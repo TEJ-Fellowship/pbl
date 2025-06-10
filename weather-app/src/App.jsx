@@ -19,6 +19,12 @@ function App() {
           <h1 className="hero-title">Hello World from TEJ!!</h1>
           <h2>Sanjeev's Push</h2>
           <p className="hero-subtitle">Welcome to PBL Monorepo.🚀</p>
+          
+          {/* Tailwind CSS Test - Remove this after confirming it works */}
+          <div className="mt-6 p-4 bg-blue-500 text-white rounded-lg shadow-lg max-w-md mx-auto">
+            <h3 className="text-lg font-bold mb-2">🎉 Tailwind CSS is working!</h3>
+            <p className="text-sm">This blue box is styled with Tailwind utility classes.</p>
+          </div>
           {/* 
           <div className="feature-cards">
             <div className="card">
