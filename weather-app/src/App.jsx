@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import "./styles/App.css";
+import  SearchBar  from "./components/SearchBar";
 
 function App() {
-  const [searchCity, setSearchCity] = useState("");
   const [currentWeather, setCurrentWeather] = useState({
     city: "Bucharest",
     country: "RO",
@@ -24,18 +24,15 @@ function App() {
     { day: "SUN", icon: "☁️", temp: "69°" }
   ]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchCity.trim()) {
-      // Here you would typically call a weather API
-      console.log("Searching for:", searchCity);
-      // For now, just update the city name
-      setCurrentWeather(prev => ({
-        ...prev,
-        city: searchCity,
-        country: "Unknown"
-      }));
-    }
+  const handleCitySearch = (cityName) => {
+    // Here you would typically call a weather API
+    console.log("Searching for:", cityName);
+    // For now, just update the city name
+    setCurrentWeather(prev => ({
+      ...prev,
+      city: cityName,
+      country: "Unknown"
+    }));
   };
 
   const WeatherIcon = ({ condition }) => {
@@ -85,25 +82,7 @@ function App() {
           </header>
 
           {/* Search Bar */}
-          <div className="px-6 md:px-8 mb-8">
-            <form onSubmit={handleSearch} className="max-w-md">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search for a city..."
-                  value={searchCity}
-                  onChange={(e) => setSearchCity(e.target.value)}
-                  className="w-full px-4 py-3 bg-white bg-opacity-20 backdrop-blur-md rounded-lg text-white placeholder-gray-300 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300 transition-colors"
-                >
-                  🔍
-                </button>
-              </div>
-            </form>
-          </div>
+          <SearchBar onSearch={handleCitySearch} />
 
           {/* Navigation */}
           <nav className="px-6 md:px-8 mb-auto">
