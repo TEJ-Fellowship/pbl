@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./styles/App.css";
+import  SearchBar  from "./components/SearchBar";
 
 function App() {
   const [searchCity, setSearchCity] = useState("");
