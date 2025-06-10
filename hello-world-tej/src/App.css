@@ -59,16 +59,19 @@
 .hero-title {
   font-size: 4rem;
   font-weight: 700;
+  background: #f8f8f8;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 2rem 0 1rem;
   animation: slideInUp 0.8s ease-out 0.2s both;
-  /* Removed background-clip styling to allow Tailwind colors */
 }
 
 .hero-subtitle {
   font-size: 1.3rem;
+  color: #f0f0f0;
   margin-bottom: 3rem;
   animation: slideInUp 0.8s ease-out 0.4s both;
-  /* Removed fixed color to allow Tailwind colors */
 }
 
 @keyframes slideInUp {
@@ -94,7 +97,6 @@
 
 .card {
   background: rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;

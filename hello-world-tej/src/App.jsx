@@ -16,29 +16,8 @@ function App() {
             <img src="/logo.png" alt="" />
           </div>
 
-          {/* Simple Tailwind Test */}
-          <div className="text-red-500 text-4xl font-bold bg-yellow-200 p-6 m-5 border-4 border-red-500">
-            TAILWIND TEST - RED text, YELLOW bg, GREEN border
-          </div>
-          
-          {/* Additional Test */}
-          <div className="bg-blue-500 text-green-100 p-8 text-2xl">
-            If you see WHITE text on BLUE background, Tailwind is working!
-          </div>
-          
-          <h1 className="text-sm text-amber-800">Hello World from TEJ!!</h1>
-          <h2 className="text-amber-700">Weather APP project</h2>
-          <p className="hero-subtitle text-amber-600">Welcome to PBL Monorepo.🚀</p>
-
-          {/* Tailwind CSS Test - Remove this after confirming it works */}
-          <div className="mt-6 p-4 bg-amber-100 text-amber-900 border-2 border-amber-300 rounded-lg shadow-lg max-w-md mx-auto">
-            <h3 className="text-lg font-bold mb-2">
-              🎉 Tailwind CSS is working!
-            </h3>
-            <p className="text-sm">
-              This brown box shows Tailwind brown colors are working perfectly!
-            </p>
-          </div>
+          <h1 className="hero-title">Hello World from TEJ!!</h1>
+          <p className="hero-subtitle">Welcome to PBL Monorepo.🚀</p>
           {/* 
           <div className="feature-cards">
             <div className="card">

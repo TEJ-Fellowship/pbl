@@ -1,14 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  /* Removed global color to allow Tailwind colors to work */
+  color: rgba(255, 255, 255, 0.87);
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
 
   font-synthesis: none;
@@ -52,7 +48,6 @@ h1 {
   font-size: 3.2em;
   line-height: 1.1;
   margin: 0;
-  /* No global color - allowing Tailwind colors */
 }
 
 h2,
@@ -89,7 +84,7 @@ button:focus-visible {
 /* Light mode adjustments */
 @media (prefers-color-scheme: light) {
   :root {
-    /* Removed global color to allow Tailwind colors */
+    color: #213547;
     background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
   }
 
