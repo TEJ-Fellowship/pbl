@@ -7,7 +7,6 @@ const [countryData,setCountryData] = useState([])
   useEffect(()=>{
    countriesApi.getAllCountries().then(
    data=>{
-   console.log(data,"ctry data")
    setCountryData(data)
    })
    .catch(error=>{
