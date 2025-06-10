@@ -22,8 +22,8 @@ function App() {
           </div>
           
           {/* Additional Test */}
-          <div className="bg-blue-500 text-green-100 p-8 text-2xl">
-            If you see WHITE text on BLUE background, Tailwind is working!
+          <div className="bg-green-500 text-green-100 p-8 text-2xl">
+            If you see WHITE text on BUE background, Tailwind is working!
           </div>
           
           <h1 className="text-sm text-amber-800">Hello World from TEJ!!</h1>
