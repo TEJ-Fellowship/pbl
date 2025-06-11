@@ -1,8 +1,9 @@
-const SearchBar = () => {
+const SearchBar = ({ searchItem, handleSearch }) => {
     return (
         <div>
-            <input type="text" placeholder="Search for a city" />
-            <button>Search</button>
+            <label htmlFor="search">Search for a country:
+                <input type="text" placeholder="Search for a country" value={searchItem} onChange={handleSearch} id="search" />
+            </label>
         </div>
     )
 }
