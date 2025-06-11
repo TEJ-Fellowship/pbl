@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./styles/App.css";
 import SearchBar from "./components/SearchBar";
 import WeatherNavigationMenu from "./components/WeatherNavigation";
@@ -6,16 +6,59 @@ import WeatherHeader from "./components/WeatherHeader";
 import WeatherCard from "./components/WeatherCard";
 import BackgroundImage from "./components/BackgroundImage";
 import WeatherDisplay from "./components/WeatherDisplay";
+import RecentSearches from "./components/RecentSearches";
 import fetchWeather from "./api/fetchWeather";
+import { useRecentSearches } from "./hooks/useRecentSearches";
 
 function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
+  const [showRecentSearches, setShowRecentSearches] = useState(false);
+  
+  // Refs for click outside detection
+  const recentSearchesRef = useRef(null);
+  const toggleButtonRef = useRef(null);
+
+  // Use the custom hook for recent searches
+  const {
+    recentSearches,
+    isLoading: isLoadingSearches,
+    addRecentSearch,
+    removeSearch,
+    clearAllSearches,
+    hasSearches
+  } = useRecentSearches();
 
   useEffect(() => {
     getWeatherData("Kathmandu");
   }, []);
+
+  // Handle click outside to close recent searches
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showRecentSearches &&
+        recentSearchesRef.current &&
+        toggleButtonRef.current &&
+        !recentSearchesRef.current.contains(event.target) &&
+        !toggleButtonRef.current.contains(event.target)
+      ) {
+        setShowRecentSearches(false);
+      }
+    };
+
+    // Add event listener when panel is open
+    if (showRecentSearches) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showRecentSearches]);
+  // Handle click outside to close recent searches
 
   const getWeatherData = async (city) => {
     try {
@@ -65,7 +108,22 @@ function App() {
   };
 
   const handleSearch = async (city) => {
-    getWeatherData(city);
+    // Save to recent searches only if the search is successful
+    const trimmedCity = city.trim();
+    if (trimmedCity) {
+      await getWeatherData(trimmedCity);
+      // Add to recent searches after successful search
+      addRecentSearch(trimmedCity);
+    }
+  };
+
+  const handleRecentSearchSelect = (city) => {
+    handleSearch(city);
+    setShowRecentSearches(false); // Hide recent searches after selection
+  };
+
+  const toggleRecentSearches = () => {
+    setShowRecentSearches(!showRecentSearches);
   };
 
   return (
@@ -86,9 +144,33 @@ function App() {
               loading={loading}
             />
           </div>
-          <button className="absolute bottom-16 right-8 bg-green-400 text-white px-4 py-2 rounded-full shadow hover:bg-green-500 transition">
+          <button 
+            ref={toggleButtonRef}
+            onClick={toggleRecentSearches}
+            className={`absolute bottom-16 right-8 px-4 py-2 rounded-full shadow transition-colors ${
+              showRecentSearches 
+                ? 'bg-green-500 text-white' 
+                : 'bg-green-400 text-white hover:bg-green-500'
+            } ${!hasSearches ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!hasSearches}
+            title={hasSearches ? 'Toggle recent searches' : 'No recent searches available'}
+          >
             LATEST LOCATIONS
           </button>
+          
+          {/* Recent Searches Panel */}
+          {showRecentSearches && (
+            <div ref={recentSearchesRef} className="absolute bottom-28 right-8 w-72 z-10">
+              <RecentSearches
+                recentSearches={recentSearches}
+                onSearchSelect={handleRecentSearchSelect}
+                onRemoveSearch={removeSearch}
+                onClearAll={clearAllSearches}
+                isLoading={isLoadingSearches}
+              />
+            </div>
+          )}
+          
           <WeatherNavigationMenu />
         </div>
         {/* Bottom Section */}
