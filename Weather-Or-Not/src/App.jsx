@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAllCountries } from "./services/coutries_api";
+import { getAllCountries } from "./services/countries_api";
 import { toast } from "sonner";
 
 function App() {
