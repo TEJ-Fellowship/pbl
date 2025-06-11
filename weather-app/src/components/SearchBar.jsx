@@ -24,6 +24,11 @@ const SearchBar = ({ handleSearch, error, onClearError }) => {
           value={searchCity}
           onChange={(e) => setSearchCity(e.target.value)}
           onFocus={handleFocus}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              submitSearch(e);
+            }
+          }}
           className="w-full px-4 py-3 rounded-full bg-white/20 backdrop-blur-sm text-white placeholder-white/70 border border-white/30 focus:outline-none focus:border-white/50"
         />
         <button
