@@ -17,6 +17,8 @@ import AqiContent from "./components/AqiContent";
 import fetchBackground from "./api/fetchBackground";
 import fetchCityInfo from "./api/fetchCityInfo";
 import CityInfo from "./components/CityInfo";
+import NewsContent from "./components/NewsContent";
+import fetchNews from "./api/fetchNews";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -30,8 +32,10 @@ function App() {
   const [forecastData, setForecastData] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [cityInfoData, setCityInfoData] = useState(null);
-  const [cityInfoLoading, setCityInfoLoading] = useState(false);
-  const [cityInfoError, setCityInfoError] = useState(null);
+  const [cityInfoLoading, setCityInfoLoading] = useState(false);  const [cityInfoError, setCityInfoError] = useState(null);
+  const [newsData, setNewsData] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState(null);
 
   // Refs for click outside detection
   const recentSearchesRef = useRef(null);
@@ -47,10 +51,13 @@ function App() {
     hasSearches,
   } = useRecentSearches();
 
+  // Initial fetch for default city data
+  // You can change "Kathmandu" to any default city you prefer
   useEffect(() => {
     getWeatherData("Kathmandu");
     getBackgroundData("Kathmandu");
     getCityInfoData("Kathmandu");
+    getNewsData("Kathmandu");
   }, []);
 
   useEffect(() => {
@@ -64,12 +71,16 @@ function App() {
     setBackgroundData(data);
   };
 
+  // Fetch AQI data based on latitude and longitude from weather data
+  // This function is called after weather data is fetched
   const getAqiData = async (lat, lon) => {
     const data = await fetchAqi(lat, lon);
     console.log("Aqi Data in App.jsx", data);
     setAqiData(data);
   };
 
+  // Fetch city information using Gemini AI
+  // This function is called after weather data is fetched
   const getCityInfoData = async (city) => {
     try {
       setCityInfoLoading(true);
@@ -93,6 +104,33 @@ function App() {
       }, 5000);
     } finally {
       setCityInfoLoading(false);
+    }
+  };
+
+  // Fetch news data for the selected city
+  // This function is called after weather data is fetched
+  const getNewsData = async (city) => {
+    try {
+      setNewsLoading(true);
+      setNewsError(null);
+      const result = await fetchNews(city);
+      
+      if (result.success) {
+        setNewsData(result.data);
+      } else {
+        setNewsError(result.error);
+        setTimeout(() => {
+          setNewsError(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      setNewsError(error.message);
+      setTimeout(() => {
+        setNewsError(null);
+      }, 5000);
+    } finally {
+      setNewsLoading(false);
     }
   };
 
@@ -174,11 +212,10 @@ function App() {
         if (weatherResult.cod === 200) {
           // Add to recent searches after successful search
           addRecentSearch(trimmedCity);
-          console.log("City:",trimmedCity);
-          await Promise.all([
+          console.log("City:",trimmedCity);          await Promise.all([
             getBackgroundData(trimmedCity),
-          
-            getCityInfoData(trimmedCity)
+            getCityInfoData(trimmedCity),
+            getNewsData(trimmedCity)
           ]);
         }
       } catch (error) {
@@ -191,11 +228,11 @@ function App() {
     try {
       setLoading(true);
       const weatherResult = await getWeatherData(city);
-      if (weatherResult.cod === 200) {
-        await Promise.all([
-          getBackgroundData(city),
-          getCityInfoData(city)
-        ]);
+      if (weatherResult.cod === 200) {          await Promise.all([
+            getBackgroundData(city),
+            getCityInfoData(city),
+            getNewsData(city)
+          ]);
       }
     } catch (error) {
       console.error("Error in recent search select:", error);
@@ -314,7 +351,13 @@ function App() {
                   error={cityInfoError}
                 />
               )}
-              {activeMenu === "NEWS" && <WeatherContent weatherData={weatherData} />}
+              {activeMenu === "NEWS" && (
+                <NewsContent 
+                  newsData={newsData}
+                  loading={newsLoading}
+                  error={newsError}
+                />
+              )}
             </div>
           </div>
         </div>

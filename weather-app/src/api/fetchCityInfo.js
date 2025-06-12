@@ -11,10 +11,12 @@ const fetchCityInfo = async (cityName) => {
 
     // Initialize Gemini AI
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
 
     // Create prompt for city information
-    const prompt = `Provide a single interesting fact about ${cityName} in 1-2 sentences. Make it concise and engaging. Format the response as JSON: {"city": "${cityName}", "information": "your fact here"}`;
+    const prompt = `Provide a single interesting fact about ${cityName} in 1-2 sentences (150-200 characters ). Make it concise and engaging. Format the response as JSON: {"city": "${cityName}", "information": "your fact here"}`;
 
     // Generate content
     const result = await model.generateContent(prompt);
