@@ -3,6 +3,8 @@ import React from "react";
 const NewsContent = ({ newsData, loading, error }) => {
   return (
     <div className="flex flex-col w-full">
+
+     { /* Display a loading spinner when data is being fetched */}
       {loading && (
         <div className="flex-1 flex flex-col items-center">
           <div className="flex items-center gap-4">
@@ -12,6 +14,7 @@ const NewsContent = ({ newsData, loading, error }) => {
         </div>
       )}
 
+        {/* Display an error message if there is an error */}
       {error && (
         <div className="flex-1 flex flex-col items-center">
           <div className="flex items-center gap-4">
@@ -21,6 +24,7 @@ const NewsContent = ({ newsData, loading, error }) => {
         </div>
       )}
 
+        { /* Display a placeholder when no news data is available */}
       {!loading && !error && !newsData && (
         <div className="flex-1 flex flex-col items-center">
           <div className="flex items-center gap-4">
@@ -30,6 +34,7 @@ const NewsContent = ({ newsData, loading, error }) => {
         </div>
       )}
 
+        { /* Display news articles if available */}
       {!loading && !error && newsData && newsData.length > 0 && (
         <div className="grid grid-cols-5 gap-4">
           {newsData.map((article, index) => (
@@ -42,11 +47,11 @@ const NewsContent = ({ newsData, loading, error }) => {
             >
               <div className="w-full aspect-video mb-2 overflow-hidden rounded-lg">
                 <img
-                  src={article.urlToImage || 'https://via.placeholder.com/300x200?text=News'}
-                  alt={article.title}
+                  src={article.urlToImage || 'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
+                  alt={'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.src = 'https://via.placeholder.com/300x200?text=News';
+                    e.target.src = 'https://placehold.co/300x200/e2e8f0/1e293b?text=News';
                   }}
                 />
               </div>
@@ -54,7 +59,7 @@ const NewsContent = ({ newsData, loading, error }) => {
                 {article.title}
               </h3>
               <span className="text-xs text-gray-500 mt-1">
-                {new Date(article.publishedAt).toLocaleDateString()}
+                {new Date(article.publishedAt).toLocaleDateString()} 
               </span>
             </a>
           ))}
