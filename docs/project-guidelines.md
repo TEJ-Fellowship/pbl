@@ -1,21 +1,44 @@
-
-# Project-Based Learning(PBL) Guidelines
-**TEJ Bootcamp - Full Stack Software Engineering Fellows**
+# Project-Based Learning Guidelines
+## TEJ Bootcamp - Full Stack Software Engineering Fellows
 
 ## Overview
-
 This document outlines the development process and standards for all projects in the TEJ bootcamp. Following these guidelines ensures consistent, high-quality code delivery and effective collaboration across teams.
 
 ## 1. Project Setup
 
 ### Repository Structure
 - **Monorepo Template Provided**: You'll receive a pre-configured monorepo
-- Put your project within that monorepo within a folder (e.g. `weather_and_AQI_app`)
+- Put your project within that monorepo within a folder (e.g., `weather_and_AQI_app`)
 
-### Getting Started Checklist
-- [ ] Clone the provided repository template
-- [ ] Review the folder structure and understand the organization
-- [ ] Initialize your project files in the appropriate directories
+### How to Get Started
+1. Clone the provided repository template
+2. Review the folder structure and understand the organization
+3. Initialize project files in the appropriate directories
+
+#### For Example:
+
+**Frontend Application**
+1. Navigate to the root directory: `PBL`
+2. Execute the following commands in the terminal:
+   ```bash
+   npm create vite@latest my-app -- --template react
+   cd my-app
+   ```
+3. Start the project
+
+**Fullstack Application**
+1. Navigate to the root directory: `PBL`
+2. Create a new project directory using the terminal:
+   ```bash
+   mkdir your_project_name
+   cd your_project_name
+   ```
+3. Create separate directories for the frontend and backend:
+   ```bash
+   mkdir your_project_frontend
+   mkdir your_project_backend
+   ```
+4. Begin coding in the respective directories
 
 ## 2. User Stories & Requirements
 
@@ -24,15 +47,14 @@ This document outlines the development process and standards for all projects in
 As a [persona], I want to [do something] so that [reason/benefit]
 ```
 
-### Key Principles
+### Key Principles:
 - Focus on user needs, not implementation details
 - Stories should be testable and measurable
 - Include acceptance criteria for each story
 
 ### Examples
-✅ **Good**: "As a job seeker, I want to filter job listings by location so that I can find opportunities near me"
-
-❌ **Bad**: "As a developer, I want to implement a React component with Material-UI"
+- ✅ **Good**: "As a job seeker, I want to filter job listings by location so that I can find opportunities near me"
+- ❌ **Bad**: "As a developer, I want to implement a React component with Material-UI"
 
 ### Story Management
 - Break large stories into smaller, manageable tasks
@@ -55,7 +77,7 @@ main
 └── hotfix/login-validation-bug
 ```
 
-### Branch Naming Convention
+**Branch Naming Convention:**
 - `feature/[brief-description]`
 - `bugfix/[brief-description]`
 - `hotfix/[brief-description]`
@@ -99,14 +121,11 @@ We strongly encourage you to use AI tools throughout your development process. A
 - Understand security implications of your implementations
 
 ### Effective Prompting Strategies
+- ❌ **Poor**: "Build me a login system"
+- ✅ **Good**: "Explain how JWT authentication works, then help me implement a login endpoint that validates user credentials and returns a JWT token"
 
-❌ **Poor**: "Build me a login system"
-
-✅ **Good**: "Explain how JWT authentication works, then help me implement a login endpoint that validates user credentials and returns a JWT token"
-
-❌ **Poor**: "Fix this bug"
-
-✅ **Good**: "I'm getting a 'Cannot read property of undefined' error on line 23. Here's my code: [paste code]. Can you explain what's happening and suggest a fix?"
+- ❌ **Poor**: "Fix this bug"
+- ✅ **Good**: "I'm getting a 'Cannot read property of undefined' error on line 23. Here's my code: [paste code]. Can you explain what's happening and suggest a fix?"
 
 ### AI Learning Workflow
 1. Encounter something new → Ask AI to explain the concept
@@ -118,7 +137,6 @@ We strongly encourage you to use AI tools throughout your development process. A
 ## 5. Commit Standards
 
 ### AI-Enhanced Commit Format
-
 ```
 ## AI Prompts Used
 [List the key prompts you used with AI tools]
@@ -134,7 +152,6 @@ We strongly encourage you to use AI tools throughout your development process. A
 ```
 
 ### Example
-
 ```
 ## AI Prompts Used
 - "Explain how React useEffect hook works with cleanup functions"
@@ -166,7 +183,6 @@ Implemented custom form validation hook for user registration with real-time val
 - **Breaking Changes**: Clearly document any breaking changes
 
 ### PR Template
-
 ```markdown
 ## Summary
 Brief description of changes
@@ -270,7 +286,5 @@ A feature is considered complete when:
 - **Pull Requests**: Code review process
 - **GitHub Actions**: CI/CD pipeline
 
----
-
-**Questions?**  
+## Questions?
 If you have questions about these guidelines, reach out to your mentor.
