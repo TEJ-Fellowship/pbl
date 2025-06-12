@@ -23,6 +23,7 @@ function App() {
   const [activeMenu, setActiveMenu] = useState("WEATHER");
   const [aqiData, setAqiData] = useState(null);
   const [backgroundData, setBackgroundData] = useState(null);
+  const [bgLoading, setBgLoading] = useState(false);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
   const [showChart, setShowChart] = useState(false);
   const [forecastData, setForecastData] = useState(null);
@@ -54,8 +55,10 @@ function App() {
   }, [weatherData]);
 
   const getBackgroundData = async (city) => {
+    setBgLoading(true);
     const data = await fetchBackground(city);
     setBackgroundData(data);
+    setBgLoading(false);
   };
 
   const getAqiData = async (lat, lon) => {
@@ -189,7 +192,10 @@ function App() {
     <>
       <WeatherCard>
         <div className="relative h-[450px]">
-          <BackgroundImage backgroundData={backgroundData} />
+          <BackgroundImage
+            backgroundData={backgroundData}
+            bgLoading={bgLoading}
+          />
           <WeatherHeader
             weatherData={weatherData}
             localTime={localTime}
