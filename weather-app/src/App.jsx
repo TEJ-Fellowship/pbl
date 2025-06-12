@@ -5,23 +5,47 @@ import WeatherNavigationMenu from "./components/WeatherNavigation";
 import WeatherHeader from "./components/WeatherHeader";
 import WeatherCard from "./components/WeatherCard";
 import BackgroundImage from "./components/BackgroundImage";
-import WeatherDisplay from "./components/WeatherDisplay";
+import WeatherContent from "./components/WeatherContent";
 import fetchWeather from "./api/fetchWeather";
+import fetchAqi from "./api/fetchAqi";
+import AqiContent from "./components/AqiContent";
+import fetchBackground from "./api/fetchBackground";
 
 function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
+  const [activeMenu, setActiveMenu] = useState("WEATHER");
+  const [aqiData, setAqiData] = useState(null);
+  const [backgroundData, setBackgroundData] = useState(null);
 
   useEffect(() => {
     getWeatherData("Kathmandu");
+    getBackgroundData("Kathmandu");
   }, []);
+
+  useEffect(() => {
+    if (weatherData?.coord?.lat && weatherData?.coord?.lon) {
+      getAqiData(weatherData.coord.lat, weatherData.coord.lon);
+    }
+  }, [weatherData]);
+
+  const getBackgroundData = async (city) => {
+    const data = await fetchBackground(city);
+    setBackgroundData(data);
+  };
+
+  const getAqiData = async (lat, lon) => {
+    const data = await fetchAqi(lat, lon);
+    console.log("Aqi Data in App.jsx", data);
+    setAqiData(data);
+  };
 
   const getWeatherData = async (city) => {
     try {
       setLoading(true);
       const data = await fetchWeather(city);
-      console.log("App Page Data", data);
+      // If city is found, set weather data
       if (data.cod === 200) {
         setWeatherData(data);
       } else {
@@ -34,9 +58,6 @@ function App() {
     } catch (error) {
       console.error("App Page Error", error);
       setError(error.message);
-      setTimeout(() => {
-        setError(null);
-      }, 5000);
     } finally {
       setLoading(false);
     }
@@ -48,8 +69,7 @@ function App() {
     return cityTime.toLocaleString(); // or toLocaleTimeString() or toLocaleDateString()
   };
 
-  const localTime = getCityLocalTime(weatherData?.timezone);
-  console.log("Local Time in City:", localTime);
+  const localTime = weatherData ? getCityLocalTime(weatherData?.timezone) : "";
 
   const getCountryName = (countryCode) => {
     const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -66,13 +86,18 @@ function App() {
 
   const handleSearch = async (city) => {
     getWeatherData(city);
+    getBackgroundData(city);
+  };
+
+  const handleActiveMenu = (menu) => {
+    setActiveMenu(menu);
   };
 
   return (
     <>
       <WeatherCard>
         <div className="relative h-[450px]">
-          <BackgroundImage />
+          <BackgroundImage backgroundData={backgroundData} />
           <WeatherHeader
             weatherData={weatherData}
             localTime={localTime}
@@ -89,11 +114,17 @@ function App() {
           <button className="absolute bottom-16 right-8 bg-green-400 text-white px-4 py-2 rounded-full shadow hover:bg-green-500 transition">
             LATEST LOCATIONS
           </button>
-          <WeatherNavigationMenu />
+          <WeatherNavigationMenu
+            activeMenu={activeMenu}
+            handleActiveMenu={handleActiveMenu}
+          />
         </div>
         {/* Bottom Section */}
         <div className="bg-white/80 px-8 py-6 flex flex-col md:flex-row items-center gap-8">
-          <WeatherDisplay weatherData={weatherData} />
+          {activeMenu === "WEATHER" && (
+            <WeatherContent weatherData={weatherData} />
+          )}
+          {activeMenu === "AIR QUALITY" && <AqiContent aqiData={aqiData} />}
         </div>
       </WeatherCard>
     </>

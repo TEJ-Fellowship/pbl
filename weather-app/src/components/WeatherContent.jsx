@@ -1,11 +1,11 @@
 import React from "react";
 
-const WeatherDisplay = ({ weatherData }) => {
+const WeatherContent = ({ weatherData }) => {
   return (
     <>
       <div className="flex-1 flex flex-col items-center">
         <div className="flex items-center gap-4">
-          <span className="text-3xl font-bold text-gray-800">
+          <span className="text-3xl font-medium text-gray-800">
             {weatherData?.main.temp}°C
           </span>
         </div>
@@ -14,7 +14,7 @@ const WeatherDisplay = ({ weatherData }) => {
 
       <div className="flex-1 flex flex-col items-center">
         <div className="flex items-center gap-4">
-          <span className="text-3xl font-bold text-gray-800">
+          <span className="text-3xl font-medium text-gray-800">
             {weatherData?.main.humidity}%
           </span>
         </div>
@@ -23,7 +23,7 @@ const WeatherDisplay = ({ weatherData }) => {
 
       <div className="flex-1 flex flex-col items-center">
         <div className="flex items-center gap-4">
-          <span className="text-3xl font-bold text-gray-800">
+          <span className="text-3xl font-medium text-gray-800">
             {weatherData?.wind.speed} km/h
           </span>
         </div>
@@ -32,8 +32,8 @@ const WeatherDisplay = ({ weatherData }) => {
 
       <div className="flex-1 flex flex-col items-center">
         <div className="flex items-center gap-4">
-          <span className="text-3xl font-bold text-gray-800">
-            {weatherData?.weather[0].main}
+          <span className="text-3xl font-medium text-gray-800">
+            {weatherData?.weather[0].main.toUpperCase()}
           </span>
         </div>
         <span className="text-gray-600 mt-2">CONDITION</span>
@@ -42,4 +42,4 @@ const WeatherDisplay = ({ weatherData }) => {
   );
 };
 
-export default WeatherDisplay;
+export default WeatherContent;

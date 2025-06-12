@@ -3,17 +3,10 @@ import React, { useEffect, useState } from "react";
 const WeatherHeader = ({ weatherData, localTime, country }) => {
   const [localTimeClock, setLocalTimeClock] = useState(null);
 
-  // useEffect(() => {
-  //   setInterval(() => {
-  //     setLocalTimeClock(localTime);
-  //   }, 1000);
-  // }, [localTime]);
-
-  console.log("Weather Header Data", weatherData);
   return (
     <>
       <div className="absolute top-6 left-8 text-white">
-        <h1 className="text-3xl font-light">{weatherData?.name}</h1>
+        <h1 className="text-4xl font-light">{weatherData?.name}</h1>
       </div>
       <div className="absolute top-6 right-8 text-white flex flex-col items-end">
         <div className="flex items-center gap-2">
@@ -38,7 +31,7 @@ const WeatherHeader = ({ weatherData, localTime, country }) => {
               fill="none"
             />
           </svg>
-          <span className="text-xs">
+          <span className="text-xs font-semibold">
             {country.toUpperCase()}, {weatherData?.name}
           </span>
         </div>
