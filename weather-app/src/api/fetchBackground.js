@@ -1,13 +1,12 @@
 import config from "../config/config";
 const fetchBackground = async (city) => {
-  const { baseApiUrl, API_KEY } = config;
+  const { baseApiBgUrl, BG_KEY } = config;
   try {
     const response = await fetch(
-      `https://api.pexels.com/v1/search?query=${city}&per_page=1`,
+      `${baseApiBgUrl}/search?query=${city}&per_page=1`,
       {
         headers: {
-          Authorization:
-            "qb7LlK65pIuKveqZrFwV41zwTd9HJCIT0NpyHTemtkJEYn8fVZiQjSRr",
+          Authorization: BG_KEY,
         },
       }
     );
