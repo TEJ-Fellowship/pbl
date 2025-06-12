@@ -15,6 +15,8 @@ import { useRecentSearches } from "./hooks/useRecentSearches";
 import fetchAqi from "./api/fetchAqi";
 import AqiContent from "./components/AqiContent";
 import fetchBackground from "./api/fetchBackground";
+import fetchCityInfo from "./api/fetchCityInfo";
+import CityInfo from "./components/CityInfo";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,9 @@ function App() {
   const [showChart, setShowChart] = useState(false);
   const [forecastData, setForecastData] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
+  const [cityInfoData, setCityInfoData] = useState(null);
+  const [cityInfoLoading, setCityInfoLoading] = useState(false);
+  const [cityInfoError, setCityInfoError] = useState(null);
 
   // Refs for click outside detection
   const recentSearchesRef = useRef(null);
@@ -45,6 +50,7 @@ function App() {
   useEffect(() => {
     getWeatherData("Kathmandu");
     getBackgroundData("Kathmandu");
+    getCityInfoData("Kathmandu");
   }, []);
 
   useEffect(() => {
@@ -62,6 +68,32 @@ function App() {
     const data = await fetchAqi(lat, lon);
     console.log("Aqi Data in App.jsx", data);
     setAqiData(data);
+  };
+
+  const getCityInfoData = async (city) => {
+    try {
+      setCityInfoLoading(true);
+      setCityInfoError(null);
+      const result = await fetchCityInfo(city);
+      
+      if (result.success) {
+        setCityInfoData(result.data);
+      } else {
+        setCityInfoError(result.error);
+        // Clear error after 5 seconds
+        setTimeout(() => {
+          setCityInfoError(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error("Error fetching city info:", error);
+      setCityInfoError(error.message);
+      setTimeout(() => {
+        setCityInfoError(null);
+      }, 5000);
+    } finally {
+      setCityInfoLoading(false);
+    }
   };
 
   // Handle click outside to close recent searches
@@ -89,7 +121,6 @@ function App() {
     };
   }, [showRecentSearches]);
   // Handle click outside to close recent searches
-
   const getWeatherData = async (city) => {
     try {
       setLoading(true);
@@ -104,9 +135,11 @@ function App() {
           setError(null);
         }, 5000);
       }
+      return data; // Return the data so other functions can check the status
     } catch (error) {
       console.error("App Page Error", error);
       setError(error.message);
+      throw error; // Rethrow so calling functions can handle it
     } finally {
       setLoading(false);
     }
@@ -132,21 +165,45 @@ function App() {
   const clearError = () => {
     setError(null);
   };
-
   const handleSearch = async (city) => {
     // Save to recent searches only if the search is successful
     const trimmedCity = city.trim();
     if (trimmedCity) {
-      await getWeatherData(trimmedCity);
-      // Add to recent searches after successful search
-      addRecentSearch(trimmedCity);
-      getBackgroundData(city);
+      try {
+        const weatherResult = await getWeatherData(trimmedCity);
+        if (weatherResult.cod === 200) {
+          // Add to recent searches after successful search
+          addRecentSearch(trimmedCity);
+          console.log("City:",trimmedCity);
+          await Promise.all([
+            getBackgroundData(trimmedCity),
+          
+            getCityInfoData(trimmedCity)
+          ]);
+        }
+      } catch (error) {
+        console.error("Error in handleSearch:", error);
+        setError("Failed to fetch city data");
+      }
     }
   };
-
-  const handleRecentSearchSelect = (city) => {
-    handleSearch(city);
-    setShowRecentSearches(false); // Hide recent searches after selection
+  const handleRecentSearchSelect = async (city) => {
+    try {
+      setLoading(true);
+      const weatherResult = await getWeatherData(city);
+      if (weatherResult.cod === 200) {
+        await Promise.all([
+          getBackgroundData(city),
+          getCityInfoData(city)
+        ]);
+      }
+    } catch (error) {
+      console.error("Error in recent search select:", error);
+      setError("Failed to fetch city data");
+    } finally {
+      setLoading(false);
+      setShowRecentSearches(false); // Hide recent searches after selection
+    }
   };
 
   const toggleRecentSearches = () => {
@@ -242,13 +299,24 @@ function App() {
             activeMenu={activeMenu}
             handleActiveMenu={handleActiveMenu}
           />
-        </div>
-        {/* Bottom Section */}
-        <div className="bg-white/80 px-8 py-6 flex flex-col md:flex-row items-center gap-8">
-          {activeMenu === "WEATHER" && (
-            <WeatherContent weatherData={weatherData} />
-          )}
-          {activeMenu === "AIR QUALITY" && <AqiContent aqiData={aqiData} />}
+        </div>        {/* Bottom Section */}
+        <div className="bg-white/80 px-8 py-6 h-[120px]">
+          <div className="h-full w-full flex items-start justify-center overflow-y-auto">
+            <div className="w-full max-w-4xl">
+              {activeMenu === "WEATHER" && (
+                <WeatherContent weatherData={weatherData} />
+              )}
+              {activeMenu === "AIR QUALITY" && <AqiContent aqiData={aqiData} />}
+              {activeMenu === "CITY INFO" && (
+                <CityInfo 
+                  cityInfoData={cityInfoData}
+                  loading={cityInfoLoading}
+                  error={cityInfoError}
+                />
+              )}
+              {activeMenu === "NEWS" && <WeatherContent weatherData={weatherData} />}
+            </div>
+          </div>
         </div>
       </WeatherCard>
 
