@@ -7,7 +7,10 @@ import WeatherCard from "./components/WeatherCard";
 import BackgroundImage from "./components/BackgroundImage";
 import WeatherDisplay from "./components/WeatherDisplay";
 import RecentSearches from "./components/RecentSearches";
+import Chart from "./components/Chart";
+import ChartLoading from "./components/ChartLoading";
 import fetchWeather from "./api/fetchWeather";
+import fetchForecast from "./api/fetchForecast";
 import { useRecentSearches } from "./hooks/useRecentSearches";
 
 function App() {
@@ -15,6 +18,9 @@ function App() {
   const [error, setError] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [forecastData, setForecastData] = useState(null);
+  const [chartLoading, setChartLoading] = useState(false);
   
   // Refs for click outside detection
   const recentSearchesRef = useRef(null);
@@ -126,6 +132,34 @@ function App() {
     setShowRecentSearches(!showRecentSearches);
   };
 
+  //fetch forecast data for the selected city and show the chart
+  const handleShowChart = async (cityName) => {
+    try {
+      setChartLoading(true);
+      setShowChart(true);
+      const forecast = await fetchForecast(cityName);
+      
+      if (forecast.success) {
+        setForecastData(forecast.data);
+      } else {
+        console.error("Failed to fetch forecast:", forecast.error);
+        setError(forecast.error);
+        setShowChart(false);
+      }
+    } catch (error) {
+      console.error("Error fetching forecast:", error);
+      setError("Failed to load forecast data");
+      setShowChart(false);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const handleCloseChart = () => {
+    setShowChart(false);
+    setForecastData(null);
+  };
+
   return (
     <>
       <WeatherCard>
@@ -135,6 +169,7 @@ function App() {
             weatherData={weatherData}
             localTime={localTime}
             country={country}
+            onShowChart={handleShowChart}
           />
           <div className="flex flex-col items-center justify-center h-[300px]">
             <SearchBar
@@ -178,6 +213,20 @@ function App() {
           <WeatherDisplay weatherData={weatherData} />
         </div>
       </WeatherCard>
+      
+      {/* Temperature Chart Loading */}
+      {chartLoading && (
+        <ChartLoading onClose={handleCloseChart} />
+      )}
+      
+      {/* Temperature Chart Modal */}
+      {showChart && !chartLoading && (
+        <Chart
+          forecastData={forecastData}
+          onClose={handleCloseChart}
+          cityName={weatherData?.name}
+        />
+      )}
     </>
   );
 }

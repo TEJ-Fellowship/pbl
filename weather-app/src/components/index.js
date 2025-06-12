@@ -6,3 +6,5 @@ export { default as WeatherNavigation } from "./WeatherNavigation";
 export { default as BackgroundImage } from "./BackgroundImage";
 export { default as RecentSearches } from "./RecentSearches";
 export { default as TemperatureCard } from "./TemperatureCard";
+export { default as Chart } from "./Chart";
+export { default as ChartLoading } from "./ChartLoading";
