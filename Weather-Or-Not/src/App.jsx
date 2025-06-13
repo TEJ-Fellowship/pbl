@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getAllCountries } from "./services/countries_api";
 import { toast } from "sonner";
 
-import SearchBar from './components/SearchBar';
-import CountryList from './components/CountryList';
-import CountryDetail from './components/CountryDetail';
+import SearchBar from "./components/SearchBar";
+import CountryList from "./components/CountryList";
+import CountryDetail from "./components/CountryDetail";
 
 /*
 ##State Management
@@ -19,25 +19,29 @@ function App() {
   const [searchItem, setSearchItem] = useState("");
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const hasFetched = useRef(false);
 
   //Fetch countries when the component mounts
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     const fetchCountries = async () => {
-      toast.success("Fetching countries...");
+      toast.info("Fetching countries...");
       try {
         const countriesData = await getAllCountries(); //API call to fetch all countries
-        setCountryData(countriesData);  //Store the fetched data in the state
+        setCountryData(countriesData); //Store the fetched data in the state
+        toast.success("Countries fetched successfully");
       } catch (error) {
-        toast.error(`Error in fetching countries data: ${error.message}`); //// Show error toast if fetch fails
+        toast.error(`Error in fetching countries data: ${error.message}`); // Show error toast if fetch fails
       }
     };
 
     fetchCountries();
   }, []);
 
-  //Filter countries based on the search input
-  useEffect(()=>{
-    if(searchItem.trim() === ""){
+  // Filter countries based on the search input
+  useEffect(() => {
+    if (searchItem.trim() === "") {
       setFilteredCountries([]); //Clear filtered results if search inputis empty
       return;
     }
@@ -53,7 +57,7 @@ function App() {
     setSelectedCountry(null); // Reset selected country when user starts searching
   };
 
-    // Handler to show details of a specific country
+  // Handler to show details of a specific country
   const handleShow = (country) => {
     setSelectedCountry(country); // Set selected country to display its details
   };
@@ -62,6 +66,7 @@ function App() {
     <>
       <h1>Weather or Not</h1>
       <p>Your comprehensive weather and air quality companion</p>
+      <h2>Weather</h2>
 
       <br />
       <SearchBar searchItem={searchItem} handleSearch={handleSearch} />
@@ -75,7 +80,6 @@ function App() {
       ) : searchItem && filteredCountries.length === 0 ? (
         <p>No countries found.</p>
       ) : null}
-
     </>
   );
 }
