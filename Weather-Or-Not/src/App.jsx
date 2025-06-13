@@ -21,8 +21,6 @@ function App() {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const hasFetched = useRef(false);
 
-  console.log("filteredCountries: ", filteredCountries);
-  console.log("searchItem: ", searchItem);
   //Fetch countries when the component mounts
   useEffect(() => {
     if (hasFetched.current) return;
