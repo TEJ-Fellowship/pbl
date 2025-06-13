@@ -40,6 +40,7 @@ pbl/
 ### Prerequisites
 
 Before you begin, ensure you have the following installed:
+
 - **Git**
 - **Cursor** (recommended AI-powered code editor)
 - **Node.js** (v18 or higher) - for individual projects as needed
@@ -48,6 +49,7 @@ Before you begin, ensure you have the following installed:
 ### Initial Setup
 
 1. **Clone the Repository**
+
    ```bash
    git clone <repository-url>
    cd tej-bootcamp-monorepo
@@ -61,12 +63,14 @@ Before you begin, ensure you have the following installed:
 ### Starting Your Project
 
 1. **Create Your Project Folder**
+
    ```bash
    mkdir your_project_name
    cd your_project_name
    ```
 
 2. **Initialize Your Project**
+
    ```bash
    npm init -y
    # Set up your frontend/backend structure as needed
@@ -85,6 +89,7 @@ For detailed development standards, workflow processes, and best practices, plea
 **📖 [Project Development Guidelines](docs/project-guidelines.md)**
 
 Key highlights:
+
 - AI-assisted development (encouraged!)
 - User story-driven development
 - Proper Git workflow and branching strategy
@@ -107,23 +112,21 @@ Remember: Always understand the AI-generated code before implementing it!
 1. **Plan**: Create user stories and break them into tasks
 2. **Develop**: Use feature branches and leverage AI assistance
 3. **Review**: Submit PRs with detailed descriptions
-4. **Collaborate**: Participate in code reviews and pair programming
+4. **Collaborate**: Participate in code reviews and p¸¸¸¸¸¸air programming
 5. **Learn**: Continuously ask questions and seek understanding
 
-
 ## 🤝 Getting Help
-
 
 - **Technical Questions**: Use GitHub issues for project-specific discussions
 - **Pair Programming**: Schedule sessions with fellow bootcampers
 - **Mentorship**: Reach out to program mentors for guidance
 - **Documentation**: Refer to the guidelines and project READMEs
-
-
+- **Presentations**: Review our [Presentation Guidelines](docs/presentation_guidelines.md) for project presentations
 
 ## 🎯 Goals
 
 By the end of the bootcamp, you'll have:
+
 - Multiple full-stack projects in your portfolio
 - Experience with modern development workflows
 - Proficiency in AI-assisted development
@@ -134,4 +137,4 @@ By the end of the bootcamp, you'll have:
 
 **Happy Coding! 🚀**
 
-*Questions or suggestions? Open an issue or reach out to your mentor.*
+_Questions or suggestions? Open an issue or reach out to your mentor._
