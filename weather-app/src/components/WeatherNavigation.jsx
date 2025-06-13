@@ -1,5 +1,5 @@
 const WeatherNavigationMenu = ({ activeMenu, handleActiveMenu }) => {
-  const menuList = ["WEATHER", "AIR QUALITY", "NEWS"];
+  const menuList = ["WEATHER", "AIR QUALITY", "CITY INFO", "NEWS"];
   return (
     <>
       <div className="absolute bottom-0 left-0 w-full flex justify-around text-white text-sm">

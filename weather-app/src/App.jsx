@@ -15,6 +15,10 @@ import { useRecentSearches } from "./hooks/useRecentSearches";
 import fetchAqi from "./api/fetchAqi";
 import AqiContent from "./components/AqiContent";
 import fetchBackground from "./api/fetchBackground";
+import fetchCityInfo from "./api/fetchCityInfo";
+import CityInfo from "./components/CityInfo";
+import NewsContent from "./components/NewsContent";
+import fetchNews from "./api/fetchNews";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -27,6 +31,12 @@ function App() {
   const [showChart, setShowChart] = useState(false);
   const [forecastData, setForecastData] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
+  const [cityInfoData, setCityInfoData] = useState(null);
+  const [cityInfoLoading, setCityInfoLoading] = useState(false);  
+  const [cityInfoError, setCityInfoError] = useState(null);
+  const [newsData, setNewsData] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState(null);
 
   // Refs for click outside detection
   const recentSearchesRef = useRef(null);
@@ -42,9 +52,13 @@ function App() {
     hasSearches,
   } = useRecentSearches();
 
+  // Initial fetch for default city data
+  // You can change "Kathmandu" to any default city you prefer
   useEffect(() => {
     getWeatherData("Kathmandu");
     getBackgroundData("Kathmandu");
+    getCityInfoData("Kathmandu");
+    getNewsData("Kathmandu");
   }, []);
 
   useEffect(() => {
@@ -58,11 +72,84 @@ function App() {
     setBackgroundData(data);
   };
 
+  // Fetch AQI data based on latitude and longitude from weather data
+  // This function is called after weather data is fetched
   const getAqiData = async (lat, lon) => {
     const data = await fetchAqi(lat, lon);
     console.log("Aqi Data in App.jsx", data);
     setAqiData(data);
   };
+
+  // Fetch city information using Gemini AI
+  // This function is also called after weather data is fetched
+  const getCityInfoData = async (city) => {
+    try {
+      // Set loading state to true and clear any previous errors
+      setCityInfoLoading(true);
+      setCityInfoError(null);
+      // Fetch city information using the fetchCityInfo API
+      const result = await fetchCityInfo(city);
+      
+      if (result.success) {
+        // If the fetch is successful, update the city info data state
+        setCityInfoData(result.data);
+      } else {
+        setCityInfoError(result.error);
+        // Clear error after 5 seconds
+        setTimeout(() => {
+          setCityInfoError(null);
+        }, 5000);
+      }
+    } catch (error) {
+      // handle any errors that occur during the fetch
+      // This ensures the error message does not persist indefinitely
+      console.error("Error fetching city info:", error);
+      setCityInfoError(error.message);
+      setTimeout(() => {
+        setCityInfoError(null);
+      }, 5000);
+    } finally {
+      setCityInfoLoading(false);
+    }
+  };
+
+  // Fetch and manages news data for the selected city
+  // This function is called after weather data is fetched
+  const getNewsData = async (city) => {
+    try {
+      // Set loading state to true and clear any previous errors
+      setNewsLoading(true);
+      setNewsError(null);
+      // Fetch news data using the fetchNews API
+      const result = await fetchNews(city);
+      
+      if (result.success) {
+        // If the fetch is successful, update the news data state
+        setNewsData(result.data);
+      } else {
+        // If the fetch fails, set the error state 
+        setNewsError(result.error);
+        // Clear error after 5 seconds
+        setTimeout(() => {
+          setNewsError(null);
+        }, 5000);
+      }
+    } catch (error) {
+      // handle any errors that occur during the fetch
+      console.error("Error fetching news:", error);
+      setNewsError(error.message);
+      // Clear error after 5 seconds
+      // This ensures the error message does not persist indefinitely
+      setTimeout(() => {
+        setNewsError(null);
+      }, 5000);
+    } finally {
+      // Set loading state to false after the fetch is complete
+      // This is important to stop showing the loading spinner
+      setNewsLoading(false);
+    }
+  };
+  
 
   // Handle click outside to close recent searches
   useEffect(() => {
@@ -88,8 +175,8 @@ function App() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showRecentSearches]);
-  // Handle click outside to close recent searches
 
+  // Fetch weather data for the given city
   const getWeatherData = async (city) => {
     try {
       setLoading(true);
@@ -104,9 +191,11 @@ function App() {
           setError(null);
         }, 5000);
       }
+      return data; // Return the data so other functions can check the status
     } catch (error) {
       console.error("App Page Error", error);
       setError(error.message);
+      throw error; // Rethrow so calling functions can handle it
     } finally {
       setLoading(false);
     }
@@ -133,22 +222,53 @@ function App() {
     setError(null);
   };
 
+  // Handle search input and fetch all data related to the city
   const handleSearch = async (city) => {
     // Save to recent searches only if the search is successful
     const trimmedCity = city.trim();
     if (trimmedCity) {
-      await getWeatherData(trimmedCity);
-      // Add to recent searches after successful search
-      addRecentSearch(trimmedCity);
-      getBackgroundData(city);
+      try {
+        const weatherResult = await getWeatherData(trimmedCity);
+        if (weatherResult.cod === 200) {
+          // Add to recent searches after successful search
+          addRecentSearch(trimmedCity);
+          // Fetch background, city info, and news data concurrently
+          await Promise.all([
+            getBackgroundData(trimmedCity),
+            getCityInfoData(trimmedCity),
+            getNewsData(trimmedCity)
+          ]);
+        }
+      } catch (error) {
+        console.error("Error in handleSearch:", error);
+        setError("Failed to fetch city data");
+      }
     }
   };
 
-  const handleRecentSearchSelect = (city) => {
-    handleSearch(city);
-    setShowRecentSearches(false); // Hide recent searches after selection
+  // Handle selection from recent searches
+  const handleRecentSearchSelect = async (city) => {
+    try {
+      setLoading(true);
+      const weatherResult = await getWeatherData(city);
+      if (weatherResult.cod === 200) {          
+          await Promise.all([
+            getBackgroundData(city),
+            getCityInfoData(city),
+            getNewsData(city)
+          ]);
+      }
+    } catch (error) {
+      console.error("Error in recent search select:", error);
+      setError("Failed to fetch city data");
+    } finally {
+      setLoading(false);
+      setShowRecentSearches(false); // Hide recent searches after selection
+    }
   };
 
+  // Toggle recent searches panel visibility
+  // This function is called when the toggle button is clicked
   const toggleRecentSearches = () => {
     setShowRecentSearches(!showRecentSearches);
   };
@@ -175,12 +295,12 @@ function App() {
       setChartLoading(false);
     }
   };
-
+  // Close the chart modal and reset forecast data
   const handleCloseChart = () => {
     setShowChart(false);
     setForecastData(null);
   };
-
+  // Handle active menu selection
   const handleActiveMenu = (menu) => {
     setActiveMenu(menu);
   };
@@ -196,6 +316,8 @@ function App() {
             country={country}
             onShowChart={handleShowChart}
           />
+
+          {/* Search Bar */}
           <div className="flex flex-col items-center justify-center h-[300px]">
             <SearchBar
               handleSearch={handleSearch}
@@ -204,6 +326,8 @@ function App() {
               loading={loading}
             />
           </div>
+
+          {/* Toggle Button for Recent Searches */}
           <button
             ref={toggleButtonRef}
             onClick={toggleRecentSearches}
@@ -237,18 +361,41 @@ function App() {
               />
             </div>
           )}
+          
 
+          {/* Navigation Menu Component */}
+          {/* Renders tabs for Weather, Air Quality, City Info, and News sections */}
           <WeatherNavigationMenu
             activeMenu={activeMenu}
             handleActiveMenu={handleActiveMenu}
           />
-        </div>
+        </div>        
+        
         {/* Bottom Section */}
-        <div className="bg-white/80 px-8 py-6 flex flex-col md:flex-row items-center gap-8">
-          {activeMenu === "WEATHER" && (
-            <WeatherContent weatherData={weatherData} />
-          )}
-          {activeMenu === "AIR QUALITY" && <AqiContent aqiData={aqiData} />}
+        <div className="bg-white/80 px-8 py-6 h-[120px]">
+          <div className="h-full w-full flex items-start justify-center overflow-y-auto">
+            <div className="w-full max-w-4xl">
+              {/* Conditional Rendering of Content Based on Active Menu */}
+              {activeMenu === "WEATHER" && (
+                <WeatherContent weatherData={weatherData} />
+              )}
+              {activeMenu === "AIR QUALITY" && <AqiContent aqiData={aqiData} />}
+              {activeMenu === "CITY INFO" && (
+                <CityInfo 
+                  cityInfoData={cityInfoData}
+                  loading={cityInfoLoading}
+                  error={cityInfoError}
+                />
+              )}
+              {activeMenu === "NEWS" && (
+                <NewsContent 
+                  newsData={newsData}
+                  loading={newsLoading}
+                  error={newsError}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </WeatherCard>
 
