@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { getAllCountries } from "./services/countries_api";
-import { getWeatherData } from "./services/weather_api";
 import { toast } from "sonner";
 
-import SearchBar from './components/SearchBar';
-import CountryList from './components/CountryList';
-import CountryDetail from './components/CountryDetail';
+import SearchBar from "./components/SearchBar";
+import CountryList from "./components/CountryList";
+import CountryDetail from "./components/CountryDetail";
 
 /*
 ##State Management
@@ -20,9 +19,10 @@ function App() {
   const [searchItem, setSearchItem] = useState("");
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(null);
-  const [weather, setWeather] = useState(null);
   const hasFetched = useRef(false);
 
+  console.log("filteredCountries: ", filteredCountries);
+  console.log("searchItem: ", searchItem);
   //Fetch countries when the component mounts
   useEffect(() => {
     if (hasFetched.current) return;
@@ -31,29 +31,19 @@ function App() {
       toast.info("Fetching countries...");
       try {
         const countriesData = await getAllCountries(); //API call to fetch all countries
-        setCountryData(countriesData);  //Store the fetched data in the state
-        const countriesData = await getAllCountries();
-        setCountryData(countriesData);
+        setCountryData(countriesData); //Store the fetched data in the state
         toast.success("Countries fetched successfully");
       } catch (error) {
-        toast.error(`Error in fetching countries data: ${error.message}`); //// Show error toast if fetch fails
+        toast.error(`Error in fetching countries data: ${error.message}`); // Show error toast if fetch fails
       }
     };
-    const fetchWeaher = async (country) => {
-      try {
-        const weatherData = await getWeatherData(country);
-        setWeather(weatherData);
-      } catch (error) {
-        throw error;
-      }
-    };
+
     fetchCountries();
-    fetchWeaher(countryData[0]);
   }, []);
 
-  //Filter countries based on the search input
-  useEffect(()=>{
-    if(searchItem.trim() === ""){
+  // Filter countries based on the search input
+  useEffect(() => {
+    if (searchItem.trim() === "") {
       setFilteredCountries([]); //Clear filtered results if search inputis empty
       return;
     }
@@ -69,7 +59,7 @@ function App() {
     setSelectedCountry(null); // Reset selected country when user starts searching
   };
 
-    // Handler to show details of a specific country
+  // Handler to show details of a specific country
   const handleShow = (country) => {
     setSelectedCountry(country); // Set selected country to display its details
   };
@@ -79,17 +69,6 @@ function App() {
       <h1>Weather or Not</h1>
       <p>Your comprehensive weather and air quality companion</p>
       <h2>Weather</h2>
-      {weather && (
-        <div>
-          <h2>Weather in {weather.location.name}</h2>
-          <p>Temperature: {weather.current.temp_c}°C</p>
-          <p>Condition: {weather.current.condition.text}</p>
-          <p>Humidity: {weather.current.humidity}%</p>
-          <p>Wind Speed: {weather.current.wind_kph} km/h</p>
-          <p>Pressure: {weather.current.pressure_mb} mb</p>
-          <p>Visibility: {weather.current.vis_km} km</p>
-        </div>
-      )}
 
       <br />
       <SearchBar searchItem={searchItem} handleSearch={handleSearch} />
@@ -103,8 +82,6 @@ function App() {
       ) : searchItem && filteredCountries.length === 0 ? (
         <p>No countries found.</p>
       ) : null}
-
-      {}
     </>
   );
 }
