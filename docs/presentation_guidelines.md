@@ -4,30 +4,34 @@
 
 **Time:** 12 mins  
 **Audience:** Fellow participants, instructors, teaching fellows, and other stakeholders involved in the Bootcamp  
-**Format:** In-person with live demonstration  
+**Format:** In-person with live demonstration and Slides
 **Focus:** Web development projects using React and API integration
 
-## Presentation Structure 
+## Presentation Structure
 
 ### 1. Introduction (1 minute)
+
 - Project name and brief tagline
 - Your name and quick personal intro
 - Problem statement: What problem does your project solve?
 - Tech stack overview: "Built with React, [specific APIs used], and [other technologies]"
 
 ### 2. Live Demo (5-6 minutes)
+
 - Start with the end result - show your deployed application first
 - Follow a user journey - demonstrate 2-3 key features as a user would experience them
 - Highlight API integration - explicitly show where external data is being fetched
 - Keep it smooth - practice the demo flow beforehand to avoid dead time
 
 ### 3. Project Overview & Learning (3 minutes)
+
 - High-level architecture - explain your project structure without showing code
 - Key features implemented - highlight 2-3 main functionalities
 - Technologies used - mention React concepts and APIs you integrated with
 - Challenges overcome - discuss problems you solved and lessons learned
 
 ### 4. Wrap-up & Questions (2 minutes)
+
 - What you learned from building this project
 - Future improvements - 1-2 features you'd add next
 - Open for questions
@@ -35,6 +39,7 @@
 ## Demonstration Best Practices
 
 ### Before Your Presentation
+
 - [ ] Test everything on the presentation setup/projector
 - [ ] Have backup plans: Screenshots if live demo fails
 - [ ] Clear browser cache and use incognito mode for clean demo
@@ -42,6 +47,7 @@
 - [ ] Close unnecessary browser tabs and applications
 
 ### During the Demo
+
 - [ ] Zoom in - make sure text/UI is readable from the back of the room
 - [ ] Narrate as you click - explain what you're doing as you do it
 - [ ] Show responsive design - demonstrate mobile view if implemented
@@ -49,6 +55,7 @@
 - [ ] Keep moving - don't spend too long troubleshooting live issues
 
 ### Explaining Technical Concepts (Without Code)
+
 - Use analogies - compare your React components to real-world concepts
 - Focus on user impact - explain how API integration improves user experience
 - Mention technical decisions - "I chose to use React hooks because..." (without showing the code)
@@ -57,18 +64,21 @@
 ## Presentation Delivery Tips
 
 ### Voice and Body Language
+
 - Speak clearly and at moderate pace - you have limited time but don't rush
 - Make eye contact with different sections of the audience
 - Use gestures to emphasize points, especially when pointing at screen elements
 - Stand confidently - avoid blocking the screen
 
 ### Managing Nerves
+
 - Practice out loud at least 3 times before presenting
 - Time yourself - make sure you can comfortably fit everything in 7 minutes
 - Focus on your accomplishment - you built something functional!
 - Remember your audience - they're fellow learners, not critics
 
 ### Handling Questions
+
 - Repeat the question if others might not have heard it
 - Be honest about limitations - "I haven't implemented that yet, but here's how I would approach it"
 - Offer to connect later for detailed technical discussions
@@ -84,12 +94,14 @@
 ## Quick Checklist - Day of Presentation
 
 ### 30 minutes before:
+
 - [ ] Test project on presentation computer/network
 - [ ] Verify all APIs are working
 - [ ] Open your deployed application in browser
 - [ ] Prepare any slides or visual aids (if using)
 
 ### Right before presenting:
+
 - [ ] Take a deep breath
 - [ ] Have water nearby
 - [ ] Remember: everyone wants you to succeed!
