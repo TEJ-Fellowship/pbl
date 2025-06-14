@@ -1,6 +1,6 @@
-# TEJ Bootcamp - PBL
+# TEJ - PBL
 
-Welcome to the TEJ Bootcamp monorepo! This repository serves as the central hub for all projects developed during the Full Stack Software Engineering Fellowship program.
+Welcome to the PBL monorepo ! This repository serves as the central hub for all projects developed during the Full Stack Software Engineering Fellowship program.
 
 ## 🚀 Overview
 
@@ -112,7 +112,7 @@ Remember: Always understand the AI-generated code before implementing it!
 1. **Plan**: Create user stories and break them into tasks
 2. **Develop**: Use feature branches and leverage AI assistance
 3. **Review**: Submit PRs with detailed descriptions
-4. **Collaborate**: Participate in code reviews and p¸¸¸¸¸¸air programming
+4. **Collaborate**: Participate in code reviews and pair programming
 5. **Learn**: Continuously ask questions and seek understanding
 
 ## 🤝 Getting Help
@@ -122,6 +122,7 @@ Remember: Always understand the AI-generated code before implementing it!
 - **Mentorship**: Reach out to program mentors for guidance
 - **Documentation**: Refer to the guidelines and project READMEs
 - **Presentations**: Review our [Presentation Guidelines](docs/presentation_guidelines.md) for project presentations
+- **Deployment**: Follow our [Render Deployment Guidelines](docs/deployment_guidelines_render.md) for deploying your applications
 
 ## 🎯 Goals
 
