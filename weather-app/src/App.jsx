@@ -38,7 +38,7 @@ function App() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState(null);
 
-  // Refs for click outside detection
+  // Refs to track dropdown and toggle button elements
   const recentSearchesRef = useRef(null);
   const toggleButtonRef = useRef(null);
 
@@ -61,6 +61,7 @@ function App() {
     getNewsData("Kathmandu");
   }, []);
 
+  // Fetch AQI data when weather data is available
   useEffect(() => {
     if (weatherData?.coord?.lat && weatherData?.coord?.lon) {
       getAqiData(weatherData.coord.lat, weatherData.coord.lon);
@@ -81,10 +82,8 @@ function App() {
   };
 
   // Fetch city information using Gemini AI
-  // This function is also called after weather data is fetched
   const getCityInfoData = async (city) => {
     try {
-      // Set loading state to true and clear any previous errors
       setCityInfoLoading(true);
       setCityInfoError(null);
       // Fetch city information using the fetchCityInfo API
@@ -101,8 +100,6 @@ function App() {
         }, 5000);
       }
     } catch (error) {
-      // handle any errors that occur during the fetch
-      // This ensures the error message does not persist indefinitely
       console.error("Error fetching city info:", error);
       setCityInfoError(error.message);
       setTimeout(() => {
@@ -114,13 +111,11 @@ function App() {
   };
 
   // Fetch and manages news data for the selected city
-  // This function is called after weather data is fetched
   const getNewsData = async (city) => {
     try {
-      // Set loading state to true and clear any previous errors
       setNewsLoading(true);
       setNewsError(null);
-      // Fetch news data using the fetchNews API
+
       const result = await fetchNews(city);
       
       if (result.success) {
@@ -129,22 +124,17 @@ function App() {
       } else {
         // If the fetch fails, set the error state 
         setNewsError(result.error);
-        // Clear error after 5 seconds
         setTimeout(() => {
           setNewsError(null);
         }, 5000);
       }
     } catch (error) {
-      // handle any errors that occur during the fetch
       console.error("Error fetching news:", error);
       setNewsError(error.message);
-      // Clear error after 5 seconds
-      // This ensures the error message does not persist indefinitely
       setTimeout(() => {
         setNewsError(null);
       }, 5000);
     } finally {
-      // Set loading state to false after the fetch is complete
       // This is important to stop showing the loading spinner
       setNewsLoading(false);
     }
@@ -155,25 +145,24 @@ function App() {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        showRecentSearches &&
-        recentSearchesRef.current &&
-        toggleButtonRef.current &&
-        !recentSearchesRef.current.contains(event.target) &&
-        !toggleButtonRef.current.contains(event.target)
+        showRecentSearches &&   // Check if recent searches panel is open
+        recentSearchesRef.current && // Panel element exists
+        toggleButtonRef.current && // Toggle button element exists
+        !recentSearchesRef.current.contains(event.target) &&  // Click not in dropdown
+        !toggleButtonRef.current.contains(event.target) // Click not on toggle button
       ) {
-        setShowRecentSearches(false);
+        setShowRecentSearches(false); //close the dropdown
       }
     };
 
-    // Add event listener when panel is open
+    //Only Add event listener when panel is open
     if (showRecentSearches) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     // Cleanup event listener
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  
   }, [showRecentSearches]);
 
   // Fetch weather data for the given city
@@ -372,7 +361,7 @@ function App() {
         </div>        
         
         {/* Bottom Section */}
-        <div className="bg-white/80 px-8 py-6 h-[120px]">
+        <div className="bg-white/80 px-4 py-4 h-[110px]">
           <div className="h-full w-full flex items-start justify-center overflow-y-auto">
             <div className="w-full max-w-4xl">
               {/* Conditional Rendering of Content Based on Active Menu */}

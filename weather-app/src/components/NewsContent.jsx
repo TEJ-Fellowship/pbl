@@ -1,6 +1,27 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 const NewsContent = ({ newsData, loading, error }) => {
+  const [showContent, setShowContent] = useState({});
+
+  useEffect(() => {
+    const intervals = {};
+    
+    if (newsData && newsData.length > 0) {
+      newsData.forEach((_, index) => {
+        intervals[index] = setInterval(() => {
+          setShowContent(prev => ({
+            ...prev,
+            [index]: !prev[index]
+          }));
+        }, 3000); // Toggle every 3 seconds
+      });
+    }
+
+    return () => {
+      Object.values(intervals).forEach(interval => clearInterval(interval));
+    };
+  }, [newsData]);
+
   return (
     <div className="flex flex-col w-full">
 
@@ -44,23 +65,29 @@ const NewsContent = ({ newsData, loading, error }) => {
               target="_blank"
               rel="noopener noreferrer"
               className="flex flex-col items-center text-center hover:bg-gray-50 rounded-lg p-2 transition-colors"
-            >
-              <div className="w-full aspect-video mb-2 overflow-hidden rounded-lg">
-                <img
-                  src={article.urlToImage || 'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
-                  alt={'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://placehold.co/300x200/e2e8f0/1e293b?text=News';
-                  }}
-                />
+            >              
+            <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+              {/* Image container with transform */}
+                <div className={`transform transition-transform duration-500 ${showContent[index] ? '-translate-y-full' : 'translate-y-0'}`}>
+                  <img
+                    src={article.urlToImage || 'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
+                    alt={'https://placehold.co/300x200/e2e8f0/1e293b?text=News'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/300x200/e2e8f0/1e293b?text=News';
+                    }}
+                  />
+                </div> 
+                 {/* Title container with transform */}               
+                <div className={`absolute top-0 left-0 w-full h-full bg-white p-3 transform transition-transform duration-500 ${showContent[index] ? 'translate-y-0' : 'translate-y-full'}`}>
+                  <div className="flex items-center justify-center h-full">                    
+                    
+                      <h3 className="text-xs font-medium text-gray-800 line-clamp-3 leading-snug">
+                      {article.title}
+                    </h3>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-sm font-medium text-gray-800 line-clamp-2">
-                {article.title}
-              </h3>
-              <span className="text-xs text-gray-500 mt-1">
-                {new Date(article.publishedAt).toLocaleDateString()} 
-              </span>
             </a>
           ))}
         </div>
