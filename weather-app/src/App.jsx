@@ -19,7 +19,8 @@ import fetchCityInfo from "./api/fetchCityInfo";
 import CityInfo from "./components/CityInfo";
 import NewsContent from "./components/NewsContent";
 import fetchNews from "./api/fetchNews";
-import SunriseSunset from "./components/SunriseSunset";
+import fetchGeminiNews from "./api/fetchGeminiNews"; 
+import GeminiNews from "./components/GeminiNews.jsx";
 
 function App() {
   const [backgroundLoading, setBackgroundLoading] = useState(false);
@@ -39,6 +40,10 @@ function App() {
   const [newsData, setNewsData] = useState(null);
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState(null);
+  const [geminiNewsData, setGeminiNewsData] = useState(null);
+  const [geminiNewsLoading, setGeminiNewsLoading] = useState(false);
+  const [geminiNewsError, setGeminiNewsError] = useState(null);
+  const [newsSource, setNewsSource] = useState("gemini"); // "newsapi" or "gemini"
 
   // Refs to track dropdown and toggle button elements
   const recentSearchesRef = useRef(null);
@@ -61,6 +66,7 @@ function App() {
     getBackgroundData("Kathmandu");
     getCityInfoData("Kathmandu");
     getNewsData("Kathmandu");
+    fetchGeminiNewsData("Kathmandu");
   }, []);
 
   // Fetch AQI data when weather data is available
@@ -124,18 +130,16 @@ function App() {
     try {
       setNewsLoading(true);
       setNewsError(null);
-
-      const result = await fetchNews(city);
-      
-      if (result.success) {
-        // If the fetch is successful, update the news data state
-        setNewsData(result.data);
+      fetchGeminiNewsData(city)
+       const newsResult = await fetchNews(city);
+      if (newsResult.success) {
+        setNewsData(newsResult.data);
       } else {
-        // If the fetch fails, set the error state 
-        setNewsError(result.error);
+        setNewsError(newsResult.error);
         setTimeout(() => {
           setNewsError(null);
         }, 5000);
+        setNewsSource("gemini");
       }
     } catch (error) {
       console.error("Error fetching news:", error);
@@ -144,11 +148,29 @@ function App() {
         setNewsError(null);
       }, 5000);
     } finally {
-      // This is important to stop showing the loading spinner
       setNewsLoading(false);
     }
   };
   
+  // Fetch news data using Gemini AI
+  const fetchGeminiNewsData = async (city) => {
+  setGeminiNewsLoading(true);
+  setGeminiNewsError(null);
+  setGeminiNewsData(null);
+  try {
+    const result = await fetchGeminiNews(city);
+    if (result.success) {
+      setGeminiNewsData(result.data);
+      console.log("Gemini News Data:", result.data);
+    } else {
+      setGeminiNewsError(result.error);
+    }
+  } catch (error) {
+    setGeminiNewsError(error.message);
+  } finally {
+    setGeminiNewsLoading(false);
+  }
+};
 
   // Handle click outside to close recent searches
   useEffect(() => {
@@ -304,7 +326,7 @@ function App() {
   };
 
   return (
-    <>
+    <div className="flex flex-col items-center justify-center gap-4">
       <WeatherCard>
         <div className="relative h-[450px]">
           <BackgroundImage
@@ -317,7 +339,7 @@ function App() {
             country={country}
             onShowChart={handleShowChart}
           />
-          
+
           {/* Search Bar */}
           <div className="flex flex-col items-center justify-center h-[300px]">
             <SearchBar
@@ -327,7 +349,6 @@ function App() {
             />
           </div>
 
-     
           {/* Toggle Button for Recent Searches */}
           <button
             ref={toggleButtonRef}
@@ -371,7 +392,8 @@ function App() {
             handleActiveMenu={handleActiveMenu}
           />
         </div>        
-          {/* Bottom Section */}
+        
+        {/* Bottom Section */}
         <div className="bg-white/80 px-4 py-4 h-[110px]">
           <div className="h-full w-full flex items-start justify-center overflow-y-auto">
             <div className="w-full max-w-4xl">
@@ -388,17 +410,52 @@ function App() {
                 />
               )}
               {activeMenu === "NEWS" && (
-                <NewsContent 
-                  newsData={newsData}
-                  loading={newsLoading}
-                  error={newsError}
-                />
+                <>
+
+                  {/* Show NewsContent or GeminiNews based on source */}
+                  {newsSource === "newsapi" && (
+                    <NewsContent
+                      newsData={newsData}
+                      loading={newsLoading}
+                      error={newsError}
+                    />
+                  )}
+                 
+                  {newsSource === "gemini" && (
+                    <GeminiNews
+                      newsData={geminiNewsData}
+                      loading={geminiNewsLoading}
+                      error={geminiNewsError}
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>
         </div>
       </WeatherCard>
-
+       {/* Always show toggle for news sources */}
+        {activeMenu === "NEWS"&& (    
+          <div className="absolute bottom-8 flex gap-2 mb-2">
+          <button
+            className={`px-3 py-1 rounded ${newsSource === "newsapi" ? "bg-blue-500 text-white" : "bg-gray-200 text-blue-500"}`}
+            onClick={() => setNewsSource("newsapi")}
+            disabled={!newsData}
+            title={newsData ? "Show Standard News" : "Standard News not available yet"}
+          >
+            Standard News
+          </button>
+          <button
+            className={`px-3 py-1 rounded ${newsSource === "gemini" ? "bg-blue-500 text-white" : "bg-gray-200 text-blue-500"}`}
+            onClick={() => setNewsSource("gemini")}
+            disabled={!geminiNewsData}
+            title={geminiNewsData ? "Show Gemini AI News" : "Gemini AI News not available yet"}
+          >
+            Gemini AI News
+          </button>
+        </div>)}
+        
+            
       {/* Temperature Chart Loading */}
       {chartLoading && <ChartLoading onClose={handleCloseChart} />}
 
@@ -410,7 +467,8 @@ function App() {
           cityName={weatherData?.name}
         />
       )}
-    </>
+      
+    </div>
   );
 }
 

@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 
 const SunriseSunset = ({ sunrise, sunset }) => {
-  const [timeUntil, setTimeUntil] = useState({ target: '', hours: 0, minutes: 0, seconds: 0 });
+  const [timeUntil, setTimeUntil] = useState({ target: '', hours: 0, minutes: 0, seconds: 0 }); 
   const [progress, setProgress] = useState(0);
 
   const getProgressStyle = (progress, target) => {
     // Different color schemes for sunrise and sunset with linear gradient for rectangular design
     if (target === 'sunrise') {
+       // Sunrise colors: warm tones (coral -> yellow -> orange)
       return {
         background: `linear-gradient(to right, 
           #FF6B6B 0%, 
@@ -15,6 +16,7 @@ const SunriseSunset = ({ sunrise, sunset }) => {
           rgba(255, 255, 255, 0.15) ${progress}%)`
       };
     } else {
+       // Sunset colors: cool tones (blue -> purple -> pink)
       return {
         background: `linear-gradient(to right, 
           #667eea 0%, 
@@ -24,9 +26,9 @@ const SunriseSunset = ({ sunrise, sunset }) => {
       };
     }
   };
-
+  // Calculate the time until sunrise or sunset
   const calculateTimeUntil = () => {
-    const now = new Date().getTime();
+    const now = new Date().getTime(); // Get the current time in milliseconds
     const sunriseTime = sunrise * 1000; // Convert to milliseconds
     const sunsetTime = sunset * 1000;
 
@@ -70,14 +72,9 @@ const SunriseSunset = ({ sunrise, sunset }) => {
   
   return (
     <div className="relative w-24 h-12 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20" 
-    style={getProgressStyle(progress, timeUntil.target)}
+    style={getProgressStyle(progress, timeUntil.target)}  //progress style
     >
-      {/* Progress indicator bar */}
-      <div 
-        className="absolute top-0 left-0 h-1 rounded-full transition-all duration-300"
-       
-      />
-      
+      <div className="absolute top-0 left-0 h-1 rounded-full transition-all duration-300"/>
       {/* Content */}
       <div className="flex items-center justify-center h-full">
         <div className="text-center text-white leading-none">
