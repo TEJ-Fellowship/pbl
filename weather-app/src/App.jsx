@@ -19,7 +19,6 @@ import fetchCityInfo from "./api/fetchCityInfo";
 import CityInfo from "./components/CityInfo";
 import NewsContent from "./components/NewsContent";
 import fetchNews from "./api/fetchNews";
-import SunriseSunset from "./components/SunriseSunset";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -306,7 +305,7 @@ function App() {
             country={country}
             onShowChart={handleShowChart}
           />
-          
+
           {/* Search Bar */}
           <div className="flex flex-col items-center justify-center h-[300px]">
             <SearchBar
@@ -317,7 +316,6 @@ function App() {
             />
           </div>
 
-     
           {/* Toggle Button for Recent Searches */}
           <button
             ref={toggleButtonRef}
@@ -361,7 +359,8 @@ function App() {
             handleActiveMenu={handleActiveMenu}
           />
         </div>        
-          {/* Bottom Section */}
+        
+        {/* Bottom Section */}
         <div className="bg-white/80 px-4 py-4 h-[110px]">
           <div className="h-full w-full flex items-start justify-center overflow-y-auto">
             <div className="w-full max-w-4xl">
