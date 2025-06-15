@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import SunriseSunset from "./SunriseSunset";
 
 const WeatherHeader = ({
   weatherData,
@@ -19,8 +20,16 @@ const WeatherHeader = ({
 
   return (
     <>
-      <div className="absolute top-6 left-8 text-white">
+      <div className="absolute top-6 left-6 text-white">
+        
         <div className="flex items-center gap-3">
+             {/* Sunrise Sunset Component*/}
+          {weatherData?.sys?.sunrise && weatherData?.sys?.sunset && (
+              <SunriseSunset 
+                sunrise={weatherData.sys.sunrise} 
+                sunset={weatherData.sys.sunset} 
+              />
+          )}          
           <h1 className="text-3xl font-light">{weatherData?.name}</h1>
           {weatherData?.name && (
             <button
@@ -45,6 +54,9 @@ const WeatherHeader = ({
           )}
         </div>
       </div>
+      
+   
+      
       <div className="absolute top-6 right-8 text-white flex flex-col items-end">
         <div className="flex items-center gap-2">
           <svg

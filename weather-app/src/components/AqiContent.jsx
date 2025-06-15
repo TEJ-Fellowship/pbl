@@ -20,7 +20,7 @@ const AqiContent = ({ aqiData }) => {
   };
 
   return (
-    <>
+    <div className="flex flex-row justify-between gap-4 w-full">
       <div className="flex-1 flex flex-col items-center">
         <div className="flex items-center gap-4">
           <span
@@ -82,7 +82,7 @@ const AqiContent = ({ aqiData }) => {
           NO<sub>2</sub>
         </span>
       </div>
-    </>
+    </div>
   );
 };
 

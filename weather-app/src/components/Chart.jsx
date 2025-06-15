@@ -12,7 +12,10 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-// Register Chart.js components
+/**
+ * Register required Chart.js components for the temperature chart
+ * Includes scales, elements, plugins for tooltips, legends, and area fills
+ */
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -34,13 +37,16 @@ const Chart = ({ forecastData, onClose, cityName }) => {
         onClose();
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
+    // Cleanup event listener on component unmount
+    // This prevents memory leaks and ensures the event listener is removed when the component is no longer in use
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onClose]);
 
+  // If no forecast data is available, display a message
+  // This is a fallback to ensure the user knows why the chart isn't displaying
   if (!forecastData || forecastData.length === 0) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -60,56 +66,65 @@ const Chart = ({ forecastData, onClose, cityName }) => {
     );
   }
 
+   /**
+   * Chart configuration object
+   * Sets up three datasets: Maximum, Minimum, and Average temperatures
+   */
   const chartData = {
     labels: forecastData.map(day => day.date),
     datasets: [
       {
         label: 'Max Temperature (°C)',
-        data: forecastData.map(day => day.maxTemp),
-        borderColor: 'rgb(239, 68, 68)',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        tension: 0.4,
-        pointBackgroundColor: 'rgb(239, 68, 68)',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: false
+        data: forecastData.map(day => day.maxTemp), // Extract max temperatures from forecast data
+        borderColor: 'rgb(239, 68, 68)',  // Red color for max temperature
+        backgroundColor: 'rgba(239, 68, 68, 0.1)', // Light red background
+        tension: 0.4,   // Smooth curve
+        pointBackgroundColor: 'rgb(239, 68, 68)', // Red point color
+        pointBorderColor: '#fff', // White point border
+        pointBorderWidth: 2, 
+        pointRadius: 6, // Larger point size
+        pointHoverRadius: 8, // Larger hover point size
+        fill: false  // No fill under the line
       },
       {
         label: 'Min Temperature (°C)',
-        data: forecastData.map(day => day.minTemp),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4,
-        pointBackgroundColor: 'rgb(59, 130, 246)',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: false
+        data: forecastData.map(day => day.minTemp), // Extract min temperatures from forecast data
+        borderColor: 'rgb(59, 130, 246)',  // Blue color for min temperature
+        backgroundColor: 'rgba(59, 130, 246, 0.1)', // Light blue background
+        tension: 0.4, 
+        pointBackgroundColor: 'rgb(59, 130, 246)', // Blue point color
+        pointBorderColor: '#fff', 
+        pointBorderWidth: 2, 
+        pointRadius: 6, 
+        pointHoverRadius: 8, 
+        fill: false 
       },
       {
         label: 'Average Temperature (°C)',
-        data: forecastData.map(day => day.avgTemp),
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        tension: 0.4,
-        pointBackgroundColor: 'rgb(34, 197, 94)',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        fill: '+1'
+        data: forecastData.map(day => day.avgTemp), // Extract average temperatures 
+        borderColor: 'rgb(34, 197, 94)', // Green color for average temperature
+        backgroundColor: 'rgba(34, 197, 94, 0.1)', // Light green background
+        tension: 0.4, 
+        pointBackgroundColor: 'rgb(34, 197, 94)', // Green point color
+        pointBorderColor: '#fff', 
+        pointBorderWidth: 2, 
+        pointRadius: 6, 
+        pointHoverRadius: 8, 
+        fill: '+1' // Fill area under the average temperature line
       }
     ]
   };
 
+  /**
+   * Chart options configuration
+   * Controls the appearance and behavior of the chart
+   */
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
+    responsive: true,  // Make the chart responsive to window size
+    maintainAspectRatio: false, // Don't maintain aspect ratio
+    plugins: {  
+      // Legend configuration for displaying dataset labels
+      legend: {   
         position: 'top',
         labels: {
           usePointStyle: true,
@@ -119,6 +134,7 @@ const Chart = ({ forecastData, onClose, cityName }) => {
           }
         }
       },
+      // Title configuration for the chart
       title: {
         display: true,
         text: `5-Day Temperature Trend - ${cityName}`,
@@ -131,21 +147,32 @@ const Chart = ({ forecastData, onClose, cityName }) => {
           bottom: 20
         }
       },
+      // Tooltip configuration for displaying data points
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-        borderWidth: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)', // Dark background
+        titleColor: '#fff', // White title color
+        bodyColor: '#fff', // White body color
+        borderColor: 'rgba(255, 255, 255, 0.2)', // Light gray border
+        borderWidth: 5, // Thin border
         callbacks: {
+          /**
+           * Formats the tooltip label for temperature data points
+           * @param {Object} context - The chart context object
+           * @param {Object} context.dataset - Contains dataset information including label
+           * @param {Object} context.parsed - Contains the parsed data values
+           * @param {number} context.parsed.y - The Y-axis value (temperature)
+           * @returns {string} Formatted string showing temperature with label and unit
+           */
           label: function(context) {
-            return `${context.dataset.label}: ${context.parsed.y}°C`;
+            return ` ${context.dataset.label} : ${context.parsed.y}°C`;
           }
         }
       }
     },
+      // Axis configurations
     scales: {
       y: {
+        // Y-axis configuration for temperature values
         beginAtZero: false,
         grid: {
           color: 'rgba(0, 0, 0, 0.1)'
@@ -157,11 +184,13 @@ const Chart = ({ forecastData, onClose, cityName }) => {
         }
       },
       x: {
+         // X-axis configuration for dates
         grid: {
           color: 'rgba(0, 0, 0, 0.1)'
         }
       }
     },
+     // Interaction configuration for hover effects
     interaction: {
       intersect: false,
       mode: 'index'
@@ -170,8 +199,10 @@ const Chart = ({ forecastData, onClose, cityName }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+       {/* Main chart container */}
       <div ref={chartRef} className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         <div className="p-6">
+           {/* Chart header with close button */}
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">Temperature Forecast</h2>
             <button
@@ -184,12 +215,12 @@ const Chart = ({ forecastData, onClose, cityName }) => {
               </svg>
             </button>
           </div>
-          
+          {/* Chart component container */}
           <div className="h-96">
             <Line data={chartData} options={options} />
           </div>
           
-          {/* Weather summary */}
+           {/* Daily weather summary grid */}
           <div className="mt-6 grid grid-cols-5 gap-2">
             {forecastData.map((day, index) => (
               <div key={index} className="text-center p-2 bg-gray-50 rounded-lg">
