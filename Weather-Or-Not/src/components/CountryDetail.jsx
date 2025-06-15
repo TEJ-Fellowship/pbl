@@ -21,7 +21,8 @@ const CountryDetail = ({ country }) => {
       try {
         const weatherData = await getWeatherData(country);
         const [lat, lon] = country.latlng;
-        const timeZone = tzLookup(lat, lon); //Get timezone from coordinates
+        /** Note: Get timezone from coordinates */
+        const timeZone = tzLookup(lat, lon);
 
         const formatTime = (unixTime) =>
           new Date(unixTime * 1000).toLocaleTimeString("en-US", {
