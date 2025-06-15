@@ -17,6 +17,7 @@ import AqiContent from "./components/AqiContent";
 import fetchBackground from "./api/fetchBackground";
 
 function App() {
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
@@ -54,8 +55,15 @@ function App() {
   }, [weatherData]);
 
   const getBackgroundData = async (city) => {
-    const data = await fetchBackground(city);
-    setBackgroundData(data);
+    try {
+      setBackgroundLoading(true);
+      const data = await fetchBackground(city);
+      setBackgroundData(data);
+    } catch (error) {
+      console.log("Error Fetching Background", error);
+    } finally {
+      setBackgroundLoading(false);
+    }
   };
 
   const getAqiData = async (lat, lon) => {
@@ -118,7 +126,7 @@ function App() {
     return cityTime.toLocaleString(); // or toLocaleTimeString() or toLocaleDateString()
   };
 
-  const localTime = weatherData ? getCityLocalTime(weatherData?.timezone) : "";
+  // const localTime = weatherData ? getCityLocalTime(weatherData?.timezone) : "";
 
   const getCountryName = (countryCode) => {
     const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -189,10 +197,13 @@ function App() {
     <>
       <WeatherCard>
         <div className="relative h-[450px]">
-          <BackgroundImage backgroundData={backgroundData} />
+          <BackgroundImage
+            loading={backgroundLoading}
+            backgroundData={backgroundData}
+          />
           <WeatherHeader
             weatherData={weatherData}
-            localTime={localTime}
+            getCityLocalTime={getCityLocalTime}
             country={country}
             onShowChart={handleShowChart}
           />
@@ -201,7 +212,6 @@ function App() {
               handleSearch={handleSearch}
               error={error}
               onClearError={clearError}
-              loading={loading}
             />
           </div>
           <button

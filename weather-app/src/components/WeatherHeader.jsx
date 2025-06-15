@@ -1,7 +1,21 @@
 import React, { useEffect, useState } from "react";
 
-const WeatherHeader = ({ weatherData, localTime, country, onShowChart }) => {
-  const [localTimeClock, setLocalTimeClock] = useState(null);
+const WeatherHeader = ({
+  weatherData,
+  country,
+  onShowChart,
+  getCityLocalTime,
+}) => {
+  const [liveTime, setLiveTime] = useState(null);
+
+  useEffect(() => {
+    if (weatherData && typeof weatherData.timezone === "number") {
+      const interval = setInterval(() => {
+        setLiveTime(getCityLocalTime(weatherData.timezone));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [weatherData]);
 
   return (
     <>
@@ -58,9 +72,7 @@ const WeatherHeader = ({ weatherData, localTime, country, onShowChart }) => {
             {country.toUpperCase()}, {weatherData?.name}
           </span>
         </div>
-        {localTime && (
-          <span className="text-lg font-semibold">{localTime}</span>
-        )}
+        {liveTime && <span className="text-lg font-semibold">{liveTime}</span>}
       </div>
     </>
   );
