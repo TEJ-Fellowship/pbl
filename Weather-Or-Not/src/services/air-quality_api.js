@@ -12,3 +12,14 @@ export const getAirQualityData = async (country) => {
     throw error;
   }
 };
+
+export const airPollution = async (lat, lon) => {
+  try {
+    const response = await axios.get(
+      `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${api_key}`
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
