@@ -23,6 +23,7 @@ import fetchGeminiNews from "./api/fetchGeminiNews";
 import GeminiNews from "./components/GeminiNews.jsx";
 
 function App() {
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [weatherData, setWeatherData] = useState(null);
@@ -76,8 +77,15 @@ function App() {
   }, [weatherData]);
 
   const getBackgroundData = async (city) => {
-    const data = await fetchBackground(city);
-    setBackgroundData(data);
+    try {
+      setBackgroundLoading(true);
+      const data = await fetchBackground(city);
+      setBackgroundData(data);
+    } catch (error) {
+      console.log("Error Fetching Background", error);
+    } finally {
+      setBackgroundLoading(false);
+    }
   };
 
   // Fetch AQI data based on latitude and longitude from weather data
@@ -219,7 +227,7 @@ function App() {
     return cityTime.toLocaleString(); // or toLocaleTimeString() or toLocaleDateString()
   };
 
-  const localTime = weatherData ? getCityLocalTime(weatherData?.timezone) : "";
+  // const localTime = weatherData ? getCityLocalTime(weatherData?.timezone) : "";
 
   const getCountryName = (countryCode) => {
     const regionNames = new Intl.DisplayNames(["en"], { type: "region" });
@@ -321,10 +329,13 @@ function App() {
     <div className="flex flex-col items-center justify-center gap-4">
       <WeatherCard>
         <div className="relative h-[450px]">
-          <BackgroundImage backgroundData={backgroundData} />
+          <BackgroundImage
+            loading={backgroundLoading}
+            backgroundData={backgroundData}
+          />
           <WeatherHeader
             weatherData={weatherData}
-            localTime={localTime}
+            getCityLocalTime={getCityLocalTime}
             country={country}
             onShowChart={handleShowChart}
           />
@@ -335,7 +346,6 @@ function App() {
               handleSearch={handleSearch}
               error={error}
               onClearError={clearError}
-              loading={loading}
             />
           </div>
 
