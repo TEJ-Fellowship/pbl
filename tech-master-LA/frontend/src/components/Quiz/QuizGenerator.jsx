@@ -1,8 +1,9 @@
-// tech-master-LA/frontend/src/components/Quiz/QuizGenerator.jsx
-import TopicSelector from "./TopicSelector";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import TopicSelector from "./TopicSelector";
 
-const QuizGenerator = ({ onGenerate, isLoading }) => {  // Add isLoading prop
+const QuizGenerator = ({ onGenerate, isLoading }) => {
   const [selectedTopic, setSelectedTopic] = useState(null);
 
   const handleGenerate = () => {
@@ -12,21 +13,44 @@ const QuizGenerator = ({ onGenerate, isLoading }) => {  // Add isLoading prop
   };
 
   return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-4">Generate New Quiz</h2>
-      <TopicSelector onSelectTopic={setSelectedTopic} disabled={isLoading} />
-      <button
-        onClick={handleGenerate}
-        disabled={!selectedTopic || isLoading}
-        className={`px-6 py-2 rounded-full ${
-          selectedTopic && !isLoading
-            ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-        }`}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="max-w-2xl mx-auto bg-gradient-to-br from-purple-100 via-blue-100 to-cyan-100 shadow-xl border border-purple-200 rounded-3xl p-6 mb-8"
+    >
+      <motion.h2
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="text-3xl font-extrabold text-center text-purple-700 mb-4 flex items-center justify-center gap-2"
       >
-        {isLoading ? 'Generating...' : 'Generate Quiz'}
-      </button>
-    </div>
+        <Sparkles className="text-purple-500" size={26} />
+        Generate New Quiz
+      </motion.h2>
+
+      <div className="mb-6">
+        <TopicSelector onSelectTopic={setSelectedTopic} disabled={isLoading} />
+      </div>
+
+      <div className="text-center">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleGenerate}
+          disabled={!selectedTopic || isLoading}
+          className={`px-6 py-2.5 rounded-full text-base font-semibold shadow-md transition-all duration-300 
+            ${
+              selectedTopic && !isLoading
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }
+          `}
+        >
+          {isLoading ? "Generating..." : "✨ Generate Quiz"}
+        </motion.button>
+      </div>
+    </motion.div>
   );
 };
 
