@@ -4,9 +4,9 @@ import axios from "axios";
 import QuizGenerator from "../components/Quiz/QuizGenerator";
 import QuizDisplay from "../components/Quiz/QuizDisplay";
 import SavedQuizzes from "../components/Quiz/SavedQuizzes";
-import generateNewQuiz from "../../api/generateNewQuiz";
+import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
-import config from "../../config/config.js"
+import config from "../config/config.js"
 
 const Quizzes = () => {
   const [quiz, setQuiz] = useState(null);
@@ -14,7 +14,7 @@ const Quizzes = () => {
   const [savedQuizzes, setSavedQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showSavedQuizzes, setShowSavedQuizzes] = useState(false);
+  const [showSavedQuizzes, setShowSavedQuizzes] = useState(true);
   const { API_BASE_URL } = config;
 
   // Fetch saved quizzes on load

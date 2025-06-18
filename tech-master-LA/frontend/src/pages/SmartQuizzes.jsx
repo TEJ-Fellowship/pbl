@@ -1,5 +1,7 @@
+import Quizzes from "./Quizzes";
+
 const SmartQuizzes = () => {
-  return <div>SmartQuizzes</div>;
+  return <Quizzes/>;
 };
 
 export default SmartQuizzes;
