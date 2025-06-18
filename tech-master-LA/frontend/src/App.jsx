@@ -1,14 +1,11 @@
-import React from 'react'
+import Routes from "./Routes";
 
 const App = () => {
   return (
     <div>
-      <div className="bg-blue-200 text-center text-red-900 p-4 rounded">
-  Hello Tailwind!
-</div>
-
+      <Routes />
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
