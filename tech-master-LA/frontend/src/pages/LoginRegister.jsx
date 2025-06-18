@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Sparkles, Code, BrainCircuit } from "lucide-react";
+import { useState } from "react";
+import { Code, BrainCircuit } from "lucide-react";
 import LoginRegisterForm from "../components/auth/LoginRegisterForm";
+import Navbar from "../components/Navbar";
 
 const LoginRegister = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -77,26 +78,7 @@ const LoginRegister = () => {
           </div>
 
           {/* Features Preview */}
-          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-            <div className="group">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-2 group-hover:bg-white/10 transition-colors duration-300">
-                <BrainCircuit className="w-6 h-6 text-red-500" />
-              </div>
-              <p className="text-xs text-gray-400">AI Chat</p>
-            </div>
-            <div className="group">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-2 group-hover:bg-white/10 transition-colors duration-300">
-                <Sparkles className="w-6 h-6 text-red-500" />
-              </div>
-              <p className="text-xs text-gray-400">Smart Quizzes</p>
-            </div>
-            <div className="group">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-2 group-hover:bg-white/10 transition-colors duration-300">
-                <Code className="w-6 h-6 text-red-500" />
-              </div>
-              <p className="text-xs text-gray-400">Track Progress</p>
-            </div>
-          </div>
+          <Navbar />
         </div>
       </div>
 

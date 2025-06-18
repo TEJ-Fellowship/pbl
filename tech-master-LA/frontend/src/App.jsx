@@ -1,11 +1,9 @@
-import React from "react";
-
-import LoginRegister from "./pages/LoginRegister";
+import Routes from "./Routes";
 
 const App = () => {
   return (
     <div>
-      <LoginRegister />
+      <Routes />
     </div>
   );
 };
