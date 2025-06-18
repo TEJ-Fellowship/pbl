@@ -21,7 +21,7 @@ const TopicSelector = ({ onSelectTopic }) => {
         <button
           key={topic}
           onClick={() => onSelectTopic(topic)}
-          className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all"
+          className="px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all"
         >
           {topic}
         </button>

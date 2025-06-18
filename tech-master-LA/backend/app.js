@@ -5,8 +5,8 @@ const { url } = require("./config/keys");
 const { errorHandler, requestLogger } = require("./utils/middleware");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const quizRoutes = require("./controllers/quiz.js");
-const statsRoutes = require("./controllers/stats.js");
+const quizRoutes = require("./routes/quizRoutes.js");
+const statsRoutes = require("./routes/statsRoutes.js");
 
 //middleware
 app.use(express.json());

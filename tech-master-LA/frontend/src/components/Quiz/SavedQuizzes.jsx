@@ -3,6 +3,14 @@ import React from "react";
 import { motion } from "framer-motion";
 
 const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
+
+  const handleRetake = (quizId) => {
+    // First scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Then call the original onRetake
+    onRetake(quizId);
+  };
+
   if (isLoading) {
     return (
       <div className="p-4 w-full max-w-4xl mx-auto">
@@ -100,7 +108,7 @@ const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => onRetake(quiz._id)}
+                onClick={() => handleRetake(quiz._id)}
                 className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

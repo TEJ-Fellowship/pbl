@@ -1,19 +1,17 @@
-const express = require("express");
-const router = express.Router();
+// controllers/quizController.js
+
 const Quiz = require("../models/quizModel");
 
-// GET all quizzes
-router.get("/", async (req, res, next) => {
+const getAllQuizzes = async (req, res, next) => {
   try {
     const quizzes = await Quiz.find({});
     res.json(quizzes);
   } catch (error) {
     next(error);
   }
-});
+};
 
-// GET single quiz
-router.get("/:id", async (req, res, next) => {
+const getQuizById = async (req, res, next) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
     if (quiz) {
@@ -24,10 +22,9 @@ router.get("/:id", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-// POST create new quiz
-router.post("/", async (req, res, next) => {
+const createQuiz = async (req, res, next) => {
   try {
     const { userId, title, topic, questions } = req.body;
 
@@ -36,7 +33,7 @@ router.post("/", async (req, res, next) => {
       title,
       topic,
       questions,
-      attempts: [], // Initialize empty attempts array
+      attempts: [],
     });
 
     const savedQuiz = await quiz.save();
@@ -44,10 +41,9 @@ router.post("/", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-// PUT update quiz
-router.put("/:id", async (req, res, next) => {
+const updateQuiz = async (req, res, next) => {
   try {
     const { title, topic, questions } = req.body;
 
@@ -65,10 +61,9 @@ router.put("/:id", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-// POST record quiz attempt
-router.post("/:id/attempts", async (req, res, next) => {
+const recordAttempt = async (req, res, next) => {
   try {
     const { score } = req.body;
 
@@ -84,10 +79,9 @@ router.post("/:id/attempts", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-// GET quiz attempts
-router.get("/:id/attempts", async (req, res, next) => {
+const getAttempts = async (req, res, next) => {
   try {
     const quiz = await Quiz.findById(req.params.id);
     if (!quiz) {
@@ -98,10 +92,9 @@ router.get("/:id/attempts", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-// DELETE quiz
-router.delete("/:id", async (req, res, next) => {
+const deleteQuiz = async (req, res, next) => {
   try {
     const deletedQuiz = await Quiz.findByIdAndDelete(req.params.id);
     if (deletedQuiz) {
@@ -112,6 +105,14 @@ router.delete("/:id", async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  getAllQuizzes,
+  getQuizById,
+  createQuiz,
+  updateQuiz,
+  recordAttempt,
+  getAttempts,
+  deleteQuiz,
+};

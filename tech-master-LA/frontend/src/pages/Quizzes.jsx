@@ -6,6 +6,7 @@ import QuizDisplay from "../components/Quiz/QuizDisplay";
 import SavedQuizzes from "../components/Quiz/SavedQuizzes";
 import generateNewQuiz from "../../api/generateNewQuiz";
 import ErrorBoundary from "../components/ErrorBoundary";
+import config from "../../config/config.js"
 
 const Quizzes = () => {
   const [quiz, setQuiz] = useState(null);
@@ -14,8 +15,7 @@ const Quizzes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSavedQuizzes, setShowSavedQuizzes] = useState(false);
-
-  const API_BASE_URL = "http://localhost:5000/api";
+  const { API_BASE_URL } = config;
 
   // Fetch saved quizzes on load
   useEffect(() => {
@@ -145,7 +145,7 @@ const Quizzes = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
       
-      <div className="flex justify-center gap-4 mb-8">
+      {!quiz&&(<div className="flex justify-center gap-4 mb-8">
         <button
           onClick={() => setShowSavedQuizzes(false)}
           className={`px-6 py-2 rounded-lg transition-colors ${
@@ -166,7 +166,7 @@ const Quizzes = () => {
         >
           Saved Quizzes
         </button>
-      </div>
+      </div>)}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">
@@ -187,7 +187,7 @@ const Quizzes = () => {
       ) : (
         <div className="max-w-4xl mx-auto">
           <ErrorBoundary>
-            <QuizGenerator onGenerate={handleGenerateQuiz} isLoading={loading} />
+            {!quiz&&(<QuizGenerator onGenerate={handleGenerateQuiz} isLoading={loading} />)}
             {quiz && (
               <QuizDisplay
                 quiz={quiz}
