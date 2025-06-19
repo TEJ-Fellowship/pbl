@@ -3,6 +3,41 @@ import React from "react";
 import { motion } from "framer-motion";
 
 const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
+  // Sort quizzes by createdAt in descending order (newest first)
+  // Handle cases where createdAt might not exist (use attempt dates as fallback)
+  const sortedQuizzes = [...quizzes].sort((a, b) => {
+    const dateA = a.createdAt || (a.attempts?.[0]?.date) || new Date(0);
+    const dateB = b.createdAt || (b.attempts?.[0]?.date) || new Date(0);
+    return new Date(dateB) - new Date(dateA);
+  });
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Date not available';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    
+    // If the date is today, show time
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    
+    if (isToday) {
+      return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // If the date is yesterday, show "Yesterday"
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    }
+
+    // For other dates, show the full date
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   const handleRetake = (quizId) => {
     // First scroll to top smoothly
@@ -61,7 +96,7 @@ const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {quizzes.map((quiz, index) => (
+        {sortedQuizzes.map((quiz, index) => (
           <motion.div
             key={quiz._id || index}
             initial={{ opacity: 0, y: 20 }}
@@ -98,6 +133,17 @@ const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
                     Not attempted yet
                   </span>
                 )}
+              </div>
+              <div className="mt-2 text-xs text-gray-400 flex items-center justify-between">
+                <div>
+                  Created: {formatDate(quiz.createdAt)}
+                </div>
+                <div className="flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>{quiz.createdBy || 'Anonymous'}</span>
+                </div>
               </div>
             </div>
             
