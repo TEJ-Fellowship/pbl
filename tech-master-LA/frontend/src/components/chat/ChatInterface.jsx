@@ -23,8 +23,8 @@ const ChatInterface = ({
   }, [messages]);
 
   return (
-    <div className={`flex flex-col h-[80vh] bg-gradient-to-br from-purple-100 via-blue-100 to-cyan-100 shadow-xl rounded-lg  ${className}`}>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className={`flex flex-col h-[80vh] backdrop-blur-sm bg-white/5  border-white/10 text-white shadow-2xl rounded-lg border border-gray-700 ${className}`}>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         <AnimatePresence>
           {messages.map((message, index) => (
             <Message 

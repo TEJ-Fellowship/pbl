@@ -8,10 +8,14 @@ const ChatTitle = () => {
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
     transition={{ delay: 0.2 }}
-    className="text-3xl font-extrabold text-center text-purple-700 mb-4 flex items-center justify-center gap-2"
+    className="text-3xl font-extrabold text-center
+    
+    text-white mb-4 flex items-center justify-center gap-2"
   >
-    <Sparkles className="text-purple-500" size={26} />
-    AI Chat Assistant
+    <Sparkles className="text-white" size={26} />
+    <span className="bg-gradient-to-t from-red-500 to-white bg-clip-text text-transparent">
+        AI Chat Assistant
+      </span>
   </motion.h2>
   )
 }

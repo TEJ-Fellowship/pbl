@@ -11,27 +11,27 @@ const MarkdownComponents = {
   ),
   // Headings with dark blue color
   h1: ({ children }) => (
-    <h1 className="text-xl font-bold mb-2 text-blue-900 dark:text-blue-300">{children}</h1>
+    <h1 className="text-xl font-bold mb-2 text-red-900 dark:text-red-300">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-lg font-bold mb-2 text-blue-800 dark:text-blue-300">{children}</h2>
+    <h2 className="text-lg font-bold mb-2 text-red-800 dark:text-red-300">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-md font-bold mb-2 text-blue-700 dark:text-blue-300">{children}</h3>
+    <h3 className="text-md font-bold mb-2 text-red-700 dark:text-red-300">{children}</h3>
   ),
   // Lists with better contrast
   ul: ({ children }) => (
-    <ul className="list-disc ml-4 mb-2 text-blue-800 dark:text-blue-200">{children}</ul>
+    <ul className="list-disc ml-4 mb-2 text-red-800 dark:text-red-200">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="list-decimal ml-4 mb-2 text-blue-800 dark:text-blue-200">{children}</ol>
+    <ol className="list-decimal ml-4 mb-2 text-red-800 dark:text-red-200">{children}</ol>
   ),
   li: ({ children }) => (
-    <li className="mb-1 text-blue-800 dark:text-blue-200">{children}</li>
+    <li className="mb-1 text-gray-800 dark:text-gray-200">{children}</li>
   ),
   // Code blocks with better background contrast
   code: ({ children }) => (
-    <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-blue-600 dark:text-blue-300">
+    <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-red-600 dark:text-red-300">
       {children}
     </code>
   ),
@@ -42,7 +42,7 @@ const MarkdownComponents = {
   ),
   // Bold text in dark blue
   strong: ({ children }) => (
-    <strong className="font-bold text-blue-900 dark:text-blue-300">{children}</strong>
+    <strong className="font-bold text-red-900 dark:text-red-300">{children}</strong>
   ),
   // Italic text in dark gray
   em: ({ children }) => (

@@ -12,28 +12,38 @@ const attemptSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
 });
 
-const quizSchema = new mongoose.Schema({
-  userId: {
-    type: String, // Changed from ObjectId to String
-    required: false, // Made it optional
+const quizSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: String, // Changed from ObjectId to String
+      required: false, // Made it optional
+    },
+    createdBy: {
+      type: String,
+      required: true,
+      default: "Anonymous", // Default value if no user is specified
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    topic: {
+      type: String,
+      required: true,
+    },
+    questions: {
+      type: [questionSchema],
+      required: true,
+      validate: [
+        (array) => array.length > 0,
+        "Quiz must have at least one question",
+      ],
+    },
+    attempts: [attemptSchema],
   },
-  title: {
-    type: String,
-    required: true,
-  },
-  topic: {
-    type: String,
-    required: true,
-  },
-  questions: {
-    type: [questionSchema],
-    required: true,
-    validate: [
-      (array) => array.length > 0,
-      "Quiz must have at least one question",
-    ],
-  },
-  attempts: [attemptSchema],
-});
+  {
+    timestamps: true, // Enable timestamps (createdAt and updatedAt)
+  }
+);
 
 module.exports = mongoose.model("Quiz", quizSchema);

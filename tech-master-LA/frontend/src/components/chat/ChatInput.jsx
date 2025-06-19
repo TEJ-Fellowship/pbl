@@ -15,20 +15,21 @@ const ChatInput = ({ onSendMessage, onGenerateQuiz, isLoading, messagesExist }) 
   };
 
   return (
-    <div className="p-4 border-t">
-      <form onSubmit={handleSubmit} className="flex gap-2">
+    <div className="p-4 border-t  border-gray-700 bg-gray-900">
+      <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-3">
+     
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 p-2 bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
         >
           Send
         </button>
@@ -36,7 +37,7 @@ const ChatInput = ({ onSendMessage, onGenerateQuiz, isLoading, messagesExist }) 
           type="button"
           onClick={onGenerateQuiz}
           disabled={!messagesExist || isLoading}
-          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+          className="px-4 py-2 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-200 disabled:opacity-50 transition"
         >
           Generate Quiz
         </button>

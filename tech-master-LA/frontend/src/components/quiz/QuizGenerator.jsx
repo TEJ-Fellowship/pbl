@@ -5,10 +5,11 @@ import TopicSelector from "./TopicSelector";
 
 const QuizGenerator = ({ onGenerate, isLoading }) => {
   const [selectedTopic, setSelectedTopic] = useState(null);
+  const [creatorName, setCreatorName] = useState("");
 
   const handleGenerate = () => {
     if (selectedTopic && !isLoading) {
-      onGenerate(selectedTopic);
+      onGenerate(selectedTopic, creatorName);
     }
   };
 
@@ -31,6 +32,17 @@ const QuizGenerator = ({ onGenerate, isLoading }) => {
 
       <div className="mb-6">
         <TopicSelector onSelectTopic={setSelectedTopic} disabled={isLoading} />
+      </div>
+
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Enter your name (optional)"
+          value={creatorName}
+          onChange={(e) => setCreatorName(e.target.value)}
+          className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          disabled={isLoading}
+        />
       </div>
 
       <div className="text-center">
