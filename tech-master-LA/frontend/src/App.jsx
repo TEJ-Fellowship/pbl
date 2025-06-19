@@ -1,13 +1,10 @@
 import Routes from "./Routes";
-import React from 'react'
-import Quizzes from './pages/Quizzes'
-
+import { Toaster } from "react-hot-toast";
 const App = () => {
   return (
     <div>
+      <Toaster position="top-right" reverseOrder={false} />
       <Routes />
-      <Quizzes />
-
     </div>
   );
 };
