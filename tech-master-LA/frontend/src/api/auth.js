@@ -31,7 +31,7 @@ const login = async ({ email, password }) => {
 
 const register = async ({ name, email, password, phone, confirmPassword }) => {
   try {
-    console.log("register", name, email, password, phone);
+    console.log("register:", name, email, password, phone, confirmPassword);
     const response = await api.post("/auth/register", {
       name,
       email,
@@ -62,4 +62,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export { login, register };
+const logout = () => {
+  localStorage.removeItem("authToken");
+};
+
+export { login, register, logout };

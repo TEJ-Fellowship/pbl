@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 import { login, register } from "../../api/auth";
+import { HOME_ROUTE } from "../../constants/routes";
 
 const LoginRegisterForm = ({ isLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,9 +15,20 @@ const LoginRegisterForm = ({ isLogin }) => {
     phone: "",
   });
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const clearForm = () => {
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      phone: "",
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -35,9 +48,13 @@ const LoginRegisterForm = ({ isLogin }) => {
       if (isLogin) {
         await login({ email, password });
         toast.success("Login successful!");
+        clearForm();
+        navigate(HOME_ROUTE, { replace: true });
       } else {
         await register({ name, email, password, confirmPassword, phone });
         toast.success("Registration successful!");
+        clearForm();
+        navigate(HOME_ROUTE, { replace: true });
       }
     } catch (err) {
       const msg = err.response?.data?.error || "An error occurred";
