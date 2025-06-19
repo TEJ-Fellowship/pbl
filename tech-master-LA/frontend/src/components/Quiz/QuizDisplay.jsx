@@ -118,9 +118,9 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
               initial={{ opacity: 0, x: 100 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}
-              className="bg-white shadow-xl rounded-xl p-6"
+              className="backdrop-blur-sm bg-gray-900/90 border border-gray-800/50 rounded-xl p-6 shadow-2xl"
             >
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">
+              <h2 className="text-xl font-semibold text-white mb-6">
                 {quiz.questions[currentQuestion].question}
               </h2>
               
@@ -133,8 +133,8 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
                     onClick={() => handleAnswer(currentQuestion, option)}
                     className={`p-4 rounded-xl text-left transition-all duration-200 ${
                       userAnswers[currentQuestion] === option
-                        ? 'bg-blue-500 text-white shadow-lg'
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg border border-red-500/30'
+                        : 'bg-gray-800/80 hover:bg-gray-700/80 text-gray-200 border border-gray-700/50'
                     }`}
                   >
                     <span className="font-medium">{option}</span>
@@ -146,10 +146,10 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
                 <button
                   onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
                   disabled={currentQuestion === 0}
-                  className={`px-6 py-2 rounded-lg ${
+                  className={`px-6 py-2 rounded-lg transition-all duration-300 ${
                     currentQuestion === 0
-                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-500 text-white hover:bg-gray-600'
+                      ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-700/30'
+                      : 'bg-gray-800 text-white hover:bg-gray-700 border border-gray-700/50'
                   }`}
                 >
                   Previous
@@ -159,10 +159,10 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
                   <button
                     onClick={handleSubmit}
                     disabled={Object.keys(userAnswers).length !== quiz.questions.length}
-                    className={`px-6 py-2 rounded-lg ${
+                    className={`px-6 py-2 rounded-lg transition-all duration-300 ${
                       Object.keys(userAnswers).length === quiz.questions.length
-                        ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white border border-red-500/30'
+                        : 'bg-gray-800/50 text-gray-500 cursor-not-allowed border border-gray-700/30'
                     }`}
                   >
                     Submit Quiz
@@ -170,7 +170,7 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
                 ) : (
                   <button
                     onClick={() => setCurrentQuestion(prev => Math.min(quiz.questions.length - 1, prev + 1))}
-                    className="px-6 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                    className="px-6 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white transition-all duration-300 border border-red-500/30"
                   >
                     Next
                   </button>

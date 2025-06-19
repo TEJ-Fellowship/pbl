@@ -7,7 +7,7 @@ import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
 import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
 import config from "../config/config.js"
-import QuizViewToggle from "../components/quiz/QuizViewToggle";
+import QuizViewToggle from "../components/quiz/QuizViewToggle.jsx";
 
 const Quizzes = () => {
   const [quiz, setQuiz] = useState(null);
@@ -160,7 +160,7 @@ const Quizzes = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 bg-black">
      {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
 
         {!quiz && (
@@ -177,7 +177,7 @@ const Quizzes = () => {
       )}
 
       {showSavedQuizzes ? (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <ErrorBoundary>
             <SavedQuizzes
               quizzes={savedQuizzes}

@@ -86,30 +86,31 @@ const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
   }
 
   return (
+    <div className="backdrop-blur-sm bg-gray-900/90 border border-gray-800/50 rounded-3xl p-8 shadow-2xl">
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-4 w-full max-w-4xl mx-auto"
+      className="p-4 w-full max-w-6xl mx-auto"
     >
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+      <h2 className="text-2xl font-bold text-white mb-6">
         📚 Saved Quizzes
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedQuizzes.map((quiz, index) => (
           <motion.div
             key={quiz._id || index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white shadow-lg rounded-lg p-4 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300"
+            className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 shadow-lg rounded-lg p-4 flex flex-col justify-between hover:shadow-xl transition-all duration-300 hover:border-gray-600/50"
           >
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              <h3 className="text-lg font-semibold text-white mb-2">
                 {quiz.title}
               </h3>
               <div className="flex items-center gap-2 mb-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 rounded-full text-sm font-medium">
                   {quiz.topic}
                 </span>
                 <span className="text-sm text-gray-500">
@@ -155,18 +156,32 @@ const SavedQuizzes = ({ quizzes = [], onRetake, isLoading = false }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleRetake(quiz._id)}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                className={`${
+                  quiz.attempts?.length === 0
+                    ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600'
+                    : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600'
+                } text-white px-6 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl border border-white/10`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Retake Quiz</span>
+                {quiz.attempts?.length === 0 ? (
+                  // Play icon for first attempt
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  // Refresh icon for retakes
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                <span>{quiz.attempts?.length === 0 ? "Start Quiz" : "Retake Quiz"}</span>
               </motion.button>
             </div>
           </motion.div>
         ))}
       </div>
     </motion.div>
+    </div>
   );
 };
 
