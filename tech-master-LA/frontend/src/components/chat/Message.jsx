@@ -1,5 +1,4 @@
 // tech-master-LA/frontend/src/components/chat/Message.jsx
-import React from 'react';
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import MessageContent from './MessageContent';

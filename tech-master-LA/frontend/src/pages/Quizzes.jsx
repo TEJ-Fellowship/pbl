@@ -1,9 +1,9 @@
 // tech-master-LA/frontend/src/pages/Quizzes.jsx
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import axios from "axios";
-import QuizGenerator from "../components/Quiz/QuizGenerator";
-import QuizDisplay from "../components/Quiz/QuizDisplay";
-import SavedQuizzes from "../components/Quiz/SavedQuizzes";
+import QuizGenerator from "../components/quiz/QuizGenerator.jsx";
+import QuizDisplay from "../components/quiz/QuizDisplay.jsx";
+import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
 import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
 import config from "../config/config.js"
@@ -72,6 +72,7 @@ const Quizzes = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleAnswer = (questionIndex, answer) => {
     setUserAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
   };
