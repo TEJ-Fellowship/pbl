@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const quizRoutes = require("./routes/quizRoutes.js");
 const statsRoutes = require("./routes/statsRoutes.js");
+const chatRoutes = require("./routes/chatRoutes.js");
 
 //middleware
 app.use(express.json());
@@ -34,6 +35,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
