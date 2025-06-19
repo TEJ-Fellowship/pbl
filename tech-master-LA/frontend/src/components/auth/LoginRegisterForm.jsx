@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react";
-import { login, register } from "../../../api/auth";
 import { toast } from "react-hot-toast";
+import { login, register } from "../../api/auth";
 
 const LoginRegisterForm = ({ isLogin }) => {
   const [showPassword, setShowPassword] = useState(false);

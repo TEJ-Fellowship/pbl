@@ -33,6 +33,7 @@ const navMenu = [
     label: "Login/Register",
     icon: User,
   },
+  
 ];
 
 export default navMenu;

@@ -4,9 +4,9 @@ import axios from "axios";
 import QuizGenerator from "../components/quiz/QuizGenerator.jsx";
 import QuizDisplay from "../components/quiz/QuizDisplay.jsx";
 import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
-import generateNewQuiz from "../../api/generateNewQuiz";
+import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
-import config from "../../config/config.js";
+import config from "../config/config.js";
 
 const SmartQuizzes = () => {
   const [quiz, setQuiz] = useState(null);
