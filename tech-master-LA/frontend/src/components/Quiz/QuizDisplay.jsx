@@ -7,6 +7,7 @@ import QuizHeader from "./QuizHeader";
 import QuestionNavigation from "./QuestionNavigation";
 import QuizResults from "./QuizResults";
 import QuizQuestion from "./QuizQuestion";
+import config from "../../config/config";
 
 
 const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComplete }) => {
@@ -16,6 +17,7 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
   const [showResults, setShowResults] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { API_BASE_URL } = config;
 
   const handleAnswer = (questionIndex, selectedOption) => {
     setUserAnswers(prev => ({
@@ -40,7 +42,7 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
     setShowResults(true);
 
     try {
-      await axios.post(`http://localhost:5000/api/quizzes/${quiz._id}/attempts`, {
+      await axios.post(`${API_BASE_URL}/quizzes/${quiz._id}/attempts`, {
         score: finalScore
       });
     } catch (error) {
@@ -51,16 +53,20 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await axios.delete(`http://localhost:5000/api/quizzes/${quiz._id}`);
+      await axios.delete(`${API_BASE_URL}/quizzes/${quiz._id}`);
       onDelete(quiz._id);
       setShowDeleteConfirm(false);
     } catch (error) {
       console.error('Error deleting quiz:', error);
+      // If quiz is already deleted, still close the modal and update UI
+      if (error.response?.status === 404) {
+        onDelete(quiz._id);
+        setShowDeleteConfirm(false);
+      }
     } finally {
       setIsDeleting(false);
     }
   };
-
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
@@ -88,7 +94,7 @@ const QuizDisplay = ({ quiz, userAnswers, setUserAnswers, onDelete, onQuizComple
         />
       )}
 
-      <div className="max-w-3xl mx-auto p-4">
+      <div className="min-h-screen max-w-3xl mx-auto p-4">
         {showResults ? (
          <QuizResults
             score={score}

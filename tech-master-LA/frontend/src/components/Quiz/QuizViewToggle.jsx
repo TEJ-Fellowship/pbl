@@ -8,7 +8,7 @@ const QuizViewToggle = ({ showSavedQuizzes, setShowSavedQuizzes }) => {
         onClick={() => setShowSavedQuizzes(false)}
         className={`px-6 py-2 rounded-lg transition-colors ${
           !showSavedQuizzes
-            ? 'bg-blue-500 text-white'
+            ? 'bg-red-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >
@@ -18,7 +18,7 @@ const QuizViewToggle = ({ showSavedQuizzes, setShowSavedQuizzes }) => {
         onClick={() => setShowSavedQuizzes(true)}
         className={`px-6 py-2 rounded-lg transition-colors ${
           showSavedQuizzes
-            ? 'bg-blue-500 text-white'
+            ? 'bg-red-500 text-white'
             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
         }`}
       >

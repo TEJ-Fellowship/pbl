@@ -158,6 +158,37 @@ class ChatService {
       };
     }
   }
+
+  async getConversationById(conversationId) {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/chat/conversations/${conversationId}`
+      );
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to fetch conversation",
+      };
+    }
+  }
+
+  async deleteConversation(conversationId) {
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/chat/conversations/${conversationId}`
+      );
+      console.log("Conversation deleted(from service):", conversationId);
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      return {
+        success: false,
+        error: error.response?.data?.error || "Failed to delete conversation",
+      };
+    }
+  }
 }
 
 export default new ChatService();

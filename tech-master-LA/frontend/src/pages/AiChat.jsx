@@ -1,7 +1,7 @@
 // tech-master-LA/frontend/src/pages/AiChat.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChatInterface, ChatTitle } from '../components/chat';
+import { ChatInterface, ChatTitle,ConversationTopic } from '../components/chat';
 import chatService from '../services/chatService';
 import { toast } from 'react-toastify';
 
@@ -10,12 +10,75 @@ const AiChat = () => {
   const [conversationId, setConversationId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [conversations, setConversations] = useState([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize conversation when component mounts
-  useEffect(() => {
-    initializeConversation();
-  }, []);
+   // Combine initialization and fetching into a single useEffect
+   useEffect(() => {
+    const initializeChat = async () => {
+      setIsInitializing(true);
+      try {
+        // First fetch existing conversations
+        await fetchUserConversations();
+        
+        // If no conversations exist, create a new one
+        if (conversations.length === 0) {
+          await initializeConversation();
+        } else {
+          // Use the most recent conversation
+          const mostRecent = conversations[0]; // Assuming conversations are sorted by date
+          setConversationId(mostRecent._id);
+          setMessages(mostRecent.messages || []);
+        }
+      } catch (error) {
+        console.error("Initialization error:", error);
+        toast.error("Failed to initialize chat");
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeChat();
+  }, []); // Run only once on component mount
+
+  const fetchUserConversations = async () => {
+    setIsLoadingConversations(true);
+    try {
+      const userId = "user123"; // Replace with actual user ID from auth
+      const result = await chatService.getAllConversations(userId);
+      if (result.success) {
+        setConversations(result.data);
+      } else {
+        toast.error("Failed to fetch conversations");
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      toast.error("Failed to fetch conversations");
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  const handleSelectConversation = async (conversationId) => {
+    try {
+      setIsLoading(true);
+      const result = await chatService.getConversationById(conversationId);
+      if (result.success) {
+        setConversationId(conversationId);
+        setMessages(result.data.messages);
+      } else {
+        toast.error("Failed to load conversation");
+      }
+    } catch (error) {
+      console.error("Error loading conversation:", error);
+      toast.error("Failed to load conversation");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const initializeConversation = async () => {
     try {
@@ -103,7 +166,32 @@ const AiChat = () => {
       setIsLoading(false);
     }
   };
-
+  const handleDeleteConversation = async (deletedConversationId) => {
+    if (window.confirm('Are you sure you want to delete this conversation?')) {
+      try {
+        const result = await chatService.deleteConversation(deletedConversationId);
+        if (result.success) {
+          // If the deleted conversation was the currently selected one
+          if (deletedConversationId === conversationId) {
+            setConversationId(null);
+            setMessages([]);
+            // Initialize a new conversation since current one was deleted
+            await initializeConversation();
+          }
+          
+          // Refresh the conversations list
+          await fetchUserConversations();
+          toast.success('Conversation deleted successfully');
+        } else {
+          toast.error('Failed to delete conversation');
+        }
+      } catch (error) {
+        console.error('Error deleting conversation:', error);
+        toast.error('Failed to delete conversation');
+      }
+    }
+  };
+  
   if (isInitializing) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -121,13 +209,25 @@ const AiChat = () => {
     <div className="container  bg-black  mx-auto px-4 py-8">
      <ChatTitle />
       {conversationId ? (
-        <ChatInterface
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          onGenerateQuiz={handleGenerateQuiz}
-          isLoading={isLoading}
-          className="max-w-4xl mx-auto"
-        />
+         <div className="flex max-w-6xl mx-auto">
+          <ConversationTopic
+            conversations={conversations}
+            selectedId={conversationId}
+            onSelect={handleSelectConversation}
+            onDelete={handleDeleteConversation}
+            isOpen={isSidebarOpen}
+            onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+            isLoading={isLoadingConversations}
+          />
+          <div className={`flex-1 transition-all ${isSidebarOpen ? 'ml-4' : ''}`}>
+            <ChatInterface
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              onGenerateQuiz={handleGenerateQuiz}
+              isLoading={isLoading}
+            />
+          </div>
+        </div>
       ) : (
         <div className="text-center p-8 bg-red-50 rounded-lg">
           <p className="text-red-600">Failed to initialize chat.</p>

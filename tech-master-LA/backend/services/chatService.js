@@ -248,7 +248,10 @@ class ChatService {
   async deleteConversation(conversationId) {
     try {
       const conversation = await Conversation.findByIdAndDelete(conversationId);
-
+      console.log(
+        "Conversation deleted(from backend service):",
+        conversationId
+      );
       if (!conversation) {
         return {
           success: false,
