@@ -1,5 +1,4 @@
 // tech-master-LA/frontend/src/components/chat/Message.jsx
-import React from 'react';
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 import MessageContent from './MessageContent';
@@ -16,8 +15,8 @@ const Message = ({ message, index }) => {
       <div
         className={`max-w-[80%] p-4 rounded-lg ${
           message.role === 'user'
-          ? 'bg-blue-600 text-white' // Darker blue for user messages
-          : 'bg-gray-50 dark:bg-gray-800 shadow-md' // Lighter background for AI messages
+          ? ' bg-gradient-to-t from-red-600 to-gray-600  text-white shadow-lg' // Darker blue for user messages
+          : 'bg-gray-50 dark:bg-gray-800 shadow-md ' // Lighter background for AI messages
         }`}
       >
         <MessageContent content={message.content} role={message.role} />

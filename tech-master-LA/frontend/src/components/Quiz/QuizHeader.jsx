@@ -7,16 +7,16 @@ const QuizHeader = ({ quiz, currentQuestion, onDeleteClick }) => {
     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-purple-100 via-blue-100 to-cyan-100 shadow-xl border border-purple-200 rounded-xl p-6 mb-6"
+      className="backdrop-blur-sm bg-gray-900/90 border border-gray-800/50 rounded-xl p-6 mb-6 shadow-[0_0_15px_rgba(255,0,0,0.1)] hover:shadow-[0_0_20px_rgba(255,0,0,0.2)] transition-shadow duration-300"
     >
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">{quiz.title}</h1>
-          <p className="text-gray-600 mt-2">Topic: {quiz.topic}</p>
+          <h1 className="text-3xl font-bold text-white">{quiz.title}</h1>
+          <p className="text-gray-400 mt-2">Topic: {quiz.topic}</p>
         </div>
         <button
           onClick={onDeleteClick}
-          className="text-red-500 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-full"
+          className="text-red-500 hover:text-red-400 transition-colors p-2 hover:bg-red-900/30 rounded-full"
           title="Delete Quiz"
         >
           <svg
@@ -37,13 +37,13 @@ const QuizHeader = ({ quiz, currentQuestion, onDeleteClick }) => {
       </div>
 
       <div className="flex items-center mt-4">
-        <div className="h-1 flex-1 bg-white rounded-full overflow-hidden">
+        <div className="h-1 flex-1 bg-gray-800 rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-red-600 to-red-700 transition-all duration-300"
             style={{ width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%` }}
           ></div>
         </div>
-        <span className="ml-4 text-sm text-gray-600">
+        <span className="ml-4 text-sm text-gray-400">
           {currentQuestion + 1}/{quiz.questions.length}
         </span>
       </div>

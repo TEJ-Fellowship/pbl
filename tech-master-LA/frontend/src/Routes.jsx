@@ -18,6 +18,7 @@ import SmartQuizzes from "./pages/SmartQuizzes";
 import TrackProgress from "./pages/TrackProgress";
 import LoginRegister from "./pages/LoginRegister";
 import AuthLayout from "./layouts/AuthLayout";
+import Quizzes from "./pages/Quizzes";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -57,7 +58,7 @@ const Routes = () => {
           <Route index element={<LearningPortal />} />
           <Route path={HOME_ROUTE} element={<LearningPortal />} />
           <Route path={AI_CHAT} element={<AiChat />} />
-          <Route path={SMART_QUIZZES} element={<SmartQuizzes />} />
+          <Route path={SMART_QUIZZES} element={<Quizzes />} />
           <Route path={TRACK_PROGRESS} element={<TrackProgress />} />
         </Route>
 
