@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ProjectSubmissionModal from "../components/projects/ProjectSubmissionModal";
 
 // Icons
 const TrendingIcon = () => (
@@ -173,6 +174,7 @@ const ProjectCard = ({ project }) => {
 
 const Home = () => {
   const [activeTab, setActiveTab] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [projects] = useState([
     {
       id: 1,
@@ -233,11 +235,17 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* Stats Banner */}
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium">
             <TrendingIcon />
             <span>1,247 projects submitted this week</span>
           </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn btn-primary"
+          >
+            Submit Project
+          </button>
         </div>
 
         {/* Header */}
@@ -312,6 +320,11 @@ const Home = () => {
             <ProjectCard key={project.id} project={project} />
           ))}
         </div>
+
+        <ProjectSubmissionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </div>
     </div>
   );
