@@ -7,6 +7,7 @@ import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
 import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
 import config from "../config/config.js"
+import QuizViewToggle from "../components/quiz/QuizViewToggle";
 
 const Quizzes = () => {
   const [quiz, setQuiz] = useState(null);
@@ -37,7 +38,7 @@ const Quizzes = () => {
     }
   };
 
-  const handleGenerateQuiz = async (topic) => {
+  const handleGenerateQuiz = async (topic, creatorName) => {
     if (!topic) {
       setError("Please select a topic first");
       return;
@@ -54,7 +55,13 @@ const Quizzes = () => {
         throw new Error("Invalid quiz format received");
       }
 
-      const response = await axios.post(`${API_BASE_URL}/quizzes`, generatedQuiz);
+      // Add creator information to the quiz
+      const quizWithCreator = {
+        ...generatedQuiz,
+        createdBy: creatorName || 'Anonymous'
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/quizzes`, quizWithCreator);
       
       if (!response.data || !response.data._id) {
         throw new Error("Invalid response from server");
@@ -84,16 +91,26 @@ const Quizzes = () => {
     }
 
     try {
+      setLoading(true);
       await axios.delete(`${API_BASE_URL}/quizzes/${quizId}`);
+      
+      // Reset quiz state
+      setQuiz(null);
+      setUserAnswers({});
+      
+      // Refresh the quiz list
       await fetchSavedQuizzes();
       
-      if (quiz?._id === quizId) {
-        setQuiz(null);
-        setUserAnswers({});
-      }
+      // Show the quiz list
+      setShowSavedQuizzes(true);
+      
+      // Clear any existing errors
+      setError(null);
     } catch (error) {
       console.error("Error deleting quiz:", error);
       setError("Failed to delete quiz");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,30 +161,14 @@ const Quizzes = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
-      
-      {!quiz&&(<div className="flex justify-center gap-4 mb-8">
-        <button
-          onClick={() => setShowSavedQuizzes(false)}
-          className={`px-6 py-2 rounded-lg transition-colors ${
-            !showSavedQuizzes
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Generate Quiz
-        </button>
-        <button
-          onClick={() => setShowSavedQuizzes(true)}
-          className={`px-6 py-2 rounded-lg transition-colors ${
-            showSavedQuizzes
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Saved Quizzes
-        </button>
-      </div>)}
+     {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
+
+        {!quiz && (
+          <QuizViewToggle
+            showSavedQuizzes={showSavedQuizzes}
+            setShowSavedQuizzes={setShowSavedQuizzes}
+          />
+        )} */}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">

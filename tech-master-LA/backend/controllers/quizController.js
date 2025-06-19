@@ -4,7 +4,7 @@ const Quiz = require("../models/quizModel");
 
 const getAllQuizzes = async (req, res, next) => {
   try {
-    const quizzes = await Quiz.find({});
+    const quizzes = await Quiz.find({}).sort({ createdAt: -1 });
     res.json(quizzes);
   } catch (error) {
     next(error);
@@ -26,7 +26,7 @@ const getQuizById = async (req, res, next) => {
 
 const createQuiz = async (req, res, next) => {
   try {
-    const { userId, title, topic, questions } = req.body;
+    const { userId, title, topic, questions, createdBy } = req.body;
 
     const quiz = new Quiz({
       userId,
@@ -34,6 +34,7 @@ const createQuiz = async (req, res, next) => {
       topic,
       questions,
       attempts: [],
+      createdBy: createdBy || "Anonymous", // Use provided createdBy or default to 'Anonymous'
     });
 
     const savedQuiz = await quiz.save();
