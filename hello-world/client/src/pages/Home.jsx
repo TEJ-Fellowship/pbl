@@ -21,8 +21,11 @@ const ProjectCard = ({ project }) => {
   const [starCount, setStarCount] = useState(project.stars || Math.floor(Math.random() * 25) + 5);
 
   const handleStar = () => {
-    setIsStarred(!isStarred);
-    setStarCount(prev => isStarred ? prev - 1 : prev + 1);
+    setIsStarred(prevIsStarred => {
+      const newIsStarred = !prevIsStarred;
+      setStarCount(prevStarCount => newIsStarred ? prevStarCount + 1 : prevStarCount - 1);
+      return newIsStarred;
+    });
   };
 
   return (
