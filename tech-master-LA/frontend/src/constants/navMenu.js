@@ -28,12 +28,11 @@ const navMenu = [
     label: "Track Progress",
     icon: Code,
   },
-  {
-    route: LOGIN_ROUTE,
-    label: "Login/Register",
-    icon: User,
-  },
-  
+  // {
+  //   route: LOGIN_ROUTE,
+  //   label: "Login/Register",
+  //   icon: User,
+  // },
 ];
 
 export default navMenu;

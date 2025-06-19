@@ -78,7 +78,7 @@ const LoginRegister = () => {
           </div>
 
           {/* Features Preview */}
-          <Navbar />
+          {/* <Navbar /> */}
         </div>
       </div>
 
