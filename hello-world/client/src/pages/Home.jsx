@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { projectsApi } from "../services/api";
 import {
   TrendingUp,
   Eye,
@@ -13,17 +16,236 @@ import {
   ArrowRight,
   Github,
   ExternalLink,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 import ProjectSubmissionModal from "../components/projects/ProjectSubmissionModal";
 
+// Navigation Header Component
+const Navigation = () => {
+  const { user, isAuthenticated, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <nav className="relative bg-white/80 backdrop-blur-sm border-b border-white/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-3">
+            <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">T</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">
+              TEJ Bootcamp
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-6">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
+                {(user?.role === "admin" || user?.role === "instructor") && (
+                  <Link
+                    to="/admin/users"
+                    className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                  >
+                    Manage Users
+                  </Link>
+                )}
+
+                {/* User Menu */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  >
+                    {user?.githubProfile?.avatar_url ? (
+                      <img
+                        src={user.githubProfile.avatar_url}
+                        alt={user.name}
+                        className="h-8 w-8 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 bg-gray-300 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-gray-600" />
+                      </div>
+                    )}
+                    <span className="font-medium">
+                      {user?.name || user?.preferredName}
+                    </span>
+                  </button>
+
+                  {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                        <div className="font-medium text-gray-900">
+                          {user?.name}
+                        </div>
+                        <div className="text-xs">{user?.email}</div>
+                        <div className="text-xs text-primary-600 capitalize">
+                          {user?.role}
+                        </div>
+                      </div>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <LogOut className="inline h-4 w-4 mr-2" />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link to="/login" className="btn-primary">
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-gray-700 hover:text-primary-600 transition-colors"
+            >
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 border-t border-gray-200">
+            {isAuthenticated ? (
+              <div className="space-y-3">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    {user?.githubProfile?.avatar_url ? (
+                      <img
+                        src={user.githubProfile.avatar_url}
+                        alt={user.name}
+                        className="h-10 w-10 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <User className="h-6 w-6 text-gray-600" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {user?.name}
+                      </div>
+                      <div className="text-sm text-gray-500">{user?.email}</div>
+                      <div className="text-xs text-primary-600 capitalize">
+                        {user?.role}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Dashboard
+                </Link>
+                {(user?.role === "admin" || user?.role === "instructor") && (
+                  <Link
+                    to="/admin/users"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                  >
+                    Manage Users
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  <LogOut className="inline h-4 w-4 mr-2" />
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Link
+                  to="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+                <div className="px-4">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="btn-primary w-full text-center"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
+
 const ProjectCard = ({ project }) => {
+  const { isAuthenticated } = useAuth();
   const [isStarred, setIsStarred] = useState(false);
-  const [starCount, setStarCount] = useState(project.stars || Math.floor(Math.random() * 25) + 5);
+  const [starCount, setStarCount] = useState(
+    project.stars || Math.floor(Math.random() * 25) + 5
+  );
 
   const handleStar = () => {
-    setIsStarred(prevIsStarred => {
+    if (!isAuthenticated) {
+      alert("Please sign in to star projects");
+      return;
+    }
+
+    setIsStarred((prevIsStarred) => {
       const newIsStarred = !prevIsStarred;
-      setStarCount(prevStarCount => newIsStarred ? prevStarCount + 1 : prevStarCount - 1);
+      setStarCount((prevStarCount) =>
+        newIsStarred ? prevStarCount + 1 : prevStarCount - 1
+      );
       return newIsStarred;
     });
   };
@@ -62,7 +284,11 @@ const ProjectCard = ({ project }) => {
             onClick={handleStar}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm hover:bg-black/70 transition-colors"
           >
-            <Star className={`w-4 h-4 ${isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+            <Star
+              className={`w-4 h-4 ${
+                isStarred ? "fill-yellow-400 text-yellow-400" : ""
+              }`}
+            />
             <span className="text-sm font-medium">{starCount}</span>
           </button>
           <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm">
@@ -161,6 +387,7 @@ const ProjectCard = ({ project }) => {
 };
 
 const Home = () => {
+  const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [projects, setProjects] = useState([]);
@@ -172,13 +399,8 @@ const Home = () => {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/projects`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch projects");
-        }
-        const data = await response.json();
+        const response = await projectsApi.getAll();
+        const data = response.data;
 
         // Transform API data to match the UI structure
         const transformedProjects = data.map((project, index) => ({
@@ -227,39 +449,37 @@ const Home = () => {
     // Refetch projects
     const fetchProjects = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/projects");
-        if (response.ok) {
-          const data = await response.json();
-          const transformedProjects = data.map((project, index) => ({
-            id: project._id,
-            title: project.title,
-            description: project.description,
-            difficulty: "Intermediate",
-            week: Math.floor(Math.random() * 12) + 1,
-            featured: index === 0,
-            likes: Math.floor(Math.random() * 50) + 10,
-            views: Math.floor(Math.random() * 200) + 50,
-            team:
-              project.collaborators.length > 0
-                ? project.collaborators.map((collab) => ({
-                    name: collab.name,
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${collab.name}`,
-                  }))
-                : [
-                    {
-                      name: "Developer",
-                      avatar:
-                        "https://api.dicebear.com/7.x/avataaars/svg?seed=Default",
-                    },
-                  ],
-            technologies: project.technologies,
-            timeAgo: new Date(project.createdAt).toLocaleDateString(),
-            codeUrl: project.githubUrl,
-            demoUrl: project.liveUrl || "#",
-            image: project.screenshots?.[0] || null,
-          }));
-          setProjects(transformedProjects);
-        }
+        const response = await projectsApi.getAll();
+        const data = response.data;
+        const transformedProjects = data.map((project, index) => ({
+          id: project._id,
+          title: project.title,
+          description: project.description,
+          difficulty: "Intermediate",
+          week: Math.floor(Math.random() * 12) + 1,
+          featured: index === 0,
+          likes: Math.floor(Math.random() * 50) + 10,
+          views: Math.floor(Math.random() * 200) + 50,
+          team:
+            project.collaborators.length > 0
+              ? project.collaborators.map((collab) => ({
+                  name: collab.name,
+                  avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${collab.name}`,
+                }))
+              : [
+                  {
+                    name: "Developer",
+                    avatar:
+                      "https://api.dicebear.com/7.x/avataaars/svg?seed=Default",
+                  },
+                ],
+          technologies: project.technologies,
+          timeAgo: new Date(project.createdAt).toLocaleDateString(),
+          codeUrl: project.githubUrl,
+          demoUrl: project.liveUrl || "#",
+          image: project.screenshots?.[0] || null,
+        }));
+        setProjects(transformedProjects);
       } catch (err) {
         console.error("Error refetching projects:", err);
       }
@@ -267,16 +487,26 @@ const Home = () => {
     fetchProjects();
   };
 
+  // Handle project submission
+  const handleSubmitProject = () => {
+    if (!isAuthenticated) {
+      alert("Please sign in to submit a project");
+      return;
+    }
+    setIsModalOpen(true);
+  };
+
   // Scroll to projects section
   const scrollToProjects = () => {
-    const projectsSection = document.getElementById('projects-section');
+    const projectsSection = document.getElementById("projects-section");
     if (projectsSection) {
-      projectsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      projectsSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-surface-50 via-white to-primary-50/30">
+      <Navigation />
       <div className="mx-auto max-w-7xl">
         {/* Modern Hero Section */}
         <div className="relative overflow-hidden">
@@ -308,7 +538,7 @@ const Home = () => {
                 </div>
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleSubmitProject}
                 className="relative px-6 py-3 overflow-hidden text-white transition-all duration-300 transform group bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl shadow-medium hover:shadow-lg hover:-translate-y-0.5"
               >
                 <span className="relative z-10 flex items-center gap-2 font-medium">
@@ -337,13 +567,16 @@ const Home = () => {
               </h1>
 
               <p className="max-w-3xl mx-auto mb-8 text-lg leading-relaxed sm:text-xl text-surface-600">
-                Showcase your bootcamp journey! From your first "Hello World" to full-stack masterpieces,
+                Showcase your bootcamp journey! From your first "Hello World" to
+                full-stack masterpieces,
                 <span className="font-semibold text-primary-600">
-                  {" "}share your progress{" "}
+                  {" "}
+                  share your progress{" "}
                 </span>
                 and
                 <span className="font-semibold text-primary-600">
-                  {" "}inspire fellow learners{" "}
+                  {" "}
+                  inspire fellow learners{" "}
                 </span>
                 on this incredible coding adventure.
               </p>
@@ -351,7 +584,7 @@ const Home = () => {
               {/* Hero CTAs */}
               <div className="flex flex-col items-center justify-center gap-4 mb-12 sm:flex-row">
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleSubmitProject}
                   className="relative px-6 py-3 overflow-hidden text-white transition-all duration-300 transform group bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl shadow-medium hover:shadow-lg hover:-translate-y-0.5"
                 >
                   <span className="relative z-10 flex items-center gap-2 font-semibold">
@@ -361,7 +594,7 @@ const Home = () => {
                   <div className="absolute inset-0 transition-opacity duration-300 opacity-0 bg-gradient-to-r from-primary-600 to-primary-700 group-hover:opacity-100"></div>
                 </button>
 
-                <button 
+                <button
                   onClick={scrollToProjects}
                   className="flex items-center gap-2 px-6 py-3 text-lg font-medium transition-all duration-300 border group bg-white/80 backdrop-blur-sm hover:bg-white text-surface-700 hover:text-surface-900 rounded-xl shadow-soft hover:shadow-medium border-surface-200 hover:border-surface-300"
                 >
@@ -538,7 +771,7 @@ const Home = () => {
                   Be the first to share your amazing work with the community!
                 </p>
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleSubmitProject}
                   className="btn btn-primary shadow-medium"
                 >
                   Submit Your Project
