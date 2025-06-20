@@ -89,26 +89,33 @@ const Quizzes = () => {
       console.error("No quiz ID provided for deletion");
       return;
     }
-
+  
     try {
       setLoading(true);
+      setError(null);
+      
+      // Attempt to delete the quiz
       await axios.delete(`${API_BASE_URL}/quizzes/${quizId}`);
       
-      // Reset quiz state
+      // If successful, update the UI
       setQuiz(null);
       setUserAnswers({});
-      
-      // Refresh the quiz list
       await fetchSavedQuizzes();
-      
-      // Show the quiz list
       setShowSavedQuizzes(true);
       
-      // Clear any existing errors
-      setError(null);
     } catch (error) {
       console.error("Error deleting quiz:", error);
-      setError("Failed to delete quiz");
+      // Check if quiz is already deleted
+      if (error.response?.status === 404) {
+        // Quiz already deleted, just update UI
+        setQuiz(null);
+        setUserAnswers({});
+        await fetchSavedQuizzes();
+        setShowSavedQuizzes(true);
+      } else {
+        // Other error occurred
+        setError("Failed to delete quiz. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -161,14 +168,14 @@ const Quizzes = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 bg-black">
-     {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
+     {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1> */}
 
         {!quiz && (
           <QuizViewToggle
             showSavedQuizzes={showSavedQuizzes}
             setShowSavedQuizzes={setShowSavedQuizzes}
           />
-        )} */}
+        )}
 
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">

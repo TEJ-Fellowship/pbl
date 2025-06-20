@@ -1,12 +1,11 @@
 // tech-master-LA/backend/services/geminiService.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { GEMINI_API_KEY } = require("../config/keys");
 
 class GeminiService {
   constructor() {
-    this.genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.0-flash", // TODO: change to the model you want to use
+      model: process.env.GEMINI_MODEL,
     });
   }
 

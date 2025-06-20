@@ -15,7 +15,7 @@ const Message = ({ message, index }) => {
       <div
         className={`max-w-[80%] p-4 rounded-lg ${
           message.role === 'user'
-          ? ' bg-gradient-to-t from-red-600 to-gray-600  text-white shadow-lg' // Darker blue for user messages
+          ? '  bg-red-500  text-white shadow-lg' // Darker blue for user messages
           : 'bg-gray-50 dark:bg-gray-800 shadow-md ' // Lighter background for AI messages
         }`}
       >
