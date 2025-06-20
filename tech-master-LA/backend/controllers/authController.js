@@ -24,6 +24,7 @@ const loginController = async (req, res) => {
 
     // Set cookie with appropriate settings for development
     res.cookie("authToken", token, {
+      expires: new Date(Date.now() + 25892000000),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production", // Only true in production
       sameSite: "Lax",

@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => {
   res.json({
-    projectName: "Project AI Learning App",
+    projectName: "Project TechMaster Learning App",
     message: "Hello, how are you? This server is working",
     port: PORT,
     environment: process.env.NODE_ENV || "development",
