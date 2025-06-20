@@ -3,14 +3,14 @@ import config from "../config/config";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: config.API_BASE_URL,
+  baseURL: config.API_BASE_URL || "http://localhost:5000",
   withCredentials: true, // This is important for cookies
 });
 
 const login = async ({ email, password }) => {
   try {
     console.log("login", email, password);
-    const response = await api.post("/auth/login", {
+    const response = await api.post("api/auth/login", {
       email,
       password,
     });
@@ -32,7 +32,7 @@ const login = async ({ email, password }) => {
 const register = async ({ name, email, password, phone, confirmPassword }) => {
   try {
     console.log("register:", name, email, password, phone, confirmPassword);
-    const response = await api.post("/auth/register", {
+    const response = await api.post("api/auth/register", {
       name,
       email,
       password,
