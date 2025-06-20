@@ -1,7 +1,16 @@
 require("dotenv").config();
-const dbUrl = process.env.MONGODB_URL;
 const PORT = process.env.PORT;
+const dbUrl = process.env.MONGODB_URL;
 const dbName = process.env.MONGODB_DB;
-const url = `${dbUrl}/${dbName}?retryWrites=true&w=majority&appName=Cluster0`;
+const JWT_SECRET = process.env.JWT_SECRET;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
-module.exports = { url, PORT };
+module.exports = {
+  dbUrl,
+  dbName,
+  PORT,
+  JWT_SECRET,
+  GEMINI_API_KEY,
+  FRONTEND_URL,
+};
