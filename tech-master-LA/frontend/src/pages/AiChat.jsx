@@ -15,33 +15,69 @@ const AiChat = () => {
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const navigate = useNavigate();
 
-   // Combine initialization and fetching into a single useEffect
-   useEffect(() => {
-    const initializeChat = async () => {
-      setIsInitializing(true);
+  // Separate useEffect for fetching conversations
+  useEffect(() => {
+    const fetchInitialConversations = async () => {
+      setIsLoadingConversations(true);
       try {
-        // First fetch existing conversations
-        await fetchUserConversations();
-        
-        // If no conversations exist, create a new one
-        if (conversations.length === 0) {
-          await initializeConversation();
+        const userId = "user123"; // Replace with actual user ID from auth
+        const result = await chatService.getAllConversations(userId);
+        if (result.success) {
+          setConversations(result.data);
+          
+          // If there are conversations, set the most recent one
+          if (result.data.length > 0) {
+            const mostRecent = result.data[0];
+            setConversationId(mostRecent._id);
+            setMessages(mostRecent.messages || []);
+          }
         } else {
-          // Use the most recent conversation
-          const mostRecent = conversations[0]; // Assuming conversations are sorted by date
-          setConversationId(mostRecent._id);
-          setMessages(mostRecent.messages || []);
+          toast.error("Failed to fetch conversations");
         }
       } catch (error) {
-        console.error("Initialization error:", error);
-        toast.error("Failed to initialize chat");
+        console.error("Error fetching conversations:", error);
+        toast.error("Failed to fetch conversations");
       } finally {
-        setIsInitializing(false);
+        setIsLoadingConversations(false);
       }
     };
 
-    initializeChat();
-  }, []); // Run only once on component mount
+    fetchInitialConversations();
+  }, []); // This effect only runs once on mount
+
+  // Separate useEffect for initializing conversation if needed
+  useEffect(() => {
+    const initializeIfNeeded = async () => {
+      // Only initialize if:
+      // 1. We're not currently loading conversations
+      // 2. We have no conversations
+      // 3. We don't have a conversationId set
+      if (!isLoadingConversations && conversations.length === 0 && !conversationId) {
+        try {
+          setIsInitializing(true);
+          const result = await chatService.createConversation(
+            "user123", // Replace with actual user ID from auth
+            "General"
+          );
+
+          if (result.success && result.data) {
+            setConversationId(result.data._id);
+            setConversations([result.data]); // Add to conversations list
+            setMessages([]); // Initialize empty messages
+          } else {
+            toast.error("Failed to initialize chat");
+          }
+        } catch (error) {
+          console.error("Initialization error:", error);
+          toast.error("Failed to initialize chat");
+        } finally {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    initializeIfNeeded();
+  }, [conversations, conversationId, isLoadingConversations]);
 
   const fetchUserConversations = async () => {
     setIsLoadingConversations(true);
@@ -81,6 +117,8 @@ const AiChat = () => {
 
 
   const initializeConversation = async () => {
+    // This function is now only used for manual initialization (e.g., Retry button)
+    if (isInitializing || isLoadingConversations) return;
     try {
       setIsInitializing(true);
       const result = await chatService.createConversation(
@@ -89,8 +127,11 @@ const AiChat = () => {
       );
 
       if (result.success && result.data) {
-        console.log("Conversation initialized with ID:", result.data._id);
         setConversationId(result.data._id);
+        setConversations(prev => [result.data, ...prev]); // Add to beginning of conversations list
+        setMessages([]);
+        toast.success("Chat initialized successfully");
+        console.log("Conversation initialized with ID:", result.data._id);
       } else {
         toast.error("Failed to initialize chat");
         console.error("Failed to initialize chat:", result.error);

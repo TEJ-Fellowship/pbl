@@ -17,7 +17,7 @@ const generateNewQuiz = async (topic) => {
     });
 
     // Create prompt for quiz generation
-    const prompt = `Generate a quiz about ${topic} with exactly 10 questions. 
+    const prompt = `Generate a quiz about ${topic} with exactly 5 questions. 
     Each question should have 4 options and one correct answer.
     Format the response as a JSON object with this exact structure:
     {
@@ -33,7 +33,7 @@ const generateNewQuiz = async (topic) => {
     }
     
     Requirements:
-    - Generate exactly 10 questions
+    - Generate exactly 5 questions
     - Each question must have exactly 4 options
     - The correct answer must exactly match one of the options
     - Questions should cover different aspects of ${topic}
@@ -77,9 +77,9 @@ const generateNewQuiz = async (topic) => {
     });
 
     // Ensure exactly 10 questions
-    if (parsed.questions.length !== 10) {
+    if (parsed.questions.length !== 5) {
       throw new Error(
-        `Quiz must have exactly 10 questions, got ${parsed.questions.length}`
+        `Quiz must have exactly 5 questions, got ${parsed.questions.length}`
       );
     }
 
