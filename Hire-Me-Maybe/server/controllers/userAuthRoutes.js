@@ -1,5 +1,6 @@
 const express = require("express");
 const User = require("../models/user");
+const { emailFormatRegex } = require("../utils/regex/userRegex");
 const bcrypt = require("bcryptjs");
 const userAuthRouter = express.Router();
 
@@ -17,7 +18,7 @@ userAuthRouter.post("/register", async (req, res) => {
     }
 
     // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = emailFormatRegex;
     if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,

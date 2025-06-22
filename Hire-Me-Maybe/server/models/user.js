@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { emailRegex, passwordRegex } = require("../utils/regex/userRegex");
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -11,15 +12,15 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Please provide email"],
     unique: true,
-    match: [
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-      "Please provide a valid email",
-    ],
+    match: [emailRegex, "Please provide a valid email"],
   },
   password: {
     type: String,
     required: [true, "Please provide password"],
-    minlength: [8, "Password must be at least 8 characters long"],
+    match: [
+      passwordRegex,
+      "Password must include uppercase, lowercase, number, and special character",
+    ],
   },
 });
 
