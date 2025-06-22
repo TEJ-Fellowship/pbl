@@ -1,0 +1,15 @@
+###
+POST http://localhost:5000/api/users/register
+Content-Type: application/json
+
+{
+    "name": "testo user",
+    "email": "testo@example.com",
+    "password": "password"
+}
+
+###
+GET http://localhost:5000/api/users
+
+###
+GET http://localhost:5000/api/users/6857fb95e270695cd085cbe6
