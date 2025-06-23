@@ -6,10 +6,11 @@ const chatRoutes = require("./routes/chatRoutes.js");
 const quizRoutes = require("./routes/quizRoutes.js");
 const statsRoutes = require("./routes/statsRoutes.js");
 const dbConnect = require("./config/db.js");
-const bodyParser = require("body-parser");
+// const bodyParser = require("body-parser");
 const logger = require("./middlewares/logger.js");
 const auth = require("./middlewares/auth-middleware.js");
 const cors = require("cors");
+const { FRONTEND_URL } = require("./config/keys.js");
 
 dotenv.config(); // ✅ Load env first
 dbConnect(); // ✅ Connect to DB next
@@ -17,13 +18,7 @@ dbConnect(); // ✅ Connect to DB next
 const app = express();
 
 // More flexible CORS configuration for development
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "http://localhost:4173",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:3000",
-];
+const allowedOrigins = [FRONTEND_URL, "https://techmaster-client.onrender.com"];
 
 app.use(
   cors({
@@ -43,8 +38,8 @@ app.use(
   })
 );
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => {
   res.json({
