@@ -10,7 +10,7 @@ const dbConnect = require("./config/db.js");
 const logger = require("./middlewares/logger.js");
 const auth = require("./middlewares/auth-middleware.js");
 const cors = require("cors");
-const { FRONTEND_URL } = require("./config/keys.js");
+const { FRONTEND_URL, FRONTEND_URL_DEV } = require("./config/keys.js");
 
 dotenv.config(); // ✅ Load env first
 dbConnect(); // ✅ Connect to DB next
@@ -18,7 +18,7 @@ dbConnect(); // ✅ Connect to DB next
 const app = express();
 
 // More flexible CORS configuration for development
-const allowedOrigins = [FRONTEND_URL, "https://techmaster-client.onrender.com"];
+const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_DEV].filter(Boolean);
 
 app.use(
   cors({
