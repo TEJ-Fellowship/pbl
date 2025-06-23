@@ -1,119 +1,150 @@
 // controllers/quizController.js
 
-const Quiz = require("../models/quizModel");
+const quizService = require("../services/quizService");
 
-const getAllQuizzes = async (req, res, next) => {
+const getQuizzes = async (req, res) => {
   try {
-    const quizzes = await Quiz.find({}).sort({ createdAt: -1 });
-    res.json(quizzes);
+    const quizzes = await quizService.getQuizzes(req.user.id);
+    res.status(200).json({ success: true, data: quizzes });
   } catch (error) {
-    next(error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-const getQuizById = async (req, res, next) => {
+const getQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
-    if (quiz) {
-      res.json(quiz);
-    } else {
-      res.status(404).json({ error: "Quiz not found" });
+    const quiz = await quizService.getQuiz(req.params.id, req.user.id);
+    res.status(200).json({ success: true, data: quiz });
+  } catch (error) {
+    res.status(404).json({ success: false, error: error.message });
+  }
+};
+
+const createQuiz = async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Topic is required" });
     }
+    const newQuiz = await quizService.createQuiz(topic, req.user.id);
+    res.status(201).json({ success: true, data: newQuiz });
   } catch (error) {
-    next(error);
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
-const createQuiz = async (req, res, next) => {
+const deleteQuiz = async (req, res) => {
   try {
-    const { userId, title, topic, questions, createdBy } = req.body;
-
-    const quiz = new Quiz({
-      userId,
-      title,
-      topic,
-      questions,
-      attempts: [],
-      createdBy: createdBy || "Anonymous", // Use provided createdBy or default to 'Anonymous'
-    });
-
-    const savedQuiz = await quiz.save();
-    res.status(201).json(savedQuiz);
+    await quizService.deleteQuiz(req.params.id, req.user.id);
+    res
+      .status(200)
+      .json({ success: true, message: "Quiz deleted successfully" });
   } catch (error) {
-    next(error);
+    res.status(404).json({ success: false, error: error.message });
   }
 };
 
-const updateQuiz = async (req, res, next) => {
+const startQuiz = async (req, res) => {
   try {
-    const { title, topic, questions } = req.body;
-
-    const updatedQuiz = await Quiz.findByIdAndUpdate(
+    const { quiz, attempt } = await quizService.startQuiz(
       req.params.id,
-      { title, topic, questions },
-      { new: true, runValidators: true }
+      req.user.id
     );
-
-    if (updatedQuiz) {
-      res.json(updatedQuiz);
-    } else {
-      res.status(404).json({ error: "Quiz not found" });
-    }
+    res.status(200).json({ success: true, data: { quiz, attempt } });
   } catch (error) {
-    next(error);
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
-const recordAttempt = async (req, res, next) => {
+const saveProgress = async (req, res) => {
   try {
-    const { score } = req.body;
-
-    const quiz = await Quiz.findById(req.params.id);
-    if (!quiz) {
-      return res.status(404).json({ error: "Quiz not found" });
-    }
-
-    quiz.attempts.push({ score });
-    const updatedQuiz = await quiz.save();
-
-    res.status(201).json(updatedQuiz);
+    const { attemptId, userAnswers } = req.body;
+    const attempt = await quizService.saveProgress(
+      req.params.id,
+      attemptId,
+      userAnswers,
+      req.user.id
+    );
+    res.status(200).json({ success: true, data: attempt });
   } catch (error) {
-    next(error);
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
-const getAttempts = async (req, res, next) => {
+const submitQuiz = async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
-    if (!quiz) {
-      return res.status(404).json({ error: "Quiz not found" });
-    }
-
-    res.json(quiz.attempts);
+    const { attemptId, userAnswers } = req.body;
+    const attempt = await quizService.submitQuiz(
+      req.params.id,
+      attemptId,
+      userAnswers,
+      req.user.id
+    );
+    res.status(200).json({ success: true, data: attempt });
   } catch (error) {
-    next(error);
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
-const deleteQuiz = async (req, res, next) => {
+const abandonAttempt = async (req, res) => {
   try {
-    const deletedQuiz = await Quiz.findByIdAndDelete(req.params.id);
-    if (deletedQuiz) {
-      res.status(204).end();
-    } else {
-      res.status(404).json({ error: "Quiz not found" });
-    }
+    const { attemptId } = req.body;
+    const attempt = await quizService.abandonAttempt(
+      req.params.id,
+      attemptId,
+      req.user.id
+    );
+    res.status(200).json({ success: true, data: attempt });
   } catch (error) {
-    next(error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+const cleanupAttempts = async (req, res) => {
+  try {
+    const quiz = await quizService.cleanupIncompleteAttempts(
+      req.params.id,
+      req.user.id
+    );
+    res.status(200).json({ success: true, data: quiz });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+const getQuizStats = async (req, res) => {
+  try {
+    const stats = await quizService.getQuizStats(req.params.id, req.user.id);
+    res.status(200).json({ success: true, data: stats });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+const regenerateQuiz = async (req, res) => {
+  try {
+    const updatedQuiz = await quizService.regenerateQuiz(
+      req.params.id,
+      req.user.id
+    );
+    res.status(200).json({ success: true, data: updatedQuiz });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 };
 
 module.exports = {
-  getAllQuizzes,
-  getQuizById,
+  getQuizzes,
+  getQuiz,
   createQuiz,
-  updateQuiz,
-  recordAttempt,
-  getAttempts,
   deleteQuiz,
+  startQuiz,
+  saveProgress,
+  submitQuiz,
+  abandonAttempt,
+  cleanupAttempts,
+  getQuizStats,
+  regenerateQuiz,
 };

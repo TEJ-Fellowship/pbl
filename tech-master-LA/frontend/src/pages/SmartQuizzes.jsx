@@ -1,12 +1,12 @@
-// tech-master-LA/frontend/src/pages/Quizzes.jsx
+// tech-master-LA/frontend/src/pages/SmartQuizzes.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import QuizGenerator from "../components/quiz/QuizGenerator.jsx";
 import QuizDisplay from "../components/quiz/QuizDisplay.jsx";
 import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
-import generateNewQuiz from "../api/generateNewQuiz.js";
+import QuizDebug from "../components/quiz/QuizDebug.jsx";
 import ErrorBoundary from "../components/ErrorBoundary";
 import config from "../config/config.js";
+import { useLocation } from "react-router-dom";
 
 const SmartQuizzes = () => {
   const [quiz, setQuiz] = useState(null);
@@ -16,17 +16,50 @@ const SmartQuizzes = () => {
   const [error, setError] = useState(null);
   const [showSavedQuizzes, setShowSavedQuizzes] = useState(false);
   const { API_BASE_URL } = config;
+  const location = useLocation();
 
-  // Fetch saved quizzes on load
+  // Create axios instance with credentials
+  const api = axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true,
+  });
+
+  // Check if quiz was passed from chat
   useEffect(() => {
-    fetchSavedQuizzes();
+    const location = window.location;
+    if (location.state?.quiz) {
+      console.log("Quiz received from chat:", location.state.quiz);
+      setQuiz(location.state.quiz);
+      setUserAnswers({});
+      setShowSavedQuizzes(false);
+      // Clear the state to prevent issues on refresh
+      window.history.replaceState({}, document.title);
+    }
   }, []);
+
+  // Fetch saved quizzes on load (only if no quiz is currently displayed)
+  useEffect(() => {
+    if (!quiz) {
+      fetchSavedQuizzes();
+    }
+  }, [quiz]);
+
+  useEffect(() => {
+    // Check if a quiz was passed from the chat page
+    if (location.state?.fromChat && location.state?.quiz) {
+      const generatedQuiz = {
+        ...location.state.quiz,
+        title: location.state.topic || location.state.quiz.title, // Use the topic as the title
+      };
+      setQuiz(generatedQuiz);
+    }
+  }, [location.state]);
 
   const fetchSavedQuizzes = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/quizzes`);
+      const response = await api.get("/api/quiz");
       setSavedQuizzes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching quizzes:", error);
@@ -37,7 +70,7 @@ const SmartQuizzes = () => {
     }
   };
 
-  const handleGenerateQuiz = async (topic) => {
+  const handleGenerateQuiz = async (topic, creatorName) => {
     if (!topic) {
       setError("Please select a topic first");
       return;
@@ -58,10 +91,13 @@ const SmartQuizzes = () => {
         throw new Error("Invalid quiz format received");
       }
 
-      const response = await axios.post(
-        `${API_BASE_URL}/quizzes`,
-        generatedQuiz
-      );
+      // Add creator information to the quiz
+      const quizWithCreator = {
+        ...generatedQuiz,
+        createdBy: creatorName || "Anonymous",
+      };
+
+      const response = await api.post("/api/quiz", quizWithCreator);
 
       if (!response.data || !response.data._id) {
         throw new Error("Invalid response from server");
@@ -90,7 +126,7 @@ const SmartQuizzes = () => {
     }
 
     try {
-      await axios.delete(`${API_BASE_URL}/quizzes/${quizId}`);
+      await api.delete(`/api/quiz/${quizId}`);
       await fetchSavedQuizzes();
 
       if (quiz?._id === quizId) {
@@ -130,7 +166,7 @@ const SmartQuizzes = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/quizzes/${quizId}`);
+      const response = await api.get(`/api/quiz/${quizId}`);
 
       if (
         !response.data ||
@@ -152,9 +188,15 @@ const SmartQuizzes = () => {
     }
   };
 
+  const handleQuizGenerated = (generatedQuiz) => {
+    // ... existing code ...
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
+    <div className="container mx-auto px-4 py-8 bg-black">
+      <h1 className="text-4xl font-bold text-center mb-8 text-white">
+        Tech Master Quiz
+      </h1>
 
       {!quiz && (
         <div className="flex justify-center gap-4 mb-8">
@@ -191,7 +233,7 @@ const SmartQuizzes = () => {
         <div className="max-w-4xl mx-auto">
           <ErrorBoundary>
             <SavedQuizzes
-              quizzes={savedQuizzes}
+              quizzes={savedSmartQuizzes}
               onRetake={handleRetake}
               isLoading={loading}
             />
@@ -200,19 +242,21 @@ const SmartQuizzes = () => {
       ) : (
         <div className="max-w-4xl mx-auto">
           <ErrorBoundary>
-            {!quiz && (
+            {quiz ? (
+              <>
+                <QuizDebug quiz={quiz} />
+                <QuizDisplay
+                  quiz={quiz}
+                  userAnswers={userAnswers}
+                  setUserAnswers={setUserAnswers}
+                  onDelete={handleQuizDelete}
+                  onQuizComplete={handleQuizComplete}
+                />
+              </>
+            ) : (
               <QuizGenerator
-                onGenerate={handleGenerateQuiz}
+                onGenerateQuiz={handleGenerateQuiz}
                 isLoading={loading}
-              />
-            )}
-            {quiz && (
-              <QuizDisplay
-                quiz={quiz}
-                userAnswers={userAnswers}
-                setUserAnswers={setUserAnswers}
-                onDelete={handleQuizDelete}
-                onQuizComplete={handleQuizComplete}
               />
             )}
           </ErrorBoundary>

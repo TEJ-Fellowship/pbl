@@ -1,69 +1,60 @@
 import axios from "axios";
-import config from "../config/config";
+import config from "../config/config.js";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: config.API_BASE_URL || "http://localhost:5000",
-  withCredentials: true, // This is important for cookies
+  baseURL: `${config.API_BASE_URL || "http://localhost:5000"}/api`,
+  withCredentials: true, // Important for sending cookies
 });
 
-const login = async ({ email, password }) => {
-  try {
-    console.log("login", email, password);
-    const response = await api.post("api/auth/login", {
-      email,
-      password,
-    });
-
-    // Store token in localStorage for development
-    if (response.data.token) {
-      console.log("tokennnn", response.data.token);
-      localStorage.setItem("authToken", response.data.token);
+export const authApi = {
+  login: async (credentials) => {
+    try {
+      const response = await api.post("/auth/login", credentials);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Login failed:",
+        error.response?.data?.error || error.message
+      );
+      return { success: false, error: error.response?.data?.error };
     }
+  },
 
-    console.log("Login response:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
-  }
-};
-
-const register = async ({ name, email, password, phone, confirmPassword }) => {
-  try {
-    console.log("register:", name, email, password, phone, confirmPassword);
-    const response = await api.post("api/auth/register", {
-      name,
-      email,
-      password,
-      confirmPassword,
-      phone,
-    });
-
-    // Store token in localStorage for development
-    if (response.data.token) {
-      localStorage.setItem("authToken", response.data.token);
+  register: async (userData) => {
+    try {
+      const response = await api.post("/auth/register", userData);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Registration failed:",
+        error.response?.data?.error || error.message
+      );
+      return { success: false, error: error.response?.data?.error };
     }
+  },
 
-    console.log("Registration response:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Registration error:", error);
-    throw error;
-  }
+  logout: async () => {
+    try {
+      const response = await api.post("/auth/logout");
+      return response.data;
+    } catch (error) {
+      console.error("Logout failed:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  verifyAuth: async () => {
+    try {
+      const response = await api.get("/auth/verify");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Auth verification failed:",
+        error.response?.data || error.message
+      );
+      // Return a standard unauthenticated response on error
+      return { authenticated: false, user: null };
+    }
+  },
 };
-
-// Add an axios interceptor to include the token in requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("authToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-const logout = () => {
-  localStorage.removeItem("authToken");
-};
-
-export { login, register, logout };
