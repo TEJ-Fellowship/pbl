@@ -3,7 +3,7 @@ import config from "../config/config.js";
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL: `${config.API_BASE_URL || "http://localhost:5000"}/api`,
+  baseURL: `${config.API_BASE_URL}/api`,
   withCredentials: true, // Important for sending cookies
 });
 
