@@ -59,6 +59,7 @@ export const projectsApi = {
 export const authApi = {
   me: () => api.get("/auth/me"),
   login: (email, password) => api.post("/auth/login", { email, password }),
+  register: (userData) => api.post("/auth/register", userData),
   logout: () => api.post("/auth/logout"),
   acceptInvite: (token, userData) =>
     api.post("/auth/accept-invite", { token, ...userData }),

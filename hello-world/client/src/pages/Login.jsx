@@ -154,12 +154,21 @@ const Login = () => {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Need an invitation?{" "}
+              Don't have an account?{" "}
               <Link
-                to="/contact"
+                to="/register"
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
-                Contact an administrator
+                Sign up
+              </Link>
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Have an invitation?{" "}
+              <Link
+                to="/accept-invite"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
+                Accept invitation
               </Link>
             </p>
           </div>

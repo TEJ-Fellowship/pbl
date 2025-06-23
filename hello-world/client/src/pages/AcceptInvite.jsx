@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Github, User, Mail, AlertCircle, CheckCircle } from "lucide-react";
 import { authApi } from "../services/api";
 
 const AcceptInvite = () => {
-  const { token } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
   const navigate = useNavigate();
   const { acceptInvite, isAuthenticated } = useAuth();
 
@@ -19,26 +20,32 @@ const AcceptInvite = () => {
   });
 
   useEffect(() => {
+    const validateInvite = async () => {
+      try {
+        const response = await authApi.validateInvite(token);
+        setInviteData(response.data.invite);
+      } catch (error) {
+        setError(
+          error.response?.data?.message || "Invalid or expired invitation"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (isAuthenticated) {
       navigate("/dashboard");
       return;
     }
 
-    validateInvite();
-  }, [token, isAuthenticated]);
-
-  const validateInvite = async () => {
-    try {
-      const response = await authApi.validateInvite(token);
-      setInviteData(response.data.invite);
-    } catch (error) {
-      setError(
-        error.response?.data?.message || "Invalid or expired invitation"
-      );
-    } finally {
+    if (!token) {
+      setError("No invitation token provided");
       setLoading(false);
+      return;
     }
-  };
+
+    validateInvite();
+  }, [token, isAuthenticated, navigate]);
 
   const handleGitHubAccept = () => {
     // Store token in localStorage temporarily for GitHub OAuth flow
@@ -64,24 +71,24 @@ const AcceptInvite = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-8 h-8 border-b-2 rounded-full animate-spin border-primary-600"></div>
       </div>
     );
   }
 
   if (error && !inviteData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center py-12 px-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white shadow-xl rounded-lg p-8 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
+      <div className="flex items-center justify-center min-h-screen px-4 py-12 bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="w-full max-w-md">
+          <div className="p-8 text-center bg-white rounded-lg shadow-xl">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+              <AlertCircle className="w-8 h-8 text-red-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="mb-2 text-2xl font-bold text-gray-900">
               Invalid Invitation
             </h2>
-            <p className="text-gray-600 mb-6">{error}</p>
+            <p className="mb-6 text-gray-600">{error}</p>
             <button onClick={() => navigate("/login")} className="btn-primary">
               Go to Login
             </button>
@@ -92,14 +99,14 @@ const AcceptInvite = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white shadow-xl rounded-lg p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-primary-600" />
+    <div className="flex items-center justify-center min-h-screen px-4 py-12 bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="w-full max-w-md">
+        <div className="p-8 bg-white rounded-lg shadow-xl">
+          <div className="mb-8 text-center">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-primary-100">
+              <CheckCircle className="w-8 h-8 text-primary-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="mb-2 text-2xl font-bold text-gray-900">
               You're Invited!
             </h2>
             <p className="text-gray-600">
@@ -108,8 +115,8 @@ const AcceptInvite = () => {
           </div>
 
           {inviteData && (
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="text-sm text-gray-600 space-y-2">
+            <div className="p-4 mb-6 rounded-lg bg-gray-50">
+              <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span className="font-medium">Email:</span>
                   <span>{inviteData.email}</span>
@@ -131,8 +138,8 @@ const AcceptInvite = () => {
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
+            <div className="flex items-center px-4 py-3 mb-6 text-red-600 border border-red-200 rounded-lg bg-red-50">
+              <AlertCircle className="w-5 h-5 mr-2" />
               {error}
             </div>
           )}
@@ -141,9 +148,9 @@ const AcceptInvite = () => {
             {/* GitHub Accept */}
             <button
               onClick={handleGitHubAccept}
-              className="w-full flex items-center justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200"
+              className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 bg-gray-800 border border-transparent rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
-              <Github className="h-5 w-5 mr-2" />
+              <Github className="w-5 h-5 mr-2" />
               Accept with GitHub
             </button>
 
@@ -152,7 +159,7 @@ const AcceptInvite = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
+                <span className="px-2 text-gray-500 bg-white">
                   Or create account manually
                 </span>
               </div>
@@ -167,14 +174,14 @@ const AcceptInvite = () => {
                 >
                   Full Name
                 </label>
-                <div className="mt-1 relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="relative mt-1">
+                  <User className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                   <input
                     id="name"
                     name="name"
                     type="text"
                     required
-                    className="input pl-10"
+                    className="pl-10 input"
                     placeholder="Enter your full name"
                     value={formData.name}
                     onChange={(e) =>
@@ -191,13 +198,13 @@ const AcceptInvite = () => {
                 >
                   Preferred Name (Optional)
                 </label>
-                <div className="mt-1 relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="relative mt-1">
+                  <User className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                   <input
                     id="preferredName"
                     name="preferredName"
                     type="text"
-                    className="input pl-10"
+                    className="pl-10 input"
                     placeholder="How would you like to be called?"
                     value={formData.preferredName}
                     onChange={(e) =>
@@ -217,14 +224,14 @@ const AcceptInvite = () => {
                 >
                   Email (Pre-filled)
                 </label>
-                <div className="mt-1 relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <div className="relative mt-1">
+                  <Mail className="absolute w-5 h-5 text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                   <input
                     id="email"
                     name="email"
                     type="email"
                     disabled
-                    className="input pl-10 bg-gray-50"
+                    className="pl-10 input bg-gray-50"
                     value={inviteData?.email || ""}
                   />
                 </div>
@@ -233,7 +240,7 @@ const AcceptInvite = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn-primary w-full"
+                className="w-full btn-primary"
               >
                 {isSubmitting ? "Creating Account..." : "Accept Invitation"}
               </button>

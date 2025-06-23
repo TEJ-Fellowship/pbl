@@ -53,21 +53,48 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await authApi.login(email, password);
+
+      // Store token in localStorage
+      localStorage.setItem("token", response.data.token);
+
       dispatch({ type: "SET_USER", payload: response.data.user });
       return { success: true, user: response.data.user };
     } catch (error) {
       const message = error.response?.data?.message || "Login failed";
       dispatch({ type: "SET_ERROR", payload: message });
       return { success: false, error: message };
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: true });
+      const response = await authApi.register(userData);
+
+      // Store token in localStorage
+      localStorage.setItem("token", response.data.token);
+
+      dispatch({ type: "SET_USER", payload: response.data.user });
+      return { success: true, user: response.data.user };
+    } catch (error) {
+      const message = error.response?.data?.message || "Registration failed";
+      dispatch({ type: "SET_ERROR", payload: message });
+      return { success: false, error: message };
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   };
 
   const logout = async () => {
     try {
       await authApi.logout();
+      localStorage.removeItem("token");
       dispatch({ type: "LOGOUT" });
     } catch (error) {
       console.error("Logout error:", error);
+      localStorage.removeItem("token");
       dispatch({ type: "LOGOUT" });
     }
   };
@@ -112,6 +139,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     ...state,
     login,
+    register,
     logout,
     acceptInvite,
     sendInvite,

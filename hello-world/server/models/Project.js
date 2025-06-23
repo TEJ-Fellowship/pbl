@@ -29,12 +29,7 @@ const projectSchema = new mongoose.Schema(
         type: String,
       },
     ],
-    // Enhanced with user relationships
-    author: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+
     collaborators: [
       {
         user: {

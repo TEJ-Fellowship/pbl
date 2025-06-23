@@ -4,21 +4,29 @@ const userSchema = new mongoose.Schema(
   {
     githubId: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true, // Allow null values, but enforce uniqueness when present
     },
     username: {
       type: String,
-      required: true,
+      unique: true,
+      sparse: true, // Allow null values, but enforce uniqueness when present
     },
     email: {
       type: String,
       required: true,
       unique: true,
     },
+    password: {
+      type: String,
+      select: false, // Don't include password in queries by default
+    },
     name: {
       type: String,
       required: true,
+    },
+    preferredName: {
+      type: String,
     },
     avatar: {
       type: String,
@@ -33,6 +41,11 @@ const userSchema = new mongoose.Schema(
       githubCreatedAt: Date,
       htmlUrl: String,
     },
+    registrationType: {
+      type: String,
+      enum: ["invite", "direct"],
+      default: "direct",
+    },
     role: {
       type: String,
       enum: ["student", "mentor", "instructor", "admin"],
@@ -41,11 +54,16 @@ const userSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["pending", "active", "suspended"],
-      default: "pending",
+      default: "active", // Changed default to active for direct registrations
     },
     invitedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: false, // Made optional for direct registrations
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
     invitedAt: {
       type: Date,

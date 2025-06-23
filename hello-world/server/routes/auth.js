@@ -1,5 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import rateLimit from "express-rate-limit";
 import User from "../models/User.js";
@@ -91,6 +92,149 @@ const sendInviteEmail = async (email, token, inviterName, role, cohort) => {
 
   return transporter.sendMail(mailOptions);
 };
+
+// Direct user registration
+router.post("/register", authLimiter, async (req, res) => {
+  try {
+    const { email, password, name, preferredName } = req.body;
+
+    // Validate input
+    if (!email || !password || !name) {
+      return res.status(400).json({
+        message: "Email, password, and name are required",
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({
+        message: "User with this email already exists",
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Generate username from email for direct registrations
+    const baseUsername = email.split("@")[0].toLowerCase();
+    let username = baseUsername;
+
+    // Check if username exists and make it unique if needed
+    let counter = 1;
+    while (await User.findOne({ username })) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+
+    // Create new user
+    const user = new User({
+      email,
+      password: hashedPassword,
+      username,
+      name,
+      preferredName: preferredName || name,
+      registrationType: "direct",
+      role: "student",
+      cohort: "self-registered",
+      status: "active",
+      emailVerified: false,
+      permissions: User.getRolePermissions("student"),
+    });
+
+    await user.save();
+
+    // Generate JWT token
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      message: "Account created successfully",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        preferredName: user.preferredName,
+        role: user.role,
+        status: user.status,
+        cohort: user.cohort,
+        permissions: user.permissions,
+      },
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Failed to create account" });
+  }
+});
+
+// Email/password login
+router.post("/login", authLimiter, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
+
+    // Find user by email and include password field
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Check if user has a password (for GitHub-only users)
+    if (!user.password) {
+      return res.status(401).json({
+        message:
+          "This account was created with GitHub. Please use GitHub login or contact support.",
+      });
+    }
+
+    // Check password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Check if user is active
+    if (user.status !== "active") {
+      return res.status(401).json({
+        message: "Account is suspended or inactive",
+      });
+    }
+
+    await user.updateLastLogin();
+
+    const token = generateToken(user._id);
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        preferredName: user.preferredName,
+        role: user.role,
+        status: user.status,
+        cohort: user.cohort,
+        permissions: user.permissions,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login failed" });
+  }
+});
 
 // GitHub OAuth initiation
 router.get("/github", (req, res, next) => {
@@ -234,11 +378,9 @@ router.post(
       });
 
       if (existingInvite) {
-        return res
-          .status(400)
-          .json({
-            message: "Pending invitation already exists for this email",
-          });
+        return res.status(400).json({
+          message: "Pending invitation already exists for this email",
+        });
       }
 
       // Create new invite

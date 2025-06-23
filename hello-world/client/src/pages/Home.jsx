@@ -126,8 +126,8 @@ const Navigation = () => {
                 >
                   Sign In
                 </Link>
-                <Link to="/login" className="btn-primary">
-                  Get Started
+                <Link to="/register" className="btn-primary">
+                  Sign Up
                 </Link>
               </div>
             )}
@@ -212,11 +212,11 @@ const Navigation = () => {
                 </Link>
                 <div className="px-4">
                   <Link
-                    to="/login"
+                    to="/register"
                     onClick={() => setIsMenuOpen(false)}
                     className="btn-primary w-full text-center"
                   >
-                    Get Started
+                    Sign Up
                   </Link>
                 </div>
               </div>

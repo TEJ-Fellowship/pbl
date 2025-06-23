@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 // Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import AcceptInvite from "./pages/AcceptInvite";
 import Dashboard from "./pages/Dashboard";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -35,7 +36,8 @@ function App() {
               {/* Public routes */}
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/invite/:token" element={<AcceptInvite />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/accept-invite" element={<AcceptInvite />} />
 
               {/* Protected routes */}
               <Route
