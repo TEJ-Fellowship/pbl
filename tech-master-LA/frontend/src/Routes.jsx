@@ -19,20 +19,45 @@ import TrackProgress from "./pages/TrackProgress";
 import LoginRegister from "./pages/LoginRegister";
 import AuthLayout from "./layouts/AuthLayout";
 import Quizzes from "./pages/Quizzes";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("authToken");
-  return token ? children : <Navigate to={LOGIN_ROUTE} replace />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return user ? children : <Navigate to={LOGIN_ROUTE} replace />;
 };
 
 // Public Route component (redirects to home if already logged in)
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem("authToken");
-  return token ? <Navigate to={HOME_ROUTE} replace /> : children;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return user ? <Navigate to={HOME_ROUTE} replace /> : children;
 };
 
-const Routes = () => {
+const AppRoutes = () => {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <>
@@ -62,20 +87,25 @@ const Routes = () => {
           <Route path={TRACK_PROGRESS} element={<TrackProgress />} />
         </Route>
 
-        {/* Catch all route - redirect to login if not authenticated, home if authenticated */}
+        {/* Catch all route - redirect based on auth */}
         <Route
           path="*"
           element={
-            <Navigate
-              to={localStorage.getItem("authToken") ? HOME_ROUTE : LOGIN_ROUTE}
-              replace
-            />
+            <Navigate to={useAuth().user ? HOME_ROUTE : LOGIN_ROUTE} replace />
           }
         />
       </>
     )
   );
   return <RouterProvider router={router} />;
+};
+
+const Routes = () => {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
 };
 
 export default Routes;

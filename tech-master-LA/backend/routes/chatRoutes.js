@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../middlewares/auth-middleware");
 const {
   createConversation,
   sendMessage,
@@ -9,6 +10,8 @@ const {
   getUserConversations,
   deleteConversation,
 } = require("../controllers/chatController");
+
+router.use(auth);
 
 router.post("/conversation", createConversation);
 router.post("/message", sendMessage);

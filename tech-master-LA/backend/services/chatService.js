@@ -53,6 +53,17 @@ class ChatService {
         };
       }
 
+      let updatedTopic = null;
+      // Check if it's the first message and the topic is the default one
+      if (
+        conversation.messages.length === 0 &&
+        (conversation.topic === "New Chat" || !conversation.topic)
+      ) {
+        // Generate a new topic from the first message
+        updatedTopic = await geminiService.generateChatTopic(message);
+        conversation.topic = updatedTopic;
+      }
+
       // Get existing messages
       const existingMessages = conversation.messages || [];
 
@@ -81,6 +92,9 @@ class ChatService {
         content: aiResponse.data,
       });
 
+      // Manually update the 'updatedAt' timestamp
+      conversation.updatedAt = new Date();
+
       // Save updated conversation
       await conversation.save();
 
@@ -90,6 +104,7 @@ class ChatService {
           message: aiResponse.data,
           conversation: conversation.toObject(),
         },
+        updatedTopic: updatedTopic,
       };
     } catch (error) {
       console.error("Send Message Error:", error);
@@ -138,7 +153,7 @@ class ChatService {
       // Create a new quiz using your Quiz model
       const newQuiz = new Quiz({
         userId: conversation.userId,
-        title: `Chat Quiz - ${conversation.topic || "General"}`,
+        title: conversation.topic || "Chat Generated Quiz",
         topic: conversation.topic || "Chat Generated",
         questions: formattedQuestions,
         attempts: [],
@@ -166,18 +181,16 @@ class ChatService {
       const conversations = await Conversation.find(query)
         .sort({ updatedAt: -1 }) // Sort by most recent first
         .select({
+          _id: 1,
           userId: 1,
           topic: 1,
           createdAt: 1,
           updatedAt: 1,
-          "messages.role": 1,
-          "messages.content": 1,
-          "messages.timestamp": 1,
         });
 
       return {
         success: true,
-        conversations,
+        data: conversations,
       };
     } catch (error) {
       console.error("Get All Conversations Error:", error);
@@ -214,23 +227,9 @@ class ChatService {
 
   async getUserConversations(userId) {
     try {
-      if (!userId) {
-        return {
-          success: false,
-          error: "User ID is required",
-        };
-      }
-
       const conversations = await Conversation.find({ userId })
-        .sort({ updatedAt: -1 }) // Most recent conversations first
-        .select({
-          topic: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          "messages.role": 1,
-          "messages.content": 1,
-          "messages.timestamp": 1,
-        });
+        .sort({ updatedAt: -1 })
+        .select("-messages"); // Don't include messages for list view
 
       return {
         success: true,

@@ -1,34 +1,75 @@
 // tech-master-LA/frontend/src/pages/Quizzes.jsx
-import  { useState, useEffect } from "react";
-import axios from "axios";
-import QuizGenerator from "../components/quiz/QuizGenerator.jsx";
+import { useState, useEffect } from "react";
+import { quizApi } from "../api/quizApi";
 import QuizDisplay from "../components/quiz/QuizDisplay.jsx";
 import SavedQuizzes from "../components/quiz/SavedQuizzes.jsx";
-import generateNewQuiz from "../api/generateNewQuiz.js";
 import ErrorBoundary from "../components/ErrorBoundary";
-import config from "../config/config.js"
+import config from "../config/config.js";
 import QuizViewToggle from "../components/quiz/QuizViewToggle.jsx";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const Quizzes = () => {
   const [quiz, setQuiz] = useState(null);
+  const [currentAttempt, setCurrentAttempt] = useState(null);
   const [userAnswers, setUserAnswers] = useState({});
   const [savedQuizzes, setSavedQuizzes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSavedQuizzes, setShowSavedQuizzes] = useState(true);
+  const [showResults, setShowResults] = useState(false);
+  const [finalScore, setFinalScore] = useState(null);
   const { API_BASE_URL } = config;
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Fetch saved quizzes on load
+  // Fetch saved quizzes or handle generated quiz from navigation
   useEffect(() => {
-    fetchSavedQuizzes();
-  }, []);
+    const { state } = location;
+
+    const startNewQuiz = async (quizData) => {
+      try {
+        setLoading(true);
+        // A quiz from navigation state is considered a new quiz, so we start a new attempt
+        const startResponse = await quizApi.startQuiz(quizData._id);
+        if (!startResponse.quiz || !startResponse.attempt) {
+          throw new Error("Failed to start the quiz.");
+        }
+        setQuiz(startResponse.quiz);
+        setCurrentAttempt(startResponse.attempt);
+        setUserAnswers({});
+        setShowSavedQuizzes(false);
+        setShowResults(false);
+        setFinalScore(null);
+      } catch (error) {
+        console.error("Error starting quiz from navigation:", error);
+        setError("Could not load the generated quiz. Please try again.");
+        // Clear navigation state to prevent re-triggering the error
+        navigate(location.pathname, { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (state && state.quiz) {
+      startNewQuiz(state.quiz);
+    } else {
+      // Otherwise, fetch saved quizzes
+      fetchSavedQuizzes();
+    }
+    // Clear the location state after processing to prevent issues on refresh
+    // navigate(location.pathname, { replace: true, state: {} });
+  }, [location.state]);
 
   const fetchSavedQuizzes = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/quizzes`);
-      setSavedQuizzes(Array.isArray(response.data) ? response.data : []);
+      const response = await quizApi.getQuizzes();
+      if (response.success) {
+        setSavedQuizzes(Array.isArray(response.data) ? response.data : []);
+      } else {
+        throw new Error(response.error || "Failed to fetch quizzes.");
+      }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
       setError("Failed to load quizzes. Please try again later.");
@@ -38,7 +79,7 @@ const Quizzes = () => {
     }
   };
 
-  const handleGenerateQuiz = async (topic, creatorName) => {
+  const handleGenerateQuiz = async (topic) => {
     if (!topic) {
       setError("Please select a topic first");
       return;
@@ -46,42 +87,111 @@ const Quizzes = () => {
 
     setLoading(true);
     setError(null);
-    setShowSavedQuizzes(false);
-    
+
     try {
-      const generatedQuiz = await generateNewQuiz(topic);
-      
-      if (!generatedQuiz || !generatedQuiz.questions || !Array.isArray(generatedQuiz.questions)) {
-        throw new Error("Invalid quiz format received");
+      // 1. Create the quiz structure
+      const createResponse = await quizApi.createQuiz(topic);
+
+      if (!createResponse.success || !createResponse.data) {
+        throw new Error(createResponse.error || "Failed to create quiz.");
+      }
+      const newQuiz = createResponse.data;
+
+      // 2. Immediately start a new attempt for this quiz
+      const startResponse = await quizApi.startQuiz(newQuiz._id);
+      if (!startResponse.quiz || !startResponse.attempt) {
+        throw new Error("Failed to start the newly created quiz.");
       }
 
-      // Add creator information to the quiz
-      const quizWithCreator = {
-        ...generatedQuiz,
-        createdBy: creatorName || 'Anonymous'
-      };
-
-      const response = await axios.post(`${API_BASE_URL}/quizzes`, quizWithCreator);
-      
-      if (!response.data || !response.data._id) {
-        throw new Error("Invalid response from server");
-      }
-
-      setQuiz(response.data);
+      // 3. Set all the necessary state
+      setQuiz(startResponse.quiz);
+      setCurrentAttempt(startResponse.attempt);
       setUserAnswers({});
+      setShowSavedQuizzes(false);
+      setShowResults(false);
+      setFinalScore(null);
+
+      // 4. Refresh the saved quizzes list in the background
       await fetchSavedQuizzes();
     } catch (error) {
       console.error("Error generating quiz:", error);
       setError(error.message || "Failed to generate quiz");
+      setQuiz(null);
+      setCurrentAttempt(null);
+      setShowSavedQuizzes(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartOrContinueQuiz = async (quizId) => {
+    if (!quizId) {
+      setError("Invalid quiz selected.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const regeneratedQuiz = await quizApi.regenerateQuiz(quizId);
+
+      if (!regeneratedQuiz) {
+        throw new Error("Failed to regenerate quiz.");
+      }
+
+      // Now, start the newly regenerated quiz
+      const { quiz, attempt } = await quizApi.startQuiz(regeneratedQuiz._id);
+
+      if (!quiz || !attempt) {
+        throw new Error("Invalid quiz data received after regeneration.");
+      }
+
+      setQuiz(quiz);
+      setCurrentAttempt(attempt);
+      setUserAnswers(attempt.userAnswers || {});
+      setShowSavedQuizzes(false);
+    } catch (error) {
+      console.error("Error starting or continuing quiz:", error);
+      setError("Failed to load quiz. Please try again.");
       setQuiz(null);
     } finally {
       setLoading(false);
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
+  const handleResetToListView = async () => {
+    setQuiz(null);
+    setCurrentAttempt(null);
+    setUserAnswers({});
+    setShowSavedQuizzes(true);
+    setShowResults(false);
+    setFinalScore(null);
+    await fetchSavedQuizzes();
+  };
+
   const handleAnswer = (questionIndex, answer) => {
     setUserAnswers((prev) => ({ ...prev, [questionIndex]: answer }));
+  };
+
+  const handleQuizRetry = async () => {
+    if (!quiz) return;
+    try {
+      setLoading(true);
+      const { quiz: newQuizData, attempt } = await quizApi.startQuiz(quiz._id);
+      if (!attempt) {
+        throw new Error("Failed to start a new attempt.");
+      }
+      setQuiz(newQuizData);
+      setCurrentAttempt(attempt);
+      setUserAnswers(attempt.userAnswers || {});
+      setFinalScore(null);
+      setShowResults(false);
+    } catch (error) {
+      console.error("Error retrying quiz:", error);
+      setError("Failed to retry quiz. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleQuizDelete = async (quizId) => {
@@ -92,20 +202,8 @@ const Quizzes = () => {
 
     try {
       setLoading(true);
-      await axios.delete(`${API_BASE_URL}/quizzes/${quizId}`);
-      
-      // Reset quiz state
-      setQuiz(null);
-      setUserAnswers({});
-      
-      // Refresh the quiz list
-      await fetchSavedQuizzes();
-      
-      // Show the quiz list
-      setShowSavedQuizzes(true);
-      
-      // Clear any existing errors
-      setError(null);
+      await quizApi.deleteQuiz(quizId);
+      await handleResetToListView();
     } catch (error) {
       console.error("Error deleting quiz:", error);
       setError("Failed to delete quiz");
@@ -114,54 +212,53 @@ const Quizzes = () => {
     }
   };
 
-  const handleQuizComplete = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // Reset quiz state first
-      setQuiz(null);
-      setUserAnswers({});
-      // Then fetch and show saved quizzes
-      await fetchSavedQuizzes();
-      setShowSavedQuizzes(true);
-    } catch (error) {
-      console.error("Error refreshing quizzes:", error);
-      setError("Failed to refresh quizzes");
-    } finally {
+  const handleLeaveQuiz = async (isAutoSave = false) => {
+    // Do not save progress if the results are being shown (quiz is complete)
+    if (quiz && currentAttempt && !showResults) {
+      try {
+        setLoading(!isAutoSave);
+        await quizApi.saveProgress(quiz._id, currentAttempt._id, userAnswers);
+      } catch (error) {
+        console.error("Error saving progress:", error);
+        setError("Could not save your progress. Please try again.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (!isAutoSave) {
+      await handleResetToListView();
+    } else {
       setLoading(false);
     }
   };
 
-  const handleRetake = async (quizId) => {
-    if (!quizId) {
-      setError("Invalid quiz selected for retake");
+  const handleQuizSubmit = async (finalAnswers) => {
+    if (!quiz || !currentAttempt) {
+      setError("No active quiz to submit.");
       return;
     }
-
     try {
       setLoading(true);
-      setError(null);
-      const response = await axios.get(`${API_BASE_URL}/quizzes/${quizId}`);
-      
-      if (!response.data || !response.data.questions || !Array.isArray(response.data.questions)) {
-        throw new Error("Invalid quiz data received");
-      }
-
-      setQuiz(response.data);
-      setUserAnswers({});
-      setShowSavedQuizzes(false);
+      const attempt = await quizApi.submitQuiz(
+        quiz._id,
+        currentAttempt._id,
+        finalAnswers
+      );
+      setFinalScore(attempt.score);
+      setShowResults(true);
+      await fetchSavedQuizzes(); // Refresh list in the background
     } catch (error) {
-      console.error("Error retaking quiz:", error);
-      setError("Failed to load quiz. Please try again.");
-      setQuiz(null);
+      console.error("Error submitting quiz:", error);
+      setError("Failed to submit quiz. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-black">
-     {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
+    <div className="container mx-auto px-4 py-8 bg-black min-h-screen">
+      {/* <h1 className="text-4xl font-bold text-center mb-8">Tech Master Quiz</h1>
 
         {!quiz && (
           <QuizViewToggle
@@ -181,7 +278,9 @@ const Quizzes = () => {
           <ErrorBoundary>
             <SavedQuizzes
               quizzes={savedQuizzes}
-              onRetake={handleRetake}
+              onRetake={handleStartOrContinueQuiz}
+              onGenerate={handleGenerateQuiz}
+              onDelete={handleQuizDelete}
               isLoading={loading}
             />
           </ErrorBoundary>
@@ -189,14 +288,18 @@ const Quizzes = () => {
       ) : (
         <div className="max-w-4xl mx-auto">
           <ErrorBoundary>
-            {!quiz&&(<QuizGenerator onGenerate={handleGenerateQuiz} isLoading={loading} />)}
             {quiz && (
               <QuizDisplay
                 quiz={quiz}
                 userAnswers={userAnswers}
                 setUserAnswers={setUserAnswers}
                 onDelete={handleQuizDelete}
-                onQuizComplete={handleQuizComplete}
+                onQuizSubmit={handleQuizSubmit}
+                onLeaveQuiz={handleLeaveQuiz}
+                onRetry={handleQuizRetry}
+                onViewSaved={handleResetToListView}
+                showResults={showResults}
+                score={finalScore}
               />
             )}
           </ErrorBoundary>

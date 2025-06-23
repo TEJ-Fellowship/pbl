@@ -8,7 +8,24 @@ const questionSchema = new mongoose.Schema({
 });
 
 const attemptSchema = new mongoose.Schema({
-  score: Number,
+  userAnswers: {
+    type: Map,
+    of: String,
+    required: false,
+  },
+  score: {
+    type: Number,
+    required: false,
+  },
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+  status: {
+    type: String,
+    enum: ["in_progress", "completed", "abandoned"],
+    default: "in_progress",
+  },
   date: { type: Date, default: Date.now },
 });
 
@@ -39,11 +56,46 @@ const quizSchema = new mongoose.Schema(
         "Quiz must have at least one question",
       ],
     },
-    attempts: [attemptSchema],
+    attempts: {
+      type: [attemptSchema],
+      validate: {
+        validator: function (attempts) {
+          // Ensure only one incomplete attempt per quiz
+          const incompleteCount = attempts.filter(
+            (att) => !att.completed && att.status !== "abandoned"
+          ).length;
+          return incompleteCount <= 1;
+        },
+        message: "Only one incomplete attempt allowed per quiz",
+      },
+    },
   },
   {
     timestamps: true, // Enable timestamps (createdAt and updatedAt)
   }
 );
+
+// Add index for better performance
+quizSchema.index({ userId: 1, createdAt: -1 });
+
+// Add method to get only completed attempts
+quizSchema.methods.getCompletedAttempts = function () {
+  return this.attempts.filter((att) => att.completed);
+};
+
+// Add method to get current incomplete attempt
+quizSchema.methods.getCurrentAttempt = function () {
+  return this.attempts.find(
+    (att) => !att.completed && att.status !== "abandoned"
+  );
+};
+
+// Add method to cleanup incomplete attempts
+quizSchema.methods.cleanupIncompleteAttempts = function () {
+  this.attempts = this.attempts.filter(
+    (att) => att.completed || att.status === "abandoned"
+  );
+  return this;
+};
 
 module.exports = mongoose.model("Quiz", quizSchema);

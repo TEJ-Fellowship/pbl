@@ -7,6 +7,7 @@ const login = async (data) => {
 
   try {
     const user = await User.findOne({
+      //$or: find user by email or phone or both
       $or: [{ email: email }, { phone: phone }],
     });
 

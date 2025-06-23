@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-
 const messageSchema = new mongoose.Schema({
   role: {
     type: String,
@@ -38,5 +37,8 @@ const conversationSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+// Add index for better performance
+conversationSchema.index({ userId: 1, updatedAt: -1 });
 
 module.exports = mongoose.model("Conversation", conversationSchema);

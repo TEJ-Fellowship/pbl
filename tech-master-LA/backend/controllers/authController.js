@@ -22,19 +22,19 @@ const loginController = async (req, res) => {
     const formattedData = formatUserData(user);
     const token = createJWT(formattedData);
 
-    // Set cookie with appropriate settings for development
-    res.cookie("authToken", token, {
-      expires: new Date(Date.now() + 25892000000),
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Only true in production
-      sameSite: "Lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: "/",
-    });
+    console.log("=== Login Debug ===");
+    console.log("Setting cookie with token:", token.substring(0, 20) + "...");
+    console.log("Request origin:", req.headers.origin);
+    console.log("Request headers:", req.headers);
 
-    console.log("token", token);
+    // Set cookie with appropriate settings for development
+    res.cookie("authToken", token);
+
+    console.log("Cookie set successfully");
+    console.log("Response headers:", res.getHeaders());
 
     res.status(200).json({
+      success: true,
       message: "Login Successful!!",
       user: formattedData,
       token, // Send token in response for development
@@ -96,19 +96,14 @@ const registerController = async (req, res) => {
     const formattedData = formatUserData(user);
     const token = createJWT(formattedData);
 
-    // Set cookie with appropriate settings for development
-    res.cookie("authToken", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Only true in production
-      sameSite: "Lax",
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: "/",
-    });
+    // Set cookie to match the working login controller's method
+    res.cookie("authToken", token);
 
     return res.status(201).json({
+      success: true,
       message: "Registration Successful!",
       user: formattedData,
-      token, // Send token in response for development
+      token, // Send token in response for consistency
     });
   } catch (error) {
     console.error("Register Error:", error);
@@ -132,4 +127,48 @@ const registerController = async (req, res) => {
   }
 };
 
-module.exports = { loginController, registerController };
+const logoutController = async (req, res) => {
+  try {
+    // Clear the auth cookie
+    res.clearCookie("authToken");
+
+    res.status(200).json({
+      message: "Logout successful!",
+    });
+  } catch (error) {
+    console.error("Logout Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const verifyAuthController = async (req, res) => {
+  try {
+    // Check if user exists in request (set by auth middleware)
+    if (!req.user) {
+      return res.status(401).json({
+        message: "User not authenticated",
+        authenticated: false,
+      });
+    }
+
+    // If middleware passed, user is authenticated
+    res.status(200).json({
+      message: "User is authenticated",
+      authenticated: true,
+      user: req.user,
+    });
+  } catch (error) {
+    console.error("Verify Auth Error:", error);
+    res.status(401).json({
+      message: "User not authenticated",
+      authenticated: false,
+    });
+  }
+};
+
+module.exports = {
+  loginController,
+  registerController,
+  logoutController,
+  verifyAuthController,
+};
