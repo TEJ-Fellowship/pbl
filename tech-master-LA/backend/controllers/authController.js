@@ -28,7 +28,12 @@ const loginController = async (req, res) => {
     console.log("Request headers:", req.headers);
 
     // Set cookie with appropriate settings for development
-    res.cookie("authToken", token);
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: true, //  REQUIRED on Render (HTTPS only)
+      sameSite: "None", //  REQUIRED for cross-origin cookie
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
     console.log("Cookie set successfully");
     console.log("Response headers:", res.getHeaders());
@@ -97,7 +102,12 @@ const registerController = async (req, res) => {
     const token = createJWT(formattedData);
 
     // Set cookie to match the working login controller's method
-    res.cookie("authToken", token);
+    res.cookie("authToken", token, {
+      httpOnly: true,
+      secure: true, //  REQUIRED on Render (HTTPS only)
+      sameSite: "None", //  REQUIRED for cross-origin cookie
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
     return res.status(201).json({
       success: true,
