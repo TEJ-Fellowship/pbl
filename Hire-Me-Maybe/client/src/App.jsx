@@ -11,10 +11,6 @@ const App = () => {
   );
   const [view, setView] = useState("signup");
 
-
-  // const handleSignup = (userData) => {
-  //   setUser(userData);
-  // };
   const handleSignup = () => {
     toast.success("Signup successful! Please log in.");
     setView("login");
@@ -22,7 +18,8 @@ const App = () => {
 
   const handleLogin = (userData) => {
     setUser(userData);
-    toast.success(`Welcome back, ${userData.user.username}!`);
+    localStorage.setItem("loggedUser", JSON.stringify(userData));
+    toast.success(`Welcome back, ${userData.username}!`);
   };
 
   const handleLogout = () => {
@@ -36,7 +33,7 @@ const App = () => {
     <div>
       {user ? (
         <div>
-          <h1>Welcome, {user.user.username}</h1>
+          <h1>Welcome, {user.username}</h1>
           <button onClick={handleLogout}>Logout</button>
         </div>
       ) : (
@@ -65,6 +62,6 @@ const App = () => {
       <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
-}
+};
 
 export default App;
