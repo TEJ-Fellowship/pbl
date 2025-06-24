@@ -24,7 +24,9 @@ const QuizHeader = ({
         </div>
         <div className="flex items-center space-x-2">
           <button
-            onClick={onLeave}
+            onClick={() => {
+              onLeave();
+            }}
             className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700/50 rounded-full"
             title="Save & Exit"
           >
