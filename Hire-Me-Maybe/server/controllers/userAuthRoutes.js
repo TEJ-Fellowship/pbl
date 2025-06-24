@@ -7,13 +7,13 @@ const userAuthRouter = express.Router();
 //user register
 userAuthRouter.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { username, email, password } = req.body;
 
     // Validation
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Name, email, and password are required",
+        message: "Username, email, and password are required",
       });
     }
 
@@ -36,7 +36,7 @@ userAuthRouter.post("/register", async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase() }, { name }],
+      $or: [{ email: email.toLowerCase() }, { username }],
     });
 
     if (existingUser) {
@@ -55,7 +55,7 @@ userAuthRouter.post("/register", async (req, res) => {
 
     // Create user
     const user = new User({
-      name,
+      username,
       email: email.toLowerCase(),
       password: hashedPassword,
     });
@@ -65,7 +65,7 @@ userAuthRouter.post("/register", async (req, res) => {
     // Return user data (without password)
     const userResponse = {
       id: user._id,
-      name: user.name,
+      name: user.username,
       email: user.email,
       createdAt: user.createdAt,
     };
@@ -100,6 +100,45 @@ userAuthRouter.post("/register", async (req, res) => {
       success: false,
       message: "Internal server error",
     });
+  }
+});
+
+// USER LOGIN
+userAuthRouter.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Successful login: send user data
+    const userResponse = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt,
+    };
+
+    res.status(200).json(userResponse);
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
