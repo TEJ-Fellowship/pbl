@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Signup from "./components/Signup";
+import ResumeUpload from "./components/resume/ResumeUpload";
 
 const App = () => {
   const [user, setUser] = useState(
@@ -25,8 +26,9 @@ const App = () => {
       ) : (
         <Signup onSignup={handleSignup} />
       )}
+      <ResumeUpload />
     </div>
   );
-}
+};
 
 export default App;
