@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { emailRegex, passwordRegex } = require("../utils/regex/userRegex");
 
 const userSchema = new mongoose.Schema({
-  name: {
+  username: {
     type: String,
     required: [true, "Please provie username"],
     minlength: [3, "Username must be at least 3 characters long"],

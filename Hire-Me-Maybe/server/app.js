@@ -7,6 +7,9 @@ const userProfileRoutes = require("./controllers/userProfileRoutes");
 const userAuthRoutes = require("./controllers/userAuthRoutes");
 
 const app = express();
+const cors = require("cors");
+app.use(cors());
+
 
 app.use(express.json());
 //connect to database
@@ -18,7 +21,7 @@ app.use(middleware.requestLogger);
 // GET routes
 app.use("/api/users", userProfileRoutes);
 // POST routes
-app.use("/api/users", userAuthRoutes);
+app.use("/api", userAuthRoutes);
 
 //Error handling
 app.use(middleware.unknownEndpoint);
