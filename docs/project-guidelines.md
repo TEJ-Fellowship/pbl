@@ -30,6 +30,28 @@ This document outlines the development process and standards for all projects in
    cd my-app
    ```
 3. Start the project
+4. Tailwind CSS setup:
+   - Install Tailwind CSS:
+     ```bash
+     npm install -D tailwindcss@3 postcss autoprefixer
+     npx tailwindcss init -p
+     ```
+   - Configure `tailwind.config.js`:
+     ```javascript
+     export default {
+       content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+       theme: {
+         extend: {},
+       },
+       plugins: [],
+     };
+     ```
+   - Add Tailwind directives to your CSS file(index.css):
+     ```css
+     @tailwind base;
+     @tailwind components;
+     @tailwind utilities;
+     ```
 
 **Fullstack Application**
 
