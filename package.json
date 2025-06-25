@@ -1,3 +1,6 @@
 {
-  "start": "node app.js"
+  "start": "node app.js",
+  "dependencies": {
+    "react-router-dom": "^7.6.2"
+  }
 }
