@@ -1,4 +1,4 @@
-const PostForm = () => (
+const PostForm = ({ categories, handleSetShowPostForm }) => (
   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
     <h3 className="font-semibold text-gray-900 mb-3">
       Request Help from Your Community
@@ -34,7 +34,7 @@ const PostForm = () => (
       </div>
       <div className="flex justify-between">
         <button
-          onClick={() => setShowPostForm(false)}
+          onClick={() => handleSetShowPostForm(false)}
           className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
         >
           Cancel
