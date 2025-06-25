@@ -32,7 +32,7 @@ const login = (userData) => {
 };
 
 const logout = () => {
-  isAuthenticated = false;
+  isAuthenticated = true;
   currentUser = null;
   window.location.href = LOGIN_ROUTE;
 };
