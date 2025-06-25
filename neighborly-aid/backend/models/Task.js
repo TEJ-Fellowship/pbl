@@ -1,0 +1,47 @@
+const mongoose = require("mongoose");
+const {
+  OPEN,
+  IN_PROGRESS,
+  COMPLETED,
+  LOW,
+  MEDIUM,
+  HIGH,
+} = require("../utils/constants");
+
+const taskSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true,
+    minlength: 3,
+    maxlength: 100,
+  },
+  description: {
+    type: String,
+    required: true,
+    minlength: 3,
+    maxlength: 1000,
+  },
+  category: {
+    type: String,
+    required: true,
+    minlength: 3,
+    maxlength: 100,
+  },
+  urgency: { type: String, enum: [LOW, MEDIUM, HIGH] },
+  status: {
+    type: String,
+    enum: [OPEN, IN_PROGRESS, COMPLETED],
+    default: OPEN,
+  },
+  location: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  acceptedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  createdAt: { type: Date, default: Date.now },
+  completedAt: Date,
+});
+
+module.exports = mongoose.model("Task", taskSchema);
