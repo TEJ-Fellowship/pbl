@@ -1,4 +1,5 @@
 const taskService = require("../services/taskService");
+const geminiService = require("../services/geminiService");
 
 // Create new task
 const createTask = async (req, res) => {
@@ -151,6 +152,32 @@ const getTasksByUrgency = async (req, res) => {
   }
 };
 
+const getTaskSuggestions = async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title || !description) {
+      return res.status(400).json({
+        error: "Title and description are required for suggestions",
+      });
+    }
+
+    const suggestions = await geminiService.generateTaskSuggestions(
+      title,
+      description
+    );
+
+    if (!suggestions.success) {
+      return res.status(500).json({ error: suggestions.error });
+    }
+
+    res.json(suggestions.data);
+  } catch (error) {
+    console.error("Task Suggestions Error:", error);
+    res.status(500).json({ error: "Failed to get task suggestions" });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
@@ -162,4 +189,5 @@ module.exports = {
   getUserTasks,
   getTasksByCategory,
   getTasksByUrgency,
+  getTaskSuggestions,
 };

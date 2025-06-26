@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Plus, Bell, User } from "lucide-react";
 import Stories from "../components/myNeighbourhood/Stories";
-import TaskCard from "../components/myNeighbourhood/TaskCard";
-import PostForm from "../components/myNeighbourhood/PostForm";
+import TaskCard from "../components/features/tasks/TaskCard";
+import PostForm from "../components/PostForm";
 import NavigationTab from "../components/myNeighbourhood/NavigationTab";
-import CategoryFilter from "../components/myNeighbourhood/CategoryFilter";
+import CategoryFilter from "../components/features/tasks/CategoryFilter";
 import MainContent from "../components/myNeighbourhood/MainContent";
 
 const MyNeighbourhood = () => {

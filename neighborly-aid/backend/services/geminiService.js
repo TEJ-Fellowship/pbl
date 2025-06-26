@@ -10,209 +10,128 @@ class GeminiService {
     });
   }
 
-  // async sendChatMessage(messageHistory, newMessage) {
-  //   try {
-  //     // Validate inputs
-  //     if (!newMessage || typeof newMessage !== "string") {
-  //       throw new Error("New message is required and must be a string");
-  //     }
+  async generateTaskSuggestions(title, description) {
+    try {
+      const prompt = `Based on the following task title and description, suggest appropriate category, urgency level, and karma points.
 
-  //     console.log("Processing in Gemini service:", {
-  //       historyLength: messageHistory?.length || 0,
-  //       newMessage,
-  //       messageHistory,
-  //     });
+      Title: "${title}"
+      Description: "${description}"
 
-  //     // Ensure messageHistory is an array
-  //     const history = Array.isArray(messageHistory) ? messageHistory : [];
+      Available categories: Home-maintenance, Cleaning, Shopping, Transportation, Moving, Gardening, Technology, Pet-care, Cooking, Elderly-care, Childcare, Tutoring, Repairs, Delivery, Event-help, Sports, Community-service, Other
 
-  //     // Format the message history for Gemini.
-  //     // The role in the DB is 'user' or 'model', which is correct for Gemini.
-  //     const formattedHistory = history.map((msg) => ({
-  //       role: msg.role,
-  //       parts: [{ text: msg.content }],
-  //     }));
+      Available urgency levels: low, medium, high
 
-  //     // Start chat with the existing history
-  //     const chat = this.model.startChat({
-  //       history: formattedHistory,
-  //     });
+      Karma Points Guidelines (10-5000 points):
+      - Simple, quick tasks (10-50 points): Basic errands, simple favors, short-duration help
+      - Regular tasks (51-200 points): Standard household help, moderate time commitment
+      - Complex tasks (201-800 points): Skilled work, longer time commitment, specialized knowledge
+      - Major tasks (801-2000 points): Significant projects, professional-level work, high impact
+      - Emergency/Critical tasks (2001-5000 points): Urgent emergencies, life-critical situations, extensive commitment
 
-  //     // Send the new message
-  //     const result = await chat.sendMessage(newMessage);
-  //     const response = await result.response;
-  //     const responseText = response.text();
+      Consider these factors for karma points:
+      - Time required (more time = higher points)
+      - Skill level needed (specialized skills = higher points)
+      - Urgency (urgent tasks = higher points)
+      - Physical effort required (heavy work = higher points)
+      - Risk or responsibility involved (higher risk = higher points)
+      - Impact on requester's life (critical needs = higher points)
 
-  //     return {
-  //       success: true,
-  //       data: responseText,
-  //     };
-  //   } catch (error) {
-  //     console.error("Gemini Chat Error:", error);
-  //     return {
-  //       success: false,
-  //       error: error.message || "Failed to get AI response",
-  //       statusCode: 500,
-  //     };
-  //   }
-  // }
+      Return ONLY a valid JSON object with no additional text, markdown, or code blocks.
+      The JSON must strictly follow this format:
+      {
+        "suggestedCategories": ["🏠 category1", "🛠️ category2", "🌟 category3"],
+        "suggestedUrgency": "urgency_level",
+        "suggestedKarmaPoints": karma_number,
+        "explanation": "Brief explanation of why these suggestions were made including karma reasoning"
+      }
 
-  // async generateQuizFromContext(context) {
-  //   try {
-  //     const prompt = `Generate a quiz with 5 multiple choice questions based on the following conversation.
-  //     Return ONLY a valid JSON object with no additional text, markdown, or code blocks.
-  //     The JSON must strictly follow this format:
-  //     {
-  //       "questions": [
-  //         {
-  //           "question": "string",
-  //           "options": ["string", "string", "string", "string"],
-  //           "correctAnswer": "string"
-  //         }
-  //       ]
-  //     }
+      Rules:
+      - Suggest 3 most relevant categories in order of relevance
+      - Choose urgency based on context clues like "urgent", "ASAP", "emergency", "soon", "no rush", etc.
+      - If no time indicators, default to "medium"
+      - Put one relevant emoji for each category at the beginning of the category name
+      - Karma points must be between 10 and 5000
+      - Explain karma reasoning in the explanation
+      - Keep explanation under 80 words`;
 
-  //     Conversation context:
-  //     ${context}
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response.text();
 
-  //     Remember: Return ONLY the JSON object, no markdown formatting or code blocks.`;
+      // Clean up the response
+      let cleanedResponse = response
+        .replace(/```json\n?/g, "") // Remove ```json
+        .replace(/```\n?/g, "") // Remove ```
+        .trim(); // Remove extra whitespace
 
-  //     const result = await this.model.generateContent(prompt);
-  //     const response = await result.response.text();
+      try {
+        const suggestions = JSON.parse(cleanedResponse);
 
-  //     // Clean up the response
-  //     let cleanedResponse = response
-  //       .replace(/```json\n?/g, "") // Remove ```json
-  //       .replace(/```\n?/g, "") // Remove ```
-  //       .trim(); // Remove extra whitespace
+        // Validate structure
+        if (
+          !suggestions.suggestedCategories ||
+          !Array.isArray(suggestions.suggestedCategories) ||
+          !suggestions.suggestedUrgency ||
+          !suggestions.explanation ||
+          !suggestions.suggestedKarmaPoints
+        ) {
+          throw new Error("Invalid suggestion format");
+        }
 
-  //     try {
-  //       const quiz = JSON.parse(cleanedResponse);
+        // Validate karma points range
+        const karmaPoints = parseInt(suggestions.suggestedKarmaPoints);
+        if (isNaN(karmaPoints) || karmaPoints < 10 || karmaPoints > 5000) {
+          suggestions.suggestedKarmaPoints = this.calculateFallbackKarma(
+            suggestions.suggestedUrgency
+          );
+        } else {
+          suggestions.suggestedKarmaPoints = karmaPoints;
+        }
 
-  //       // Validate quiz structure
-  //       if (!quiz.questions || !Array.isArray(quiz.questions)) {
-  //         throw new Error("Invalid quiz format: missing questions array");
-  //       }
+        return {
+          success: true,
+          data: suggestions,
+        };
+      } catch (parseError) {
+        console.error("Task Suggestions Parsing Error:", parseError);
 
-  //       // Validate each question
-  //       quiz.questions.forEach((q, index) => {
-  //         if (
-  //           !q.question ||
-  //           !q.options ||
-  //           !Array.isArray(q.options) ||
-  //           !q.correctAnswer
-  //         ) {
-  //           throw new Error(`Invalid question format at index ${index}`);
-  //         }
-  //         if (q.options.length !== 4) {
-  //           throw new Error(
-  //             `Question ${index + 1} must have exactly 4 options`
-  //           );
-  //         }
-  //         if (!q.options.includes(q.correctAnswer)) {
-  //           throw new Error(
-  //             `Question ${index + 1} correct answer must be one of the options`
-  //           );
-  //         }
-  //       });
+        // Fallback suggestions
+        return {
+          success: true,
+          data: {
+            suggestedCategories: [
+              "🏠 Other",
+              "🛠️ Home-maintenance",
+              "🌟 Community-service",
+            ],
+            suggestedUrgency: "medium",
+            suggestedKarmaPoints: 100,
+            explanation:
+              "Default suggestions due to parsing error. Medium urgency task with standard karma points.",
+          },
+        };
+      }
+    } catch (error) {
+      console.error("Gemini Task Suggestions Error:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to generate task suggestions",
+      };
+    }
+  }
 
-  //       return { success: true, quiz };
-  //     } catch (parseError) {
-  //       console.error("Quiz Parsing Error:", parseError);
-
-  //       // If parsing fails, try to generate again with a more strict prompt
-  //       const retryPrompt = `Generate a quiz with 5 multiple choice questions.
-  //       Return ONLY the following JSON structure, nothing else:
-  //       {
-  //         "questions": [
-  //           {
-  //             "question": "What is JavaScript?",
-  //             "options": ["A programming language", "A markup language", "A database", "An operating system"],
-  //             "correctAnswer": "A programming language"
-  //           }
-  //         ]
-  //       }
-
-  //       Based on: ${context}`;
-
-  //       const retryResult = await this.model.generateContent(retryPrompt);
-  //       const retryResponse = await retryResult.response.text();
-  //       const cleanedRetryResponse = retryResponse
-  //         .replace(/```json\n?/g, "")
-  //         .replace(/```\n?/g, "")
-  //         .trim();
-
-  //       const retryQuiz = JSON.parse(cleanedRetryResponse);
-  //       return { success: true, quiz: retryQuiz };
-  //     }
-  //   } catch (error) {
-  //     console.error("Gemini Quiz Generation Error:", error);
-  //     return {
-  //       success: false,
-  //       error: error.message || "Failed to generate quiz",
-  //     };
-  //   }
-  // }
-
-  // async generateChatTopic(firstMessage) {
-  //   const prompt = `Generate a very short, concise topic title (4-5 words maximum) for a conversation that starts with the following message. Only return the title itself, with no extra text or quotation marks.\n\nMessage: "${firstMessage}"\n\nTitle:`;
-
-  //   try {
-  //     const result = await this.model.generateContent(prompt);
-  //     const response = await result.response;
-  //     const topic = response.text().trim();
-  //     return topic;
-  //   } catch (error) {
-  //     console.error("Error generating chat topic:", error);
-  //     // Return a generic topic in case of an error
-  //     return "General Discussion";
-  //   }
-  // }
-
-  // async generateQuizQuestions(topic, questionCount = 5) {
-  //   const prompt = `Generate a quiz with ${questionCount} multiple choice questions about ${topic}.
-  //       Return ONLY a valid JSON object with no additional text, markdown, or code blocks.
-  //       The JSON must strictly follow this format:
-  //       {
-  //         "questions": [
-  //           {
-  //             "question": "string",
-  //             "options": ["string", "string", "string", "string"],
-  //             "correctAnswer": "string"
-  //           }
-  //         ]
-  //       }`;
-
-  //   try {
-  //     const result = await this.model.generateContent(prompt);
-  //     const response = await result.response;
-  //     let text = response.text();
-
-  //     // Clean the response
-  //     text = text
-  //       .replace(/```json/g, "")
-  //       .replace(/```/g, "")
-  //       .trim();
-
-  //     const quizData = JSON.parse(text);
-
-  //     // Basic validation
-  //     if (
-  //       !quizData.questions ||
-  //       !Array.isArray(quizData.questions) ||
-  //       quizData.questions.length === 0
-  //     ) {
-  //       throw new Error(
-  //         "Invalid quiz format: 'questions' array is missing or empty."
-  //       );
-  //     }
-
-  //     return quizData.questions;
-  //   } catch (error) {
-  //     console.error("Error generating quiz questions from AI:", error);
-  //     throw new Error("Failed to generate quiz questions from AI.");
-  //   }
-  // }
+  // Fallback karma calculation based on urgency
+  calculateFallbackKarma(urgency) {
+    switch (urgency?.toLowerCase()) {
+      case "low":
+        return 50;
+      case "medium":
+        return 150;
+      case "high":
+        return 500;
+      default:
+        return 100;
+    }
+  }
 }
 
 module.exports = new GeminiService();

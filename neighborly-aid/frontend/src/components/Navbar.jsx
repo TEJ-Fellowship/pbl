@@ -1,6 +1,6 @@
 import navMenu from "../constants/navMenu";
 import { NavLink } from "react-router-dom";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "./common/ThemeToggle";
 
 const Navbar = () => {
   const navLinkClass = ({ isActive }) =>

@@ -11,9 +11,11 @@ const {
   getUserTasks,
   getTasksByCategory,
   getTasksByUrgency,
+  getTaskSuggestions,
 } = require("../controllers/taskController");
 const auth = require("../middlewares/auth-middleware");
-
+// Get task suggestions
+router.post("/suggestions", getTaskSuggestions);
 // Apply auth middleware to all routes
 router.use(auth);
 

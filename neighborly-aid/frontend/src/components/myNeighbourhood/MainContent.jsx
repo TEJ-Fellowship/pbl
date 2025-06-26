@@ -1,7 +1,8 @@
 import React from "react";
-import PostForm from "./PostForm";
+// import PostForm from "../PostForm";
+import { TaskForm } from "../../components";
 import { User } from "lucide-react";
-import TaskCard from "./TaskCard";
+import TaskCard from "../features/tasks/TaskCard";
 
 const MainContent = ({
   categories,
@@ -95,7 +96,7 @@ const MainContent = ({
         )}
 
         {showPostForm && (
-          <PostForm
+          <TaskForm
             categories={categories}
             handleSetShowPostForm={handleSetShowPostForm}
           />
