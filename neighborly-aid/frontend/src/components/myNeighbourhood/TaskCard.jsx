@@ -5,16 +5,17 @@ const TaskCard = ({ task, categories }) => {
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
       case "high":
-        return "bg-red-100 text-red-800 border-red-200";
+        return `bg-status-error-bg text-status-error-text border-status-error-border`;
       case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return `bg-status-warning-bg text-status-warning-text border-status-warning-border`;
       case "low":
-        return "bg-green-100 text-green-800 border-green-200";
+        return `bg-status-success-bg text-status-success-text border-status-success-border`;
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return `bg-gray-100 text-text-dark border-border-strong`;
     }
   };
 
+  // Status icons remain the same
   const getStatusIcon = (status) => {
     switch (status) {
       case "open":
@@ -29,17 +30,17 @@ const TaskCard = ({ task, categories }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 hover:shadow-md transition-shadow">
+    <div className="bg-background rounded-2xl shadow-sm border border-border overflow-hidden mb-4 hover:shadow-md transition-shadow">
       <div className="p-4">
         <div className="flex items-start space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-xl">
+          <div className="w-12 h-12 bg-gradient-to-br from-primary-light to-primary rounded-full flex items-center justify-center text-background text-xl">
             {task.avatar}
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900">{task.user}</h3>
-                <p className="text-sm text-gray-500">{task.time}</p>
+                <h3 className="font-semibold text-text-dark">{task.user}</h3>
+                <p className="text-sm text-text-light">{task.time}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <span
@@ -69,10 +70,10 @@ const TaskCard = ({ task, categories }) => {
             </span>
           </div>
 
-          <h4 className="font-semibold text-gray-900 mb-2">{task.title}</h4>
-          <p className="text-gray-700 mb-3">{task.description}</p>
+          <h4 className="font-semibold text-text-dark mb-2">{task.title}</h4>
+          <p className="text-text mb-3">{task.description}</p>
 
-          <div className="flex items-center text-sm text-gray-500 space-x-4 mb-3">
+          <div className="flex items-center text-sm text-text-light space-x-4 mb-3">
             <div className="flex items-center space-x-1">
               <MapPin className="w-4 h-4" />
               <span>{task.location}</span>
@@ -85,9 +86,9 @@ const TaskCard = ({ task, categories }) => {
         </div>
       </div>
 
-      <div className="border-t border-gray-100 px-4 py-3">
+      <div className="border-t border-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <div className="flex items-center space-x-4 text-sm text-text-light">
             <div className="flex items-center space-x-1">
               <Heart className="w-4 h-4" />
               <span>{task.likes}</span>
@@ -104,17 +105,17 @@ const TaskCard = ({ task, categories }) => {
 
           <div className="flex space-x-2">
             {task.status === "open" && (
-              <button className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full text-sm font-medium hover:from-green-600 hover:to-green-700 transition-colors">
+              <button className="bg-gradient-to-r from-primary-light to-primary text-background px-4 py-2 rounded-full text-sm font-medium hover:from-primary hover:to-primary-dark transition-colors">
                 I can help!
               </button>
             )}
             {task.status === "in-progress" && (
-              <button className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+              <button className="bg-status-success-bg text-status-success-text px-4 py-2 rounded-full text-sm font-medium">
                 In Progress
               </button>
             )}
             {task.status === "completed" && (
-              <button className="bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+              <button className="bg-status-success-bg text-status-success-text px-4 py-2 rounded-full text-sm font-medium">
                 Completed ✨
               </button>
             )}
@@ -124,4 +125,5 @@ const TaskCard = ({ task, categories }) => {
     </div>
   );
 };
+
 export default TaskCard;
