@@ -90,7 +90,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gray-50">
         <div className="w-full max-w-md">
           {/* Mobile Logo and Header */}
-          <div className="lg:hidden text-center mb-8">
+          <div className="hidden lg:block text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500 rounded-full mb-4">
               <Heart className="w-8 h-8 text-white" />
             </div>
