@@ -65,16 +65,16 @@ const MainContent = ({
 
   return (
     <>
-      <div className="px-6 pb-20">
+      <div className="px-6 pb-20 dark:bg-background-humbleDark dark:text-text-spotlight">
         {/* What's on your mind */}
         {!showPostForm && (
           <div
             onClick={() => handleSetShowPostForm(true)}
-            className="bg-background rounded-2xl shadow-sm border border-border p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-primary-light to-primary rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-background" />
+                <User className="w-5 h-5 text-background dark:text-text-spotlight" />
               </div>
               <div className="flex-1 text-text-light">
                 What help do you need today?
