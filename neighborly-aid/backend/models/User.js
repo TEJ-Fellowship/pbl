@@ -30,6 +30,12 @@ const userSchema = new mongoose.Schema({
       "Password must be at least 8 characters and include letters and numbers",
     ],
   },
+  address: {
+    type: String,
+    required: false,
+    max: 100,
+    min: 3,
+  },
   phone: {
     type: String,
     unique: true,
@@ -38,8 +44,12 @@ const userSchema = new mongoose.Schema({
   },
   role: { type: String, enum: ["helper", "requester"], default: "requester" },
   location: String,
-  karmaPoints: { type: Number, default: 0 },
-  badges: [String],
+  karmaPoints: { type: Number, default: 100 },
+  badges: {
+    type: String,
+    enum: ["bronze", "silver", "gold", "platinum", "diamond", "master"],
+    default: "bronze",
+  },
   completedTasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
   reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
 });

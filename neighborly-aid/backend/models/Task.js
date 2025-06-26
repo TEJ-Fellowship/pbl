@@ -36,11 +36,13 @@ const taskSchema = new mongoose.Schema({
   location: String,
   taskKarmaPoints: { type: Number, default: 10 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  acceptedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
+  helpers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  location: String,
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
 });

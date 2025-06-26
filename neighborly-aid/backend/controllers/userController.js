@@ -11,6 +11,19 @@ const getAllUsersController = async (req, res) => {
   }
 };
 
+const getUserDashboardController = async (req, res) => {
+  console.log("getUserDashboardController", req.params.userId);
+  try {
+    const userId = req.params.userId;
+    const result = await userService.getUserDashboard(userId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+};
+
 const createUserController = async (req, res) => {
   const data = req.body;
   try {
@@ -28,4 +41,8 @@ const createUserController = async (req, res) => {
   }
 };
 
-module.exports = { getAllUsersController, createUserController };
+module.exports = {
+  getAllUsersController,
+  createUserController,
+  getUserDashboardController,
+};

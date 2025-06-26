@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
 app.use(logger);
 
 app.use("/api/auth", authRoutes);
-app.use("/api/user", auth, userRoutes);
+app.use("/api/users", auth, userRoutes);
 app.use("/api/task", taskRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/event", eventRoutes);

@@ -22,10 +22,10 @@ const loginController = async (req, res) => {
     const formattedData = formatUserData(user);
     const token = createJWT(formattedData);
 
-    console.log("=== Login Debug ===");
-    console.log("Setting cookie with token:", token.substring(0, 20) + "...");
-    console.log("Request origin:", req.headers.origin);
-    console.log("Request headers:", req.headers);
+    // console.log("=== Login Debug ===");
+    // console.log("Setting cookie with token:", token.substring(0, 20) + "...");
+    // console.log("Request origin:", req.headers.origin);
+    // console.log("Request headers:", req.headers);
 
     // Set cookie with appropriate settings for development
     res.cookie("authToken", token, {
@@ -67,10 +67,10 @@ const loginController = async (req, res) => {
 };
 
 const registerController = async (req, res) => {
-  console.log("login Register", req.data);
+  console.log("register controller - received data:", req.body);
 
   try {
-    const { name, password, confirmPassword, email, phone } = req.body;
+    const { name, password, confirmPassword, email, phone, role } = req.body;
 
     // Collect errors in an array
     const errors = [];
@@ -80,6 +80,7 @@ const registerController = async (req, res) => {
     if (!phone) errors.push("Phone number is required");
     if (!password) errors.push("Password is required");
     if (!confirmPassword) errors.push("Confirm password is required");
+    if (!role) errors.push("Role is required");
     if (password && confirmPassword && password !== confirmPassword) {
       errors.push("Passwords do not match");
     }
@@ -89,6 +90,8 @@ const registerController = async (req, res) => {
         "Password must be at least 8 characters and include letters and numbers!"
       );
     if (!PHONE_REGEX.test(phone)) errors.push("Invalid phone format!");
+
+    console.log("Validation errors:", errors);
 
     if (errors.length > 0) {
       return res.status(422).json({ errors });
@@ -139,15 +142,31 @@ const registerController = async (req, res) => {
 
 const logoutController = async (req, res) => {
   try {
-    // Clear the auth cookie
-    res.clearCookie("authToken");
+    console.log("Logout request received");
+
+    // Clear the auth cookie with all possible settings to ensure it's removed
+    res.clearCookie("authToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+    });
+
+    // Also try clearing without secure flag for development
+    res.clearCookie("authToken", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "Lax",
+    });
+
+    console.log("Cookies cleared");
 
     res.status(200).json({
+      success: true,
       message: "Logout successful!",
     });
   } catch (error) {
     console.error("Logout Error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
 

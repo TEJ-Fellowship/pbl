@@ -1,0 +1,72 @@
+import { createContext, useEffect, useState } from "react";
+import { verifyAuth, loginAuth, registerAuth, logoutAuth } from "../api/auth";
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        setLoading(true);
+        const response = await verifyAuth();
+        if (response.authenticated) {
+          setUser(response.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error verifying auth:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+  }, []);
+
+  const login = async (data) => {
+    const response = await loginAuth(data);
+    if (response.success) {
+      setUser(response.user);
+    }
+    return response;
+  };
+
+  const register = async (data) => {
+    const response = await registerAuth(data);
+    if (response.success) {
+      setUser(response.user);
+    }
+    return response;
+  };
+
+  const logout = async () => {
+    console.log("AuthContext logout called");
+    try {
+      const response = await logoutAuth();
+      console.log("AuthContext logout response:", response);
+
+      // Always clear user state on logout attempt
+      setUser(null);
+      console.log("User state cleared");
+
+      return response;
+    } catch (error) {
+      console.error("AuthContext logout error:", error);
+      // Even if logout fails, clear user state
+      setUser(null);
+      console.log("User state cleared despite error");
+      return { success: false, error: error.message };
+    }
+  };
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContext;

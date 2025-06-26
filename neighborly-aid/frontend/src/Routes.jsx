@@ -18,40 +18,25 @@ import AvailableSupport from "./pages/AvailableSupport";
 import ReachOut from "./pages/ReachOut";
 import AuthLayout from "./layouts/AuthLayout";
 import AuthPage from "./pages/AuthPage";
-
-// Simple auth state management
-let isAuthenticated = true;
-let currentUser = null;
-
-// Auth functions
-const login = (userData) => {
-  isAuthenticated = true;
-  currentUser = userData;
-  // Force a page reload to update the routes
-  window.location.href = MY_NEIGHBOURHOOD;
-};
-
-const logout = () => {
-  isAuthenticated = true;
-  currentUser = null;
-  window.location.href = LOGIN_ROUTE;
-};
+import { useContext } from "react";
+import AuthContext, { AuthProvider } from "./context/AuthContext";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
-  return isAuthenticated ? children : <Navigate to={LOGIN_ROUTE} replace />;
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div>Loading...</div>;
+  return user ? children : <Navigate to={LOGIN_ROUTE} replace />;
 };
 
 // Public Route component (redirects to home if already logged in)
 const PublicRoute = ({ children }) => {
-  return isAuthenticated ? (
-    <Navigate to={MY_NEIGHBOURHOOD} replace />
-  ) : (
-    children
-  );
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div>Loading...</div>;
+  return user ? <Navigate to={MY_NEIGHBOURHOOD} replace /> : children;
 };
 
 const AppRoutes = () => {
+  const { user } = useContext(AuthContext);
   const router = createBrowserRouter(
     createRoutesFromElements(
       <>
@@ -60,7 +45,7 @@ const AppRoutes = () => {
           path={LOGIN_ROUTE}
           element={
             <PublicRoute>
-              <AuthPage onLogin={login} />
+              <AuthPage />
             </PublicRoute>
           }
         />
@@ -70,7 +55,7 @@ const AppRoutes = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <AuthLayout user={currentUser} onLogout={logout} />
+              <AuthLayout />
             </ProtectedRoute>
           }
         >
@@ -85,10 +70,7 @@ const AppRoutes = () => {
         <Route
           path="*"
           element={
-            <Navigate
-              to={isAuthenticated ? MY_NEIGHBOURHOOD : LOGIN_ROUTE}
-              replace
-            />
+            <Navigate to={user ? MY_NEIGHBOURHOOD : LOGIN_ROUTE} replace />
           }
         />
       </>
@@ -98,7 +80,11 @@ const AppRoutes = () => {
 };
 
 const Routes = () => {
-  return <AppRoutes />;
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
+  );
 };
 
 export default Routes;

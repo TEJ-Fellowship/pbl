@@ -1,16 +1,30 @@
 import React, { useState } from "react";
-import { User, Mail, Lock, Eye, EyeOff, Phone } from "lucide-react";
-import { login, register } from "../../api/auth";
+import {
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Phone,
+  HandHeart,
+  ChevronDown,
+} from "lucide-react";
+import { useContext } from "react";
+import AuthContext from "../../context/AuthContext";
+
 const AuthForm = ({ isLogin, handleIsLogin }) => {
+  const { login, register } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
-    phone: "",
+    role: "",
   });
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -20,15 +34,29 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { name, email, password, confirmPassword, phone } = formData;
-    setIsLoading(true);
+    const { name, email, phone, password, confirmPassword, role } = formData;
 
     if (isLogin) {
-      login({ email, password });
+      setIsLoading(true);
+      try {
+        login({ email, password });
+      } catch (error) {
+        console.log("Error during login", error);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
-      register({ name, email, password, phone, confirmPassword });
+      setIsLoading(true);
+      try {
+        register({ name, email, phone, password, confirmPassword, role });
+      } catch (error) {
+        console.log("Error during register", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
+
   return (
     <>
       <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -108,6 +136,34 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
             </div>
           )}
 
+          {!isLogin && (
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <HandHeart className="h-5 w-5 text-gray-400" />
+              </div>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleInputChange}
+                className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-colors appearance-none bg-white text-gray-700"
+                required={!isLogin}
+              >
+                <option className="text-gray-400" value="">
+                  Select Role
+                </option>
+                <option className="text-gray-400" value="helper">
+                  Helper
+                </option>
+                <option className="text-gray-400" value="requester">
+                  Requester
+                </option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              </div>
+            </div>
+          )}
+
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Lock className="h-5 w-5 text-gray-400" />
@@ -169,7 +225,7 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+            className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
           </button>
