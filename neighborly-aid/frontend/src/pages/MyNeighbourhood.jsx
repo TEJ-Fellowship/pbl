@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import Stories from "../components/myNeighbourhood/Stories";
+import TaskCard from "../components/features/tasks/TaskCard";
+import PostForm from "../components/PostForm";
 import NavigationTab from "../components/myNeighbourhood/NavigationTab";
-import CategoryFilter from "../components/myNeighbourhood/CategoryFilter";
+import CategoryFilter from "../components/features/tasks/CategoryFilter";
 import MainContent from "../components/myNeighbourhood/MainContent";
 import Header from "../components/myNeighbourhood/Header";
 
@@ -66,13 +68,13 @@ const MyNeighbourhood = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:bg-background-politeDark">
       {/* Header */}
       <Header />
 
-      <div className="w-full">
+      <div className="w-full dark:bg-background-humbleDark">
         {/* Stories Section */}
-        <Stories />
+        {/* <Stories /> */}
 
         {/* Navigation Tabs */}
         <NavigationTab

@@ -20,6 +20,7 @@ module.exports = {
           DEFAULT: "#ffffff", // white
           middleDark: "#0F0F23", //slate-900
           humbleDark: "#1D2638", //slate-800
+          politeDark: "#253143", //slate-700
           dark: "#1f2937", // gray-800
         },
         text: {
@@ -33,21 +34,37 @@ module.exports = {
             bg: "#dcfce7", // green-100
             text: "#166534", // green-800
             border: "#bbf7d0", // green-200
+            dark: {
+              bg: "#166534", // green-800
+              text: "#dcfce7", // green-100
+              border: "#bbf7d0", // green-200
+            },
           },
           warning: {
             bg: "#fef9c3", // yellow-100
             text: "#854d0e", // yellow-800
             border: "#fef08a", // yellow-200
+            dark: {
+              bg: "#854d0e", // yellow-800
+              text: "#fef9c3", // yellow-100
+              border: "#fef08a", // yellow-200
+            },
           },
           error: {
             bg: "#fee2e2", // red-100
             text: "#991b1b", // red-800
             border: "#fecaca", // red-200
+            dark: {
+              bg: "#991b1b", // red-800
+              text: "#fee2e2", // red-100
+              border: "#fecaca", // red-200
+            },
           },
         },
         border: {
           DEFAULT: "#f3f4f6", // gray-100
-          strong: "#e5e7eb", // gray-200
+          dark: "#374151", // gray-700
+          green: "#bbf7d0", // green-200
         },
       },
       boxShadow: {

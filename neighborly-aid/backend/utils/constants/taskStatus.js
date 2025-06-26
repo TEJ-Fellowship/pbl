@@ -1,5 +1,5 @@
 const OPEN = "open";
-const IN_PROGRESS = "in_progress";
+const CLAIMED = "claimed";
 const COMPLETED = "completed";
 
-module.exports = { OPEN, IN_PROGRESS, COMPLETED };
+module.exports = { OPEN, CLAIMED, COMPLETED };

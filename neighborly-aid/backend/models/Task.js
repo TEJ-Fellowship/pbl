@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const {
   OPEN,
-  IN_PROGRESS,
+  CLAIMED,
   COMPLETED,
   LOW,
   MEDIUM,
@@ -30,9 +30,11 @@ const taskSchema = new mongoose.Schema({
   urgency: { type: String, enum: [LOW, MEDIUM, HIGH] },
   status: {
     type: String,
-    enum: [OPEN, IN_PROGRESS, COMPLETED],
+    enum: [OPEN, CLAIMED, COMPLETED],
     default: OPEN,
   },
+  location: String,
+  taskKarmaPoints: { type: Number, default: 10 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   helpers: [
     {
