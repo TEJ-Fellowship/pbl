@@ -33,13 +33,14 @@ const taskSchema = new mongoose.Schema({
     enum: [OPEN, IN_PROGRESS, COMPLETED],
     default: OPEN,
   },
-  location: String,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  acceptedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null,
-  },
+  helpers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  location: String,
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
 });

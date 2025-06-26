@@ -22,7 +22,19 @@ const createUser = async (data) => {
   }
 };
 
+const getUserDashboard = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    console.log("user in service", user);
+    return user;
+  } catch (error) {
+    console.log("Error fetching user dashboard", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllUsers,
   createUser,
+  getUserDashboard,
 };
