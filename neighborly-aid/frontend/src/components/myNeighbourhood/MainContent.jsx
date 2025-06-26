@@ -70,23 +70,23 @@ const MainContent = ({
         {!showPostForm && (
           <div
             onClick={() => handleSetShowPostForm(true)}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
+            className="bg-background rounded-2xl shadow-sm border border-border p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-primary-light to-primary rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-background" />
               </div>
-              <div className="flex-1 text-gray-500">
+              <div className="flex-1 text-text-light">
                 What help do you need today?
               </div>
               <div className="flex space-x-2">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-status-success-bg rounded-full flex items-center justify-center">
                   <span className="text-sm">🛒</span>
                 </div>
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-status-warning-bg rounded-full flex items-center justify-center">
                   <span className="text-sm">💻</span>
                 </div>
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-status-error-bg rounded-full flex items-center justify-center">
                   <span className="text-sm">🐕</span>
                 </div>
               </div>

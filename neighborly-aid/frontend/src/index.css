@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add this to ensure full height for your app */
+@layer base {
+    html, body, #root {
+      @apply h-full w-full;
+    }
+  }

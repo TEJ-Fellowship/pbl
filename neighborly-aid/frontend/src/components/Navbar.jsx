@@ -1,10 +1,11 @@
 import navMenu from "../constants/navMenu";
 import { NavLink } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const navLinkClass = ({ isActive }) =>
     `relative px-3 py-2 text-lg font-large transition-all duration-300 ${
-      isActive ? "text-green-600" : "text-gray-500 hover:text-green-500"
+      isActive ? "text-primary" : "text-text-light hover:text-text-dark"
     }`;
 
   return (
@@ -16,13 +17,14 @@ const Navbar = () => {
               <>
                 {menu.label}
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-green-500 to-green-600 rounded-full animate-pulse"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary-light to-primary rounded-full animate-pulse"></div>
                 )}
               </>
             )}
           </NavLink>
         );
       })}
+       <ThemeToggle />
     </nav>
   );
 };
