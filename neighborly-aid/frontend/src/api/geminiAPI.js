@@ -14,7 +14,7 @@ import config from "../config/config";
 export const getTaskSuggestions = async (title, description) => {
   try {
     const response = await axios.post(
-      `${config.API_BASE_URL}/api/task/suggestions`,
+      `${config.API_BASE_URL}/api/tasks/suggestions`,
       { title, description },
       {
         headers: {

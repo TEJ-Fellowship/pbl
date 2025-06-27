@@ -1,14 +1,16 @@
-// frontend/src/components/myNeighbourhood/PostForm.jsx
-import React, { useRef } from 'react';
+// frontend/src/components/forms/TaskForm/TaskForm.jsx
+import React, { useRef, useContext } from 'react';
 import { GeminiIcon, GeminiSuggestions, StatusMessage } from '../../../components';
-import  SubmitButton  from './SubmitButton';
-import  TaskFormFields  from './TaskFormFields';
-import { useTaskForm ,useGeminiSuggestions} from '../../../hooks';
+import SubmitButton from './SubmitButton';
+import TaskFormFields from './TaskFormFields';
+import { useTaskForm, useGeminiSuggestions } from '../../../hooks';
 import { submitTaskAction } from '../../../services';
+import AuthContext from '../../../context/AuthContext';
 
-const PostForm = ({ categories, handleSetShowPostForm }) => {
+const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
   const formRef = useRef(null);
-  
+  const { user } = useContext(AuthContext); // Get logged-in user
+  console.log("user from task form", user);
   // Custom hooks
   const {
     formData,
@@ -53,10 +55,18 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
 
   // Handle form submission
   const handleSubmit = async (formDataObj) => {
+    // Check if user is logged in
+    if (!user) {
+      setError('You must be logged in to create a task');
+      setSubmitStatus('error');
+      return;
+    }
+
     setError(null);
     setSubmitStatus(null);
     
     try {
+      // The user ID will be automatically included by the backend from the auth token
       const result = await submitTaskAction(formDataObj);
       
       if (result.success) {
@@ -67,6 +77,10 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
           resetForm();
           resetSuggestions();
           handleSetShowPostForm(false);
+          // Call the success callback to refresh tasks
+          if (onTaskCreated) {
+            onTaskCreated();
+          }
         }, 2000);
       }
     } catch (err) {
@@ -74,6 +88,26 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
       setSubmitStatus('error');
     }
   };
+
+  // Show login message if user is not authenticated
+  if (!user) {
+    return (
+      <div className="bg-background dark:bg-background-dark dark:border-border-dark rounded-2xl shadow-sm border border-border p-6 mb-4 text-center">
+        <h3 className="font-semibold text-text-dark dark:text-text-spotlight mb-2">
+          Please Log In
+        </h3>
+        <p className="text-text-light dark:text-text-spotlight/70 mb-4">
+          You need to be logged in to create a help request.
+        </p>
+        <button
+          onClick={() => handleSetShowPostForm(false)}
+          className="bg-gradient-to-r from-primary-light to-primary text-white px-6 py-2 rounded-full font-medium hover:from-primary hover:to-primary-dark transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background dark:bg-background-dark dark:border-border-dark rounded-2xl shadow-sm border border-border p-4 mb-4 relative">
@@ -94,6 +128,13 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
       <h3 className="font-semibold text-text-dark dark:text-text-spotlight mb-3 pr-12">
         Request Help from Your Community
       </h3>
+
+      {/* User Info Display */}
+      <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Posting as: <span className="font-medium text-text-dark dark:text-text-spotlight">{user.name}</span>
+        </p>
+      </div>
 
       {/* Gemini Suggestions Display */}
       <GeminiSuggestions 
@@ -131,4 +172,4 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
   );
 };
 
-export default PostForm;
+export default TaskForm;

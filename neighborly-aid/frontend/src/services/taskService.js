@@ -1,23 +1,101 @@
-// frontend/src/services/taskService.js
+import { createTask, getTasks, getUserTasks } from "../api/tasks";
+
 export const submitTaskAction = async (formData) => {
-  // Simulate API call - replace with actual task creation API
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  try {
+    // Convert FormData to regular object
+    const taskData = {
+      title: formData.get("title"),
+      description: formData.get("description"),
+      category: formData.get("category"),
+      urgency: formData.get("urgency"),
+      location: formData.get("location"),
+      taskKarmaPoints: parseInt(formData.get("karmaPoints")) || 10,
+    };
 
-  const taskData = {
-    title: formData.get("title"),
-    description: formData.get("description"),
-    category: formData.get("category"),
-    urgency: formData.get("urgency"),
-    location: formData.get("location"),
-    taskKarmaPoints: parseInt(formData.get("karmaPoints")) || 10,
-  };
+    console.log("Submitting task data:", taskData);
 
-  console.log("Task submitted:", taskData);
+    // Call the API to create the task
+    const response = await createTask(taskData);
 
-  // Simulate potential error
-  if (Math.random() > 0.8) {
-    throw new Error("Failed to create task. Please try again.");
+    console.log("Task created successfully:", response);
+
+    return { success: true, data: response };
+  } catch (error) {
+    console.error("Task submission error:", error);
+
+    // Handle different types of errors
+    if (error.error) {
+      throw new Error(error.error);
+    } else if (error.message) {
+      throw new Error(error.message);
+    } else {
+      throw new Error("Failed to create task. Please try again.");
+    }
   }
+};
 
-  return { success: true, data: taskData };
+// Transform database task to component format
+export const transformTaskForDisplay = (dbTask) => {
+  return {
+    id: dbTask._id,
+    user: dbTask.createdBy?.name || "Unknown User",
+    avatar: "👤", // Default avatar, you can customize this based on user data
+    time: formatTimeAgo(dbTask.createdAt),
+    category: dbTask.category,
+    urgency: dbTask.urgency,
+    title: dbTask.title,
+    description: dbTask.description,
+    location: dbTask.location || "Location not specified",
+    likes: 0, // These might need to be added to your schema later
+    comments: 0,
+    helpers: Array.isArray(dbTask.helpers) ? dbTask.helpers.length : 0,
+    karma: dbTask.taskKarmaPoints || 0,
+    status: dbTask.status?.toLowerCase() || "open",
+    isUserTask: false, // Will be set based on context
+  };
+};
+
+// Helper function to format time ago
+const formatTimeAgo = (dateString) => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInMs = now - date;
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInHours / 24);
+
+  if (diffInHours < 1) {
+    return "Just now";
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours !== 1 ? "s" : ""} ago`;
+  } else if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays !== 1 ? "s" : ""} ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+};
+
+// Fetch all tasks (for Help Others tab)
+export const fetchAllTasks = async (filters = {}) => {
+  try {
+    const tasks = await getTasks(filters);
+    return tasks.map(transformTaskForDisplay);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    throw error;
+  }
+};
+
+// Fetch user's own tasks (for Ask for Help tab)
+export const fetchUserTasks = async () => {
+  try {
+    const tasks = await getUserTasks("created");
+    return tasks.map((task) => ({
+      ...transformTaskForDisplay(task),
+      isUserTask: true,
+      user: "You",
+    }));
+  } catch (error) {
+    console.error("Error fetching user tasks:", error);
+    throw error;
+  }
 };

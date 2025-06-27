@@ -4,9 +4,36 @@ const geminiService = require("../services/geminiService");
 // Create new task
 const createTask = async (req, res) => {
   try {
-    const task = await taskService.createTask(req.body, req.user._id);
-    res.status(201).json(task);
+    console.log("=== Create Task Debug ===");
+    console.log("Request body:", req.body);
+    console.log("Authenticated user:", req.user);
+
+    // Check if user is authenticated
+    if (!req.user || !req.user.id) {
+      console.log("No authenticated user found");
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    console.log("This worksss", req.user.id);
+
+    // Add user ID to task data
+    const taskData = {
+      ...req.body,
+      createdBy: req.user.id,
+    };
+
+    console.log("Task data with user ID:", taskData);
+
+    const task = await taskService.createTask(taskData, req.user.id);
+
+    console.log("Task created:", task);
+
+    // Populate the created task with user info
+    const populatedTask = await taskService.getTaskById(task._id);
+
+    res.status(201).json(populatedTask);
   } catch (error) {
+    console.error("Create task error:", error);
     res.status(400).json({ error: error.message });
   }
 };

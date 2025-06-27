@@ -33,16 +33,21 @@ const taskSchema = new mongoose.Schema({
     enum: [OPEN, CLAIMED, COMPLETED],
     default: OPEN,
   },
-  location: String,
+  location: {
+    type: String,
+    required: true,
+    minlength: 3,
+    maxlength: 100,
+  },
   taskKarmaPoints: { type: Number, default: 10 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  likes: { type: Number, default: 0 },
   helpers: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
   ],
-  location: String,
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
 });
