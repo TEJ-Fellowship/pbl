@@ -1,4 +1,5 @@
 import Routes from "./Routes";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   return (
@@ -6,6 +7,7 @@ function App() {
     <div className="h-full w-full m-0 p-0 box-border overflow-x-hidden">
       {/* This replaces the app-big-container class */}
       <Routes />
+      <Toaster position="top-right" />
     </div>
   );
 }

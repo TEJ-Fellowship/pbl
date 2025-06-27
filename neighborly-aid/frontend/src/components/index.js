@@ -11,5 +11,5 @@ export { StatusMessage } from "./ui";
 export { GeminiIcon, ThemeToggle } from "./common";
 
 // Page-specific components
-export { MainContent, NavigationTab, Stories } from "./myNeighbourhood";
+export { NavigationTab, Stories } from "./myNeighbourhood";
 // export * from "./auth";
