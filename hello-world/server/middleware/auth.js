@@ -22,7 +22,17 @@ export const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ message: "Account not active" });
     }
 
+    // Check if token is blacklisted
+    const isBlacklisted = user.blacklistedTokens?.some(
+      (t) => t.token === token && new Date(t.expiresAt) > new Date()
+    );
+
+    if (isBlacklisted) {
+      return res.status(401).json({ message: "Token has been invalidated" });
+    }
+
     req.user = user;
+    req.token = token; // Store token for logout
     next();
   } catch (error) {
     if (error.name === "JsonWebTokenError") {

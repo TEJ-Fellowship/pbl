@@ -41,25 +41,35 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      console.log("Checking auth status...");
+      const token = localStorage.getItem("token");
+      console.log("Token from localStorage:", token);
+
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await authApi.me();
+      console.log("Auth check response:", response.data);
       dispatch({ type: "SET_USER", payload: response.data.user });
     } catch (error) {
+      console.error("Auth check error:", error);
       dispatch({ type: "SET_USER", payload: null });
     }
   };
 
   const login = async (email, password) => {
     try {
+      console.log("Starting login process...");
       dispatch({ type: "SET_LOADING", payload: true });
       const response = await authApi.login(email, password);
+      console.log("Login response:", response.data);
 
       // Store token in localStorage
       localStorage.setItem("token", response.data.token);
+      console.log("Token saved in localStorage:", response.data.token);
 
       dispatch({ type: "SET_USER", payload: response.data.user });
       return { success: true, user: response.data.user };
     } catch (error) {
+      console.error("Login error:", error);
       const message = error.response?.data?.message || "Login failed";
       dispatch({ type: "SET_ERROR", payload: message });
       return { success: false, error: message };
@@ -89,13 +99,28 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Try to notify server about logout
       await authApi.logout();
-      localStorage.removeItem("token");
-      dispatch({ type: "LOGOUT" });
     } catch (error) {
       console.error("Logout error:", error);
+      // Continue with local logout even if server request fails
+    } finally {
+      // Clear all auth data regardless of server response
       localStorage.removeItem("token");
+      sessionStorage.clear(); // Clear any session data
+
+      // Clear any other auth-related storage
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      // Reset auth state
       dispatch({ type: "LOGOUT" });
+
+      // Force reload to clear any sensitive data from memory
+      window.location.href = "/login";
     }
   };
 

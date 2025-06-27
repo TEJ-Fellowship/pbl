@@ -45,7 +45,7 @@ const generateToken = (userId) => {
 
 // Send invitation email
 const sendInviteEmail = async (email, token, inviterName, role, cohort) => {
-  const inviteUrl = `${process.env.FRONTEND_URL}/accept-invite?token=${token}`;
+  const inviteUrl = `${process.env.CLIENT_URL}/accept-invite?token=${token}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -244,12 +244,9 @@ router.get("/github", (req, res, next) => {
     });
   }
 
-  const { invite_token } = req.query;
-
   // Pass invite token as state to GitHub OAuth
   passport.authenticate("github", {
     scope: ["user:email"],
-    state: invite_token,
   })(req, res, next);
 });
 
@@ -257,15 +254,19 @@ router.get("/github", (req, res, next) => {
 router.get(
   "/github/callback",
   (req, res, next) => {
+    console.log("[auth.js--[257]], ");
     if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+      console.log("[auth.js--[259]], ");
       return res.status(501).json({
         message: "GitHub OAuth not configured on this server",
       });
     }
-
+    console.log("[auth.js--[264]], ");
     passport.authenticate("github", { session: false })(req, res, next);
   },
   async (req, res) => {
+    debugger;
+    console.log("[auth.js--[267]], ");
     try {
       const userData = req.user;
 
@@ -273,28 +274,7 @@ router.get(
       if (userData._id) {
         const token = generateToken(userData._id);
         return res.redirect(
-          `${process.env.FRONTEND_URL}/auth/success?token=${token}`
-        );
-      }
-
-      // New user registration - validate invite
-      if (!userData.inviteToken) {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/auth/error?message=invitation_required`
-        );
-      }
-
-      const invite = await Invite.findValidInvite(userData.inviteToken);
-      if (!invite) {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/auth/error?message=invalid_invite`
-        );
-      }
-
-      // Check if email matches invite
-      if (userData.email !== invite.email) {
-        return res.redirect(
-          `${process.env.FRONTEND_URL}/auth/error?message=email_mismatch&expected=${invite.email}`
+          `${process.env.CLIENT_URL}/auth/success?token=${token}`
         );
       }
 
@@ -306,27 +286,24 @@ router.get(
         name: userData.name,
         avatar: userData.avatar,
         githubData: userData.githubData,
-        role: invite.role,
-        cohort: invite.cohort,
-        invitedBy: invite.invitedBy,
-        invitedAt: invite.createdAt,
+        role: "guest",
+        cohort: "guest",
+        invitedBy: null,
+        invitedAt: null,
         status: "active",
-        permissions: User.getRolePermissions(invite.role),
+        permissions: User.getRolePermissions("guest"),
       });
 
       await user.save();
       await user.updateLastLogin();
-      await invite.accept();
 
       const token = generateToken(user._id);
       res.redirect(
-        `${process.env.FRONTEND_URL}/auth/success?token=${token}&firstLogin=true`
+        `${process.env.CLIENT_URL}/auth/success?token=${token}&firstLogin=true`
       );
     } catch (error) {
       console.error("GitHub callback error:", error);
-      res.redirect(
-        `${process.env.FRONTEND_URL}/auth/error?message=server_error`
-      );
+      res.redirect(`${process.env.CLIENT_URL}/auth/error?message=server_error`);
     }
   }
 );
@@ -474,9 +451,37 @@ router.get("/me", authenticateToken, async (req, res) => {
   }
 });
 
-// Logout (client-side will remove token)
-router.post("/logout", (req, res) => {
-  res.json({ message: "Logged out successfully" });
+// Logout
+router.post("/logout", authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const token = req.token;
+
+    // Get token expiration from JWT
+    const decoded = jwt.decode(token);
+    const expiresAt = new Date(decoded.exp * 1000); // Convert to milliseconds
+
+    // Add token to blacklist
+    user.blacklistedTokens = user.blacklistedTokens || [];
+    user.blacklistedTokens.push({ token, expiresAt });
+
+    // Clean up expired tokens while we're here
+    user.blacklistedTokens = user.blacklistedTokens.filter(
+      (t) => new Date(t.expiresAt) > new Date()
+    );
+
+    await user.save();
+
+    // Clear any session data
+    if (req.session) {
+      req.session.destroy();
+    }
+
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Failed to logout" });
+  }
 });
 
 // Get all users (admin/instructor only)

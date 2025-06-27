@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
       unique: true,
     },
     password: {
@@ -48,8 +47,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "mentor", "instructor", "admin"],
-      default: "student",
+      enum: ["guest", "student", "mentor", "instructor", "admin"],
+      default: "guest",
     },
     status: {
       type: String,
@@ -79,6 +78,12 @@ const userSchema = new mongoose.Schema(
     cohort: {
       type: String,
     },
+    blacklistedTokens: [
+      {
+        token: String,
+        expiresAt: Date,
+      },
+    ],
   },
   {
     timestamps: true,
@@ -88,6 +93,7 @@ const userSchema = new mongoose.Schema(
 // Define role permissions
 userSchema.statics.getRolePermissions = function (role) {
   const permissions = {
+    guest: ["view_public_projects", "view_public_profiles"],
     student: [
       "create_project",
       "edit_own_project",

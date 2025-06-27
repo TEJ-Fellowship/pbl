@@ -31,8 +31,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       },
       async (req, accessToken, refreshToken, profile, done) => {
         try {
-          const { state } = req.query; // This contains the invite token
-
           // Check if user already exists
           let user = await User.findOne({ githubId: profile.id });
 
@@ -52,14 +50,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
             return done(null, user);
           }
 
-          // New user registration requires valid invite
-          if (!state) {
-            return done(
-              new Error("Invitation required for registration"),
-              null
-            );
-          }
-
           // Store user data in session for later use with invite validation
           const userData = {
             githubId: profile.id,
@@ -77,7 +67,6 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
               githubCreatedAt: new Date(profile._json.created_at),
               htmlUrl: profile._json.html_url,
             },
-            inviteToken: state,
           };
 
           return done(null, userData);
