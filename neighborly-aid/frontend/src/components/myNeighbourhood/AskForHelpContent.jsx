@@ -13,7 +13,7 @@ const AskForHelpContent = ({
   onTaskCreated,
 }) => {
   return (
-    <div className="px-6 pb-20 dark:bg-background-humbleDark dark:text-text-spotlight">
+    <div className="min-h-screen px-6 pb-20 dark:bg-background-humbleDark dark:text-text-spotlight">
       {/* Create New Request Section */}
       <div className="mb-6">
         {!showPostForm ? (
@@ -95,6 +95,7 @@ const AskForHelpContent = ({
               task={task} 
               categories={categories}
               showEditOptions={true} // Add this prop to show edit/delete options
+              onTaskUpdate={onTaskCreated} // Use the same callback for consistency
             />
           ))
         ) : (

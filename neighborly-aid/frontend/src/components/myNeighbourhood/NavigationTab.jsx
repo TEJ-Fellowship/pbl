@@ -3,7 +3,7 @@ import React from "react";
 const NavigationTab = ({ activeTab, handleSetActiveTab }) => {
   return (
     <div>
-      <div className="p-6 mb-4">
+      <div className="p-6 mb-0">
         <div className="flex space-x-1 bg-background dark:bg-gray-700  rounded-xl p-1 shadow-sm dark:border-border-dark">
           <button
             onClick={() => handleSetActiveTab("helpothers")}

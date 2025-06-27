@@ -78,7 +78,7 @@ const updateTask = async (req, res) => {
 // Accept task
 const acceptTask = async (req, res) => {
   try {
-    const task = await taskService.acceptTask(req.params.id, req.user._id);
+    const task = await taskService.acceptTask(req.params.id, req.user.id);
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
     }
@@ -117,10 +117,17 @@ const deleteTask = async (req, res) => {
 // Get user's tasks
 const getUserTasks = async (req, res) => {
   try {
+    console.log("=== Get User Tasks Debug ===");
+    console.log("Authenticated user:", req.user);
+    console.log("User ID:", req.user.id);
+
     const type = req.query.type || "created"; // 'created' or 'accepted'
-    const tasks = await taskService.getUserTasks(req.user._id, type);
+    const tasks = await taskService.getUserTasks(req.user.id, type);
+
+    console.log("Found tasks:", tasks.length);
     res.json(tasks);
   } catch (error) {
+    console.error("Get user tasks error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -205,6 +212,28 @@ const getTaskSuggestions = async (req, res) => {
   }
 };
 
+// Like/Unlike a task
+const likeTask = async (req, res) => {
+  try {
+    console.log("=== Like Task Debug ===");
+    console.log("Task ID:", req.params.id);
+    console.log("User ID:", req.user.id);
+
+    const result = await taskService.likeTask(req.params.id, req.user.id);
+
+    console.log("Like result:", result.message);
+    res.json(result);
+  } catch (error) {
+    console.error("Like task error:", error);
+
+    if (error.message === "You cannot like your own task") {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
@@ -217,4 +246,5 @@ module.exports = {
   getTasksByCategory,
   getTasksByUrgency,
   getTaskSuggestions,
+  likeTask,
 };

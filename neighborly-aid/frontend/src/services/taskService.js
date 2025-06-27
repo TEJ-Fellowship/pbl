@@ -38,6 +38,7 @@ export const submitTaskAction = async (formData) => {
 export const transformTaskForDisplay = (dbTask) => {
   return {
     id: dbTask._id,
+    _id: dbTask._id, // Keep both for compatibility
     user: dbTask.createdBy?.name || "Unknown User",
     avatar: "👤", // Default avatar, you can customize this based on user data
     time: formatTimeAgo(dbTask.createdAt),
@@ -46,12 +47,14 @@ export const transformTaskForDisplay = (dbTask) => {
     title: dbTask.title,
     description: dbTask.description,
     location: dbTask.location || "Location not specified",
-    likes: 0, // These might need to be added to your schema later
-    comments: 0,
+    likes: dbTask.likes || 0,
+    likedBy: dbTask.likedBy || [],
+    comments: 0, // This might need to be added to your schema later
     helpers: Array.isArray(dbTask.helpers) ? dbTask.helpers.length : 0,
     karma: dbTask.taskKarmaPoints || 0,
     status: dbTask.status?.toLowerCase() || "open",
     isUserTask: false, // Will be set based on context
+    createdBy: dbTask.createdBy, // Include full creator info for like validation
   };
 };
 

@@ -13,16 +13,18 @@ class TaskService {
   // Get all tasks with optional filters
   async getTasks(filters = {}) {
     return await Task.find(filters)
-      .populate("createdBy", "name email")
+      .populate("createdBy", "name email karmaPoints totalLikes")
       .populate("helpers", "name email")
+      .populate("likedBy", "name email")
       .sort({ createdAt: -1 });
   }
 
   // Get task by ID
   async getTaskById(taskId) {
     return await Task.findById(taskId)
-      .populate("createdBy", "name email")
-      .populate("helpers", "name email");
+      .populate("createdBy", "name email karmaPoints totalLikes")
+      .populate("helpers", "name email")
+      .populate("likedBy", "name email");
   }
 
   // Update task
@@ -69,7 +71,8 @@ class TaskService {
       type === "created" ? { createdBy: userId } : { helpers: userId };
 
     return await Task.find(filter)
-      .populate("createdBy helpers", "name email")
+      .populate("createdBy helpers", "name email karmaPoints totalLikes")
+      .populate("likedBy", "name email")
       .sort({ createdAt: -1 });
   }
 
@@ -96,6 +99,81 @@ class TaskService {
       return tasks;
     } catch (error) {
       throw new Error(`Error fetching tasks by urgency: ${error.message}`);
+    }
+  }
+
+  // Like/Unlike a task
+  async likeTask(taskId, userId) {
+    const User = require("../models/User");
+
+    try {
+      const task = await Task.findById(taskId).populate("createdBy");
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Prevent users from liking their own tasks
+      if (task.createdBy._id.toString() === userId) {
+        throw new Error("You cannot like your own task");
+      }
+
+      // Check if user already liked the task
+      const alreadyLiked = task.likedBy.includes(userId);
+
+      if (alreadyLiked) {
+        // Unlike the task
+        task.likedBy.pull(userId);
+        task.likes = Math.max(0, task.likes - 1);
+
+        // Decrease task creator's karma and likes
+        await User.findByIdAndUpdate(task.createdBy._id, {
+          $inc: {
+            karmaPoints: -1,
+            totalLikes: -1,
+          },
+        });
+      } else {
+        // Like the task
+        task.likedBy.push(userId);
+        task.likes += 1;
+
+        // Increase task creator's karma and likes
+        await User.findByIdAndUpdate(task.createdBy._id, {
+          $inc: {
+            karmaPoints: 1,
+            totalLikes: 1,
+          },
+        });
+      }
+
+      await task.save();
+
+      // Return the updated task with populated fields
+      const updatedTask = await Task.findById(taskId)
+        .populate("createdBy", "name email karmaPoints totalLikes")
+        .populate("helpers", "name email")
+        .populate("likedBy", "name email");
+
+      return {
+        task: updatedTask,
+        isLiked: !alreadyLiked,
+        message: alreadyLiked ? "Task unliked" : "Task liked",
+      };
+    } catch (error) {
+      throw new Error(`Error liking/unliking task: ${error.message}`);
+    }
+  }
+
+  // Check if user has liked a task
+  async hasUserLikedTask(taskId, userId) {
+    try {
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+      return task.likedBy.includes(userId);
+    } catch (error) {
+      throw new Error(`Error checking if user liked task: ${error.message}`);
     }
   }
 }

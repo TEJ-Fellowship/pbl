@@ -45,6 +45,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["helper", "requester"], default: "requester" },
   location: String,
   karmaPoints: { type: Number, default: 100 },
+  totalLikes: { type: Number, default: 0 },
   badges: {
     type: String,
     enum: ["bronze", "silver", "gold", "platinum", "diamond", "master"],

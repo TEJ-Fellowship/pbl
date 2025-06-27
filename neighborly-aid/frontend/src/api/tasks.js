@@ -130,3 +130,25 @@ export const deleteTask = async (taskId) => {
     throw error.response?.data || { error: "Failed to delete task" };
   }
 };
+
+/**
+ * Like/Unlike a task
+ * @param {string} taskId - Task ID
+ * @returns {Promise<Object>} Updated task data and like status
+ */
+export const likeTask = async (taskId) => {
+  try {
+    console.log("Liking task:", taskId);
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/like`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Like task error:", error);
+    throw error.response?.data || { error: "Failed to like task" };
+  }
+};

@@ -10,7 +10,6 @@ import { fetchAllTasks, fetchUserTasks } from "../services/taskService";
 const MyNeighbourhood = () => {
   const [activeTab, setActiveTab] = useState("helpothers");
   const [showPostForm, setShowPostForm] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("all");
   
   // State for tasks
   const [allTasks, setAllTasks] = useState([]);
@@ -162,6 +161,7 @@ const MyNeighbourhood = () => {
             handleSetShowPostForm={handleSetShowPostForm}
             tasks={allTasks}
             loading={loading}
+            onTaskUpdate={refreshTasks}
           />
         )}
         

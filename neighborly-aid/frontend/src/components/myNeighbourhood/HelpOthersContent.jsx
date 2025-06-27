@@ -10,6 +10,7 @@ const HelpOthersContent = ({
   handleSetShowPostForm,
   tasks = [],
   loading = false,
+  onTaskUpdate,
 }) => {
   // Local state for category filtering within this component
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -80,7 +81,12 @@ const HelpOthersContent = ({
           </div>
         ) : filteredTasks.length > 0 ? (
           filteredTasks.map((task) => (
-            <TaskCard key={task.id} task={task} categories={categories} />
+            <TaskCard 
+              key={task.id} 
+              task={task} 
+              categories={categories}
+              onTaskUpdate={onTaskUpdate}
+            />
           ))
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 text-center">
