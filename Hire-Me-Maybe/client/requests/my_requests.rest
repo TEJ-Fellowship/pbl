@@ -1,9 +1,11 @@
 ### 
-POST http://localhost:3001/users
+POST http://localhost:5000/api/register
 Content-Type: application/json
 
 {
-  "username": "test2",
-  "email": "test2@example.com",
-  "password": "password123"
+  "firstName": "muskan",
+  "lastName": "lama",
+  "username": "muskanlama",
+  "email": "testing@gmail.com",
+  "password": "Password123!2"
 }
