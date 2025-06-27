@@ -11,6 +11,7 @@ const AskForHelpContent = ({
   tasks = [],
   loading = false,
   onTaskCreated,
+  onTaskUpdate,
 }) => {
   return (
     <div className="px-6 pb-20 dark:bg-background-humbleDark dark:text-text-spotlight">
@@ -66,16 +67,19 @@ const AskForHelpContent = ({
               "Loading..."
             ) : (
               <>
-                {tasks.length} request{tasks.length !== 1 ? 's' : ''}
+                {tasks.length} request{tasks.length !== 1 ? "s" : ""}
               </>
             )}
           </div>
         </div>
-        
+
         {loading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark p-6 animate-pulse"
+              >
                 <div className="flex items-start space-x-3">
                   <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                   <div className="flex-1 space-y-2">
@@ -90,11 +94,12 @@ const AskForHelpContent = ({
           </div>
         ) : tasks.length > 0 ? (
           tasks.map((task) => (
-            <TaskCard 
-              key={task.id} 
-              task={task} 
+            <TaskCard
+              key={task.id}
+              task={task}
               categories={categories}
               showEditOptions={true} // Add this prop to show edit/delete options
+              onTaskUpdate={onTaskUpdate}
             />
           ))
         ) : (

@@ -37,7 +37,7 @@ export const submitTaskAction = async (formData) => {
 // Transform database task to component format
 export const transformTaskForDisplay = (dbTask) => {
   return {
-    id: dbTask._id,
+    id: dbTask.id,
     user: dbTask.createdBy?.name || "Unknown User",
     avatar: "👤", // Default avatar, you can customize this based on user data
     time: formatTimeAgo(dbTask.createdAt),

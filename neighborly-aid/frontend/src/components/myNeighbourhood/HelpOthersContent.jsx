@@ -10,6 +10,7 @@ const HelpOthersContent = ({
   handleSetShowPostForm,
   tasks = [],
   loading = false,
+  onTaskUpdate,
 }) => {
   // Local state for category filtering within this component
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -21,7 +22,7 @@ const HelpOthersContent = ({
 
   // Get category name for display
   const getCategoryName = () => {
-    const category = categories.find(c => c.id === selectedCategory);
+    const category = categories.find((c) => c.id === selectedCategory);
     return category ? category.name : "All Tasks";
   };
 
@@ -55,7 +56,8 @@ const HelpOthersContent = ({
               "Loading..."
             ) : (
               <>
-                {filteredTasks.length} request{filteredTasks.length !== 1 ? 's' : ''} 
+                {filteredTasks.length} request
+                {filteredTasks.length !== 1 ? "s" : ""}
                 {selectedCategory !== "all" && ` in ${getCategoryName()}`}
               </>
             )}
@@ -65,7 +67,10 @@ const HelpOthersContent = ({
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 animate-pulse">
+              <div
+                key={i}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 animate-pulse"
+              >
                 <div className="flex items-start space-x-3">
                   <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                   <div className="flex-1 space-y-2">
@@ -80,7 +85,12 @@ const HelpOthersContent = ({
           </div>
         ) : filteredTasks.length > 0 ? (
           filteredTasks.map((task) => (
-            <TaskCard key={task.id} task={task} categories={categories} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              categories={categories}
+              onTaskUpdate={onTaskUpdate}
+            />
           ))
         ) : (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-8 text-center">
@@ -91,7 +101,7 @@ const HelpOthersContent = ({
                 <Filter className="w-8 h-8 text-gray-400" />
               )}
             </div>
-            
+
             {selectedCategory === "all" ? (
               <>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -113,8 +123,9 @@ const HelpOthersContent = ({
                   No {getCategoryName().toLowerCase()} requests found
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  There are currently no help requests in the {getCategoryName().toLowerCase()} category. 
-                  Try checking other categories or create the first one!
+                  There are currently no help requests in the{" "}
+                  {getCategoryName().toLowerCase()} category. Try checking other
+                  categories or create the first one!
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <button

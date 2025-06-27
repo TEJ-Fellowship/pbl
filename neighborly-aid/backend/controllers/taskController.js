@@ -118,7 +118,7 @@ const deleteTask = async (req, res) => {
 const getUserTasks = async (req, res) => {
   try {
     const type = req.query.type || "created"; // 'created' or 'accepted'
-    const tasks = await taskService.getUserTasks(req.user._id, type);
+    const tasks = await taskService.getUserTasks(req.user.id, type);
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { MapPin, Star, Heart, MessageCircle, Users } from "lucide-react";
+import axios from "axios";
+import config from "../../../config/config";
 
-const TaskCard = ({ task, categories }) => {
+const TaskCard = ({ task, categories, onTaskUpdate }) => {
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState(null);
+
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
       case "high":
@@ -29,6 +34,75 @@ const TaskCard = ({ task, categories }) => {
     }
   };
 
+  // Handle accepting a task
+  const handleAcceptTask = async () => {
+    if (isAccepting) return;
+
+    setIsAccepting(true);
+    setAcceptError(null);
+
+    try {
+      await axios.post(
+        `${config.API_BASE_URL}/api/tasks/${task.id}/accept`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      // Update the task locally
+      const updatedTask = {
+        ...task,
+        status: "in-progress",
+        helpers: task.helpers + 1,
+      };
+
+      // Call the callback to update parent component
+      if (onTaskUpdate) {
+        onTaskUpdate(updatedTask);
+      }
+    } catch (error) {
+      console.error("Error accepting task:", error);
+      setAcceptError(error.response?.data?.error || "Failed to accept task");
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  // Handle completing a task (for task owner)
+  const handleCompleteTask = async () => {
+    if (isAccepting) return;
+
+    setIsAccepting(true);
+    setAcceptError(null);
+
+    try {
+      await axios.post(
+        `${config.API_BASE_URL}/api/tasks/${task.id}/complete`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      // Update the task locally
+      const updatedTask = {
+        ...task,
+        status: "completed",
+      };
+
+      // Call the callback to update parent component
+      if (onTaskUpdate) {
+        onTaskUpdate(updatedTask);
+      }
+    } catch (error) {
+      console.error("Error completing task:", error);
+      setAcceptError(error.response?.data?.error || "Failed to complete task");
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
   return (
     <div className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark overflow-hidden mb-4 hover:shadow-md dark:hover:shadow-gray-900/20 transition-shadow">
       <div className="p-4">
@@ -39,8 +113,12 @@ const TaskCard = ({ task, categories }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-text-dark dark:text-white">{task.user}</h3>
-                <p className="text-sm text-text-light dark:text-gray-400">{task.time}</p>
+                <h3 className="font-semibold text-text-dark dark:text-white">
+                  {task.user}
+                </h3>
+                <p className="text-sm text-text-light dark:text-gray-400">
+                  {task.time}
+                </p>
               </div>
               <div className="flex items-center space-x-2 ">
                 <span
@@ -70,8 +148,12 @@ const TaskCard = ({ task, categories }) => {
             </span>
           </div>
 
-          <h4 className="font-semibold text-text-dark dark:text-white mb-2">{task.title}</h4>
-          <p className="text-text dark:text-gray-300 mb-3">{task.description}</p>
+          <h4 className="font-semibold text-text-dark dark:text-white mb-2">
+            {task.title}
+          </h4>
+          <p className="text-text dark:text-gray-300 mb-3">
+            {task.description}
+          </p>
 
           <div className="flex items-center text-sm text-text-light dark:text-gray-400 space-x-4 mb-3">
             <div className="flex items-center space-x-1">
@@ -105,13 +187,21 @@ const TaskCard = ({ task, categories }) => {
 
           <div className="flex space-x-2">
             {task.status === "open" && (
-              <button className="bg-gradient-to-r from-primary-light to-primary text-background px-4 py-2 rounded-full text-sm font-medium hover:from-primary hover:to-primary-dark transition-colors">
-                I can help!
+              <button
+                onClick={handleAcceptTask}
+                disabled={isAccepting}
+                className="bg-gradient-to-r from-primary-light to-primary text-background px-4 py-2 rounded-full text-sm font-medium hover:from-primary hover:to-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAccepting ? "Accepting..." : "I can help!"}
               </button>
             )}
             {task.status === "in-progress" && (
-              <button className="bg-status-success-bg text-status-success-text dark:bg-primary-dark dark:hover:bg-primary dark:text-status-success-dark-text px-4 py-2 rounded-full text-sm font-medium">
-                In Progress
+              <button
+                onClick={handleCompleteTask}
+                disabled={isAccepting}
+                className="bg-status-success-bg text-status-success-text dark:bg-primary-dark dark:hover:bg-primary dark:text-status-success-dark-text px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAccepting ? "Completing..." : "Mark Complete"}
               </button>
             )}
             {task.status === "completed" && (
@@ -121,6 +211,13 @@ const TaskCard = ({ task, categories }) => {
             )}
           </div>
         </div>
+
+        {/* Error message */}
+        {acceptError && (
+          <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+            {acceptError}
+          </div>
+        )}
       </div>
     </div>
   );
