@@ -14,39 +14,31 @@ const {
   getTaskSuggestions,
 } = require("../controllers/taskController");
 const auth = require("../middlewares/auth-middleware");
-// Get task suggestions
+
+// Debug route to test authentication
+router.get("/debug/auth", auth, (req, res) => {
+  res.json({
+    message: "Authentication working!",
+    user: req.user,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Public routes (no auth required)
 router.post("/suggestions", getTaskSuggestions);
-// Apply auth middleware to all routes
-router.use(auth);
+router.get("/", getTasks); // Public - anyone can view tasks
 
-// Create a new task
-router.post("/", createTask);
+// Protected routes (auth required)
+router.post("/", auth, createTask); // Create task - requires auth
+router.get("/my-tasks", auth, getUserTasks); // Get user's tasks - requires auth
+router.get("/:id", getTaskById); // Get specific task - public for now
+router.put("/:id", auth, updateTask); // Update task - requires auth
+router.post("/:id/accept", auth, acceptTask); // Accept task - requires auth
+router.post("/:id/complete", auth, completeTask); // Complete task - requires auth
+router.delete("/:id", auth, deleteTask); // Delete task - requires auth
 
-// Get all tasks
-router.get("/", getTasks);
-
-// Get user's tasks (created or accepted)
-router.get("/my-tasks", getUserTasks);
-
-// Get specific task by ID
-router.get("/:id", getTaskById);
-
-// Update task
-router.put("/:id", updateTask);
-
-// Accept task
-router.post("/:id/accept", acceptTask);
-
-// Complete task
-router.post("/:id/complete", completeTask);
-
-// Delete task
-router.delete("/:id", deleteTask);
-
-// Get tasks by category
+// Category and urgency routes
 router.get("/category/:category", getTasksByCategory);
-
-// Get tasks by urgency
 router.get("/urgency/:urgency", getTasksByUrgency);
 
 module.exports = router;

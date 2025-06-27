@@ -43,7 +43,7 @@ const MainContent = ({
       comments: 12,
       helpers: 1,
       karma: 32,
-      status: "in-progress",
+      status: "claimed",
     },
     {
       id: 3,

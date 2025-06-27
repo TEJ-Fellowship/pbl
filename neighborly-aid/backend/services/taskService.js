@@ -14,7 +14,7 @@ class TaskService {
   async getTasks(filters = {}) {
     return await Task.find(filters)
       .populate("createdBy", "name email")
-      .populate("acceptedBy", "name email")
+      .populate("helpers", "name email")
       .sort({ createdAt: -1 });
   }
 
@@ -22,7 +22,7 @@ class TaskService {
   async getTaskById(taskId) {
     return await Task.findById(taskId)
       .populate("createdBy", "name email")
-      .populate("acceptedBy", "name email");
+      .populate("helpers", "name email");
   }
 
   // Update task
@@ -31,7 +31,7 @@ class TaskService {
       taskId,
       { ...updateData },
       { new: true, runValidators: true }
-    ).populate("createdBy acceptedBy", "name email");
+    ).populate("createdBy helpers", "name email");
   }
 
   // Accept task
@@ -39,11 +39,11 @@ class TaskService {
     return await Task.findByIdAndUpdate(
       taskId,
       {
-        acceptedBy: userId,
+        helpers: userId,
         status: "IN_PROGRESS",
       },
       { new: true, runValidators: true }
-    ).populate("createdBy acceptedBy", "name email");
+    ).populate("createdBy helpers", "name email");
   }
 
   // Complete task
@@ -55,7 +55,7 @@ class TaskService {
         completedAt: new Date(),
       },
       { new: true, runValidators: true }
-    ).populate("createdBy acceptedBy", "name email");
+    ).populate("createdBy helpers", "name email");
   }
 
   // Delete task
@@ -66,10 +66,10 @@ class TaskService {
   // Get tasks by user (either created or accepted)
   async getUserTasks(userId, type = "created") {
     const filter =
-      type === "created" ? { createdBy: userId } : { acceptedBy: userId };
+      type === "created" ? { createdBy: userId } : { helpers: userId };
 
     return await Task.find(filter)
-      .populate("createdBy acceptedBy", "name email")
+      .populate("createdBy helpers", "name email")
       .sort({ createdAt: -1 });
   }
 
@@ -78,7 +78,7 @@ class TaskService {
     try {
       const tasks = await Task.find({ category })
         .populate("createdBy", "name email")
-        .populate("acceptedBy", "name email")
+        .populate("helpers", "name email")
         .sort({ createdAt: -1 });
       return tasks;
     } catch (error) {
@@ -91,7 +91,7 @@ class TaskService {
     try {
       const tasks = await Task.find({ urgency })
         .populate("createdBy", "name email")
-        .populate("acceptedBy", "name email")
+        .populate("helpers", "name email")
         .sort({ createdAt: -1 });
       return tasks;
     } catch (error) {

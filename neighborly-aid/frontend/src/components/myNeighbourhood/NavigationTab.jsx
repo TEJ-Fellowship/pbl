@@ -6,24 +6,24 @@ const NavigationTab = ({ activeTab, handleSetActiveTab }) => {
       <div className="p-6 mb-4">
         <div className="flex space-x-1 bg-background dark:bg-gray-700  rounded-xl p-1 shadow-sm dark:border-border-dark">
           <button
-            onClick={() => handleSetActiveTab("newsfeed")}
+            onClick={() => handleSetActiveTab("helpothers")}
             className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "newsfeed"
+              activeTab === "helpothers"
                 ? "bg-gradient-to-r from-primary-light to-primary text-background  dark:text-text-spotlight dark:hover:text-white"
                 : "text-text-light hover:text-text-dark dark:text-text-spotlight dark:hover:text-white"
             }`}
           >
-            Help Feed
+            Help Others
           </button>
           <button
-            onClick={() => handleSetActiveTab("explore")}
+            onClick={() => handleSetActiveTab("askforhelp")}
             className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "explore"
+              activeTab === "askforhelp"
                 ? "bg-gradient-to-r from-primary-light to-primary text-background dark:text-text-spotlight dark:hover:text-white"
                 : "text-text-light hover:text-text-dark dark:text-text-spotlight dark:hover:text-white"
             }`}
           >
-            Explore
+            Ask for Help
           </button>
         </div>
       </div>
