@@ -20,7 +20,7 @@ const App = () => {
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem("loggedUser", JSON.stringify(userData));
-    toast.success(`Welcome back, ${userData.username}!`);
+    toast.success(`Welcome back, ${userData.firstName || userData.email}!`);
   };
 
   const handleLogout = () => {
@@ -32,19 +32,40 @@ const App = () => {
 
   if (user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            Welcome back, {user.username}!
-          </h1>
-          <p className="text-gray-600 mb-6">Ready to build your perfect resume?</p>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-          >
-            Logout
-          </button>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <div className="flex items-center">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900">AI Resume Builder</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-600">
+                  Welcome, {user.firstName || user.email}!
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main>
+          <ResumeUpload />
+        </main>
+
+        {/* Toast notifications container */}
         <ToastContainer position="top-center" autoClose={3000} />
       </div>
     );
@@ -145,7 +166,6 @@ const App = () => {
 
       {/* Toast notifications container */}
       <ToastContainer position="top-center" autoClose={3000} />
-      <ResumeUpload />
     </div>
   );
 };

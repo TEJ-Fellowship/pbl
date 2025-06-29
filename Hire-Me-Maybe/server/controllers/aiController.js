@@ -9,6 +9,13 @@ const analyzeResume = asyncHandler(async (req, res) => {
 
   const analysis = await AiService.analyzeResume(req.params.id);
 
+  console.log("=== ANALYSIS RESULT ===");
+  console.log("Analysis object:", analysis);
+  console.log("Skills:", analysis.skills);
+  console.log("Experience Level:", analysis.experienceLevel);
+  console.log("Strengths:", analysis.strengths);
+  console.log("Suggestions:", analysis.suggestions);
+
   res.json({
     success: true,
     message: "Resume analyzed successfully",

@@ -19,21 +19,20 @@ const Signup = ({ onSignup }) => {
             return;
         }
 
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters");
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters");
             return;
         }
 
         setIsLoading(true);
 
         try {
-            const username = `${firstName} ${lastName}`.trim();
             const response = await fetch("/api/register", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ username, email, password, firstName, lastName }),
+                body: JSON.stringify({ email, password, firstName, lastName }),
             });
 
             const data = await response.json();

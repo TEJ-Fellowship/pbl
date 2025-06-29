@@ -12,10 +12,19 @@ export const useResumeAnalysis = () => {
     setAnalysisResult(null);
 
     try {
+      console.log("=== FRONTEND ANALYSIS DEBUG ===");
+      console.log("Calling analyzeResume with ID:", resumeId);
+
       const result = await aiService.analyzeResume(resumeId);
-      setAnalysisResult(result.data);
-      return result.data;
+
+      console.log("Raw API response:", result);
+      console.log("Response data:", result.data);
+      console.log("Analysis result:", result.data?.data);
+
+      setAnalysisResult(result.data?.data);
+      return result.data?.data;
     } catch (error) {
+      console.error("Analysis error:", error);
       setAnalysisError(error.message || "Analysis failed");
       throw error;
     } finally {

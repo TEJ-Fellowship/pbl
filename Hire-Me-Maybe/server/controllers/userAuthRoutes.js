@@ -7,13 +7,14 @@ const userAuthRouter = express.Router();
 //user register
 userAuthRouter.post("/register", async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName } = req.body;
 
     // Validation - Update to include new fields
-    if (!username || !email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required: firstName, lastName, username, email, and password",
+        message:
+          "All fields are required: firstName, lastName, email, and password",
       });
     }
 
@@ -26,34 +27,24 @@ userAuthRouter.post("/register", async (req, res) => {
       });
     }
 
-    // Password strength validation
-    if (password.length < 6) {  // Match frontend validation
+    // Password strength validation - use the regex (minimum 8 characters)
+    if (!passwordRegex.test(password)) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 6 characters long",
+        message:
+          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
       });
     }
 
-  
-// Password strength validation - use the actual regex
-if (!passwordRegex.test(password)) {
-  return res.status(400).json({
-    success: false,
-    message: "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
-  });
-}
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase() }, { username }],
+      email: email.toLowerCase(),
     });
 
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message:
-          existingUser.email === email.toLowerCase()
-            ? "Email already registered"
-            : "Username already taken",
+        message: "Email already registered",
       });
     }
 
@@ -65,7 +56,6 @@ if (!passwordRegex.test(password)) {
     const user = new User({
       firstName,
       lastName,
-      username,
       email: email.toLowerCase(),
       password: hashedPassword,
     });
@@ -77,7 +67,6 @@ if (!passwordRegex.test(password)) {
       id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
-      username: user.username,
       email: user.email,
       createdAt: user.createdAt,
     };
@@ -142,7 +131,6 @@ userAuthRouter.post("/login", async (req, res) => {
     // Successful login: send user data
     const userResponse = {
       id: user._id,
-      username: user.username,
       email: user.email,
       createdAt: user.createdAt,
     };
