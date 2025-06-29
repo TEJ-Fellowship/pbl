@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ResumeUpload from "./components/resume/ResumeUpload";
 
 import Signup from "./components/Signup";
 import Login from "./components/Login";
@@ -60,6 +61,7 @@ const App = () => {
 
       {/* Toast notifications container */}
       <ToastContainer position="top-center" autoClose={3000} />
+      <ResumeUpload />
     </div>
   );
 };
