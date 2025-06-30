@@ -40,6 +40,11 @@ const register = async (data) => {
       email,
       phone,
       role,
+      karmaPoints: 100,
+      totalLikes: 0,
+      badges: "bronze",
+      completedTasks: [],
+      reviews: [],
     });
 
     // Modify the user object before saving (optional) This is the advantage of making new instance of user and saving
