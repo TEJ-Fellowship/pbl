@@ -6,6 +6,8 @@ const {
   LOW,
   MEDIUM,
   HIGH,
+  ACTIVE,
+  HELPER_COMPLETED,
 } = require("../utils/constants");
 
 const taskSchema = new mongoose.Schema({
@@ -27,12 +29,7 @@ const taskSchema = new mongoose.Schema({
     minlength: 3,
     maxlength: 100,
   },
-  urgency: { type: String, enum: [LOW, MEDIUM, HIGH] },
-  status: {
-    type: String,
-    enum: [OPEN, IN_PROGRESS, COMPLETED],
-    default: OPEN,
-  },
+
   location: {
     type: String,
     required: true,
@@ -48,12 +45,30 @@ const taskSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  urgency: { type: String, enum: [LOW, MEDIUM, HIGH] },
+  status: {
+    type: String,
+    enum: [OPEN, IN_PROGRESS, COMPLETED],
+    default: OPEN,
+  },
   helpers: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      acceptedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      status: {
+        type: String,
+        enum: [ACTIVE, HELPER_COMPLETED],
+        default: ACTIVE,
+      },
     },
   ],
+
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
 });

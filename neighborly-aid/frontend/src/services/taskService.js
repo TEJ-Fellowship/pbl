@@ -1,5 +1,31 @@
 import { createTask, getTasks, getUserTasks } from "../api/tasks";
 
+// Fetch all tasks (for Help Others tab)
+export const fetchAllTasks = async (filters = {}) => {
+  try {
+    const tasks = await getTasks(filters);
+    return tasks.map(transformTaskForDisplay);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    throw error;
+  }
+};
+
+// Fetch user's own tasks (for Ask for Help tab)
+export const fetchUserTasks = async () => {
+  try {
+    const tasks = await getUserTasks("created");
+    return tasks.map((task) => ({
+      ...transformTaskForDisplay(task),
+      isUserTask: true,
+      user: "You",
+    }));
+  } catch (error) {
+    console.error("Error fetching user tasks:", error);
+    throw error;
+  }
+};
+
 export const submitTaskAction = async (formData) => {
   try {
     // Convert FormData to regular object
@@ -74,31 +100,5 @@ const formatTimeAgo = (dateString) => {
     return `${diffInDays} day${diffInDays !== 1 ? "s" : ""} ago`;
   } else {
     return date.toLocaleDateString();
-  }
-};
-
-// Fetch all tasks (for Help Others tab)
-export const fetchAllTasks = async (filters = {}) => {
-  try {
-    const tasks = await getTasks(filters);
-    return tasks.map(transformTaskForDisplay);
-  } catch (error) {
-    console.error("Error fetching tasks:", error);
-    throw error;
-  }
-};
-
-// Fetch user's own tasks (for Ask for Help tab)
-export const fetchUserTasks = async () => {
-  try {
-    const tasks = await getUserTasks("created");
-    return tasks.map((task) => ({
-      ...transformTaskForDisplay(task),
-      isUserTask: true,
-      user: "You",
-    }));
-  } catch (error) {
-    console.error("Error fetching user tasks:", error);
-    throw error;
   }
 };

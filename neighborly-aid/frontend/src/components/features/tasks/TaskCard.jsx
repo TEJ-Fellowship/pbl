@@ -1,6 +1,13 @@
 import React, { useState, useContext } from "react";
-import { MapPin, Star, Heart, MessageCircle, Users } from "lucide-react";
-import { likeTask } from "../../../api/tasks";
+import {
+  MapPin,
+  Star,
+  Heart,
+  MessageCircle,
+  Users,
+  CloudCog,
+} from "lucide-react";
+import { acceptTask, likeTask } from "../../../api/tasks";
 import AuthContext from "../../../context/AuthContext";
 import { toast } from "react-hot-toast";
 
@@ -8,6 +15,8 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
   const { user } = useContext(AuthContext);
   const [isLiking, setIsLiking] = useState(false);
   const [currentTask, setCurrentTask] = useState(task);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState(null);
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
       case "high":
@@ -21,6 +30,7 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
     }
   };
 
+  console.log("currentTask", currentTask);
   // Status icons remain the same
   const getStatusIcon = (status) => {
     switch (status) {
@@ -47,12 +57,12 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
     setIsLiking(true);
     try {
       const result = await likeTask(currentTask.id || currentTask._id);
-      
+
       // Update the current task state
-      setCurrentTask(prev => ({
+      setCurrentTask((prev) => ({
         ...prev,
         likes: result.task.likes,
-        likedBy: result.task.likedBy
+        likedBy: result.task.likedBy,
       }));
 
       // Call parent update function if provided
@@ -70,9 +80,31 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
   };
 
   // Check if current user has liked this task
-  const isLikedByUser = currentTask.likedBy?.some(
-    likedUser => likedUser._id === user?.id || likedUser === user?.id
-  ) || false;
+  const isLikedByUser =
+    currentTask.likedBy?.some(
+      (likedUser) => likedUser._id === user?.id || likedUser === user?.id
+    ) || false;
+
+  const handleAcceptTask = async () => {
+    //Prevent multiple clicks
+    if (isAccepting) return;
+    setIsAccepting(true);
+    setAcceptError(null);
+    try {
+      const result = await acceptTask(currentTask.id, user.id);
+      setCurrentTask((prev) => ({
+        ...prev,
+        status: result.task.status,
+      }));
+      setAcceptError(null);
+      console.log(result);
+    } catch (error) {
+      console.error("Error accepting task:", error);
+      setAcceptError(error.error || "Failed to accept task");
+    } finally {
+      setIsAccepting(false);
+    }
+  };
 
   return (
     <div className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark overflow-hidden mb-4 hover:shadow-md dark:hover:shadow-gray-900/20 transition-shadow">
@@ -84,8 +116,12 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-text-dark dark:text-white">{currentTask.user}</h3>
-                <p className="text-sm text-text-light dark:text-gray-400">{currentTask.time}</p>
+                <h3 className="font-semibold text-text-dark dark:text-white">
+                  {currentTask.user}
+                </h3>
+                <p className="text-sm text-text-light dark:text-gray-400">
+                  {currentTask.time}
+                </p>
               </div>
               <div className="flex items-center space-x-2 ">
                 <span
@@ -95,7 +131,9 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                 >
                   {currentTask.urgency} priority
                 </span>
-                <span className="text-lg">{getStatusIcon(currentTask.status)}</span>
+                <span className="text-lg">
+                  {getStatusIcon(currentTask.status)}
+                </span>
               </div>
             </div>
           </div>
@@ -115,8 +153,12 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
             </span>
           </div>
 
-          <h4 className="font-semibold text-text-dark dark:text-white mb-2">{currentTask.title}</h4>
-          <p className="text-text dark:text-gray-300 mb-3">{currentTask.description}</p>
+          <h4 className="font-semibold text-text-dark dark:text-white mb-2">
+            {currentTask.title}
+          </h4>
+          <p className="text-text dark:text-gray-300 mb-3">
+            {currentTask.description}
+          </p>
 
           <div className="flex items-center text-sm text-text-light dark:text-gray-400 space-x-4 mb-3">
             <div className="flex items-center space-x-1">
@@ -134,17 +176,17 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
       <div className="border-t border-border dark:border-gray-700 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4 text-sm text-text-light dark:text-gray-400">
-            <button 
+            <button
               onClick={handleLike}
               disabled={isLiking}
               className={`flex items-center space-x-1 transition-colors cursor-pointer disabled:opacity-50 ${
-                isLikedByUser 
-                  ? 'text-red-500 hover:text-red-600' 
-                  : 'hover:text-gray-800 dark:hover:text-gray-200'
+                isLikedByUser
+                  ? "text-red-500 hover:text-red-600"
+                  : "hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
-              <Heart 
-                className={`w-4 h-4 ${isLikedByUser ? 'fill-current' : ''}`} 
+              <Heart
+                className={`w-4 h-4 ${isLikedByUser ? "fill-current" : ""}`}
               />
               <span>{currentTask.likes}</span>
             </button>
@@ -158,7 +200,11 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
             </div>
           </div>
 
-          <div className="flex space-x-2">
+          <div
+            onClick={handleAcceptTask}
+            disabled={isAccepting}
+            className="flex space-x-2"
+          >
             {currentTask.status === "open" && (
               <button className="bg-gradient-to-r from-primary-light to-primary text-background px-4 py-2 rounded-full text-sm font-medium hover:from-primary hover:to-primary-dark transition-colors">
                 I can help!

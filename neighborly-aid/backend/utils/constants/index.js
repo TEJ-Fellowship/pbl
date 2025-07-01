@@ -1,6 +1,7 @@
 const { OPEN, IN_PROGRESS, COMPLETED } = require("./taskStatus");
 const { HELPER, REQUESTER, ADMIN } = require("./userRole");
 const { LOW, MEDIUM, HIGH } = require("./taskUrgency");
+const { ACTIVE, COMPLETED: HELPER_COMPLETED } = require("./helperStatus");
 const {
   PENDING,
   ACCEPTED,
@@ -37,4 +38,8 @@ module.exports = {
   ONGOING,
   CLOSED,
   CANCELLED,
+
+  // Helper Status
+  ACTIVE,
+  HELPER_COMPLETED,
 };

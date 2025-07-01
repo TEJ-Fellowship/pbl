@@ -152,3 +152,17 @@ export const likeTask = async (taskId) => {
     throw error.response?.data || { error: "Failed to like task" };
   }
 };
+
+export const acceptTask = async (taskId, userId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/accept`,
+      { userId },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Accept task error:", error);
+    throw error.response?.data || { error: "Failed to accept task" };
+  }
+};

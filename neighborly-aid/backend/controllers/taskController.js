@@ -77,8 +77,14 @@ const updateTask = async (req, res) => {
 
 // Accept task
 const acceptTask = async (req, res) => {
+  console.log("=== Accept Task Debug ===");
+  console.log("Task ID:", req.params.id);
+  console.log("User ID:", req.user.id);
+  console.log("Request body:", req.body);
+
   try {
     const task = await taskService.acceptTask(req.params.id, req.user.id);
+    console.log("Task accepted after service:", task);
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
     }
