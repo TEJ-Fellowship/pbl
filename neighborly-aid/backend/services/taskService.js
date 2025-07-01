@@ -1,4 +1,5 @@
 const Task = require("../models/Task");
+const User = require("../models/User");
 
 class TaskService {
   // Create a new task
@@ -146,8 +147,6 @@ class TaskService {
 
   // Like/Unlike a task
   async likeTask(taskId, userId) {
-    const User = require("../models/User");
-
     try {
       const task = await Task.findById(taskId).populate("createdBy");
       if (!task) {
@@ -167,10 +166,9 @@ class TaskService {
         task.likedBy.pull(userId);
         task.likes = Math.max(0, task.likes - 1);
 
-        // Decrease task creator's karma and likes
+        // Decrease task creator's likes
         await User.findByIdAndUpdate(task.createdBy._id, {
           $inc: {
-            karmaPoints: -1,
             totalLikes: -1,
           },
         });
@@ -179,10 +177,9 @@ class TaskService {
         task.likedBy.push(userId);
         task.likes += 1;
 
-        // Increase task creator's karma and likes
+        // Increase task creator's likes
         await User.findByIdAndUpdate(task.createdBy._id, {
           $inc: {
-            karmaPoints: 1,
             totalLikes: 1,
           },
         });

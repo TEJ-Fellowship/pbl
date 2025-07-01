@@ -10,8 +10,12 @@ const getUserDashboard = async (userId) => {
     console.log("response in api", response.data);
     return response;
   } catch (error) {
-    console.error("Failed to fetch dashboard data:", error);
-    throw error; // Re-throw the error so the component can handle it
+    console.error("Dashboard API error:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    throw error;
   }
 };
 
