@@ -41,6 +41,12 @@ const taskSchema = new mongoose.Schema({
   },
   taskKarmaPoints: { type: Number, default: 10 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
   likes: { type: Number, default: 0 },
   likedBy: [
     {
