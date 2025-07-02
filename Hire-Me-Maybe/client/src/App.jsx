@@ -2,15 +2,16 @@ import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import Signup from "./components/Signup";
-import Login from "./components/Login";
 import AppRoutes from "./AppRoutes";
+import LandingPage from "./components/LandingPage";
+import LoginPage from "./components/LoginPage";
+import SignupPage from "./components/SignupPage";
 
 const App = () => {
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("loggedUser")) || null
   );
-  const [view, setView] = useState("signup");
+  const [view, setView] = useState("landing");
 
   const handleSignup = () => {
     toast.success("Signup successful! Please log in.");
@@ -26,11 +27,22 @@ const App = () => {
   const handleLogout = () => {
     localStorage.removeItem("loggedUser");
     setUser(null);
-    setView("login");
+    setView("landing");
     toast.info("You have been logged out.");
   };
 
-  // If user is authenticated, show the routed app
+  const navigateToLogin = () => {
+    setView("login");
+  };
+
+  const navigateToSignup = () => {
+    setView("signup");
+  };
+
+  const navigateToLanding = () => {
+    setView("landing");
+  };
+
   if (user) {
     return (
       <>
@@ -145,8 +157,56 @@ const App = () => {
           </div>
         </div>
       </div>
+  // Show landing page
+  if (view === "landing") {
+    return (
+      <>
+        <LandingPage
+          onLoginClick={navigateToLogin}
+          onGetStartedClick={navigateToSignup}
+        />
+        <ToastContainer position="top-center" autoClose={3000} />
+      </>
+    );
+  }
+
+  // Show login page
+  if (view === "login") {
+    return (
+      <>
+        <LoginPage
+          onLogin={handleLogin}
+          onBackToHome={navigateToLanding}
+          onGoToSignup={navigateToSignup}
+        />
+        <ToastContainer position="top-center" autoClose={3000} />
+      </>
+    );
+  }
+
+  // Show signup page
+  if (view === "signup") {
+    return (
+      <>
+        <SignupPage
+          onSignup={handleSignup}
+          onBackToHome={navigateToLanding}
+          onGoToLogin={navigateToLogin}
+        />
+        <ToastContainer position="top-center" autoClose={3000} />
+      </>
+    );
+  }
+
+  // Fallback - should not reach here
+  return (
+    <>
+      <LandingPage
+        onLoginClick={navigateToLogin}
+        onGetStartedClick={navigateToSignup}
+      />
       <ToastContainer position="top-center" autoClose={3000} />
-    </div>
+    </>
   );
 };
 
