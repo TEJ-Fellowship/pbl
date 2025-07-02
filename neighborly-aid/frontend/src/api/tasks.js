@@ -153,16 +153,71 @@ export const likeTask = async (taskId) => {
   }
 };
 
-export const acceptTask = async (taskId, userId) => {
+export const acceptTask = async (taskId) => {
   try {
     const response = await axios.post(
       `${config.API_BASE_URL}/api/tasks/${taskId}/accept`,
-      { userId },
+      {},
       { withCredentials: true }
     );
     return response.data;
   } catch (error) {
     console.error("Accept task error:", error);
     throw error.response?.data || { error: "Failed to accept task" };
+  }
+};
+
+export const completeTask = async (taskId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/complete`,
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Complete task error:", error);
+    throw error.response?.data || { error: "Failed to complete task" };
+  }
+};
+
+export const removeHelp = async (taskId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/remove-help`,
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Remove help error:", error);
+    throw error.response?.data || { error: "Failed to remove help" };
+  }
+};
+
+export const getTaskWithHelpers = async (taskId) => {
+  try {
+    const response = await axios.get(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/helpers`,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get task with helpers error:", error);
+    throw error.response?.data || { error: "Failed to fetch task helpers" };
+  }
+};
+
+export const selectHelper = async (taskId, helperId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/select-helper/${helperId}`,
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Select helper error:", error);
+    throw error.response?.data || { error: "Failed to select helper" };
   }
 };

@@ -76,7 +76,7 @@ export const transformTaskForDisplay = (dbTask) => {
     likes: dbTask.likes || 0,
     likedBy: dbTask.likedBy || [],
     comments: 0, // This might need to be added to your schema later
-    helpers: Array.isArray(dbTask.helpers) ? dbTask.helpers.length : 0,
+    helpers: dbTask.helpers || [],
     karma: dbTask.taskKarmaPoints || 0,
     status: dbTask.status?.toLowerCase() || "open",
     isUserTask: false, // Will be set based on context

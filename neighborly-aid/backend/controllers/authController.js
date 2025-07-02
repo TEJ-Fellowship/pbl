@@ -22,11 +22,6 @@ const loginController = async (req, res) => {
     const formattedData = formatUserData(user);
     const token = createJWT(formattedData);
 
-    // console.log("=== Login Debug ===");
-    // console.log("Setting cookie with token:", token.substring(0, 20) + "...");
-    // console.log("Request origin:", req.headers.origin);
-    // console.log("Request headers:", req.headers);
-
     // Set cookie with appropriate settings for development
     res.cookie("authToken", token, {
       httpOnly: true,

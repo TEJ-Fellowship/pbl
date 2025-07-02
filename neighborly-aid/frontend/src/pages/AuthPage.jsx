@@ -34,7 +34,7 @@ export default function AuthPage() {
                 <Heart className="h-12 w-12 text-white" />
               </div>
             </div>
-            <h1 className="text-5xl font-bold mb-4">Neighborly Aid</h1>
+            <h1 className="text-5xl font-bold mb-4">Neighbourly Aid</h1>
             <p className="text-xl text-emerald-100 mb-8 max-w-md">
               Building stronger communities, one neighbor at a time
             </p>
@@ -95,7 +95,7 @@ export default function AuthPage() {
               <Heart className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-emerald-600 mb-2">
-              Neighborly Aid
+              Neighbourly Aid
             </h1>
             <p className="text-gray-600">
               {isLogin

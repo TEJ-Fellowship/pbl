@@ -1,5 +1,16 @@
+const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const User = require("../models/User");
+const notificationService = require("./notificationService");
+const {
+  OPEN,
+  IN_PROGRESS,
+  COMPLETED,
+  ACTIVE,
+  PENDING,
+  SELECTED,
+  REJECTED,
+} = require("../utils/constants");
 
 class TaskService {
   // Create a new task
@@ -45,46 +56,50 @@ class TaskService {
       if (!task) {
         throw new Error("Task not found");
       }
-  
+
       // Check if task is open
-      if (task.status !== 'open') {
+      if (task.status !== OPEN) {
         throw new Error("Task is not available for help");
       }
-  
+
       // Check if user is not the task creator
       if (task.createdBy.toString() === userId) {
         throw new Error("You cannot help with your own task");
       }
-  
+
       // Check if user already helping
-      const alreadyHelping = task.helpers.some(helper => 
-        helper.userId.toString() === userId
+      const alreadyHelping = task.helpers.some(
+        (helper) => helper.userId.toString() === userId
       );
       if (alreadyHelping) {
         throw new Error("You are already helping with this task");
       }
-  
-      // Update task
+
+      // Only add helper, do NOT change task status here
       const updatedTask = await Task.findByIdAndUpdate(
         taskId,
         {
           $push: {
             helpers: {
-              userId,
+              userId: new mongoose.Types.ObjectId(userId),
               acceptedAt: new Date(),
-              status: "active",
-            }
+              status: PENDING,
+            },
           },
-          status: "in-progress",
         },
         { new: true, runValidators: true }
       ).populate([
         { path: "createdBy", select: "name email" },
-        { path: "helpers.userId", select: "name email" },
+        {
+          path: "helpers.userId",
+          select: "name email address location karmaPoints totalLikes badges",
+        },
       ]);
-  
+
+      // Create notification for new helper offered
+      await notificationService.notifyNewHelperOffered(taskId, userId);
+
       return updatedTask;
-      
     } catch (error) {
       console.error("Error in acceptTask:", error);
       throw error;
@@ -92,15 +107,62 @@ class TaskService {
   }
 
   // Complete task
-  async completeTask(taskId) {
-    return await Task.findByIdAndUpdate(
+  async completeTask(taskId, userId) {
+    const updatedTask = await Task.findByIdAndUpdate(
       taskId,
       {
-        status: "COMPLETED",
+        status: COMPLETED,
         completedAt: new Date(),
       },
       { new: true, runValidators: true }
     ).populate("createdBy helpers.userId", "name email");
+
+    // Create notification for task completion
+    await notificationService.notifyTaskCompleted(taskId, userId);
+
+    return updatedTask;
+  }
+
+  // Remove help
+  async removeHelp(taskId, userId) {
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is helping with this task
+      const isHelping = task.helpers.some(
+        (helper) => helper.userId.toString() === userId
+      );
+      if (!isHelping) {
+        throw new Error("You are not helping with this task");
+      }
+
+      // Remove user from helpers array
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          $pull: {
+            helpers: {
+              userId: new mongoose.Types.ObjectId(userId),
+            },
+          },
+          // If no more helpers, set status back to open
+          ...(task.helpers.length === 1 && { status: OPEN }),
+        },
+        { new: true, runValidators: true }
+      ).populate([
+        { path: "createdBy", select: "name email" },
+        { path: "helpers.userId", select: "name email" },
+      ]);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in removeHelp:", error);
+      throw error;
+    }
   }
 
   // Delete task
@@ -111,7 +173,9 @@ class TaskService {
   // Get tasks by user (either created or accepted)
   async getUserTasks(userId, type = "created") {
     const filter =
-      type === "created" ? { createdBy: userId } : { helpers: userId };
+      type === "created"
+        ? { createdBy: new mongoose.Types.ObjectId(userId) }
+        : { "helpers.userId": new mongoose.Types.ObjectId(userId) };
 
     return await Task.find(filter)
       .populate("createdBy helpers.userId", "name email karmaPoints totalLikes")
@@ -159,11 +223,13 @@ class TaskService {
       }
 
       // Check if user already liked the task
-      const alreadyLiked = task.likedBy.includes(userId);
+      const alreadyLiked = task.likedBy.includes(
+        new mongoose.Types.ObjectId(userId)
+      );
 
       if (alreadyLiked) {
         // Unlike the task
-        task.likedBy.pull(userId);
+        task.likedBy.pull(new mongoose.Types.ObjectId(userId));
         task.likes = Math.max(0, task.likes - 1);
 
         // Decrease task creator's likes
@@ -174,7 +240,7 @@ class TaskService {
         });
       } else {
         // Like the task
-        task.likedBy.push(userId);
+        task.likedBy.push(new mongoose.Types.ObjectId(userId));
         task.likes += 1;
 
         // Increase task creator's likes
@@ -210,9 +276,101 @@ class TaskService {
       if (!task) {
         throw new Error("Task not found");
       }
-      return task.likedBy.includes(userId);
+      return task.likedBy.includes(new mongoose.Types.ObjectId(userId));
     } catch (error) {
       throw new Error(`Error checking if user liked task: ${error.message}`);
+    }
+  }
+
+  // Get task with populated helpers (for selection UI)
+  async getTaskWithHelpers(taskId) {
+    try {
+      const task = await Task.findById(taskId)
+        .populate(
+          "helpers.userId",
+          "name email address location karmaPoints totalLikes badges completedTasks reviews"
+        )
+        .populate(
+          "selectedHelper",
+          "name email address location karmaPoints totalLikes badges"
+        )
+        .populate("createdBy", "name email");
+
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      return task;
+    } catch (error) {
+      console.error("Error in getTaskWithHelpers:", error);
+      throw error;
+    }
+  }
+
+  // Select a helper for a task
+  async selectHelper(taskId, helperUserId, creatorId) {
+    try {
+      // Validate task exists and user is creator
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      if (task.createdBy.toString() !== creatorId) {
+        throw new Error("Only task creator can select helpers");
+      }
+
+      // Check if helper exists in helpers array
+      const helperExists = task.helpers.some(
+        (helper) => helper.userId.toString() === helperUserId
+      );
+
+      if (!helperExists) {
+        throw new Error("Helper not found in task helpers");
+      }
+
+      // Update helper status to selected
+      await Task.updateOne(
+        { _id: taskId, "helpers.userId": helperUserId },
+        {
+          $set: {
+            "helpers.$.status": SELECTED,
+            "helpers.$.selectedAt": new Date(),
+            selectedHelper: helperUserId,
+            status: IN_PROGRESS,
+          },
+        }
+      );
+
+      // Reject other helpers
+      await Task.updateOne(
+        { _id: taskId },
+        {
+          $set: {
+            "helpers.$[elem].status": REJECTED,
+          },
+        },
+        {
+          arrayFilters: [
+            {
+              "elem.userId": { $ne: new mongoose.Types.ObjectId(helperUserId) },
+            },
+          ],
+        }
+      );
+
+      // Create notifications for helper selection
+      await notificationService.notifyHelperSelected(
+        taskId,
+        helperUserId,
+        creatorId
+      );
+
+      // Return updated task with populated data
+      return await this.getTaskWithHelpers(taskId);
+    } catch (error) {
+      console.error("Error in selectHelper:", error);
+      throw error;
     }
   }
 }

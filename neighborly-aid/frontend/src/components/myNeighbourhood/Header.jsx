@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Bell, User } from "lucide-react";
+import { User } from "lucide-react";
 import UserModal from "../ui/UserModal";
+import NotificationDropdown from "../ui/NotificationDropdown";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,7 +17,7 @@ const Header = () => {
               HelpBoard
             </h1>
             <div className="flex items-center space-x-3">
-              <Bell className="w-6 h-6 text-gray-600" />
+              <NotificationDropdown />
               <button
                 onClick={handleIsOpen}
                 className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center hover:from-green-500 hover:to-green-700 transition-all duration-200 cursor-pointer"

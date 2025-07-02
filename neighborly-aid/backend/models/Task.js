@@ -6,7 +6,10 @@ const {
   LOW,
   MEDIUM,
   HIGH,
+  PENDING,
   ACTIVE,
+  SELECTED,
+  REJECTED,
   HELPER_COMPLETED,
 } = require("../utils/constants");
 
@@ -69,12 +72,16 @@ const taskSchema = new mongoose.Schema({
       },
       status: {
         type: String,
-        enum: [ACTIVE, HELPER_COMPLETED],
-        default: ACTIVE,
+        enum: [PENDING, ACTIVE, SELECTED, REJECTED, HELPER_COMPLETED],
+        default: PENDING,
       },
+      selectedAt: Date,
     },
   ],
-
+  selectedHelper: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
 });
