@@ -7,12 +7,15 @@ const {
   updateTask,
   acceptTask,
   completeTask,
+  removeHelp,
   deleteTask,
   getUserTasks,
   getTasksByCategory,
   getTasksByUrgency,
   getTaskSuggestions,
   likeTask,
+  getTaskWithHelpers,
+  selectHelper,
 } = require("../controllers/taskController");
 const auth = require("../middlewares/auth-middleware");
 
@@ -36,11 +39,16 @@ router.get("/:id", getTaskById); // Get specific task - public for now
 router.put("/:id", auth, updateTask); // Update task - requires auth
 router.post("/:id/accept", auth, acceptTask); // Accept task - requires auth
 router.post("/:id/complete", auth, completeTask); // Complete task - requires auth
+router.post("/:id/remove-help", auth, removeHelp); // Remove help - requires auth
 router.post("/:id/like", auth, likeTask); // Like/Unlike task - requires auth
 router.delete("/:id", auth, deleteTask); // Delete task - requires auth
 
 // Category and urgency routes
 router.get("/category/:category", getTasksByCategory);
 router.get("/urgency/:urgency", getTasksByUrgency);
+
+// Add these new routes
+router.get("/:id/helpers", getTaskWithHelpers);
+router.post("/:id/select-helper/:helperId", auth, selectHelper);
 
 module.exports = router;

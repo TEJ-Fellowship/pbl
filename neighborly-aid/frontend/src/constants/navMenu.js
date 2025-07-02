@@ -1,7 +1,7 @@
 import {
   MY_NEIGHBOURHOOD,
   AVAILABLE_SUPPORT,
-  WHY_NEIGHBORLY_AID,
+  WHY_NEIGHBOURLY_AID,
   REACH_OUT,
 } from "./routes";
 
@@ -11,8 +11,8 @@ const navMenu = [
     label: "My Neighbourhood",
   },
   {
-    route: WHY_NEIGHBORLY_AID,
-    label: "Why Neighborly Aid?",
+    route: WHY_NEIGHBOURLY_AID,
+    label: "Why Neighbourly Aid?",
   },
   {
     route: AVAILABLE_SUPPORT,

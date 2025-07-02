@@ -3,6 +3,13 @@ const { HELPER, REQUESTER, ADMIN } = require("./userRole");
 const { LOW, MEDIUM, HIGH } = require("./taskUrgency");
 const {
   PENDING,
+  ACTIVE,
+  SELECTED,
+  REJECTED,
+  COMPLETED: HELPER_COMPLETED,
+} = require("./helperStatus");
+const {
+  PENDING: EVENT_PENDING,
   ACCEPTED,
   DECLINED,
   UPCOMING,
@@ -28,7 +35,7 @@ module.exports = {
   ADMIN,
 
   // Event Status for participants
-  PENDING,
+  EVENT_PENDING,
   ACCEPTED,
   DECLINED,
 
@@ -37,4 +44,11 @@ module.exports = {
   ONGOING,
   CLOSED,
   CANCELLED,
+
+  // Helper Status
+  PENDING,
+  ACTIVE,
+  SELECTED,
+  REJECTED,
+  HELPER_COMPLETED,
 };

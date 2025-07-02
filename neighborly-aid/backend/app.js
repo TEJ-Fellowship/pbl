@@ -5,6 +5,7 @@ const authRoutes = require("./routes/authRoute.js");
 const taskRoutes = require("./routes/taskRoutes.js");
 const reviewRoutes = require("./routes/reviewRoutes.js");
 const eventRoutes = require("./routes/eventRoutes.js");
+const notificationRoutes = require("./routes/notificationRoutes.js");
 const dbConnect = require("./config/db.js");
 // const bodyParser = require("body-parser");
 const logger = require("./middlewares/logger.js");
@@ -22,18 +23,9 @@ const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_DEV].filter(Boolean);
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true, // Allow all origins
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   })
 );
@@ -43,7 +35,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.get("/", (req, res) => {
   res.json({
-    projectName: "Project Neighborly Aid",
+    projectName: "Project Neighbourly Aid",
     message: "Hello, how are you? This server is working",
     port: PORT,
     environment: process.env.NODE_ENV || "development",
@@ -58,6 +50,7 @@ app.use("/api/users", auth, userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/event", eventRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

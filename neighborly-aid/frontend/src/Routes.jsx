@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import {
   MY_NEIGHBOURHOOD,
-  WHY_NEIGHBORLY_AID,
+  WHY_NEIGHBOURLY_AID,
   AVAILABLE_SUPPORT,
   REACH_OUT,
   LOGIN_ROUTE,
@@ -61,7 +61,7 @@ const AppRoutes = () => {
         >
           <Route index element={<Navigate to={MY_NEIGHBOURHOOD} replace />} />
           <Route path={MY_NEIGHBOURHOOD} element={<MyNeighbourhood />} />
-          <Route path={WHY_NEIGHBORLY_AID} element={<WhyNeigbourlyAId />} />
+          <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
           <Route path={AVAILABLE_SUPPORT} element={<AvailableSupport />} />
           <Route path={REACH_OUT} element={<ReachOut />} />
         </Route>
@@ -80,11 +80,7 @@ const AppRoutes = () => {
 };
 
 const Routes = () => {
-  return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
-  );
+  return <AppRoutes />;
 };
 
 export default Routes;

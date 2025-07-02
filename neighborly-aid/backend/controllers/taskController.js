@@ -77,8 +77,14 @@ const updateTask = async (req, res) => {
 
 // Accept task
 const acceptTask = async (req, res) => {
+  console.log("=== Accept Task Debug ===");
+  console.log("Task ID:", req.params.id);
+  console.log("User ID:", req.user.id);
+  console.log("Request body:", req.body);
+
   try {
     const task = await taskService.acceptTask(req.params.id, req.user.id);
+    console.log("Task accepted after service:", task);
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
     }
@@ -91,7 +97,24 @@ const acceptTask = async (req, res) => {
 // Complete task
 const completeTask = async (req, res) => {
   try {
-    const task = await taskService.completeTask(req.params.id);
+    const task = await taskService.completeTask(req.params.id, req.user.id);
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Remove help
+const removeHelp = async (req, res) => {
+  console.log("=== Remove Help Debug ===");
+  console.log("Task ID:", req.params.id);
+  console.log("User ID:", req.user.id);
+
+  try {
+    const task = await taskService.removeHelp(req.params.id, req.user.id);
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
     }
@@ -234,6 +257,31 @@ const likeTask = async (req, res) => {
   }
 };
 
+// Get task with helpers (for selection UI)
+const getTaskWithHelpers = async (req, res) => {
+  try {
+    const task = await taskService.getTaskWithHelpers(req.params.id);
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Select helper for task
+const selectHelper = async (req, res) => {
+  try {
+    const { helperId } = req.params;
+    const task = await taskService.selectHelper(
+      req.params.id,
+      helperId,
+      req.user.id
+    );
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
@@ -241,10 +289,13 @@ module.exports = {
   updateTask,
   acceptTask,
   completeTask,
+  removeHelp,
   deleteTask,
   getUserTasks,
   getTasksByCategory,
   getTasksByUrgency,
   getTaskSuggestions,
   likeTask,
+  getTaskWithHelpers,
+  selectHelper,
 };

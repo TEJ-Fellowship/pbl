@@ -1,6 +1,8 @@
+const mongoose = require("mongoose");
 const User = require("../models/User.js");
 const Task = require("../models/Task.js");
 const Review = require("../models/Review.js");
+const { COMPLETED } = require("../utils/constants");
 
 const getAllUsers = async () => {
   try {
@@ -26,28 +28,52 @@ const createUser = async (data) => {
 
 const getUserDashboard = async (userId) => {
   try {
-    const user = await User.findById(userId);
+    console.log(
+      "getUserDashboard called with userId:",
+      userId,
+      "type:",
+      typeof userId
+    );
 
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new Error("Invalid user ID format");
+    }
+
+    const user = await User.findById(new mongoose.Types.ObjectId(userId));
+    console.log("user in service", user);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
     // Get completed tasks
     const completedTasks = await Task.find({
       $or: [
-        { createdBy: userId, status: "completed" },
-        { helpers: userId, status: "completed" },
+        { createdBy: new mongoose.Types.ObjectId(userId), status: COMPLETED },
+        {
+          "helpers.userId": new mongoose.Types.ObjectId(userId),
+          status: COMPLETED,
+        },
       ],
     })
       .populate("createdBy", "name email")
-      .populate("helpers", "name email")
+      .populate({
+        path: "helpers.userId",
+        select: "name email",
+      })
       .sort({ completedAt: -1 });
 
     // Get reviews received
-    const reviews = await Review.find({ reviewee: userId })
+    const reviews = await Review.find({
+      reviewee: new mongoose.Types.ObjectId(userId),
+    })
       .populate("reviewer", "name email")
       .populate("task", "title")
       .sort({ createdAt: -1 });
 
     // Calculate average rating
     const ratingStats = await Review.aggregate([
-      { $match: { reviewee: userId } },
+      { $match: { reviewee: new mongoose.Types.ObjectId(userId) } },
       {
         $group: {
           _id: null,

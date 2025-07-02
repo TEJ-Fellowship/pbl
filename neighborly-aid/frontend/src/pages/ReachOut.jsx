@@ -5,7 +5,8 @@ const ReachOut = () => (
     <h1>Reach Out to Us</h1>
     <p>
       Have questions or need support? Email us at{" "}
-      <a href="mailto:support@neighborlyaid.com">support@neighborlyaid.com</a>.
+      <a href="mailto:support@neighbourlyaid.com">support@neighbourlyaid.com</a>
+      .
     </p>
   </div>
 );

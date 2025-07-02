@@ -1,5 +1,16 @@
+const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const User = require("../models/User");
+const notificationService = require("./notificationService");
+const {
+  OPEN,
+  IN_PROGRESS,
+  COMPLETED,
+  ACTIVE,
+  PENDING,
+  SELECTED,
+  REJECTED,
+} = require("../utils/constants");
 
 class TaskService {
   // Create a new task
@@ -13,9 +24,27 @@ class TaskService {
 
   // Get all tasks with optional filters
   async getTasks(filters = {}) {
-    return await Task.find(filters)
+    // Calculate the date 24 hours ago
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Build the filter conditions
+    let filterConditions = { ...filters };
+
+    // Filter out completed tasks that are older than 24 hours
+    // This means we only show:
+    // 1. Non-completed tasks (open, in_progress)
+    // 2. Completed tasks that were completed within the last 24 hours
+    filterConditions.$or = [
+      { status: { $ne: COMPLETED } }, // Non-completed tasks
+      {
+        status: COMPLETED,
+        completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+      },
+    ];
+
+    return await Task.find(filterConditions)
       .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers", "name email")
+      .populate("helpers.userId", "name email")
       .populate("likedBy", "name email")
       .sort({ createdAt: -1 });
   }
@@ -24,7 +53,7 @@ class TaskService {
   async getTaskById(taskId) {
     return await Task.findById(taskId)
       .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers", "name email")
+      .populate("helpers.userId", "name email")
       .populate("likedBy", "name email");
   }
 
@@ -34,31 +63,154 @@ class TaskService {
       taskId,
       { ...updateData },
       { new: true, runValidators: true }
-    ).populate("createdBy helpers", "name email");
+    ).populate("createdBy helpers.userId", "name email");
   }
 
   // Accept task
   async acceptTask(taskId, userId) {
-    return await Task.findByIdAndUpdate(
-      taskId,
-      {
-        helpers: userId,
-        status: "IN_PROGRESS",
-      },
-      { new: true, runValidators: true }
-    ).populate("createdBy helpers", "name email");
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if task is open
+      if (task.status !== OPEN) {
+        throw new Error("Task is not available for help");
+      }
+
+      // Check if user is not the task creator
+      if (task.createdBy.toString() === userId) {
+        throw new Error("You cannot help with your own task");
+      }
+
+      // Check if user already helping
+      const alreadyHelping = task.helpers.some(
+        (helper) => helper.userId.toString() === userId
+      );
+      if (alreadyHelping) {
+        throw new Error("You are already helping with this task");
+      }
+
+      // Only add helper, do NOT change task status here
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          $push: {
+            helpers: {
+              userId: new mongoose.Types.ObjectId(userId),
+              acceptedAt: new Date(),
+              status: PENDING,
+            },
+          },
+        },
+        { new: true, runValidators: true }
+      ).populate([
+        { path: "createdBy", select: "name email" },
+        {
+          path: "helpers.userId",
+          select: "name email address location karmaPoints totalLikes badges",
+        },
+      ]);
+
+      // Create notification for new helper offered
+      await notificationService.notifyNewHelperOffered(taskId, userId);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in acceptTask:", error);
+      throw error;
+    }
   }
 
   // Complete task
-  async completeTask(taskId) {
-    return await Task.findByIdAndUpdate(
-      taskId,
-      {
-        status: "COMPLETED",
-        completedAt: new Date(),
-      },
-      { new: true, runValidators: true }
-    ).populate("createdBy helpers", "name email");
+  async completeTask(taskId, userId) {
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is authorized to complete the task
+      const isCreator = task.createdBy.toString() === userId;
+      const isSelectedHelper = task.helpers.some(
+        (helper) =>
+          helper.userId.toString() === userId && helper.status === "selected"
+      );
+
+      if (!isCreator && !isSelectedHelper) {
+        throw new Error(
+          "Only the task creator or selected helper can complete this task"
+        );
+      }
+
+      // Check if task is in progress
+      console.log("Task status:", task.status, "Expected: in_progress");
+      if (task.status !== "in_progress") {
+        throw new Error("Only tasks in progress can be completed");
+      }
+
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          status: COMPLETED,
+          completedAt: new Date(),
+        },
+        { new: true, runValidators: true }
+      ).populate("createdBy helpers.userId", "name email");
+
+      // Create notification for task completion
+      await notificationService.notifyTaskCompleted(taskId, userId);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in completeTask:", error);
+      throw error;
+    }
+  }
+
+  // Remove help
+  async removeHelp(taskId, userId) {
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is helping with this task
+      const isHelping = task.helpers.some(
+        (helper) => helper.userId.toString() === userId
+      );
+      if (!isHelping) {
+        throw new Error("You are not helping with this task");
+      }
+
+      // Remove user from helpers array
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          $pull: {
+            helpers: {
+              userId: new mongoose.Types.ObjectId(userId),
+            },
+          },
+          // If no more helpers, set status back to open
+          ...(task.helpers.length === 1 && { status: OPEN }),
+        },
+        { new: true, runValidators: true }
+      ).populate([
+        { path: "createdBy", select: "name email" },
+        { path: "helpers.userId", select: "name email" },
+      ]);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in removeHelp:", error);
+      throw error;
+    }
   }
 
   // Delete task
@@ -69,10 +221,12 @@ class TaskService {
   // Get tasks by user (either created or accepted)
   async getUserTasks(userId, type = "created") {
     const filter =
-      type === "created" ? { createdBy: userId } : { helpers: userId };
+      type === "created"
+        ? { createdBy: new mongoose.Types.ObjectId(userId) }
+        : { "helpers.userId": new mongoose.Types.ObjectId(userId) };
 
     return await Task.find(filter)
-      .populate("createdBy helpers", "name email karmaPoints totalLikes")
+      .populate("createdBy helpers.userId", "name email karmaPoints totalLikes")
       .populate("likedBy", "name email")
       .sort({ createdAt: -1 });
   }
@@ -80,9 +234,24 @@ class TaskService {
   // Get tasks by category
   async getTasksByCategory(category) {
     try {
-      const tasks = await Task.find({ category })
+      // Calculate the date 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Filter conditions for category and completed task time limit
+      const filterConditions = {
+        category,
+        $or: [
+          { status: { $ne: COMPLETED } }, // Non-completed tasks
+          {
+            status: COMPLETED,
+            completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+          },
+        ],
+      };
+
+      const tasks = await Task.find(filterConditions)
         .populate("createdBy", "name email")
-        .populate("helpers", "name email")
+        .populate("helpers.userId", "name email")
         .sort({ createdAt: -1 });
       return tasks;
     } catch (error) {
@@ -93,9 +262,24 @@ class TaskService {
   // Get tasks by urgency
   async getTasksByUrgency(urgency) {
     try {
-      const tasks = await Task.find({ urgency })
+      // Calculate the date 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Filter conditions for urgency and completed task time limit
+      const filterConditions = {
+        urgency,
+        $or: [
+          { status: { $ne: COMPLETED } }, // Non-completed tasks
+          {
+            status: COMPLETED,
+            completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+          },
+        ],
+      };
+
+      const tasks = await Task.find(filterConditions)
         .populate("createdBy", "name email")
-        .populate("helpers", "name email")
+        .populate("helpers.userId", "name email")
         .sort({ createdAt: -1 });
       return tasks;
     } catch (error) {
@@ -117,11 +301,13 @@ class TaskService {
       }
 
       // Check if user already liked the task
-      const alreadyLiked = task.likedBy.includes(userId);
+      const alreadyLiked = task.likedBy.includes(
+        new mongoose.Types.ObjectId(userId)
+      );
 
       if (alreadyLiked) {
         // Unlike the task
-        task.likedBy.pull(userId);
+        task.likedBy.pull(new mongoose.Types.ObjectId(userId));
         task.likes = Math.max(0, task.likes - 1);
 
         // Decrease task creator's likes
@@ -132,7 +318,7 @@ class TaskService {
         });
       } else {
         // Like the task
-        task.likedBy.push(userId);
+        task.likedBy.push(new mongoose.Types.ObjectId(userId));
         task.likes += 1;
 
         // Increase task creator's likes
@@ -148,7 +334,7 @@ class TaskService {
       // Return the updated task with populated fields
       const updatedTask = await Task.findById(taskId)
         .populate("createdBy", "name email karmaPoints totalLikes")
-        .populate("helpers", "name email")
+        .populate("helpers.userId", "name email")
         .populate("likedBy", "name email");
 
       return {
@@ -168,9 +354,101 @@ class TaskService {
       if (!task) {
         throw new Error("Task not found");
       }
-      return task.likedBy.includes(userId);
+      return task.likedBy.includes(new mongoose.Types.ObjectId(userId));
     } catch (error) {
       throw new Error(`Error checking if user liked task: ${error.message}`);
+    }
+  }
+
+  // Get task with populated helpers (for selection UI)
+  async getTaskWithHelpers(taskId) {
+    try {
+      const task = await Task.findById(taskId)
+        .populate(
+          "helpers.userId",
+          "name email address location karmaPoints totalLikes badges completedTasks reviews"
+        )
+        .populate(
+          "selectedHelper",
+          "name email address location karmaPoints totalLikes badges"
+        )
+        .populate("createdBy", "name email");
+
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      return task;
+    } catch (error) {
+      console.error("Error in getTaskWithHelpers:", error);
+      throw error;
+    }
+  }
+
+  // Select a helper for a task
+  async selectHelper(taskId, helperUserId, creatorId) {
+    try {
+      // Validate task exists and user is creator
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      if (task.createdBy.toString() !== creatorId) {
+        throw new Error("Only task creator can select helpers");
+      }
+
+      // Check if helper exists in helpers array
+      const helperExists = task.helpers.some(
+        (helper) => helper.userId.toString() === helperUserId
+      );
+
+      if (!helperExists) {
+        throw new Error("Helper not found in task helpers");
+      }
+
+      // Update helper status to selected
+      await Task.updateOne(
+        { _id: taskId, "helpers.userId": helperUserId },
+        {
+          $set: {
+            "helpers.$.status": SELECTED,
+            "helpers.$.selectedAt": new Date(),
+            selectedHelper: helperUserId,
+            status: IN_PROGRESS,
+          },
+        }
+      );
+
+      // Reject other helpers
+      await Task.updateOne(
+        { _id: taskId },
+        {
+          $set: {
+            "helpers.$[elem].status": REJECTED,
+          },
+        },
+        {
+          arrayFilters: [
+            {
+              "elem.userId": { $ne: new mongoose.Types.ObjectId(helperUserId) },
+            },
+          ],
+        }
+      );
+
+      // Create notifications for helper selection
+      await notificationService.notifyHelperSelected(
+        taskId,
+        helperUserId,
+        creatorId
+      );
+
+      // Return updated task with populated data
+      return await this.getTaskWithHelpers(taskId);
+    } catch (error) {
+      console.error("Error in selectHelper:", error);
+      throw error;
     }
   }
 }
