@@ -33,12 +33,13 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
   };
 
   console.log("currentTask", currentTask);
+  console.log("Task status:", currentTask.status);
   // Status icons remain the same
   const getStatusIcon = (status) => {
     switch (status) {
       case "open":
         return "🔓";
-      case "in-progress":
+      case "in_progress":
         return "⏳";
       case "completed":
         return "✅";
@@ -99,6 +100,15 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
   const isUserCreator =
     currentTask.createdBy?._id === user?.id ||
     currentTask.createdBy === user?.id;
+
+  // Check if current user is the selected helper
+  const isSelectedHelper = Array.isArray(currentTask.helpers)
+    ? currentTask.helpers.some(
+        (helper) =>
+          (helper.userId?._id === user?.id || helper.userId === user?.id) &&
+          helper.status === "selected"
+      )
+    : false;
 
   const handleAcceptTask = () => {
     if (!user) {
@@ -379,23 +389,26 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                 Already Helping
               </button>
             )}
-            {currentTask.status === "in-progress" && !isUserHelping && (
-              <button className="bg-status-success-bg text-status-success-text dark:bg-primary-dark dark:hover:bg-primary dark:text-status-success-dark-text px-4 py-2 rounded-full text-sm font-medium">
-                In Progress
-              </button>
-            )}
-            {currentTask.status === "in-progress" && isUserHelping && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCompleteTask();
-                }}
-                disabled={isCompleting}
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isCompleting ? "Completing..." : "Mark Complete"}
-              </button>
-            )}
+            {currentTask.status === "in_progress" &&
+              !isUserCreator &&
+              !isSelectedHelper && (
+                <button className="bg-status-success-bg text-status-success-text dark:bg-primary-dark dark:hover:bg-primary dark:text-status-success-dark-text px-4 py-2 rounded-full text-sm font-medium">
+                  In Progress
+                </button>
+              )}
+            {currentTask.status === "in_progress" &&
+              (isUserCreator || isSelectedHelper) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCompleteTask();
+                  }}
+                  disabled={isCompleting}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCompleting ? "Completing..." : "Mark Complete"}
+                </button>
+              )}
             {currentTask.status === "completed" && (
               <button className="bg-status-success-bg text-status-success-text dark:bg-primary-dark dark:hover:bg-primary dark:text-status-success-dark-text px-4 py-2 rounded-full text-sm font-medium">
                 Completed ✨

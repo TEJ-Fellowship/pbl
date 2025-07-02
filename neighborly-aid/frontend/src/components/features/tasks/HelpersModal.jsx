@@ -210,7 +210,7 @@ const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
                 className={`px-2 py-1 rounded-full text-xs font-medium ${
                   task.status === "open"
                     ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                    : task.status === "in-progress"
+                    : task.status === "in_progress"
                     ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
                     : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                 }`}

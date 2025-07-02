@@ -35,6 +35,70 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
 
+  // Helper function for relative time
+  const getRelativeTime = (date) => {
+    const now = new Date();
+    const diff = now - new Date(date);
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    return "Just now";
+  };
+
+  // Helper function to get emoji based on category
+  const getCategoryEmoji = (category) => {
+    const emojis = {
+      // Home & Maintenance
+      "home-maintenance": "🏠",
+      cleaning: "🧹",
+      repairs: "🔧",
+      gardening: "🌱",
+
+      // Shopping & Delivery
+      shopping: "🛍️",
+      groceries: "🛒",
+      delivery: "📦",
+
+      // Transportation & Moving
+      transportation: "🚗",
+      moving: "📦",
+
+      // Care Services
+      "elderly-care": "👵",
+      childcare: "👶",
+      "pet-care": "🐾",
+
+      // Education & Technology
+      tutoring: "📚",
+      technology: "💻",
+      "tech-help": "🖥️",
+
+      // Community & Events
+      "event-help": "🎉",
+      "community-service": "🤝",
+      sports: "⚽",
+
+      // Food & Cooking
+      cooking: "👨‍🍳",
+
+      // Default fallback
+      default: "💝",
+    };
+
+    // Handle null/undefined category
+    if (!category) return emojis.default;
+
+    // Convert category to lowercase and remove spaces
+    const normalizedCategory = category.toLowerCase().replace(/\s+/g, "-");
+
+    // Return matching emoji or default
+    return emojis[normalizedCategory] || emojis.default;
+  };
+
   useEffect(() => {
     if (isOpen && user) {
       console.log("User object:", user);
@@ -101,7 +165,8 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       value: dashboardData?.completedTasks?.length ?? 0,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
-      gradient: "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700",
+      gradient:
+        "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700",
     },
     {
       icon: Heart,
@@ -117,7 +182,8 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       value: dashboardData?.totalReviews ?? 0,
       color: "text-amber-600 dark:text-amber-400",
       bg: "bg-amber-50 dark:bg-amber-900/20",
-      gradient: "from-amber-400 to-amber-500 dark:from-amber-600 dark:to-amber-700",
+      gradient:
+        "from-amber-400 to-amber-500 dark:from-amber-600 dark:to-amber-700",
     },
   ];
 
@@ -132,13 +198,15 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       icon: Car,
       label: "Transport",
       count: 28,
-      color: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
+      color:
+        "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
     },
     {
       icon: Wrench,
       label: "Tech Help",
       count: 23,
-      color: "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
+      color:
+        "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
     },
     {
       icon: PawPrint,
@@ -148,129 +216,64 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     },
   ];
 
-//   // Update categoryStats to be dynamic based on completed tasks
-// const categoryStats = dashboardData?.completedTasks?.reduce((acc, task) => {
-//   const category = task.category;
-//   if (!acc[category]) {
-//     acc[category] = {
-//       icon: getCategoryIcon(category), // We'll create this helper function
-//       label: category,
-//       count: 1,
-//       color: getCategoryColor(category), // We'll create this helper function
-//     };
-//   } else {
-//     acc[category].count += 1;
-//   }
-//   return acc;
-// }, {}) || [];
+  //   // Update categoryStats to be dynamic based on completed tasks
+  // const categoryStats = dashboardData?.completedTasks?.reduce((acc, task) => {
+  //   const category = task.category;
+  //   if (!acc[category]) {
+  //     acc[category] = {
+  //       icon: getCategoryIcon(category), // We'll create this helper function
+  //       label: category,
+  //       count: 1,
+  //       color: getCategoryColor(category), // We'll create this helper function
+  //     };
+  //   } else {
+  //     acc[category].count += 1;
+  //   }
+  //   return acc;
+  // }, {}) || [];
 
-// // Helper function to get icon based on category
-// const getCategoryIcon = (category) => {
-//   const icons = {
-//     groceries: ShoppingCart,
-//     transport: Car,
-//     'tech help': Wrench,
-//     'pet care': PawPrint,
-//     default: HandHeart
-//   };
-//   return icons[category.toLowerCase()] || icons.default;
-// };
+  // // Helper function to get icon based on category
+  // const getCategoryIcon = (category) => {
+  //   const icons = {
+  //     groceries: ShoppingCart,
+  //     transport: Car,
+  //     'tech help': Wrench,
+  //     'pet care': PawPrint,
+  //     default: HandHeart
+  //   };
+  //   return icons[category.toLowerCase()] || icons.default;
+  // };
 
-// // Helper function to get color based on category
-// const getCategoryColor = (category) => {
-//   const colors = {
-//     groceries: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
-//     transport: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
-//     'tech help': "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
-//     'pet care': "from-rose-400 to-rose-500 dark:from-rose-600 dark:to-rose-700",
-//     default: "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700"
-//   };
-//   return colors[category.toLowerCase()] || colors.default;
-// };
+  // // Helper function to get color based on category
+  // const getCategoryColor = (category) => {
+  //   const colors = {
+  //     groceries: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
+  //     transport: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
+  //     'tech help': "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
+  //     'pet care': "from-rose-400 to-rose-500 dark:from-rose-600 dark:to-rose-700",
+  //     default: "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700"
+  //   };
+  //   return colors[category.toLowerCase()] || colors.default;
+  // };
 
-  
-// Combine real completed tasks with sample data
-const recentActivity = [
-  // Real completed tasks from backend (if any)
-  ...(dashboardData?.completedTasks?.map(task => ({
-    action: task.title,
-    time: getRelativeTime(task.completedAt),
-    emoji: getCategoryEmoji(task.category),
-    rating: task.rating || 0,
-  })) || []),
-  
-  // Sample data (only shown if there are  no completed tasks)
-  {
-    action: "Helped Sarah with grocery shopping",
-    time: "2 hours ago",
-    emoji: "🛒",
-    rating: 5,
-  }
-].slice(0, 3); // Only show maximum 3 items
+  // Combine real completed tasks with sample data
+  const recentActivity = [
+    // Real completed tasks from backend (if any)
+    ...(dashboardData?.completedTasks?.map((task) => ({
+      action: task.title,
+      time: getRelativeTime(task.completedAt),
+      emoji: getCategoryEmoji(task.category),
+      rating: task.rating || 0,
+    })) || []),
 
-// Helper function to get emoji based on category
-const getCategoryEmoji = (category) => {
-  const emojis = {
-    // Home & Maintenance
-    'home-maintenance': '🏠',
-    'cleaning': '🧹',
-    'repairs': '🔧',
-    'gardening': '🌱',
-    
-    // Shopping & Delivery
-    'shopping': '🛍️',
-    'groceries': '🛒',
-    'delivery': '📦',
-    
-    // Transportation & Moving
-    'transportation': '🚗',
-    'moving': '📦',
-    
-    // Care Services
-    'elderly-care': '👵',
-    'childcare': '👶',
-    'pet-care': '🐾',
-    
-    // Education & Technology
-    'tutoring': '📚',
-    'technology': '💻',
-    'tech-help': '🖥️',
-    
-    // Community & Events
-    'event-help': '🎉',
-    'community-service': '🤝',
-    'sports': '⚽',
-    
-    // Food & Cooking
-    'cooking': '👨‍🍳',
-    
-    // Default fallback
-    'default': '💝'
-  };
-  
-  // Handle null/undefined category
-  if (!category) return emojis.default;
-  
-  // Convert category to lowercase and remove spaces
-  const normalizedCategory = category.toLowerCase().replace(/\s+/g, '-');
-  
-  // Return matching emoji or default
-  return emojis[normalizedCategory] || emojis.default;
-};
-
-// Helper function for relative time
-const getRelativeTime = (date) => {
-  const now = new Date();
-  const diff = now - new Date(date);
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  return 'Just now';
-};
+    // Sample data (only shown if there are  no completed tasks)
+    {
+      action: "Helped Sarah with grocery shopping",
+      time: "2 hours ago",
+      emoji: "🛒",
+      rating: 5,
+    },
+  ].slice(0, 3); // Only show maximum 3 items
 
   return (
     <>
@@ -343,7 +346,9 @@ const getRelativeTime = (date) => {
                       <div className="text-sm font-bold text-yellow-900 dark:text-yellow-100">
                         {dashboardData?.karmaPoints ?? 100}
                       </div>
-                      <div className="text-xs text-yellow-800 dark:text-yellow-200 -mt-1">Karma</div>
+                      <div className="text-xs text-yellow-800 dark:text-yellow-200 -mt-1">
+                        Karma
+                      </div>
                     </div>
                     <div className="w-8 h-8 bg-orange-400 dark:bg-orange-500 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-300">
                       <Trophy className="w-4 h-4 text-white" />
@@ -392,7 +397,9 @@ const getRelativeTime = (date) => {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 dark:border-green-400 mx-auto mb-4"></div>
-                    <p className="text-slate-600 dark:text-slate-300">Loading your dashboard...</p>
+                    <p className="text-slate-600 dark:text-slate-300">
+                      Loading your dashboard...
+                    </p>
                   </div>
                 </div>
               ) : !dashboardData ? (

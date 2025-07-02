@@ -108,19 +108,49 @@ class TaskService {
 
   // Complete task
   async completeTask(taskId, userId) {
-    const updatedTask = await Task.findByIdAndUpdate(
-      taskId,
-      {
-        status: COMPLETED,
-        completedAt: new Date(),
-      },
-      { new: true, runValidators: true }
-    ).populate("createdBy helpers.userId", "name email");
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
 
-    // Create notification for task completion
-    await notificationService.notifyTaskCompleted(taskId, userId);
+      // Check if user is authorized to complete the task
+      const isCreator = task.createdBy.toString() === userId;
+      const isSelectedHelper = task.helpers.some(
+        (helper) =>
+          helper.userId.toString() === userId && helper.status === "selected"
+      );
 
-    return updatedTask;
+      if (!isCreator && !isSelectedHelper) {
+        throw new Error(
+          "Only the task creator or selected helper can complete this task"
+        );
+      }
+
+      // Check if task is in progress
+      console.log("Task status:", task.status, "Expected: in_progress");
+      if (task.status !== "in_progress") {
+        throw new Error("Only tasks in progress can be completed");
+      }
+
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          status: COMPLETED,
+          completedAt: new Date(),
+        },
+        { new: true, runValidators: true }
+      ).populate("createdBy helpers.userId", "name email");
+
+      // Create notification for task completion
+      await notificationService.notifyTaskCompleted(taskId, userId);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in completeTask:", error);
+      throw error;
+    }
   }
 
   // Remove help
