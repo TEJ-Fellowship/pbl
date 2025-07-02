@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ResumeUpload from "./components/resume/ResumeUpload";
 
 import Signup from "./components/Signup";
 import Login from "./components/Login";
+import AppRoutes from "./AppRoutes";
 
 const App = () => {
   const [user, setUser] = useState(
@@ -20,7 +20,7 @@ const App = () => {
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem("loggedUser", JSON.stringify(userData));
-    toast.success(`Welcome back, ${userData.firstName || userData.email}!`);
+    toast.success(`Welcome back, ${userData.username}!`);
   };
 
   const handleLogout = () => {
@@ -30,70 +30,50 @@ const App = () => {
     toast.info("You have been logged out.");
   };
 
+  // If user is authenticated, show the routed app
   if (user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <h1 className="text-xl font-bold text-gray-900">AI Resume Builder</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-600">
-                  Welcome, {user.firstName || user.email}!
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors duration-200"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main>
-          <ResumeUpload />
-        </main>
-
-        {/* Toast notifications container */}
+      <>
+        <AppRoutes user={user} onLogout={handleLogout} />
         <ToastContainer position="top-center" autoClose={3000} />
-      </div>
+      </>
     );
   }
 
+  // If user is not authenticated, show login/signup form
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="max-w-6xl w-full bg-white rounded-xl shadow-xl overflow-hidden">
         <div className="flex flex-col md:flex-row">
-
           {/* Left Panel - Descriptive Text */}
           <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-blue-500 p-8 md:p-12 flex flex-col justify-center text-white">
             <div className="mb-8">
               {/* AI Icon */}
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
                 </svg>
               </div>
 
-              <h1 className="text-4xl font-bold mb-4">
-                AI Resume Builder
-              </h1>
+              <h1 className="text-4xl font-bold mb-4">AI Resume Builder</h1>
               <p className="text-xl text-indigo-100 mb-6">
-                Your AI-powered resume builder helps you craft the perfect resume in minutes!
+                Your AI-powered resume builder helps you craft the perfect
+                resume in minutes!
               </p>
               <p className="text-indigo-200 leading-relaxed">
-                Create professional resumes tailored for your dream job. Our intelligent system analyzes job descriptions and optimizes your resume for maximum impact.
+                Create professional resumes tailored for your dream job. Our
+                intelligent system analyzes job descriptions and optimizes your
+                resume for maximum impact.
               </p>
             </div>
 
@@ -101,7 +81,9 @@ const App = () => {
             <div className="space-y-3">
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full mr-3"></div>
-                <span className="text-indigo-100">AI-powered content suggestions</span>
+                <span className="text-indigo-100">
+                  AI-powered content suggestions
+                </span>
               </div>
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full mr-3"></div>
@@ -116,24 +98,25 @@ const App = () => {
 
           {/* Right Panel - Authentication Form */}
           <div className="md:w-1/2 p-8 md:p-12">
-
             {/* Tab Navigation */}
             <div className="flex mb-8 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setView("signup")}
-                className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-200 ${view === "signup"
-                  ? "bg-white text-indigo-600 shadow-sm font-semibold"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  view === "signup"
+                    ? "bg-white text-indigo-600 shadow-sm font-semibold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
                 Sign Up
               </button>
               <button
                 onClick={() => setView("login")}
-                className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-200 ${view === "login"
-                  ? "bg-white text-indigo-600 shadow-sm font-semibold"
-                  : "text-gray-500 hover:text-gray-700"
-                  }`}
+                className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                  view === "login"
+                    ? "bg-white text-indigo-600 shadow-sm font-semibold"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
               >
                 Login
               </button>
@@ -147,8 +130,7 @@ const App = () => {
               <p className="text-gray-600">
                 {view === "signup"
                   ? "Your student account is your portal to all things Fullstack: workshops, help desk, career resources, and more!"
-                  : "Sign in to continue building your resume"
-                }
+                  : "Sign in to continue building your resume"}
               </p>
             </div>
 
@@ -163,8 +145,6 @@ const App = () => {
           </div>
         </div>
       </div>
-
-      {/* Toast notifications container */}
       <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
