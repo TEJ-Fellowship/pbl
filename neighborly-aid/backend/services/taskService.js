@@ -24,7 +24,25 @@ class TaskService {
 
   // Get all tasks with optional filters
   async getTasks(filters = {}) {
-    return await Task.find(filters)
+    // Calculate the date 24 hours ago
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Build the filter conditions
+    let filterConditions = { ...filters };
+
+    // Filter out completed tasks that are older than 24 hours
+    // This means we only show:
+    // 1. Non-completed tasks (open, in_progress)
+    // 2. Completed tasks that were completed within the last 24 hours
+    filterConditions.$or = [
+      { status: { $ne: COMPLETED } }, // Non-completed tasks
+      {
+        status: COMPLETED,
+        completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+      },
+    ];
+
+    return await Task.find(filterConditions)
       .populate("createdBy", "name email karmaPoints totalLikes")
       .populate("helpers.userId", "name email")
       .populate("likedBy", "name email")
@@ -216,7 +234,22 @@ class TaskService {
   // Get tasks by category
   async getTasksByCategory(category) {
     try {
-      const tasks = await Task.find({ category })
+      // Calculate the date 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Filter conditions for category and completed task time limit
+      const filterConditions = {
+        category,
+        $or: [
+          { status: { $ne: COMPLETED } }, // Non-completed tasks
+          {
+            status: COMPLETED,
+            completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+          },
+        ],
+      };
+
+      const tasks = await Task.find(filterConditions)
         .populate("createdBy", "name email")
         .populate("helpers.userId", "name email")
         .sort({ createdAt: -1 });
@@ -229,7 +262,22 @@ class TaskService {
   // Get tasks by urgency
   async getTasksByUrgency(urgency) {
     try {
-      const tasks = await Task.find({ urgency })
+      // Calculate the date 24 hours ago
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Filter conditions for urgency and completed task time limit
+      const filterConditions = {
+        urgency,
+        $or: [
+          { status: { $ne: COMPLETED } }, // Non-completed tasks
+          {
+            status: COMPLETED,
+            completedAt: { $gte: twentyFourHoursAgo }, // Completed tasks within last 24 hours
+          },
+        ],
+      };
+
+      const tasks = await Task.find(filterConditions)
         .populate("createdBy", "name email")
         .populate("helpers.userId", "name email")
         .sort({ createdAt: -1 });
