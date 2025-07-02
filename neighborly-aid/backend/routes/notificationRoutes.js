@@ -19,10 +19,10 @@ router.get("/", getUserNotifications);
 router.get("/unread-count", getUnreadCount);
 
 // Mark all notifications as read
-router.patch("/mark-all-read", markAllAsRead);
+router.put("/mark-all-read", markAllAsRead);
 
 // Mark notification as read
-router.patch("/:notificationId/read", markAsRead);
+router.put("/:notificationId/read", markAsRead);
 
 // Delete notification
 router.delete("/:notificationId", deleteNotification);

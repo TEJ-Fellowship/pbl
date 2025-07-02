@@ -32,7 +32,7 @@ export const getUnreadCount = async () => {
 // Mark notification as read
 export const markAsRead = async (notificationId) => {
   try {
-    const response = await axios.patch(
+    const response = await axios.put(
       `${config.API_BASE_URL}/api/notifications/${notificationId}/read`,
       {},
       { withCredentials: true }
@@ -49,7 +49,7 @@ export const markAsRead = async (notificationId) => {
 // Mark all notifications as read
 export const markAllAsRead = async () => {
   try {
-    const response = await axios.patch(
+    const response = await axios.put(
       `${config.API_BASE_URL}/api/notifications/mark-all-read`,
       {},
       { withCredentials: true }
