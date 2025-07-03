@@ -15,8 +15,6 @@ import {
 } from "./constants/routes";
 import MyNeighbourhood from "./pages/MyNeighbourhood";
 import WhyNeigbourlyAId from "./pages/WhyNeigbourlyAId";
-import AvailableSupport from "./pages/AvailableSupport";
-import ReachOut from "./pages/ReachOut";
 import AuthLayout from "./layouts/AuthLayout";
 import AuthPage from "./pages/AuthPage";
 import { useContext } from "react";

@@ -51,21 +51,25 @@ const Navbar = () => {
       </div>
 
       {/* Desktop Navigation */}
-      <div className="hidden md:flex md:flex-row md:gap-4 lg:gap-8">
-        {navMenu.map((menu) => (
-          <NavLink key={menu.route} to={menu.route} className={navLinkClass}>
-            {({ isActive }) => (
-              <>
-                {menu.label}
-                {isActive && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary-light to-primary rounded-full animate-pulse"></div>
-                )}
-              </>
-            )}
-          </NavLink>
-        ))}
-        {/* Theme toggle for desktop */}
-        <div className="hidden md:block">
+      <div className="hidden md:flex md:items-center md:justify-between">
+        {/* Navigation Links */}
+        <div className="flex flex-row gap-4 lg:gap-8">
+          {navMenu.map((menu) => (
+            <NavLink key={menu.route} to={menu.route} className={navLinkClass}>
+              {({ isActive }) => (
+                <>
+                  {menu.label}
+                  {isActive && (
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary-light to-primary rounded-full animate-pulse"></div>
+                  )}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+        
+        {/* Theme toggle positioned to the right */}
+        <div className="flex items-center">
           <ThemeToggle />
         </div>
       </div>

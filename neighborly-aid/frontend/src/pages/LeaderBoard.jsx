@@ -278,7 +278,7 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="max-w-6xl bg-background dark:bg-background-humbleDark mx-auto px-4 py-8">
+    <div className="max-w-6xl bg-green-50 dark:bg-background-humbleDark w-full mx-auto px-4 py-8">
       <Header />
       <SortFilter />
       <LeaderboardTable />
