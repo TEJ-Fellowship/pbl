@@ -11,6 +11,7 @@ const {
   SELECTED,
   REJECTED,
   HELPER_COMPLETED,
+  AWAITING_APPROVAL,
 } = require("../utils/constants");
 
 const taskSchema = new mongoose.Schema({
@@ -57,7 +58,7 @@ const taskSchema = new mongoose.Schema({
   urgency: { type: String, enum: [LOW, MEDIUM, HIGH] },
   status: {
     type: String,
-    enum: [OPEN, IN_PROGRESS, COMPLETED],
+    enum: [OPEN, IN_PROGRESS, AWAITING_APPROVAL, COMPLETED],
     default: OPEN,
   },
   helpers: [
@@ -84,6 +85,20 @@ const taskSchema = new mongoose.Schema({
   },
   createdAt: { type: Date, default: Date.now },
   completedAt: Date,
+  helperMarkedComplete: {
+    type: Boolean,
+    default: false,
+  },
+  helperCompletedAt: Date,
+  requesterApproved: {
+    type: Boolean,
+    default: null,
+  },
+  requesterApprovedAt: Date,
+  completionNotes: {
+    type: String,
+    maxlength: 500,
+  },
 });
 
 module.exports = mongoose.model("Task", taskSchema);

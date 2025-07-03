@@ -1,16 +1,27 @@
 // frontend/src/components/forms/TaskForm/TaskForm.jsx
-import React, { useRef, useContext } from 'react';
-import { GeminiIcon, GeminiSuggestions, StatusMessage } from '../../../components';
-import SubmitButton from './SubmitButton';
-import TaskFormFields from './TaskFormFields';
-import { useTaskForm, useGeminiSuggestions } from '../../../hooks';
-import { submitTaskAction } from '../../../services';
-import AuthContext from '../../../context/AuthContext';
+import React, { useRef, useContext } from "react";
+import {
+  GeminiIcon,
+  GeminiSuggestions,
+  StatusMessage,
+} from "../../../components";
+import SubmitButton from "./SubmitButton";
+import TaskFormFields from "./TaskFormFields";
+import { useTaskForm, useGeminiSuggestions } from "../../../hooks";
+import { submitTaskAction } from "../../../services";
+import AuthContext from "../../../context/AuthContext";
 
 const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
   const formRef = useRef(null);
-  const { user } = useContext(AuthContext); // Get logged-in user
+  const { user, refreshUser } = useContext(AuthContext); // Get logged-in user and refresh function
   console.log("user from task form", user);
+
+  // Refresh user data when component mounts to get latest karma points
+  React.useEffect(() => {
+    if (user?.id) {
+      refreshUser();
+    }
+  }, [user?.id]); // Remove refreshUser from dependencies to prevent infinite loops
   // Custom hooks
   const {
     formData,
@@ -20,7 +31,7 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     resetForm,
     updateFormData,
     setSubmitStatus,
-    setError
+    setError,
   } = useTaskForm();
 
   const {
@@ -30,15 +41,20 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     handleGetSuggestions,
     applySuggestions,
     resetSuggestions,
-    resetSuggestionsApplied
+    resetSuggestionsApplied,
   } = useGeminiSuggestions();
 
   // Enhanced input change handler
   const handleInputChangeWithSuggestionReset = (field, value) => {
     handleInputChange(field, value);
-    
+
     // Reset suggestions when user manually changes category/urgency/karma
-    if ((field === 'category' || field === 'urgency' || field === 'karmaPoints') && suggestionsApplied) {
+    if (
+      (field === "category" ||
+        field === "urgency" ||
+        field === "karmaPoints") &&
+      suggestionsApplied
+    ) {
       resetSuggestionsApplied();
     }
   };
@@ -53,25 +69,56 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     applySuggestions(updateFormData);
   };
 
+  // Validate karma points
+  const validateKarmaPoints = () => {
+    const karmaPoints = parseInt(formData.karmaPoints) || 0;
+    const userKarma = user?.karmaPoints || 0;
+
+    if (karmaPoints > userKarma) {
+      return `You only have ${userKarma} karma points, but you're trying to offer ${karmaPoints}. Please reduce the karma points or earn more karma.`;
+    }
+
+    if (karmaPoints < 10) {
+      return "Minimum karma points required is 10.";
+    }
+
+    if (karmaPoints > 5000) {
+      return "Maximum karma points allowed is 5000.";
+    }
+
+    return null;
+  };
+
   // Handle form submission
   const handleSubmit = async (formDataObj) => {
     // Check if user is logged in
     if (!user) {
-      setError('You must be logged in to create a task');
-      setSubmitStatus('error');
+      setError("You must be logged in to create a task");
+      setSubmitStatus("error");
+      return;
+    }
+
+    // Validate karma points before submission
+    const karmaError = validateKarmaPoints();
+    if (karmaError) {
+      setError(karmaError);
+      setSubmitStatus("error");
       return;
     }
 
     setError(null);
     setSubmitStatus(null);
-    
+
     try {
       // The user ID will be automatically included by the backend from the auth token
       const result = await submitTaskAction(formDataObj);
-      
+
       if (result.success) {
-        setSubmitStatus('success');
-        
+        setSubmitStatus("success");
+
+        // Refresh user data to get updated karma points
+        await refreshUser();
+
         // Reset form after successful submission
         setTimeout(() => {
           resetForm();
@@ -84,8 +131,8 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err.message || 'Failed to create task');
-      setSubmitStatus('error');
+      setError(err.message || "Failed to create task");
+      setSubmitStatus("error");
     }
   };
 
@@ -132,12 +179,19 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
       {/* User Info Display */}
       <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Posting as: <span className="font-medium text-text-dark dark:text-text-spotlight">{user.name}</span>
+          Posting as:{" "}
+          <span className="font-medium text-text-dark dark:text-text-spotlight">
+            {user.name}
+          </span>{" "}
+          • Available karma:{" "}
+          <span className="font-medium text-orange-600 dark:text-orange-400">
+            {user.karmaPoints || 0} ⭐
+          </span>
         </p>
       </div>
 
       {/* Gemini Suggestions Display */}
-      <GeminiSuggestions 
+      <GeminiSuggestions
         geminiSuggestions={geminiSuggestions}
         onApplySuggestions={handleApplySuggestions}
       />
@@ -150,6 +204,7 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
           categories={categories}
           geminiSuggestions={geminiSuggestions}
           suggestionsApplied={suggestionsApplied}
+          user={user}
         />
 
         {/* Form Actions */}
@@ -161,8 +216,12 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
           >
             Cancel
           </button>
-          
-          <SubmitButton submitStatus={submitStatus} />
+
+          <SubmitButton
+            submitStatus={submitStatus}
+            formData={formData}
+            user={user}
+          />
         </div>
 
         {/* Status Messages */}

@@ -22,7 +22,6 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
     phone: "",
     password: "",
     confirmPassword: "",
-    role: "",
   });
 
   const handleInputChange = (e) => {
@@ -34,7 +33,7 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { name, email, phone, password, confirmPassword, role } = formData;
+    const { name, email, phone, password, confirmPassword } = formData;
 
     if (isLogin) {
       setIsLoading(true);
@@ -48,7 +47,7 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
     } else {
       setIsLoading(true);
       try {
-        register({ name, email, phone, password, confirmPassword, role });
+        register({ name, email, phone, password, confirmPassword });
       } catch (error) {
         console.log("Error during register", error);
       } finally {
@@ -133,34 +132,6 @@ const AuthForm = ({ isLogin, handleIsLogin }) => {
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-colors"
                 required={!isLogin}
               />
-            </div>
-          )}
-
-          {!isLogin && (
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <HandHeart className="h-5 w-5 text-gray-400" />
-              </div>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-colors appearance-none bg-white text-gray-700"
-                required={!isLogin}
-              >
-                <option className="text-gray-400" value="">
-                  Select Role
-                </option>
-                <option className="text-gray-400" value="helper">
-                  Helper
-                </option>
-                <option className="text-gray-400" value="requester">
-                  Requester
-                </option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <ChevronDown className="h-4 w-4 text-gray-400" />
-              </div>
             </div>
           )}
 

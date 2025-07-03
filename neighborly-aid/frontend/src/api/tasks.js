@@ -132,6 +132,27 @@ export const deleteTask = async (taskId) => {
 };
 
 /**
+ * Cancel task
+ * @param {string} taskId - Task ID
+ * @returns {Promise<Object>} Success message with refunded karma
+ */
+export const cancelTask = async (taskId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/cancel`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Cancel task error:", error);
+    throw error.response?.data || { error: "Failed to cancel task" };
+  }
+};
+
+/**
  * Like/Unlike a task
  * @param {string} taskId - Task ID
  * @returns {Promise<Object>} Updated task data and like status
@@ -164,20 +185,6 @@ export const acceptTask = async (taskId) => {
   } catch (error) {
     console.error("Accept task error:", error);
     throw error.response?.data || { error: "Failed to accept task" };
-  }
-};
-
-export const completeTask = async (taskId) => {
-  try {
-    const response = await axios.post(
-      `${config.API_BASE_URL}/api/tasks/${taskId}/complete`,
-      {},
-      { withCredentials: true }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Complete task error:", error);
-    throw error.response?.data || { error: "Failed to complete task" };
   }
 };
 
@@ -219,5 +226,35 @@ export const selectHelper = async (taskId, helperId) => {
   } catch (error) {
     console.error("Select helper error:", error);
     throw error.response?.data || { error: "Failed to select helper" };
+  }
+};
+
+export const markTaskAsCompletedByHelper = async (taskId) => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/helper-complete`,
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Helper complete task error:", error);
+    throw error.response?.data || { error: "Failed to mark task as completed" };
+  }
+};
+
+export const approveTaskCompletion = async (taskId, approved, notes = "") => {
+  try {
+    const response = await axios.post(
+      `${config.API_BASE_URL}/api/tasks/${taskId}/approve-completion`,
+      { approved, notes },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Approve completion error:", error);
+    throw (
+      error.response?.data || { error: "Failed to approve task completion" }
+    );
   }
 };

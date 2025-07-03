@@ -190,6 +190,90 @@ class NotificationService {
       throw error;
     }
   }
+
+  // Helper method to notify when helper marks task as completed
+  async notifyHelperMarkedTaskComplete(taskId, helperUserId) {
+    try {
+      const task = await Task.findById(taskId).populate("createdBy", "name");
+      const helper = await User.findById(helperUserId, "name");
+
+      await this.createNotification({
+        recipient: task.createdBy._id,
+        sender: helperUserId,
+        task: taskId,
+        type: "helper_marked_complete",
+        title: "Task marked as completed! ⏳",
+        message: `${helper.name} has marked "${task.title}" as completed. Please review and approve.`,
+      });
+    } catch (error) {
+      console.error(
+        "Error creating helper marked complete notification:",
+        error
+      );
+      throw error;
+    }
+  }
+
+  // Helper method to notify when task completion is rejected
+  async notifyTaskCompletionRejected(taskId, requesterId) {
+    try {
+      const task = await Task.findById(taskId)
+        .populate("createdBy", "name")
+        .populate("helpers.userId", "name");
+
+      const requester = await User.findById(requesterId, "name");
+      const selectedHelper = task.helpers.find(
+        (helper) => helper.status === "completed"
+      );
+
+      if (selectedHelper) {
+        await this.createNotification({
+          recipient: selectedHelper.userId._id,
+          sender: requesterId,
+          task: taskId,
+          type: "completion_rejected",
+          title: "Task completion rejected ❌",
+          message: `${requester.name} has rejected the completion of "${task.title}". Please try again.`,
+        });
+      }
+    } catch (error) {
+      console.error("Error creating completion rejected notification:", error);
+      throw error;
+    }
+  }
+
+  // Notify both users about karma transfer after task completion
+  async notifyKarmaTransferred({
+    taskId,
+    taskTitle,
+    points,
+    fromUserId,
+    toUserId,
+  }) {
+    try {
+      // Notify helper (receiver)
+      await this.createNotification({
+        recipient: toUserId,
+        sender: fromUserId,
+        task: taskId,
+        type: "task_completed", // Reuse type for now
+        title: "Karma Received! 🌟",
+        message: `You have received ${points} karma points for helping with "${taskTitle}".`,
+      });
+      // Notify requester (giver)
+      await this.createNotification({
+        recipient: fromUserId,
+        sender: toUserId,
+        task: taskId,
+        type: "task_completed", // Reuse type for now
+        title: "Karma Given! 💸",
+        message: `You have given ${points} karma points for completion of "${taskTitle}".`,
+      });
+    } catch (error) {
+      console.error("Error creating karma transfer notifications:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new NotificationService();

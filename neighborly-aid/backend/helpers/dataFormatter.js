@@ -5,6 +5,7 @@ const formatUserData = (user) => {
     name: user.name,
     email: user.email,
     phone: user.phone,
+    karmaPoints: user.karmaPoints || 0,
   };
 };
 

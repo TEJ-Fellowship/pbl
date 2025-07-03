@@ -10,7 +10,7 @@ import { fetchAllTasks, fetchUserTasks } from "../services/taskService";
 const MyNeighbourhood = () => {
   const [activeTab, setActiveTab] = useState("helpothers");
   const [showPostForm, setShowPostForm] = useState(false);
-  
+
   // State for tasks
   const [allTasks, setAllTasks] = useState([]);
   const [userTasks, setUserTasks] = useState([]);
@@ -63,13 +63,13 @@ const MyNeighbourhood = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch both all tasks and user tasks in parallel
         const [allTasksData, userTasksData] = await Promise.all([
           fetchAllTasks(),
-          fetchUserTasks().catch(() => []) // Don't fail if user tasks can't be fetched
+          fetchUserTasks().catch(() => []), // Don't fail if user tasks can't be fetched
         ]);
-        
+
         setAllTasks(allTasksData);
         setUserTasks(userTasksData);
       } catch (err) {
@@ -88,9 +88,9 @@ const MyNeighbourhood = () => {
     try {
       const [allTasksData, userTasksData] = await Promise.all([
         fetchAllTasks(),
-        fetchUserTasks().catch(() => [])
+        fetchUserTasks().catch(() => []),
       ]);
-      
+
       setAllTasks(allTasksData);
       setUserTasks(userTasksData);
     } catch (err) {
@@ -123,7 +123,9 @@ const MyNeighbourhood = () => {
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:bg-background-politeDark flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-text-light dark:text-text-spotlight">Loading tasks...</p>
+          <p className="text-text-light dark:text-text-spotlight">
+            Loading tasks...
+          </p>
         </div>
       </div>
     );
@@ -131,54 +133,57 @@ const MyNeighbourhood = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:bg-background-politeDark">
-      {/* Header */}
-      <Header />
+      {/* App Container */}
+      <div className="max-w-6xl mx-auto relative min-h-screen">
+        {/* Header */}
+        <Header />
 
-      <div className="w-full dark:bg-background-humbleDark">
-        {/* Navigation Tabs */}
-        <NavigationTab
-          activeTab={activeTab}
-          handleSetActiveTab={handleSetActiveTab}
-        />
-        
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-red-700 dark:text-red-300">{error}</p>
-            <button 
-              onClick={refreshTasks}
-              className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-        
-        {/* Content based on active tab */}
-        {activeTab === "helpothers" && (
-          <HelpOthersContent
-            categories={categories}
-            showPostForm={showPostForm}
-            handleSetShowPostForm={handleSetShowPostForm}
-            tasks={allTasks}
-            loading={loading}
-            onTaskUpdate={refreshTasks}
+        <div className="w-full dark:bg-background-humbleDark">
+          {/* Navigation Tabs */}
+          <NavigationTab
+            activeTab={activeTab}
+            handleSetActiveTab={handleSetActiveTab}
           />
-        )}
-        
-        {activeTab === "askforhelp" && (
-          <AskForHelpContent
-            categories={categories}
-            showPostForm={showPostForm}
-            handleSetShowPostForm={handleSetShowPostForm}
-            tasks={userTasks}
-            loading={loading}
-            onTaskCreated={handleTaskCreated}
-          />
-        )}
 
-        {/* Floating Action Button - only show on Help Others tab */}
+          {error && (
+            <div className="mx-6 mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-red-700 dark:text-red-300">{error}</p>
+              <button
+                onClick={refreshTasks}
+                className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {/* Content based on active tab */}
+          {activeTab === "helpothers" && (
+            <HelpOthersContent
+              categories={categories}
+              showPostForm={showPostForm}
+              handleSetShowPostForm={handleSetShowPostForm}
+              tasks={allTasks}
+              loading={loading}
+              onTaskUpdate={refreshTasks}
+            />
+          )}
+
+          {activeTab === "askforhelp" && (
+            <AskForHelpContent
+              categories={categories}
+              showPostForm={showPostForm}
+              handleSetShowPostForm={handleSetShowPostForm}
+              tasks={userTasks}
+              loading={loading}
+              onTaskCreated={handleTaskCreated}
+            />
+          )}
+        </div>
+
+        {/* Floating Action Button - positioned relative to app container */}
         {activeTab === "helpothers" && (
-          <div className="fixed bottom-6 right-6">
+          <div className="absolute bottom-6 right-6 z-50">
             <button
               onClick={() => handleSetShowPostForm(true)}
               className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
