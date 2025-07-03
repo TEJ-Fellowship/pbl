@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   X,
   User,
@@ -32,10 +32,11 @@ import { getUserDashboard } from "../../api/users";
 import { getCategories } from "../../api/categories";
 
 const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, refreshUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [categories, setCategories] = useState([]);
+  const hasRefreshedUser = useRef(false);
 
   // Helper function for relative time
   const getRelativeTime = (date) => {
@@ -102,13 +103,22 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
   };
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (isOpen && user && !hasRefreshedUser.current) {
       console.log("User object:", user);
       console.log("User ID:", user.id);
+      refreshUser(); // Refresh user data to get latest karma points
       fetchDashboardData(user.id);
       fetchCategories();
+      hasRefreshedUser.current = true;
     }
-  }, [isOpen, user]);
+  }, [isOpen, user?.id]); // Only depend on isOpen and user.id, not refreshUser
+
+  // Reset the ref when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      hasRefreshedUser.current = false;
+    }
+  }, [isOpen]);
 
   const fetchDashboardData = async (userId) => {
     setLoading(true);

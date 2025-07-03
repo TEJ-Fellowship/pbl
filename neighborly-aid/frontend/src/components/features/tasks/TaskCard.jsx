@@ -1,19 +1,40 @@
 import React, { useState, useContext, useEffect } from "react";
-import { MapPin, Star, Heart, Users, CloudCog } from "lucide-react";
-import { acceptTask, likeTask, completeTask } from "../../../api/tasks";
+import {
+  MapPin,
+  Star,
+  Heart,
+  Users,
+  CloudCog,
+  Edit,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  acceptTask,
+  likeTask,
+  markTaskAsCompletedByHelper,
+  approveTaskCompletion,
+  deleteTask,
+  cancelTask,
+  updateTask,
+} from "../../../api/tasks";
 import AuthContext from "../../../context/AuthContext";
 import { toast } from "react-hot-toast";
 import ConfirmationModal from "../../ui/ConfirmationModal";
 import HelpersModal from "./HelpersModal";
+import EditTaskForm from "./EditTaskForm";
 
 const TaskCard = ({ task, categories, onTaskUpdate }) => {
   const { user } = useContext(AuthContext);
   const [isLiking, setIsLiking] = useState(false);
   const [currentTask, setCurrentTask] = useState(task);
   const [isAccepting, setIsAccepting] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showHelpersModal, setShowHelpersModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Update currentTask when task prop changes
   useEffect(() => {
@@ -32,8 +53,6 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
     }
   };
 
-  // console.log("currentTask", currentTask);
-  // console.log("Task status:", currentTask.status);
   // Status icons remain the same
   const getStatusIcon = (status) => {
     switch (status) {
@@ -43,6 +62,8 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
         return "⏳";
       case "completed":
         return "✅";
+      case "awaiting_approval":
+        return "⏳";
       default:
         return "🔓";
     }
@@ -110,6 +131,14 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
       )
     : false;
 
+  // Alternative check using selectedHelper field
+  const isSelectedHelperAlt =
+    currentTask.selectedHelper?._id === user?.id ||
+    currentTask.selectedHelper === user?.id;
+
+  // Use either method to determine if user is selected helper
+  const isUserSelectedHelper = isSelectedHelper || isSelectedHelperAlt;
+
   const handleAcceptTask = () => {
     if (!user) {
       toast.error("Please log in to help with tasks");
@@ -150,44 +179,151 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
     }
   };
 
-  const handleCompleteTask = async () => {
+  const handleHelperCompleteTask = async () => {
     if (!user) {
       toast.error("Please log in to complete tasks");
       return;
     }
 
-    // Show confirmation dialog
     const confirmed = window.confirm(
-      `Are you sure you want to mark "${currentTask.title}" as completed? This action cannot be undone.`
+      `Are you sure you have completed "${currentTask.title}"? The requester will need to approve your completion.`
     );
 
     if (!confirmed) return;
 
-    if (isCompleting) return;
-    setIsCompleting(true);
-
     try {
-      const result = await completeTask(currentTask.id || currentTask._id);
+      const result = await markTaskAsCompletedByHelper(
+        currentTask.id || currentTask._id
+      );
 
-      // Update the current task state with the response
-      setCurrentTask((prev) => ({
-        ...prev,
-        status: result.status,
-        completedAt: result.completedAt,
-      }));
+      // Update the current task state with all the returned data
+      setCurrentTask(result);
 
-      // Call parent update function if provided
       if (onTaskUpdate) {
         onTaskUpdate(result);
       }
 
-      toast.success("Task completed successfully! 🎉");
+      toast.success(
+        "Task marked as completed! Waiting for requester approval. ⏳"
+      );
     } catch (error) {
-      console.error("Error completing task:", error);
-      const errorMessage = error.error || "Failed to complete task";
+      console.error("Error marking task as completed:", error);
+      const errorMessage = error.error || "Failed to mark task as completed";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleApproveCompletion = async (approved, notes = "") => {
+    if (!user) {
+      toast.error("Please log in to approve task completion");
+      return;
+    }
+
+    const action = approved ? "approve" : "reject";
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} the completion of "${currentTask.title}"?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const result = await approveTaskCompletion(
+        currentTask.id || currentTask._id,
+        approved,
+        notes
+      );
+
+      // Update the current task state with all the returned data
+      setCurrentTask(result);
+
+      if (onTaskUpdate) {
+        onTaskUpdate(result);
+      }
+
+      if (approved) {
+        if (result.karmaTransfer) {
+          const { transferredAmount, requester, helper } = result.karmaTransfer;
+          toast.success(
+            `Task approved! ${transferredAmount} karma points transferred from ${requester.name} to ${helper.name}! 🎉✨`,
+            { duration: 5000 }
+          );
+        } else {
+          toast.success("Task approved! Karma points transferred! 🎉");
+        }
+      } else {
+        toast.success("Task completion rejected. Helper can try again. ❌");
+      }
+    } catch (error) {
+      console.error("Error approving task completion:", error);
+      const errorMessage = error.error || "Failed to approve task completion";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!user) {
+      toast.error("Please log in to delete this task");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      let result;
+      if (currentTask.status === "in_progress") {
+        result = await cancelTask(currentTask.id || currentTask._id);
+        toast.success(
+          `Task cancelled successfully! ${result.refundedKarma} karma points refunded.`
+        );
+      } else {
+        result = await deleteTask(currentTask.id || currentTask._id);
+        toast.success(
+          `Task deleted successfully! ${result.refundedKarma} karma points refunded.`
+        );
+      }
+
+      // Call onTaskUpdate to refresh the task list
+      if (onTaskUpdate) {
+        onTaskUpdate(null); // Pass null to indicate task was deleted/cancelled
+      }
+    } catch (error) {
+      console.error("Error deleting/cancelling task:", error);
+      const errorMessage = error.error || "Failed to delete/cancel task";
       toast.error(errorMessage);
     } finally {
-      setIsCompleting(false);
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleUpdateTask = async (updatedData) => {
+    if (!user) {
+      toast.error("Please log in to update this task");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const result = await updateTask(
+        currentTask.id || currentTask._id,
+        updatedData
+      );
+
+      // Update the current task state
+      setCurrentTask(result);
+
+      // Call onTaskUpdate to refresh the task list
+      if (onTaskUpdate) {
+        onTaskUpdate(result);
+      }
+
+      toast.success("Task updated successfully! ✨");
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      const errorMessage = error.error || "Failed to update task";
+      toast.error(errorMessage);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -398,9 +534,31 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                 </button>
               )}
             {currentTask.status === "open" && isUserCreator && (
-              <button className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 px-4 py-2 rounded-full text-sm font-medium cursor-not-allowed">
-                Your Task
-              </button>
+              <div className="flex space-x-2">
+                <button className="bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 px-4 py-2 rounded-full text-sm font-medium cursor-not-allowed">
+                  Your Task
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowEditModal(true);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-full text-sm font-medium flex items-center space-x-1"
+                >
+                  <Edit className="w-3 h-3" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteModal(true);
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-full text-sm font-medium flex items-center space-x-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Delete</span>
+                </button>
+              </div>
             )}
             {currentTask.status === "open" && isUserHelping && (
               <button className="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-medium">
@@ -414,17 +572,66 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                   In Progress
                 </button>
               )}
-            {currentTask.status === "in_progress" &&
-              (isUserCreator || isSelectedHelper) && (
+            {currentTask.status === "in_progress" && isUserCreator && (
+              <div className="flex space-x-2">
+                <button className="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-300 px-4 py-2 rounded-full text-sm font-medium">
+                  In Progress
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleCompleteTask();
+                    setShowDeleteModal(true);
                   }}
-                  disabled={isCompleting}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-full text-sm font-medium flex items-center space-x-1"
                 >
-                  {isCompleting ? "Completing..." : "Mark Complete"}
+                  <Trash2 className="w-3 h-3" />
+                  <span>Cancel</span>
+                </button>
+              </div>
+            )}
+            {currentTask.status === "in_progress" &&
+              isUserSelectedHelper &&
+              !currentTask.helperMarkedComplete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleHelperCompleteTask();
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium"
+                >
+                  Mark as Completed
+                </button>
+              )}
+            {currentTask.helperMarkedComplete &&
+              isUserCreator &&
+              (currentTask.requesterApproved === null ||
+                currentTask.requesterApproved === undefined) && (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleApproveCompletion(true);
+                    }}
+                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium"
+                  >
+                    Approve ✅
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleApproveCompletion(false);
+                    }}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium"
+                  >
+                    Reject ❌
+                  </button>
+                </div>
+              )}
+            {currentTask.helperMarkedComplete &&
+              !isUserCreator &&
+              currentTask.requesterApproved === null && (
+                <button className="bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+                  Waiting for Approval ⏳
                 </button>
               )}
             {currentTask.status === "completed" && (
@@ -432,6 +639,34 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                 Completed ✨
               </button>
             )}
+            {currentTask.status === "awaiting_approval" && isUserCreator && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleApproveCompletion(true);
+                  }}
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-medium"
+                >
+                  Approve ✅
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleApproveCompletion(false);
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-medium"
+                >
+                  Reject ❌
+                </button>
+              </div>
+            )}
+            {currentTask.status === "awaiting_approval" &&
+              isUserSelectedHelper && (
+                <button className="bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-medium">
+                  Waiting for Approval ⏳
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -463,6 +698,60 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
           }
         }}
       />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteTask}
+        title={
+          currentTask.status === "in_progress" ? "Cancel Task" : "Delete Task"
+        }
+        message={`Are you sure you want to ${
+          currentTask.status === "in_progress" ? "cancel" : "delete"
+        } "${
+          currentTask.title
+        }"? This action cannot be undone and you will receive a refund of ${
+          currentTask.karma
+        } karma points.`}
+        confirmText={
+          currentTask.status === "in_progress"
+            ? "Yes, Cancel Task"
+            : "Yes, Delete Task"
+        }
+        cancelText="Cancel"
+        type="danger"
+        isLoading={isDeleting}
+      />
+
+      {/* Edit Task Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Edit Task
+                </h3>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <EditTaskForm
+                task={currentTask}
+                categories={categories}
+                onUpdate={handleUpdateTask}
+                onCancel={() => setShowEditModal(false)}
+                isLoading={isUpdating}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

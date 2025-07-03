@@ -30,7 +30,7 @@ const login = async (data) => {
 const register = async (data) => {
   console.log("authservice", data);
   try {
-    const { name, password, address, email, phone, role } = data;
+    const { name, password, address, email, phone } = data;
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
@@ -39,8 +39,6 @@ const register = async (data) => {
       address,
       email,
       phone,
-      role,
-      karmaPoints: 1000,
       totalLikes: 0,
       badges: "bronze",
       completedTasks: [],
@@ -48,7 +46,7 @@ const register = async (data) => {
     });
 
     // Modify the user object before saving (optional) This is the advantage of making new instance of user and saving
-    // user.roles = ["Super Admin"];
+
     return await newUser.save();
   } catch (error) {
     console.log("Error during User Registration", error);

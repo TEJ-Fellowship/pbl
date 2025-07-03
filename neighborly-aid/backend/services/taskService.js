@@ -12,11 +12,62 @@ const {
   PENDING,
   SELECTED,
   REJECTED,
+  AWAITING_APPROVAL,
 } = require("../utils/constants");
+const karmaService = require("./karmaService");
 
 class TaskService {
   // Create a new task
   async createTask(taskData, userId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Validate user has enough karma points
+      const user = await User.findById(userId).session(session);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const taskKarmaPoints = parseInt(taskData.taskKarmaPoints) || 0;
+
+      if (user.karmaPoints < taskKarmaPoints) {
+        throw new Error(
+          `Insufficient karma points. You have ${user.karmaPoints} but need ${taskKarmaPoints}`
+        );
+      }
+
+      // Deduct karma points from user
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { karmaPoints: -taskKarmaPoints } },
+        { new: true, session }
+      );
+
+      // Create the task
+      const task = new Task({
+        ...taskData,
+        createdBy: userId,
+      });
+      const savedTask = await task.save({ session });
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      console.log(
+        `Task created successfully. ${taskKarmaPoints} karma points deducted from user ${user.name}. Remaining karma: ${updatedUser.karmaPoints}`
+      );
+
+      // Return populated task
+      return await this.getTaskById(savedTask._id);
+    } catch (error) {
+      // Rollback the transaction on error
+      await session.abortTransaction();
+      console.error("Task creation failed:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
     try {
       // Validate category exists
       const category = await Category.findById(taskData.category);
@@ -64,6 +115,8 @@ class TaskService {
       let query = Task.find(filters)
         .populate("createdBy", "name email karmaPoints totalLikes")
         .populate("helpers.userId", "name email")
+        .populate("likedBy", "name email")
+        .populate("selectedHelper", "name email")
         .populate("category", "name displayName icon color") // Populate category
         .sort({ createdAt: -1 });
 
@@ -79,16 +132,100 @@ class TaskService {
     return await Task.findById(taskId)
       .populate("createdBy", "name email karmaPoints totalLikes")
       .populate("helpers.userId", "name email")
+      .populate("selectedHelper", "name email")
       .populate("likedBy", "name email");
   }
 
   // Update task
-  async updateTask(taskId, updateData) {
-    return await Task.findByIdAndUpdate(
-      taskId,
-      { ...updateData },
-      { new: true, runValidators: true }
-    ).populate("createdBy helpers.userId", "name email");
+  async updateTask(taskId, updateData, userId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Get the task to check ownership and current state
+      const task = await Task.findById(taskId).session(session);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is the task creator
+      if (task.createdBy.toString() !== userId) {
+        throw new Error("Only the task creator can update this task");
+      }
+
+      // Check if task is not completed (completed tasks cannot be updated)
+      if (task.status === COMPLETED) {
+        throw new Error("Cannot update completed tasks");
+      }
+
+      // Check if task is in progress (tasks with selected helpers cannot be updated)
+      if (task.status === IN_PROGRESS) {
+        throw new Error("Cannot update tasks that are in progress");
+      }
+
+      // Handle karma points adjustment if taskKarmaPoints is being updated
+      const newKarmaPoints = updateData.taskKarmaPoints;
+      const currentKarmaPoints = task.taskKarmaPoints || 0;
+
+      if (
+        newKarmaPoints !== undefined &&
+        newKarmaPoints !== currentKarmaPoints
+      ) {
+        // Validate new karma points
+        if (newKarmaPoints < 10) {
+          throw new Error("Minimum karma points required is 10");
+        }
+        if (newKarmaPoints > 5000) {
+          throw new Error("Maximum karma points allowed is 5000");
+        }
+
+        // Get user to check current karma balance
+        const user = await User.findById(userId).session(session);
+        if (!user) {
+          throw new Error("User not found");
+        }
+
+        // Calculate karma adjustment
+        const karmaDifference = newKarmaPoints - currentKarmaPoints;
+        const availableKarma = user.karmaPoints + currentKarmaPoints; // Available karma + current task karma
+
+        if (newKarmaPoints > availableKarma) {
+          throw new Error(
+            `Insufficient karma points. You have ${user.karmaPoints} available karma plus ${currentKarmaPoints} from this task. Total available: ${availableKarma}, Required: ${newKarmaPoints}`
+          );
+        }
+
+        // Adjust user's karma points
+        await User.findByIdAndUpdate(
+          userId,
+          { $inc: { karmaPoints: -karmaDifference } },
+          { session }
+        );
+
+        console.log(
+          `Task karma updated: ${currentKarmaPoints} → ${newKarmaPoints}. Karma adjustment: ${karmaDifference}`
+        );
+      }
+
+      // Update the task
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        { ...updateData },
+        { new: true, runValidators: true, session }
+      ).populate("createdBy helpers.userId", "name email");
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      return updatedTask;
+    } catch (error) {
+      // Rollback the transaction on error
+      await session.abortTransaction();
+      console.error("Task update failed:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   // Accept task
@@ -239,8 +376,119 @@ class TaskService {
   }
 
   // Delete task
-  async deleteTask(taskId) {
-    return await Task.findByIdAndDelete(taskId);
+  async deleteTask(taskId, userId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Get the task to check karma points and ownership
+      const task = await Task.findById(taskId).session(session);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is the task creator
+      if (task.createdBy.toString() !== userId) {
+        throw new Error("Only the task creator can delete this task");
+      }
+
+      // Check if task is not completed (completed tasks shouldn't be refunded)
+      if (task.status === COMPLETED) {
+        throw new Error("Cannot delete completed tasks");
+      }
+
+      // Check if task is not in progress (tasks with selected helpers cannot be deleted)
+      if (task.status === IN_PROGRESS) {
+        throw new Error(
+          "Cannot delete tasks that are in progress. Please cancel the task instead."
+        );
+      }
+
+      const taskKarmaPoints = task.taskKarmaPoints || 0;
+
+      // Refund karma points to the user
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { karmaPoints: taskKarmaPoints } },
+        { new: true, session }
+      );
+
+      // Delete the task
+      await Task.findByIdAndDelete(taskId, { session });
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      console.log(
+        `Task deleted successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+      );
+
+      return { success: true, refundedKarma: taskKarmaPoints };
+    } catch (error) {
+      // Rollback the transaction on error
+      await session.abortTransaction();
+      console.error("Task deletion failed:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  // Cancel task (refund karma if no helpers are selected)
+  async cancelTask(taskId, userId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Get the task to check karma points and ownership
+      const task = await Task.findById(taskId).session(session);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is the task creator
+      if (task.createdBy.toString() !== userId) {
+        throw new Error("Only the task creator can cancel this task");
+      }
+
+      // Check if task is not completed
+      if (task.status === COMPLETED) {
+        throw new Error("Cannot cancel completed tasks");
+      }
+
+      // Check if task is not in progress (if helpers are working, can't cancel)
+      if (task.status === IN_PROGRESS) {
+        throw new Error("Cannot cancel tasks that are in progress");
+      }
+
+      const taskKarmaPoints = task.taskKarmaPoints || 0;
+
+      // Refund karma points to the user
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { karmaPoints: taskKarmaPoints } },
+        { new: true, session }
+      );
+
+      // Delete the task
+      await Task.findByIdAndDelete(taskId, { session });
+
+      // Commit the transaction
+      await session.commitTransaction();
+
+      console.log(
+        `Task cancelled successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+      );
+
+      return { success: true, refundedKarma: taskKarmaPoints };
+    } catch (error) {
+      // Rollback the transaction on error
+      await session.abortTransaction();
+      console.error("Task cancellation failed:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   // Get tasks by user (either created or accepted)
@@ -473,6 +721,199 @@ class TaskService {
       return await this.getTaskWithHelpers(taskId);
     } catch (error) {
       console.error("Error in selectHelper:", error);
+      throw error;
+    }
+  }
+
+  // Add new method for helper to mark task as completed
+  async markTaskAsCompletedByHelper(taskId, userId) {
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is the selected helper
+      const isSelectedHelper = task.helpers.some(
+        (helper) =>
+          helper.userId.toString() === userId && helper.status === "selected"
+      );
+
+      if (!isSelectedHelper) {
+        throw new Error("Only the selected helper can mark task as completed");
+      }
+
+      // Check if task is in progress
+      if (task.status !== "in_progress") {
+        throw new Error("Only tasks in progress can be marked as completed");
+      }
+
+      // Check if helper already marked as completed
+      if (task.helperMarkedComplete) {
+        throw new Error("Task has already been marked as completed by helper");
+      }
+
+      // Update task to helper completed status
+      const updatedTask = await Task.findByIdAndUpdate(
+        taskId,
+        {
+          helperMarkedComplete: true,
+          helperCompletedAt: new Date(),
+          status: AWAITING_APPROVAL,
+        },
+        { new: true, runValidators: true }
+      ).populate("createdBy helpers.userId selectedHelper", "name email");
+
+      // Update the specific helper's status separately
+      await Task.updateOne(
+        { _id: taskId, "helpers.userId": userId },
+        {
+          $set: {
+            "helpers.$.status": "completed",
+          },
+        }
+      );
+
+      // Create notification for requester
+      await notificationService.notifyHelperMarkedTaskComplete(taskId, userId);
+
+      return updatedTask;
+    } catch (error) {
+      console.error("Error in markTaskAsCompletedByHelper:", error);
+      throw error;
+    }
+  }
+
+  // Add new method for requester to approve completion
+  async approveTaskCompletion(
+    taskId,
+    requesterId,
+    approved = true,
+    notes = ""
+  ) {
+    try {
+      // Validate task exists
+      const task = await Task.findById(taskId);
+      if (!task) {
+        throw new Error("Task not found");
+      }
+
+      // Check if user is the task creator
+      if (task.createdBy.toString() !== requesterId) {
+        throw new Error("Only the task creator can approve completion");
+      }
+
+      // Check if helper has marked task as completed
+      if (!task.helperMarkedComplete) {
+        throw new Error("Helper has not marked task as completed yet");
+      }
+
+      // Check if already approved/rejected
+      if (
+        task.requesterApproved !== null &&
+        task.requesterApproved !== undefined
+      ) {
+        throw new Error("Task completion has already been reviewed");
+      }
+
+      // Check if task is awaiting approval
+      if (task.status !== AWAITING_APPROVAL) {
+        throw new Error("Task is not awaiting approval");
+      }
+
+      if (approved) {
+        // Find the selected helper
+        const selectedHelper = task.helpers.find(
+          (helper) => helper.status === "completed"
+        );
+
+        if (!selectedHelper) {
+          throw new Error("No helper has completed this task");
+        }
+
+        // Transfer karma points
+        let karmaTransferResult = null;
+        try {
+          karmaTransferResult = await karmaService.transferKarmaPoints(
+            taskId,
+            task.createdBy.toString(),
+            selectedHelper.userId.toString(),
+            task.taskKarmaPoints
+          );
+          // Notify both users about karma transfer
+          await notificationService.notifyKarmaTransferred({
+            taskId: task._id,
+            taskTitle: task.title,
+            points: task.taskKarmaPoints,
+            fromUserId: task.createdBy,
+            toUserId: selectedHelper.userId,
+          });
+        } catch (karmaError) {
+          console.error("Karma transfer failed:", karmaError);
+          throw new Error(`Karma transfer failed: ${karmaError.message}`);
+        }
+
+        // Update task to completed status
+        const updatedTask = await Task.findByIdAndUpdate(
+          taskId,
+          {
+            status: COMPLETED,
+            completedAt: new Date(),
+            requesterApproved: true,
+            requesterApprovedAt: new Date(),
+            completionNotes: notes,
+          },
+          { new: true, runValidators: true }
+        ).populate("createdBy helpers.userId selectedHelper", "name email");
+
+        // Create notification for task completion
+        await notificationService.notifyTaskCompleted(taskId, requesterId);
+
+        return {
+          ...updatedTask.toObject(),
+          karmaTransfer: karmaTransferResult,
+        };
+      } else {
+        // Reject completion - task goes back to in_progress
+        const updatedTask = await Task.findByIdAndUpdate(
+          taskId,
+          {
+            status: IN_PROGRESS,
+            helperMarkedComplete: false,
+            helperCompletedAt: null,
+            requesterApproved: false,
+            requesterApprovedAt: new Date(),
+            completionNotes: notes,
+          },
+          { new: true, runValidators: true }
+        ).populate("createdBy helpers.userId selectedHelper", "name email");
+
+        // Reset the helper's status back to selected
+        const selectedHelper = task.helpers.find(
+          (helper) => helper.status === "completed"
+        );
+        if (selectedHelper) {
+          await Task.updateOne(
+            { _id: taskId, "helpers.userId": selectedHelper.userId },
+            {
+              $set: {
+                "helpers.$.status": "selected",
+              },
+            }
+          );
+        }
+
+        // Create notification for helper
+        await notificationService.notifyTaskCompletionRejected(
+          taskId,
+          requesterId
+        );
+
+        return updatedTask;
+      }
+    } catch (error) {
+      console.error("Error in approveTaskCompletion:", error);
       throw error;
     }
   }

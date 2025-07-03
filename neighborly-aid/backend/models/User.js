@@ -42,7 +42,6 @@ const userSchema = new mongoose.Schema({
     required: true,
     match: [PHONE_REGEX, "Invalid phone format!"],
   },
-  role: { type: String, enum: ["helper", "requester"], default: "requester" },
   location: String,
   karmaPoints: { type: Number, default: 1000 },
   totalLikes: { type: Number, default: 0 },
@@ -53,6 +52,7 @@ const userSchema = new mongoose.Schema({
   },
   completedTasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
   reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
+  // role: { type: String, enum: ["helper", "requester"], default: "requester" },
 });
 
 const model = mongoose.model("User", userSchema);

@@ -11,7 +11,7 @@ import { useCategories } from "../hooks/useCategories";
 const MyNeighbourhood = () => {
   const [activeTab, setActiveTab] = useState("helpothers");
   const [showPostForm, setShowPostForm] = useState(false);
-  
+
   // State for tasks
   const [allTasks, setAllTasks] = useState([]);
   const [userTasks, setUserTasks] = useState([]);
@@ -33,13 +33,13 @@ const MyNeighbourhood = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch both all tasks and user tasks in parallel
         const [allTasksData, userTasksData] = await Promise.all([
           fetchAllTasks(),
-          fetchUserTasks().catch(() => []) // Don't fail if user tasks can't be fetched
+          fetchUserTasks().catch(() => []), // Don't fail if user tasks can't be fetched
         ]);
-        
+
         setAllTasks(allTasksData);
         setUserTasks(userTasksData);
       } catch (err) {
@@ -62,9 +62,9 @@ const MyNeighbourhood = () => {
     try {
       const [allTasksData, userTasksData] = await Promise.all([
         fetchAllTasks(),
-        fetchUserTasks().catch(() => [])
+        fetchUserTasks().catch(() => []),
       ]);
-      
+
       setAllTasks(allTasksData);
       setUserTasks(userTasksData);
     } catch (err) {
@@ -109,8 +109,10 @@ const MyNeighbourhood = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:bg-background-politeDark">
-      {/* Header */}
-      <Header />
+      {/* App Container */}
+      <div className="max-w-6xl mx-auto relative min-h-screen">
+        {/* Header */}
+        <Header />
 
       <div className="w-full dark:bg-background-humbleDark">
         {/* Navigation Tabs */}
@@ -155,9 +157,9 @@ const MyNeighbourhood = () => {
           />
         )}
 
-        {/* Floating Action Button - only show on Help Others tab */}
+        {/* Floating Action Button - positioned relative to app container */}
         {activeTab === "helpothers" && (
-          <div className="fixed bottom-6 right-6">
+          <div className="absolute bottom-6 right-6 z-50">
             <button
               onClick={() => handleSetShowPostForm(true)}
               className="w-14 h-14 bg-gradient-to-r from-green-500 to-green-600 rounded-full shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"

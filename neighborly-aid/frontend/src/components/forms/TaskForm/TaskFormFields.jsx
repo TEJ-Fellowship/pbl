@@ -1,13 +1,14 @@
 // frontend/src/components/myNeighbourhood/TaskFormFields.jsx
-import React from 'react';
-import { MapPin } from 'lucide-react';
+import React from "react";
+import { MapPin } from "lucide-react";
 
-const TaskFormFields = ({ 
-  formData, 
-  onInputChange, 
-  categories, 
-  geminiSuggestions, 
-  suggestionsApplied 
+const TaskFormFields = ({
+  formData,
+  onInputChange,
+  categories,
+  geminiSuggestions,
+  suggestionsApplied,
+  user,
 }) => {
   return (
     <div className="space-y-3">
@@ -18,7 +19,7 @@ const TaskFormFields = ({
           name="title"
           placeholder="What do you need help with?"
           value={formData.title}
-          onChange={(e) => onInputChange('title', e.target.value)}
+          onChange={(e) => onInputChange("title", e.target.value)}
           className="w-full p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
           required
         />
@@ -31,7 +32,7 @@ const TaskFormFields = ({
           placeholder="Describe your request in detail..."
           rows="3"
           value={formData.description}
-          onChange={(e) => onInputChange('description', e.target.value)}
+          onChange={(e) => onInputChange("description", e.target.value)}
           className="w-full p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none transition-all duration-200"
           required
         />
@@ -45,7 +46,7 @@ const TaskFormFields = ({
           name="location"
           placeholder="Enter your location (e.g., Downtown, 123 Main St)"
           value={formData.location}
-          onChange={(e) => onInputChange('location', e.target.value)}
+          onChange={(e) => onInputChange("location", e.target.value)}
           className="w-full pl-10 pr-3 py-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
           required
         />
@@ -124,12 +125,14 @@ const TaskFormFields = ({
           )}
         </div>
         {/* Priority Select */}
-        <select 
+        <select
           name="urgency"
           value={formData.urgency}
-          onChange={(e) => onInputChange('urgency', e.target.value)}
+          onChange={(e) => onInputChange("urgency", e.target.value)}
           className={`p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 ${
-            suggestionsApplied && formData.urgency ? 'ring-2 ring-purple-400 border-purple-400 animate-pulse' : ''
+            suggestionsApplied && formData.urgency
+              ? "ring-2 ring-purple-400 border-purple-400 animate-pulse"
+              : ""
           }`}
           required
         >
@@ -141,7 +144,9 @@ const TaskFormFields = ({
 
         {/* Karma Points Input */}
         <div className="relative">
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 font-bold">⭐</span>
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-500 font-bold">
+            ⭐
+          </span>
           <input
             type="number"
             name="karmaPoints"
@@ -149,19 +154,75 @@ const TaskFormFields = ({
             min="10"
             max="5000"
             value={formData.karmaPoints}
-            onChange={(e) => onInputChange('karmaPoints', e.target.value)}
-            className={`w-full pl-10 pr-3 py-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 ${
-              suggestionsApplied && formData.karmaPoints ? 'ring-2 ring-orange-400 border-orange-400 animate-pulse' : ''
+            onChange={(e) => onInputChange("karmaPoints", e.target.value)}
+            className={`w-full pl-10 pr-24 py-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 ${
+              suggestionsApplied && formData.karmaPoints
+                ? "ring-2 ring-orange-400 border-orange-400 animate-pulse"
+                : ""
             }`}
             required
           />
+          {/* User Karma Display */}
+          {user && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-1 rounded">
+              {user.karmaPoints || 0} ⭐
+            </div>
+          )}
         </div>
       </div>
 
       {/* Karma Points Helper Text */}
       <div className="text-xs text-gray-500 dark:text-gray-400 px-1">
-        💡 Karma Points Guide: Simple tasks (10-50) • Regular tasks (51-200) • Complex tasks (201-800) • Major tasks (801-2000) • Emergency tasks (2001-5000)
+        💡 Karma Points Guide: Simple tasks (10-50) • Regular tasks (51-200) •
+        Complex tasks (201-800) • Major tasks (801-2000) • Emergency tasks
+        (2001-5000)
       </div>
+
+      {/* Karma Validation Feedback */}
+      {user && formData.karmaPoints && (
+        <div className="px-1">
+          {(() => {
+            const karmaPoints = parseInt(formData.karmaPoints) || 0;
+            const userKarma = user.karmaPoints || 0;
+
+            if (karmaPoints > userKarma) {
+              return (
+                <div className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
+                  <span>⚠️</span>
+                  <span>
+                    You only have {userKarma} karma points. Please reduce the
+                    amount.
+                  </span>
+                </div>
+              );
+            } else if (karmaPoints < 10) {
+              return (
+                <div className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
+                  <span>⚠️</span>
+                  <span>Minimum karma points required is 10.</span>
+                </div>
+              );
+            } else if (karmaPoints > 5000) {
+              return (
+                <div className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
+                  <span>⚠️</span>
+                  <span>Maximum karma points allowed is 5000.</span>
+                </div>
+              );
+            } else {
+              return (
+                <div className="text-xs text-green-500 dark:text-green-400 flex items-center gap-1">
+                  <span>✅</span>
+                  <span>
+                    Valid karma amount. You'll have {userKarma - karmaPoints}{" "}
+                    karma points remaining.
+                  </span>
+                </div>
+              );
+            }
+          })()}
+        </div>
+      )}
     </div>
   );
 };

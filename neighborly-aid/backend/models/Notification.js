@@ -24,6 +24,8 @@ const notificationSchema = new mongoose.Schema({
       "task_completed", // When a task is marked as completed
       "task_liked", // When someone likes your task
       "new_helper_offered", // When someone offers to help with your task
+      "helper_marked_complete", // When a helper marks a task as completed
+      "completion_rejected", // When task completion is rejected
     ],
     required: true,
   },

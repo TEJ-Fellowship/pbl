@@ -25,7 +25,7 @@ const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_DEV].filter(Boolean);
 
 app.use(
   cors({
-    origin: true, // Allow all origins
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
