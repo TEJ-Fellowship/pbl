@@ -1,5 +1,6 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState, useCallback } from "react";
 import { verifyAuth, loginAuth, registerAuth, logoutAuth } from "../api/auth";
+import { getUserDashboard } from "../api/users";
 
 const AuthContext = createContext();
 
@@ -62,8 +63,31 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message };
     }
   };
+
+  const refreshUser = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await getUserDashboard(user.id);
+      if (response.data) {
+        // Update user with fresh data from backend
+        setUser({
+          id: response.data._id || response.data.id,
+          name: response.data.name,
+          email: response.data.email,
+          phone: response.data.phone,
+          karmaPoints: response.data.karmaPoints || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  }, [user?.id]);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

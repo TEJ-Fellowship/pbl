@@ -1,5 +1,10 @@
-const { OPEN, IN_PROGRESS, COMPLETED } = require("./taskStatus");
-const { HELPER, REQUESTER, ADMIN } = require("./userRole");
+const {
+  OPEN,
+  IN_PROGRESS,
+  AWAITING_APPROVAL,
+  COMPLETED,
+} = require("./taskStatus");
+
 const { LOW, MEDIUM, HIGH } = require("./taskUrgency");
 const {
   PENDING,
@@ -22,17 +27,13 @@ module.exports = {
   // Task Status
   OPEN,
   IN_PROGRESS,
+  AWAITING_APPROVAL,
   COMPLETED,
 
   // Task Urgency
   LOW,
   MEDIUM,
   HIGH,
-
-  // User Roles
-  HELPER,
-  REQUESTER,
-  ADMIN,
 
   // Event Status for participants
   EVENT_PENDING,

@@ -65,7 +65,7 @@ const registerController = async (req, res) => {
   console.log("register controller - received data:", req.body);
 
   try {
-    const { name, password, confirmPassword, email, phone, role } = req.body;
+    const { name, password, confirmPassword, email, phone } = req.body;
 
     // Collect errors in an array
     const errors = [];
@@ -75,7 +75,7 @@ const registerController = async (req, res) => {
     if (!phone) errors.push("Phone number is required");
     if (!password) errors.push("Password is required");
     if (!confirmPassword) errors.push("Confirm password is required");
-    if (!role) errors.push("Role is required");
+
     if (password && confirmPassword && password !== confirmPassword) {
       errors.push("Passwords do not match");
     }

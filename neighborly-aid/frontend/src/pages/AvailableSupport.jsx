@@ -82,13 +82,11 @@ const AvailableSupport = () => {
       name: "Alex Thompson",
       karma: 150,
       tasksCompleted: 23,
-      role: "Helper",
     },
     requester: {
       name: "Jessica Martinez",
       karma: 85,
       tasksPosted: 12,
-      role: "Requester",
     },
   };
 
@@ -288,7 +286,7 @@ const AvailableSupport = () => {
             </div>
             <div className="text-right">
               <p className="font-semibold text-gray-800">{currentUser?.name}</p>
-              <p className="text-sm text-gray-600">{currentUser?.role}</p>
+              <p className="text-sm text-gray-600">Community Member</p>
             </div>
             <button
               onClick={() => setCurrentUser(null)}
@@ -344,15 +342,9 @@ const AvailableSupport = () => {
             <Users className="text-blue-600" size={24} />
           </div>
           <p className="text-3xl font-bold text-blue-600 mb-1">
-            {currentUser?.role === "Helper"
-              ? currentUser?.tasksCompleted
-              : currentUser?.tasksPosted}
+            {currentUser?.tasksCompleted || currentUser?.tasksPosted}
           </p>
-          <p className="text-sm text-gray-600">
-            {currentUser?.role === "Helper"
-              ? "Tasks Completed"
-              : "Tasks Posted"}
-          </p>
+          <p className="text-sm text-gray-600">Tasks Completed</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6">
@@ -376,9 +368,8 @@ const AvailableSupport = () => {
               tasks.filter(
                 (t) =>
                   t.status === "In Progress" &&
-                  (currentUser?.role === "Helper"
-                    ? t.helper === currentUser?.name
-                    : t.requester === currentUser?.name)
+                  (t.helper === currentUser?.name ||
+                    t.requester === currentUser?.name)
               ).length
             }
           </p>
@@ -503,7 +494,7 @@ const AvailableSupport = () => {
                 {task.karma} karma
               </div>
 
-              {currentUser?.role === "Helper" && task.status === "Open" && (
+              {task.status === "Open" && (
                 <button
                   onClick={() => claimTask(task.id)}
                   className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-green-600 hover:to-green-700 transition-all"

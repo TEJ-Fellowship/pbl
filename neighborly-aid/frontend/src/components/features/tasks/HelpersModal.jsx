@@ -11,13 +11,19 @@ import {
 import Modal from "../../ui/Modal";
 import AuthContext from "../../../context/AuthContext";
 import { toast } from "react-hot-toast";
-import { removeHelp, acceptTask, selectHelper } from "../../../api/tasks";
+import {
+  removeHelp,
+  acceptTask,
+  selectHelper,
+  approveTaskCompletion,
+} from "../../../api/tasks";
 
 const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
   const { user } = useContext(AuthContext);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
 
   if (!task) return null;
 
@@ -114,6 +120,54 @@ const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
       toast.error(error.error || "Failed to select helper");
     } finally {
       setIsSelecting(false);
+    }
+  };
+
+  const handleApproveCompletion = async (approved, notes = "") => {
+    if (!user) {
+      toast.error("Please log in to approve task completion");
+      return;
+    }
+
+    const action = approved ? "approve" : "reject";
+    const confirmed = window.confirm(
+      `Are you sure you want to ${action} the completion of "${task.title}"?`
+    );
+
+    if (!confirmed) return;
+
+    setIsApproving(true);
+    try {
+      const result = await approveTaskCompletion(
+        task.id || task._id,
+        approved,
+        notes
+      );
+
+      if (onTaskUpdate) {
+        onTaskUpdate(result);
+      }
+
+      if (approved) {
+        if (result.karmaTransfer) {
+          const { transferredAmount, requester, helper } = result.karmaTransfer;
+          toast.success(
+            `Task approved! ${transferredAmount} karma points transferred from ${requester.name} to ${helper.name}! 🎉✨`,
+            { duration: 5000 }
+          );
+        } else {
+          toast.success("Task approved! Karma points transferred! 🎉");
+        }
+      } else {
+        toast.success("Task completion rejected. Helper can try again. ❌");
+      }
+      onClose();
+    } catch (error) {
+      console.error("Error approving task completion:", error);
+      const errorMessage = error.error || "Failed to approve task completion";
+      toast.error(errorMessage);
+    } finally {
+      setIsApproving(false);
     }
   };
 
@@ -244,6 +298,24 @@ const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
                     selectedHelper.selectedAt || selectedHelper.acceptedAt
                   )}
                 </p>
+                {/* Show completion status */}
+                {task.helperMarkedComplete && (
+                  <div className="mt-2">
+                    {task.requesterApproved === null ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                        ⏳ Waiting for approval
+                      </span>
+                    ) : task.requesterApproved === true ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                        ✅ Approved
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                        ❌ Rejected
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -400,6 +472,30 @@ const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
             </button>
           </div>
         )}
+
+        {/* Approval buttons for task creator */}
+        {isUserCreator &&
+          task.helperMarkedComplete &&
+          task.requesterApproved === null && (
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleApproveCompletion(true)}
+                  disabled={isApproving}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isApproving ? "Approving..." : "Approve ✅"}
+                </button>
+                <button
+                  onClick={() => handleApproveCompletion(false)}
+                  disabled={isApproving}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-red-600 hover:to-rose-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isApproving ? "Rejecting..." : "Reject ❌"}
+                </button>
+              </div>
+            </div>
+          )}
       </div>
     </Modal>
   );

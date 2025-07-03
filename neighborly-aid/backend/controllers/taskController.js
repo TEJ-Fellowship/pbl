@@ -1,5 +1,6 @@
 const taskService = require("../services/taskService");
 const geminiService = require("../services/geminiService");
+const User = require("../models/User");
 
 // Create new task
 const createTask = async (req, res) => {
@@ -12,6 +13,32 @@ const createTask = async (req, res) => {
     if (!req.user || !req.user.id) {
       console.log("No authenticated user found");
       return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Validate karma points
+    const taskKarmaPoints = parseInt(req.body.taskKarmaPoints) || 0;
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (taskKarmaPoints > user.karmaPoints) {
+      return res.status(400).json({
+        error: `You only have ${user.karmaPoints} karma points, but you're trying to offer ${taskKarmaPoints}. Please reduce the karma points or earn more karma.`,
+      });
+    }
+
+    if (taskKarmaPoints < 10) {
+      return res.status(400).json({
+        error: "Minimum karma points required is 10.",
+      });
+    }
+
+    if (taskKarmaPoints > 5000) {
+      return res.status(400).json({
+        error: "Maximum karma points allowed is 5000.",
+      });
     }
 
     console.log("This worksss", req.user.id);
@@ -65,12 +92,22 @@ const getTaskById = async (req, res) => {
 // Update task
 const updateTask = async (req, res) => {
   try {
-    const task = await taskService.updateTask(req.params.id, req.body);
+    console.log("=== Update Task Debug ===");
+    console.log("Task ID:", req.params.id);
+    console.log("User ID:", req.user.id);
+    console.log("Update data:", req.body);
+
+    const task = await taskService.updateTask(
+      req.params.id,
+      req.body,
+      req.user.id
+    );
     if (!task) {
       return res.status(404).json({ error: "Task not found" });
     }
     res.json(task);
   } catch (error) {
+    console.error("Update task error:", error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -127,12 +164,27 @@ const removeHelp = async (req, res) => {
 // Delete task
 const deleteTask = async (req, res) => {
   try {
-    const task = await taskService.deleteTask(req.params.id);
-    if (!task) {
-      return res.status(404).json({ error: "Task not found" });
-    }
-    res.json({ message: "Task deleted successfully" });
+    const result = await taskService.deleteTask(req.params.id, req.user.id);
+    res.json({
+      message: "Task deleted successfully",
+      refundedKarma: result.refundedKarma,
+    });
   } catch (error) {
+    console.error("Delete task error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Cancel task
+const cancelTask = async (req, res) => {
+  try {
+    const result = await taskService.cancelTask(req.params.id, req.user.id);
+    res.json({
+      message: "Task cancelled successfully",
+      refundedKarma: result.refundedKarma,
+    });
+  } catch (error) {
+    console.error("Cancel task error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -282,6 +334,34 @@ const selectHelper = async (req, res) => {
   }
 };
 
+// Add new controller methods
+const markTaskAsCompletedByHelper = async (req, res) => {
+  try {
+    const task = await taskService.markTaskAsCompletedByHelper(
+      req.params.id,
+      req.user.id
+    );
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const approveTaskCompletion = async (req, res) => {
+  try {
+    const { approved, notes } = req.body;
+    const task = await taskService.approveTaskCompletion(
+      req.params.id,
+      req.user.id,
+      approved,
+      notes
+    );
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,
@@ -291,6 +371,7 @@ module.exports = {
   completeTask,
   removeHelp,
   deleteTask,
+  cancelTask,
   getUserTasks,
   getTasksByCategory,
   getTasksByUrgency,
@@ -298,4 +379,6 @@ module.exports = {
   likeTask,
   getTaskWithHelpers,
   selectHelper,
+  markTaskAsCompletedByHelper,
+  approveTaskCompletion,
 };
