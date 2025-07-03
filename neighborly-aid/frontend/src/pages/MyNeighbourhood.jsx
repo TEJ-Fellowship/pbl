@@ -169,6 +169,7 @@ const MyNeighbourhood = () => {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 };
