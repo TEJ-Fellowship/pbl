@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import AppRoutes from "./AppRoutes";
 import LandingPage from "./components/LandingPage";
 import LoginPage from "./components/LoginPage";
 import SignupPage from "./components/SignupPage";
@@ -42,23 +43,13 @@ const App = () => {
     setView("landing");
   };
 
+  // If user is authenticated, show the routed app
   if (user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            Welcome back, {user.username}!
-          </h1>
-          <p className="text-gray-600 mb-6">Ready to build your perfect resume?</p>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-          >
-            Logout
-          </button>
-        </div>
+      <>
+        <AppRoutes user={user} onLogout={handleLogout} />
         <ToastContainer position="top-center" autoClose={3000} />
-      </div>
+      </>
     );
   }
 
@@ -103,7 +94,7 @@ const App = () => {
     );
   }
 
-  // Fallback - should not reach here
+  // Default fallback
   return (
     <>
       <LandingPage
