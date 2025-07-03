@@ -9,8 +9,8 @@ const SubmitButton = ({ submitStatus ,formData, user}) => {
   const isKarmaInvalid = () => {
     if (!user || !formData.karmaPoints) return false;
     const karmaPoints = parseInt(formData.karmaPoints) || 0;
-    const userKarma = user.karmaPoints || 0;
-    return karmaPoints > userKarma || karmaPoints < 10 || karmaPoints > 5000;
+    const userAvailableKarma = user.availableKarmaPoints || user.karmaPoints || 0;
+    return karmaPoints > userAvailableKarma || karmaPoints < 10 || karmaPoints > 5000;
   };
   
   const isLoading = pending || submitStatus === 'creating_category' || submitStatus === 'submitting';

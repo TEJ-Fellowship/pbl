@@ -23,7 +23,7 @@ class TaskService {
     session.startTransaction();
 
     try {
-      // Validate user has enough karma points
+      // Validate user has enough available karma points
       const user = await User.findById(userId).session(session);
       if (!user) {
         throw new Error("User not found");
@@ -31,16 +31,17 @@ class TaskService {
 
       const taskKarmaPoints = parseInt(taskData.taskKarmaPoints) || 0;
 
-      if (user.karmaPoints < taskKarmaPoints) {
+      // Check available karma points instead of total karma points
+      if (user.availableKarmaPoints < taskKarmaPoints) {
         throw new Error(
-          `Insufficient karma points. You have ${user.karmaPoints} but need ${taskKarmaPoints}`
+          `Insufficient available karma points. You have ${user.availableKarmaPoints} but need ${taskKarmaPoints}`
         );
       }
 
-      // Deduct karma points from user
+      // Reserve karma points by deducting from available karma
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: -taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: -taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -55,7 +56,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task created successfully. ${taskKarmaPoints} karma points deducted from user ${user.name}. Remaining karma: ${updatedUser.karmaPoints}`
+        `Task created successfully. ${taskKarmaPoints} karma points reserved from user ${user.name}. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       // Return populated task
@@ -187,18 +188,18 @@ class TaskService {
 
         // Calculate karma adjustment
         const karmaDifference = newKarmaPoints - currentKarmaPoints;
-        const availableKarma = user.karmaPoints + currentKarmaPoints; // Available karma + current task karma
+        const availableKarma = user.availableKarmaPoints + currentKarmaPoints; // Available karma + current task karma
 
         if (newKarmaPoints > availableKarma) {
           throw new Error(
-            `Insufficient karma points. You have ${user.karmaPoints} available karma plus ${currentKarmaPoints} from this task. Total available: ${availableKarma}, Required: ${newKarmaPoints}`
+            `Insufficient available karma points. You have ${user.availableKarmaPoints} available karma plus ${currentKarmaPoints} from this task. Total available: ${availableKarma}, Required: ${newKarmaPoints}`
           );
         }
 
-        // Adjust user's karma points
+        // Adjust user's available karma points
         await User.findByIdAndUpdate(
           userId,
-          { $inc: { karmaPoints: -karmaDifference } },
+          { $inc: { availableKarmaPoints: -karmaDifference } },
           { session }
         );
 
@@ -406,10 +407,10 @@ class TaskService {
 
       const taskKarmaPoints = task.taskKarmaPoints || 0;
 
-      // Refund karma points to the user
+      // Refund available karma points to the user
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -420,7 +421,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task deleted successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+        `Task deleted successfully. ${taskKarmaPoints} karma points refunded to user. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       return { success: true, refundedKarma: taskKarmaPoints };
@@ -463,10 +464,10 @@ class TaskService {
 
       const taskKarmaPoints = task.taskKarmaPoints || 0;
 
-      // Refund karma points to the user
+      // Refund available karma points to the user
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -477,7 +478,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task cancelled successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+        `Task cancelled successfully. ${taskKarmaPoints} karma points refunded to user. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       return { success: true, refundedKarma: taskKarmaPoints };

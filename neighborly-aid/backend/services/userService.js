@@ -47,6 +47,15 @@ const getUserDashboard = async (userId) => {
       throw new Error("User not found");
     }
 
+    // Ensure availableKarmaPoints exists (for backward compatibility)
+    if (
+      user.availableKarmaPoints === undefined ||
+      user.availableKarmaPoints === null
+    ) {
+      user.availableKarmaPoints = user.karmaPoints || 1000;
+      await user.save();
+    }
+
     // Get completed tasks with category populated
     const completedTasks = await Task.find({
       $or: [

@@ -34,14 +34,14 @@ class KarmaService {
         throw new Error("Cannot transfer karma to yourself");
       }
 
-      // Check if requester has enough karma points
+      // Check if requester has enough karma points (karma was already reserved during task creation)
       if (requester.karmaPoints < karmaAmount) {
         throw new Error(
-          `Requester doesn't have enough karma points. Available: ${requester.karmaPoints}, Required: ${karmaAmount}`
+          `Requester doesn't have enough karma points. Total: ${requester.karmaPoints}, Required: ${karmaAmount}`
         );
       }
 
-      // Deduct karma points from requester
+      // Transfer karma points from requester to helper (karma was already reserved)
       const updatedRequester = await User.findByIdAndUpdate(
         requesterId,
         { $inc: { karmaPoints: -karmaAmount } },

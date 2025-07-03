@@ -165,7 +165,7 @@ const TaskFormFields = ({
           {/* User Karma Display */}
           {user && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-1 rounded">
-              {user.karmaPoints || 0} ⭐
+              {user.availableKarmaPoints || user.karmaPoints || 0} ⭐
             </div>
           )}
         </div>
@@ -183,14 +183,14 @@ const TaskFormFields = ({
         <div className="px-1">
           {(() => {
             const karmaPoints = parseInt(formData.karmaPoints) || 0;
-            const userKarma = user.karmaPoints || 0;
+            const userAvailableKarma = user.availableKarmaPoints || user.karmaPoints || 0;
 
-            if (karmaPoints > userKarma) {
+            if (karmaPoints > userAvailableKarma) {
               return (
                 <div className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
                   <span>⚠️</span>
                   <span>
-                    You only have {userKarma} karma points. Please reduce the
+                    You only have {userAvailableKarma} available karma points. Please reduce the
                     amount.
                   </span>
                 </div>
@@ -214,8 +214,8 @@ const TaskFormFields = ({
                 <div className="text-xs text-green-500 dark:text-green-400 flex items-center gap-1">
                   <span>✅</span>
                   <span>
-                    Valid karma amount. You'll have {userKarma - karmaPoints}{" "}
-                    karma points remaining.
+                    Valid karma amount. You'll have {userAvailableKarma - karmaPoints}{" "}
+                    available karma points remaining.
                   </span>
                 </div>
               );

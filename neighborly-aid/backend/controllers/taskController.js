@@ -23,9 +23,18 @@ const createTask = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (taskKarmaPoints > user.karmaPoints) {
+    // Ensure availableKarmaPoints exists (for backward compatibility)
+    if (
+      user.availableKarmaPoints === undefined ||
+      user.availableKarmaPoints === null
+    ) {
+      user.availableKarmaPoints = user.karmaPoints || 1000;
+      await user.save();
+    }
+
+    if (taskKarmaPoints > user.availableKarmaPoints) {
       return res.status(400).json({
-        error: `You only have ${user.karmaPoints} karma points, but you're trying to offer ${taskKarmaPoints}. Please reduce the karma points or earn more karma.`,
+        error: `You only have ${user.availableKarmaPoints} available karma points, but you're trying to offer ${taskKarmaPoints}. Please reduce the karma points or earn more karma.`,
       });
     }
 

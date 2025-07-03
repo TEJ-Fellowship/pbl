@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }) => {
           email: response.data.email,
           phone: response.data.phone,
           karmaPoints: response.data.karmaPoints || 0,
+          availableKarmaPoints: response.data.availableKarmaPoints || response.data.karmaPoints || 0,
         });
       }
     } catch (error) {
