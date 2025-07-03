@@ -32,4 +32,9 @@ export const resumeService = {
   getResumeText: async (id) => {
     return axios.get(`${API_BASE_URL}/resumes/${id}/text`);
   },
+
+  // Analyze resume
+  analyzeResume: async (id) => {
+    return axios.post(`${API_BASE_URL}/resumes/${id}/analyze`);
+  },
 };

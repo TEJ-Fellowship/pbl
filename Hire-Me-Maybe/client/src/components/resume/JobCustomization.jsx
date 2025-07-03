@@ -81,11 +81,12 @@ const JobCustomization = ({ uploadedResume, onCustomizationComplete }) => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
               Company Name *
             </label>
             <input
               type="text"
+              id="company"
               name="company"
               value={jobDetails.company}
               onChange={handleInputChange}
@@ -95,11 +96,12 @@ const JobCustomization = ({ uploadedResume, onCustomizationComplete }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
               Job Title *
             </label>
             <input
               type="text"
+              id="jobTitle"
               name="jobTitle"
               value={jobDetails.jobTitle}
               onChange={handleInputChange}
@@ -109,11 +111,12 @@ const JobCustomization = ({ uploadedResume, onCustomizationComplete }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               Role/Position
             </label>
             <input
               type="text"
+              id="role"
               name="role"
               value={jobDetails.role}
               onChange={handleInputChange}
@@ -122,10 +125,11 @@ const JobCustomization = ({ uploadedResume, onCustomizationComplete }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-2">
               Industry
             </label>
             <select
+              id="industry"
               name="industry"
               value={jobDetails.industry}
               onChange={handleInputChange}
@@ -143,17 +147,115 @@ const JobCustomization = ({ uploadedResume, onCustomizationComplete }) => {
               <option value="other">Other</option>
             </select>
           </div>
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+              Location
+            </label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              value={jobDetails.location}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., San Francisco, CA or Remote"
+            />
+          </div>
+          <div>
+            <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-2">
+              Salary Range
+            </label>
+            <input
+              type="text"
+              id="salary"
+              name="salary"
+              value={jobDetails.salary}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., $80,000 - $120,000"
+            />
+          </div>
+          <div>
+            <label htmlFor="experienceLevel" className="block text-sm font-medium text-gray-700 mb-2">
+              Experience Level
+            </label>
+            <select
+              id="experienceLevel"
+              name="experienceLevel"
+              value={jobDetails.experienceLevel}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Experience Level</option>
+              <option value="entry">Entry Level (0-2 years)</option>
+              <option value="mid">Mid Level (3-5 years)</option>
+              <option value="senior">Senior Level (5-8 years)</option>
+              <option value="lead">Lead/Manager (8+ years)</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="jobType" className="block text-sm font-medium text-gray-700 mb-2">
+              Job Type
+            </label>
+            <select
+              id="jobType"
+              name="jobType"
+              value={jobDetails.jobType}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Job Type</option>
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+              <option value="freelance">Freelance</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="remoteWork" className="block text-sm font-medium text-gray-700 mb-2">
+              Remote Work
+            </label>
+            <select
+              id="remoteWork"
+              name="remoteWork"
+              value={jobDetails.remoteWork}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Remote Option</option>
+              <option value="on-site">On-site only</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="remote">Fully remote</option>
+              <option value="flexible">Flexible</option>
+            </select>
+          </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Job Requirements (Optional)
+            <label htmlFor="requirements" className="block text-sm font-medium text-gray-700 mb-2">
+              Job Requirements & Description
             </label>
             <textarea
+              id="requirements"
               name="requirements"
               value={jobDetails.requirements}
               onChange={handleInputChange}
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Paste the complete job description, requirements, and responsibilities here for better customization..."
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="benefits" className="block text-sm font-medium text-gray-700 mb-2">
+              Benefits & Perks (Optional)
+            </label>
+            <textarea
+              id="benefits"
+              name="benefits"
+              value={jobDetails.benefits}
+              onChange={handleInputChange}
               rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Paste job description or requirements here for better customization..."
+              placeholder="Health insurance, 401k, flexible hours, etc..."
             />
           </div>
         </div>

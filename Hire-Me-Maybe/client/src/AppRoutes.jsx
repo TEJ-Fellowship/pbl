@@ -13,6 +13,7 @@ import ResumePreview from "./components/resume/ResumePreview";
 import ResumeComparison from "./components/resume/ResumeComparison";
 import ResumeAnalysis from "./components/resume/ResumeAnalysis";
 import JobCustomization from "./components/resume/JobCustomization";
+import ResumeList from "./components/resume/ResumeList";
 import Dashboard from "./components/Dashboard";
 import Header from "./components/Header";
 // import Profile from "./components/Profile";
