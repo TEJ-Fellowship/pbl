@@ -11,6 +11,7 @@ import {
   AVAILABLE_SUPPORT,
   REACH_OUT,
   LOGIN_ROUTE,
+  LEADERBOARD,
 } from "./constants/routes";
 import MyNeighbourhood from "./pages/MyNeighbourhood";
 import WhyNeigbourlyAId from "./pages/WhyNeigbourlyAId";
@@ -20,6 +21,7 @@ import AuthLayout from "./layouts/AuthLayout";
 import AuthPage from "./pages/AuthPage";
 import { useContext } from "react";
 import AuthContext, { AuthProvider } from "./context/AuthContext";
+import Leaderboard from "./pages/LeaderBoard";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -62,8 +64,9 @@ const AppRoutes = () => {
           <Route index element={<Navigate to={MY_NEIGHBOURHOOD} replace />} />
           <Route path={MY_NEIGHBOURHOOD} element={<MyNeighbourhood />} />
           <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
-          <Route path={AVAILABLE_SUPPORT} element={<AvailableSupport />} />
-          <Route path={REACH_OUT} element={<ReachOut />} />
+          <Route path={LEADERBOARD} element={<Leaderboard />} />
+          {/* <Route path={AVAILABLE_SUPPORT} element={<AvailableSupport />} />
+          <Route path={REACH_OUT} element={<ReachOut />} /> */}
         </Route>
 
         {/* Catch all route - redirect based on auth */}

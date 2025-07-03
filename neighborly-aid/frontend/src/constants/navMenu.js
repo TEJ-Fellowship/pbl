@@ -3,6 +3,7 @@ import {
   AVAILABLE_SUPPORT,
   WHY_NEIGHBOURLY_AID,
   REACH_OUT,
+  LEADERBOARD,
 } from "./routes";
 
 const navMenu = [
@@ -15,13 +16,17 @@ const navMenu = [
     label: "Why Neighbourly Aid?",
   },
   {
-    route: AVAILABLE_SUPPORT,
-    label: "Available Support",
+    route: LEADERBOARD,
+    label: "Leaderboard",
   },
-  {
-    route: REACH_OUT,
-    label: "Reach Out",
-  },
+  // {
+  //   route: AVAILABLE_SUPPORT,
+  //   label: "Available Support",
+  // },
+  // {
+  //   route: REACH_OUT,
+  //   label: "Reach Out",
+  // },
   // {
   //   route: LOGIN_ROUTE,
   //   label: "Login/Register",

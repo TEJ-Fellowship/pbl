@@ -6,6 +6,7 @@ export * from "./geminiAPI";
 export * from "./tasks";
 export * from "./users";
 export * from "./categories";
+export * from "./leaderboard";
 // export * from './reviews';
 // export * from './events';
 

@@ -7,6 +7,7 @@ const reviewRoutes = require("./routes/reviewRoutes.js");
 const eventRoutes = require("./routes/eventRoutes.js");
 const notificationRoutes = require("./routes/notificationRoutes.js");
 const categoryRoutes = require("./routes/categoryRoutes.js");
+const leaderboardRoutes = require("./routes/leaderboardRoutes.js");
 const dbConnect = require("./config/db.js");
 // const bodyParser = require("body-parser");
 const logger = require("./middlewares/logger.js");
@@ -53,6 +54,7 @@ app.use("/api/review", reviewRoutes);
 app.use("/api/event", eventRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
