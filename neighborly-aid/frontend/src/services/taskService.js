@@ -62,13 +62,31 @@ export const submitTaskAction = async (formData) => {
 
 // Transform database task to component format
 export const transformTaskForDisplay = (dbTask) => {
+  // Handle category - could be populated object or string (for backward compatibility)
+  let categoryDisplay = "Other";
+  let categoryId = null;
+
+  if (dbTask.category) {
+    if (typeof dbTask.category === "object" && dbTask.category.displayName) {
+      // New populated category object
+      categoryDisplay = dbTask.category.displayName;
+      categoryId = dbTask.category._id;
+    } else if (typeof dbTask.category === "string") {
+      // Legacy string category or ObjectId
+      categoryDisplay = dbTask.category;
+      categoryId = dbTask.category;
+    }
+  }
+
   return {
     id: dbTask._id,
     _id: dbTask._id, // Keep both for compatibility
     user: dbTask.createdBy?.name || "Unknown User",
     avatar: "👤", // Default avatar, you can customize this based on user data
     time: formatTimeAgo(dbTask.createdAt),
-    category: dbTask.category,
+    category: categoryDisplay, // Display name for UI
+    categoryId: categoryId, // ID for filtering/operations
+    categoryData: dbTask.category, // Full category object if available
     urgency: dbTask.urgency,
     title: dbTask.title,
     description: dbTask.description,

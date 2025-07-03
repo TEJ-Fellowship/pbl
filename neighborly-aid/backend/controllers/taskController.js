@@ -282,6 +282,35 @@ const selectHelper = async (req, res) => {
   }
 };
 
+// Get category statistics
+const getCategoryStatistics = async (req, res) => {
+  try {
+    const userId = req.query.userId || req.user?.id || null;
+    const stats = await taskService.getCategoryStatistics(userId);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get user's recent categories
+const getUserRecentCategories = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const limit = parseInt(req.query.limit) || 5;
+    const recentCategories = await taskService.getUserRecentCategories(
+      req.user.id,
+      limit
+    );
+    res.json(recentCategories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createTask,
   getTasks,

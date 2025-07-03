@@ -25,12 +25,20 @@ export const useGeminiSuggestions = () => {
     }
   };
 
-  const applySuggestions = (updateFormData) => {
-    if (geminiSuggestions && updateFormData) {
-      const primaryCategory = geminiSuggestions.suggestedCategories[0];
+  const applySuggestions = (updateFormData, categories) => {
+    if (geminiSuggestions && updateFormData && categories) {
+      const primarySuggestedCategory = geminiSuggestions.suggestedCategories[0];
+
+      // Find the matching category from our categories list
+      const matchingCategory = categories.find(
+        (cat) =>
+          cat.displayName === primarySuggestedCategory ||
+          cat.name === primarySuggestedCategory ||
+          primarySuggestedCategory.includes(cat.displayName)
+      );
 
       updateFormData({
-        category: primaryCategory || "",
+        category: matchingCategory?._id || "", // Use the category ID instead of name
         urgency: geminiSuggestions.suggestedUrgency || "",
         karmaPoints: geminiSuggestions.suggestedKarmaPoints?.toString() || "",
       });

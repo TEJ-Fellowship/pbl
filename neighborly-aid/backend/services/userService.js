@@ -46,7 +46,8 @@ const getUserDashboard = async (userId) => {
     if (!user) {
       throw new Error("User not found");
     }
-    // Get completed tasks
+
+    // Get completed tasks with category populated
     const completedTasks = await Task.find({
       $or: [
         { createdBy: new mongoose.Types.ObjectId(userId), status: COMPLETED },
@@ -57,6 +58,7 @@ const getUserDashboard = async (userId) => {
       ],
     })
       .populate("createdBy", "name email")
+      .populate("category", "displayName icon color")
       .populate({
         path: "helpers.userId",
         select: "name email",

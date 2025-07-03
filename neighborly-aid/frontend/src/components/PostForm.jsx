@@ -2,31 +2,8 @@ import React, { useState, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { MapPin, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { getTaskSuggestions } from "../api/geminiAPI";
+import { createTask } from "../api/tasks";
 import GeminiIcon from "./common/GeminiIcon";
-
-// Submit action for the form
-async function submitTaskAction(formData) {
-  // Simulate API call - replace with actual task creation API
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  const taskData = {
-    title: formData.get('title'),
-    description: formData.get('description'),
-    category: formData.get('category'),
-    urgency: formData.get('urgency'),
-    location: formData.get('location'),
-    taskKarmaPoints: parseInt(formData.get('karmaPoints')) || 10 // Add karma points with fallback
-  };
-  
-  console.log("Task submitted:", taskData);
-  
-  // Simulate potential error
-  if (Math.random() > 0.8) {
-    throw new Error("Failed to create task. Please try again.");
-  }
-  
-  return { success: true, data: taskData };
-}
 
 // Submit button component that uses useFormStatus
 function SubmitButton({ submitStatus }) {
@@ -55,7 +32,7 @@ function SubmitButton({ submitStatus }) {
   );
 }
 
-const PostForm = ({ categories, handleSetShowPostForm }) => {
+const PostForm = ({ categories, handleSetShowPostForm, onTaskCreated, ensureCategoryExists }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -111,12 +88,18 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
   // Apply Gemini suggestions - Updated to use original categories
   const applySuggestions = () => {
     if (geminiSuggestions) {
-      // Use the first suggested category directly as returned by Gemini
-      const primaryCategory = geminiSuggestions.suggestedCategories[0];
+      // Find or create a matching category
+      const suggestedCategoryName = geminiSuggestions.suggestedCategories[0];
+      const matchingCategory = categories.find(cat => 
+        cat.name === suggestedCategoryName.toLowerCase().replace(/[^a-z0-9]/g, '-') ||
+        cat.displayName === suggestedCategoryName ||
+        cat.displayName.toLowerCase() === suggestedCategoryName.toLowerCase()
+      );
       
       setFormData(prev => ({
         ...prev,
-        category: primaryCategory || '',
+        category: matchingCategory ? matchingCategory._id : 'custom',
+        customCategory: matchingCategory ? '' : suggestedCategoryName,
         urgency: geminiSuggestions.suggestedUrgency || '',
         karmaPoints: geminiSuggestions.suggestedKarmaPoints?.toString() || ''
       }));
@@ -125,14 +108,45 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
   };
 
   // Handle form submission using form action
-  const handleSubmit = async (formDataObj) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError(null);
     setSubmitStatus(null);
     
     try {
-      const result = await submitTaskAction(formDataObj);
+      // If it's a custom category or Gemini suggestion, create it first
+      let categoryId = formData.category;
+      if (formData.category === 'custom' || (geminiSuggestions && !categories.find(c => c._id === formData.category))) {
+        const categoryName = formData.customCategory || geminiSuggestions?.suggestedCategories[0];
+        if (!categoryName) {
+          throw new Error('Please enter a category name');
+        }
+        
+        try {
+          const newCategoryId = await ensureCategoryExists(categoryName);
+          if (!newCategoryId) {
+            throw new Error('Failed to create category');
+          }
+          categoryId = newCategoryId;
+        } catch (err) {
+          console.error('Failed to create category:', err);
+          throw new Error('Failed to create category: ' + err.message);
+        }
+      }
+
+      // Create the task with the correct category ID
+      const taskData = {
+        title: formData.title,
+        description: formData.description,
+        category: categoryId,
+        urgency: formData.urgency,
+        location: formData.location,
+        taskKarmaPoints: parseInt(formData.karmaPoints) || 10
+      };
+
+      const result = await createTask(taskData);
       
-      if (result.success) {
+      if (result) {
         setSubmitStatus('success');
         
         // Reset form after successful submission
@@ -149,6 +163,9 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
           setSuggestionsApplied(false);
           setSubmitStatus(null);
           handleSetShowPostForm(false);
+          if (onTaskCreated) {
+            onTaskCreated();
+          }
         }, 2000);
       }
     } catch (err) {
@@ -328,10 +345,10 @@ const PostForm = ({ categories, handleSetShowPostForm }) => {
           
           {/* Original categories */}
           {categories
-            .filter((c) => c.id !== "all")
+            .filter((c) => (c._id || c.id) !== "all")
             .map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.icon} {cat.name}
+              <option key={cat._id || cat.id} value={cat._id || cat.id}>
+                {cat.icon} {cat.displayName || cat.name}
               </option>
             ))}
         </select>

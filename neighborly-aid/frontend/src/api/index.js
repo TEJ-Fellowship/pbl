@@ -4,7 +4,8 @@ export * from "./geminiAPI";
 
 // You can add these when you create them:
 export * from "./tasks";
-// export * from './users';
+export * from "./users";
+export * from "./categories";
 // export * from './reviews';
 // export * from './events';
 

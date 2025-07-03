@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const User = require("../models/User");
+const Category = require("../models/Category");
 const notificationService = require("./notificationService");
+const categoryService = require("./categoryService");
 const {
   OPEN,
   IN_PROGRESS,
@@ -15,11 +17,27 @@ const {
 class TaskService {
   // Create a new task
   async createTask(taskData, userId) {
-    const task = new Task({
-      ...taskData,
-      createdBy: userId,
-    });
-    return await task.save();
+    try {
+      // Validate category exists
+      const category = await Category.findById(taskData.category);
+      if (!category || !category.isActive) {
+        throw new Error("Invalid or inactive category");
+      }
+
+      const task = new Task({
+        ...taskData,
+        createdBy: userId,
+      });
+
+      const savedTask = await task.save();
+
+      // Update category usage statistics
+      await categoryService.updateCategoryUsage(taskData.category);
+
+      return savedTask;
+    } catch (error) {
+      throw new Error(`Error creating task: ${error.message}`);
+    }
   }
 
   // Get all tasks with optional filters
@@ -42,11 +60,18 @@ class TaskService {
       },
     ];
 
-    return await Task.find(filterConditions)
-      .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers.userId", "name email")
-      .populate("likedBy", "name email")
-      .sort({ createdAt: -1 });
+    try {
+      let query = Task.find(filters)
+        .populate("createdBy", "name email karmaPoints totalLikes")
+        .populate("helpers.userId", "name email")
+        .populate("category", "name displayName icon color") // Populate category
+        .sort({ createdAt: -1 });
+
+      const tasks = await query;
+      return tasks;
+    } catch (error) {
+      throw new Error(`Error fetching tasks: ${error.message}`);
+    }
   }
 
   // Get task by ID
@@ -449,6 +474,65 @@ class TaskService {
     } catch (error) {
       console.error("Error in selectHelper:", error);
       throw error;
+    }
+  }
+
+  // Get category statistics sorted by recent usage (updated for new Category model)
+  async getCategoryStatistics(userId = null) {
+    try {
+      // Use the categoryService for consistency
+      return await categoryService.getCategoryStatistics(userId);
+    } catch (error) {
+      throw new Error(`Error fetching category statistics: ${error.message}`);
+    }
+  }
+
+  // Get user's recently used categories (updated for new Category model)
+  async getUserRecentCategories(userId, limit = 5) {
+    try {
+      const recentCategories = await Task.aggregate([
+        {
+          $match: {
+            createdBy: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryInfo",
+          },
+        },
+        { $unwind: "$categoryInfo" },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+            lastUsed: { $max: "$createdAt" },
+            categoryInfo: { $first: "$categoryInfo" },
+          },
+        },
+        {
+          $sort: { lastUsed: -1 },
+        },
+        {
+          $limit: limit,
+        },
+      ]);
+
+      return recentCategories.map((cat) => ({
+        _id: cat._id,
+        name: cat.categoryInfo.name,
+        displayName: cat.categoryInfo.displayName,
+        icon: cat.categoryInfo.icon,
+        count: cat.count,
+        lastUsed: cat.lastUsed,
+      }));
+    } catch (error) {
+      throw new Error(
+        `Error fetching user recent categories: ${error.message}`
+      );
     }
   }
 }

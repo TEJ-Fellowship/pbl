@@ -3,7 +3,7 @@ import React, { useRef, useContext } from 'react';
 import { GeminiIcon, GeminiSuggestions, StatusMessage } from '../../../components';
 import SubmitButton from './SubmitButton';
 import TaskFormFields from './TaskFormFields';
-import { useTaskForm, useGeminiSuggestions } from '../../../hooks';
+import { useTaskForm, useGeminiSuggestions, useCategories } from '../../../hooks';
 import { submitTaskAction } from '../../../services';
 import AuthContext from '../../../context/AuthContext';
 
@@ -33,6 +33,9 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     resetSuggestionsApplied
   } = useGeminiSuggestions();
 
+  // Get both refreshCategories and ensureCategoryExists from useCategories
+  const { refreshCategories, ensureCategoryExists } = useCategories();
+
   // Enhanced input change handler
   const handleInputChangeWithSuggestionReset = (field, value) => {
     handleInputChange(field, value);
@@ -50,7 +53,7 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
 
   // Handle applying suggestions
   const handleApplySuggestions = () => {
-    applySuggestions(updateFormData);
+    applySuggestions(updateFormData, categories);
   };
 
   // Handle form submission
@@ -66,11 +69,19 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     setSubmitStatus(null);
     
     try {
-      // The user ID will be automatically included by the backend from the auth token
+      // If it's a custom category, ensure it exists first
+      if (formData.category === "custom" && formData.customCategory) {
+        const categoryId = await ensureCategoryExists(formData.customCategory);
+        formDataObj.set("category", categoryId);
+      }
+
       const result = await submitTaskAction(formDataObj);
       
       if (result.success) {
         setSubmitStatus('success');
+        
+        // Refresh categories before resetting the form
+        await refreshCategories();
         
         // Reset form after successful submission
         setTimeout(() => {

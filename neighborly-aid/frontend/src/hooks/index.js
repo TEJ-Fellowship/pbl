@@ -1,7 +1,7 @@
 // Custom hooks exports
 export { useTaskForm } from "./useTaskForm";
 export { useGeminiSuggestions } from "./useGeminiSuggestions";
-
+export { useCategories } from "./useCategories";
 // Add these as you create them:
 // export { useAuth } from './useAuth';
 // export { useDebounce } from './useDebounce';

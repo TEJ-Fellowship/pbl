@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "cleanup-attempts": "node scripts/cleanupAttempts.js"
+    "cleanup-attempts": "node scripts/cleanupAttempts.js",
+    "migrate-categories": "node scripts/migrateCategories.js",
+    "seed": "node scripts/seedDatabase.js"
   },
   "keywords": [],
   "author": "",

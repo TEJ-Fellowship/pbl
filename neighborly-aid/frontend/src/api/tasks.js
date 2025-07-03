@@ -221,3 +221,45 @@ export const selectHelper = async (taskId, helperId) => {
     throw error.response?.data || { error: "Failed to select helper" };
   }
 };
+
+export const getUserRecentCategories = async (limit = 5) => {
+  try {
+    const response = await axios.get(
+      `${config.API_BASE_URL}/api/tasks/categories/recent`,
+      {
+        params: { limit },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get user recent categories error:", error);
+    throw (
+      error.response?.data || { error: "Failed to fetch recent categories" }
+    );
+  }
+};
+
+/**
+ * Get category statistics
+ * @param {string} userId - Optional user ID for personalized statistics
+ * @returns {Promise<Object>} Category statistics with usage data
+ */
+export const getCategoryStatistics = async (userId = null) => {
+  try {
+    const params = userId ? { userId } : {};
+    const response = await axios.get(
+      `${config.API_BASE_URL}/api/tasks/categories/statistics`,
+      {
+        params,
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Get category statistics error:", error);
+    throw (
+      error.response?.data || { error: "Failed to fetch category statistics" }
+    );
+  }
+};

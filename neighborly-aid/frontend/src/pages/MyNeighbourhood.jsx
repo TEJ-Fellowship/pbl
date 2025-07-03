@@ -6,6 +6,7 @@ import Header from "../components/myNeighbourhood/Header";
 import HelpOthersContent from "../components/myNeighbourhood/HelpOthersContent";
 import AskForHelpContent from "../components/myNeighbourhood/AskForHelpContent";
 import { fetchAllTasks, fetchUserTasks } from "../services/taskService";
+import { useCategories } from "../hooks/useCategories";
 
 const MyNeighbourhood = () => {
   const [activeTab, setActiveTab] = useState("helpothers");
@@ -17,45 +18,14 @@ const MyNeighbourhood = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock data for categories - you might want to move this to a constants file
-  const categories = [
-    {
-      id: "all",
-      name: "All Tasks",
-      icon: "🏠",
-      color: "bg-green-100 text-green-800",
-    },
-    {
-      id: "groceries",
-      name: "Groceries",
-      icon: "🛒",
-      color: "bg-green-100 text-green-800",
-    },
-    {
-      id: "tech",
-      name: "Tech Help",
-      icon: "💻",
-      color: "bg-green-100 text-green-800",
-    },
-    {
-      id: "pets",
-      name: "Pet Care",
-      icon: "🐕",
-      color: "bg-green-100 text-green-800",
-    },
-    {
-      id: "transport",
-      name: "Transport",
-      icon: "🚗",
-      color: "bg-green-100 text-green-800",
-    },
-    {
-      id: "cleaning",
-      name: "Cleaning",
-      icon: "🧹",
-      color: "bg-green-100 text-green-800",
-    },
-  ];
+  // Use categories from backend
+  const { 
+    categories, 
+    loading: categoriesLoading, 
+    error: categoriesError, 
+    ensureCategoryExists,
+    refreshCategories
+  } = useCategories();
 
   // Fetch tasks on component mount
   useEffect(() => {
@@ -82,6 +52,10 @@ const MyNeighbourhood = () => {
 
     loadTasks();
   }, []);
+
+  // Handle combined loading state and errors
+  const isLoading = loading || categoriesLoading;
+  const hasError = error || categoriesError;
 
   // Refresh tasks when a new task is created
   const refreshTasks = async () => {
@@ -113,17 +87,21 @@ const MyNeighbourhood = () => {
   };
 
   // Handle successful task creation
-  const handleTaskCreated = () => {
+  const handleTaskCreated = async () => {
     setShowPostForm(false);
-    refreshTasks(); // Refresh the tasks list
+    // Refresh both tasks and categories
+    await Promise.all([
+      refreshTasks(),
+      refreshCategories()
+    ]);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-green-50 to-green-100 dark:bg-background-politeDark flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-text-light dark:text-text-spotlight">Loading tasks...</p>
+          <p className="text-text-light dark:text-text-spotlight">Loading tasks and categories...</p>
         </div>
       </div>
     );
@@ -141,9 +119,9 @@ const MyNeighbourhood = () => {
           handleSetActiveTab={handleSetActiveTab}
         />
         
-        {error && (
+        {hasError && (
           <div className="mx-6 mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-red-700 dark:text-red-300">{error}</p>
+            <p className="text-red-700 dark:text-red-300">{hasError}</p>
             <button 
               onClick={refreshTasks}
               className="mt-2 text-sm text-red-600 dark:text-red-400 underline hover:no-underline"
@@ -173,6 +151,7 @@ const MyNeighbourhood = () => {
             tasks={userTasks}
             loading={loading}
             onTaskCreated={handleTaskCreated}
+            ensureCategoryExists={ensureCategoryExists}
           />
         )}
 

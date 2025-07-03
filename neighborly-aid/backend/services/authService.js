@@ -40,7 +40,7 @@ const register = async (data) => {
       email,
       phone,
       role,
-      karmaPoints: 100,
+      karmaPoints: 1000,
       totalLikes: 0,
       badges: "bronze",
       completedTasks: [],
