@@ -277,47 +277,133 @@ const HelpersModal = ({ isOpen, onClose, task, onTaskUpdate }) => {
 
         {/* Selected Helper Section */}
         {selectedHelper && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              <h3 className="font-semibold text-green-800 dark:text-green-200">
-                Selected Helper
-              </h3>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                <User className="w-5 h-5" />
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5 text-white" />
+                <h3 className="font-semibold text-white">
+                  Selected Helper
+                </h3>
               </div>
-              <div>
-                <h4 className="font-medium text-green-900 dark:text-green-100">
-                  {selectedHelper.userId?.name || "Helper"}
-                </h4>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  Selected on{" "}
-                  {formatDate(
-                    selectedHelper.selectedAt || selectedHelper.acceptedAt
-                  )}
-                </p>
-                {/* Show completion status */}
-                {task.helperMarkedComplete && (
-                  <div className="mt-2">
-                    {task.requesterApproved === null ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                        ⏳ Waiting for approval
-                      </span>
-                    ) : task.requesterApproved === true ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                        ✅ Approved
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                        ❌ Rejected
-                      </span>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4">
+              <div className="flex items-start space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-lg">
+                  <User className="w-8 h-8" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-1">
+                    {selectedHelper.userId?.name || "Helper"}
+                  </h4>
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-3">
+                    Selected on{" "}
+                    {formatDate(
+                      selectedHelper.selectedAt || selectedHelper.acceptedAt
+                    )}
+                  </p>
+                  
+                  {/* Helper Stats */}
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    {selectedHelper.userId?.karmaPoints && (
+                      <div className="flex items-center space-x-1 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                        <span className="text-green-600 dark:text-green-400">⭐</span>
+                        <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                          {selectedHelper.userId.karmaPoints} Karma
+                        </span>
+                      </div>
+                    )}
+                    {selectedHelper.userId?.completedTasks && (
+                      <div className="flex items-center space-x-1 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                        <span className="text-green-600 dark:text-green-400">✅</span>
+                        <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                          {selectedHelper.userId.completedTasks.length} Tasks
+                        </span>
+                      </div>
+                    )}
+                    {selectedHelper.userId?.badges && (
+                      <div className="flex items-center space-x-1 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                        <span className="text-green-600 dark:text-green-400">🏆</span>
+                        <span className="text-xs font-medium text-green-700 dark:text-green-300 capitalize">
+                          {selectedHelper.userId.badges}
+                        </span>
+                      </div>
                     )}
                   </div>
-                )}
+                  
+                  {/* Completion Status */}
+                  {task.helperMarkedComplete && (
+                    <div className="mt-3">
+                      {task.requesterApproved === null ? (
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                          ⏳ Waiting for approval
+                        </span>
+                      ) : task.requesterApproved === true ? (
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                          ✅ Approved
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                          ❌ Rejected
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
+            
+            {/* Contact Information Form at Bottom */}
+            {isUserCreator && (
+              <div className="border-t border-green-200 dark:border-green-800 bg-white dark:bg-slate-800 p-4">
+                <h5 className="text-sm font-semibold text-green-800 dark:text-green-200 mb-4">
+                  📞 Contact Information
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {selectedHelper.userId?.email && (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-green-600 dark:text-green-400">
+                        Email Address
+                      </label>
+                      <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md">
+                        <span className="text-green-600 dark:text-green-400">📧</span>
+                        <span className="text-sm text-green-700 dark:text-green-300 truncate">
+                          {selectedHelper.userId.email || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedHelper.userId?.phone && (
+                    <div className="space-y-1">
+                      <label className="block text-xs font-medium text-green-600 dark:text-green-400">
+                        Phone Number
+                      </label>
+                      <div className="flex items-center space-x-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md">
+                        <span className="text-green-600 dark:text-green-400">📞</span>
+                        <span className="text-sm text-green-700 dark:text-green-300">
+                          {selectedHelper.userId.phone || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {selectedHelper.userId?.address && (
+                    <div className="space-y-1 md:col-span-3">
+                      <label className="block text-xs font-medium text-green-600 dark:text-green-400">
+                        Address
+                      </label>
+                      <div className="flex items-start space-x-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md">
+                        <span className="text-green-600 dark:text-green-400 mt-0.5">📍</span>
+                        <span className="text-sm text-green-700 dark:text-green-300 leading-relaxed">
+                          {selectedHelper.userId.address || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

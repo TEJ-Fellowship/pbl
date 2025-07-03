@@ -115,9 +115,9 @@ class TaskService {
     try {
       let query = Task.find(filters)
         .populate("createdBy", "name email karmaPoints totalLikes")
-        .populate("helpers.userId", "name email")
+        .populate("helpers.userId", "name email phone")
         .populate("likedBy", "name email")
-        .populate("selectedHelper", "name email")
+        .populate("selectedHelper", "name email phone")
         .populate("category", "name displayName icon color") // Populate category
         .sort({ createdAt: -1 });
 
@@ -132,8 +132,8 @@ class TaskService {
   async getTaskById(taskId) {
     return await Task.findById(taskId)
       .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers.userId", "name email")
-      .populate("selectedHelper", "name email")
+      .populate("helpers.userId", "name email phone")
+      .populate("selectedHelper", "name email phone")
       .populate("likedBy", "name email");
   }
 
@@ -640,11 +640,11 @@ class TaskService {
       const task = await Task.findById(taskId)
         .populate(
           "helpers.userId",
-          "name email address location karmaPoints totalLikes badges completedTasks reviews"
+          "name email phone address location karmaPoints totalLikes badges completedTasks reviews"
         )
         .populate(
           "selectedHelper",
-          "name email address location karmaPoints totalLikes badges"
+          "name email phone address location karmaPoints totalLikes badges"
         )
         .populate("createdBy", "name email");
 
@@ -764,7 +764,7 @@ class TaskService {
           status: AWAITING_APPROVAL,
         },
         { new: true, runValidators: true }
-      ).populate("createdBy helpers.userId selectedHelper", "name email");
+      ).populate("createdBy helpers.userId selectedHelper", "name email phone");
 
       // Update the specific helper's status separately
       await Task.updateOne(
@@ -866,7 +866,10 @@ class TaskService {
             completionNotes: notes,
           },
           { new: true, runValidators: true }
-        ).populate("createdBy helpers.userId selectedHelper", "name email");
+        ).populate(
+          "createdBy helpers.userId selectedHelper",
+          "name email phone"
+        );
 
         // Create notification for task completion
         await notificationService.notifyTaskCompleted(taskId, requesterId);
@@ -888,7 +891,10 @@ class TaskService {
             completionNotes: notes,
           },
           { new: true, runValidators: true }
-        ).populate("createdBy helpers.userId selectedHelper", "name email");
+        ).populate(
+          "createdBy helpers.userId selectedHelper",
+          "name email phone"
+        );
 
         // Reset the helper's status back to selected
         const selectedHelper = task.helpers.find(
