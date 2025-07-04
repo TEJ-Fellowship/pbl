@@ -102,6 +102,15 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     return emojis[normalizedCategory] || emojis.default;
   };
 
+  // Returns only tasks where the user was a helper
+  const getHelpedTasks = (completedTasks, userId) => {
+    if (!completedTasks) return [];
+    return completedTasks.filter(task =>
+      Array.isArray(task.helpers) &&
+      task.helpers.some(h => h.userId?._id === userId || h.userId === userId)
+    );
+  };
+
   useEffect(() => {
     if (isOpen && user && !hasRefreshedUser.current) {
       console.log("User object:", user);
@@ -180,11 +189,13 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     return null;
   }
 
+  const helpedTasks = getHelpedTasks(dashboardData?.completedTasks, user?.id);
+
   const primaryStats = [
     {
       icon: HandHeart,
       label: "Tasks Completed",
-      value: dashboardData?.completedTasks?.length ?? 0,
+      value: helpedTasks.length,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       gradient:
@@ -237,7 +248,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
 
   // Generate real category stats from completed tasks
   const categoryStats = React.useMemo(() => {
-    if (!dashboardData?.completedTasks?.length || !categories.length) {
+    if (!helpedTasks?.length || !categories.length) {
       return []; // Return empty array if no completed tasks or categories
     }
 
@@ -248,7 +259,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     }, {});
 
     // Group tasks by category and count them
-    const categoryCounts = dashboardData.completedTasks.reduce((acc, task) => {
+    const categoryCounts = helpedTasks.reduce((acc, task) => {
       // Handle both populated category objects and string categories
       const categoryData = task.category;
       let categoryId, categoryName, categoryIcon, categoryColor;
@@ -301,11 +312,11 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       count: count,
       color: `from-${getColorClass(categoryColor)} to-${getColorClass(categoryColor)} dark:from-${getColorClass(categoryColor)} dark:to-${getColorClass(categoryColor)}`,
     }));
-  }, [dashboardData?.completedTasks, categories]);
+  }, [helpedTasks, categories]);
 
   // Update recentActivity to only show real data
   const recentActivity = React.useMemo(() => {
-    if (!dashboardData?.completedTasks?.length || !categories.length) {
+    if (!helpedTasks?.length || !categories.length) {
       return []; // Return empty array if no completed tasks or categories
     }
 
@@ -315,7 +326,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       return acc;
     }, {});
 
-    return dashboardData.completedTasks
+    return helpedTasks
       .slice(0, 3) // Only show maximum 3 items
       .map((task) => {
         // Handle both populated category objects and string categories
@@ -337,7 +348,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
           rating: task.rating || 0,
         };
       });
-  }, [dashboardData?.completedTasks, categories]);
+  }, [helpedTasks, categories]);
 
   return (
     <>

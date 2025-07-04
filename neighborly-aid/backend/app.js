@@ -21,7 +21,11 @@ dbConnect(); // ✅ Connect to DB next
 const app = express();
 
 // More flexible CORS configuration for development
-const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_DEV].filter(Boolean);
+const allowedOrigins = [
+  FRONTEND_URL,
+  FRONTEND_URL_DEV,
+  "http://localhost:5173",
+].filter(Boolean);
 
 app.use(
   cors({
