@@ -9,3 +9,13 @@ Content-Type: application/json
   "email": "testing@gmail.com",
   "password": "Password123!2"
 }
+
+###
+POST http://localhost:5000/api/login
+Content-Type: application/json
+
+{
+  "username": "muskanlama",
+  "email": "testing@gmail.com",
+  "password": "Password123!2"
+}
