@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "http://localhost:5000/api"||"https://pbl-t5f9.onrender.com/api";
 
 export const resumeService = {
   // Upload resume with progress tracking
