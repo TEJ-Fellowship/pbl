@@ -23,9 +23,18 @@ const createTask = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    if (taskKarmaPoints > user.karmaPoints) {
+    // Ensure availableKarmaPoints exists (for backward compatibility)
+    if (
+      user.availableKarmaPoints === undefined ||
+      user.availableKarmaPoints === null
+    ) {
+      user.availableKarmaPoints = user.karmaPoints || 1000;
+      await user.save();
+    }
+
+    if (taskKarmaPoints > user.availableKarmaPoints) {
       return res.status(400).json({
-        error: `You only have ${user.karmaPoints} karma points, but you're trying to offer ${taskKarmaPoints}. Please reduce the karma points or earn more karma.`,
+        error: `You only have ${user.availableKarmaPoints} available karma points, but you're trying to offer ${taskKarmaPoints}. Please reduce the karma points or earn more karma.`,
       });
     }
 
@@ -331,6 +340,35 @@ const selectHelper = async (req, res) => {
     res.json(task);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+};
+
+// Get category statistics
+const getCategoryStatistics = async (req, res) => {
+  try {
+    const userId = req.query.userId || req.user?.id || null;
+    const stats = await taskService.getCategoryStatistics(userId);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get user's recent categories
+const getUserRecentCategories = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const limit = parseInt(req.query.limit) || 5;
+    const recentCategories = await taskService.getUserRecentCategories(
+      req.user.id,
+      limit
+    );
+    res.json(recentCategories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 

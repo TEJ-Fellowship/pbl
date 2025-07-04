@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
 const User = require("../models/User");
+const Category = require("../models/Category");
 const notificationService = require("./notificationService");
+const categoryService = require("./categoryService");
 const {
   OPEN,
   IN_PROGRESS,
@@ -21,7 +23,7 @@ class TaskService {
     session.startTransaction();
 
     try {
-      // Validate user has enough karma points
+      // Validate user has enough available karma points
       const user = await User.findById(userId).session(session);
       if (!user) {
         throw new Error("User not found");
@@ -29,16 +31,17 @@ class TaskService {
 
       const taskKarmaPoints = parseInt(taskData.taskKarmaPoints) || 0;
 
-      if (user.karmaPoints < taskKarmaPoints) {
+      // Check available karma points instead of total karma points
+      if (user.availableKarmaPoints < taskKarmaPoints) {
         throw new Error(
-          `Insufficient karma points. You have ${user.karmaPoints} but need ${taskKarmaPoints}`
+          `Insufficient available karma points. You have ${user.availableKarmaPoints} but need ${taskKarmaPoints}`
         );
       }
 
-      // Deduct karma points from user
+      // Reserve karma points by deducting from available karma
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: -taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: -taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -53,7 +56,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task created successfully. ${taskKarmaPoints} karma points deducted from user ${user.name}. Remaining karma: ${updatedUser.karmaPoints}`
+        `Task created successfully. ${taskKarmaPoints} karma points reserved from user ${user.name}. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       // Return populated task
@@ -65,6 +68,27 @@ class TaskService {
       throw error;
     } finally {
       session.endSession();
+    }
+    try {
+      // Validate category exists
+      const category = await Category.findById(taskData.category);
+      if (!category || !category.isActive) {
+        throw new Error("Invalid or inactive category");
+      }
+
+      const task = new Task({
+        ...taskData,
+        createdBy: userId,
+      });
+
+      const savedTask = await task.save();
+
+      // Update category usage statistics
+      await categoryService.updateCategoryUsage(taskData.category);
+
+      return savedTask;
+    } catch (error) {
+      throw new Error(`Error creating task: ${error.message}`);
     }
   }
 
@@ -88,20 +112,28 @@ class TaskService {
       },
     ];
 
-    return await Task.find(filterConditions)
-      .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers.userId", "name email")
-      .populate("selectedHelper", "name email")
-      .populate("likedBy", "name email")
-      .sort({ createdAt: -1 });
+    try {
+      let query = Task.find(filters)
+        .populate("createdBy", "name email karmaPoints totalLikes")
+        .populate("helpers.userId", "name email phone")
+        .populate("likedBy", "name email")
+        .populate("selectedHelper", "name email phone")
+        .populate("category", "name displayName icon color") // Populate category
+        .sort({ createdAt: -1 });
+
+      const tasks = await query;
+      return tasks;
+    } catch (error) {
+      throw new Error(`Error fetching tasks: ${error.message}`);
+    }
   }
 
   // Get task by ID
   async getTaskById(taskId) {
     return await Task.findById(taskId)
       .populate("createdBy", "name email karmaPoints totalLikes")
-      .populate("helpers.userId", "name email")
-      .populate("selectedHelper", "name email")
+      .populate("helpers.userId", "name email phone")
+      .populate("selectedHelper", "name email phone")
       .populate("likedBy", "name email");
   }
 
@@ -156,18 +188,18 @@ class TaskService {
 
         // Calculate karma adjustment
         const karmaDifference = newKarmaPoints - currentKarmaPoints;
-        const availableKarma = user.karmaPoints + currentKarmaPoints; // Available karma + current task karma
+        const availableKarma = user.availableKarmaPoints + currentKarmaPoints; // Available karma + current task karma
 
         if (newKarmaPoints > availableKarma) {
           throw new Error(
-            `Insufficient karma points. You have ${user.karmaPoints} available karma plus ${currentKarmaPoints} from this task. Total available: ${availableKarma}, Required: ${newKarmaPoints}`
+            `Insufficient available karma points. You have ${user.availableKarmaPoints} available karma plus ${currentKarmaPoints} from this task. Total available: ${availableKarma}, Required: ${newKarmaPoints}`
           );
         }
 
-        // Adjust user's karma points
+        // Adjust user's available karma points
         await User.findByIdAndUpdate(
           userId,
-          { $inc: { karmaPoints: -karmaDifference } },
+          { $inc: { availableKarmaPoints: -karmaDifference } },
           { session }
         );
 
@@ -375,10 +407,10 @@ class TaskService {
 
       const taskKarmaPoints = task.taskKarmaPoints || 0;
 
-      // Refund karma points to the user
+      // Refund available karma points to the user
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -389,7 +421,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task deleted successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+        `Task deleted successfully. ${taskKarmaPoints} karma points refunded to user. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       return { success: true, refundedKarma: taskKarmaPoints };
@@ -432,10 +464,10 @@ class TaskService {
 
       const taskKarmaPoints = task.taskKarmaPoints || 0;
 
-      // Refund karma points to the user
+      // Refund available karma points to the user
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { $inc: { karmaPoints: taskKarmaPoints } },
+        { $inc: { availableKarmaPoints: taskKarmaPoints } },
         { new: true, session }
       );
 
@@ -446,7 +478,7 @@ class TaskService {
       await session.commitTransaction();
 
       console.log(
-        `Task cancelled successfully. ${taskKarmaPoints} karma points refunded to user. New karma balance: ${updatedUser.karmaPoints}`
+        `Task cancelled successfully. ${taskKarmaPoints} karma points refunded to user. Available karma: ${updatedUser.availableKarmaPoints}`
       );
 
       return { success: true, refundedKarma: taskKarmaPoints };
@@ -608,11 +640,11 @@ class TaskService {
       const task = await Task.findById(taskId)
         .populate(
           "helpers.userId",
-          "name email address location karmaPoints totalLikes badges completedTasks reviews"
+          "name email phone address location karmaPoints totalLikes badges completedTasks reviews"
         )
         .populate(
           "selectedHelper",
-          "name email address location karmaPoints totalLikes badges"
+          "name email phone address location karmaPoints totalLikes badges"
         )
         .populate("createdBy", "name email");
 
@@ -732,7 +764,7 @@ class TaskService {
           status: AWAITING_APPROVAL,
         },
         { new: true, runValidators: true }
-      ).populate("createdBy helpers.userId selectedHelper", "name email");
+      ).populate("createdBy helpers.userId selectedHelper", "name email phone");
 
       // Update the specific helper's status separately
       await Task.updateOne(
@@ -834,7 +866,10 @@ class TaskService {
             completionNotes: notes,
           },
           { new: true, runValidators: true }
-        ).populate("createdBy helpers.userId selectedHelper", "name email");
+        ).populate(
+          "createdBy helpers.userId selectedHelper",
+          "name email phone"
+        );
 
         // Create notification for task completion
         await notificationService.notifyTaskCompleted(taskId, requesterId);
@@ -856,7 +891,10 @@ class TaskService {
             completionNotes: notes,
           },
           { new: true, runValidators: true }
-        ).populate("createdBy helpers.userId selectedHelper", "name email");
+        ).populate(
+          "createdBy helpers.userId selectedHelper",
+          "name email phone"
+        );
 
         // Reset the helper's status back to selected
         const selectedHelper = task.helpers.find(
@@ -884,6 +922,65 @@ class TaskService {
     } catch (error) {
       console.error("Error in approveTaskCompletion:", error);
       throw error;
+    }
+  }
+
+  // Get category statistics sorted by recent usage (updated for new Category model)
+  async getCategoryStatistics(userId = null) {
+    try {
+      // Use the categoryService for consistency
+      return await categoryService.getCategoryStatistics(userId);
+    } catch (error) {
+      throw new Error(`Error fetching category statistics: ${error.message}`);
+    }
+  }
+
+  // Get user's recently used categories (updated for new Category model)
+  async getUserRecentCategories(userId, limit = 5) {
+    try {
+      const recentCategories = await Task.aggregate([
+        {
+          $match: {
+            createdBy: new mongoose.Types.ObjectId(userId),
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "categoryInfo",
+          },
+        },
+        { $unwind: "$categoryInfo" },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+            lastUsed: { $max: "$createdAt" },
+            categoryInfo: { $first: "$categoryInfo" },
+          },
+        },
+        {
+          $sort: { lastUsed: -1 },
+        },
+        {
+          $limit: limit,
+        },
+      ]);
+
+      return recentCategories.map((cat) => ({
+        _id: cat._id,
+        name: cat.categoryInfo.name,
+        displayName: cat.categoryInfo.displayName,
+        icon: cat.categoryInfo.icon,
+        count: cat.count,
+        lastUsed: cat.lastUsed,
+      }));
+    } catch (error) {
+      throw new Error(
+        `Error fetching user recent categories: ${error.message}`
+      );
     }
   }
 }

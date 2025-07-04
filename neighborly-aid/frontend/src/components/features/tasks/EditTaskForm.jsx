@@ -45,13 +45,13 @@ const EditTaskForm = ({ task, categories, onUpdate, onCancel, isLoading }) => {
 
     // Validate karma points
     const karmaPoints = parseInt(formData.karmaPoints) || 0;
-    const userKarma = user?.karmaPoints || 0;
+    const userAvailableKarma = user?.availableKarmaPoints || user?.karmaPoints || 0;
     const currentTaskKarma = task.karma || 0;
-    const availableKarma = userKarma + currentTaskKarma; // Available karma + current task karma
+    const availableKarma = userAvailableKarma + currentTaskKarma; // Available karma + current task karma
 
     if (karmaPoints > availableKarma) {
       setError(
-        `Insufficient karma points. You have ${userKarma} available karma plus ${currentTaskKarma} from this task. Total available: ${availableKarma}, Required: ${karmaPoints}`
+        `Insufficient available karma points. You have ${userAvailableKarma} available karma plus ${currentTaskKarma} from this task. Total available: ${availableKarma}, Required: ${karmaPoints}`
       );
       setSubmitStatus("error");
       return;

@@ -29,11 +29,13 @@ import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { LOGIN_ROUTE } from "../../constants/routes";
 import { getUserDashboard } from "../../api/users";
+import { getCategories } from "../../api/categories";
 
 const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
   const { user, logout, refreshUser } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
+  const [categories, setCategories] = useState([]);
   const hasRefreshedUser = useRef(false);
 
   // Helper function for relative time
@@ -100,12 +102,22 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     return emojis[normalizedCategory] || emojis.default;
   };
 
+  // Returns only tasks where the user was a helper
+  const getHelpedTasks = (completedTasks, userId) => {
+    if (!completedTasks) return [];
+    return completedTasks.filter(task =>
+      Array.isArray(task.helpers) &&
+      task.helpers.some(h => h.userId?._id === userId || h.userId === userId)
+    );
+  };
+
   useEffect(() => {
     if (isOpen && user && !hasRefreshedUser.current) {
       console.log("User object:", user);
       console.log("User ID:", user.id);
       refreshUser(); // Refresh user data to get latest karma points
       fetchDashboardData(user.id);
+      fetchCategories();
       hasRefreshedUser.current = true;
     }
   }, [isOpen, user?.id]); // Only depend on isOpen and user.id, not refreshUser
@@ -130,6 +142,15 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
       setDashboardData(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesResponse = await getCategories();
+      setCategories(categoriesResponse);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
     }
   };
 
@@ -168,11 +189,13 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     return null;
   }
 
+  const helpedTasks = getHelpedTasks(dashboardData?.completedTasks, user?.id);
+
   const primaryStats = [
     {
       icon: HandHeart,
       label: "Tasks Completed",
-      value: dashboardData?.completedTasks?.length ?? 0,
+      value: helpedTasks.length,
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-900/20",
       gradient:
@@ -197,93 +220,135 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
     },
   ];
 
-  const categoryStats = [
-    {
-      icon: ShoppingCart,
-      label: "Groceries",
-      count: 45,
-      color: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
-    },
-    {
-      icon: Car,
-      label: "Transport",
-      count: 28,
-      color:
-        "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
-    },
-    {
-      icon: Wrench,
-      label: "Tech Help",
-      count: 23,
-      color:
-        "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
-    },
-    {
-      icon: PawPrint,
-      label: "Pet Care",
-      count: 18,
-      color: "from-rose-400 to-rose-500 dark:from-rose-600 dark:to-rose-700",
-    },
-  ];
+  // Simple helper to convert hex colors to Tailwind color classes
+  const getColorClass = (hexColor) => {
+    // Map common hex colors to Tailwind classes
+    const colorMap = {
+      '#3B82F6': 'blue-400',
+      '#1D4ED8': 'blue-600',
+      '#10B981': 'emerald-400',
+      '#059669': 'emerald-600',
+      '#F59E0B': 'amber-400',
+      '#D97706': 'amber-600',
+      '#EF4444': 'red-400',
+      '#DC2626': 'red-600',
+      '#8B5CF6': 'violet-400',
+      '#7C3AED': 'violet-600',
+      '#06B6D4': 'cyan-400',
+      '#0891B2': 'cyan-600',
+      '#F97316': 'orange-400',
+      '#EA580C': 'orange-600',
+      '#EC4899': 'pink-400',
+      '#DB2777': 'pink-600',
+      '#6B7280': 'gray-400', // Default
+    };
+    
+    return colorMap[hexColor] || 'gray-400';
+  };
 
-  //   // Update categoryStats to be dynamic based on completed tasks
-  // const categoryStats = dashboardData?.completedTasks?.reduce((acc, task) => {
-  //   const category = task.category;
-  //   if (!acc[category]) {
-  //     acc[category] = {
-  //       icon: getCategoryIcon(category), // We'll create this helper function
-  //       label: category,
-  //       count: 1,
-  //       color: getCategoryColor(category), // We'll create this helper function
-  //     };
-  //   } else {
-  //     acc[category].count += 1;
-  //   }
-  //   return acc;
-  // }, {}) || [];
+  // Generate real category stats from completed tasks
+  const categoryStats = React.useMemo(() => {
+    if (!helpedTasks?.length || !categories.length) {
+      return []; // Return empty array if no completed tasks or categories
+    }
 
-  // // Helper function to get icon based on category
-  // const getCategoryIcon = (category) => {
-  //   const icons = {
-  //     groceries: ShoppingCart,
-  //     transport: Car,
-  //     'tech help': Wrench,
-  //     'pet care': PawPrint,
-  //     default: HandHeart
-  //   };
-  //   return icons[category.toLowerCase()] || icons.default;
-  // };
+    // Create a map of category IDs to category objects for quick lookup
+    const categoryMap = categories.reduce((acc, category) => {
+      acc[category._id] = category;
+      return acc;
+    }, {});
 
-  // // Helper function to get color based on category
-  // const getCategoryColor = (category) => {
-  //   const colors = {
-  //     groceries: "from-sky-400 to-sky-500 dark:from-sky-600 dark:to-sky-700",
-  //     transport: "from-indigo-400 to-indigo-500 dark:from-indigo-600 dark:to-indigo-700",
-  //     'tech help': "from-orange-400 to-orange-500 dark:from-orange-600 dark:to-orange-700",
-  //     'pet care': "from-rose-400 to-rose-500 dark:from-rose-600 dark:to-rose-700",
-  //     default: "from-emerald-400 to-emerald-500 dark:from-emerald-600 dark:to-emerald-700"
-  //   };
-  //   return colors[category.toLowerCase()] || colors.default;
-  // };
+    // Group tasks by category and count them
+    const categoryCounts = helpedTasks.reduce((acc, task) => {
+      // Handle both populated category objects and string categories
+      const categoryData = task.category;
+      let categoryId, categoryName, categoryIcon, categoryColor;
+      
+      if (typeof categoryData === 'object' && categoryData !== null) {
+        // Populated category object
+        categoryId = categoryData._id;
+        categoryName = categoryData.displayName;
+        categoryIcon = categoryData.icon;
+        categoryColor = categoryData.color;
+      } else {
+        // String category (fallback) - look up in categoryMap
+        categoryId = categoryData;
+        const categoryInfo = categoryMap[categoryId];
+        
+        if (categoryInfo) {
+          categoryName = categoryInfo.displayName;
+          categoryIcon = categoryInfo.icon;
+          categoryColor = categoryInfo.color;
+        } else {
+          categoryName = categoryId || 'Other';
+          categoryIcon = '💝'; // Default emoji
+          categoryColor = '#6B7280'; // Default gray
+        }
+      }
+      
+      if (!acc[categoryId]) {
+        acc[categoryId] = {
+          count: 1,
+          categoryName,
+          categoryIcon,
+          categoryColor,
+        };
+      } else {
+        acc[categoryId].count += 1;
+      }
+      
+      return acc;
+    }, {});
 
-  // Combine real completed tasks with sample data
-  const recentActivity = [
-    // Real completed tasks from backend (if any)
-    ...(dashboardData?.completedTasks?.map((task) => ({
-      action: task.title,
-      time: getRelativeTime(task.completedAt),
-      emoji: getCategoryEmoji(task.category),
-      rating: task.rating || 0,
-    })) || []),
+    // Convert to array and sort by count (highest first)
+    const sortedCategories = Object.values(categoryCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 4); // Only show top 4 categories
 
-    // Sample data (only shown if there are  no completed tasks)
-    {
-      action: "Helped Sarah with grocery shopping",
-      time: "2 hours ago",
-      emoji: "🛒",
-      rating: 5,
-    },
-  ].slice(0, 3); // Only show maximum 3 items
+    // Map to the format expected by the UI
+    return sortedCategories.map(({ categoryName, categoryIcon, categoryColor, count }) => ({
+      icon: categoryIcon || '💝', // Ensure we always have an icon
+      label: categoryName,
+      count: count,
+      color: `from-${getColorClass(categoryColor)} to-${getColorClass(categoryColor)} dark:from-${getColorClass(categoryColor)} dark:to-${getColorClass(categoryColor)}`,
+    }));
+  }, [helpedTasks, categories]);
+
+  // Update recentActivity to only show real data
+  const recentActivity = React.useMemo(() => {
+    if (!helpedTasks?.length || !categories.length) {
+      return []; // Return empty array if no completed tasks or categories
+    }
+
+    // Create a map of category IDs to category objects for quick lookup
+    const categoryMap = categories.reduce((acc, category) => {
+      acc[category._id] = category;
+      return acc;
+    }, {});
+
+    return helpedTasks
+      .slice(0, 3) // Only show maximum 3 items
+      .map((task) => {
+        // Handle both populated category objects and string categories
+        const categoryData = task.category;
+        let categoryIcon;
+        
+        if (typeof categoryData === 'object' && categoryData !== null) {
+          categoryIcon = categoryData.icon;
+        } else {
+          // Look up category in categoryMap
+          const categoryInfo = categoryMap[categoryData];
+          categoryIcon = categoryInfo?.icon || '💝'; // Default emoji
+        }
+        
+        return {
+          action: task.title,
+          time: getRelativeTime(task.completedAt),
+          emoji: categoryIcon || '💝', // Ensure we always have an emoji
+          rating: task.rating || 0,
+        };
+      });
+  }, [helpedTasks, categories]);
 
   return (
     <>
@@ -354,7 +419,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-bold text-yellow-900 dark:text-yellow-100">
-                        {dashboardData?.karmaPoints ?? 100}
+                        {dashboardData?.karmaPoints ?? 1000}
                       </div>
                       <div className="text-xs text-yellow-800 dark:text-yellow-200 -mt-1">
                         Karma
@@ -462,35 +527,47 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
                       <Trophy className="w-5 h-5 mr-2 text-indigo-500 dark:text-indigo-400" />
                       Help Categories
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {categoryStats.map((category, index) => (
-                        <div
-                          key={index}
-                          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-300 group"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-9 h-9 bg-gradient-to-r ${category.color} rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}
-                              >
-                                <category.icon className="w-5 h-5 text-white" />
+                    {categoryStats.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        {categoryStats.map((category, index) => (
+                          <div
+                            key={index}
+                            className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-300 group"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div
+                                  className={`w-9 h-9 bg-gradient-to-r ${category.color} rounded-lg flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}
+                                >
+                                  <span className="text-lg">{category.icon}</span>
+                                </div>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                                  {category.label}
+                                </span>
                               </div>
-                              <span className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
-                                {category.label}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
-                                {category.count}
-                              </div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400">
-                                tasks
+                              <div className="text-right">
+                                <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
+                                  {category.count}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">
+                                  tasks
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 text-center">
+                        <HandHeart className="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-3" />
+                        <p className="text-slate-600 dark:text-slate-300 mb-2">
+                          No completed tasks yet
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">
+                          Start helping others to see your category breakdown here!
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Recent Activity */}
@@ -499,48 +576,60 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
                       <Clock className="w-5 h-5 mr-2 text-sky-500 dark:text-sky-400" />
                       Recent Kindness
                     </h3>
-                    <div className="space-y-3">
-                      {recentActivity.map((activity, index) => (
-                        <div
-                          key={index}
-                          className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-300 group"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="text-2xl group-hover:scale-110 transition-transform duration-300">
-                                {activity.emoji}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
-                                  {activity.action}
+                    {recentActivity.length > 0 ? (
+                      <div className="space-y-3">
+                        {recentActivity.map((activity, index) => (
+                          <div
+                            key={index}
+                            className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-300 group"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="text-2xl group-hover:scale-110 transition-transform duration-300">
+                                  {activity.emoji}
                                 </div>
-                                <div className="text-slate-500 dark:text-slate-400 text-xs">
-                                  {activity.time}
+                                <div>
+                                  <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                                    {activity.action}
+                                  </div>
+                                  <div className="text-slate-500 dark:text-slate-400 text-xs">
+                                    {activity.time}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="flex items-center">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-3 h-3 ${
-                                      i < activity.rating
-                                        ? "text-amber-400 dark:text-amber-500 fill-current"
-                                        : "text-slate-300 dark:text-slate-600"
-                                    }`}
-                                  />
-                                ))}
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${
+                                        i < activity.rating
+                                          ? "text-amber-400 dark:text-amber-500 fill-current"
+                                          : "text-slate-300 dark:text-slate-600"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                               </div>
-                              <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 text-center">
+                        <Clock className="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-3" />
+                        <p className="text-slate-600 dark:text-slate-300 mb-2">
+                          No recent activity
+                        </p>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">
+                          Complete some tasks to see your recent kindness here!
+                        </p>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Quick Actions */}
+{/* 
+                  Quick Actions
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 mb-4">
                       Ready to Help?
@@ -555,7 +644,7 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
                         <span className="font-semibold">Find Help</span>
                       </button>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Menu Items */}
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-6">

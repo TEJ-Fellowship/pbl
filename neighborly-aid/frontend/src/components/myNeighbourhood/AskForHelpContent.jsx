@@ -11,6 +11,7 @@ const AskForHelpContent = ({
   tasks = [],
   loading = false,
   onTaskCreated,
+  ensureCategoryExists,
 }) => {
   return (
     <div className="min-h-screen px-6 pb-20 dark:bg-background-humbleDark dark:text-text-spotlight">
@@ -51,6 +52,7 @@ const AskForHelpContent = ({
             categories={categories}
             handleSetShowPostForm={handleSetShowPostForm}
             onTaskCreated={onTaskCreated}
+            ensureCategoryExists={ensureCategoryExists}
           />
         )}
       </div>

@@ -44,6 +44,7 @@ const userSchema = new mongoose.Schema({
   },
   location: String,
   karmaPoints: { type: Number, default: 1000 },
+  availableKarmaPoints: { type: Number, default: 1000 },
   totalLikes: { type: Number, default: 0 },
   badges: {
     type: String,

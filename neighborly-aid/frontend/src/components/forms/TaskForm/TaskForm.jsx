@@ -7,7 +7,7 @@ import {
 } from "../../../components";
 import SubmitButton from "./SubmitButton";
 import TaskFormFields from "./TaskFormFields";
-import { useTaskForm, useGeminiSuggestions } from "../../../hooks";
+import { useTaskForm, useGeminiSuggestions, useCategories } from "../../../hooks";
 import { submitTaskAction } from "../../../services";
 import AuthContext from "../../../context/AuthContext";
 
@@ -44,6 +44,9 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     resetSuggestionsApplied,
   } = useGeminiSuggestions();
 
+  // Get both refreshCategories and ensureCategoryExists from useCategories
+  const { refreshCategories, ensureCategoryExists } = useCategories();
+
   // Enhanced input change handler
   const handleInputChangeWithSuggestionReset = (field, value) => {
     handleInputChange(field, value);
@@ -66,16 +69,16 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
 
   // Handle applying suggestions
   const handleApplySuggestions = () => {
-    applySuggestions(updateFormData);
+    applySuggestions(updateFormData, categories);
   };
 
   // Validate karma points
   const validateKarmaPoints = () => {
     const karmaPoints = parseInt(formData.karmaPoints) || 0;
-    const userKarma = user?.karmaPoints || 0;
+    const userAvailableKarma = user?.availableKarmaPoints || user?.karmaPoints || 0;
 
-    if (karmaPoints > userKarma) {
-      return `You only have ${userKarma} karma points, but you're trying to offer ${karmaPoints}. Please reduce the karma points or earn more karma.`;
+    if (karmaPoints > userAvailableKarma) {
+      return `You only have ${userAvailableKarma} available karma points, but you're trying to offer ${karmaPoints}. Please reduce the karma points or earn more karma.`;
     }
 
     if (karmaPoints < 10) {
@@ -110,7 +113,12 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     setSubmitStatus(null);
 
     try {
-      // The user ID will be automatically included by the backend from the auth token
+      // If it's a custom category, ensure it exists first
+      if (formData.category === "custom" && formData.customCategory) {
+        const categoryId = await ensureCategoryExists(formData.customCategory);
+        formDataObj.set("category", categoryId);
+      }
+
       const result = await submitTaskAction(formDataObj);
 
       if (result.success) {
@@ -119,6 +127,11 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
         // Refresh user data to get updated karma points
         await refreshUser();
 
+     
+        
+        // Refresh categories before resetting the form
+        await refreshCategories();
+        
         // Reset form after successful submission
         setTimeout(() => {
           resetForm();
@@ -185,8 +198,13 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
           </span>{" "}
           • Available karma:{" "}
           <span className="font-medium text-orange-600 dark:text-orange-400">
-            {user.karmaPoints || 0} ⭐
+            {user.availableKarmaPoints || user.karmaPoints || 0} ⭐
           </span>
+          {user.availableKarmaPoints !== user.karmaPoints && (
+            <span className="text-xs text-gray-500 ml-1">
+              (Total: {user.karmaPoints || 0})
+            </span>
+          )}
         </p>
       </div>
 

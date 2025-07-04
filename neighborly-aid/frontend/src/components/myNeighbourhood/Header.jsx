@@ -1,20 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { User } from "lucide-react";
 import UserModal from "../ui/UserModal";
 import NotificationDropdown from "../ui/NotificationDropdown";
+import AuthContext from "../../context/AuthContext";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const handleIsOpen = () => {
     setIsOpen((prev) => !prev);
   };
+  const { user } = useContext(AuthContext);
   return (
     <>
       <div className="bg-white/80 dark:bg-background-humbleDark backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
         <div className="w-full px-4 py-3">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-              HelpBoard
+              Welcome, {user?.name || "User"} !
             </h1>
             <div className="flex items-center space-x-3">
               <NotificationDropdown />

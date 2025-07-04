@@ -371,18 +371,36 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
         </div>
 
         <div className="mt-3">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-lg">
-              {categories.find((c) => c.id === currentTask.category)?.icon}
-            </span>
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                categories.find((c) => c.id === currentTask.category)?.color
-              }`}
-            >
-              {categories.find((c) => c.id === currentTask.category)?.name}
-            </span>
-          </div>
+          {/* Category Tag */}
+          {currentTask.category && (
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="text-lg">
+                {categories.find((c) => 
+                  (c._id === currentTask.category?._id || c._id === currentTask.category)
+                )?.icon || '📋'}
+              </span>
+              <span
+                className="px-2 py-1 rounded-full text-xs font-medium border"
+                style={{
+                  backgroundColor: `${categories.find((c) => 
+                    (c._id === currentTask.category?._id || c._id === currentTask.category)
+                  )?.color || '#6B7280'}20`,
+                  color: categories.find((c) => 
+                    (c._id === currentTask.category?._id || c._id === currentTask.category)
+                  )?.color || '#6B7280',
+                  borderColor: categories.find((c) => 
+                    (c._id === currentTask.category?._id || c._id === currentTask.category)
+                  )?.color || '#6B7280'
+                }}
+              >
+                {categories.find((c) => 
+                  (c._id === currentTask.category?._id || c._id === currentTask.category)
+                )?.displayName || categories.find((c) => 
+                  (c._id === currentTask.category?._id || c._id === currentTask.category)
+                )?.name || 'Uncategorized'}
+              </span>
+            </div>
+          )}
 
           <h4 className="font-semibold text-text-dark dark:text-white mb-2">
             {currentTask.title}

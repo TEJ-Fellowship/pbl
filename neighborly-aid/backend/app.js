@@ -6,6 +6,8 @@ const taskRoutes = require("./routes/taskRoutes.js");
 const reviewRoutes = require("./routes/reviewRoutes.js");
 const eventRoutes = require("./routes/eventRoutes.js");
 const notificationRoutes = require("./routes/notificationRoutes.js");
+const categoryRoutes = require("./routes/categoryRoutes.js");
+const leaderboardRoutes = require("./routes/leaderboardRoutes.js");
 const dbConnect = require("./config/db.js");
 // const bodyParser = require("body-parser");
 const logger = require("./middlewares/logger.js");
@@ -19,7 +21,11 @@ dbConnect(); // ✅ Connect to DB next
 const app = express();
 
 // More flexible CORS configuration for development
-const allowedOrigins = [FRONTEND_URL, FRONTEND_URL_DEV].filter(Boolean);
+const allowedOrigins = [
+  FRONTEND_URL,
+  FRONTEND_URL_DEV,
+  "http://localhost:5173",
+].filter(Boolean);
 
 app.use(
   cors({
@@ -51,6 +57,8 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/review", reviewRoutes);
 app.use("/api/event", eventRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

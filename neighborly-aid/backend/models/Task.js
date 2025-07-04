@@ -28,10 +28,15 @@ const taskSchema = new mongoose.Schema({
     maxlength: 1000,
   },
   category: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
     minlength: 3,
     maxlength: 100,
+  },
+  // Keep the old category field temporarily for migration
+  categoryName: {
+    type: String,
+    required: false,
   },
 
   location: {

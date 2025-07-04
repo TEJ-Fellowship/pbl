@@ -17,13 +17,15 @@ const HelpOthersContent = ({
 
   // Filter tasks based on selected category
   const filteredTasks = tasks.filter(
-    (task) => selectedCategory === "all" || task.category === selectedCategory
+    (task) => selectedCategory === "all" || 
+    task.category?._id === selectedCategory || 
+    task.category === selectedCategory
   );
 
   // Get category name for display
   const getCategoryName = () => {
-    const category = categories.find(c => c.id === selectedCategory);
-    return category ? category.name : "All Tasks";
+    const category = categories.find(c => (c._id || c.id) === selectedCategory);
+    return category ? (category.displayName || category.name) : "All Tasks";
   };
 
   // Handle category selection
