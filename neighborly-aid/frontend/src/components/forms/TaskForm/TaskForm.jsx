@@ -113,11 +113,31 @@ const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
     setSubmitStatus(null);
 
     try {
-      // If it's a custom category, ensure it exists first
-      if (formData.category === "custom" && formData.customCategory) {
-        const categoryId = await ensureCategoryExists(formData.customCategory);
-        formDataObj.set("category", categoryId);
+      // Handle custom category creation
+      let categoryId = formData.category;
+      
+      if (formData.category === "custom" || formData.category?.startsWith("custom-")) {
+        const categoryName = formData.customCategory || 
+          (formData.category?.startsWith("custom-") ? formData.category.replace("custom-", "") : "");
+        
+        if (!categoryName) {
+          throw new Error('Please enter a category name');
+        }
+        
+        try {
+          const newCategoryId = await ensureCategoryExists(categoryName);
+          if (!newCategoryId) {
+            throw new Error('Failed to create category');
+          }
+          categoryId = newCategoryId;
+        } catch (err) {
+          console.error('Failed to create category:', err);
+          throw new Error('Failed to create category: ' + err.message);
+        }
       }
+
+      // Update the form data with the correct category ID
+      formDataObj.set("category", categoryId);
 
       const result = await submitTaskAction(formDataObj);
 

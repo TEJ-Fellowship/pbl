@@ -47,7 +47,7 @@ export const useGeminiSuggestions = () => {
       });
 
       updateFormData({
-        category: matchingCategory?._id || "custom",
+        category: matchingCategory?._id || `custom-${primarySuggestedCategory}`,
         customCategory: matchingCategory ? "" : primarySuggestedCategory,
         urgency: geminiSuggestions.suggestedUrgency || "",
         karmaPoints: geminiSuggestions.suggestedKarmaPoints?.toString() || "",

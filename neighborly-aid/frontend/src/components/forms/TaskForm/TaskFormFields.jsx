@@ -61,47 +61,45 @@ const TaskFormFields = ({
             value={formData.category}
             onChange={(e) => onInputChange('category', e.target.value)}
             className={`w-full p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 ${
-             // Add animation when suggestions are applied and a category matches the AI suggestion
-             suggestionsApplied && geminiSuggestions?.suggestedCategories?.some(suggestion => 
-              categories.find(cat => cat._id === formData.category)?.displayName === suggestion
-            ) ? 'ring-2 ring-purple-400 border-purple-400 animate-pulse' : ''
+              suggestionsApplied && formData.category ? 'ring-2 ring-purple-400 border-purple-400 animate-pulse' : ''
             }`}
             required
           >
             <option value="">Select Category</option>
             
-            {/* Enhanced Category Select with Custom Option */}
+            {/* AI Suggested Categories */}
             {geminiSuggestions?.suggestedCategories?.map((suggestion, idx) => {
-              // Clean suggestion for matching
               const cleanSuggestion = suggestion.replace(/^[^\w]+/g, "").replace(/-/g, " ").trim().toLowerCase();
-              // Try to find a matching category
               const match = categories.find(cat =>
                 cat.name.replace(/-/g, " ").toLowerCase() === cleanSuggestion ||
                 cat.displayName.toLowerCase() === cleanSuggestion
               );
+              
               if (match) {
+                // Existing category - show with AI suggestion highlight
                 return (
                   <option key={`gemini-${match._id}`} value={match._id} className="font-medium bg-purple-50 dark:bg-purple-900/20">
                     ⭐ {match.icon} {match.displayName} (AI Suggested)
                   </option>
                 );
+              } else {
+                // New category - show as custom option
+                return (
+                  <option key={`gemini-custom-${idx}`} value={`custom-${suggestion}`} className="font-medium text-green-600">
+                    ✨ {suggestion} (New)
+                  </option>
+                );
               }
-              // If not found, show as custom
-              return (
-                <option key={`gemini-custom-${idx}`} value="custom" className="font-medium text-green-600">
-                  ✨ {suggestion} (New)
-                </option>
-              );
             })}
-
-            {/* Separator if Gemini suggestions exist */}
+            
+            {/* Separator if AI suggestions exist */}
             {geminiSuggestions && (
               <option disabled className="text-gray-400">
                 ─────── All Categories ───────
               </option>
             )}
-
-            {/* Original categories */}
+            
+            {/* All existing categories */}
             {categories
               .filter((c) => c._id !== "all")
               .map((cat) => (
@@ -110,7 +108,7 @@ const TaskFormFields = ({
                 </option>
               ))}
             
-            {/* Custom category option */}
+            {/* General custom category option */}
             <option disabled className="text-gray-400">
               ────── Create New ──────
             </option>
@@ -119,15 +117,15 @@ const TaskFormFields = ({
             </option>
           </select>
           
-          {/* Custom category input - show when "custom" is selected */}
-          {formData.category === "custom" && (
+          {/* Custom category input - show when "custom" or "custom-suggestion" is selected */}
+          {(formData.category === "custom" || formData.category?.startsWith("custom-")) && (
             <div className="absolute top-full left-0 right-0 mt-1 z-10">
               <input
                 type="text"
                 placeholder="Enter new category name..."
                 className="w-full p-3 border border-green-500 dark:border-green-400 bg-white dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 shadow-lg"
                 onChange={(e) => onInputChange('customCategory', e.target.value)}
-                value={formData.customCategory || ''}
+                value={formData.customCategory || (formData.category?.startsWith("custom-") ? formData.category.replace("custom-", "") : "")}
                 autoFocus
               />
               <div className="text-xs text-green-600 dark:text-green-400 mt-1 px-1">
