@@ -79,7 +79,7 @@ const AppRoutes = () => {
       </>
     ),
     {
-      basename: "/",
+      basename: "",
     }
   );
   return <RouterProvider router={router} />;
