@@ -246,8 +246,10 @@ const WhyNeigbourlyAId = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
+              <button onClick={handleGetStarted} className="flex items-center gap-2">
               <Lightbulb className="size-4" />
-              Building Stronger Communities
+              {user ? "Explore Our Neighbourhood" : "Building Stronger Communities"}
+              </button>
             </motion.div>
             <motion.h1 
               className="text-5xl md:text-6xl font-bold text-text-dark dark:text-text-spotlight mb-6"
