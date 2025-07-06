@@ -113,8 +113,8 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
 
   useEffect(() => {
     if (isOpen && user && !hasRefreshedUser.current) {
-      console.log("User object:", user);
-      console.log("User ID:", user.id);
+      // console.log("User object:", user);
+      // console.log("User ID:", user.id);
       refreshUser(); // Refresh user data to get latest karma points
       fetchDashboardData(user.id);
       fetchCategories();
@@ -131,11 +131,11 @@ const UserModal = ({ isOpen = true, handleIsOpen = () => {} }) => {
 
   const fetchDashboardData = async (userId) => {
     setLoading(true);
-    console.log("fetchDashboardData called with userId:", userId);
+    // console.log("fetchDashboardData called with userId:", userId);
 
     try {
       const response = await getUserDashboard(userId);
-      console.log("response in fetchDashboardData:", response.data);
+      // console.log("response in fetchDashboardData:", response.data);
       setDashboardData(response.data);
     } catch (error) {
       console.error("Failed to fetch dashboard:", error);

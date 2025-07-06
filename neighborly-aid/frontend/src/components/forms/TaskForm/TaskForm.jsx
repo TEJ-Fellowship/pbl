@@ -14,7 +14,7 @@ import AuthContext from "../../../context/AuthContext";
 const TaskForm = ({ categories, handleSetShowPostForm, onTaskCreated }) => {
   const formRef = useRef(null);
   const { user, refreshUser } = useContext(AuthContext); // Get logged-in user and refresh function
-  console.log("user from task form", user);
+  // console.log("user from task form", user);
 
   // Refresh user data when component mounts to get latest karma points
   React.useEffect(() => {
