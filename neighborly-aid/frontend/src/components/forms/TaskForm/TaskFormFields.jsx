@@ -118,17 +118,22 @@ const TaskFormFields = ({
                 );
                 
                 if (match) {
-                  // Existing category - show with AI suggestion highlight
+                  // Existing category - show with AI suggestion highlight (only AI icon, no category icon)
                   return (
                     <option key={`gemini-${match._id}`} value={match._id} className="font-medium bg-purple-50 dark:bg-purple-900/20">
-                      ⭐ {match.icon} {match.displayName} (AI Suggested)
+                      ⭐ {match.displayName} (AI Suggested)
                     </option>
                   );
                 } else {
-                  // New category - show as custom option
+                  // New category - show as custom option (only AI icon, clean text)
+                  const cleanDisplayText = suggestion
+                    .replace(/^[^\w]+/g, "") // Remove leading emojis
+                    .replace(/-/g, " ")      // Replace hyphens with spaces
+                    .trim();                 // Remove extra spaces
+                  
                   return (
                     <option key={`gemini-custom-${idx}`} value={`custom-${suggestion}`} className="font-medium text-green-600">
-                      ✨ {suggestion} (New)
+                      ⭐ {cleanDisplayText} (Create New)
                     </option>
                   );
                 }
