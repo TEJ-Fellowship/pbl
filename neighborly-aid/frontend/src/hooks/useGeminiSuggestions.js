@@ -56,6 +56,34 @@ export const useGeminiSuggestions = () => {
     }
   };
 
+  // Add a new function to handle manual category selection
+  const handleCategorySelection = (
+    selectedValue,
+    updateFormData,
+    categories
+  ) => {
+    if (selectedValue.startsWith("custom-")) {
+      // Handle custom category selection
+      const categoryName = selectedValue.replace("custom-", "");
+      updateFormData({
+        category: selectedValue,
+        customCategory: categoryName,
+      });
+    } else if (selectedValue) {
+      // Handle existing category selection
+      updateFormData({
+        category: selectedValue,
+        customCategory: "",
+      });
+    } else {
+      // Handle clearing selection
+      updateFormData({
+        category: "",
+        customCategory: "",
+      });
+    }
+  };
+
   const resetSuggestions = () => {
     setGeminiSuggestions(null);
     setSuggestionsApplied(false);
@@ -71,6 +99,7 @@ export const useGeminiSuggestions = () => {
     suggestionsApplied,
     handleGetSuggestions,
     applySuggestions,
+    handleCategorySelection, // Add this new function
     resetSuggestions,
     resetSuggestionsApplied,
   };
