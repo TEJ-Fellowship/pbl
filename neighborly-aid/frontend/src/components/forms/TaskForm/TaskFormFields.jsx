@@ -70,33 +70,45 @@ const TaskFormFields = ({
           >
             <option value="">Select Category</option>
             
-            {/* Original categories - updated for new database structure */}
-            {categories
-              .filter((c) => c._id !== "all")
-              .map((cat) => {
-                // Check if this category was suggested by Gemini
-                const isGeminiSuggested = geminiSuggestions && 
-                  geminiSuggestions.suggestedCategories.some(suggestion => 
-                    suggestion.toLowerCase().replace(/[^a-z0-9]/g, '-') === cat.name ||
-                    suggestion === cat.name ||
-                    suggestion.includes(cat.displayName)
-                  );
-                
-                // Create display text with usage information
-                let displayText = `${cat.icon} ${cat.displayName}`;
-                if (isGeminiSuggested) displayText = `⭐ ${displayText} (AI Suggested)`;
-                if (cat.count > 0) displayText += ` (${cat.count} used)`;
-                
+            {/* Enhanced Category Select with Custom Option */}
+            {geminiSuggestions?.suggestedCategories?.map((suggestion, idx) => {
+              // Clean suggestion for matching
+              const cleanSuggestion = suggestion.replace(/^[^\w]+/g, "").replace(/-/g, " ").trim().toLowerCase();
+              // Try to find a matching category
+              const match = categories.find(cat =>
+                cat.name.replace(/-/g, " ").toLowerCase() === cleanSuggestion ||
+                cat.displayName.toLowerCase() === cleanSuggestion
+              );
+              if (match) {
                 return (
-                  <option 
-                    key={cat._id} 
-                    value={cat._id}
-                    className={isGeminiSuggested ? 'font-medium bg-purple-50 dark:bg-purple-900/20' : ''}
-                  >
-                    {displayText}
+                  <option key={`gemini-${match._id}`} value={match._id} className="font-medium bg-purple-50 dark:bg-purple-900/20">
+                    ⭐ {match.icon} {match.displayName} (AI Suggested)
                   </option>
                 );
-              })}
+              }
+              // If not found, show as custom
+              return (
+                <option key={`gemini-custom-${idx}`} value="custom" className="font-medium text-green-600">
+                  ✨ {suggestion} (New)
+                </option>
+              );
+            })}
+
+            {/* Separator if Gemini suggestions exist */}
+            {geminiSuggestions && (
+              <option disabled className="text-gray-400">
+                ─────── All Categories ───────
+              </option>
+            )}
+
+            {/* Original categories */}
+            {categories
+              .filter((c) => c._id !== "all")
+              .map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.icon} {cat.displayName}
+                </option>
+              ))}
             
             {/* Custom category option */}
             <option disabled className="text-gray-400">
