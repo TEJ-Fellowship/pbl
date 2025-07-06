@@ -8,6 +8,7 @@ import {
 import {
   MY_NEIGHBOURHOOD,
   WHY_NEIGHBOURLY_AID,
+  WHY_NEIGHBOURLY_AID_DASHBOARD,
   AVAILABLE_SUPPORT,
   REACH_OUT,
   LOGIN_ROUTE,
@@ -32,7 +33,7 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user ? <Navigate to={MY_NEIGHBOURHOOD} replace /> : children;
+  return user ? <Navigate to={WHY_NEIGHBOURLY_AID_DASHBOARD} replace /> : children;
 };
 
 const AppRoutes = () => {
@@ -49,7 +50,8 @@ const AppRoutes = () => {
             </PublicRoute>
           }
         />
-
+        {/* Public routes */}
+        <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
         {/* Protected routes */}
         <Route
           path="/"
@@ -61,7 +63,7 @@ const AppRoutes = () => {
         >
           <Route index element={<Navigate to={MY_NEIGHBOURHOOD} replace />} />
           <Route path={MY_NEIGHBOURHOOD} element={<MyNeighbourhood />} />
-          <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
+          <Route path={WHY_NEIGHBOURLY_AID_DASHBOARD} element={<WhyNeigbourlyAId />} />
           <Route path={LEADERBOARD} element={<Leaderboard />} />
           {/* <Route path={AVAILABLE_SUPPORT} element={<AvailableSupport />} />
           <Route path={REACH_OUT} element={<ReachOut />} /> */}

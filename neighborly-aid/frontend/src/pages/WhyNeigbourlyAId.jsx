@@ -1,6 +1,8 @@
 import React from "react";
 import {  useScroll, useTransform } from "framer-motion";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { MY_NEIGHBOURHOOD , LEADERBOARD } from "../constants/routes";
 import {
   Heart,
   Users,
@@ -22,6 +24,16 @@ const WhyNeigbourlyAId = () => {
     target: containerRef,
     offset: ["start start", "end end"]
   });
+  const navigate = useNavigate();
+  const handleGetStarted = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(MY_NEIGHBOURHOOD);
+  };
+  const handleLearnMore = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate(LEADERBOARD);
+  };
+
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
 
@@ -169,7 +181,10 @@ const WhyNeigbourlyAId = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-green-50 dark:bg-background-humbleDark dark:text-text-spotlight overflow-hidden relative">
+    <div ref={containerRef}
+     className="min-h-screen bg-green-50 dark:bg-background-humbleDark dark:text-text-spotlight overflow-hidden relative"
+     style={{ position: "relative" }}
+     >
       {/* Parallax Background */}
       <motion.div
         className="absolute inset-0 opacity-10"
@@ -455,10 +470,11 @@ const WhyNeigbourlyAId = () => {
             variants={staggerContainer}
           >
             <motion.button 
-              className="bg-white text-primary px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+              className="bg-white text-primary px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
               variants={scaleIn}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleGetStarted}
             >
               Get Started Now
             </motion.button>
@@ -467,6 +483,7 @@ const WhyNeigbourlyAId = () => {
               variants={scaleIn}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleLearnMore}
             >
               Learn More
             </motion.button>

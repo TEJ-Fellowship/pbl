@@ -419,4 +419,5 @@ module.exports = {
   selectHelper,
   markTaskAsCompletedByHelper,
   approveTaskCompletion,
+  getUserRecentCategories,
 };
