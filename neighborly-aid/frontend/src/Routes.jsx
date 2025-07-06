@@ -26,14 +26,14 @@ import Leaderboard from "./pages/LeaderBoard";
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user ? children : <Navigate to={LOGIN_ROUTE} replace />;
+  return user ? children : <Navigate to={WHY_NEIGHBOURLY_AID} replace />;
 };
 
 // Public Route component (redirects to home if already logged in)
 const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user ? <Navigate to={WHY_NEIGHBOURLY_AID_DASHBOARD} replace /> : children;
+  return user ? <Navigate to={MY_NEIGHBOURHOOD} replace /> : children;
 };
 
 const AppRoutes = () => {
