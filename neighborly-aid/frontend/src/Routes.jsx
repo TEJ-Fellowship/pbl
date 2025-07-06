@@ -69,15 +69,18 @@ const AppRoutes = () => {
           <Route path={REACH_OUT} element={<ReachOut />} /> */}
         </Route>
 
-        {/* Catch all route - redirect based on auth */}
+       {/* Catch all route - redirects to WHY_NEIGHBOURHOOD if not logged in */}
         <Route
           path="*"
           element={
-            <Navigate to={user ? MY_NEIGHBOURHOOD : LOGIN_ROUTE} replace />
+            <Navigate to={user ? MY_NEIGHBOURHOOD : WHY_NEIGHBOURLY_AID} replace />
           }
         />
       </>
-    )
+    ),
+    {
+      basename: "/",
+    }
   );
   return <RouterProvider router={router} />;
 };
