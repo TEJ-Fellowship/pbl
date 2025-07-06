@@ -119,20 +119,18 @@ export const useCategories = () => {
         return existingCategory._id;
       }
 
-      // Try to get the first emoji at the start of the string
-      const emojiMatch = categoryName.match(/^[\p{Emoji}\u200d\uFE0F]/u);
-      const icon = emojiMatch ? emojiMatch[0] : "📚"; // fallback to book emoji
+      // Extract emoji from the category name (if present)
+      const emojiMatch = categoryName.match(/^[^\w\s]/);
+      const icon = emojiMatch ? emojiMatch[0] : "📁"; // fallback icon if no emoji
 
       // Remove emoji from display name
-      const displayName = categoryName
-        .replace(/^[\p{Emoji}\u200d\uFE0F]/u, "")
-        .trim();
+      const displayName = categoryName.replace(/^[^\w\s]+/, "").trim();
 
       // Create new category
       const newCategory = await createCategory({
         name: displayName.toLowerCase().replace(/\s+/g, "-"),
         displayName: displayName.charAt(0).toUpperCase() + displayName.slice(1),
-        icon, // always a valid emoji
+        icon, // Use the extracted emoji
         description: `User-created category: ${displayName}`,
         sortOrder: 999,
       });
