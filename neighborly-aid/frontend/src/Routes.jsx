@@ -79,7 +79,7 @@ const AppRoutes = () => {
       </>
     ),
     {
-      basename: import.meta.env.PROD ? "" : "/",
+      // basename: import.meta.env.PROD ? "" : "/",
     }
   );
   return <RouterProvider router={router} />;

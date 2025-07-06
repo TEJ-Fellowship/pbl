@@ -7,12 +7,12 @@ export default defineConfig({
   build: {
     outDir: "dist",
   },
-  server: {
-    port: 3000,
-  },
-  preview: {
-    port: 3000,
-  },
-  // Add this for proper routing
-  base: "/",
+  // server: {
+  //   port: 3000,
+  // },
+  // preview: {
+  //   port: 3000,
+  // },
+  // // Add this for proper routing
+  // base: "/",
 });

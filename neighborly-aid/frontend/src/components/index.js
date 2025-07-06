@@ -5,7 +5,7 @@ export { TaskCard, CategoryFilter, GeminiSuggestions } from "./features";
 export { TaskForm } from "./forms";
 
 // UI components
-export { StatusMessage } from "./ui";
+export { StatusMessage, DeleteButton } from "./ui";
 
 // Common components
 export { GeminiIcon, ThemeToggle } from "./common";
