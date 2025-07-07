@@ -51,6 +51,8 @@ const MyNeighbourhood = () => {
     };
 
     loadTasks();
+     // Scroll to top when component mounts
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // Handle combined loading state and errors

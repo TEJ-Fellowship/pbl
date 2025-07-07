@@ -3,7 +3,7 @@ import config from "../config/config.js";
 
 const registerAuth = async (data) => {
   try {
-    console.log("register in auth api", data);
+    // console.log("register in auth api", data);
     const response = await axios.post(
       `${config.API_BASE_URL}/api/auth/register`,
       data,
@@ -23,7 +23,7 @@ const registerAuth = async (data) => {
 
 const loginAuth = async (data) => {
   try {
-    console.log("login in auth api", data);
+    // console.log("login in auth api", data);
     const response = await axios.post(
       `${config.API_BASE_URL}/api/auth/login`,
       data,

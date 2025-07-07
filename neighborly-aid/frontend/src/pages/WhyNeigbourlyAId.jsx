@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
 import {  useScroll, useTransform } from "framer-motion";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { MY_NEIGHBOURHOOD , LEADERBOARD , LOGIN_ROUTE } from "../constants/routes";
+import AuthContext from "../context/AuthContext";
+
 import {
   Heart,
   Users,
@@ -17,11 +21,33 @@ import {
 } from "lucide-react";
 
 const WhyNeigbourlyAId = () => {
+  const { user } = useContext(AuthContext);
   const containerRef = React.useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
   });
+  const navigate = useNavigate();
+  const handleGetStarted = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (user) {
+      navigate(MY_NEIGHBOURHOOD);
+    } else {
+      navigate(LOGIN_ROUTE);
+    }
+  };
+  const handleLearnMore = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (user) {
+      navigate(LEADERBOARD);
+    } else {
+      navigate(LOGIN_ROUTE);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate(LOGIN_ROUTE);
+  };
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
 
@@ -169,7 +195,28 @@ const WhyNeigbourlyAId = () => {
   };
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-green-50 dark:bg-background-humbleDark dark:text-text-spotlight overflow-hidden relative">
+    <div ref={containerRef}
+     className="min-h-screen bg-green-50 dark:bg-background-humbleDark dark:text-text-spotlight overflow-hidden relative"
+     style={{ position: "relative" }}
+     >
+            {/* Login Button - Top Right */}
+            {!user && (
+        <motion.div
+          className="fixed top-6 right-6 z-50"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <motion.button
+            className="bg-white text-primary px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl border border-gray-200"
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleLogin}
+          >
+            Login
+          </motion.button>
+        </motion.div>
+      )}
       {/* Parallax Background */}
       <motion.div
         className="absolute inset-0 opacity-10"
@@ -199,8 +246,10 @@ const WhyNeigbourlyAId = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
+              <button onClick={handleGetStarted} className="flex items-center gap-2">
               <Lightbulb className="size-4" />
-              Building Stronger Communities
+              {user ? "Explore Our Neighbourhood" : "Building Stronger Communities"}
+              </button>
             </motion.div>
             <motion.h1 
               className="text-5xl md:text-6xl font-bold text-text-dark dark:text-text-spotlight mb-6"
@@ -455,18 +504,22 @@ const WhyNeigbourlyAId = () => {
             variants={staggerContainer}
           >
             <motion.button 
-              className="bg-white text-primary px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+              className="bg-white text-primary px-8 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
               variants={scaleIn}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleGetStarted}
             >
               Get Started Now
             </motion.button>
+
+
             <motion.button 
               className="border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white hover:text-primary transition-colors"
               variants={scaleIn}
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
+              onClick={handleLearnMore}
             >
               Learn More
             </motion.button>

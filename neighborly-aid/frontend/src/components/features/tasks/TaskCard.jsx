@@ -23,6 +23,7 @@ import { toast } from "react-hot-toast";
 import ConfirmationModal from "../../ui/ConfirmationModal";
 import HelpersModal from "./HelpersModal";
 import EditTaskForm from "./EditTaskForm";
+import DeleteButton from "../../ui/Button/DeleteButton";
 
 const TaskCard = ({ task, categories, onTaskUpdate }) => {
   const { user } = useContext(AuthContext);
@@ -327,8 +328,38 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
     }
   };
 
+  const handleDeleteClick = (e) => {
+    e.stopPropagation(); // Prevent opening the helpers modal
+    setShowDeleteModal(true);
+  };
+  const renderDeleteButton = () => {
+    if (!isUserCreator ) {
+      return null;
+    }
+    return (
+      <>
+      
+        {/* Actual delete button */}
+        {/* <div className="absolute top-3 right-16 z-50"> */}
+          <DeleteButton
+            onClick={handleDeleteClick}
+            isVisible={true}
+            taskStatus={currentTask.status}
+            disabled={isDeleting}
+            size="default"
+            showTooltip={true}
+          />
+        {/* </div> */}
+      </>
+    );
+  };
+  
+
   return (
-    <div className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark overflow-hidden mb-4 hover:shadow-md dark:hover:shadow-gray-900/20 transition-shadow">
+    <div className="bg-background dark:bg-background-politeDark rounded-2xl shadow-sm border border-border dark:border-border-dark overflow-hidden mb-4 hover:shadow-md dark:hover:shadow-gray-900/20 transition-shadow relative">
+       
+
+      
       <div
         className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
         onClick={() => setShowHelpersModal(true)}
@@ -365,6 +396,7 @@ const TaskCard = ({ task, categories, onTaskUpdate }) => {
                 <span className="text-lg">
                   {getStatusIcon(currentTask.status)}
                 </span>
+                {renderDeleteButton()}
               </div>
             </div>
           </div>

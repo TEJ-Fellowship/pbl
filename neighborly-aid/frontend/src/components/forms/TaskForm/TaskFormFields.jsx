@@ -54,76 +54,125 @@ const TaskFormFields = ({
 
       {/* Category, Priority, and Karma Points Row */}
       <div className="grid grid-cols-3 gap-3">
-        {/* Enhanced Category Select with Custom Option */}
+        {/* Enhanced Category Select/Input */}
         <div className="relative">
-          <select 
-            name="category"
-            value={formData.category}
-            onChange={(e) => onInputChange('category', e.target.value)}
-            className={`w-full p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 ${
-             // Add animation when suggestions are applied and a category matches the AI suggestion
-             suggestionsApplied && geminiSuggestions?.suggestedCategories?.some(suggestion => 
-              categories.find(cat => cat._id === formData.category)?.displayName === suggestion
-            ) ? 'ring-2 ring-purple-400 border-purple-400 animate-pulse' : ''
-            }`}
-            required
-          >
-            <option value="">Select Category</option>
-            
-            {/* Original categories - updated for new database structure */}
-            {categories
-              .filter((c) => c._id !== "all")
-              .map((cat) => {
-                // Check if this category was suggested by Gemini
-                const isGeminiSuggested = geminiSuggestions && 
-                  geminiSuggestions.suggestedCategories.some(suggestion => 
-                    suggestion.toLowerCase().replace(/[^a-z0-9]/g, '-') === cat.name ||
-                    suggestion === cat.name ||
-                    suggestion.includes(cat.displayName)
-                  );
-                
-                // Create display text with usage information
-                let displayText = `${cat.icon} ${cat.displayName}`;
-                if (isGeminiSuggested) displayText = `⭐ ${displayText} (AI Suggested)`;
-                if (cat.count > 0) displayText += ` (${cat.count} used)`;
-                
-                return (
-                  <option 
-                    key={cat._id} 
-                    value={cat._id}
-                    className={isGeminiSuggested ? 'font-medium bg-purple-50 dark:bg-purple-900/20' : ''}
-                  >
-                    {displayText}
-                  </option>
-                );
-              })}
-            
-            {/* Custom category option */}
-            <option disabled className="text-gray-400">
-              ────── Create New ──────
-            </option>
-            <option value="custom" className="font-medium text-green-600">
-              ➕ Create New Category
-            </option>
-          </select>
-          
-          {/* Custom category input - show when "custom" is selected */}
-          {formData.category === "custom" && (
-            <div className="absolute top-full left-0 right-0 mt-1 z-10">
+          {formData.category === "custom" || (formData.category && formData.category.startsWith("custom-")) ? (
+            // Show text input for custom category
+            <div className="relative">
               <input
                 type="text"
+                name="customCategory"
                 placeholder="Enter new category name..."
-                className="w-full p-3 border border-green-500 dark:border-green-400 bg-white dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 shadow-lg"
+                value={formData.customCategory || (formData.category?.startsWith("custom-") ? formData.category.replace("custom-", "") : "")}
                 onChange={(e) => onInputChange('customCategory', e.target.value)}
-                value={formData.customCategory || ''}
+                className="w-full p-3 border border-green-500 dark:border-green-400 bg-white dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
+                required
                 autoFocus
               />
-              <div className="text-xs text-green-600 dark:text-green-400 mt-1 px-1">
-                💡 This will create a new category that others can use too!
-              </div>
+              {/* Back to dropdown button */}
+              <button
+                type="button"
+                onClick={() => {
+                  onInputChange('category', '');
+                  onInputChange('customCategory', '');
+                }}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                title="Back to categories"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+          ) : (
+            // Show dropdown for existing categories
+            <select 
+              name="category"
+              value={formData.category}
+              onChange={(e) => {
+                const selectedValue = e.target.value;
+                if (selectedValue === "custom" || selectedValue.startsWith('custom-')) {
+                  // Handle custom category selection
+                  const categoryName = selectedValue.startsWith('custom-') ? selectedValue.replace('custom-', '') : '';
+                  onInputChange('category', selectedValue);
+                  onInputChange('customCategory', categoryName);
+                } else {
+                  // Handle existing category selection
+                  onInputChange('category', selectedValue);
+                  onInputChange('customCategory', '');
+                }
+              }}
+              className={`w-full p-3 border border-border-strong dark:border-border-dark dark:bg-background-politeDark rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-300 ${
+                suggestionsApplied && formData.category ? 'ring-2 ring-purple-400 border-purple-400 animate-pulse' : ''
+              }`}
+              required
+            >
+              <option value="">Select Category</option>
+              
+              {/* AI Suggested Categories */}
+              {geminiSuggestions?.suggestedCategories?.map((suggestion, idx) => {
+                const cleanSuggestion = suggestion.replace(/^[^\w]+/g, "").replace(/-/g, " ").trim().toLowerCase();
+                const match = categories.find(cat =>
+                  cat.name.replace(/-/g, " ").toLowerCase() === cleanSuggestion ||
+                  cat.displayName.toLowerCase() === cleanSuggestion
+                );
+                
+                if (match) {
+                  // Existing category - show with AI suggestion highlight (only AI icon, no category icon)
+                  return (
+                    <option key={`gemini-${match._id}`} value={match._id} className="font-medium bg-purple-50 dark:bg-purple-900/20">
+                      ⭐ {match.displayName} (AI Suggested)
+                    </option>
+                  );
+                } else {
+                  // New category - show as custom option (only AI icon, clean text)
+                  const cleanDisplayText = suggestion
+                    .replace(/^[^\w]+/g, "") // Remove leading emojis
+                    .replace(/-/g, " ")      // Replace hyphens with spaces
+                    .trim();                 // Remove extra spaces
+                  
+                  return (
+                    <option key={`gemini-custom-${idx}`} value={`custom-${suggestion}`} className="font-medium text-green-600">
+                      ⭐ {cleanDisplayText} (Create New)
+                    </option>
+                  );
+                }
+              })}
+              
+              {/* Separator if AI suggestions exist */}
+              {geminiSuggestions && (
+                <option disabled className="text-gray-400">
+                  ─────── All Categories ───────
+                </option>
+              )}
+              
+              {/* All existing categories */}
+              {categories
+                .filter((c) => c._id !== "all")
+                .map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.icon} {cat.displayName}
+                  </option>
+                ))}
+              
+              {/* General custom category option */}
+              <option disabled className="text-gray-400">
+                ────── Create New ──────
+              </option>
+              <option value="custom" className="font-medium text-green-600">
+                ➕ Create New Category
+              </option>
+            </select>
           )}
+          
+          {/* Helper text for custom category - positioned absolutely to not affect layout */}
+          {/* {(formData.category === "custom" || (formData.category && formData.category.startsWith("custom-"))) && (
+            <div className="absolute -bottom-6 left-0 text-xs text-green-600 dark:text-green-400">
+              💡 This will create a new category that others can use too!
+            </div>
+          )} */}
         </div>
+
         {/* Priority Select */}
         <select
           name="urgency"

@@ -8,6 +8,7 @@ import {
 import {
   MY_NEIGHBOURHOOD,
   WHY_NEIGHBOURLY_AID,
+  WHY_NEIGHBOURLY_AID_DASHBOARD,
   AVAILABLE_SUPPORT,
   REACH_OUT,
   LOGIN_ROUTE,
@@ -25,7 +26,7 @@ import Leaderboard from "./pages/LeaderBoard";
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user ? children : <Navigate to={LOGIN_ROUTE} replace />;
+  return user ? children : <Navigate to={WHY_NEIGHBOURLY_AID} replace />;
 };
 
 // Public Route component (redirects to home if already logged in)
@@ -49,7 +50,8 @@ const AppRoutes = () => {
             </PublicRoute>
           }
         />
-
+        {/* Public routes */}
+        <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
         {/* Protected routes */}
         <Route
           path="/"
@@ -61,21 +63,24 @@ const AppRoutes = () => {
         >
           <Route index element={<Navigate to={MY_NEIGHBOURHOOD} replace />} />
           <Route path={MY_NEIGHBOURHOOD} element={<MyNeighbourhood />} />
-          <Route path={WHY_NEIGHBOURLY_AID} element={<WhyNeigbourlyAId />} />
+          <Route path={WHY_NEIGHBOURLY_AID_DASHBOARD} element={<WhyNeigbourlyAId />} />
           <Route path={LEADERBOARD} element={<Leaderboard />} />
           {/* <Route path={AVAILABLE_SUPPORT} element={<AvailableSupport />} />
           <Route path={REACH_OUT} element={<ReachOut />} /> */}
         </Route>
 
-        {/* Catch all route - redirect based on auth */}
+       {/* Catch all route - redirects to WHY_NEIGHBOURHOOD if not logged in */}
         <Route
           path="*"
           element={
-            <Navigate to={user ? MY_NEIGHBOURHOOD : LOGIN_ROUTE} replace />
+            <Navigate to={user ? MY_NEIGHBOURHOOD : WHY_NEIGHBOURLY_AID} replace />
           }
         />
       </>
-    )
+    ),
+    {
+      // basename: import.meta.env.PROD ? "" : "/",
+    }
   );
   return <RouterProvider router={router} />;
 };

@@ -810,13 +810,13 @@ class TaskService {
         throw new Error("Helper has not marked task as completed yet");
       }
 
-      // Check if already approved/rejected
-      if (
-        task.requesterApproved !== null &&
-        task.requesterApproved !== undefined
-      ) {
-        throw new Error("Task completion has already been reviewed");
-      }
+      // // Check if already approved/rejected
+      // if (
+      //   task.requesterApproved !== null &&
+      //   task.requesterApproved !== undefined
+      // ) {
+      //   throw new Error("Task completion has already been reviewed");
+      // }
 
       // Check if task is awaiting approval
       if (task.status !== AWAITING_APPROVAL) {

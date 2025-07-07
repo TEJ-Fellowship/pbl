@@ -38,11 +38,18 @@ const HelpOthersContent = ({
     setSelectedCategory("all");
   };
 
+  const sortedCategories = [
+    ...categories.filter(cat => cat._id === "all"),
+    ...categories
+      .filter(cat => cat._id !== "all")
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  ];
+
   return (
     <div className="min-h-screen dark:bg-background-humbleDark dark:text-text-spotlight">
       {/* Category Filter - integrated within this component */}
       <CategoryFilter
-        categories={categories}
+        categories={sortedCategories}
         selectedCategory={selectedCategory}
         handleSetSelectedCategory={handleSetSelectedCategory}
       />

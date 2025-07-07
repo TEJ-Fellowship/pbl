@@ -45,21 +45,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    console.log("AuthContext logout called");
+    // console.log("AuthContext logout called");
     try {
       const response = await logoutAuth();
-      console.log("AuthContext logout response:", response);
+      // console.log("AuthContext logout response:", response);
 
       // Always clear user state on logout attempt
       setUser(null);
-      console.log("User state cleared");
+      // console.log("User state cleared");
 
       return response;
     } catch (error) {
       console.error("AuthContext logout error:", error);
       // Even if logout fails, clear user state
       setUser(null);
-      console.log("User state cleared despite error");
+      // console.log("User state cleared despite error");
       return { success: false, error: error.message };
     }
   };

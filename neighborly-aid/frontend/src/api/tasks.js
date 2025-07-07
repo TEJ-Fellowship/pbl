@@ -7,8 +7,8 @@ import config from "../config/config";
  */
 export const createTask = async (taskData) => {
   try {
-    console.log("Creating task with data:", taskData);
-    console.log("API URL:", `${config.API_BASE_URL}/api/tasks`);
+    // console.log("Creating task with data:", taskData);
+    // console.log("API URL:", `${config.API_BASE_URL}/api/tasks`);
 
     const response = await axios.post(
       `${config.API_BASE_URL}/api/tasks`,
@@ -159,7 +159,7 @@ export const cancelTask = async (taskId) => {
  */
 export const likeTask = async (taskId) => {
   try {
-    console.log("Liking task:", taskId);
+    // console.log("Liking task:", taskId);
     const response = await axios.post(
       `${config.API_BASE_URL}/api/tasks/${taskId}/like`,
       {},

@@ -19,6 +19,7 @@ const {
   selectHelper,
   markTaskAsCompletedByHelper,
   approveTaskCompletion,
+  getUserRecentCategories,
 } = require("../controllers/taskController");
 const auth = require("../middlewares/auth-middleware");
 
@@ -56,5 +57,8 @@ router.get("/:id/helpers", getTaskWithHelpers);
 router.post("/:id/select-helper/:helperId", auth, selectHelper);
 router.post("/:id/helper-complete", auth, markTaskAsCompletedByHelper);
 router.post("/:id/approve-completion", auth, approveTaskCompletion);
+
+// Add the missing recent categories route
+router.get("/categories/recent", auth, getUserRecentCategories);
 
 module.exports = router;

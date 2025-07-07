@@ -119,14 +119,20 @@ export const useCategories = () => {
         return existingCategory._id;
       }
 
+      // Extract emoji from the category name (if present)
+      const emojiMatch = categoryName.match(/^[^\w\s]/);
+      const icon = emojiMatch ? emojiMatch[0] : "📁"; // fallback icon if no emoji
+
+      // Remove emoji from display name
+      const displayName = categoryName.replace(/^[^\w\s]+/, "").trim();
+
       // Create new category
       const newCategory = await createCategory({
-        name: categoryName.toLowerCase().replace(/\s+/g, "-"),
-        displayName:
-          categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
-        icon: "💝", // Default icon for user-created categories
-        description: `User-created category: ${categoryName}`,
-        sortOrder: 999, // Put new categories at the end
+        name: displayName.toLowerCase().replace(/\s+/g, "-"),
+        displayName: displayName.charAt(0).toUpperCase() + displayName.slice(1),
+        icon, // Use the extracted emoji
+        description: `User-created category: ${displayName}`,
+        sortOrder: 999,
       });
 
       // Refresh categories to include the new one

@@ -38,12 +38,12 @@ export const submitTaskAction = async (formData) => {
       taskKarmaPoints: parseInt(formData.get("karmaPoints")) || 10,
     };
 
-    console.log("Submitting task data:", taskData);
+    // console.log("Submitting task data:", taskData);
 
     // Call the API to create the task
     const response = await createTask(taskData);
 
-    console.log("Task created successfully:", response);
+    // console.log("Task created successfully:", response);
 
     return { success: true, data: response };
   } catch (error) {

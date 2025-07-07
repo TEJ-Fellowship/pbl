@@ -7,7 +7,7 @@ const getUserDashboard = async (userId) => {
       `${config.API_BASE_URL}/api/users/${userId}`,
       { withCredentials: true }
     );
-    console.log("response in api", response.data);
+    // console.log("response in api", response.data);
     return response;
   } catch (error) {
     console.error("Dashboard API error:", {

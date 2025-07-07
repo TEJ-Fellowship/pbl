@@ -2,18 +2,19 @@ import {
   MY_NEIGHBOURHOOD,
   AVAILABLE_SUPPORT,
   WHY_NEIGHBOURLY_AID,
+  WHY_NEIGHBOURLY_AID_DASHBOARD,
   REACH_OUT,
   LEADERBOARD,
 } from "./routes";
 
 const navMenu = [
   {
-    route: MY_NEIGHBOURHOOD,
-    label: "My Neighbourhood",
+    route: WHY_NEIGHBOURLY_AID_DASHBOARD,
+    label: "Why Neighbourly Aid?",
   },
   {
-    route: WHY_NEIGHBOURLY_AID,
-    label: "Why Neighbourly Aid?",
+    route: MY_NEIGHBOURHOOD,
+    label: "My Neighbourhood",
   },
   {
     route: LEADERBOARD,
