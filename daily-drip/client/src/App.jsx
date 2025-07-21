@@ -6,6 +6,7 @@ function App() {
       <h1>Top Headlines</h1>
       <NewsFeed />
     </div>
+   
   )
 }
 

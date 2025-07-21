@@ -14,6 +14,8 @@ app.get('/api/news', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
+console.log('API Key:', process.env.NEWS_API_KEY);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
