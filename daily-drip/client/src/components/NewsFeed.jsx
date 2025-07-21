@@ -9,7 +9,7 @@ const NewsFeed = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/news')
+        const response = await axios.get('/api/news')
         setArticles(response.data.articles)
       } catch (error) {
         console.error('Error fetching news:', error)
