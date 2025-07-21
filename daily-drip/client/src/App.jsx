@@ -1,12 +1,16 @@
-import NewsFeed from './components/NewsFeed'
+import { useState } from "react";
+import NewsFeed from "./components/NewsFeed";
 
-function App() {
+export default function App() {
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
+
   return (
-    <div>
-      <NewsFeed />
-    </div>
-   
-  )
+    <NewsFeed
+      selectedCategory={selectedCategory}
+      onCategorySelect={setSelectedCategory}
+      searchKeyword={searchKeyword}
+      onSearch={setSearchKeyword}
+    />
+  );
 }
-
-export default App
