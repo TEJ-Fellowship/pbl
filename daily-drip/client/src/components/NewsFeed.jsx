@@ -49,9 +49,15 @@ const NewsFeed = () => {
       <Navbar onSearch={handleSearch} />
 
       <div className="news-feed grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-2 gap-y-9 p-4">
-        {filteredArticles.map((article, index) => (
-          <ArticleCard key={index} article={article} onClick={setSelectedArticle} />
-        ))}
+      {filteredArticles.length > 0 ? (
+          filteredArticles.map((article, index) => (
+            <ArticleCard key={index} article={article} onClick={setSelectedArticle} />
+          ))
+        ) : (
+          <p className="col-span-full text-center text-gray-500 dark:text-gray-400 italic">
+            No results found.
+          </p>
+        )}
 
         <Modal
           isOpen={!!selectedArticle}
