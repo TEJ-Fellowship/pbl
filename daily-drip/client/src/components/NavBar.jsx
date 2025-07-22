@@ -7,7 +7,7 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
 
   return (
     <>
-      <nav className="bg-white shadow px-4 py-3 flex flex-col md:flex-row items-center justify-between sticky top-0 z-50">
+      <nav className="bg-white dark:bg-gray-900 shadow px-4 py-3 flex flex-col md:flex-row items-center justify-between sticky top-0 z-50">
         <div className="flex items-center w-full md:w-auto gap-3">
           <button
             className="text-2xl mr-2"
@@ -19,7 +19,7 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
               <line x1="12" y1="5" x2="12" y2="19"/>
             </svg>
           </button>
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             Daily Drip
           </div>
         </div>
