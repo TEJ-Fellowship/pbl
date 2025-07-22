@@ -10,7 +10,7 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
       <nav className="bg-white dark:bg-gray-900 shadow px-4 py-3 flex flex-col md:flex-row items-center justify-between sticky top-0 z-50">
         <div className="flex items-center w-full md:w-auto gap-3">
           <button
-            className="text-2xl mr-2"
+            className="text-2xl mr-2 text-gray-800 dark:text-gray-100"
             aria-label="Open Menu"
             onClick={() => setIsPanelOpen(true)}
           >
@@ -29,7 +29,9 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
       </nav>
       <div
         className={`
-          fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg
+          fixed top-0 left-0 h-full w-64 
+          bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100
+          z-50 shadow-lg
           transform transition-transform duration-300 ease-in-out
           ${isPanelOpen ? "translate-x-0" : "-translate-x-full"}
         `}
@@ -37,7 +39,7 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
         <div className="p-6">
           <button
             aria-label="Close Menu"
-            className="mb-4"
+            className="mb-4 text-gray-800 dark:text-gray-100"
             onClick={() => setIsPanelOpen(false)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

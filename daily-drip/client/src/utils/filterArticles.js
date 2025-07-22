@@ -12,14 +12,15 @@ const filterArticles = (articles, selectedCategory="", searchKeyword="") => {
   }
   if (searchKeyword) {
     const lowerKeyword = searchKeyword.toLowerCase();
-    result = result.filter(
-      (article) =>
-        article.title?.toLowerCase().includes(lowerKeyword) ||
-        article.description?.toLowerCase().includes(lowerKeyword)
-    );
+    result = result.filter((article) => {
+      const title = article.title?.toLowerCase() || "";
+      const description = article.description?.toLowerCase() || "";
+      return title.includes(lowerKeyword) || description.includes(lowerKeyword);
+    });
   }
+
   return result;
-}
+};
 
 export default filterArticles;
   
