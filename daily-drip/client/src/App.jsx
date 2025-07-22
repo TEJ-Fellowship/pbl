@@ -1,15 +1,20 @@
+import { useState } from "react";
 import { ThemeProvider } from 'next-themes'
-import NewsFeed from './components/NewsFeed'
+import NewsFeed from "./components/NewsFeed";
 
-function App() {
+export default function App() {
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
+
   return (
     <ThemeProvider attribute="class" defaultTheme="system">
-    <div>
-      <NewsFeed />
-    </div>
+    <NewsFeed
+      selectedCategory={selectedCategory}
+      onCategorySelect={setSelectedCategory}
+      searchKeyword={searchKeyword}
+      onSearch={setSearchKeyword}
+    />
   </ThemeProvider>
-   
-  )
+  
+  );
 }
-
-export default App
