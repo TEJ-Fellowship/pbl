@@ -5,6 +5,7 @@ import ArticleCard from "./ArticleCard";
 import Navbar from "./NavBar";
 import categorizeArticle from "../utils/categorizeArticle";
 import filterArticles from "../utils/filterArticles";
+import Pagination from "./Pagination";
 
 const NewsFeed = ({
   selectedCategory = "",
@@ -15,6 +16,9 @@ const NewsFeed = ({
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage, setPostsPerPage] = useState(8);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -33,6 +37,10 @@ const NewsFeed = ({
   }, []);
 
     const filteredArticles = filterArticles(articles, selectedCategory, searchKeyword);
+
+    const lastPostIndex = currentPage * postsPerPage;
+    const firstPostIndex = lastPostIndex - postsPerPage;
+    const currentPosts = filteredArticles.slice(firstPostIndex, lastPostIndex);
 
   if (loading) {
     return (
@@ -54,7 +62,7 @@ const NewsFeed = ({
             No news found for this category.
           </div>
         ) : (
-          filteredArticles.map((article, idx) => (
+          currentPosts.map((article, idx) => (
             <ArticleCard
               key={idx}
               article={article}
@@ -68,6 +76,7 @@ const NewsFeed = ({
           article={selectedArticle}
         />
       </div>
+      <Pagination postsPerPage={postsPerPage} totalPosts={filteredArticles.length} setCurrentPage={setCurrentPage} />
     </>
   );
 };
