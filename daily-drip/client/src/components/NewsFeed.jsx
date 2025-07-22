@@ -48,7 +48,7 @@ const NewsFeed = ({
   return (
     <>
       <Navbar onSearch={onSearch} onCategorySelect={onCategorySelect} />
-      <div className="news-feed grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-2 gap-y-9 p-4">
+      <div className="news-feed grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 py-8">
         {filteredArticles.length === 0 ? (
           <div className="col-span-full text-center text-gray-600">
             No news found for this category.
