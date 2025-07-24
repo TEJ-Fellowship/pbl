@@ -1,0 +1,46 @@
+/* HOME PAGE STYLES */
+
+.home-page {
+  padding: 2rem;
+  background-color: #f9f9f9;
+  min-height: 100vh;
+}
+
+.search-input-main {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.8rem 1rem;
+  margin: 1rem auto 2rem;
+  display: block;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border 0.3s;
+}
+
+.search-input-main:focus {
+  border-color: #ff3c3c;
+  outline: none;
+}
+
+.movie-grid {
+  display: grid;
+  /* grid-template-columns: repeat(auto-fit, minmax(250px, 3fr)); */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  justify-items: center;
+  padding: 1rem;
+}
+
+.no-movies-message {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 2rem;
+}
+
+@media (max-width: 600px) {
+  .search-input-main {
+    max-width: 100%;
+  }
+}
