@@ -1,0 +1,138 @@
+/* Main navbar background */
+.navbar {
+  /* background-color: #e3f2fd; */
+  background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  /* position: fixed; */
+  top: 0;
+  z-index: 999;
+}
+
+/* For the text in the navbar */
+.navbar a {
+  color: white;
+  text-decoration: none;
+  margin: 0 15px;
+  font-weight: 500;
+}
+
+/* Optional: hover effect */
+.navbar a:hover {
+  color: #ffcccc; /* soft white on hover */
+}
+.navbar-title {
+  color: white !important;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+
+/* Layout container */
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1.2rem;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* Logo and Title */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.navbar-logo {
+  width: 40px;
+  margin-right: 0.8rem;
+}
+
+.navbar-title {
+  color: black;
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+/* Mobile toggle button */
+.navbar-toggler {
+  display: none;
+  font-size: 1.8rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+/* Nav links container */
+.navbar-collapse {
+  display: flex;
+}
+
+.navbar-nav {
+  list-style: none;
+  display: flex;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  list-style: none;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: black;
+  font-size: 1rem;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: #007bff;
+}
+
+/* Responsive Styles */
+@media screen and (max-width: 768px) {
+  .navbar-toggler {
+    display: block;
+  }
+
+  .navbar-collapse {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    background-color: #e3f2fd;
+    padding: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .navbar-collapse.show {
+    display: flex;
+  }
+
+  .navbar-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+}
+
+@media screen and (max-width: 380px) {
+  #navbar-title-text {
+    font-size: 1.1rem;
+  }
+
+  #navbar-mobileview-btn {
+    font-size: 1rem;
+  }
+}
+
+@media screen and (max-width: 340px) {
+  #navbar-mobileview-btn {
+    font-size: 0.8rem;
+  }
+}
