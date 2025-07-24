@@ -18,7 +18,7 @@ const NewsFeed = ({
   const [selectedArticle, setSelectedArticle] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage, setPostsPerPage] = useState(8);
+  const [postsPerPage] = useState(8);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -36,7 +36,11 @@ const NewsFeed = ({
     fetchNews();
   }, []);
 
-  const filteredArticles = filterArticles(articles, selectedCategory, searchKeyword);
+  const filteredArticles = filterArticles(
+    articles,
+    selectedCategory,
+    searchKeyword
+  );
 
   const lastPostIndex = currentPage * postsPerPage;
   const firstPostIndex = lastPostIndex - postsPerPage;
@@ -56,7 +60,7 @@ const NewsFeed = ({
   return (
     <>
       <Navbar onSearch={onSearch} onCategorySelect={onCategorySelect} />
-      <div className="news-feed grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 py-8">
+      <div className="news-feed grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 py-8 max-w-screen-xl mx-auto">
         {filteredArticles.length === 0 ? (
           <div className="col-span-full text-center text-gray-600">
             No news found for this category.
@@ -77,7 +81,11 @@ const NewsFeed = ({
         />
       </div>
 
-      <Pagination postsPerPage={postsPerPage} totalPosts={filteredArticles.length} setCurrentPage={setCurrentPage} />
+      <Pagination
+        postsPerPage={postsPerPage}
+        totalPosts={filteredArticles.length}
+        setCurrentPage={setCurrentPage}
+      />
     </>
   );
 };

@@ -2,17 +2,17 @@ import ArticleImage from './ArticleImage'
 import ArticleContent from './ArticleContent'
 
 const ArticleCard = ({ article, onClick }) => (
-    <div
-    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md dark:shadow-gray-700 overflow-hidden cursor-pointer hover:shadow-lg transition"
-      onClick={() => onClick(article)}
-    >
-      <ArticleImage urlToImage={article.urlToImage} title={article.title} />
-      <ArticleContent
-        title={article.title}
-        description={article.description}
-        source={article.source}
-      />
-    </div>
-  )
+  <div
+    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md w-64 mx-auto overflow-hidden cursor-pointer hover:shadow-lg transition"
+    onClick={() => onClick(article)}
+  >
+    <ArticleImage urlToImage={article.urlToImage} title={article.title} />
+    <ArticleContent
+      title={article.title}
+      description={article.description}
+      source={article.source}
+    />
+  </div>
+)
 
-  export default ArticleCard
+export default ArticleCard
