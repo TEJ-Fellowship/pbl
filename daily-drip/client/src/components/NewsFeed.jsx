@@ -36,11 +36,11 @@ const NewsFeed = ({
     fetchNews();
   }, []);
 
-    const filteredArticles = filterArticles(articles, selectedCategory, searchKeyword);
+  const filteredArticles = filterArticles(articles, selectedCategory, searchKeyword);
 
-    const lastPostIndex = currentPage * postsPerPage;
-    const firstPostIndex = lastPostIndex - postsPerPage;
-    const currentPosts = filteredArticles.slice(firstPostIndex, lastPostIndex);
+  const lastPostIndex = currentPage * postsPerPage;
+  const firstPostIndex = lastPostIndex - postsPerPage;
+  const currentPosts = filteredArticles.slice(firstPostIndex, lastPostIndex);
 
   if (loading) {
     return (
@@ -76,6 +76,7 @@ const NewsFeed = ({
           article={selectedArticle}
         />
       </div>
+
       <Pagination postsPerPage={postsPerPage} totalPosts={filteredArticles.length} setCurrentPage={setCurrentPage} />
     </>
   );
