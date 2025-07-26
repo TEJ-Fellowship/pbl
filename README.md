@@ -13,7 +13,7 @@ This monorepo contains multiple projects built by our fellows as they progress t
 - **Individual Project Folders**: Each project lives in its own dedicated folder with independent dependencies
 - **Documentation**: Project guidelines and development standards
 - **Collaborative Learning**: Code reviews, pair programming, and knowledge sharing
-- **AI-Enhanced Development**: Leveraging modern AI tools for accelerated learning
+- **Modern Development Tools**: Using contemporary development tools and practices
 
 ## 📁 Repository Structure
 
@@ -42,9 +42,9 @@ pbl/
 Before you begin, ensure you have the following installed:
 
 - **Git**
-- **Cursor** (recommended AI-powered code editor)
+- **Cursor** (recommended code editor)
 - **Node.js** (v18 or higher) - for individual projects as needed
-- **npm** or **yarn** - for individual projects as needed
+- **npm** - for individual projects as needed
 
 ### Initial Setup
 
@@ -79,7 +79,7 @@ Before you begin, ensure you have the following installed:
 3. **Follow the Development Workflow**
    - Create issues for features
    - Use feature branches
-   - Leverage AI tools for learning and development
+   - Follow development best practices
    - Submit pull requests for code review
 
 ## 📋 Development Guidelines
@@ -90,30 +90,30 @@ For detailed development standards, workflow processes, and best practices, plea
 
 Key highlights:
 
-- AI-assisted development (encouraged!)
+- Modern development practices
 - User story-driven development
 - Proper Git workflow and branching strategy
 - Code review requirements
 - Testing standards
 
-## 🤖 AI-Enhanced Learning
+## 🛠 Development Learning
 
-We strongly encourage the use of AI tools throughout your development journey:
+We encourage active learning throughout your development journey:
 
-- **Learning**: Ask AI to explain complex concepts
-- **Development**: Generate boilerplate and get implementation suggestions
-- **Debugging**: Get help understanding and fixing errors
-- **Code Review**: Request AI feedback on your code quality
+- **Learning**: Research and understand complex concepts
+- **Development**: Write clean, maintainable code
+- **Debugging**: Develop strong problem-solving skills
+- **Code Review**: Participate in peer code reviews
 
-Remember: Always understand the AI-generated code before implementing it!
+Remember: Always understand the code you write and implement!
 
 ## 🔄 Workflow Summary
 
 1. **Plan**: Create user stories and break them into tasks
-2. **Develop**: Use feature branches and leverage AI assistance
+2. **Develop**: Use feature branches and follow best practices
 3. **Review**: Submit PRs with detailed descriptions
 4. **Collaborate**: Participate in code reviews and pair programming
-5. **Learn**: Continuously ask questions and seek understanding
+5. **Learn**: Continuously research and seek understanding
 
 ## 🤝 Getting Help
 
@@ -130,12 +130,10 @@ By the end of the bootcamp, you'll have:
 
 - Multiple full-stack projects in your portfolio
 - Experience with modern development workflows
-- Proficiency in AI-assisted development
+- Proficiency in software development practices
 - Strong collaboration and code review skills
 - A solid foundation in software engineering best practices
 
 ---
 
 **Happy Coding! 🚀**
-
-_Questions or suggestions? Open an issue or reach out to your mentor._

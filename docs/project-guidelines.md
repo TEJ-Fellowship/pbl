@@ -93,7 +93,18 @@ As a [persona], I want to [do something] so that [reason/benefit]
 - Prioritize stories based on user value
 - Define clear acceptance criteria before development starts
 
-## 3. Development Workflow
+## 3. Wireframe Design
+
+Before starting development, create wireframes for your application. This helps visualize the user interface and user experience, making development more efficient and reducing the need for major changes later.
+
+### Requirements:
+
+- Create wireframes for all main pages and user flows
+- Include both desktop and mobile layouts
+- Use tools like Figma, Balsamiq, or pen and paper
+- Share wireframes with your team for feedback before coding
+
+## 4. Development Workflow
 
 ### Issue Management
 
@@ -121,98 +132,113 @@ main
 
 1. Create issue for the feature/bug
 2. Create feature branch from main
-3. Develop iteratively (see AI-Assisted Development section)
+3. Develop iteratively following best practices
 4. Create pull request when ready
 5. Request peer review
 6. Address feedback and merge
 
-## 4. AI-Assisted Development with Cursor
+## 5. Development Best Practices
 
-### Proactive AI Usage - ENCOURAGED!
+### Proactive Learning - ENCOURAGED!
 
-We strongly encourage you to use AI tools throughout your development process. AI is a powerful learning and development tool that can accelerate your understanding and productivity.
+We strongly encourage you to actively learn throughout your development process. Research, documentation, and community resources are powerful tools that can accelerate your understanding and productivity.
 
-### Best Practices for AI Usage
+### Best Practices for Development
 
-- **Iterative Prompting**: Break down complex problems into smaller, focused prompts
-- **Learn as You Go**: Use AI to explain concepts you don't understand
-- **Code Understanding**: Always ask AI to explain generated code before implementing
-- **Conceptual Learning**: Use AI to clarify programming concepts and patterns
+- **Iterative Development**: Break down complex problems into smaller, manageable tasks
+- **Learn as You Go**: Research and understand concepts you don't know
+- **Code Understanding**: Always understand the code you write before implementing
+- **Conceptual Learning**: Study programming concepts and patterns
 
-### When and How to Use AI Tools
+### When and How to Use Development Resources
 
 #### For Learning & Understanding
 
-- Ask AI to explain complex code sections in simple terms
-- Request explanations of programming concepts and patterns
-- Get clarification on error messages and debugging approaches
+- Research complex code sections and understand them thoroughly
+- Study programming concepts and patterns from documentation
+- Learn debugging approaches and error handling techniques
 - Understand architectural decisions and design patterns
 
 #### For Development
 
-- Generate boilerplate code and starter templates
-- Get suggestions for implementing specific features
-- Debug issues with detailed error analysis
+- Write clean, maintainable code from scratch
+- Implement features using best practices and patterns
+- Debug issues with systematic problem-solving approaches
 - Optimize existing code for performance or readability
 
 #### For Code Review
 
-- Ask AI to review your code for potential issues
-- Get suggestions for improvements and best practices
-- Understand security implications of your implementations
+- Review your own code for potential issues
+- Apply best practices and coding standards
+- Consider security implications of your implementations
 
-### Effective Prompting Strategies
+### Effective Development Strategies
 
-- ❌ **Poor**: "Build me a login system"
-- ✅ **Good**: "Explain how JWT authentication works, then help me implement a login endpoint that validates user credentials and returns a JWT token"
+- ❌ **Poor**: Copy-paste code without understanding
+- ✅ **Good**: Research how JWT authentication works, then implement a login endpoint that validates user credentials and returns a JWT token
 
-- ❌ **Poor**: "Fix this bug"
-- ✅ **Good**: "I'm getting a 'Cannot read property of undefined' error on line 23. Here's my code: [paste code]. Can you explain what's happening and suggest a fix?"
+- ❌ **Poor**: Ignore error messages
+- ✅ **Good**: When you get a 'Cannot read property of undefined' error on line 23, research the issue and understand what's happening before fixing it
 
-### AI Learning Workflow
+### Learning Workflow
 
-1. Encounter something new → Ask AI to explain the concept
-2. Before implementing → Ask AI to break down the approach
-3. After generating code → Ask AI to explain what the code does
-4. When debugging → Use AI to understand error messages
-5. During code review → Ask AI to identify potential improvements
+1. Encounter something new → Research and understand the concept
+2. Before implementing → Plan your approach and break it down
+3. After writing code → Review and understand what the code does
+4. When debugging → Research error messages and understand the root cause
+5. During code review → Identify potential improvements and best practices
 
-## 5. Commit Standards
+## 6. Commit Standards
 
-### AI-Enhanced Commit Format
+### Semantic Commit Messages
 
-```
-[Clear description of what this commit accomplishes]
+Use semantic commit messages to clearly communicate the purpose and scope of your changes. This helps with project history, automated changelog generation, and code review processes.
 
-## AI Prompts Used
-[List the key prompts you used with AI tools]
-
-## Manual Changes
-[Describe what manual changes you did]
-
-## Understanding Check
-[Briefly explain what the code does in your own words]
-```
-
-### Example
+### Commit Message Format
 
 ```
-feat: Implemented custom form validation hook for user registration with real-time validation and error handling
+<type>[optional scope]: <description>
 
-## AI Prompts Used
-- "Explain how React useEffect hook works with cleanup functions"
-- "Help me create a custom hook for managing form state with validation"
+[optional body]
 
-## Manual Changes
-- AI generated the basic hook structure and validation logic
-- I manually added specific validation rules for our user registration form
-- I wrote the error handling and user feedback components myself
-
-## Understanding Check
-This commit adds a reusable useFormValidation hook that manages form state, validates inputs in real-time, and provides error messages. The hook uses useEffect to validate on input changes and useCallback to optimize performance.
+[optional footer(s)]
 ```
 
-## 6. Pull Request Process
+### Types
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, etc.)
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **chore**: Changes to the build process or auxiliary tools
+
+### Examples
+
+```
+feat: add user authentication with JWT tokens
+
+fix: resolve login form validation error
+
+docs: update API documentation for user endpoints
+
+refactor: extract form validation logic into custom hook
+
+test: add unit tests for user registration component
+
+chore: update dependencies to latest versions
+```
+
+### Best Practices
+
+- Use the imperative mood ("add" not "added" or "adds")
+- Keep the description under 50 characters
+- Use the body to explain what and why, not how
+- Reference issues and pull requests in the footer
+
+## 7. Pull Request Process
 
 ### Before Creating PR
 
@@ -224,7 +250,7 @@ This commit adds a reusable useFormValidation hook that manages form state, vali
 
 - **Detailed Description**: Explain what was implemented and why
 - **Screenshots**: Include before/after screenshots for UI changes
-- **Testing Plan**: Describe how you tested the changes
+- **Testing Plan**: Describe how to manual test the changes
 - **Breaking Changes**: Clearly document any breaking changes
 
 ### PR Template
@@ -258,7 +284,7 @@ E.g.:
 Any other relevant information
 ```
 
-## 7. Code Review Process
+## 8. Code Review Process
 
 ### For Reviewers
 
@@ -283,7 +309,7 @@ Any other relevant information
 - Approve only when all concerns are addressed
 - Use GitHub's suggestion feature for minor changes
 
-## 8. Code Quality Standards
+## 9. Code Quality Standards
 
 ### General Principles
 
@@ -299,22 +325,7 @@ Any other relevant information
 - Comment complex logic
 - Remove unused code and imports
 
-## 9. Testing Requirements
-
-### Minimum Testing Standards
-
-- Unit tests for all utility functions
-- Integration tests for API endpoints
-- Component tests for React components
-- End-to-end tests for critical user flows
-
-### Testing Strategy
-
-- Write tests before or alongside development
-- Aim for meaningful test coverage, not just high percentages
-- Test both happy path and error scenarios
-
-## 10. Definition of Done
+## 09. Definition of Done
 
 A feature is considered complete when:
 
@@ -324,18 +335,18 @@ A feature is considered complete when:
 - [ ] No breaking changes introduced
 - [ ] Performance impact assessed
 
-## 11. Common Pitfalls to Avoid
+## 10. Common Pitfalls to Avoid
 
-- **Passive AI Usage**: Don't just copy-paste AI code without understanding it
-- **Skipping the Learning**: Always ask AI to explain concepts you don't understand
-- **Single Large Prompts**: Break complex requests into smaller, focused prompts
-- **Skipping Reviews**: Every PR needs human review, even AI-generated code
+- **Passive Code Usage**: Don't just copy-paste code without understanding it
+- **Skipping the Learning**: Always research and understand concepts you don't know
+- **Single Large Features**: Break complex features into smaller, manageable tasks
+- **Skipping Reviews**: Every PR needs human review
 - **Large Commits**: Keep commits focused and atomic
-- **Ignoring Edge Cases**: Test boundary conditions and ask AI about potential issues
-- **Poor Commit Messages**: Be descriptive and document your AI usage
-- **Not Asking "Why"**: Always understand the reasoning behind AI suggestions
+- **Ignoring Edge Cases**: Test boundary conditions and consider potential issues
+- **Poor Commit Messages**: Be descriptive and document your changes
+- **Not Asking "Why"**: Always understand the reasoning behind your implementations
 
-## 12. Resources & Support
+## 11. Resources & Support
 
 ### Getting Help
 
@@ -345,11 +356,11 @@ A feature is considered complete when:
 
 ### Useful Tools
 
-- **Cursor**: AI-powered code editor
+- **Cursor**: Modern code editor
 - **GitHub Issues**: Project management
 - **Pull Requests**: Code review process
 - **GitHub Actions**: CI/CD pipeline
 
 ### Questions?
 
-If you have questions about these guidelines, reach out to your mentor.
+If you have questions about these guidelines, reach out to your TF/mentor.
