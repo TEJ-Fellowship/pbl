@@ -29,16 +29,27 @@ const projectSchema = new mongoose.Schema(
         type: String,
       },
     ],
-
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     collaborators: [
       {
-        user: {
+        userId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
+          required: true,
         },
-        name: String,
-        githubUsername: String,
-        role: String,
+        role: {
+          type: String,
+          enum: ["contributor", "reviewer", "maintainer"],
+          default: "contributor",
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
     // Star system
@@ -52,38 +63,8 @@ const projectSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    // Reviews and feedback
-    reviews: [
-      {
-        reviewer: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        rating: {
-          type: Number,
-          min: 1,
-          max: 5,
-          required: true,
-        },
-        comment: String,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-    // Meta information
-    cohort: {
-      type: String,
-    },
     week: {
       type: Number,
-    },
-    difficulty: {
-      type: String,
-      enum: ["Beginner", "Intermediate", "Advanced"],
-      default: "Intermediate",
     },
     featured: {
       type: Boolean,
@@ -147,6 +128,17 @@ projectSchema.methods.incrementView = function (userId = null) {
     this.viewedBy.push({ user: userId });
   }
   return this.save();
+};
+
+// Method to check if user is a collaborator
+projectSchema.methods.isCollaborator = function (userId) {
+  return this.collaborators.some((c) => c.userId.equals(userId));
+};
+
+// Method to get collaborator role
+projectSchema.methods.getCollaboratorRole = function (userId) {
+  const collaborator = this.collaborators.find((c) => c.userId.equals(userId));
+  return collaborator ? collaborator.role : null;
 };
 
 export default mongoose.model("Project", projectSchema);

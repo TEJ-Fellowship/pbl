@@ -488,7 +488,7 @@ router.post("/logout", authenticateToken, async (req, res) => {
 router.get(
   "/users",
   authenticateToken,
-  requireRole(["admin", "instructor"]),
+  requirePermission("view_users"),
   async (req, res) => {
     try {
       const { page = 1, limit = 20, role, cohort, status } = req.query;
@@ -555,6 +555,32 @@ router.get(
     } catch (error) {
       console.error("Get invites error:", error);
       res.status(500).json({ message: "Failed to get invites" });
+    }
+  }
+);
+
+// Update user permissions
+router.post(
+  "/update-permissions",
+  authenticateToken,
+  requireRole("admin"),
+  async (req, res) => {
+    try {
+      const users = await User.find();
+
+      for (const user of users) {
+        // Get fresh permissions based on role
+        const rolePermissions = User.getRolePermissions(user.role);
+        user.permissions = rolePermissions;
+        await user.save();
+      }
+
+      res.json({
+        message: "All user permissions have been updated successfully",
+      });
+    } catch (error) {
+      console.error("Update permissions error:", error);
+      res.status(500).json({ message: "Failed to update permissions" });
     }
   }
 );

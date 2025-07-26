@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
+import { projectsApi } from "../../services/api";
+import ProjectCard from "./ProjectCard";
 
-const ProjectList = () => {
+export default function ProjectList() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -9,13 +10,11 @@ const ProjectList = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/projects`
-        );
+        const response = await projectsApi.getAll();
         setProjects(response.data);
-        setLoading(false);
       } catch (err) {
-        setError("Failed to fetch projects");
+        setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -23,39 +22,35 @@ const ProjectList = () => {
     fetchProjects();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-600">
+        <p>Error loading projects: {error}</p>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <p>No projects found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
-        <div key={project._id} className="p-4 border rounded-lg shadow-sm">
-          <h2 className="text-xl font-bold">{project.title}</h2>
-          <p className="text-gray-600">{project.description}</p>
-          <div className="mt-2">
-            <a
-              href={project.githubUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-700"
-            >
-              GitHub Repository
-            </a>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {project.technologies.map((tech, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 text-sm bg-gray-200 rounded-full"
-              >
-                {tech}
-              </span>
-            ))}
-          </div>
-        </div>
+        <ProjectCard key={project._id} project={project} />
       ))}
     </div>
   );
-};
-
-export default ProjectList;
+}

@@ -99,6 +99,8 @@ userSchema.statics.getRolePermissions = function (role) {
       "edit_own_project",
       "star_project",
       "comment_project",
+      "view_users",
+      "manage_collaborators",
     ],
     mentor: [
       "create_project",
@@ -107,6 +109,8 @@ userSchema.statics.getRolePermissions = function (role) {
       "comment_project",
       "review_project",
       "feature_project",
+      "view_users",
+      "manage_collaborators",
     ],
     instructor: [
       "create_project",
@@ -119,6 +123,8 @@ userSchema.statics.getRolePermissions = function (role) {
       "invite_mentor",
       "moderate_content",
       "view_analytics",
+      "view_users",
+      "manage_collaborators",
     ],
     admin: [
       "create_project",
@@ -134,6 +140,8 @@ userSchema.statics.getRolePermissions = function (role) {
       "view_analytics",
       "manage_users",
       "system_settings",
+      "view_users",
+      "manage_collaborators",
     ],
   };
 
