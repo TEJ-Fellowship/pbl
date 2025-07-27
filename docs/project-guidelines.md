@@ -23,11 +23,10 @@ This document outlines the development process and standards for all projects in
 
 **Frontend Application**
 
-1. Navigate to the root directory: `PBL`
+1. Navigate to the root directory: `PBL1/(your-project-folder)`
 2. Execute the following commands in the terminal:
    ```bash
-   npm create vite@latest my-app -- --template react
-   cd my-app
+   npm create vite@latest . -- --template react
    ```
 3. Start the project
 4. Tailwind CSS setup:
