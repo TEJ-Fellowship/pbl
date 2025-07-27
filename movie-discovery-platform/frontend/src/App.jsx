@@ -1,41 +1,50 @@
-// src/App.jsx
-
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
-// Components
-import Navbar from './components/Navbar/Navbar';
-import Footer from './components/Footer/Footer';
-
-// Pages
-import Home from './pages/Home';
-import TopRated from './pages/TopRated';
-import Upcoming from './pages/Upcoming';
-import Genres from './pages/Genres';
-import Contact from './pages/Contact';
-import PageNotFound from './pages/PageNotFound';
-import MovieDetails from './pages/MovieDetails';
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import  Home  from "./pages/Home";
+import  About  from "./pages/About";
+import  Movie  from "./pages/Movie";
+import  Contact from "./pages/Contact";
+import AppLayout from "./components/layout/AppLayout";
+import "./App.css";
+import  ErrorPage  from "./pages/ErrorPage";
+import getMoviesData  from "./api/GetAPIData";
+import MovieDetails  from "./components/UI/MovieDetails";
+import getMovieDetails  from "./api/GetMovieDetails";
 
 const App = () => {
-  return (
-    <React.Fragment>
-      <Router>
-        <Navbar />
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <AppLayout />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          path: "/",
+          element: <Home />,
+        },
+        {
+          path: "/about",
+          element: <About />,
+        },
+        {
+          path: "/movie",
+          element: <Movie />,
+          loader: getMoviesData,
+        },
+        {
+          path: "/movie/:movieID",
+          element: <MovieDetails />,
+          loader: getMovieDetails,
+        },
+        {
+          path: "/contact",
+          element: <Contact />,
+          // action: contactData,
+        },
+      ],
+    },
+  ]);
 
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/top-rated" element={<TopRated />} />
-          <Route path="/upcoming" element={<Upcoming />} />
-          <Route path="/genres" element={<Genres />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="*" element={<PageNotFound />} />
-          <Route path='/movie/:id' element={<MovieDetails/>} />
-        </Routes>
-
-        <Footer />
-      </Router>
-    </React.Fragment>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default App;
