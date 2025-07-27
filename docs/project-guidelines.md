@@ -325,7 +325,7 @@ Any other relevant information
 - Comment complex logic
 - Remove unused code and imports
 
-## 09. Definition of Done
+## 10. Definition of Done
 
 A feature is considered complete when:
 
@@ -335,7 +335,7 @@ A feature is considered complete when:
 - [ ] No breaking changes introduced
 - [ ] Performance impact assessed
 
-## 10. Common Pitfalls to Avoid
+## 11. Common Pitfalls to Avoid
 
 - **Passive Code Usage**: Don't just copy-paste code without understanding it
 - **Skipping the Learning**: Always research and understand concepts you don't know
@@ -346,7 +346,7 @@ A feature is considered complete when:
 - **Poor Commit Messages**: Be descriptive and document your changes
 - **Not Asking "Why"**: Always understand the reasoning behind your implementations
 
-## 11. Resources & Support
+## 12. Resources & Support
 
 ### Getting Help
 
