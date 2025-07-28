@@ -2,7 +2,7 @@ import { useState } from "react";
 import SearchBar from './SearchBar';
 import Category from "./Category";
 
-const Navbar = ({ onSearch, onCategorySelect }) => {
+const Navbar = ({ onSearch, onCategorySelect, onToggleBookmarks, showBookmarks }) => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   return (
@@ -15,8 +15,8 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
             onClick={() => setIsPanelOpen(true)}
           >
             <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <rect x="6" y="5" width="12" height="14" rx="2"/>
-              <line x1="12" y1="5" x2="12" y2="19"/>
+              <rect x="6" y="5" width="12" height="14" rx="2" />
+              <line x1="12" y1="5" x2="12" y2="19" />
             </svg>
           </button>
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -27,6 +27,8 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
           <SearchBar onSearch={onSearch} />
         </div>
       </nav>
+
+      {/* Sidebar Panel */}
       <div
         className={`
           fixed top-0 left-0 h-full w-64 
@@ -43,17 +45,48 @@ const Navbar = ({ onSearch, onCategorySelect }) => {
             onClick={() => setIsPanelOpen(false)}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+
+          {/* Categories */}
           <Category
             onSelect={cat => {
               setIsPanelOpen(false);
               onCategorySelect?.(cat);
             }}
           />
+
+          {/* Divider */}
+          <hr className="my-6 border-gray-300 dark:border-gray-700" />
+
+          {/* Bookmark Toggle Button */}
+          <button
+            onClick={() => {
+              onToggleBookmarks?.();
+              setIsPanelOpen(false);
+            }}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition"
+            aria-pressed={showBookmarks}
+            aria-label="Toggle Bookmarks View"
+          >
+            {/* You can add a bookmark icon here if you like */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill={showBookmarks ? "currentColor" : "none"}
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 5v14l7-7 7 7V5a2 2 0 00-2-2H7a2 2 0 00-2 2z" />
+            </svg>
+            {showBookmarks ? "Back to News" : "View Bookmarks"}
+          </button>
         </div>
       </div>
+
+      {/* Overlay when sidebar is open */}
       {isPanelOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-40"
