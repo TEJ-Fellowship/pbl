@@ -8,7 +8,7 @@ function App() {
 
   return (
     <>
-    <h1>shitty website</h1>
+    <h1>normal website</h1>
     </>
   )
 }
