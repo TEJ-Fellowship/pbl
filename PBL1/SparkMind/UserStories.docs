@@ -1,0 +1,33 @@
+Issues
+
+Homepage:
+-Welcome the user
+-Have a clean look
+-Buttom to start quiz
+
+ChooseTopic :
+-Display 3-4 categories
+-Start quiz after selection
+-Show active selection clearly
+
+Question:
+-Render 5 questions one-by-one
+-Timer of 2 minutes
+-Each question has 4 options (🟢 1 correct, 🔴 3 incorrect)
+-Only one option can be selected per question
+-Move to next only after answering
+
+AnswerFeedback:
+-Highlight correct answer with green
+-Highlight clicked wrong answer as red
+-Show short explanation below (optional)
+
+ResultCard :
+-Show score out of 5
+-Show "Try Again" or "Choose another topic"
+
+Streak :(optional)
+-Store streak in localStorage
+-Increase streak only once per day
+-Reset if user misses a day
+-Show current streak on homepage or result screen
