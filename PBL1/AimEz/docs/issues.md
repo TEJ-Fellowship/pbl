@@ -24,5 +24,5 @@
     Issue 5: Calender Streak tracker
     - build streak calender component.
     - show a row of days with coloured boxes
-    - highlighting tha gays where tasks were done.
+    - highlighting tha days where tasks were done.
     - Integating with data of saved streak.
