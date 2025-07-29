@@ -43,59 +43,57 @@ User Story 2
 As a user, I want a clear "Start Quiz" button on the homepage so that I can begin the learning session quickly.
 
 🎛️ ChooseTopic
+
 User Story 3
-As a learner, I want to choose from categories like Tech Trends or Logic so that I can focus on topics that interest me.
+As a user, I want to see topic to be highlighted clearly so that I know which quiz I’m about to take.
 
 User Story 4
-As a user, I want the selected topic to be highlighted clearly so that I know which quiz I’m about to take.
-
-User Story 5
 As a user, I want the quiz to start immediately after I select a topic so that the flow feels quick and engaging.
 
 ❓ Question
-User Story 6
+User Story 5
 As a learner, I want to answer 5 questions one at a time so that I can focus without being overwhelmed.
 
-User Story 7
+User Story 6
 As a user, I want a visible 2-minute timer so that I stay aware of my time and think quickly.
 
-User Story 8
+User Story 7
 As a quiz taker, I want each question to have 4 options (1 correct, 3 incorrect) or a True/False format so that the quiz feels diverse and challenging.
 
-User Story 9
+User Story 8
 As a user, I want to be able to select only one option per question so that I don’t accidentally choose multiple answers.
 
-User Story 10
+User Story 9
 As a user, I want to move to the next question only after selecting an answer so that I don’t skip by mistake.
 
 ✅ AnswerFeedback
-User Story 11
+User Story 10
 As a learner, I want correct answers to be highlighted in green so that I get positive visual feedback.
 
-User Story 12
+User Story 11
 As a user, I want my wrong answer to turn red so that I know what I got wrong.
 
-User Story 13
+User Story 12
 As a user, I want to see a short explanation after answering so that I can learn from my mistakes. (Optional)
 
 🏁 ResultCard
-User Story 14
+User Story 13
 As a user, I want to see my score out of 5 at the end so that I can measure my performance.
 
-User Story 15
+User Story 14
 As a learner, I want clear buttons to either retry or pick a new topic so that I can continue learning without confusion.
 
 🔁 Streak (Optional)
-User Story 16
+User Story 15
 As a returning user, I want my daily streak saved locally so that I stay motivated over time.
 
-User Story 17
+User Story 16
 As a user, I want my streak to increase only once per day so that it tracks true daily progress.
 
-User Story 18
+User Story 17
 As a user, I want the streak to reset if I miss a day so that it encourages consistent learning.
 
-User Story 19
+User Story 18
 As a learner, I want to see my current streak on the homepage or result screen so that I stay aware of my progress.
 
 
@@ -107,16 +105,18 @@ As a dev, I want to render a clean landing page with a "Start Quiz" button.
 As a dev, I want to display a welcome message to guide the user.
 
 🎛️ ChooseTopic
-As a dev, I want to show 3–4 topic cards for user selection.
+As a dev, I want to show 3–4 topic cards.
 As a dev, I want to highlight the active topic visually.
-As a dev, I want to trigger the quiz start when a topic is selected.
+As a dev, I want to trigger the quiz start when start button is selected.
 
 ❓ Question
 As a dev, I want to display 5 questions, one at a time.
+As a dev, I want to randomly shuffle option position.
+As a dev ,I want display end result if the timer went down.
 As a dev, I want to add a 2-minute countdown timer for the quiz session.
 As a dev, I want each question to support either 4 options or true/false , suffle the option randomly.
 As a dev, I want to allow only one option to be selected per question.
-As a dev, I want to disable navigation until an answer is selected.
+As a dev, I want to disable next until an answer is selected.
 
 ✅ AnswerFeedback
 As a dev, I want to show green for correct answers and red for wrong ones.
@@ -131,3 +131,20 @@ As a dev, I want to save streak data in localStorage.
 As a dev, I want to update the streak once per day if a quiz is completed.
 As a dev, I want to reset the streak if a day is missed.
 As a dev, I want to show the current streak on the homepage or result screen.
+
+Some Edge cases in the project :
+1. LocalStorage Limitations or Failure
+-Browser blocks or fails to access localStorage.
+-Streak tracking should fail gracefully without affecting core functionality.
+
+2. External API Fails to Respond (Tier 2 and beyond)
+-App fails to fetch quiz data due to network error or server issue.
+-Display a friendly error message and fallback behavior (e.g., retry or offline mode).
+
+3. Layout Issues on Small Screens
+-UI components may break or overflow on mobile devices.
+-4Responsive design should ensure all quiz elements are usable and accessible.
+
+4. Perfect or Zero Score
+-User scores either 0/5 or 5/5.
+-ResultCard should display these scores correctly without layout or logic issues.
