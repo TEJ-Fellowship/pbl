@@ -1,45 +1,270 @@
-/* #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/*────────────────────────────────────────────
+  1) VARIABLES & RESET
+────────────────────────────────────────────*/
+:root {
+  /* Colors */
+  --bg-page: #f7f8fa;
+  --bg-white: #ffffff;
+  --border: #e0e0e5;
+  --text: #333333;
+  --text-light: #777777;
+
+  --primary: #4A90E2;
+  --primary-light: #e8f0fe;
+  --secondary: #50e3c2;
+  --secondary-light: #e6f9f3;
+
+  --tag-study: #ffeecb;
+  --tag-study-text: #f5a623;
+  --tag-health: #e8f5e9;
+  --tag-health-text: #43a047;
+  --tag-finance: #e3f2fd;
+  --tag-finance-text: #1e88e5;
+
+  --overdue: #f44336;
+  --overdue-bg: #fdecea;
+
+  /* Spacing & shadows */
+  --radius: 8px;
+  --gap: 1rem;
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --transition: 0.2s ease-in-out;
+
+  /* Typography */
+  --font-base: 'Segoe UI', Tahoma, Verdana, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-page);
+  font-family: var(--font-base);
+  color: var(--text);
+}
+
+/*────────────────────────────────────────────
+  2) PAGE CONTAINER
+────────────────────────────────────────────*/
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: var(--gap);
+}
+
+/* Section Titles */
+.container>h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Subtitles (including your <span><pre>…) */
+.container>span {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+}
+
+.container>span strong {
+  color: var(--primary);
+}
+
+.container>span p {
+  margin-top: 0.5rem;
+}
+
+/*────────────────────────────────────────────
+  3) QUICK ADD FORM
+────────────────────────────────────────────*/
+form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap);
+  margin-bottom: 2rem;
+}
+
+form input[type="text"],
+form input[type="date"],
+form select,
+form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0. nine rem;
+  font-family: var(--font-base);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+form textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+form button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: var(--gap);
+  background: #685fbc;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
   text-align: center;
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+form button:hover {
+  background: #6454d8;
+  /* a 10–15% darker purple */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+form button:active {
+  background: #356bb3;
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+/*────────────────────────────────────────────
+  4) NAV TABS
+────────────────────────────────────────────*/
+nav {
+  margin: 1rem 0 1.5rem;
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+nav li {
+  padding: 0.5rem 1rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0. nine rem;
+  color: var(--text);
+  transition: background var(--transition), border-color var(--transition);
+}
+
+nav li:hover {
+  background: var(--border);
+}
+
+nav li.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/*────────────────────────────────────────────
+  5) TASK GRID PLACEHOLDER
+────────────────────────────────────────────*/
+.TaskList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--gap);
+  min-height: 120px;
+}
+
+/* placeholder text */
+.TaskList>span {
+  grid-column: 1/-1;
+  background: var(--bg-white);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  text-align: center;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/*────────────────────────────────────────────
+  6) PRODUCTIVITY OVERVIEW CARDS
+────────────────────────────────────────────*/
+.subcontainer {
+  display: flex;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.subcontainer>div {
+  flex: 1;
+  min-width: 180px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem var(--gap);
+  box-shadow: var(--shadow);
+  text-align: center;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.subcontainer>div:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.subcontainer h2 {
+  font-size: 2.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.subcontainer span {
+  font-size: 0. nine rem;
+  color: var(--text-light);
+}
+
+/* colored numbers */
+.total h2 {
+  color: var(--primary);
+}
+
+.complete h2 {
+  color: var(--secondary);
+}
+
+.pending h2 {
+  color: var(--overdue);
+}
+
+/*────────────────────────────────────────────
+  7) RESPONSIVE
+────────────────────────────────────────────*/
+@media (max-width: 640px) {
+  form {
+    grid-template-columns: 1fr;
   }
-  to {
-    transform: rotate(360deg);
+
+  .TaskList {
+    grid-template-columns: 1fr;
   }
-}
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .subcontainer {
+    flex-direction: column;
+    align-items: center;
   }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-} */
-h1{
-  color: red;
 }
