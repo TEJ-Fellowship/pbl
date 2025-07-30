@@ -10,6 +10,9 @@ import getMoviesData  from "./api/GetAPIData";
 import MovieDetails  from "./components/UI/MovieDetails";
 import getMovieDetails  from "./api/GetMovieDetails";
 
+//importing Watchlist component
+import Watchlist from "./pages/Watchlist";
+
 const App = () => {
   const router = createBrowserRouter([
     {
@@ -34,6 +37,10 @@ const App = () => {
           path: "/movie/:movieID",
           element: <MovieDetails />,
           loader: getMovieDetails,
+        },
+        {
+          path: "/watchlist",
+          element: <Watchlist />,
         },
         {
           path: "/contact",
