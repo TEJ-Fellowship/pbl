@@ -1,0 +1,155 @@
+/* pages/Watchlist.css */
+.watchlist-container {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.watchlist-title {
+  font-size: 3rem;
+  margin-bottom: 2rem;
+  color: #333; /* Adjust as needed */
+}
+
+.no-movies-message {
+  font-size: 1.8rem;
+  color: #666; /* Adjust as needed */
+}
+
+/* New styles for the list of movie details */
+.watchlist-list {
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  gap: 3rem; /* Space between each movie item */
+  padding: 0 2rem; /* Add some horizontal padding */
+}
+
+.watchlist-item-detail {
+  display: flex; /* Use flexbox for image on left, info on right */
+  background-color: #f9f9f9; /* Light background for each item */
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Ensures border-radius is applied to children */
+  text-align: left; /* Align text within info section to left */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  align-items: flex-start; /* Align items to the top */
+}
+
+.watchlist-item-image {
+  flex: 0 0 200px; /* Fixed width for the image container */
+  max-width: 200px; /* Ensure image doesn't exceed this width */
+  height: auto; /* Allow image height to adjust */
+  overflow: hidden; /* Hide anything outside */
+  border-right: 1px solid #eee; /* Subtle separator */
+}
+
+.watchlist-item-image img {
+  width: 100%;
+  height: 100%; /* Make image fill its container */
+  object-fit: cover; /* Cover the area, cropping if necessary */
+  display: block; /* Remove extra space below image */
+}
+
+.watchlist-item-info {
+  flex: 1; /* Take up remaining space */
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Push button to bottom if space allows */
+}
+
+.watchlist-item-info h3 {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  color: #0056b3; /* A nice blue for titles */
+}
+
+.watchlist-item-info p {
+  font-size: 1.5rem;
+  margin-bottom: 0.8rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.watchlist-plot {
+  font-size: 1.4rem;
+  color: #666;
+  margin-top: 1.5rem;
+  margin-bottom: 2rem; /* Space before button */
+  max-height: 100px; /* Limit plot height */
+  overflow: hidden; /* Hide overflowing text */
+  text-overflow: ellipsis; /* Add ellipsis for overflow */
+  display: -webkit-box;
+  -webkit-line-clamp: 4; /* Limit to 4 lines */
+  -webkit-box-orient: vertical;
+}
+
+
+/* Existing remove button styles */
+.remove-button {
+  background-color: #dc3545; /* Red color for remove */
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1.4rem;
+  margin-top: auto; /* Pushes the button to the bottom of the flex container */
+  align-self: flex-start; /* Align button to the start (left) */
+  transition: background-color 0.3s ease;
+}
+
+.remove-button:hover {
+  background-color: #c82333;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 768px) {
+  .watchlist-item-detail {
+    flex-direction: column; /* Stack image and info vertically */
+    align-items: center; /* Center items when stacked */
+  }
+
+  .watchlist-item-image {
+    flex: none; /* Reset flex properties */
+    max-width: 100%; /* Allow image to take full width */
+    width: 250px; /* Set a specific width for the image to avoid stretching */
+    height: auto;
+    border-right: none; /* Remove separator */
+    border-bottom: 1px solid #eee; /* Add bottom separator */
+    padding-bottom: 1rem; /* Space below image */
+  }
+
+  .watchlist-item-image img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .watchlist-item-info {
+    padding: 1.5rem;
+    align-items: center; /* Center text content too */
+    text-align: center; /* Center text */
+  }
+
+  .watchlist-item-info h3 {
+    text-align: center;
+  }
+
+  .watchlist-item-info p {
+    text-align: center;
+  }
+  .remove-button {
+    align-self: center; /* Center the button when stacked */
+  }
+}
+
+@media (max-width: 480px) {
+  .watchlist-item-info h3 {
+    font-size: 1.8rem;
+  }
+  .watchlist-item-info p {
+    font-size: 1.3rem;
+  }
+  .watchlist-list {
+    padding: 0 1rem;
+  }
+}
