@@ -2,10 +2,41 @@
 // /* eslint-disable react/prop-types */
 import { NavLink, useLoaderData } from "react-router-dom";
 import "../UI/Card.css";
+import { useEffect, useState } from "react";
 
 const MovieDetails = () => {
   const movieData = useLoaderData();
-  console.log(movieData);
+  //data yesmw aaauxa
+  // console.log(movieData);
+
+  const [isAddedToWatchlist, setIsAddedToWatchlist] = useState(false);
+  useEffect(() => {
+    const storedWatchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+    const movieInWatchlist = storedWatchlist.some(
+      (movie) => movie.imdbID === movieData.imdbID
+    );
+    setIsAddedToWatchlist(movieInWatchlist);
+  }, [movieData.imdbID]); // Re-run effect if movieData.imdbID changes
+
+  const handleAddToWatchlist = () => {
+    // Get existing watchlist from local storage
+    const storedWatchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+
+    // Check if the movie is already in the watchlist
+    const movieExists = storedWatchlist.some(
+      (movie) => movie.imdbID === movieData.imdbID
+    );
+
+    if (!movieExists) {
+      // Add the current movie data to the watchlist
+      const updatedWatchlist = [...storedWatchlist, movieData];
+      localStorage.setItem("watchlist", JSON.stringify(updatedWatchlist));
+      setIsAddedToWatchlist(true);
+      alert(`${movieData.Title} added to your watchlist!`);
+    } else {
+      alert(`${movieData.Title} is already in your watchlist!`);
+    }
+  };
 
   const {
     Actor,
@@ -30,7 +61,7 @@ const MovieDetails = () => {
   console.log(hours, minutes);
 
   const formattedTime = `${hours}hr ${minutes}min`;
-  console.log(formattedTime);
+  // console.log(formattedTime);
 
   return (
     <li className="hero-container hero-movie-container">
@@ -70,7 +101,25 @@ const MovieDetails = () => {
                 {BoxOffice}
               </p>
             </div>
+
             <div>
+              <button
+                onClick={handleAddToWatchlist}
+                // className="movie__tag movie__tag--2"
+                style={{
+                  textAlign: "center",
+                  fontSize: "1.6rem",
+                  backgroundColor: "pink",
+                  borderRadius: "12px",
+                  padding: "8px 16px",
+                  border: "none",
+                  cursor: isAddedToWatchlist ? "not-allowed" : "pointer",
+                  color: "white",
+                }}
+                disabled={isAddedToWatchlist} // Disable if already added
+              >
+                {isAddedToWatchlist ? "Added to Watchlist" : "Add to Watchlist"}
+              </button>
               <NavLink
                 to="/movie"
                 className="movie__tag movie__tag--2"
@@ -87,5 +136,4 @@ const MovieDetails = () => {
   );
 };
 
-
-export default MovieDetails
+export default MovieDetails;
