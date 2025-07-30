@@ -42,7 +42,7 @@ const Header = () => {
                 </NavLink>
               </li>
               <li className="nav-item">
-                <NavLink
+                {/* <NavLink
                   to="/about"
                   style={({ isActive }) => {
                     return {
@@ -51,7 +51,17 @@ const Header = () => {
                   }}
                 >
                   about
-                </NavLink>
+                </NavLink> */}
+                {<NavLink
+                  to="/watchlist"
+                  style={({ isActive }) => {
+                    return {
+                      color: isActive ? "blue" : "black",
+                    };
+                  }}
+                >
+                  Watchlist   {/* yahe ho naya new link */}
+                </NavLink> }
               </li>
               <li className="nav-item">
                 <NavLink
