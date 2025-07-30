@@ -21,7 +21,7 @@
 
 - [✅] Initialize React project using Vite or CRA
 - [✅] Setup folder structure: `components`, `pages`, `services`, etc.
-- [⌛] Install dependencies: `react-router-dom`, `axios`, `tailwindcss`
+- [✅] Install dependencies: `react-router-dom`, `axios`, `tailwindcss`
 
 ---
 
