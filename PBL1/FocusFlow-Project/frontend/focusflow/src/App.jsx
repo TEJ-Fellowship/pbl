@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import Banner from './components/Banner'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  
+  const [count, setCount] = useState(0)
 
   return (
     <>
-    <Banner/>
-    
+    <h1>normal website</h1>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

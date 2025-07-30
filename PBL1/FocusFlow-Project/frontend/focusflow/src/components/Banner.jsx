@@ -1,10 +1,11 @@
-import React from 'react'
+import React from "react";
+
 function Banner() {
   return (
-   <div className="container">
-    <h1>Hello, I am from Banner!</h1>
-   </div>
-  )
+    <div>
+      <h1>Hello, I am ganesh chaudhary!</h1>
+    </div>
+  );
 }
 
-export default Banner
+export default Banner;
