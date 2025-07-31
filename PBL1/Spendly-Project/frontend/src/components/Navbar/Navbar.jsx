@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+
 import styles from "./Navbar.module.css";
 function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
