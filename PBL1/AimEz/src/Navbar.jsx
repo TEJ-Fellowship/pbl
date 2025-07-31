@@ -1,18 +1,23 @@
 import './navbar.css'
 
-function Navbar() {
+function Navbar({setShowDashboard}) {
+     const handleStart = () => {
+    
+    setShowDashboard(true);
+  } 
+
     return (
         <div>
             <div className="body">
             <div className="Nav">
             <a>Home</a>
-            <a>Categories</a>
-            <a>Goal</a>
+
             <a>Contact</a>
             <a>About Us</a>
             </div>
-            <h1>AimEZ</h1>
+            <h1 id="title">AimEZ</h1>
             <h3>*Your friendly app for goal tracking*</h3>
+            <button onClick ={handleStart}>Let's get Started</button>
             </div>
          </div>
         

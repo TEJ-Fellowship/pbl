@@ -1,5 +1,6 @@
 body{
   background-image: url(images/cherry.png);
-  
+  margin:0;
+  height:100%;
 }
 
