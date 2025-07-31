@@ -1,0 +1,150 @@
+Issues
+
+Homepage:
+-Welcome the user
+-Have a clean look
+-Buttom to start quiz
+
+ChooseTopic :
+-Display 3-4 categories
+-Start quiz after selection
+-Show active selection clearly
+
+Question:
+-Render 5 questions one-by-one
+-Timer of 2 minutes
+-Each question has 4 options (🟢 1 correct, 🔴 3 incorrect) or it can be true or flase
+-Only one option can be selected per question
+-Move to next only after answering
+
+AnswerFeedback:
+-Highlight correct answer with green
+-Highlight clicked wrong answer as red
+-Show short explanation below (optional)
+
+ResultCard :
+-Show score out of 5
+-Show "Try Again" or "Choose another topic"
+
+Streak :(optional)
+-Store streak in localStorage
+-Increase streak only once per day
+-Reset if user misses a day
+-Show current streak on homepage or result screen
+
+
+User Stories:
+
+🏠 Homepage
+User Story 1
+As a learner, I want to see a friendly and clean homepage so that I feel invited to start my daily learning.
+
+User Story 2
+As a user, I want a clear "Start Quiz" button on the homepage so that I can begin the learning session quickly.
+
+🎛️ ChooseTopic
+
+User Story 3
+As a user, I want to see topic to be highlighted clearly so that I know which quiz I’m about to take.
+
+User Story 4
+As a user, I want the quiz to start immediately after I select a topic so that the flow feels quick and engaging.
+
+❓ Question
+User Story 5
+As a learner, I want to answer 5 questions one at a time so that I can focus without being overwhelmed.
+
+User Story 6
+As a user, I want a visible 2-minute timer so that I stay aware of my time and think quickly.
+
+User Story 7
+As a quiz taker, I want each question to have 4 options (1 correct, 3 incorrect) or a True/False format so that the quiz feels diverse and challenging.
+
+User Story 8
+As a user, I want to be able to select only one option per question so that I don’t accidentally choose multiple answers.
+
+User Story 9
+As a user, I want to move to the next question only after selecting an answer so that I don’t skip by mistake.
+
+✅ AnswerFeedback
+User Story 10
+As a learner, I want correct answers to be highlighted in green so that I get positive visual feedback.
+
+User Story 11
+As a user, I want my wrong answer to turn red so that I know what I got wrong.
+
+User Story 12
+As a user, I want to see a short explanation after answering so that I can learn from my mistakes. (Optional)
+
+🏁 ResultCard
+User Story 13
+As a user, I want to see my score out of 5 at the end so that I can measure my performance.
+
+User Story 14
+As a learner, I want clear buttons to either retry or pick a new topic so that I can continue learning without confusion.
+
+🔁 Streak (Optional)
+User Story 15
+As a returning user, I want my daily streak saved locally so that I stay motivated over time.
+
+User Story 16
+As a user, I want my streak to increase only once per day so that it tracks true daily progress.
+
+User Story 17
+As a user, I want the streak to reset if I miss a day so that it encourages consistent learning.
+
+User Story 18
+As a learner, I want to see my current streak on the homepage or result screen so that I stay aware of my progress.
+
+
+
+Devloper Pov:
+
+🏠 Homepage
+As a dev, I want to render a clean landing page with a "Start Quiz" button.
+As a dev, I want to display a welcome message to guide the user.
+
+🎛️ ChooseTopic
+As a dev, I want to show 3–4 topic cards.
+As a dev, I want to highlight the active topic visually.
+As a dev, I want to trigger the quiz start when start button is selected.
+
+❓ Question
+As a dev, I want to display 5 questions, one at a time.
+As a dev, I want to randomly shuffle option position.
+As a dev ,I want display end result if the timer went down.
+As a dev, I want to add a 2-minute countdown timer for the quiz session.
+As a dev, I want each question to support either 4 options or true/false , suffle the option randomly.
+As a dev, I want to allow only one option to be selected per question.
+As a dev, I want to disable next until an answer is selected.
+
+✅ AnswerFeedback
+As a dev, I want to show green for correct answers and red for wrong ones.
+As a dev, I want to display a short explanation below the answer (optional).
+
+🏁 ResultCard
+As a dev, I want to show the final score out of 5.
+As a dev, I want to display "Try Again" and "Choose another topic" buttons.
+
+🔁 Streak (Optional)
+As a dev, I want to save streak data in localStorage.
+As a dev, I want to update the streak once per day if a quiz is completed.
+As a dev, I want to reset the streak if a day is missed.
+As a dev, I want to show the current streak on the homepage or result screen.
+
+Some Edge cases in the project :
+1. LocalStorage Limitations or Failure
+-Browser blocks or fails to access localStorage.
+-Streak tracking should fail gracefully without affecting core functionality.
+
+2. External API Fails to Respond (Tier 2 and beyond)
+-App fails to fetch quiz data due to network error or server issue.
+-Display a friendly error message and fallback behavior (e.g., retry or offline mode).
+
+3. Layout Issues on Small Screens
+-UI components may break or overflow on mobile devices.
+-4Responsive design should ensure all quiz elements are usable and accessible.
+
+4. Perfect or Zero Score
+-User scores either 0/5 or 5/5.
+-ResultCard should display these scores correctly without layout or logic issues.
