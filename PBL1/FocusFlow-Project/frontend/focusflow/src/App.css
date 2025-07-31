@@ -22,7 +22,7 @@
   --tag-finance-text: #1e88e5;
 
   --overdue: #f44336;
-  --overdue-bg: #fdecea;
+  --overdue-bg: #eeeafd;
 
   /* Spacing & shadows */
   --radius: 8px;
@@ -113,6 +113,16 @@ form textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
 }
+.date-select-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; 
+}
+.date-select-row input,
+.date-select-row select {
+  flex: 1;
+  min-width: 200px;
+}
 
 form button {
   display: block;
@@ -155,6 +165,18 @@ nav {
   margin: 1rem 0 1.5rem;
 }
 
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-left,
+.nav-right {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
 nav ul {
   list-style: none;
   display: flex;
@@ -162,18 +184,19 @@ nav ul {
   gap: var(--gap);
 }
 
-/* Logo */
-nav ul img {
-  flex-shrink: 0;
-  border-radius: 10px;
-  width: 40px;
-  height: 38px;
-  margin-left: 0;
-  /* SVG already has its own margin */
+
+.navbar-logo{
+  height: 70px;
+  width: auto;
+  transform: scale(2.8);
+  margin-left: 40px;
+  margin-right: 50px;
+  
 }
 
 /* Tabs */
-nav li {
+.nav-left li,
+.nav-right li{
   padding: 0.5rem 1rem;
   background: var(--bg-white);
   border: 1px solid var(--border);
@@ -184,39 +207,61 @@ nav li {
   transition: background var(--transition), border-color var(--transition), transform var(--transition);
 }
 
-nav li:hover {
-  background: var(--border);
+.nav-left li:hover,
+.nav-right li:hover{
+  background: #f8f8ff;
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 3px rgb(192, 192, 255);
 }
 
-nav li.active {
+.nav-left li.active {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
 }
 
-/* Search input */
-nav input[type="search"] {
-  flex: 1;
-  max-width: 240px;
-  margin-left: auto;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-family: var(--font-base);
-  font-size: 0. nine rem;
-  transition: border-color var(--transition), box-shadow var(--transition);
+.search-container {
+  position: relative;
+  width: 280px;
 }
 
-nav input[type="search"]:focus {
+
+.search-container input {
+  width: 100%;
+  padding: 10px 10px 10px 35px;
+  border: none;
+  border-radius: 12px;
+  border-color: rgb(174, 174, 255);
+  background-color: #f1f3f5; 
+  font-size: 14px;
+  color: black;
+}
+.search-container input:hover {
+border: 1px solid rgb(174, 174, 255);
+box-shadow: 2px 2px 3px rgb(192, 192, 255);
+transition: all 0.3s;
+}
+.search-container input:focus {
+  border: 1px solid rgb(211, 211, 249);
+  box-shadow: 2px 2px 3px rgb(198, 198, 236);
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /*────────────────────────────────────────────
   Notification icon styling
 ────────────────────────────────────────────*/
-nav li.notification {
+.nav-right li.notification {
   /* match your other tabs */
   padding: 0.5rem;
   background: var(--bg-white);
@@ -229,12 +274,13 @@ nav li.notification {
   transition: background var(--transition), transform var(--transition);
 }
 
-nav li.notification:hover {
-  background: var(--border);
+.nav-right li.notification:hover {
+  background: #f8f8ff;
   transform: translateY(-1px);
+  box-shadow: 2px 2px 3px rgb(192, 192, 255);
 }
 
-nav li.notification img {
+.nav-right li.notification img {
   /* size the bell icon */
   width: 1.25rem;
   height: 1.25rem;
@@ -242,7 +288,7 @@ nav li.notification img {
 }
 
 /* if you ever want an unread badge: */
-nav li.notification .badge {
+.nav-right li.notification .badge {
   position: absolute;
   top: 0.2rem;
   right: 0.2rem;
@@ -256,6 +302,75 @@ nav li.notification .badge {
 /*────────────────────────────────────────────
   5) TASK GRID PLACEHOLDER
 ────────────────────────────────────────────*/
+.task-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+  margin: 1rem 0 1.5rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.categories,
+.icon-buttons {
+  display: flex;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Your original category buttons */
+.categories li {
+  padding: 0.5rem 1rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bolder;
+  color: var(--text);
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.categories li:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 1px 2px 3px rgb(84, 81, 81);
+}
+
+.grp-item {
+  padding: 0.5rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.grp-item img {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: block;
+}
+
+.grp-item:hover {
+  background: #f8f8ff;
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 3px rgb(192, 192, 255);
+}
+
+.grp-item:active {
+  background: #5218fa ;
+  box-shadow: 2px 2px 3px rgb(192, 192, 255);
+}
+
 .TaskList {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

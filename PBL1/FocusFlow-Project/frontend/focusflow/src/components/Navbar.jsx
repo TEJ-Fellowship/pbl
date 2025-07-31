@@ -1,28 +1,32 @@
 import React from "react";
-import notification from "../assets/notification.png";
+import notification from "../assets/notification.svg";
+import logo from "../assets/logo.png";
+import searchIcon from "../assets/search.png";
+
 function Navbar() {
   return (
     <>
       <nav>
-        <ul>
-          <img
-            src="https://media.istockphoto.com/id/636379014/photo/hands-forming-a-heart-shape-with-sunset-silhouette.jpg?s=612x612&w=0&k=20&c=CgjWWGEasjgwia2VT7ufXa10azba2HXmUDe96wZG8F0="
-            alt="logo"
-            width={40}
-            height={38}
-            style={{ marginLeft: "40px", borderRadius: "10px" }}
-          />
-          <li>Home</li>
-          <li>Services</li>
-          <li>Contact Us</li>
-          <input
-            type="search"
-            placeholder=" 🔍︎ Search your Task List Faster..."
-          />
-          <li class="notification">
-            <img src={notification} alt="notification" />
-          </li>
-        </ul>
+        <div className="navbar-container">
+          <ul className = 'nav-left'>
+
+            <img src= {logo} alt="logo" className="navbar-logo" />
+            <li>Home</li>
+            <li>Services</li>
+            <li>Contact Us</li>
+          </ul>
+
+          <ul className="nav-right">
+            <div className="search-container">
+              <img src={searchIcon} alt="search" className="search-icon" />
+            <input
+              type="text" placeholder="Search..." />
+            </div>
+            <li class="notification">
+              <img src={notification} alt="notification" />
+            </li>
+          </ul>
+        </div>
       </nav>
     </>
   );
