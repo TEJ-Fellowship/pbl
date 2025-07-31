@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import TransactionList from "./features/expenses/TransactionList";
 import Navbar from "./components/Navbar/Navbar";
 
 import "./App.css";
+import Sidebar from "./components/Sidebar/Sidebar";
 
 function App() {
   return (
@@ -10,9 +10,7 @@ function App() {
       <Router>
         <div className="appContainer">
           <Navbar />
-          <Routes>
-            <Route path="/expenses" element={<TransactionList />} />
-          </Routes>
+          <Sidebar />
         </div>
       </Router>
     </>
