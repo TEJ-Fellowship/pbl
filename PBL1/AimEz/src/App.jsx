@@ -1,6 +1,7 @@
 
 import './App.css'
 import Navbar from "./Navbar.jsx";
+import Dashboard from "./components/Dashboard";
 function App() {
 
   return (
@@ -11,8 +12,11 @@ function App() {
       
       
      
+      <div style={{  width: "100vw" ,height:"100vh"}}>
+        <Dashboard/>
+      </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
