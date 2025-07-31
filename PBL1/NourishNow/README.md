@@ -32,7 +32,7 @@
 - [ ] Recipe Detail Page
 - [ ] Saved Recipes Page
 - [ ] Create Recipe Form Page
-- [⌛] Navbar for navigation
+- [✅] Navbar for navigation
 
 ---
 
