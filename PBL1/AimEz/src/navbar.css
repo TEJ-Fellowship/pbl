@@ -1,0 +1,68 @@
+h1{
+    position: absolute;
+    top: 240px;
+    margin-left: 2%;
+    font-size: 130px;
+    font-family: cursive;
+    font-weight: 200px;
+    /* color: rgb(174, 126, 215); */
+    color: white;
+    text-shadow: 1px 1px 2px black, 0 0 25px blue, 0 0 5px darkblue;
+
+}
+h1:hover{
+    transform: scale(1.1);
+
+    text-shadow: 1px 1px 2px black, 0 0 25px purple, 0 0 5px rgb(95, 9, 9);
+}
+h3{
+    position: absolute;
+    top: 710px;
+    margin-left: 27%;
+    font-size: 30px;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    color: white;
+    text-shadow: 1px 1px 2px rgb(234, 224, 224), 0 0 25px rgb(105, 42, 105), 0 0 5px rgb(5, 7, 114);
+}
+.Nav{
+    display: flex;
+    justify-content: center;
+
+}
+.Nav a{
+    margin-left: 40px;
+    margin-top: 25px;
+    font-size: 23px;
+    font: bolder;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    color: azure;
+    height: 20px;
+    border-bottom: 3px solid transparent;
+    transition: border-bottom-color 0.5s ease;
+    padding-bottom: 5px;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+     
+}
+.Nav a:hover{
+    color: rgb(59, 5, 57);
+    /* transition: 1s;
+    border-bottom-color: rgb(59, 5, 57); */
+
+    
+}
+.Nav a::after{
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 3px;
+    background-color: rgb(59, 5, 57) ;
+    transition: width 0.8s ease
+}
+.Nav a:hover::after{
+    width:100%;
+}

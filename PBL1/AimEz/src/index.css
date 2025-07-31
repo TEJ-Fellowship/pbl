@@ -1,3 +1,21 @@
+.body{
+    
+    background-image: url(./images/pink2.png);
+    background-size: cover;
+    background-position: center;
+    height: 750px;
+    width: 1400px;
+    margin-left: 250px;
+    margin-top: 100px;
+    margin-bottom: 20px;
+    margin-right: 10px;
+    
+    border-radius: 2cm;
+    border-color: aliceblue;
+    border-width: 3px;
+    border-style: dotted;
+
+}
 * {
   box-sizing: border-box;
 }
