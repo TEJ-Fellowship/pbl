@@ -1,0 +1,90 @@
+.sideBarContainer {
+  position: fixed;
+  top: 0;
+  width: 90px;
+  height: 100vh;
+  background-color: #002218;
+  transition: all 0.1s ease-in-out;
+}
+
+.activeSideBar {
+  width: 160px;
+  transition: width 0.1s ease-in-out;
+}
+
+.circleContainer {
+  width: 50px;
+  height: 50px;
+  background-color: #27c781;
+  border-radius: 50%;
+  position: relative;
+  top: 1%;
+  left: 22%;
+}
+
+.dollarIcon {
+  position: absolute;
+  top: 20%;
+  left: 10%;
+  font-size: 32px;
+  color: #fff;
+  transform: rotate(3deg);
+}
+
+.line {
+  position: absolute;
+  top: 3%;
+  transition: all 0.1s ease-in-out;
+}
+
+.barsStaggered {
+  color: #fff;
+  font-size: 32px;
+  position: absolute;
+  top: 13%;
+  left: 32%;
+}
+
+.barsDollarIcon {
+  color: #fff;
+  font-size: 28px;
+  position: absolute;
+  top: 13%;
+  left: 12%;
+}
+
+.sideBarList {
+  color: #fff;
+  width: 160px;
+  font-size: 20px;
+  font-family: "Irish Grover", sans-serif;
+  position: absolute;
+  top: 18%;
+  left: 5%;
+  transition: all 0.3s ease-out;
+}
+
+.plus {
+  color: #fff;
+  font-size: 32px;
+  position: absolute;
+  top: 85%;
+  left: 25%;
+  transition: transform 0.1s ease-in;
+}
+
+.multiply {
+  transform: rotate(45deg);
+  transition: transform 0.1s ease-in;
+}
+
+.sideBarExpense {
+  color: #fff;
+  width: 160px;
+  font-size: 20px;
+  font-family: "Irish Grover", sans-serif;
+  position: absolute;
+  top: 90%;
+  left: 9%;
+  transition: all 0.3s ease-out;
+}

@@ -3,6 +3,7 @@ import Navbar from "./components/Navbar/Navbar";
 import Expense from "./components/Add-Expense/Expense"
 
 import "./App.css";
+import Sidebar from "./components/Sidebar/Sidebar";
 
 function App() {
   return (
@@ -10,6 +11,9 @@ function App() {
       <Router>
         <div className="appContainer">
           <Navbar />
+
+          <Sidebar />
+
           <Expense />
         </div>
       </Router>
