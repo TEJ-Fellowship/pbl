@@ -1,14 +1,19 @@
-import './ExpenseForm.css'
-import ExpenseForm from './ExpenseForm'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import "./components/Navbar/Navbar.jsx";
+import "./App.css";
+
 
 function App() {
-  
-
   return (
     <>
-      <ExpenseForm />
+      <Router>
+        <div className="appContainer">
+          <Navbar />
+        </div>
+      </Router>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
+
