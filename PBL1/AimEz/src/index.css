@@ -1,68 +1,133 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+* {
+  box-sizing: border-box;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
+html, body {
+  height: 100%;
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: white;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
+#container {
+  width: 700px;
+  height: 500px;
+  margin:auto;
+  background-color: white;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding:20px;
+
+  display: flex;
+  flex-direction: column;
+  gap:12px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+
+#container input[type="text"] {
+  width: 97%;
+  padding:10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.3s ease;
+}
+
+#container input[type="text"]:focus {
+  border-color: #007BFF;
+}
+
+
+#add-task {
+
+  display: flex;
+  align-items: center;
+  gap:7px;
+  
+
+
+  width: 120px;
+  padding: 10px;
+  font-size: 16px;
+  background-color: #5046E4;
+  color: white;
+  border: none;
+  border-radius: 80px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  align-self: flex-end;
+}
+
+#add-task:hover {
+  background-color: #0056b3;
+}
+
+
+
+
+
+/* GoalForm.css */
+#buttons{
+  /* margin-top: 24px; */
+  display: flex;
+  gap: 10px;
+}
+
+#create,#cancel{
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#create{
+  background-color: #5046E4;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+#cancel {
+  background-color: gray;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+/* .sidebar{
+  width: "200px"; 
+  background-color: red;
+  padding: "20px";
+} */
+
+
+.sidebar{
+    width: 200px;
+    height:100%;
+    background-color: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+}
+
+ul{
+  list-style: none;
+  padding: 0;
+}
+
+li{
+  margin:10px 0;
+}
+
+.eachList{
+  display: flex;
+  align-items: center;
+  gap:8px;
+  color : #5046E4;
 }
