@@ -1,0 +1,98 @@
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5); /* black with 50% opacity */
+  z-index: 50;
+}
+
+.popup-content {
+  background-color: white;
+  border-radius: 0.75rem;        /* rounded-xl */
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* shadow-lg */
+  padding: 1.5rem;               /* p-6 */
+  width: 100%;                   /* w-full */
+  max-width: 28rem;              /* max-w-md (448px) */
+}
+
+.popup-title {
+  font-size: 1.25rem;       /* text-xl */
+  font-weight: 600;         /* font-semibold */
+  margin-bottom: 1rem;      /* mb-4 */
+  text-align: center;       /* text-center */
+}
+
+.expense-form > * + * {
+  margin-top: 1rem; /* Mimics Tailwind's space-y-4 (vertical spacing between children) */
+}
+
+.input-field {
+  width: 100%;             /* w-full */
+  border: 1px solid #ccc;  /* border */
+  border-radius: 0.25rem;  /* rounded */
+  padding: 0.5rem 0.75rem; /* px-3 py-2 */
+  box-sizing: border-box;
+}
+
+.button-group {
+  display: flex;             /* flex */
+  justify-content: flex-end; /* justify-end */
+  gap: 0.5rem;               /* gap-2 */
+  padding-top: 0.5rem;       /* pt-2 */
+}
+
+.cancel-button {
+  padding: 0.5rem 1rem;               /* px-4 py-2 */
+  background-color: #d1d5db;          /* bg-gray-300 */
+  border: none;
+  border-radius: 0.25rem;             /* rounded */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #9ca3af;          /* hover:bg-gray-400 */
+}
+
+.submit-button {
+  padding: 0.5rem 1rem;               /* px-4 py-2 */
+  background-color: #3b82f6;          /* bg-blue-500 */
+  color: white;                       /* text-white */
+  border: none;
+  border-radius: 0.25rem;             /* rounded */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+  background-color: #2563eb;          /* hover:bg-blue-600 */
+}
+
+.app-container {
+  display: flex;                     /* flex */
+  flex-direction: column;           /* flex-col */
+  align-items: center;              /* items-center */
+  justify-content: center;          /* justify-center */
+  min-height: 100vh;                /* min-h-screen */
+  background-color: #f3f4f6;        /* bg-gray-100 */
+  padding: 1rem;                    /* p-4 */
+}
+
+.add-expense-button {
+  padding: 0.75rem 1.5rem;          /* px-6 py-3 */
+  background-color: #16a34a;        /* bg-green-600 */
+  color: white;                     /* text-white */
+  border: none;
+  border-radius: 0.25rem;           /* rounded */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-expense-button:hover {
+  background-color: #15803d;        /* hover:bg-green-700 */
+}
