@@ -11,8 +11,7 @@ function Navbar({setShowDashboard}) {
             <div className="body">
             <div className="Nav">
             <a>Home</a>
-            {/* <a>Categories</a>
-            <a>Goal</a> */}
+
             <a>Contact</a>
             <a>About Us</a>
             </div>
