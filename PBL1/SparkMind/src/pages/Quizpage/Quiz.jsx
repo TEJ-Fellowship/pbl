@@ -61,3 +61,4 @@ const [ourOptions] = useState(() => shuffleArray(currentItem.options));
     );
 }
 
+export default Quiz;
