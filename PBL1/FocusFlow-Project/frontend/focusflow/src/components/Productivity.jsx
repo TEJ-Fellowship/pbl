@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 
-function Productivity() {
+function Productivity({ tasks }) {
+  const total = tasks.length;
+  const complete = tasks.filter((t) => t.isComplete).length;
+  const pending = total - complete;
   return (
     <div className="container">
       <h2>Productivity Overview</h2>
@@ -8,19 +11,19 @@ function Productivity() {
       <div className="subcontainer">
         <div className="total">
           <center>
-            <h2>10</h2>
+            <h2>{total}</h2>
             <span>Total Tasks</span>
           </center>
         </div>
         <div className="complete">
           <center>
-            <h2>2</h2>
+            <h2>{complete}</h2>
             <span>Complete</span>
           </center>
         </div>
         <div className="pending">
           <center>
-            <h2>8</h2>
+            <h2>{pending}</h2>
             <span>Pending</span>
           </center>
         </div>

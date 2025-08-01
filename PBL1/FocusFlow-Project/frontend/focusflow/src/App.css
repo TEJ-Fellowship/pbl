@@ -371,23 +371,96 @@ transition: all 0.3s;
   box-shadow: 2px 2px 3px rgb(192, 192, 255);
 }
 
+/*────────────────────────────────────────────
+  5) TASK GRID PLACEHOLDER
+────────────────────────────────────────────*/
+/*────────────────────────────────────────────
+   TASK LIST GRID & CARD STYLING
+────────────────────────────────────────────*/
 .TaskList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--gap);
-  min-height: 120px;
+  margin-top: var(--gap);
+  padding: 0;
+  /* reset any inherited padding */
+  list-style: none;
+  /* ensure no default bullets */
 }
 
-/* placeholder text */
-.TaskList>span {
-  grid-column: 1/-1;
+/* Each .mytask becomes a card */
+.TaskList .mytask {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-white);
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: var(--gap);
-  text-align: center;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+/* Lift effect on hover */
+.TaskList .mytask:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Remove default list formatting */
+.TaskList .mytask li {
+  list-style: none;
+  margin: 0.25rem 0;
+  padding: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/* Title styling (first li) */
+.TaskList .mytask li:first-child {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+/* Meta info (date & category) */
+.TaskList .mytask li:nth-child(2),
+.TaskList .mytask li:nth-child(4) {
+  font-size: 0.85rem;
   color: var(--text-light);
-  font-style: italic;
+}
+
+/* Description styling (third li) */
+.TaskList .mytask li:nth-child(3) {
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* If you want a colored strip per category, add: */
+.TaskList .mytask[data-category="work"] {
+  border-left: 4px solid var(--tag-study-text);
+}
+
+.TaskList .mytask[data-category="personal"] {
+  border-left: 4px solid var(--tag-health-text);
+}
+
+.TaskList .mytask[data-category="study"] {
+  border-left: 4px solid var(--tag-finance-text);
+}
+
+.TaskList .mytask[data-category="health"] {
+  border-left: 4px solid var(--tag-health-text);
+}
+
+.TaskList .mytask[data-category="finance"] {
+  border-left: 4px solid var(--tag-finance-text);
+}
+
+/* Optional: responsive adjustment */
+@media (max-width: 600px) {
+  .TaskList {
+    grid-template-columns: 1fr;
+  }
 }
 
 /*────────────────────────────────────────────

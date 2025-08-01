@@ -1,24 +1,73 @@
 import React, { useState } from "react";
 
-function QuickAdd() {
+function QuickAdd({ onAdd }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [duedate, setDuedate] = useState("");
+  const [category, setCategory] = useState("all");
   const [add, setAdd] = useState(false);
+  const submithandler = (e) => {
+    e.preventDefault();
+
+    if (!title.trim()) return;
+
+    const newTask = {
+      id: Date.now(),
+      title,
+      description,
+      duedate,
+      category,
+    };
+
+    onAdd(newTask);
+
+    setAdd(true);
+
+    setTitle("");
+    setDescription("");
+    setDuedate("");
+    setCategory("all");
+    setTimeout(() => setAdd(false), 1000);
+  };
   return (
     <div className="container">
       <h2>Quick Task Entry</h2>
       <span>
         <pre>
           <span>
-            <strong>Stay Focused. Stay Productive. Get it Done.</strong><br /><br />
+            <strong>Stay Focused. Stay Productive. Get it Done.</strong>
+            <br />
+            <br />
             <p>Start by entering the details of your task.</p>
           </span>
         </pre>
       </span>
-      <form action="">
-        <input type="text" placeholder="Task Title (eg. Finish report!)" />
-        <textarea name="description" id="description" placeholder="Description (optional)"></textarea>
+      <form action="" onSubmit={submithandler}>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Task Title (eg. Finish report!)"
+        />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          name="description"
+          id="description"
+          placeholder="Description (optional)"
+        ></textarea>
         <div className="date-select-row">
-          <input type="date" />
-          <select id="task-category" name="taskCategory">
+          <input
+            type="date"
+            value={duedate}
+            onChange={(e) => setDuedate(e.target.value)}
+          />
+          <select
+            id="task-category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            name="taskCategory"
+          >
             <option value="all">All Tasks</option>
             <option value="work">Work</option>
             <option value="personal">Personal</option>
@@ -26,15 +75,8 @@ function QuickAdd() {
             <option value="health">Health</option>
             <option value="finance">Finance</option>
           </select>
-
         </div>
-        <button
-          onClick={() => {
-            setAdd(true);
-          }}
-        >
-          {add ? "Added Task ✔" : "Add Task"}
-        </button>
+        <button type="submit">{add ? "Added Task ✔" : "Add Task"}</button>
       </form>
     </div>
   );

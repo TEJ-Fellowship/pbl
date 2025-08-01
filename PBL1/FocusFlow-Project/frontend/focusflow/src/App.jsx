@@ -5,14 +5,36 @@ import YourTask from "./components/YourTask";
 import QuickAdd from "./components/QuickAdd";
 import Navbar from "./components/Navbar";
 function App() {
-  // const [count, setCount] = useState(0);
+  const [tasks, setTasks] = useState([]);
+
+  const addTask = (task) => {
+    setTasks((prev) => [...prev, task]);
+  };
+
+  // Mark a task as complete (isComplete: true), but do not remove it
+  const handleCompleteTask = (id) => {
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === id ? { ...task, isComplete: true } : task
+      )
+    );
+  };
+
+  // Remove a task from the list (delete)
+  const handleDeleteTask = (id) => {
+    setTasks((prev) => prev.filter((task) => task.id !== id));
+  };
 
   return (
     <>
       <Navbar />
-      <QuickAdd />
-      <YourTask />
-      <Productivity />
+      <QuickAdd onAdd={addTask} />
+      <YourTask
+        tasks={tasks}
+        onCompleteTask={handleCompleteTask}
+        onDeleteTask={handleDeleteTask}
+      />
+      <Productivity tasks={tasks} />
     </>
   );
 }
