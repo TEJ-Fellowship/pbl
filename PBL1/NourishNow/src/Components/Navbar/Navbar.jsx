@@ -1,28 +1,36 @@
-import './Navbar.css'
+import styles from './Navbar.module.css';
+import { FaSearch } from "react-icons/fa";
+import { MdOutlineBookmarkAdd } from "react-icons/md";
+import { RxAvatar } from "react-icons/rx";
 
 const Navbar = () => {
   return (
-    <>
-    <nav className="Nav-bar">
-    <span className="Culinary-Campanion"> 
-      Culinary Campanion
+    <nav className={styles.navBar}>
+      <span className={styles.brand}>
+        Culinary Campanion
       </span>
-      <div className="part1">
-        <span id="home">Home</span>
-        <span id="Explore">Explore</span>
-        <span id="MyRecipies">MyRecipies</span>
+
+      <div className={styles.links}>
+        <span className={styles.link}>Home</span>
+        <span className={styles.link}>Explore</span>
       </div>
-      <div>
-       <span id="Search">
-        <input placeholder='🔍Search'></input>
-       </span>
-       <span id="bookmark">Favourites</span>
-       <span id="Avatar"></span>
+
+      <div className={styles.rightSection}>
+        <span className={styles.search}>
+          <FaSearch className={styles.icon} />
+          <input placeholder='Search' />
+        </span>
+
+        <span className={styles.bookmark}>
+          <MdOutlineBookmarkAdd size={30} className={styles.icon} />
+        </span>
+
+        <span className={styles.avatar}>
+          <RxAvatar className={styles.avatarIcon} />
+        </span>
       </div>
     </nav>
-    </>
-  )
-}
+  );
+};
 
-export default Navbar
-
+export default Navbar;
