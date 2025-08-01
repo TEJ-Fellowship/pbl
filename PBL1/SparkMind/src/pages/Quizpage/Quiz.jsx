@@ -23,8 +23,10 @@ return (
     <h3 className='option1'>option2 </h3>
     <h3 className='option1'>option3 </h3>
     <h3 className='option1'>option4 </h3>
-    {/* <h3 className='next'> Next </h3> */}
-    <h3 className='next' onClick={handleResults}> View Results </h3>
+    <h3 className='next' 
+    onClick={handleResults}
+    > View Results 
+    </h3>
     </div>
 </div>
 </div>
