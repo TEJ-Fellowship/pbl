@@ -1,6 +1,5 @@
-/* Root color variables for easy reuse */
 :root {
-  --background-color: #f6fdfa;
+  --background-color: #d1f8e7;
   --text-color: #111827;
   --nav-link-color: #374151;
   --highlight-color: #10b981;
@@ -9,8 +8,9 @@
   --avatar-border: #f3f4f6;
 }
 
-.Nav-bar {
+.navBar {
   background-color: var(--background-color);
+  border-radius: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -19,58 +19,89 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Left logo */
-.Culinary-Campanion {
+/* Brand logo */
+.brand {
   font-size: 1.25rem;
   font-weight: bold;
   color: var(--text-color);
 }
 
+.brand:hover {
+  color: var(--highlight-color);
+}
+
 /* Center links */
-.part1 span {
-  margin: 0 1rem;
+.links {
+  display: flex;
+  gap: 1rem;
+}
+
+.link {
   color: var(--nav-link-color);
   cursor: pointer;
   font-weight: 500;
 }
 
-.part1 span:hover {
+.link:hover {
   color: var(--highlight-color);
 }
 
 /* Right section */
-#Search input {
-  padding: 0.4rem 1rem;
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Search bar */
+.search {
+  display: flex;
+  align-items: center;
   background-color: var(--search-bg-color);
-  border: none;
+  padding: 0.3rem 0.7rem;
   border-radius: 8px;
+  gap: 0.5rem;
+}
+
+.search input {
+  border: none;
+  background: none;
   outline: none;
   color: var(--highlight-color);
   font-size: 0.95rem;
-  margin-right: 1rem;
 }
 
-/* Bookmark */
-#bookmark {
-  margin-right: 1rem;
-  cursor: pointer;
-  font-size: 1rem;
+/* Icons */
+.icon {
+  font-size: 1.25rem;
   color: var(--nav-link-color);
+  cursor: pointer;
 }
 
-#bookmark:hover {
+.icon:hover {
   color: var(--highlight-color);
 }
 
-/* Avatar Placeholder */
-#Avatar {
-  width: 36px;
-  height: 36px;
-  background-color: #ddd;
+/* Bookmark */
+.bookmark {
+  cursor: pointer;
+}
+
+.bookmark:hover .icon {
+  color: var(--highlight-color);
+}
+
+/* Avatar */
+.avatarIcon {
+  font-size: 1.8rem;
+  color: var(--nav-link-color);
   border-radius: 50%;
   border: 2px solid var(--avatar-border);
-  background-image: url('https://i.imgur.com/your-avatar.png'); /* replace with actual image */
-  background-size: cover;
-  background-position: center;
+  background-color: #ddd;
+  padding: 2px;
   cursor: pointer;
+}
+
+.avatarIcon:hover {
+  color: var(--highlight-color);
 }
