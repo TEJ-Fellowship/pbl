@@ -10,13 +10,13 @@ return (
     
     <p className='topic' id='topic'>Social</p>
     <hr className='underline'></hr>
-    <div className='options'>
+    <div className='option-container'>
     <h3 className='option1'>option1 </h3>
     <h3 className='option1'>option2 </h3>
     <h3 className='option1'>option3 </h3>
     <h3 className='option1'>option4 </h3>
-    </div>
     <h3 className='next'> Next </h3>
+    </div>
 </div>
 </div>
 )
