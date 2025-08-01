@@ -8,7 +8,6 @@ const Result = () => {
     };
   return (
     <div>
-      Hi, I am reslt;
        <div className='resultWrapper'>
         <div className="resultContainer">
             <div className="fraction">
