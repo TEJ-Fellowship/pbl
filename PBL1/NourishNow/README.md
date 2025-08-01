@@ -31,7 +31,7 @@
 - [ ] Recipe Listing Page
 - [ ] Recipe Detail Page
 - [ ] Saved Recipes Page
-- [ ] Create Recipe Form Page
+- [⌛] Create Recipe Form Page
 - [✅] Navbar for navigation
 
 ---
