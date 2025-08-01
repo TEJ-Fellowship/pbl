@@ -8,93 +8,92 @@ height: 100vh;
 width: 100vw;
 }
 
-
-.question-container {
-width: 570;
-height: 873;
-top: 75px;
-left: 435px;
-opacity: 1;
-border-radius: 64px;
-}
-
-
-.question-title {
-    font-size: 24px;
-    font-family:Ubuntu;
-    text-align: center;
-    margin-bottom: auto;
-
-}
 .timer {
-margin-bottom: 0%;
+margin-bottom: 20px;
 font-family: Ubuntu;
 font-weight: 700;
 font-style: Bold;
-font-size: 70.22px;
+font-size: 80.22px;
 line-height: 80%;
 letter-spacing: 2%;
 text-align: center;
 vertical-align: middle;
 color: #6035D3;
 }
-.question-card {
-    display: flex;
-    align-items: center;
-flex-direction: column;
-  padding-top:20rem;
-  background-color: white;
-  padding: 1.2rem;
-  border-radius:1.5rem;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-.topic {
-font-family:Ubuntu;
-color:#6035D3;
-background-color:#ccc7dc;
-width: auto;
-height: auto;
-opacity: 0.9;
-border-radius:12px;
-padding: 8px;
-gap: 8px;
-text-align: center;
-margin-bottom: auto;
 
-}
-hr {
-    width: 300px;
-}
-.options{
+.question-card {
 display: flex;
 align-items: center;
 flex-direction: column;
-width: 380px;
-height:270px;
-top: 327px;
-left: 41.03px;
-opacity: 1;
-gap: 8px;
-border: 1px solid red;
+background-color: white;
+padding: 50px;
+width: 520px;
+height: 773px;
+border-radius: 32px;
+background: #FFF;
 }
-.option1{
-margin:1.5%;
+
+.question-title{
+    margin-top: 20px;
+color: #000;
+text-align: center;
 font-family: Ubuntu;
+font-size: 24px;
+font-style: normal;
+font-weight: 700;
+line-height: 116.635%; /* 27.992px */
+letter-spacing: 0.48px;
+}
+
+.topic {
+margin-top: 10px;
+display: inline-flex;
+padding: 10px;
+justify-content: center;
+align-items: center;
+/* gap: 10px; */
+border-radius: 12px;
+background: #E1D7FA;
+color: #6035D3;
+
+font-family: Ubuntu;
+font-size: 16px;
+font-style: normal;
 font-weight: 400;
-font-style: Regular;
-font-size: 21.88px;
-letter-spacing: 0%;
-text-align: center;
-vertical-align: middle;
-background-color: #F7F7F8;
-width: 350px;
-opacity: 1;
-border-radius:8px;
-padding:12px;
+line-height: normal;
 }
-.next {
-margin-top:8px;
-text-align: center;
+
+hr {
+width: 376.603px;
+height: 1px;
+background: rgba(200, 183, 183, 0.80);
 }
+.option-container{
+display: flex;
+width: 488.764px;
+flex-direction: column;
+align-items: flex-start;
+/* gap: 2.885px; */
+}
+
+.option1, .next{
+display: flex;
+height: 32.069px;
+padding: 18.268px 46.536px 18.8px 46.624px;
+justify-content: center;
+align-items: center;
+align-self: stretch;
+border-radius: 21.885px;
+background: #F7F7F8;
+color: #000;
+
+text-align: center;
+font-family: Ubuntu;
+font-size: 21.885px;
+font-style: normal;
+font-weight: 400;
+line-height: normal;
+/* width: 100%; */
+  /* box-sizing: border-box;  */
+}
+
