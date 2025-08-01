@@ -21,7 +21,7 @@ const Quiz_timer = () => {
 
   return (
     <div className='timer'>
-      Time Left : <strong>{timeLeft}</strong>
+      <strong>{timeLeft}</strong>
     </div>
   )
 }
