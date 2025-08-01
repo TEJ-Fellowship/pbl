@@ -16,8 +16,10 @@ const Header = () => {
               <p>Get TEJFlix Membership, 30-day return or refund guarantee.</p>
             </div>
             <div className="sing_in_up">
-              <NavLink to="# ">SIGN IN</NavLink>
-              <NavLink to="# ">SIGN UP</NavLink>
+              {/* <NavLink to="# ">SIGN IN</NavLink> */}
+              {/* <NavLink to="# ">SIGN UP</NavLink> */}
+              <NavLink to="index">SIGN IN</NavLink>
+              <NavLink to="index">SIGN UP</NavLink>
             </div>
           </div>
         </section>
