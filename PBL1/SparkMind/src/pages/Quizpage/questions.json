@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "topic": "social",
+    "question": "Which of the following is a basic human right?",
+    "options": ["Owning a car", "Freedom of speech", "Free Wi-Fi", "Unlimited vacation"],
+    "answer": "Freedom of speech"
+  },
+  {
+    "id": 2,
+    "topic": "maths",
+    "question": "What is the square root of 144?",
+    "options": ["10", "11", "12", "13"],
+    "answer": "12"
+  },
+  {
+    "id": 3,
+    "topic": "logic",
+    "question": "If all bloops are razzies and all razzies are lazzies, are all bloops definitely lazzies?",
+    "options": ["Yes", "No", "Cannot be determined", "Only sometimes"],
+    "answer": "Yes"
+  },
+  {
+    "id": 4,
+    "topic": "critical thinking",
+    "question": "If a train leaves station A at 2 PM traveling 60km/h, and another leaves station B at 3 PM traveling 90km/h, when will they meet?",
+    "options": ["They never meet", "4 PM", "5 PM", "Cannot be determined"],
+    "answer": "Cannot be determined"
+  },
+  {
+    "id": 5,
+    "topic": "geography",
+    "question": "Which country has the longest coastline in the world?",
+    "options": ["Australia", "Canada", "Russia", "Indonesia"],
+    "answer": "Canada"
+  }
+]
