@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 // import Card from "../components/UI/Card"; // Assuming you want to reuse your Card component
 import "./Watchlist.css"; // Create this CSS file for styling
 
+import ReadOnlyStarRating from "../components/UI/ReadOnlyStarRating";
+
 const Watchlist = () => {
   const [watchlistMovies, setWatchlistMovies] = useState([]);
 
   useEffect(() => {
-
-    //concept of localstorage here 
+    //concept of localstorage here
     const storedWatchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
     setWatchlistMovies(storedWatchlist);
   }, []);
@@ -30,18 +31,42 @@ const Watchlist = () => {
           No movies in your watchlist yet. Add some from the movie details page!
         </p>
       ) : (
-        <div className="watchlist-list"> {/* New container for list items */}
+        <div className="watchlist-list">
+          {" "}
+          {/* New container for list items */}
           {watchlistMovies.map((curMovie) => (
-            <div key={curMovie.imdbID} className="watchlist-item-detail"> {/* Changed class name */}
+            <div key={curMovie.imdbID} className="watchlist-item-detail">
+              {" "}
+              {/* Changed class name */}
               <div className="watchlist-item-image">
                 <img src={curMovie.Poster} alt={curMovie.Title} />
               </div>
               <div className="watchlist-item-info">
-                <h3>{curMovie.Title} ({curMovie.Year})</h3>
-                <p><strong>Genre:</strong> {curMovie.Genre}</p>
-                <p><strong>Runtime:</strong> {curMovie.Runtime}</p>
-                <p><strong>IMDB Rating:</strong> {curMovie.imdbRating}</p>
-                <p><strong>Actors:</strong> {curMovie.Actors}</p>
+                <h3>
+                  {curMovie.Title} ({curMovie.Year})
+                </h3>
+                <p>
+                  <strong>Genre:</strong> {curMovie.Genre}
+                </p>
+                <p>
+                  <strong>Runtime:</strong> {curMovie.Runtime}
+                </p>
+                <p>
+                  <strong>IMDB Rating:</strong> {curMovie.imdbRating}
+                </p>
+                <p>
+                  <strong>Actors:</strong> {curMovie.Actors}
+                </p>
+                {/* <p><strong>Your Rating:</strong> {curMovie.userRating || "Not rated"}</p> */}
+                <div>
+                  <strong>Your Rating:</strong>
+                  {curMovie.userRating ? (
+                    <ReadOnlyStarRating rating={curMovie.userRating} />
+                  ) : (
+                    " Not rated"
+                  )}
+                </div>
+
                 <p className="watchlist-plot">{curMovie.Plot}</p>
                 <button
                   className="remove-button"
