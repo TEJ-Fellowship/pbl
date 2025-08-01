@@ -3,6 +3,7 @@
 import { NavLink, useLoaderData } from "react-router-dom";
 import "../UI/Card.css";
 import { useEffect, useState } from "react";
+import StarRating from "./StarRating";
 
 const MovieDetails = () => {
   const movieData = useLoaderData();
@@ -10,6 +11,7 @@ const MovieDetails = () => {
   // console.log(movieData);
 
   const [isAddedToWatchlist, setIsAddedToWatchlist] = useState(false);
+  const [rating, setRating] = useState(0);
   useEffect(() => {
     const storedWatchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
     const movieInWatchlist = storedWatchlist.some(
@@ -28,8 +30,10 @@ const MovieDetails = () => {
     );
 
     if (!movieExists) {
+      //when adding a movie to the watchlist , include the raing:
+      const movieWithRating ={ ...movieData, userRating: rating};
       // Add the current movie data to the watchlist
-      const updatedWatchlist = [...storedWatchlist, movieData];
+      const updatedWatchlist = [...storedWatchlist, movieWithRating];
       localStorage.setItem("watchlist", JSON.stringify(updatedWatchlist));
       setIsAddedToWatchlist(true);
       alert(`${movieData.Title} added to your watchlist!`);
@@ -100,6 +104,11 @@ const MovieDetails = () => {
                 </span>
                 {BoxOffice}
               </p>
+              {/* here we go and pass setRating to StarRating */}
+              <StarRating 
+                onSetRating={setRating}
+                message={["Terrible", "Bad", "Okary","Good","Excellent"]}
+                />
             </div>
 
             <div>
