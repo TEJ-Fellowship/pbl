@@ -218,24 +218,34 @@ Use semantic commit messages to clearly communicate the purpose and scope of you
 
 ```
 feat: add user authentication with JWT tokens
-
 fix: resolve login form validation error
-
 docs: update API documentation for user endpoints
-
 refactor: extract form validation logic into custom hook
-
 test: add unit tests for user registration component
-
 chore: update dependencies to latest versions
 ```
 
-### Best Practices
+### Subject Line Rules (Header)
+- Use the imperative mood: "Add", not "Added" or "Adds"
+- Capitalize only the first letter
+- No period (full-stop) at the end
+- Keep under 50 characters
 
-- Use the imperative mood ("add" not "added" or "adds")
-- Keep the description under 50 characters
-- Use the body to explain what and why, not how
-- Reference issues and pull requests in the footer
+### Body Rules (Optional but Recommended)
+- Insert a blank line between subject and body
+- Use if additional context is needed
+- Explain what was done and why, not how
+- Wrap at 72 characters
+
+### Example
+```
+feat(auth): Add JWT login for user authentication
+
+Implement stateless login by issuing JWT tokens after user
+authentication. This improves session handling and supports
+token-based role management in future updates.
+
+```
 
 ## 7. Pull Request Process
 
@@ -251,10 +261,11 @@ chore: update dependencies to latest versions
 - **Screenshots**: Include before/after screenshots for UI changes
 - **Testing Plan**: Describe how to manual test the changes
 - **Breaking Changes**: Clearly document any breaking changes
+- **Linked Issues: Mention related issues using Closes #issue_number to auto-close them on merge
 
 ### PR Template
 
-```markdown
+```
 ## Summary
 
 Brief description of changes
@@ -279,8 +290,9 @@ E.g.:
 [Include relevant screenshots]
 
 ## Additional Notes
+- Any other relevant information
 
-Any other relevant information
+Closes #12
 ```
 
 ## 8. Code Review Process
