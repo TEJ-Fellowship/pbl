@@ -79,7 +79,7 @@
   overflow: hidden; /* Hide overflowing text */
   text-overflow: ellipsis; /* Add ellipsis for overflow */
   display: -webkit-box;
-  -webkit-line-clamp: 4; /* Limit to 4 lines */
+  /* -webkit-line-clamp: 4; Limit to 4 lines */
   -webkit-box-orient: vertical;
 }
 
