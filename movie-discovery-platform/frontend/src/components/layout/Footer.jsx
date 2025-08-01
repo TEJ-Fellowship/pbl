@@ -3,7 +3,8 @@
     <footer className="section-footer">
       <div className="footer-container container">
         <div className="content_1">
-          <img src="./images/logo.png" alt="logo" />
+          {/* <img src="./images/logo.png" alt="logo" /> */}
+          <img src="./movie_logo.png" alt="logo" />
           <p>
             Welcome to TEJFlix MovieStore, your ultimate destination for
             cutting-edge gadgets!
