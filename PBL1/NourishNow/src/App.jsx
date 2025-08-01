@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import Navbar from './Components/Navbar/Navbar'
+import HomePage from './Components/Home-page/HomePage.jsx'
 
 const App = () => {
   return (
@@ -8,6 +9,7 @@ const App = () => {
     <div className='navbar'>
       <Navbar/>
     </div>
+    <HomePage />
     </>
   )
 }

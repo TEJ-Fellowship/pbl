@@ -1,0 +1,78 @@
+.div1 {
+    width: 900px;
+    height: 1000px;
+    background-color: #f7fcfa;
+    display: flex;
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    border-radius: 10px;
+    justify-content: center;
+    align-items: flex-start;
+    margin: 20px auto;
+    box-shadow: 0 0 8px;
+}
+
+.fun-fact-container {
+    width: 800px;
+    height: 500px;
+    border-radius: 10px;
+    background-image: url('./pexels-pixabay-372882.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: center;
+    box-shadow: 0 0 8px #707776;
+    background-position: center;
+    overflow: hidden;
+    margin: 30px;
+    position: relative;
+}
+
+.search-entity {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.search-bar {
+    width: 500px;
+    height: 50px;
+    border-radius: 10px;
+    background-color: #dcfce7;
+    color: #10b981;
+    opacity: 0.8;
+    border: none;
+    font-size: 20px;
+    padding: 0 20px;
+    outline: none;
+}
+
+#search-button {
+    color: white;
+    background-color: #10b981;
+    font-weight: medium;
+    padding: 16px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    margin-left: 20px;
+}
+
+#search-button:hover {
+    transform: scale(1.05);
+}
+
+#head-question {
+    color: white;
+    display: flex;
+    justify-content: center;
+    font-weight: 1000;
+}
+
+#fun-fact {
+    color: white;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    font-size: medium;
+    padding: 20px 50px;
+    margin-bottom: 200px;
+}
