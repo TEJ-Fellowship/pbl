@@ -60,6 +60,8 @@ function YourTask({ tasks, onCompleteTask, onDeleteTask }) {
               style={{
                 cursor: task.isComplete ? "default" : "pointer",
                 color: task.isComplete ? "#aaa" : "#333",
+                transition: "color 0.3s, opacity 0.5s",
+                opacity: task.isComplete ? 0.5 : 1,
               }}
               onClick={() => {
                 if (!task.isComplete && !fadingTasks.includes(task.id)) {
