@@ -1,0 +1,17 @@
+#each-category {
+    margin-bottom: 30px;
+}
+
+#each-category>div {
+    height: 140px;
+    width: 143.7px;
+    background-color: #22c772; 
+    border-radius: 10px;
+    box-shadow: 0 0 6px #ccc;
+}
+
+#each-category>h5 {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
