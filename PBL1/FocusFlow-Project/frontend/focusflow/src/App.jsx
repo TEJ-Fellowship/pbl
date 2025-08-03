@@ -5,9 +5,10 @@ import YourTask from "./components/YourTask";
 import QuickAdd from "./components/QuickAdd";
 import Navbar from "./components/Navbar";
 function App() {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState([]); //[{},{},{}]
 
   const addTask = (task) => {
+    //task=newTask
     setTasks((prev) => [...prev, task]);
   };
 

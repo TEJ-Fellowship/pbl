@@ -14,7 +14,7 @@ function QuickAdd({ onAdd }) {
     const newTask = {
       id: Date.now(),
       title,
-      description,
+      description, //[{},{}]
       duedate,
       category,
     };
