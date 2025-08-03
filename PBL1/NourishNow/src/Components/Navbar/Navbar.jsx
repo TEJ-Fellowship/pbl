@@ -1,3 +1,4 @@
+
 import styles from './Navbar.module.css';
 import { FaSearch } from "react-icons/fa";
 import { MdOutlineBookmarkAdd } from "react-icons/md";
