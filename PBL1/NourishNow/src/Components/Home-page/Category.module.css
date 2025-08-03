@@ -1,0 +1,46 @@
+.eachCategory {
+    margin-bottom: 30px;
+}
+
+.eachCategory > div {
+    height: 140px;
+    width: 143.7px;
+    background-color: #22c772; 
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-size: cover;
+    box-shadow: 0 0 6px #ccc;
+}
+
+.eachCategory > h5 {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+/* Background images mapped to classNames */
+.quickeasy {
+    background-image: url('./category-images/easyandfast.jpg');
+}
+
+.vegetarian {
+    background-image: url('./category-images/vegeterian-food.jpg');
+}
+
+.desserts {
+    background-image: url('./category-images/desserts-item.jpg');
+}
+
+.italian {
+    background-image: url('./category-images/italian-food.jpg');
+}
+
+.healthy {
+    background-image: url('./category-images/healthy-food.jpg');
+}
+
+.mexican {
+    background-image: url('./category-images/mexican-food.jpg');
+}

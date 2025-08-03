@@ -17,10 +17,12 @@ const Recipeformpage = () => {
   };
 
   return (
+    <div className={styles.maindiv}>
+    <h1 className={styles.title}>Manage Your Recipes</h1>
     <div className={styles.formPreviewWrapper}>
       {/* Left: Form Section */}
       <div className={styles.container}>
-        <h1 className={styles.title}>Manage Your Recipes</h1>
+
 
         <div className={styles.formGroup}>
           <label htmlFor="title">Recipe Title</label>
@@ -30,7 +32,7 @@ const Recipeformpage = () => {
             placeholder="Enter recipe title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-          />
+            />
         </div>
 
         {/* Category and Image Upload side by side */}
@@ -42,7 +44,7 @@ const Recipeformpage = () => {
               name="category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-            >
+              >
               <option value="" disabled>
                 Select category
               </option>
@@ -61,7 +63,7 @@ const Recipeformpage = () => {
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-            />
+              />
           </div>
         </div>
 
@@ -73,7 +75,7 @@ const Recipeformpage = () => {
             placeholder="Enter ingredients"
             value={ingredients}
             onChange={(e) => setIngredients(e.target.value)}
-          />
+            />
         </div>
 
         <div className={styles.formGroup}>
@@ -82,7 +84,7 @@ const Recipeformpage = () => {
             id="steps"
             className={styles.txtarea}
             placeholder="Enter steps to prepare your recipe"
-          />
+            />
         </div>
 
         <div className={styles.formGroup}>
@@ -93,7 +95,7 @@ const Recipeformpage = () => {
             placeholder="Enter time in minutes"
             value={preptime}
             onChange={(e) => setPreptime(e.target.value)}
-          />
+            />
         </div>
 
         <div className={styles.buttonGroup}>
@@ -121,6 +123,7 @@ const Recipeformpage = () => {
         </div>
       )}
     </div>
+      </div>
   );
 };
 
