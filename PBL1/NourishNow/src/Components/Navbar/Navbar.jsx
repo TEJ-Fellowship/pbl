@@ -1,4 +1,3 @@
-
 import styles from './Navbar.module.css';
 import { FaSearch } from "react-icons/fa";
 import { MdOutlineBookmarkAdd } from "react-icons/md";
@@ -17,13 +16,13 @@ const Navbar = () => {
       </div>
 
       <div className={styles.rightSection}>
-        <span className={styles.search}>
+        <span className={styles.navSearch}>
           <FaSearch className={styles.icon} />
-          <input placeholder='Search' />
+          <input className={styles.navSearchInput} placeholder='Search' />
         </span>
 
         <span className={styles.bookmark}>
-          <MdOutlineBookmarkAdd size={30} className={styles.icon} />
+          <MdOutlineBookmarkAdd size="1.5rem" className={styles.icon} />
         </span>
 
         <span className={styles.avatar}>
