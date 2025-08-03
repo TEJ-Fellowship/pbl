@@ -7,6 +7,10 @@
     width: 143.7px;
     background-color: #22c772; 
     border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-size: cover;
     box-shadow: 0 0 6px #ccc;
 }
 

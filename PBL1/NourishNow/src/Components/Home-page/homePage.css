@@ -1,6 +1,6 @@
 .div1 {
     width: 900px;
-    height: 1100px;
+    height: 1050px;
     background-color: #f7fcfa;
     display: flex;
     flex-direction: column;
@@ -102,4 +102,28 @@
 
 .browse-by-category > div:hover {
     transform: scale(1.05);
+}
+
+#quickeasy {
+    background-image: url('./category-images/easyandfast.jpg');
+}
+
+#vegetarian {
+    background-image: url('./category-images/vegeterian-food.jpg');
+}
+
+#desserts {
+    background-image: url('./category-images/desserts-item.jpg');
+}
+
+#italian {
+    background-image: url('./category-images/italian-food.jpg')
+}
+
+#healthy {
+    background-image: url('./category-images/healthy-food.jpg')
+}
+
+#mexican {
+    background-image: url('./category-images/mexican-food.jpg')
 }
