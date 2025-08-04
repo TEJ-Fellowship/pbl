@@ -12,9 +12,9 @@ const Navbar = () => {
       </span>
 
       <div className={styles.links}>
-        <Link to="/" className={styles.link}>Home</Link>
-        <Link to="/add-recipe" className={styles.link}>Add Recipe</Link>
-        <Link to="/Explore" className={styles.link}>Explore</Link>
+        <Link to='/' className={styles.link}>Home</Link>
+        <Link to='/add-recipe' className={styles.link}>Add Recipe</Link>
+        <Link to='/explore' className={styles.link}>Explore</Link>
       </div>
 
       <div className={styles.rightSection}>

@@ -9,11 +9,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 const App = () => {
   return (
     <>
-    <div className='navbar'>
-      <Navbar/>
-    </div>
-    <HomePage />
-    <Recipeformpage/>
+      <Router>
+        <div className='navbar'>
+          <Navbar />
+        </div>
+        <Routes>
+          <Route path='/' element={<HomePage />} />
+          <Route path='/add-recipe' element={<Recipeformpage />} />
+        </Routes>
+      </Router>
     </>
   )
 }
