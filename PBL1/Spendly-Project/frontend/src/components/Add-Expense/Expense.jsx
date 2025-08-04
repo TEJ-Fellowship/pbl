@@ -1,5 +1,5 @@
 import { useState } from "react";
-import './Expense.css'
+import styles from "./Expense.module.css";
 
 const ExpenseForm = ({closePopup}) => {
   const [expenseList, setExpenseList] = useState([]);
@@ -39,12 +39,13 @@ const ExpenseForm = ({closePopup}) => {
 
   return (
     <>
-      <div className="form-container">
+      <div className={styles.formContainer}>
       <form onSubmit={handleSubmit}>
 
-        <div className="form-group">
-          <label htmlFor="amount">Amount:</label>
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="amount">Amount:</label>
           <input
+            className={styles.input}
             type="number"
             id="amount"
             name="amount"
@@ -54,9 +55,10 @@ const ExpenseForm = ({closePopup}) => {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="date">Date</label>
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="date">Date</label>
           <input 
+          className={styles.input}
           type="date"
           id='date'
           onChange={(e) => setDate(e.target.value)}
@@ -65,9 +67,10 @@ const ExpenseForm = ({closePopup}) => {
 
         </div>
 
-        <div className="form-group">
-          <label htmlFor="description">Description:</label>
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="description">Description:</label>
           <textarea
+          className={styles.textarea}
             id="description"
             name="description"
             placeholder="Enter description"
@@ -76,9 +79,10 @@ const ExpenseForm = ({closePopup}) => {
           />
         </div>
 
-        <div className="form-group">
-          <label for="category">Category:</label>
+        <div className={styles.formGroup}>
+          <label className={styles.label} for="category">Category:</label>
           <select
+          className={styles.select}
             id="category"
             name="category"
             onChange={(e)=> setCategory(e.target.value)}
@@ -90,7 +94,7 @@ const ExpenseForm = ({closePopup}) => {
           </select>
         </div>
 
-        <button type="submit">Add Expense</button>
+        <button className={styles.btn} type="submit">Add Expense</button>
       </form>
     </div>
 
