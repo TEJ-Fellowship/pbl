@@ -27,7 +27,7 @@
 
 ### 🟢 STEP 2: Basic UI & Navigation
 
-- [⌛] Home Page: Featured/trending recipes
+- [✅] Home Page: Featured/trending recipes
 - [ ] Recipe Listing Page
 - [ ] Recipe Detail Page
 - [ ] Saved Recipes Page
@@ -50,14 +50,14 @@
 - [ ] Delete Saved Recipes  
 - [ ] Search by Title  
 - [ ] View Full Details  
-- [ ] Show Ingredients Preview  
-- [ ] Display Preparation Time
+- [✅] Show Ingredients Preview  
+- [✅] Display Preparation Time
 
 ---
 
 ### 🟢 STEP 5: Contribution Features
 
-- [ ] Recipe Creation Form  
+- [✅] Recipe Creation Form  
 - [ ] Categorization with Tags or Dropdowns  
 - [ ] Ratings & Review Section  
 - [ ] Saved Recipe Organizer (Folders/Tags)

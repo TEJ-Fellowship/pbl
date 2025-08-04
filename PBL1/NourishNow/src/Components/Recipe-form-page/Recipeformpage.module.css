@@ -2,15 +2,34 @@
   font-family: 'Poppins', sans-serif;
 }
 
+.maindiv{
+    width: 1110px;
+    height: 900px;
+    background-color: #f7fcfa;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    border-radius: 10px;
+    margin: 10px auto;
+    box-shadow: 0 0 8px;
+}
+
+.title{
+  font-family: sans-serif;
+  margin-left: 50px;
+}
+
+
 /* Main wrapper for layout */
 .formPreviewWrapper {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 40px;
+  gap: 30px;
   flex-wrap: wrap;
   padding: 40px;
   box-sizing: border-box;
+  margin-left: 15px;
 }
 
 /* Left: Form container */
@@ -126,7 +145,7 @@ select::placeholder {
 .previewCard {
   border: 1px solid #cde3d8;
   border-radius: 12px;
-  background-color: #ffffff;
+  background-color: #d1f8e7;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
   display: flex;
