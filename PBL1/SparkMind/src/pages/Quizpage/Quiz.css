@@ -35,7 +35,7 @@ background: #FFF;
 
 .question-title{
     margin-top: 20px;
-color: #000;
+/* color: #000; */
 text-align: center;
 font-family: Ubuntu;
 font-size: 24px;
@@ -100,15 +100,11 @@ background: rgba(200, 183, 183, 0.80);
 
 .correct {
   text-align: center;
-  background: #EEFFF2;
-  /* border: 2px solid #21F14F; */
   color: #21F14F;
 }
 
 .incorrect {
   text-align: center;
-  background: #FED7D7;
-  /* border: 2px solid #FF3131; */
   color: #FF3131;
 }
 /* #21F14F (border)

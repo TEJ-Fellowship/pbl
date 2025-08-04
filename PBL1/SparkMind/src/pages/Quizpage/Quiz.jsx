@@ -85,16 +85,23 @@ function Quiz() {
             <h3
               key={index}
               className={`option1 
-                                  ${clicked ? "disabled" : ""}
-                                   ${
-                                     clicked && option === selectedOption
-                                       ? isCorrect
-                                         ? "correct"
-                                         : "incorrect"
-                                       : ""
-                                   }`}
+                                  ${clicked ? "disabled" : ""}`}
               onClick={() => {
                 answerCheck(option);
+                setSelectedOption(index);
+              }}
+              style={{
+                padding: "10px 20px",
+                border: "1px solid #ccc",
+                cursor: "pointer",
+                backgroundColor:
+                  selectedOption === index
+                    ? isCorrect
+                      ? "#21F14F"
+                      : "#FF3131"
+                    : "white",
+                color: selectedOption === index ? "white" : "black",
+                borderRadius: "5px",
               }}
             >
               {option}
@@ -106,6 +113,7 @@ function Quiz() {
           <h3
             className={`next ${optionSelected ? "active" : "disabled"}`}
             onClick={() => {
+              setSelectedOption(null);
               if (!optionSelected) return; // Prevent clicking if not selected
 
               if (currentIndex === questions.length - 1) {
