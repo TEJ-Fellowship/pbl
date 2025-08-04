@@ -1,0 +1,18 @@
+.anglebtn {
+  border-radius: 4px;
+  margin: 0 10px 0 10px;
+  color: rgb(86, 86, 86);
+}
+.calenderheader {
+  display: flex;
+  margin: auto;
+  margin-top: 20px;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+  font-size: x-large;
+  width: 25%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  height: 40px;
+}
+
