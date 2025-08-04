@@ -27,7 +27,7 @@ align-items: center;
 flex-direction: column;
 background-color: white;
 padding: 50px;
-width: 520px;
+width: 500px;
 height: 773px;
 border-radius: 32px;
 background: #FFF;
@@ -99,14 +99,16 @@ background: rgba(200, 183, 183, 0.80);
 }
 
 .correct {
+  text-align: center;
   background: #EEFFF2;
-  border: 2px solid #21F14F;
+  /* border: 2px solid #21F14F; */
   color: #21F14F;
 }
 
 .incorrect {
+  text-align: center;
   background: #FED7D7;
-  border: 2px solid #FF3131;
+  /* border: 2px solid #FF3131; */
   color: #FF3131;
 }
 /* #21F14F (border)
@@ -118,7 +120,14 @@ Incorrect Answer:
 /* .next.active:hover {
     color: white;
 } */
+.quizController{
+  flex-direction: column;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  
 
+}
 .next{
     background: #cbd5e0;
     cursor: not-allowed;
