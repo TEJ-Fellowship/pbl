@@ -11,10 +11,9 @@ function CalendarBody({
   const actualYear=date.getFullYear()
   const actualMonth=date.getMonth()
   const actualDate=date.getDate()
-  console.log(actualDate,actualMonth,actualYear)
   const generateCalendarDays = () => {
     const calendarDays = [];
-    let CountDay = 0;
+    let CountDay = 1;
     for (let i = 0; i < 6; i++) {
       let week = [];
       for (let j = 0; j < 7; j++) {
@@ -27,7 +26,7 @@ function CalendarBody({
         }
         if (j < firstDay && i === 0) {
           cellContent = "";
-        } else if (CountDay < lastDate) {
+        } else if (CountDay <= lastDate) {
           cellContent = CountDay;
           CountDay++;
         } else {
@@ -69,5 +68,5 @@ function CalendarBody({
     </div>
   );
 }
-
+console
 export default CalendarBody;
