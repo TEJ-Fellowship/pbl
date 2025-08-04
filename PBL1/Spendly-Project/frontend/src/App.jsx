@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
-import Expense from "./components/Add-Expense/Expense"
 
 import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
+import TransactionList from "./features/Transaction/TransactionList";
 
 function App() {
   return (
@@ -11,10 +11,11 @@ function App() {
       <Router>
         <div className="appContainer">
           <Navbar />
-
           <Sidebar />
-
-          <Expense />
+          <Routes>
+            <Route path="/transaction" element={<TransactionList />}></Route>
+          </Routes>
+          <TransactionList />
         </div>
       </Router>
     </>
