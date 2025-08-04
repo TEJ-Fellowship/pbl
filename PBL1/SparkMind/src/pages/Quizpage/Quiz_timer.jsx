@@ -2,7 +2,7 @@ import React from 'react'
 import { useState, useEffect } from 'react'
 
 const Quiz_timer = ({setTimeUp}) => {
-    const[timeLeft, setTimeLeft] = useState(30);
+    const[timeLeft, setTimeLeft] = useState(1000);
 
     useEffect(()=>{
         const interval = setInterval(()=>{

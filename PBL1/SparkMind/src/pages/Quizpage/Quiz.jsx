@@ -14,7 +14,9 @@ function Quiz() {
     const [clicked, setClicked] = useState(false); // To disable after 1 click
     const [optionSelected, setOptionSelected] = useState(false);
     const [ourOptions, setOurOptions] = useState([]);
+    const [isCorrect, setIsCorrect] = useState(null);
     const currentItem = questions[currentIndex];
+    const [selectedOption, setSelectedOption] = useState("");
 
       const [score, setScore] = useState(0); //score tracker
   const [timeUp, setTimeUp] = useState(false);
@@ -48,17 +50,21 @@ function Quiz() {
 
 
   function answerCheck(option) {
+    if (clicked) return; // Prevent further clicking
+    setClicked(true);
+    setSelectedOption(option);
+    setOptionSelected(true); // Mark that an option was selected
     if (option === currentItem.answer) {
       setFeedback("Wow! You are correct");
+      setIsCorrect(true);
       setScore(prev=>prev+1); //added the score updating part
     } else {
       setFeedback(`Oops! Correct answer is ${currentItem.answer}`);
+      setIsCorrect(false);
     }
+  }
   
-   if (clicked) return; // Prevent further clicking
-        setClicked(true);
-        setOptionSelected(true); // Mark that an option was selected
-    }
+  
     function handleNext() {
         if (currentIndex < questions.length - 1) {
             setCurrentIndex(currentIndex + 1);
@@ -78,36 +84,44 @@ function Quiz() {
                 <p className="topic">{currentItem.topic}</p>
                 <hr className="underline" />
 
-                <div className="option-container">
+                
                      <div className="options">
                         {ourOptions.map((option, index) => (
                             <h3
                                 key={index}
-                                className={`option1 ${clicked ? "disabled" : ""}`}
-                                onClick={() => answerCheck(option)}
+                                
+                                className={`option1 
+                                  ${clicked ? "disabled" : ""}
+                                   ${clicked && option === selectedOption ? (isCorrect ? "correct" : "incorrect") : ""}`
+                                  }
+                                onClick={() => {
+                          
+                                  answerCheck(option)
+                                }}
                             >
                                 {option}
                             </h3>
                         ))}
                     </div>
-
-                    <h3 className="feedback">{feedback}</h3>
+                    <h3 className= {isCorrect? "correct" : "incorrect"}>{feedback}</h3>
+                    <div className="next">
                    <h3
     className={`next ${optionSelected ? "active" : "disabled"}`}
     onClick={() => {
-        if (!optionSelected) return; // Prevent clicking if not selected
-
-        if (currentIndex === questions.length - 1) {
-            handleResults();
-        } else {
-            handleNext();
-        }
+      if (!optionSelected) return; // Prevent clicking if not selected
+      
+      if (currentIndex === questions.length - 1) {
+        handleResults();
+      } else {
+        handleNext();
+      }
     }}
 >
     {currentIndex === questions.length - 1 ? "View Results" : "Next"}
 </h3>
+  </div>
 
-                </div>
+               
             </div>
         </div>
     );
