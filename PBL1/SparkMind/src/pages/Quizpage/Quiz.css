@@ -97,3 +97,18 @@ line-height: normal;
   /* box-sizing: border-box;  */
 }
 
+.option1.disabled {
+  pointer-events: none;        /* Prevent clicking */
+  background-color: #E6E6E6;   /* Slightly dim background */
+  color: #999;                 /* Dim text */
+  opacity: 1;                  /* Keep full opacity for consistent layout */
+  border: 1px dashed #bbb;     /* Optional: subtle border to show "locked" */
+  cursor: not-allowed;         /* Visual feedback */
+}
+
+.next.active:hover {
+    color: rgb(224, 11, 11);
+}
+
+
+
