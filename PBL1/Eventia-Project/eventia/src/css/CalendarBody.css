@@ -1,0 +1,27 @@
+.calendarbody{
+  /* background-color: rgb(127, 162, 193); */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  flex-direction: column;
+  margin-top: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 60%;
+  padding: 12px;
+}
+table{
+    border: 1px solid rgb(202, 202, 202);
+    border-collapse: collapse;
+}
+tr,th,td{
+    table-layout: fixed;
+    width: 100px;
+    border: 1px solid rgb(241, 241, 241);
+    padding: 15px;
+    text-align: center; 
+}
+.current{
+    background-color: rgb(89, 138, 245);
+    border-radius: 50%;
+}

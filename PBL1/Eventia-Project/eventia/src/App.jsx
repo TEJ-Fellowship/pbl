@@ -15,7 +15,6 @@ function App() {
         <Navbar theme={theme} setTheme={setTheme} />
       </div>
     </>
-   
   )
 }
 
