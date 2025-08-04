@@ -5,7 +5,7 @@ const Result = () => {
   const navigate = useNavigate();
   const location = useLocation(); //added the location hook to receive data passed as navigate("/result", { state: { score } });
 
-  const score = location.state?.score || 0; //read the score
+  const { score, duration } = location.state || { score: 0, duration: 30 }; //read the score
   const handlePlay = () => {
     navigate("/quiz");
   };
@@ -20,7 +20,8 @@ const Result = () => {
             <span style={{ color: "grey" }}>correct!</span>
           </div>
           <br />
-          <p className="tagline">Keep Shining!</p>
+          <span>⏱️ Time Taken: {duration}s</span>
+          {/* <p className="tagline">Keep Shining!</p> */}
           <button className="playBtn" onClick={handlePlay}>
             Play Again
           </button>
