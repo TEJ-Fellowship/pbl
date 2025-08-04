@@ -4,8 +4,7 @@ import Calendar from '../components/Calendar'
 function HomePage() {
   return (<>
        <Calendar />
-  </>
-  
+  </>  
   )
 }
 
