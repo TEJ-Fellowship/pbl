@@ -11,9 +11,9 @@ const App = () => {
     <>
     <div className='navbar'>
       <Navbar/>
-      <Recipeformpage/>
     </div>
     <HomePage />
+    <Recipeformpage/>
     </>
   )
 }
