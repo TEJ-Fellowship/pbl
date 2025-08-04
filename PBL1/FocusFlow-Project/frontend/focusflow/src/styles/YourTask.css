@@ -1,33 +1,44 @@
-/* Grid/List view styles */
-
+/* Grid View Style */
 .TaskList.grid-view {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
-  padding: 12px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) 0;
 }
 
 .TaskList.grid-view .mytask {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  border-radius: 16px;
-  padding: 24px 18px 18px 18px;
-  min-height: 180px;
-  background: #fff;
-  transition: box-shadow 0.2s, transform 0.2s;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: var(--spacing-lg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    min-height: 220px;
+    background-color: var(--color-bg-task);
+
+}
+
+
+
+/* List View Style */
+.TaskList.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+}
+
+.TaskList.list-view .mytask {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
 }
 .TaskList.grid-view .mytask:hover {
   box-shadow: 0 8px 32px rgba(0,0,0,0.16);
   transform: translateY(-2px) scale(1.03);
 }
 
-.TaskList.list-view {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
 .TaskList.list-view {
   display: flex;
@@ -206,3 +217,4 @@
         width: 100%;
     }
 }
+
