@@ -12,7 +12,7 @@ It’s designed for daily upskilling — whether it’s **product sense**, **mar
 
 ### 📌 What It Does:
 
-- 🔍 Choose a topic: `Product`, `Tech Trends`, `Logic`
+- 🔍 Renders 3 topic: `Product`, `Tech Trends`, `Logic`
 - ❓ Take a 5-question quiz: `MCQs` or `True/False`
 - 🧾 See your score with **instant feedback/explanation**
 
