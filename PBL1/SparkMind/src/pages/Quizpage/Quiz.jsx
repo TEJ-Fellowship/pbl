@@ -1,16 +1,26 @@
 import "./Quiz.css";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Quiz_timer from "./Quiz_timer";
 import questions from "./questions.json";
 import { useNavigate } from "react-router-dom";
+
 function Quiz() {
   const navigate = useNavigate();
   const handleResults = () => {
-    navigate("/result");
+    navigate("/result", {state: {score}}); //sending score along with navigation
   };
   const [currentIndex, setCurrentIndex] = useState(3);
   const [feedback, setFeedback] = useState("");
   const currentItem = questions[currentIndex];
+  const [score, setScore] = useState(0); //score tracker
+  const [timeUp, setTimeUp] = useState(false);
+
+
+  useEffect(()=>{
+    if(timeUp){
+      handleResults();
+    }
+  }, [timeUp])
 
   // Shuffle logic
   function shuffleArray(array) {
@@ -27,16 +37,17 @@ function Quiz() {
 
   function answerCheck(option) {
     if (option === currentItem.answer) {
-      setFeedback("Wow! You are correct");
+      setFeedback("Wow! You are correct"); 
+      setScore(prev=>prev+1); //added the score updating part
     } else {
-      setFeedback(`Oops! Correct answer is ${currentItem.answer}`);
+      setFeedback(`Oops! Correct answer is ${currentItem.answer}`); 
     }
   }
 
   return (
     <div className="container">
       <div className="question-card">
-        <Quiz_timer />
+        <Quiz_timer setTimeUp = {setTimeUp}/>
 
         <h2 className="question-title">{currentItem.question}</h2>
         <p className="topic" id="topic">
