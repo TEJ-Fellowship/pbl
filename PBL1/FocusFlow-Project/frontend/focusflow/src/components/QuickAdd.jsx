@@ -48,6 +48,7 @@ function QuickAdd({ onAdd }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Task Title (eg. Finish report!)"
+          required
         />
         <textarea
           value={description}
@@ -55,18 +56,21 @@ function QuickAdd({ onAdd }) {
           name="description"
           id="description"
           placeholder="Description (optional)"
+          required
         ></textarea>
         <div className="date-select-row">
           <input
             type="date"
             value={duedate}
             onChange={(e) => setDuedate(e.target.value)}
+            required
           />
           <select
             id="task-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             name="taskCategory"
+            required
           >
             <option value="all">All Tasks</option>
             <option value="work">Work</option>

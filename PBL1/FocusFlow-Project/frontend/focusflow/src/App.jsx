@@ -12,7 +12,6 @@ function App() {
     setTasks((prev) => [...prev, task]);
   };
 
-  // Mark a task as complete (isComplete: true), but do not remove it
   const handleCompleteTask = (id) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -21,7 +20,6 @@ function App() {
     );
   };
 
-  // Remove a task from the list (delete)
   const handleDeleteTask = (id) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };

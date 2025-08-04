@@ -6,9 +6,8 @@ import "../styles/YourTask.css";
 function YourTask({ tasks, onCompleteTask, onDeleteTask }) {
   const [fadingTasks, setFadingTasks] = useState([]);
   const [filter, setFilter] = useState("All");
-  const [view, setView] = useState("list"); // 'list' or 'grid'
+  const [view, setView] = useState("list"); // yo list ra grid ko lagi ho!
 
-  // Filter tasks by category
   const filteredTasks =
     filter === "All"
       ? tasks
@@ -20,7 +19,6 @@ function YourTask({ tasks, onCompleteTask, onDeleteTask }) {
 
   const categories = ["All", "Work", "Personal", "Study", "Health", "Finance"];
 
-  // Always show filter UI
   if (filteredTasks.length === 0) {
     return (
       <div className="container">
