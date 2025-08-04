@@ -17,6 +17,7 @@ function Quiz() {
   const [isCorrect, setIsCorrect] = useState(null);
   const currentItem = questions[currentIndex];
   const [selectedOption, setSelectedOption] = useState("");
+  const [startTime] = useState(Date.now());
 
   const [score, setScore] = useState(0); //score tracker
   const [timeUp, setTimeUp] = useState(false);
