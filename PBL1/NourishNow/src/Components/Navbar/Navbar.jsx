@@ -3,6 +3,7 @@ import styles from './Navbar.module.css';
 import { FaSearch } from "react-icons/fa";
 import { MdOutlineBookmarkAdd } from "react-icons/md";
 import { RxAvatar } from "react-icons/rx";
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   return (
@@ -12,8 +13,9 @@ const Navbar = () => {
       </span>
 
       <div className={styles.links}>
-        <span className={styles.link}>Home</span>
-        <span className={styles.link}>Explore</span>
+        <Link to='/' className={styles.link}>Home</Link>
+        <Link to='/add-recipe' className={styles.link}>Add Recipe</Link>
+        <Link to='/explore' className={styles.link}>Explore</Link>
       </div>
 
       <div className={styles.rightSection}>
