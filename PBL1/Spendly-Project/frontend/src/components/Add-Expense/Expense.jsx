@@ -1,120 +1,109 @@
-import React,  { useState, useRef, useEffect } from 'react';
+import { useState } from "react";
 import './Expense.css'
 
-
-const ExpensePopup = ({ onClose, onSubmit }) => {
-  const popupRef = useRef(null);
-
-  const [amount, setAmout] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+const ExpenseForm = ({closePopup}) => {
+  const [expenseList, setExpenseList] = useState([]);
+  const [amount, setAmount] = useState(0);
+  const [category, setCategory] = useState('Food');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('');
-
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const categories = ['Food', 'Travel', 'Education', 'Entertainment', 'Healthcare', 'Shopping', 'Utilities', 'Other'];
-  //Close popup when clicking outside of it
-  useEffect(() => {
-    const handleClickedOutside = (event) => {
-      if (popupRef.current && !popupRef.current.contains(event.target)) {
-        onClose();
-        }
-      };
-      document.addEventListener('mousedown', handleClickedOutside);
-      return () => document.removeEventListener('mousedown', handleClickedOutside); 
-  }, [onClose]);
 
-  const handleSubmit = (e) => {
+
+
+  const handleSubmit = (e)=>{
     e.preventDefault();
-    onSubmit({ amount, date, description, category });
-    onClose();
-  };
+
+  const obj = {
+      id: Date.now(),
+      amount:amount,
+      date:date,
+      category:category,
+      description:description
+    }
+
+    setExpenseList([obj, ...expenseList])
+
+  if (closePopup) {
+    closePopup();
+  }
+
+  // Optionally reset form
+  setAmount(0);
+  setDescription('');
+  setCategory('Food');
+  setDate(new Date().toISOString().split('T')[0]);    
+  }
+
 
   return (
-    <div className='popup-overlay'>
-      <div ref={popupRef} className='pop-content'>
-        <h2 className='pop-title'>Add Expense</h2>
-        <form onSubmit={handleSubmit} className='expense-form'>
+    <>
+      <div className="form-container">
+      <form onSubmit={handleSubmit}>
+
+        <div className="form-group">
+          <label htmlFor="amount">Amount:</label>
           <input
-            type="number" 
-            placeholder='Amount' 
-            value={amount}
-            onChange={(e) => setAmout(e.target.value)}
-            className='input-field'
+            type="number"
+            id="amount"
+            name="amount"
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Enter amount"
             required
           />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className='input-field'
-            required
-          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="date">Date</label>
           <input 
-            type="text"
-            placeholder='What did you on?'
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className='input-field'
+          type="date"
+          id='date'
+          onChange={(e) => setDate(e.target.value)}
+          required
+          />
+
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="description">Description:</label>
+          <textarea
+            id="description"
+            name="description"
+            placeholder="Enter description"
+            onChange={(e)=> setDescription(e.target.value)}
             required
           />
-          <select 
-            value={category}    
-            onChange={(e) => setCategory(e.target.value)}
-            className='input-field'      
+        </div>
+
+        <div className="form-group">
+          <label for="category">Category:</label>
+          <select
+            id="category"
+            name="category"
+            onChange={(e)=> setCategory(e.target.value)}
+            required
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
-          <div class="button-group">
-            <button
-              type="button"
-              onClick={onClose}
-              class="cancel-button"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="submit-button"
-            >
-              Add
-            </button>
-          </div>
+        </div>
 
-        </form>
-      </div>
-    </div>
-  )
-}
-
-const ExpenseForm = () => {
-  const [showPopup, setShowPopup] = useState(false);
-
-
-  const handleAddExpense = (data) => {
-    console.log('Expense Date', data);
-    //Save to state or backend
-  };
-
-  return(
-    <div class="app-container">
-        <button
-        onClick={() => setShowPopup(true)}
-        class="add-expense-button"
-      >
-        Add Expense
-      </button>
-
-      {showPopup && (
-        <ExpensePopup
-          onClose={() => setShowPopup(false)}
-          onSubmit={handleAddExpense}
-        />
-      )}
+        <button type="submit">Add Expense</button>
+      </form>
     </div>
 
-  )
-}
+      {/*expenseList.map((expense) => (
+          <div class="expense-item">
+          <div class="category">{expense.category}</div>
+          <div class="amount">${expense.amount}</div>
+          <div class="description">{expense.description}</div>
+          <button className="">Delete</button>
+        </div>
+      ))*/}
+    </>
+  );
+};
 
-export default ExpenseForm
+export default ExpenseForm;
