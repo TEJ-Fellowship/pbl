@@ -4,10 +4,9 @@ import Navbar from "./components/Navbar/Navbar";
 
 import TransactionList from "./features/Transaction/TransactionList";
 
-import ExpenseForm from "./components/Add-Expense/Expense";
 import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
-import './components/Add-Expense/Expense.css'
+import ExpenseForm from "./components/Expense/Expense";
 
 
 function App() {
@@ -20,8 +19,8 @@ function App() {
 
           <Routes>
             <Route path="/transaction" element={<TransactionList />}></Route>
+            <Route path="/add-expense" element={<ExpenseForm />}></Route>
           </Routes>
-          <TransactionList />
 
         </div>
       </Router>
