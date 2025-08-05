@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react'
-import '../css/Navbar.css'
-import logo_light from '../assets/logo-v1.png'
-import logo_dark from '../assets/logo-v2.png'
-import search_icon_light from '../assets/white.png'
-import search_icon_dark from '../assets/black.png'
-import toggle_light from '../assets/night.png'
-import toggle_dark from '../assets/day.png'
-import set_icon_light from '../assets/set_wb.png'
-import set_icon_dark from '../assets/set_bb.png'
+import React, { useState, useEffect } from 'react';
+import ReactFlagsSelect from "react-flags-select";
+
+
+import '../css/Navbar.css';
+import logo_light from '../assets/logo-v1.png';
+import logo_dark from '../assets/logo-v2.png';
+import search_icon_light from '../assets/white.png';
+import search_icon_dark from '../assets/black.png';
+import toggle_light from '../assets/night.png';
+import toggle_dark from '../assets/day.png';
+import set_icon_light from '../assets/set_wb.png';
+import set_icon_dark from '../assets/set_bb.png';
 
 function Navbar() {
   const [darkMode, setDarkMode] = useState(false);
   const [setShow, setShowHandle] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('np');
 
   useEffect(() => {
-    document.querySelector('.container').classList.toggle('dark', darkMode);
+    document.querySelector('.container')?.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
   const toggleDarkMode = () => {
@@ -24,6 +28,20 @@ function Navbar() {
   const handleSettings = () => {
     setShowHandle(prev => !prev);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (setShow && !event.target.closest('.settings-container') && 
+          !event.target.closest('.country-list')) {
+        setShowHandle(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [setShow]);
 
   return (
     <>
@@ -37,22 +55,31 @@ function Navbar() {
         
         <div className='setting-icons'>
           <div className="settings-container">
-            <img src={darkMode ? set_icon_light : set_icon_dark} alt='Settings' className='set-icon' onClick={handleSettings} />
+            <img 
+              src={darkMode ? set_icon_light : set_icon_dark} 
+              alt='Settings' 
+              className='set-icon' 
+              onClick={handleSettings} 
+            />
             {setShow && (
               <div className={`settings-dropdown ${darkMode ? 'dark' : ''}`}>
                 <ul>
-                <p id = 'set'>Settings</p><hr />
-                  <li>Country <select id='code'>
-                    <option>+977</option>
-                    <option>+01</option>
-                    <option>+08</option>
-                  </select> </li>
+                  <p id='set'>Settings</p><hr />
+                  <li>
+                    <span id="country-li">Country
+                      <ReactFlagsSelect selected={selectedCountry}
+                        onSelect={(code) => setSelectedCountry(code)}
+                        id="flags-select"
+                      />
+                    </span>
+                  </li>
                   <li>Profile</li>
                   <li>Theme</li>
                 </ul>
               </div>
             )}
           </div>
+
           <img 
             src={darkMode ? toggle_dark : toggle_light} 
             alt='Toggle theme' 
@@ -62,7 +89,7 @@ function Navbar() {
         </div>
       </div>
     </>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;
