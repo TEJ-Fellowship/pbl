@@ -13,9 +13,13 @@ const Result = () => {
   };
 
   useEffect(() => {
-    const prevHigh = JSON.parse(
-      localStorage.getItem("highScore") || { score: 0, duration: 30 }
-    );
+    // const prevHigh = JSON.parse(
+    //   localStorage.getItem("highScore") ||
+    //     JSON.stringify({ score: 0, duration: 30 })
+    // );
+    const saved = localStorage.getItem("highScore");
+    const prevHigh = saved ? JSON.parse(saved) : { score: 0, duration: 30 };
+
     if (
       score > prevHigh.score ||
       (score === prevHigh.score && duration < prevHigh.duration)
@@ -26,6 +30,20 @@ const Result = () => {
       setHighScore(prevHigh);
     }
   }, []);
+  // useEffect(() => {
+  //   const prevHigh = JSON.parse(
+  //     localStorage.getItem("highScore") || { score: 0, duration: 30 }
+  //   );
+  //   if (
+  //     score > prevHigh.score ||
+  //     (score === prevHigh.score && duration < prevHigh.duration)
+  //   ) {
+  //     setHighScore({ score, duration });
+  //     localStorage.setItem("highScore", JSON.stringify({ score, duration }));
+  //   } else {
+  //     setHighScore(prevHigh);
+  //   }
+  // }, []);
 
   return (
     <div>
