@@ -17,7 +17,7 @@ function Navbar({setShowDashboard}) {
             </div>
             <h1 id="title">AimEZ</h1>
             <h3>*Your friendly app for goal tracking*</h3>
-            <button onClick ={handleStart}>Let's get Started</button>
+            <button onClick ={handleStart} className='let'>Let's get Started</button>
             </div>
          </div>
         
