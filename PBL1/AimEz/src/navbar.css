@@ -66,9 +66,8 @@ h3{
 .Nav a:hover::after{
     width:100%;
 }
-
-button{
-    color: rgb(224, 221, 206);
+.let{
+    color: rgb(165, 127, 255);
     position: absolute;
     bottom: 50px;
     right: 100px;
@@ -76,7 +75,10 @@ button{
     text-shadow: 1px 1px 2px rgb(71, 14, 15), 0 0 25px rgb(182, 174, 94), 0 0 5px rgb(155, 61, 61);
     border-width: 3px;
     border-color: rgb(196, 85, 179);
-    
+}
+
+button{
+    color: rgb(224, 221, 206);
     border-style: dotted;
     border-end-end-radius: 2px;
     font-family: cursive;

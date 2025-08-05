@@ -1,9 +1,8 @@
-import React, { use } from "react";
+import React from "react";
 import { FaPlus } from "react-icons/fa";
 import { useState } from "react";
 
-function GoalForm() {
-  const [goalTitle, setGoalTitle] = useState("");
+function GoalForm({onSubmit}) {
 
   //to change the state of input field, at first the input field is not displayed.
   const [showInputField, setShowInputField] = useState(false);
@@ -28,16 +27,29 @@ function GoalForm() {
     setShowTaskText("");
   };
 
+
+  const handleCreateGoal = ()=>{
+    const task={
+      title:taskText,
+      tasks: allTasks,
+    }
+    onSubmit(task)
+  }
+
   return (
     <div>
       <div id="container">
 
-        <h3>Fitness</h3>
+
+        <h4>Fitness</h4>
         <input type="text" placeholder="Goal title"></input>
+
         <button id="add-task" onClick={handleAddTaskClick}>
           <FaPlus />
           Add task
         </button>
+
+
 
         {showInputField && (
           <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
@@ -46,6 +58,7 @@ function GoalForm() {
               value={taskText}
               onChange={handleInputText}
               placeholder="Enter a task"
+              required
             />
           </form>
         )}
@@ -71,20 +84,17 @@ function GoalForm() {
           })}
         </ul>
 
-        <div id='buttons'>
-<button id='create'>Create Goal</button>
-<button id='cancel'>Cancel</button>
+        <div id="buttons">
+          <button id="create" onClick={handleCreateGoal}>Create Goal</button>
+          <button id="cancel">Cancel</button>
+        </div>
+
+
       </div>
-      
-      </div>
-
-
-
-
-
-
     </div>
   );
 }
 
 export default GoalForm;
+
+
