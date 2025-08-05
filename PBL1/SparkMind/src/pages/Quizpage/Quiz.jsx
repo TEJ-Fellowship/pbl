@@ -7,7 +7,9 @@ import { useNavigate } from "react-router-dom";
 function Quiz() {
   const navigate = useNavigate();
   const handleResults = () => {
-    navigate("/result", { state: { score } }); //sending score along with navigation
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - startTime) / 1000);
+    navigate("/result", { state: { score, duration } }); //sending score along with navigation
   };
   const [currentIndex, setCurrentIndex] = useState(0); // Choose any index
   const [feedback, setFeedback] = useState("");
