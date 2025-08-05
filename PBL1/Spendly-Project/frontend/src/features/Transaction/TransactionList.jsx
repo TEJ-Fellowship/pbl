@@ -5,7 +5,7 @@ import Calender from "./Calender";
 import Expense from "../../components/Data/Expense";
 import filterByDateRange from "../Filter/filter";
 
-function TransactionList() {
+function TransactionList({ searchQuery }) {
   const [calender, setCalender] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -16,11 +16,20 @@ function TransactionList() {
     setCurrentPage(1);
   }, [startDate, endDate]);
 
-  //paginate data
+  const dateFiltered = filterByDateRange(Expense, startDate, endDate);
+  const filteredExpense = dateFiltered.filter((expense) =>
+    (
+      String(expense.description) +
+      String(expense.category) +
+      String(expense.amount) +
+      String(expense.date)
+    )
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
+
   const indexOfLastItem = currentPage * itemPerPage;
   const indexOfFirstItem = indexOfLastItem - itemPerPage;
-
-  const filteredExpense = filterByDateRange(Expense, startDate, endDate);
   const currentExpense = filteredExpense.slice(
     indexOfFirstItem,
     indexOfLastItem
