@@ -1,7 +1,6 @@
 import "./Quiz.css";
 import React, { useState, useEffect } from "react";
 import Quiz_timer from "./Quiz_timer";
-import questions from "./questions.json";
 import { useNavigate } from "react-router-dom";
 
 function Quiz() {
