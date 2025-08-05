@@ -7,7 +7,6 @@ import TransactionList from "./features/Transaction/TransactionList";
 import "./App.css";
 import Sidebar from "./components/Sidebar/Sidebar";
 import ExpenseForm from "./components/Expense/Expense";
-import Dashboard from "./pages/dashboard";
 import { useState } from "react";
 
 
