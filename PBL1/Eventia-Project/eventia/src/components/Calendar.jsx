@@ -28,7 +28,17 @@ function Calendar() {
       setMonth(mon);
     }
   }
-
+  function selectHandleMonth(e){
+     
+      setMonth(parseInt(e.target.value))
+  
+  }
+    function selectHandleYear(e){
+     
+      setYear(parseInt(e.target.value))
+  
+  }
+ 
   const weeks = [
     "Sunday",
     "Monday",
@@ -56,13 +66,13 @@ function Calendar() {
 
   return (
     <>
-      <CalendarHeader
+      <CalendarHeader 
         month={months[month]}
         year={year}
         rightClick={rightClick}
         leftClick={leftClick}
-        // onPrevious={goToPreviousMonth}
-        // onNext={goToNextMonth}
+        handleSelectMonth={selectHandleMonth}
+        handleSelectYear={selectHandleYear}
       />
       <CalendarBody
         weeks={weeks}

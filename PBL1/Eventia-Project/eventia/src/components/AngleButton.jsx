@@ -2,9 +2,12 @@ import React from "react";
 
 function AngleButton({ text, onClick }) {
   return (
-    <button className="anglebtn" onClick={onClick}>
-      {text}
-    </button>
+    <>
+       <button className="anglebtn" onClick={onClick}>
+        {text}
+      </button>
+    </>
+   
   );
 }
 
