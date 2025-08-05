@@ -68,12 +68,18 @@ h3{
 }
 
 button{
-    color: rgb(165, 127, 255);
+    color: rgb(224, 221, 206);
     position: absolute;
-    bottom: 100px;
+    bottom: 50px;
     right: 100px;
-    font-size: 30px;
-    border-radius: 3cm;
+    font-size: 27px;
+    text-shadow: 1px 1px 2px rgb(71, 14, 15), 0 0 25px rgb(182, 174, 94), 0 0 5px rgb(155, 61, 61);
+    border-width: 3px;
+    border-color: rgb(196, 85, 179);
     
+    border-style: dotted;
+    border-end-end-radius: 2px;
+    font-family: cursive;
+    /* background-color: rgba(123, 146, 151, 0.007); */
 }
 

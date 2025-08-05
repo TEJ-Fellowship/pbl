@@ -10,9 +10,8 @@ function Navbar({setShowDashboard}) {
         <div>
             <div className="body">
             <div className="Nav">
-            <a>Home</a>
-            {/* <a>Categories</a>
-            <a>Goal</a> */}
+            <a>Home</a>q
+            <a>Goal</a>
             <a>Contact</a>
             <a>About Us</a>
             </div>

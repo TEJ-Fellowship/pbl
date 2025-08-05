@@ -16,11 +16,15 @@ function Sidebar({setActiveSection}) {
               
               Home
             </li>
-
-            <li className="eachList" onClick={()=> setActiveSection("goals")}><FaBullseye />
-          Goals</li>
+            <li className='eachList' onClick={()=> setActiveSection("categories")}>
+              <FaBullseye />
+              
+              Goals/Categories
+            </li>
+            
             <li className="eachList" onClick={()=> setActiveSection("calendar")}><FaCalendarAlt />
            Calender</li>
+
           </ul>
         </div>
       </div>

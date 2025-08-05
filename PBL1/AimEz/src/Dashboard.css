@@ -131,3 +131,7 @@ li{
   gap:8px;
   color : #5046E4;
 } 
+li:hover{
+  color: #071e0f;
+  transition: ease-in;
+}
