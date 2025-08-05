@@ -1,45 +1,69 @@
 import { useState } from "react";
 import styles from "./Expense.module.css";
+import { set } from "date-fns";
 
-const Expense = () => {
+const Expense = ({onAddExpense}) => {
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [category, setCategory] = useState('Food');
+  const [description, setDescription] = useState('');
+
+  const categories = ['Food', 'Transport', 'Education', 'Entertainment', 'Healthcare', 'Shopping', 'Utilities', 'Other'];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if(!amount || !description) return;
+
+    onAddExpense({
+      id: Date.now(),
+      amount: parseFloat(amount),
+      description,
+      category,
+      date
+    });
+
+    setAmount('');
+    setCategory('Food');
+    setDate(new Date().toISOString().split('T')[0]);
+
+  }
+  
+
   return (
     <>
       <div className={styles.container}>
         <div className={styles.expenseContainer}>
-          <h2 className={styles.heading}>Add Transaction</h2>
+          <h2 className={styles.heading}>Expense</h2>
 
-          <form className={styles.expenseForm}>
+          <form className={styles.expenseForm} onSubmit={handleSubmit}>
             <label className={styles.label}>Amount:</label>
             <input
               className={styles.input}
               type="number"
-              value=""
+              value={amount}
               name="amount"
-              onChange=""
+              onChange={(e) => setAmount(e.target.value)}
               required
             />
 
             <label className={styles.label}>Category: </label>
 
-            <select name="category" value="" onChange="" required>
-              <option value="">Select</option>
-              <option value="Food">Food</option>
-              <option value="Travel">Travel</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Education">Education</option>
-              <option value="Other">Other</option>
+            <select name="category" value={category} onChange={(e) => setCategory(e.target.value)} required>
+              {categories.map(cat =>(
+                <option key= {cat} value={cat}>{cat}</option>
+              ))}
             </select>
 
             <label className={styles.label}>Date: </label>
 
-            <input type="date" name="date" value="" onChange="" required />
+            <input type="date" name="date" value={date} onChange={(e) => setDate(e.target.value)} required />
 
             <label className={styles.label}>Description: </label>
 
             <textarea
               name="description"
-              value=""
-              onChange=""
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               rows={4}
               placeholder="Enter details..."
               required
