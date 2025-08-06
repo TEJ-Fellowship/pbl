@@ -23,6 +23,7 @@ function App() {
     setExpenses(updatedExpenses);
   };
 
+
   const updateTransaction = (updatedExpense) => {
     const updated = expenses.map(exp =>
       exp.id === updatedExpense.id ? updatedExpense : exp
@@ -38,7 +39,7 @@ function App() {
   return (
     <Router>
       <div className="appContainer">
-        <Navbar />
+        <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery}/>
         <Sidebar />
 
         <Routes>
@@ -48,6 +49,7 @@ function App() {
               <TransactionList
                 expenses={expenses}
                 onDelete={deleteTransaction}
+                searchQuery={searchQuery}
               />
             }
           />
@@ -67,6 +69,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+
   );
 }
 

@@ -4,7 +4,8 @@ import styles from "./TransactionList.module.css";
 import Calender from "./Calender";
 import filterByDateRange from "../Filter/filter";
 
-function TransactionList({ expenses, onDelete }) {
+function TransactionList({ expenses, onDelete, searchQuery }) {
+
   const [calender, setCalender] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -18,12 +19,38 @@ function TransactionList({ expenses, onDelete }) {
     setCurrentPage(1);
   }, [startDate, endDate]);
 
-  const filteredExpense = filterByDateRange(expenses, startDate, endDate);
+//   const filteredExpense = filterByDateRange(expenses, startDate, endDate);
+//   const indexOfLastItem = currentPage * itemPerPage;
+//   const indexOfFirstItem = indexOfLastItem - itemPerPage;
+//   const currentExpense = filteredExpense.slice(indexOfFirstItem, indexOfLastItem);
+
+//   const toggleCalendar = () => setCalender(prev => !prev);
+  const dateFiltered = filterByDateRange(expenses, startDate, endDate);
+  const filteredExpense = dateFiltered.filter((expense) =>
+    (
+      String(expense.description) +
+      String(expense.category) +
+      String(expense.amount) +
+      String(expense.date)
+    )
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
+
   const indexOfLastItem = currentPage * itemPerPage;
   const indexOfFirstItem = indexOfLastItem - itemPerPage;
-  const currentExpense = filteredExpense.slice(indexOfFirstItem, indexOfLastItem);
+  const currentExpense = filteredExpense.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
-  const toggleCalendar = () => setCalender(prev => !prev);
+  console.log("Current page:", currentPage);
+  console.log("Current items:", currentExpense);
+
+  function isCalender() {
+    setCalender(!calender);
+    return calender;
+  }
 
   return (
     <div className={styles.container}>

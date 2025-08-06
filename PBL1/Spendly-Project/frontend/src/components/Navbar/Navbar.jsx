@@ -1,8 +1,7 @@
 import { useState } from "react";
 
-
 import styles from "./Navbar.module.css";
-function Navbar() {
+function Navbar({ searchQuery, setSearchQuery }) {
   const [searchOpen, setSearchOpen] = useState(false);
   return (
     <>
@@ -15,7 +14,9 @@ function Navbar() {
             <input
               type="text"
               name="search"
-              placeholder="Search..."
+              placeholder="Category..Date..Des..amt.."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className={styles.searchInput}
             />
           )}

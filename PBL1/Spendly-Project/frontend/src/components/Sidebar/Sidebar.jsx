@@ -9,7 +9,6 @@ import {
   faGear,
 } from "@fortawesome/free-solid-svg-icons";
 import ExpenseForm from "../Expense/Expense"; // import the form component
-import "./Popup.css"; // we'll create this CSS
 
 function Sidebar() {
   // const [active, isActive] = useState(false);
