@@ -22,11 +22,18 @@ function Quiz() {
   const [score, setScore] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
   const[startTime,setStartTime]=useState(Date.now())
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
+       setLoading(true);
       try {
         const res = await fetch("https://opentdb.com/api.php?amount=5&type=multiple");
+          if (res.status === 429) {
+            // Delay and retry once after 30 seconds
+            setTimeout(fetchData, 30000);
+            return;
+          }
         const data = await res.json();
         const formatted = data.results.map((item, index) => {
           const allOptions = shuffleArray([...item.incorrect_answers, item.correct_answer]);
@@ -39,10 +46,11 @@ function Quiz() {
           };
         });
 setQuestions(formatted);
-        
+        setLoading(false); 
       }
       catch (error) {
         setError(`something went wrong `)
+        setLoading(false); 
       }
     }
     fetchData();
@@ -106,24 +114,28 @@ setQuestions(formatted);
     }
   };
 
-  
-
-  if (questions.length === 0) {
-    return (<p> Loading...</p>,
-      <div className="loader">
+ if (loading) {
+    return (
+      <div className="loading-wrapper">
+        <p style={{ textAlign: "center", marginTop: "20px" }}>Loading...</p>
+        <div className="loader"></div>
       </div>
-    )
+    );
   }
 
-  const currentItem = questions[currentIndex];
+if (error) {
+  return (
+    <div style={{ color: "red", textAlign: "center", marginTop: "20px" }}>
+      {error}
+    </div>
+  );
+}
+
+
+const currentItem = questions[currentIndex] ??{};
 
   return (
     <div className="container">
-      {error && (
-        <div style={{ color: "red", textAlign: "center", marginTop: "20px" }}>
-          {error}
-        </div>
-      )}
       <div className="question-card">
         <Quiz_timer setTimeUp={setTimeUp} />
 
