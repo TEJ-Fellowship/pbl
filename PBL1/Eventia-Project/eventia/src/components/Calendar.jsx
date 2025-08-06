@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import CalendarHeader from "./CalendarHeader";
 import CalendarBody from "./CalendarBody";
 
-function Calendar() {
+function Calendar({events}) {
   const initialDate = new Date();
   const [month, setMonth] = useState(initialDate.getMonth());
   const [year, setYear] = useState(initialDate.getFullYear());
@@ -80,6 +80,7 @@ function Calendar() {
         lastDate={lastDate}
         currentMonth={month}
         currentYear={year}
+        events={events}
       />
     </div>
   );
