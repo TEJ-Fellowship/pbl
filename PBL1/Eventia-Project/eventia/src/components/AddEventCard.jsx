@@ -61,12 +61,13 @@ function AddEventCard({ handleClick, events, setEvents }) {
   return (
     <div className="addeventcard">
       <div>
+        <div className="crossntit">
         <div className="cross">
           <button onClick={handleClick} className="cross">
             X
           </button>
         </div>
-        <input
+          <input
           className="title"
           type="text"
           placeholder="Add Title"
@@ -74,6 +75,8 @@ function AddEventCard({ handleClick, events, setEvents }) {
           value={formData.title}
           onChange={handleChange}
         />
+        </div>
+
         <hr className="tophr" />
         <div className="date">
           <h1>🗓️</h1>

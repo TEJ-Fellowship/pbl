@@ -7,6 +7,7 @@ function CalendarBody({
   lastDate,
   currentYear,
   currentMonth,
+
   events,
 }) {
   const [showEvent,setShowEvent]=useState(false)
@@ -21,6 +22,7 @@ function CalendarBody({
   const actualYear = date.getFullYear();
   const actualMonth = date.getMonth();
   const actualDate = date.getDate();
+
   const generateCalendarDays = () => {
     const calendarDays = [];
     let CountDay = 1;
@@ -51,6 +53,7 @@ function CalendarBody({
     return calendarDays;
   };
   const calendarDays = generateCalendarDays();
+
   function handleShowEvent(){
     setShowEvent(!showEvent)
   }
@@ -74,7 +77,7 @@ function CalendarBody({
               <tr key={i}>
                 {week.map((day) => {
                   return (
-                    <td key={day.key} className={day.isToday ? "current" : ""}>
+                    <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div>
                       {day.content}
                       {day.content !== "" &&
                         newEventsList
@@ -91,6 +94,7 @@ function CalendarBody({
                           ))}
                     </td>
                   );
+
                 })}
               </tr>
             );

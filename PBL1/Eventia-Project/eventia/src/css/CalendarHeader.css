@@ -8,13 +8,14 @@
 .calenderheader {
   display: flex;
   margin: auto;
-  margin-top: 20px;
+  margin-top: 0;
+  margin-bottom: 18px;
   justify-content: center;
   align-items: center;
   font-weight: 600;
   font-size: x-large;
   width: 25%;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1.5px 5px rgba(0, 0, 0, 0.2);
   height: 40px;
   gap: 15px;
 }
