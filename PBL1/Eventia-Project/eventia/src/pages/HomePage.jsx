@@ -5,9 +5,9 @@ import Sidediv from "../components/Sidediv";
 import "../css/HomePage.css";
 function HomePage() {
   return (
-    <div className="calendarbody">
+    <div className="main-calendar">
       <Sidediv/>
-        <Calendar />
+      <Calendar />
         
     </div>
   );

@@ -1,28 +1,49 @@
-.calendarbody{
-    width: 100%;
- 
+
+.main-calendar{
+    width: 100vw;
+    height: 87vh;
     display: flex;
-    flex-direction:row;
-    gap: 40px;
+    gap: 0.5rem;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    padding: 0;
+    box-sizing: border-box;
+    overflow: hidden;
     /* background-color: blue; */
 }
+
 .sidediv{
   /* background-color: brown; */
+  width: 25%;
+  height: 100%;
+  border-radius: 0.4rem;
+  box-shadow: 0 0 4px 0;
+  width: 320px;
+  min-width: 280px;
+  max-width: 350px;
+  height: 100vh;
+  margin-top: 1px;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  width: 200px;
-  margin-right: 100px;
-  margin-top: 0;
+  box-sizing: border-box;
 }
+
 .createbtn {
   background: #f8f9fa;
   border: 1px solid #e1e5e9;
   border-radius: 13px;
-  padding: 12px 24px;
+  padding: 8px 1px;
   font-size: 16px;
   color: #6c757d;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   transition: all 0.2s;
+  width: 80%;
+  height: 6%;
 }
 
 .createbtn:hover {
@@ -30,27 +51,36 @@
   transform: translateY(-1px);
 }
 .addeventcard{
-    padding: 25px;
-    width: 500px;
- 
+    width: 450px;
     /* background-color: blue; */
   position: absolute;
-  top: -150px; /* or any offset */
-  left: 400px; /* or where you want to place it */
-  z-index: 999;
+  top: 10px; /* or any offset */
+  left: 250px; /* or where you want to place it 22222222*/
+  z-index: 100;
   /* background: rgb(174, 105, 105); */
   box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
 }
-.cross{
+/* .cross{
     padding-left: 200px;
- 
-}
-.cross{
-    height: 40px;
+    position: relative;
+    bottom: -10px;
+    background-color: purple;
+    height: 20px;
     font-weight: 500;
     font-size:x-large;
     color: #646565;
     border: none;
+} */
+.cross{
+    padding: 5px;
+    left: 200px;
+    border: none;
+    font-size: 20px;
+}
+.crossntit{
+    display: flex;
+    /* justify-content: space-between; */
+    flex-direction: row-reverse;
 }
 .date, .time, .categories,.invite,.description,.btnn{
     display: flex;
@@ -92,11 +122,11 @@ input{
 .title{
     border: none;
     font-size: 24px;
-    margin-left: 75px;
+    margin-left: auto;
 
 }
 .tophr{
-    margin-left:70px;
+    margin-left:auto;
 }
 .dash{
     font-size: 30px;

@@ -10,7 +10,8 @@ function CalendarBody({
   const date=new Date()
   const actualYear=date.getFullYear()
   const actualMonth=date.getMonth()
-  const actualDate=date.getDate()
+  const actualDate = date.getDate()
+  
   const generateCalendarDays = () => {
     const calendarDays = [];
     let CountDay = 1;
@@ -39,6 +40,7 @@ function CalendarBody({
     return calendarDays;
   };
   const calendarDays = generateCalendarDays();
+
   return (
     <div className="calendarbody">
       <table>
@@ -58,7 +60,7 @@ function CalendarBody({
             return (
               <tr key={i}>
                 {week.map((day) => {
-                  return <td key={day.key} className={day.isToday?'current':''}>{day.content}</td>;
+                  return <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div></td>;
                 })}
               </tr>
             );

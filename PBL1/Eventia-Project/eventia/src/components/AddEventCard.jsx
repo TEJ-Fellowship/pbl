@@ -4,10 +4,12 @@ function AddEventCard({handleClick}) {
   return (
     <div className="addeventcard">
       <div>
+        <div className="crossntit">
         <div className="cross">
           <button onClick={handleClick}className="cross">X</button>
         </div>
         <input className="title" type="text" placeholder="Add Title" />
+        </div>
         <hr className="tophr" />
         <div className="date">
           <h1>🗓️</h1>
