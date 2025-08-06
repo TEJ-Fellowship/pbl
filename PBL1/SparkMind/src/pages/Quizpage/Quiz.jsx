@@ -33,10 +33,10 @@ function Quiz() {
   const endAudio = new Audio("/Sounds/end.mp3");
 
   useEffect(() => {
-    if (questions.length > 0) {
-      if (!startTime) setStartTime(Date.now());
+    if (questions.length > 0 && !startTime) {
+      setStartTime(Date.now());
     }
-  });
+  }, [questions]);
 
   const handleResults = () => {
     const endTime = Date.now();
@@ -145,8 +145,10 @@ function Quiz() {
   if (questions.length === 0) {
     return (
       <>
-        <p>loading</p>
-        <div className="loader"></div>
+        {/* <div className="loader"></div> */}
+        <div className="ai-loader">
+          Generating<span className="dots"></span>
+        </div>
       </>
     );
   }

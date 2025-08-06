@@ -8,7 +8,7 @@
 }
 
 .homeContainer{
-    height: 400px;
+    height: 500px;
     width: 400px;
     background-color: #fff;
     display: flex;
@@ -20,20 +20,37 @@
 
 .logo {
     color:#6035D3 ;
+    margin-top: 5px;
+}
+.logoName{
+  margin: 0px auto;
+  text-align: center;
+  margin-bottom: 10px;
 }
 
 .tagline{
+  margin-top: 10px;
     color:#6035D3 ;
 }
 .playBtn{
-    color:#fff ;
-    font-size: medium;
-    font-style: bold;
-    height: 50px;
-    width: 250px;
-    border-radius: 16px;
+color: #fff;
+  font-weight: bold;
+  font-size: medium;
+  height: 50px;
+  width: 250px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(90deg, #6035d3, #9b59b6);
+  margin-top: 10px;
+  cursor: pointer;
+  box-shadow: 0 0 10px 2px #6035d3aa;
+}
+
+#inputTopic{
+    border-radius:12px;
+    padding: 8px;
     border-color: #6035D3;
-    border: none;    
-    background-color: #6035D3;
-    margin-top: 20px;
+    border-width: 3px;
+    margin: 10px auto;
+    text-align: center;
 }

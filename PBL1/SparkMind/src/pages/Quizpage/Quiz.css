@@ -129,7 +129,35 @@ hr {
 }
 .next.active {
   background-color: #6035d3;
+  
 }
+
+.ai-loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  font-family: monospace;
+  font-size: 18px;
+  color: white;
+  z-index: 9999;
+}
+
+.dots::after {
+  content: '';
+  display: inline-block;
+  width: 1ch;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+  100% { content: ''; }
+}
+
 .loader {
 position: fixed;
   top: 50%;
