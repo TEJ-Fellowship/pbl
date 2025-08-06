@@ -10,13 +10,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import ExpenseForm from "../Expense/Expense"; // import the form component
 
-function Sidebar() {
+function Sidebar({barActive, setBarActive}) {
   // const [active, isActive] = useState(false);
-  const [barActive, isBarActive] = useState(false);
+  // const [barActive, isBarActive] = useState(false);
   const navigate = useNavigate();
 
   function barToggleActive() {
-    isBarActive(!barActive);
+    setBarActive(!barActive);
   }
 
   // function handlePlusClick() {
