@@ -65,7 +65,7 @@ function Calendar() {
   ];
 
   return (
-    <>
+    <div className="calendar">
       <CalendarHeader 
         month={months[month]}
         year={year}
@@ -81,7 +81,7 @@ function Calendar() {
         currentMonth={month}
         currentYear={year}
       />
-    </>
+    </div>
   );
 }
 
