@@ -3,12 +3,15 @@ import Navbar from "./components/Navbar/Navbar";
 import TransactionList from "./features/Transaction/TransactionList";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Expense from "./components/Expense/Expense";
+import Dashboard from "./pages/dashboard";
 import "./App.css";
 import { useState, useEffect } from "react";
 
 function App() {
   // Initialize from localStorage or use empty array
   const [searchQuery, setSearchQuery] = useState('')
+  const [barActive, setBarActive] = useState(false);
+
   const [expenses, setExpenses] = useState(() => {
     const saved = localStorage.getItem('expenses');
     return saved ? JSON.parse(saved) : [];
@@ -18,6 +21,7 @@ function App() {
   useEffect(() => {
     localStorage.setItem('expenses', JSON.stringify(expenses));
   }, [expenses]);
+
 
   const deleteTransaction = (id) => {
     const updatedExpenses = expenses.filter(exp => exp.id !== id);
@@ -41,9 +45,10 @@ function App() {
     <Router>
       <div className="appContainer">
         <Navbar searchQuery={searchQuery} setSearchQuery={setSearchQuery}/>
-        <Sidebar />
+        <Sidebar barActive={barActive} setBarActive={setBarActive} />
 
         <Routes>
+          <Route path="/" element={<Dashboard barActive={barActive} />}></Route>
           <Route
             path="/transaction"
             element={
