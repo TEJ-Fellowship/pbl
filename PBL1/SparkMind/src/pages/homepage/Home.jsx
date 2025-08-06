@@ -14,14 +14,17 @@ const Home = () => {
       <div className="homeContainer">
         <h1 className="logo">Spark Mind</h1>
         <p className="tagline">Play 30s Quiz</p>
-        <input
-          type="text"
-          name=""
-          id="inputTopic"
-          placeholder="enter topic"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-        />
+        <span>
+          <input
+            type="text"
+            name=""
+            id="inputTopic"
+            placeholder="enter topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+          />
+        </span>
+
         <button className="playBtn" onClick={handlePlay}>
           Play
         </button>

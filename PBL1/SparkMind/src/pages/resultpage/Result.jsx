@@ -30,20 +30,6 @@ const Result = () => {
       setHighScore(prevHigh);
     }
   }, []);
-  // useEffect(() => {
-  //   const prevHigh = JSON.parse(
-  //     localStorage.getItem("highScore") || { score: 0, duration: 30 }
-  //   );
-  //   if (
-  //     score > prevHigh.score ||
-  //     (score === prevHigh.score && duration < prevHigh.duration)
-  //   ) {
-  //     setHighScore({ score, duration });
-  //     localStorage.setItem("highScore", JSON.stringify({ score, duration }));
-  //   } else {
-  //     setHighScore(prevHigh);
-  //   }
-  // }, []);
 
   return (
     <div>

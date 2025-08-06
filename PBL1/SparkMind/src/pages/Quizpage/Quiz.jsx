@@ -13,11 +13,6 @@ function Quiz() {
   const location = useLocation();
 
   const navigate = useNavigate();
-  const handleResults = () => {
-    const endTime = Date.now();
-    const duration = Math.floor((endTime - startTime) / 1000);
-    navigate("/result", { state: { score, duration } }); //sending score along with navigation
-  };
   const [error, setError] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0); // Choose any index
@@ -29,14 +24,30 @@ function Quiz() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
-  const [startTime, setStartTime] = useState(Date.now());
-  // const [title, setTitle] = useState("");
+  const [startTime, setStartTime] = useState(null);
   const topic = location.state;
+
+  const correctAudio = new Audio("/Sounds/correct.mp3");
+  const wrongAudio = new Audio("/Sounds/wrong.mp3");
+  const startAudio = new Audio("/Sounds/start.mp3");
+  const endAudio = new Audio("/Sounds/end.mp3");
+
+  useEffect(() => {
+    if (questions.length > 0) {
+      if (!startTime) setStartTime(Date.now());
+    }
+  });
+
+  const handleResults = () => {
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - startTime) / 1000);
+    navigate("/result", { state: { score, duration } }); //sending score along with navigation
+  };
 
   const fetchData = async () => {
     try {
       // setLoading(true);
-      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic}.
+      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic} or Nepal topic if no topic is provided.
       Return ONLY a valid JSON object with no explanations or markdown. Format it like this:
       [
     {
@@ -112,10 +123,12 @@ function Quiz() {
     if (option === questions[currentIndex].answer) {
       setFeedback("Wow! You are correct");
       setIsCorrect(true);
+      correctAudio.play();
       setScore((prev) => prev + 1);
     } else {
       setFeedback(`Oops! Correct answer is ${questions[currentIndex].answer}`);
       setIsCorrect(false);
+      wrongAudio.play();
     }
   };
 
@@ -132,7 +145,7 @@ function Quiz() {
   if (questions.length === 0) {
     return (
       <>
-        <p> Loading...</p>
+        <p>loading</p>
         <div className="loader"></div>
       </>
     );
@@ -148,7 +161,7 @@ function Quiz() {
         </div>
       )}
       <div className="question-card">
-        <Quiz_timer setTimeUp={setTimeUp} />
+        {!timeUp && <Quiz_timer setTimeUp={setTimeUp} />}
 
         <h2 className="question-title">{currentItem.question}</h2>
         <p className="topic">{currentItem.topic}</p>
