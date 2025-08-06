@@ -33,7 +33,7 @@ const Navbar = () => {
         )}
 
         <span className={styles.bookmark}>
-          <MdOutlineBookmarkAdd size="1.5rem" className={styles.icon} />
+          <Link to="/favorite"><MdOutlineBookmarkAdd size="1.5rem" className={styles.icon} /></Link>
         </span>
 
         <span className={styles.avatar}>
