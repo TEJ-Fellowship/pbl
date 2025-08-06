@@ -2,15 +2,18 @@ import "./Quiz.css";
 import React, { useState, useEffect } from "react";
 import Quiz_timer from "./Quiz_timer";
 import { useNavigate } from "react-router-dom";
+import { GoogleGenAI } from "@google/genai";
+import { useLocation } from "react-router-dom";
+
+const ai = new GoogleGenAI({
+  apiKey: "AIzaSyBiX2E3HIrVqtbddMEuHVZmULrliNksLzI",
+});
 
 function Quiz() {
+  const location = useLocation();
+
   const navigate = useNavigate();
-  const handleResults = () => {
-    const endTime = Date.now();
-    const duration = Math.floor((endTime - startTime) / 1000);
-    navigate("/result", { state: { score, duration } }); //sending score along with navigation
-  };
-    const [error, setError] = useState(null);
+  const [error, setError] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0); // Choose any index
   const [feedback, setFeedback] = useState("");
@@ -21,38 +24,67 @@ function Quiz() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
-  const[startTime,setStartTime]=useState(Date.now())
-  const [loading, setLoading] = useState(false);
+  const [startTime, setStartTime] = useState(null);
+  const topic = location.state;
+
+  const correctAudio = new Audio("/Sounds/correct.mp3");
+  const wrongAudio = new Audio("/Sounds/wrong.mp3");
+  const startAudio = new Audio("/Sounds/start.mp3");
+  const endAudio = new Audio("/Sounds/end.mp3");
 
   useEffect(() => {
-    async function fetchData() {
-       setLoading(true);
-      try {
-        const res = await fetch("https://opentdb.com/api.php?amount=5&type=multiple");
-          if (res.status === 429) {
-            // Delay and retry once after 30 seconds
-            setTimeout(fetchData, 30000);
-            return;
-          }
-        const data = await res.json();
-        const formatted = data.results.map((item, index) => {
-          const allOptions = shuffleArray([...item.incorrect_answers, item.correct_answer]);
-          return {
-            id: index + 1,
-            topic: decodeHTML(item.category),
-            question: decodeHTML(item.question),
-            options: allOptions.map(decodeHTML),
-            answer: decodeHTML(item.correct_answer)
-          };
-        });
-setQuestions(formatted);
-        setLoading(false); 
-      }
-      catch (error) {
-        setError(`something went wrong `)
-        setLoading(false); 
-      }
+    if (questions.length > 0 && !startTime) {
+      setStartTime(Date.now());
     }
+  }, [questions]);
+
+  const handleResults = () => {
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - startTime) / 1000);
+    navigate("/result", { state: { score, duration } }); //sending score along with navigation
+  };
+
+  const fetchData = async () => {
+    try {
+      // setLoading(true);
+      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic} or Nepal topic if no topic is provided.
+      Return ONLY a valid JSON object with no explanations or markdown. Format it like this:
+      [
+    {
+      "id": 1,
+      "topic": "string",
+      "question": "string",
+      "options": ["string", "string", "string", "string"],
+      "answer": "string"
+    }
+  ]`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: quizPrompt,
+      });
+      console.log(response.text);
+      // const data = await response.json();
+      const data = JSON.parse(response.text);
+
+      console.log(data);
+      const formatted = data.map((item) => {
+        const allOptions = shuffleArray([...item.options]);
+        return {
+          id: item.id,
+          topic: item.topic,
+          question: item.question,
+          options: allOptions,
+          answer: item.answer,
+        };
+      });
+      console.log(formatted);
+      setQuestions(formatted);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -73,12 +105,6 @@ setQuestions(formatted);
     }
   }, [currentIndex, questions]);
 
-  const decodeHTML = (html) => {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    return txt.value;
-  };
-
   const shuffleArray = (array) => {
     const copied = [...array];
     for (let i = copied.length - 1; i > 0; i--) {
@@ -97,10 +123,12 @@ setQuestions(formatted);
     if (option === questions[currentIndex].answer) {
       setFeedback("Wow! You are correct");
       setIsCorrect(true);
+      correctAudio.play();
       setScore((prev) => prev + 1);
     } else {
       setFeedback(`Oops! Correct answer is ${questions[currentIndex].answer}`);
       setIsCorrect(false);
+      wrongAudio.play();
     }
   };
 
@@ -114,12 +142,14 @@ setQuestions(formatted);
     }
   };
 
- if (loading) {
+  if (questions.length === 0) {
     return (
-      <div className="loading-wrapper">
-        <p style={{ textAlign: "center", marginTop: "20px" }}>Loading...</p>
-        <div className="loader"></div>
-      </div>
+      <>
+        {/* <div className="loader"></div> */}
+        <div className="ai-loader">
+          Generating<span className="dots"></span>
+        </div>
+      </>
     );
   }
 
@@ -137,7 +167,7 @@ const currentItem = questions[currentIndex] ??{};
   return (
     <div className="container">
       <div className="question-card">
-        <Quiz_timer setTimeUp={setTimeUp} />
+        {!timeUp && <Quiz_timer setTimeUp={setTimeUp} />}
 
         <h2 className="question-title">{currentItem.question}</h2>
         <p className="topic">{currentItem.topic}</p>
@@ -163,7 +193,7 @@ const currentItem = questions[currentIndex] ??{};
                       : "#FF3131"
                     : "white",
                 color: selectedOption === index ? "white" : "black",
-                borderRadius: "5px"
+                borderRadius: "5px",
               }}
             >
               {option}
