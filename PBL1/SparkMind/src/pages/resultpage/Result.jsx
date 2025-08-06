@@ -20,7 +20,7 @@ const Result = () => {
             <span style={{ color: "grey" }}>correct!</span>
           </div>
           <br />
-          <p className="tagline">You are great!</p>
+          <p className="tagline">Keep Shining!</p>
           <button className="playBtn" onClick={handlePlay}>
             Play Again
           </button>
