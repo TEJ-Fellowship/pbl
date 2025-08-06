@@ -129,7 +129,7 @@ form button {
   width: 100%;
   padding: 0.75rem 1rem;
   margin-top: var(--gap);
-  background: #685fbc;
+  background: var(--primary);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -142,7 +142,7 @@ form button {
 }
 
 form button:hover {
-  background: #6454d8;
+  background: var(--tag-finance-text);
   /* a 10–15% darker purple */
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -157,6 +157,11 @@ form button:active {
 /*────────────────────────────────────────────
   4) NAVBAR (enhanced)
 ────────────────────────────────────────────*/
+#mynav{
+  position: fixed;
+  width: 100%;
+  margin: auto;
+}
 nav {
   background: var(--bg-white);
   padding: 0.5rem 1rem;
@@ -547,3 +552,105 @@ transition: all 0.3s;
   border: 0;
 }
 
+/* ::::::::::: Banner ::::::::::: */
+
+/* 1) SECTION LAYOUT */
+.banner {
+  /* Light primary → secondary gradient */
+  background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+  color: var(--text);
+  padding: 5rem var(--gap);
+  text-align: center;
+}
+
+/* Constrain card width & center */
+.banner .cards {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* 2) TITLE */
+.banner-title {
+  font-family: var(--font-base);
+  font-size: 2.25rem;
+  color: var(--primary);
+  font-weight: 700;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.banner-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background-color: var(--primary);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
+}
+
+/* 3) QUOTE CARD */
+.card.quote-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  max-width: 100%;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.card.quote-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Quote text */
+.quote-card .card-text {
+  font-family: 'Georgia', serif;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+/* Author name */
+.quote-card .card-author {
+  font-family: var(--font-base);
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--primary);
+  text-align: right;
+}
+
+/* 4) BUTTON (reuses your Ideal form button style) */
+.banner .btn {
+  display: inline-block;
+  margin-top: var(--gap);
+  width: auto;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.banner .btn:hover {
+  background: #356bb3;
+  /* ~15% darker primary */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.banner .btn:active {
+  background: var(--primary);
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}

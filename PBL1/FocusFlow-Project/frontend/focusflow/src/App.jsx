@@ -4,6 +4,7 @@ import Productivity from "./components/Productivity";
 import YourTask from "./components/YourTask";
 import QuickAdd from "./components/QuickAdd";
 import Navbar from "./components/Navbar";
+import Banner from "./components/Banner";
 function App() {
   const [tasks, setTasks] = useState([]); //[{},{},{}]
 
@@ -27,6 +28,7 @@ function App() {
   return (
     <>
       <Navbar />
+      <Banner />
       <QuickAdd onAdd={addTask} />
       <YourTask
         tasks={tasks}

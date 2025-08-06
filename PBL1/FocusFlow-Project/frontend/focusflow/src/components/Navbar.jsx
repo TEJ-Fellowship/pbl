@@ -6,13 +6,41 @@ import searchIcon from "../assets/search.png";
 function Navbar() {
   return (
     <>
-      <nav>
+      <nav id="mynav">
         <div className="navbar-container">
           <ul className="nav-left">
-            <img src={logo} alt="logo" className="navbar-logo" />
-            <li>Home</li>
-            <li>Services</li>
-            <li>Contact Us</li>
+            <a href="#">
+              <img src={logo} alt="logo" className="navbar-logo" />
+            </a>
+            <li>
+              <a href="#" style={{ textDecoration: "none", color: "#333333" }}>
+                Home
+              </a>
+            </li>
+            <li>
+              <a
+                href="#newtask"
+                style={{ textDecoration: "none", color: "#333333" }}
+              >
+                Add New Task
+              </a>
+            </li>
+            <li>
+              <a
+                href="#mytask"
+                style={{ textDecoration: "none", color: "#333333" }}
+              >
+                Your Task
+              </a>
+            </li>
+            <li>
+              <a
+                href="#overview"
+                style={{ textDecoration: "none", color: "#333333" }}
+              >
+                Overview
+              </a>
+            </li>
           </ul>
 
           <ul className="nav-right">
