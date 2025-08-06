@@ -1,116 +1,118 @@
 import { useState } from "react";
 
+import { useNavigate } from "react-router-dom";
+
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+
 import styles from "./Dashboard.module.css";
 import ExpenseStatistics from "./ExpenseStatistics";
 import PiChart from "./PiChart";
 
-function Dashboard({ barActive }) {
+function Dashboard({ barActive, expenses}) {
   const [selectedPeriod, setSelectedPeriod] = useState("Daily");
 
+
+  // Utilities
+  const getDayName = (dateStr) =>
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(dateStr).getDay()];
+  const getMonthName = (dateStr) =>
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][new Date(dateStr).getMonth()];
+  const getYear = (dateStr) => new Date(dateStr).getFullYear();
+
+  // Initialize structures
+  const dailyChart = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+  const monthlyChart = {};
+  const yearlyChart = {};
+  const dailyCategory = {};
+  const monthlyCategory = {};
+  const yearlyCategory = {};
+
+  // Convert
+  expenses.forEach(({ amount, category, date }) => {
+    const day = getDayName(date);
+    const month = getMonthName(date);
+    const year = getYear(date);
+
+    // Daily
+    if (dailyChart[day] !== undefined) dailyChart[day] += amount;
+    dailyCategory[category] = (dailyCategory[category] || 0) + amount;
+
+    // Monthly
+    monthlyChart[month] = (monthlyChart[month] || 0) + amount;
+    monthlyCategory[category] = (monthlyCategory[category] || 0) + amount;
+
+    // Yearly
+    yearlyChart[year] = (yearlyChart[year] || 0) + amount;
+    yearlyCategory[category] = (yearlyCategory[category] || 0) + amount;
+  });
+
+  // Color Palette (8 distinct)
+  const categoryColors = [
+    "#22C55E", // green
+    "#8B5CF6", // purple
+    "#F59E0B", // amber
+    "#EF4444", // red
+    "#0EA5E9", // sky
+    "#A855F7", // violet
+    "#10B981", // emerald
+    "#F97316", // orange
+  ];
+
+  // Converters
+  const toChartArray = (obj) =>
+    Object.entries(obj).map(([name, amount]) => ({ name, amount }));
+
+  const toCategoryArray = (obj) => {
+    const entries = Object.entries(obj);
+    return entries.map(([name, value], index) => ({
+      name,
+      value,
+      color: categoryColors[index % categoryColors.length], // use only 8 colors
+    }));
+  };
+
+  const getTotal = (data) =>
+    data.reduce((sum, item) => sum + item.amount, 0).toFixed(2);
+
+  // Final Structure
   const expenseData = {
     Daily: {
-      chartData: [
-        { name: "Mon", amount: 120 },
-        { name: "Tue", amount: 200 },
-        { name: "Wed", amount: 150 },
-        { name: "Thu", amount: 300 },
-        { name: "Fri", amount: 250 },
-        { name: "Sat", amount: 400 },
-        { name: "Sun", amount: 180 },
-      ],
-      categories: [
-        { name: "Food", value: 800, color: "#22C55E" },
-        { name: "Transport", value: 300, color: "#8B5CF6" },
-        { name: "Shopping", value: 500, color: "#F59E0B" },
-        { name: "Food", value: 800, color: "#22C55E" },
-        { name: "Transport", value: 300, color: "#8B5CF6" },
-        { name: "Shopping", value: 500, color: "#F59E0B" },
-        { name: "Food", value: 800, color: "#22C55E" },
-        { name: "Transport", value: 300, color: "#8B5CF6" },
-        { name: "Shopping", value: 500, color: "#F59E0B" },
-        { name: "Food", value: 800, color: "#22C55E" },
-        { name: "Transport", value: 300, color: "#8B5CF6" },
-        { name: "Shopping", value: 500, color: "#F59E0B" },
-        { name: "Food", value: 800, color: "#22C55E" },
-        { name: "Transport", value: 300, color: "#8B5CF6" },
-        { name: "Shopping", value: 500, color: "#F59E0B" },
-      ],
-      summary: {
-        total: "$1,600",
-        average: "$228",
-        highest: "$400 (Saturday)",
-      },
+      chartData: toChartArray(dailyChart),
+      categories: toCategoryArray(dailyCategory),
+      total: getTotal(toChartArray(dailyChart)),
     },
     Monthly: {
-      chartData: [
-        { name: "Week 1", amount: 1200 },
-        { name: "Week 2", amount: 1500 },
-        { name: "Week 3", amount: 1800 },
-        { name: "Week 4", amount: 1300 },
-      ],
-      categories: [
-        { name: "Food", value: 2400, color: "#22C55E" },
-        { name: "Transport", value: 1200, color: "#8B5CF6" },
-        { name: "Shopping", value: 2200, color: "#F59E0B" },
-      ],
-      summary: {
-        total: "$5,800",
-        average: "$1,450",
-        highest: "$1,800 (Week 3)",
-      },
+      chartData: toChartArray(monthlyChart),
+      categories: toCategoryArray(monthlyCategory),
+      total: getTotal(toChartArray(monthlyChart)),
     },
     Yearly: {
-      chartData: [
-        { name: "Jan", amount: 5800 },
-        { name: "Feb", amount: 4200 },
-        { name: "Mar", amount: 6500 },
-        { name: "Apr", amount: 5200 },
-        { name: "May", amount: 7100 },
-        { name: "Jun", amount: 6800 },
-      ],
-      categories: [
-        { name: "Food", value: 12000, color: "#22C55E" },
-        { name: "Transport", value: 8000, color: "#8B5CF6" },
-        { name: "Shopping", value: 15600, color: "#F59E0B" },
-      ],
-      summary: {
-        total: "$35,600",
-        average: "$5,933",
-        highest: "$7,100 (May)",
-      },
+      chartData: toChartArray(yearlyChart),
+      categories: toCategoryArray(yearlyCategory),
+      total: getTotal(toChartArray(yearlyChart)),
     },
   };
 
-  const recentExpenses = [
-    {
-      id: 1,
-      description: "Grocery Shopping",
-      amount: "$85.50",
-      category: "Food",
-      date: "Today",
-    },
-    {
-      id: 2,
-      description: "Uber Ride",
-      amount: "$12.30",
-      category: "Transport",
-      date: "Yesterday",
-    },
-    {
-      id: 3,
-      description: "Coffee Shop",
-      amount: "$4.20",
-      category: "Food",
-      date: "2 days ago",
-    },
-    {
-      id: 4,
-      description: "Online Shopping",
-      amount: "$156.80",
-      category: "Shopping",
-      date: "3 days ago",
-    },
-  ];
+  console.log(expenseData);
+
+
+
+const dailyTotal = expenseData.Daily.total;
+const monthlyTotal = expenseData.Monthly.total;
+const yearlyTotal = expenseData.Yearly.total;
+
+const totalExpense = parseFloat(dailyTotal + monthlyTotal + yearlyTotal).toFixed(2)
+console.log(totalExpense)
+
+
+  const navigate = useNavigate()
+  function handleAddExpense() {
+    navigate("/add-expense");
+  }
+
+  const recentExpenses = expenses.slice(0, 4)
 
   return (
     <div
@@ -125,11 +127,13 @@ function Dashboard({ barActive }) {
               <h1 className={styles.heading}>Hello, Miss</h1>
               <p>Welcome back!</p>
             </div>
-
+            <div className={styles.addBtn} >
+              <FontAwesomeIcon icon={faPlus} className={styles.plus} onClick={handleAddExpense} />
+            </div>
             <div className={styles.expenseContainer}>
               <h3>Total Expense</h3>
-              <h2>$27,890</h2>
-              <p>2% vs last 30 days</p>
+              <h2>${totalExpense}</h2>
+              {/* <p>2% vs last 30 days</p> */}
             </div>
           </div>
 
@@ -152,21 +156,21 @@ function Dashboard({ barActive }) {
           onClick={() => setSelectedPeriod("Monthly")}
         >
           <strong>Monthly</strong>
-          <p>$1200</p>
+          <p>${monthlyTotal}</p>
         </div>
         <div
           className={styles.daily}
           onClick={() => setSelectedPeriod("Daily")}
         >
           <strong>Daily</strong>
-          <p>$1200</p>
+          <p>${dailyTotal}</p>
         </div>
         <div
           className={styles.yearly}
           onClick={() => setSelectedPeriod("Yearly")}
         >
           <strong>Yearly</strong>
-          <p>$1200</p>
+          <p>${yearlyTotal}</p>
         </div>
       </div>
 
@@ -180,7 +184,7 @@ function Dashboard({ barActive }) {
         <div className={styles.recentTransaction}>
           <h2 className={styles.subHeading}>Recent Expenses</h2>
           {recentExpenses.map((expense) => (
-            <div className={styles.recentList}>
+            <div className={styles.recentList} key={expense.id}>
                 <div>
                     <p style={{fontWeight: "bold"}}>{expense.category}</p>
                     <p >{expense.description}</p>

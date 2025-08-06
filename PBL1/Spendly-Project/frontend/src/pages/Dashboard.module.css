@@ -158,3 +158,22 @@
   margin:4px;
 }
 
+.addBtn{
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 56%;
+  background-color: #00c47e;
+}
+
+.plus{
+  color: #fff;
+  font-size: 32px;
+  position: absolute;
+  top: 0.9rem;
+  left: 0.62rem;
+  /* transition: transform 0.1s ease-in-out; */
+  cursor: pointer;
+}
