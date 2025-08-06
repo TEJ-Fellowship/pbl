@@ -9,7 +9,7 @@ const Result = () => {
   const { score, duration } = location.state || { score: 0, duration: 30 }; //read the score
   const [highScore, setHighScore] = useState({ score: 0, duration: 30 });
   const handlePlay = () => {
-    navigate("/quiz");
+    navigate("/");
   };
 
   useEffect(() => {

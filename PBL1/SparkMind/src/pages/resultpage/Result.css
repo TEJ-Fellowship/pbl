@@ -53,3 +53,10 @@ font-weight: 500;
     background-color: #6035D3;
     margin-top: 20px;
 }
+
+#inputTopic{
+    border-radius: 8px;
+    padding: 8px;
+    border-color: #6035D3;
+    margin: 10px auto;
+}

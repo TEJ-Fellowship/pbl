@@ -2,15 +2,23 @@ import "./Quiz.css";
 import React, { useState, useEffect } from "react";
 import Quiz_timer from "./Quiz_timer";
 import { useNavigate } from "react-router-dom";
+import { GoogleGenAI } from "@google/genai";
+import { useLocation } from "react-router-dom";
+
+const ai = new GoogleGenAI({
+  apiKey: "AIzaSyBiX2E3HIrVqtbddMEuHVZmULrliNksLzI",
+});
 
 function Quiz() {
+  const location = useLocation();
+
   const navigate = useNavigate();
   const handleResults = () => {
     const endTime = Date.now();
     const duration = Math.floor((endTime - startTime) / 1000);
     navigate("/result", { state: { score, duration } }); //sending score along with navigation
   };
-    const [error, setError] = useState(null);
+  const [error, setError] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0); // Choose any index
   const [feedback, setFeedback] = useState("");
@@ -21,30 +29,51 @@ function Quiz() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
-  const[startTime,setStartTime]=useState(Date.now())
+  const [startTime, setStartTime] = useState(Date.now());
+  // const [title, setTitle] = useState("");
+  const topic = location.state;
+
+  const fetchData = async () => {
+    try {
+      // setLoading(true);
+      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic}.
+      Return ONLY a valid JSON object with no explanations or markdown. Format it like this:
+      [
+    {
+      "id": 1,
+      "topic": "string",
+      "question": "string",
+      "options": ["string", "string", "string", "string"],
+      "answer": "string"
+    }
+  ]`;
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: quizPrompt,
+      });
+      console.log(response.text);
+      // const data = await response.json();
+      const data = JSON.parse(response.text);
+
+      console.log(data);
+      const formatted = data.map((item) => {
+        const allOptions = shuffleArray([...item.options]);
+        return {
+          id: item.id,
+          topic: item.topic,
+          question: item.question,
+          options: allOptions,
+          answer: item.answer,
+        };
+      });
+      console.log(formatted);
+      setQuestions(formatted);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch("https://opentdb.com/api.php?amount=5&type=multiple");
-        const data = await res.json();
-        const formatted = data.results.map((item, index) => {
-          const allOptions = shuffleArray([...item.incorrect_answers, item.correct_answer]);
-          return {
-            id: index + 1,
-            topic: decodeHTML(item.category),
-            question: decodeHTML(item.question),
-            options: allOptions.map(decodeHTML),
-            answer: decodeHTML(item.correct_answer)
-          };
-        });
-setQuestions(formatted);
-        
-      }
-      catch (error) {
-        setError(`something went wrong `)
-      }
-    }
     fetchData();
   }, []);
 
@@ -64,12 +93,6 @@ setQuestions(formatted);
       setFeedback("");
     }
   }, [currentIndex, questions]);
-
-  const decodeHTML = (html) => {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = html;
-    return txt.value;
-  };
 
   const shuffleArray = (array) => {
     const copied = [...array];
@@ -106,13 +129,13 @@ setQuestions(formatted);
     }
   };
 
-  
-
   if (questions.length === 0) {
-    return (<p> Loading...</p>,
-      <div className="loader">
-      </div>
-    )
+    return (
+      <>
+        <p> Loading...</p>
+        <div className="loader"></div>
+      </>
+    );
   }
 
   const currentItem = questions[currentIndex];
@@ -151,7 +174,7 @@ setQuestions(formatted);
                       : "#FF3131"
                     : "white",
                 color: selectedOption === index ? "white" : "black",
-                borderRadius: "5px"
+                borderRadius: "5px",
               }}
             >
               {option}
