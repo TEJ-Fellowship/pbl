@@ -3,12 +3,13 @@ import Navbar from "../components/Navbar";
 import Calendar from "../components/Calendar";
 import Sidediv from "../components/Sidediv";
 import "../css/HomePage.css";
-function HomePage() {
+function HomePage({events,setEvents}) {
   return (
-    <div className="main-calendar">
-      <Sidediv/>
-      <Calendar />
-        
+
+    <div className="main-calendar" >
+      <Sidediv setEvents={setEvents} events={events}/>
+        <Calendar events={events}/>
+
     </div>
   );
 }
