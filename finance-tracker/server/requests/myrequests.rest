@@ -2,9 +2,9 @@ POST http://localhost:8000/api/auth/register
 Content-Type: application/json
 
 {
-    "fullName": "John Doe",
-    "email": "john@example.com",
-    "password": "password",
+    "fullName": "xyz",
+    "email": "xyz@example.com",
+    "password": "password123",
     "profileImageUrl": ""
 }
 ###
@@ -12,8 +12,8 @@ POST http://localhost:8000/api/auth/login
 Content-Type: application/json
 
 {
-    "email": "john@example.com",
-    "password": "password"
+    "email": "xyz@example.com",
+    "password": "password123"
 }
 ###
 GET http://localhost:8000/api/auth/getUser
@@ -38,3 +38,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTIxZGIyY
 ###
 GET http://localhost:8000/api/income/downloadexcel
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTIxZGIyYzMxYWI1MjdmZGMwNTAxNCIsImlhdCI6MTc1NDQwNzM2MCwiZXhwIjoxNzU0NDEwOTYwfQ.Vze3EgmwphFgfZwDGR-jqKoje5v2baUSH3tV-D2okDQ
+###
+GET http://localhost:8000/api/expense/get
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTJmMGYxNzAzMWExMjc1Y2FkZTljMyIsImlhdCI6MTc1NDQ2MDQyMCwiZXhwIjoxNzU0NDY0MDIwfQ.I55hhrY5YubSheW33Z2iS0siLqR5JinjnwHZ514dnDU
+### 
+POST http://localhost:8000/api/expense/add
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTJmMGYxNzAzMWExMjc1Y2FkZTljMyIsImlhdCI6MTc1NDQ2MDQyMCwiZXhwIjoxNzU0NDY0MDIwfQ.I55hhrY5YubSheW33Z2iS0siLqR5JinjnwHZ514dnDU
+
+{
+    "icon": "💰",
+    "category": "Food",
+    "amount": 100,
+    "date": "2025-08-05"
+}
+###
+GET http://localhost:8000/api/dashboard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4OTJmMGYxNzAzMWExMjc1Y2FkZTljMyIsImlhdCI6MTc1NDQ2MDQyMCwiZXhwIjoxNzU0NDY0MDIwfQ.I55hhrY5YubSheW33Z2iS0siLqR5JinjnwHZ514dnDU
