@@ -50,11 +50,9 @@
   padding: 10px;
   justify-content: center;
   align-items: center;
-  /* gap: 10px; */
   border-radius: 12px;
   background: #e1d7fa;
   color: #6035d3;
-
   font-family: Ubuntu;
   font-size: 16px;
   font-style: normal;
@@ -67,6 +65,7 @@ hr {
   height: 1px;
   background: rgba(200, 183, 183, 0.8);
 }
+
 .options {
   display: grid;
   width: 100%;
@@ -106,15 +105,7 @@ hr {
   text-align: center;
   color: #ff3131;
 }
-/* #21F14F (border)
-#EEFFF2 (body)
 
-Incorrect Answer:
-#FED7D7 body
-#FF3131 (border) */
-/* .next.active:hover {
-    color: white;
-} */
 .quizController {
   flex-direction: column;
   width: 100%;
@@ -138,20 +129,47 @@ Incorrect Answer:
 }
 .next.active {
   background-color: #6035d3;
+  
 }
+
+.ai-loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  font-family: monospace;
+  font-size: 18px;
+  color: white;
+  z-index: 9999;
+}
+
+.dots::after {
+  content: '';
+  display: inline-block;
+  width: 1ch;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% { content: ''; }
+  25% { content: '.'; }
+  50% { content: '..'; }
+  75% { content: '...'; }
+  100% { content: ''; }
+}
+
 .loader {
-  border: 8px solid #f3f3f3;         
-  border-top: 8px solid #f21e1e;     
+position: fixed;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #6035d3;
   border-radius: 50%;
   width: 60px;
   height: 60px;
   animation: spin 1s linear infinite;
-  
-  /* Center horizontally and vertically */
-  position: fixed;       /* stays relative to viewport */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  z-index: 9999;
 }
 
 
@@ -159,5 +177,3 @@ Incorrect Answer:
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
-
