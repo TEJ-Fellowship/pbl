@@ -4,6 +4,7 @@
   justify-content: center;
   align-items: center;
   margin: auto;
+  margin-right: 200px;
   flex-direction: column;
   margin-top: 15px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);

@@ -45,7 +45,6 @@ function CalendarHeader({ month, year, leftClick, rightClick ,handleSelectMonth,
           );
         })}
       </select>
-
       <AngleButton text=">" onClick={rightClick} />
     </div>
   );
