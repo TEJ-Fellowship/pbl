@@ -3,8 +3,8 @@
 }
 
 .eachCategory > div {
-    height: 140px;
-    width: 143.7px;
+    height: 300px;
+    width: 200px;
     background-color: #22c772; 
     border-radius: 10px;
     position: relative;

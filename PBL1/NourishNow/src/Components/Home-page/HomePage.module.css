@@ -1,6 +1,6 @@
 .div1 {
-    width: 1110px;
-    height: 1050px;
+    width: 1060px;
+    height: 650px;
     background-color: #d1f8e7;
     display: flex;
     flex-direction: column;
@@ -75,31 +75,4 @@
     font-size: medium;
     padding: 20px 50px;
     margin-bottom: 200px;
-}
-
-.categoryName {
-    display: block;
-    text-align: center;
-    align-self: flex-start;
-    margin-left: 50px;
-}
-
-.browseByCategory {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;   
-    gap: 20px;              
-    margin-top: 20px; 
-    margin-left: 5px; 
-    width: 1000px; 
-    height: auto;     
-}
-
-.browseByCategory > div {
-    width: 143.7px;            
-    height: 140px;
-}
-
-.browseByCategory > div:hover {
-    transform: scale(1.05);
 }
