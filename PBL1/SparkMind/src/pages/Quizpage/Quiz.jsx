@@ -5,9 +5,14 @@ import { useNavigate } from "react-router-dom";
 
 function Quiz() {
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
+  const handleResults = () => {
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - startTime) / 1000);
+    navigate("/result", { state: { score, duration } }); //sending score along with navigation
+  };
+    const [error, setError] = useState(null);
   const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0); // Choose any index
   const [feedback, setFeedback] = useState("");
   const [clicked, setClicked] = useState(false);
   const [optionSelected, setOptionSelected] = useState(false);
@@ -16,6 +21,7 @@ function Quiz() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
   const [timeUp, setTimeUp] = useState(false);
+  const[startTime,setStartTime]=useState(Date.now())
 
   useEffect(() => {
     async function fetchData() {
@@ -100,9 +106,7 @@ setQuestions(formatted);
     }
   };
 
-  const handleResults = () => {
-    navigate("/result", { state: { score } });
-  };
+  
 
   if (questions.length === 0) {
     return (<p> Loading...</p>,
