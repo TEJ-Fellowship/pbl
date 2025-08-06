@@ -1,0 +1,160 @@
+@import url("https://fonts.googleapis.com/css2?family=Irish+Grover&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=VT323&display=swap");
+
+
+.dashboardContainer {
+  margin-top: 2rem;
+  transition: margin-left 0.1s ease, width 0.1s ease;
+  padding: 20px;
+  font-family: 'Source Sans 3', sans-serif;
+  /* background-color: #fff; */
+  min-height: 80vh;
+  position: relative;
+}
+
+.flexContainer {
+  display: flex;
+}
+
+.withSideBarActive {
+  margin-left: 230px;
+  width: calc(100% - 330px);
+}
+
+.withSideBarCollapsed {
+  margin-left: 100px;
+  width: calc(100% - 180px);
+}
+.heading {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #fff;
+}
+
+.cardContainer {
+  margin: 0 auto auto 8px;
+  padding: 20px;
+  width: 56%;
+  height: 35vh;
+  background-color: #152f29;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.leftColumn{
+  display: flex;
+  flex-direction: column;
+  gap: 14px
+}
+
+.pieCharContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 500px;
+  height: 250px;
+  margin: auto;
+}
+
+.sideContainer {
+  margin: 0 8px auto auto;
+  padding: 20px;
+  width: 35%;
+  height: 40vh;
+  background-color: #152f29;
+  border-radius: 12px;
+}
+
+.expenseContainer {
+  width: 180px;
+  height: 100px;
+  background-color: #287160;
+  padding: 12px;
+  /* display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; */
+  border-radius: 8px;
+}
+
+.blockContainer {
+  width: 28rem;
+  height: 10rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  /* background-color: red; */
+  position: absolute;
+  left: 16%;
+  top: 40.5%;
+  text-align: center;
+}
+
+.daily,
+.monthly,
+.yearly {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.monthly {
+  width: 6rem;
+  height: 6rem;
+  background-color: #2b1d2f;
+  border-radius: 12px;
+}
+.daily {
+  width: 7rem;
+  height: 8rem;
+  background-color: #00c47e;
+  border-radius: 12px;
+  color: #2b1d2f;
+}
+.yearly {
+  width: 6rem;
+  height: 6rem;
+  background-color: #8e44ad;
+  border-radius: 12px;
+}
+
+.bflexContainer {
+  display: flex;
+}
+
+.spendingActivity {
+  margin: 3rem auto auto 8px;
+  padding: 20px;
+  width: 56%;
+  height: 27vh;
+  background-color: #152f29;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.recentTransaction {
+  margin: 1rem auto auto 2rem;
+  padding: 20px;
+  width: 35%;
+  height: 30.5vh;
+  background-color: #152f29;
+  border-radius: 12px;
+}
+
+
+.recentList{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #287160;
+  border-radius: 8px;
+  padding: 4px;
+  margin:4px;
+}
+
