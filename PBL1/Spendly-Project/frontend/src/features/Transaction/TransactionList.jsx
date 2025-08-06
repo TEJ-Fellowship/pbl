@@ -70,7 +70,7 @@ function TransactionList({ expenses, onDelete, searchQuery }) {
             <option value="Grocery">Grocery</option>
           </select>
 
-          <button className={styles.calenderBtn} onClick={toggleCalendar}>
+          <button className={styles.calenderBtn} onClick={isCalender}>
             Date
           </button>
 

@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 
 function App() {
   // Initialize from localStorage or use empty array
+  const [searchQuery, setSearchQuery] = useState('')
   const [expenses, setExpenses] = useState(() => {
     const saved = localStorage.getItem('expenses');
     return saved ? JSON.parse(saved) : [];
