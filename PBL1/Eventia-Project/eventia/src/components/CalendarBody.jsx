@@ -81,10 +81,10 @@ function handleShowEvent(eventData) {
               <tr key={i}>
                 {week.map((day) => {
                   return (
-                    <td key={day.key}>
-                      <div className={day.isToday ? "current" : ""}>
-                        {day.content}
-                      </div>
+
+
+                    <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div>
+
                       {day.content !== "" &&
                         newEventsList
                           .filter((event) => {
