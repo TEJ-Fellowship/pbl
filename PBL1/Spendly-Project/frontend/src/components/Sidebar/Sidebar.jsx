@@ -35,6 +35,10 @@ function Sidebar({barActive, setBarActive}) {
     navigate("/add-expense");
   }
 
+  function handleDashboard(){
+    navigate("/");
+  }
+
   return (
     <>
       <div
@@ -51,8 +55,8 @@ function Sidebar({barActive, setBarActive}) {
           >{barActive ? "<" : ">"}</button>
         </div>
 
-        <div className={styles.circleContainer}>
-          <FontAwesomeIcon icon={faDollarSign} className={styles.dollarIcon} />
+        <div className={styles.circleContainer} onClick={handleDashboard}>
+          <FontAwesomeIcon icon={faDollarSign} className={styles.dollarIcon} onClick={handleDashboard}/>
         </div>
 
         {barActive ? (

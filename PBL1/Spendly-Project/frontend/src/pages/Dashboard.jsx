@@ -108,6 +108,7 @@ console.log(totalExpense)
 
 
   const navigate = useNavigate()
+  
   function handleAddExpense() {
     navigate("/add-expense");
   }
