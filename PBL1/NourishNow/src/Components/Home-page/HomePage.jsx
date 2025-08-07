@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import styles from "./HomePage.module.css";
 import { FaSearch } from "react-icons/fa";
+import Leftcontainer from "./Left-container/LeftContainer";
+import RightContainer from "./Right-continer/RightContainer";
 
 // Dummy data
 const dummyRecipes = [
@@ -72,6 +74,12 @@ function HomePage() {
   }, [searchTerm]);
 
   return (
+    <div className={styles.main}>
+      <div className={styles.leftcontainer}>
+        <Leftcontainer></Leftcontainer>
+
+      </div>
+
     <div className={styles.div1}>
       <div className={styles.funFactContainer}>
         <h1 className={styles.headQuestion}>Did you know?</h1>
@@ -94,7 +102,7 @@ function HomePage() {
             placeholder="Search for recipe"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-          />
+            />
           <button className={styles.searchButton} onClick={handleSearch}>
             <FaSearch />
           </button>
@@ -109,7 +117,7 @@ function HomePage() {
                 src={searchResult.photo}
                 alt={searchResult.title}
                 className={styles.recipeImage}
-              />
+                />
               <div className={styles.recipeDetails}>
                 <h2>{searchResult.title}</h2>
                 <p>
@@ -131,6 +139,10 @@ function HomePage() {
           )}
         </div>
       )}
+      </div>
+      <div className={styles.rightcontainer}>
+        <RightContainer></RightContainer>
+      </div>
     </div>
   );
 }
