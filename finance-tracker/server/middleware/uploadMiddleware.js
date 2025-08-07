@@ -1,4 +1,12 @@
 const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
+
+// Ensure 'uploads' folder exists
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
 //configure multer storage
 const storage = multer.diskStorage({
