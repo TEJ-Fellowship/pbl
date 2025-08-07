@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./Expense.module.css";
 import { useParams, useNavigate } from 'react-router-dom';
-
+import FinanceFact from "./FinanceFact";
 const Expense = ({ onAddExpense, onUpdate, expenses = [] }) => {
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,7 +46,7 @@ const Expense = ({ onAddExpense, onUpdate, expenses = [] }) => {
       navigate('/transaction');
     } else if (onAddExpense) {
       onAddExpense(expense);
-      navigate('/transaction');
+      // navigate('/transaction');
     }
 
     // Reset form after submission
@@ -112,6 +112,7 @@ const Expense = ({ onAddExpense, onUpdate, expenses = [] }) => {
       <svg height="767" width="2">
         <line x1="1" y1="0" x2="1" y2="767" stroke="#fff" strokeWidth="2" />
       </svg>
+      <FinanceFact category={category}/>
     </div>
   );
 };

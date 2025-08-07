@@ -4,7 +4,7 @@ import styles from "./TransactionList.module.css";
 import Calender from "./Calender";
 import filterByDateRange from "../Filter/filter";
 
-function TransactionList({ expenses, onDelete, searchQuery }) {
+function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
 
   const [calender, setCalender] = useState(false);
   const [startDate, setStartDate] = useState(null);
@@ -43,6 +43,11 @@ function TransactionList({ expenses, onDelete, searchQuery }) {
     indexOfFirstItem,
     indexOfLastItem
   );
+
+  const handleClearAll = () =>{
+    localStorage.removeItem('expenses')
+    setExpenses([]);
+  }
 
   console.log("Current page:", currentPage);
   console.log("Current items:", currentExpense);
@@ -89,7 +94,7 @@ function TransactionList({ expenses, onDelete, searchQuery }) {
             <option value="Income">Income</option>
           </select>
         </div>
-
+        <button onClick={handleClearAll}>Clear All</button>
         {/* Pagination */}
         <div className={styles.paginationContainer}>
           <input
