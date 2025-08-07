@@ -41,6 +41,14 @@ function Navbar() {
                 Overview
               </a>
             </li>
+            <li>
+              <a
+                href="#gemini"
+                style={{ textDecoration: "none", color: "#333333" }}
+              >
+                Gemini
+              </a>
+            </li>
           </ul>
 
           <ul className="nav-right">
