@@ -6,7 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const location = useLocation();
-  const isExplorePage = location.pathname === "/explore";
+  const showSearch = location.pathname === "/explore" || location.pathname === "/favorite";
 
   return (
     <nav className={styles.navBar}>
@@ -25,7 +25,7 @@ const Navbar = () => {
       </div>
 
       <div className={styles.rightSection}>
-        {isExplorePage && (
+        {showSearch && (
           <span className={styles.navSearch}>
             <FaSearch className={styles.icon} />
             <input className={styles.navSearchInput} placeholder="Search" />
@@ -33,7 +33,9 @@ const Navbar = () => {
         )}
 
         <span className={styles.bookmark}>
-          <Link to="/favorite"><MdOutlineBookmarkAdd size="1.5rem" className={styles.icon} /></Link>
+          <Link to="/favorite">
+            <MdOutlineBookmarkAdd size="1.5rem" className={styles.icon} />
+          </Link>
         </span>
 
         <span className={styles.avatar}>
