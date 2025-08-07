@@ -6,7 +6,7 @@ import Quote from "./Quote";
 
 function Home({ goals ,setAllGoals}) {
 
-  const [editingId, setEditingId] = useState(null);
+  // const [editingId, setEditingId] = useState(null);
 
   function handleDeleteButton(taskID) {
      let updategoal= goals.map((goal) =>{
