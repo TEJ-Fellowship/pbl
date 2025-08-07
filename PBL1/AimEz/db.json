@@ -1,0 +1,49 @@
+{
+    "goals": [
+      {
+        "id": 1,
+        "title": "Plan Project",
+        "tasks": [
+          { "id": 1, "text": "Define the project goal" },
+          { "id": 2, "text": "List core features" },
+          { "id": 3, "text": "Sketch basic UI or wireframe" }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Set Up Environment",
+        "tasks": [
+          { "id": 1, "text": "Create project folder" },
+          { "id": 2, "text": "Initialize Git repo" },
+          { "id": 3, "text": "Install necessary tools/frameworks" }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Build Core Features",
+        "tasks": [
+          { "id": 1, "text": "Implement UI components" },
+          { "id": 2, "text": "Add interactivity" },
+          { "id": 3, "text": "Connect logic or backend (if any)" }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Test & Debug",
+        "tasks": [
+          { "id": 1, "text": "Test all features" },
+          { "id": 2, "text": "Fix bugs and improve UX" }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Polish & Deploy",
+        "tasks": [
+          { "id": 1, "text": "Add final styles" },
+          { "id": 2, "text": "Deploy the project" },
+          { "id": 3, "text": "Share with others" }
+        ]
+      }
+    ]
+  }
+  
