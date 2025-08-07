@@ -2,11 +2,14 @@ import {React, useState} from 'react'
 import CreateButton from './CreateButton'
 import AddEventCard from './AddEventCard'
 import AskGeminiButton from './AskGeminiButton'
-import GeminiCard from './GeminiCard'
+import GeminiApi from '../GeminiApi'
 function Sidediv({events,setEvents, showHolidays, setShowHolidays}) {
+    const[isAskGemini,setaskGemini]=useState(false)
     const [popup,setpopup]=useState(false)
+    function handleaskGemini(){
+      setaskGemini(!isAskGemini)
+    }
     function handleClick(){
-
         setpopup(!popup)
     }
     return (
@@ -22,9 +25,9 @@ function Sidediv({events,setEvents, showHolidays, setShowHolidays}) {
         Show Public Holidays
       </label>
     </div>
-    <GeminiCard />
-    <AskGeminiButton />
-  
+    <GeminiApi isAskGemini={isAskGemini} handleaskGemini={handleaskGemini} events={events} />
+    <AskGeminiButton handleaskGemini={handleaskGemini}/>
+     
     {popup && <AddEventCard handleClick={handleClick} events={events} setEvents={setEvents}/>}
   </div>
   )

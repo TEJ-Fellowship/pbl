@@ -1,8 +1,8 @@
 import React from 'react'
 
-function AskGeminiButton() {
+function AskGeminiButton({handleaskGemini}) {
   return (
-    <button className='geminibtn' >✨Ask Gemini</button>
+    <button className='geminibtn' onClick={handleaskGemini}>✨Ask Gemini</button>
   )
 }
 
