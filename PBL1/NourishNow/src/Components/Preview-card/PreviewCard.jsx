@@ -1,13 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./PreviewCard.module.css";
 import AlternativesCard from "./AiCards/Alternatives/Alternatives";
+import NutritionChart from "./AiCards/Nutrition/NutritionChart";
+import { getNutritionBreakdown } from "../../gemini";
 
-const PreviewCard = ({ recipe, onClose, editingId,onUpdateRecipe }) => {
+const PreviewCard = ({ recipe, onClose, editingId, onUpdateRecipe }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [nutritionData, setNutritionData] = useState({});
   const [editableRecipe, setEditableRecipe] = useState({
     ...recipe,
     id: recipe.id ?? Date.now(),
   });
+
+  useEffect(() => {
+    async function fetchNutrition() {
+      if (recipe?.ingredients?.length > 0) {
+        const data = await getNutritionBreakdown(recipe.ingredients);
+        setNutritionData(data);
+      }
+    }
+
+    fetchNutrition();
+  }, [recipe]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,15 +38,6 @@ const PreviewCard = ({ recipe, onClose, editingId,onUpdateRecipe }) => {
     }));
   };
 
-  // const handleSave = () => {
-  //   const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
-  //   const updatedRecipes = savedRecipes.map((r) =>
-  //     r.id === editableRecipe.id ? editableRecipe : r
-  //   );
-  //   localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
-  //   setIsEditing(false);
-  // };
-
   const handleSave = () => {
     const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
 
@@ -48,7 +53,6 @@ const PreviewCard = ({ recipe, onClose, editingId,onUpdateRecipe }) => {
 
     localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
 
-    // ✅ Notify parent
     onUpdateRecipe(editableRecipe);
 
     setIsEditing(false);
@@ -178,16 +182,14 @@ const PreviewCard = ({ recipe, onClose, editingId,onUpdateRecipe }) => {
           </button>
         </div>
 
-        {/* Gemini Cards (you can plug in your Gemini data here) */}
+        {/* Gemini Cards */}
         <div className={styles.sideCards}>
-          <div className={styles.alternative}>
-            <h3>Alternatives</h3>
-            {/* <AlternativesCard recipe={recipe} /> */}
+          <div>
             <AlternativesCard recipe={recipe} />
           </div>
           <div className={styles.foodCalculator}>
             <h3>Nutrition Chart</h3>
-            <p>Chart or Gemini response will go here...</p>
+            <NutritionChart nutritionData={nutritionData} />
           </div>
         </div>
       </div>
