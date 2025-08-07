@@ -126,26 +126,3 @@
 } */
 
 
-.sidebar{
-    width: 200px;
-    height:100%;
-    background-color: white;
-    padding: 20px;
-    border: 1px solid #ccc;
-}
-
-ul{
-  list-style: none;
-  padding: 0;
-}
-
-li{
-  margin:10px 0;
-}
-
-.eachList{
-  display: flex;
-  align-items: center;
-  gap:8px;
-  color : #5046E4;
-}

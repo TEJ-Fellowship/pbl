@@ -42,7 +42,7 @@ function Quote() {
  
     return (
         <>
-        <p>{quote}</p>
+        <p className="quote">{quote}</p>
         
         </>
       )

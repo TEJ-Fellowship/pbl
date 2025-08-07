@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../home.css";
 import Quote from "./Quote";
-
+import Gemini from "./Gemini"
 
 
 function Home({ goals ,setAllGoals}) {
@@ -18,7 +18,9 @@ function Home({ goals ,setAllGoals}) {
 
   return (
     <>
+    <div className="home">
     <Quote/>
+    <Gemini goals={goals} setAllGoals={setAllGoals}/>
     <div className="home-container">
       <h2>Your goals</h2>
       {goals.length === 0 ? (
@@ -57,6 +59,7 @@ function Home({ goals ,setAllGoals}) {
           ))}
         </div>
       )}
+    </div>
     </div>
     </>
   );

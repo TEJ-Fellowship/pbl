@@ -108,10 +108,13 @@
 
 .sidebar{
     width: 200px;
-    height:100vh;
     background-color: white;
     padding: 20px;
     border: 1px solid #ccc;
+    height: 100vh;
+    
+    
+    
 }
 
 ul{
@@ -144,3 +147,58 @@ li:hover{
 /* .bini{
   background-color: red;
 } */
+
+/* ai part*/
+.styled-textarea {
+  width: 100%;
+  max-width: 1000px;
+  height: 60px;
+  padding: 12px 16px;
+  font-size: 20px;
+  border: 1.5px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s, box-shadow 0.3s;
+  font-family: inherit;
+  background-color: #fff;
+  color: #333;
+}
+
+.styled-textarea:focus {
+  outline: none;
+  border-color: #4f46e5; /* nice blue */
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* subtle focus glow */
+}
+
+
+
+
+
+
+.propmt{
+  display: flex;
+  justify-content: center;
+}
+
+
+.ask{
+  /* display: flex;
+  align-items: center; */
+  /* gap:6px; */
+  width: 100px;
+  padding: 9px;
+  font-size: 16px;
+  margin:10px;
+  background-color: #5046E4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  /* align-self: flex-end; */
+}
+.parent{
+  height: 100vh;
+  
+}
