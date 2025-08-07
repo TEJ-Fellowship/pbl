@@ -7,7 +7,8 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY1;
 
 export async function generateFinanceFact(category) {
   try {
-    const prompt = `Give me a recent and interesting financial fact related to the "${category}" expense category. Keep it short and insightful.`;
+    const prompt = `Give me a globally-relevant financial fact about the "${category}" expense category. Avoid U.S.-only data unless globally relevant. Keep it short, factual, and suitable for a finance tracker.`;
+    
 
     const res = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
