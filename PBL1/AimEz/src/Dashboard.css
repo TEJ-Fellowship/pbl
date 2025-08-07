@@ -108,7 +108,7 @@
 
 .sidebar{
     width: 200px;
-    height:100%;
+    height:100vh;
     background-color: white;
     padding: 20px;
     border: 1px solid #ccc;

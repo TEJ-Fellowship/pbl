@@ -12,6 +12,7 @@ function Goal({addGoal,setActiveSection}) {
     <div className='card-container'> 
 {isClicked ? (<GoalForm onSubmit={(goal) =>{
   addGoal(goal); /// goal = task
+  console.log("Goal Added:", goal);
   setIsClicked(false);
   setActiveSection("home");
 }}/>
