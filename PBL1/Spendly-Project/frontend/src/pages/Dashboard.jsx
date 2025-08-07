@@ -48,30 +48,29 @@ function Dashboard({ barActive, expenses}) {
     yearlyCategory[category] = (yearlyCategory[category] || 0) + amount;
   });
 
-  // Color Palette (8 distinct)
-  const categoryColors = [
-    "#22C55E", // green
-    "#8B5CF6", // purple
-    "#F59E0B", // amber
-    "#EF4444", // red
-    "#0EA5E9", // sky
-    "#A855F7", // violet
-    "#10B981", // emerald
-    "#F97316", // orange
-  ];
+  const categoryColorMap = {
+    Food: "#22C55E",           // Green
+    Transport: "#8B5CF6",      // Purple
+    Education: "#F59E0B",      // Amber
+    Entertainment: "#EF4444",  // Red
+    Healthcare: "#0EA5E9",     // Sky Blue
+    Shopping: "#A855F7",       // Violet
+    Utilities: "#10B981",      // Emerald
+    Other: "#F97316",          // Orange
+  };
 
   // Converters
   const toChartArray = (obj) =>
     Object.entries(obj).map(([name, amount]) => ({ name, amount }));
 
   const toCategoryArray = (obj) => {
-    const entries = Object.entries(obj);
-    return entries.map(([name, value], index) => ({
+    return Object.entries(obj).map(([name, value]) => ({
       name,
       value,
-      color: categoryColors[index % categoryColors.length], // use only 8 colors
+      color: categoryColorMap[name] || "#D1D5DB", // Fallback gray if category is unknown
     }));
   };
+
 
   const getTotal = (data) =>
     data.reduce((sum, item) => sum + item.amount, 0).toFixed(2);
