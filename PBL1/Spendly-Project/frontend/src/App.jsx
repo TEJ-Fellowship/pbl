@@ -5,12 +5,14 @@ import Sidebar from "./components/Sidebar/Sidebar";
 import Expense from "./components/Expense/Expense";
 import Dashboard from "./pages/dashboard";
 import "./App.css";
+
 import { useState, useEffect } from "react";
 
-function App() {
+const App = () => {
   // Initialize from localStorage or use empty array
   const [searchQuery, setSearchQuery] = useState('')
   const [barActive, setBarActive] = useState(false);
+
 
   const [expenses, setExpenses] = useState(() => {
     const saved = localStorage.getItem('expenses');
@@ -54,6 +56,7 @@ function App() {
             element={
               <TransactionList
                 expenses={expenses}
+                setExpenses={setExpenses}
                 onDelete={deleteTransaction}
                 searchQuery={searchQuery}
               />
