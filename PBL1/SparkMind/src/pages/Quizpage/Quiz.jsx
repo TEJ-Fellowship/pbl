@@ -4,16 +4,10 @@ import Quiz_timer from "./Quiz_timer";
 import { useNavigate } from "react-router-dom";
 import { GoogleGenAI } from "@google/genai";
 import { useLocation } from "react-router-dom";
-// const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// const ai = new GoogleGenAI({
-//   apiKey: API_KEY,
-// });
+
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const ai = new GoogleGenAI({ apiKey });
-// const ai = new GoogleGenAI({
-//   apiKey: "AIzaSyBiX2E3HIrVqtbddMEuHVZmULrliNksLzI",
-// });
 
 function Quiz() {
   const location = useLocation();
@@ -52,7 +46,6 @@ function Quiz() {
 
   const fetchData = async () => {
     try {
-      // setLoading(true);
       const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic} or Nepal topic if no topic is provided.
       Return ONLY a valid JSON object with no explanations or markdown. Format it like this:
       [
