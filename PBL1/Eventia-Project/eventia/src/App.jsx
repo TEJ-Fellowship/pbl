@@ -5,6 +5,7 @@ import "./css/Navbar.css";
 import "./App.css";
 import eventsData from "./data.json";
 const STORAGE_KEY = "eventia-events";
+import GeminiApi from "./GeminiApi";
 function App() {
   const saveEventsToStorage = (eventsData) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(eventsData));
@@ -46,6 +47,7 @@ function App() {
           setSearchTerm={setSearchTerm}
         />
         <HomePage events={filteredEvents} setEvents={setEvents} />
+        <GeminiApi events={events}/>
       </div>
     </>
   );

@@ -9,7 +9,7 @@ function HomePage({events,setEvents}) {
 
     <div className="main-calendar" >
       <Sidediv setEvents={setEvents} events={events} showHolidays={showHolidays} setShowHolidays={setShowHolidays} />
-        <Calendar events={events} setEvents={setEvents} showHolidays={showHolidays} />
+      <Calendar events={events} setEvents={setEvents} showHolidays={showHolidays} />
 
     </div>
   );

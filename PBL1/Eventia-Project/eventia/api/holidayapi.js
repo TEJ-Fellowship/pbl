@@ -1,4 +1,5 @@
-const API_KEY = "vNRE92G2JIYIE1nCMHTLctiKfVoWhBQ3"; 
+
+const API_KEY =import.meta.env.VITE_GEMINI_HOLIDAY_API_KEY 
 
 export const fetchHolidays = async (countryCode, year) => {
   try {
