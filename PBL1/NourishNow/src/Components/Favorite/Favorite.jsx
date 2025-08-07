@@ -58,7 +58,7 @@ function Favorite() {
     const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
 
     const formattedSaved = savedRecipes.map((r, index) => ({
-      id: `local-${index}`,
+      id: r.id ?? `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       title: r.title || "Untitled",
       prepTime: r.preptime || 0,
       category: r.category || "Uncategorized",
@@ -114,6 +114,16 @@ function Favorite() {
     setEditValues((prev) => ({ ...prev, [name]: value }));
   }
 
+
+  function updateRecipeInList(updatedRecipe) {
+  const updated = recipes.map((r) =>
+    r.id === updatedRecipe.id ? updatedRecipe : r
+  );
+  setRecipes(updated);
+  setSelectedRecipe(updatedRecipe); // ✅ update preview with latest
+}
+
+
   return (
     <div className={styles.maincontainer}>
       <ul className={styles.recipeList}>
@@ -140,7 +150,9 @@ function Favorite() {
             ) : (
               <div className={styles.eachRecipe}>
                 <h3
-                  onClick={() => setSelectedRecipe(recipe)}
+                  onClick={() => {setSelectedRecipe(recipe)
+                    setEditingId(recipe.id);
+                  }}
                   style={{
                     cursor: "pointer",
                     color: "#588157",
@@ -164,7 +176,9 @@ function Favorite() {
               ) : (
                 <>
                   <button onClick={() => handleEdit(recipe)}>Edit</button>
-                  <button onClick={() => handleDelete(recipe.id)}>Delete</button>
+                  <button onClick={() => handleDelete(recipe.id)}>
+                    Delete
+                  </button>
                 </>
               )}
             </div>
@@ -173,10 +187,13 @@ function Favorite() {
       </ul>
 
       {selectedRecipe && (
-        <PreviewCard
-          recipe={selectedRecipe}
-          onClose={() => setSelectedRecipe(null)}
-        />
+<PreviewCard
+  recipe={selectedRecipe}
+  onClose={() => setSelectedRecipe(null)}
+  editingId={selectedRecipe?.id}
+  onUpdateRecipe={updateRecipeInList}
+/>
+
       )}
     </div>
   );

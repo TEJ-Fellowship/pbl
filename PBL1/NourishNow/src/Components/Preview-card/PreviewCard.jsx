@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import styles from "./PreviewCard.module.css";
 import AlternativesCard from "./AiCards/Alternatives/Alternatives";
 
-
-
-const PreviewCard = ({ recipe, onClose }) => {
+const PreviewCard = ({ recipe, onClose, editingId,onUpdateRecipe }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editableRecipe, setEditableRecipe] = useState({ ...recipe });
+  const [editableRecipe, setEditableRecipe] = useState({
+    ...recipe,
+    id: recipe.id ?? Date.now(),
+  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,12 +24,33 @@ const PreviewCard = ({ recipe, onClose }) => {
     }));
   };
 
+  // const handleSave = () => {
+  //   const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
+  //   const updatedRecipes = savedRecipes.map((r) =>
+  //     r.id === editableRecipe.id ? editableRecipe : r
+  //   );
+  //   localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
+  //   setIsEditing(false);
+  // };
+
   const handleSave = () => {
     const savedRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
-    const updatedRecipes = savedRecipes.map((r) =>
-      r.id === editableRecipe.id ? editableRecipe : r
-    );
+
+    const existingIndex = savedRecipes.findIndex((r) => r.id === editingId);
+
+    let updatedRecipes;
+    if (existingIndex !== -1) {
+      updatedRecipes = [...savedRecipes];
+      updatedRecipes[existingIndex] = editableRecipe;
+    } else {
+      updatedRecipes = [...savedRecipes, editableRecipe];
+    }
+
     localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
+
+    // ✅ Notify parent
+    onUpdateRecipe(editableRecipe);
+
     setIsEditing(false);
   };
 
@@ -54,16 +76,16 @@ const PreviewCard = ({ recipe, onClose }) => {
           {/* Image */}
           {isEditing ? (
             <input
-              name="imageUrl"
-              value={editableRecipe.imageUrl}
+              name="image"
+              value={editableRecipe.image}
               onChange={handleChange}
               placeholder="Image URL"
               className={styles.input}
             />
           ) : (
-            editableRecipe.imageUrl && (
+            editableRecipe.image && (
               <img
-                src={editableRecipe.imageUrl}
+                src={editableRecipe.image}
                 alt={editableRecipe.title}
                 className={styles.image}
               />
@@ -105,7 +127,8 @@ const PreviewCard = ({ recipe, onClose }) => {
             />
           ) : (
             <p>
-              <strong>Preparation Time:</strong> {editableRecipe.prepTime} minutes
+              <strong>Preparation Time:</strong> {editableRecipe.prepTime}{" "}
+              minutes
             </p>
           )}
 
@@ -123,9 +146,13 @@ const PreviewCard = ({ recipe, onClose }) => {
             />
           ) : (
             <ul>
-              {Array.isArray(editableRecipe.ingredients)
-                ? editableRecipe.ingredients.map((ing, i) => <li key={i}>{ing}</li>)
-                : <li>{editableRecipe.ingredients}</li>}
+              {Array.isArray(editableRecipe.ingredients) ? (
+                editableRecipe.ingredients.map((ing, i) => (
+                  <li key={i}>{ing}</li>
+                ))
+              ) : (
+                <li>{editableRecipe.ingredients}</li>
+              )}
             </ul>
           )}
 
@@ -155,8 +182,8 @@ const PreviewCard = ({ recipe, onClose }) => {
         <div className={styles.sideCards}>
           <div className={styles.alternative}>
             <h3>Alternatives</h3>
-{/* <AlternativesCard recipe={recipe} /> */}
-<AlternativesCard recipe={recipe}/>
+            {/* <AlternativesCard recipe={recipe} /> */}
+            <AlternativesCard recipe={recipe} />
           </div>
           <div className={styles.foodCalculator}>
             <h3>Nutrition Chart</h3>
