@@ -1,13 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CalendarHeader from "./CalendarHeader";
 import CalendarBody from "./CalendarBody";
+import { fetchHolidays, formatHolidays } from "../../api/holidayapi";
 
-function Calendar({events,setEvents}) {
+function Calendar({events, setEvents, selectedCountry = "np", showHolidays}) {
   const initialDate = new Date();
   const [month, setMonth] = useState(initialDate.getMonth());
   const [year, setYear] = useState(initialDate.getFullYear());
   const firstDay = new Date(year, month, 1).getDay();
   const lastDate = new Date(year, month + 1, 0).getDate();
+  const [holidays, setHolidays] = useState([]);
+  const [loadingHolidays, setLoadingHolidays] = useState(false);
+  const [holidayError, setHolidayError] = useState(null);
+
+  useEffect(() => {
+    setLoadingHolidays(true);
+    setHolidayError(null);
+    fetchHolidays(selectedCountry, year)
+      .then((data) => setHolidays(formatHolidays(data)))
+      .catch((err) => setHolidayError("Failed to load holidays"))
+      .finally(() => setLoadingHolidays(false));
+  }, [selectedCountry, year]);
 
   function leftClick() {
     let mon = month - 1;
@@ -80,7 +93,10 @@ function Calendar({events,setEvents}) {
         lastDate={lastDate}
         currentMonth={month}
         currentYear={year}
-        events={events} setEvents={setEvents}
+        events={events}
+        setEvents={setEvents}
+        holidays={holidays}
+        showHolidays={showHolidays}
       />
     </div>
   );
