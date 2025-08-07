@@ -50,7 +50,7 @@ const App = () => {
         <Sidebar barActive={barActive} setBarActive={setBarActive} />
 
         <Routes>
-          <Route path="/" element={<Dashboard barActive={barActive} expenses={expenses} />}></Route>
+          <Route path="/" element={<Dashboard barActive={barActive} expenses={expenses} setExpenses={setExpenses}/>}></Route>
           <Route
             path="/transaction"
             element={
