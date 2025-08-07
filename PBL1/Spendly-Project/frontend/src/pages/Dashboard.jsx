@@ -9,16 +9,35 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import styles from "./Dashboard.module.css";
 import ExpenseStatistics from "./ExpenseStatistics";
 import PiChart from "./PiChart";
+import useGeminiAI from "../features/AI/GeminiAI";
 
-function Dashboard({ barActive, expenses}) {
+function Dashboard({ barActive, expenses, setExpenses }) {
   const [selectedPeriod, setSelectedPeriod] = useState("Daily");
-
+  const [searchField, setSearchField] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const { aiResponse, analyzeSpending, loading, expenseLoading, parseExpenseFromQuery } =
+    useGeminiAI();
 
   // Utilities
   const getDayName = (dateStr) =>
-    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(dateStr).getDay()];
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+      new Date(dateStr).getDay()
+    ];
   const getMonthName = (dateStr) =>
-    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][new Date(dateStr).getMonth()];
+    [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ][new Date(dateStr).getMonth()];
   const getYear = (dateStr) => new Date(dateStr).getFullYear();
 
   // Initialize structures
@@ -49,14 +68,14 @@ function Dashboard({ barActive, expenses}) {
   });
 
   const categoryColorMap = {
-    Food: "#22C55E",           // Green
-    Transport: "#8B5CF6",      // Purple
-    Education: "#F59E0B",      // Amber
-    Entertainment: "#EF4444",  // Red
-    Healthcare: "#0EA5E9",     // Sky Blue
-    Shopping: "#A855F7",       // Violet
-    Utilities: "#10B981",      // Emerald
-    Other: "#F97316",          // Orange
+    Food: "#22C55E", // Green
+    Transport: "#8B5CF6", // Purple
+    Education: "#F59E0B", // Amber
+    Entertainment: "#EF4444", // Red
+    Healthcare: "#0EA5E9", // Sky Blue
+    Shopping: "#A855F7", // Violet
+    Utilities: "#10B981", // Emerald
+    Other: "#F97316", // Orange
   };
 
   // Converters
@@ -70,7 +89,6 @@ function Dashboard({ barActive, expenses}) {
       color: categoryColorMap[name] || "#D1D5DB", // Fallback gray if category is unknown
     }));
   };
-
 
   const getTotal = (data) =>
     data.reduce((sum, item) => sum + item.amount, 0).toFixed(2);
@@ -94,25 +112,50 @@ function Dashboard({ barActive, expenses}) {
     },
   };
 
-  console.log(expenseData);
+  // console.log(expenseData);
 
+  const dailyTotal = expenseData.Daily.total;
+  const monthlyTotal = expenseData.Monthly.total;
+  const yearlyTotal = expenseData.Yearly.total;
 
+  const totalExpense = parseFloat(
+    dailyTotal + monthlyTotal + yearlyTotal
+  ).toFixed(2);
+  // console.log(totalExpense);
 
-const dailyTotal = expenseData.Daily.total;
-const monthlyTotal = expenseData.Monthly.total;
-const yearlyTotal = expenseData.Yearly.total;
+  const navigate = useNavigate();
 
-const totalExpense = parseFloat(dailyTotal + monthlyTotal + yearlyTotal).toFixed(2)
-console.log(totalExpense)
-
-
-  const navigate = useNavigate()
-  
   function handleAddExpense() {
     navigate("/add-expense");
   }
 
-  const recentExpenses = expenses.slice(0, 4)
+  function handleAIExpense() {
+    setSearchField(!searchField);
+  }
+
+  const handleAISpending = async () => {
+    if (searchField) setSearchField(!searchField);
+    await analyzeSpending(expenseData);
+  };
+
+  const handleAddQueryExpense = async () => {
+    if (!aiQuery.trim()) return;
+
+    const parsed = await parseExpenseFromQuery(aiQuery);
+    if (!parsed) {
+      alert("Couldn't understand  expense, Try Again !!");
+      return;
+    }
+
+    const updatedExpense = [parsed, ...expenses];
+    setExpenses(updatedExpense);
+
+    alert("Expenses added!!, Spend but Wisely!!!");
+
+    setAiQuery("");
+    setSearchField(false);
+  };
+  const recentExpenses = expenses.slice(0, 4);
 
   return (
     <div
@@ -127,8 +170,12 @@ console.log(totalExpense)
               <h1 className={styles.heading}>Hello, Miss</h1>
               <p>Welcome back!</p>
             </div>
-            <div className={styles.addBtn} >
-              <FontAwesomeIcon icon={faPlus} className={styles.plus} onClick={handleAddExpense} />
+            <div className={styles.addBtn}>
+              <FontAwesomeIcon
+                icon={faPlus}
+                className={styles.plus}
+                onClick={handleAddExpense}
+              />
             </div>
             <div className={styles.expenseContainer}>
               <h3>Total Expense</h3>
@@ -146,7 +193,43 @@ console.log(totalExpense)
         </div>
         <div className={styles.sideContainer}>
           <h2 style={styles.subHeading}>AI Analaysis</h2>
-          <h1 style={{margin: "8rem"}}>Coming Soon....</h1>
+          <div className={styles.aiContainer}>
+            <div className={styles.aiBackground}>
+              {aiResponse && !searchField ? (
+                <div className={styles.aiResponse}>
+                  <p>{aiResponse}</p>
+                </div>
+              ) : (
+                ""
+              )}
+              {searchField && (
+                <input
+                  className={`${styles.searchActive}`}
+                  type="text"
+                  placeholder="Enter your expenses..."
+                  value={aiQuery}
+                  onChange={(e) => setAiQuery(e.target.value)}
+                />
+              )}
+            </div>
+            <div className={styles.btnContainer}>
+              <button
+                type="button"
+                onClick={() => handleAISpending()}
+                disabled={loading}
+              >
+                {loading ? "Analyzing..." : "Analyze My Spending"}
+              </button>
+              <button
+                type="button"
+                onClick={searchField ? handleAddQueryExpense : handleAIExpense}
+              >
+                {searchField
+                  ? `${expenseLoading ? "Submitting.." : "Submit Expense"}`
+                  : "Add Expense"}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -185,11 +268,11 @@ console.log(totalExpense)
           <h2 className={styles.subHeading}>Recent Expenses</h2>
           {recentExpenses.map((expense) => (
             <div className={styles.recentList} key={expense.id}>
-                <div>
-                    <p style={{fontWeight: "bold"}}>{expense.category}</p>
-                    <p >{expense.description}</p>
-                </div>
-                <span style={{fontWeight: "bold"}}>{expense.amount}</span>
+              <div>
+                <p style={{ fontWeight: "bold" }}>{expense.category}</p>
+                <p>{expense.description}</p>
+              </div>
+              <span style={{ fontWeight: "bold" }}>{expense.amount}</span>
             </div>
           ))}
         </div>
