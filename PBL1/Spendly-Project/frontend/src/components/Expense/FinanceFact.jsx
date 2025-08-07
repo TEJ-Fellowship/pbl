@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { generateFinanceFact } from "../../utils/generateFinanceFacts"; 
+import { generateFinanceFact } from "../../utils/generateFinanceFacts";
+import styles from "../Expense/FinanceFact.module.css";
 
 const FinanceFact = ({ category }) => {
   const [fact, setFact] = useState("");
@@ -9,7 +10,7 @@ const FinanceFact = ({ category }) => {
   const fetchFact = async () => {
     setLoading(true);
     setError(""); // Clear any previous errors
-    
+
     // Fallback category if none is provided
     const factCategory = category || "general finance";
 
@@ -33,10 +34,12 @@ const FinanceFact = ({ category }) => {
   }, [category]); // The effect re-runs whenever the category prop changes
 
   return (
-    <div className="finance-fact-container">
-      {loading && <p>Loading a finance fact...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {!loading && !error && <p>{fact}</p>}
+    <div className={styles.FinanceFactContainer}>
+      <div className={styles.factContainer}>
+        {loading && <p>Loading a finance fact...</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        {!loading && !error && <p>{fact}</p>}
+      </div>
       <button onClick={fetchFact} style={{ marginTop: "10px" }}>
         🔄 New Fact
       </button>
