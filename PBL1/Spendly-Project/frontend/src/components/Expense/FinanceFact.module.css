@@ -14,7 +14,8 @@
   font-family: "Source Sans 3", sans-serif;
   font-size: 1.2rem;
   width: 90%;
-  height: 20vh;
+  min-height: fit-content;
+  max-height: max-content;
   display: flex;
   justify-content: center;
   align-items: center;
