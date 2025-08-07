@@ -1,11 +1,10 @@
 @import url("https://fonts.googleapis.com/css2?family=Irish+Grover&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Sans+3:ital,wght@0,200..900;1,200..900&family=VT323&display=swap");
 
-
 .dashboardContainer {
   margin-top: 2rem;
   transition: margin-left 0.1s ease, width 0.1s ease;
   padding: 20px;
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: "Source Sans 3", sans-serif;
   /* background-color: #fff; */
   min-height: 80vh;
   position: relative;
@@ -42,10 +41,11 @@
   justify-content: space-between;
 }
 
-.leftColumn{
+
+.leftColumn {
   display: flex;
   flex-direction: column;
-  gap: 14px
+  gap: 14px;
 }
 
 .pieCharContainer {
@@ -64,6 +64,72 @@
   height: 40vh;
   background-color: #152f29;
   border-radius: 12px;
+}
+
+.aiBackground{
+  width: 100%;
+  height: 100%;
+  background-color: #287160;
+  border-radius: 1rem;
+  margin: 1rem auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+.aiContainer {
+  width: 100%;
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.aiResponse{
+  margin: auto;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 1rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.searchActive, .searchActive:active {
+  padding: 0.5rem;
+  font-family: "Source Sans 3", sans-serif;
+  width: 20rem;
+  height: 1.5rem;
+  text-align: center;
+  transition: margin-bottom 0.3s ease-out;
+  border-radius: 1rem;
+  outline: none;
+  color: #4796E3;
+  font-size: 18px;
+  border: 3px solid #9f63e3;
+  box-shadow: rgba(103, 45, 150, 0.56) 0px 22px 70px 4px;
+}
+
+.btnContainer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btnContainer button {
+  padding: 0.5rem 1rem;
+  border: none;
+  font-family: "Source Sans 3", sans-serif;
+  font-size: 1rem;
+  border-radius: 1rem;
+  background-color: #4796e3;
+  transition: background-color 0.3s ease;
+  z-index: 2;
+}
+
+.btnContainer button:hover {
+  outline: none;
+  background-color: #8b7cb4;
 }
 
 .expenseContainer {
@@ -147,18 +213,17 @@
   border-radius: 12px;
 }
 
-
-.recentList{
+.recentList {
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: #287160;
   border-radius: 8px;
   padding: 4px;
-  margin:4px;
+  margin: 4px;
 }
 
-.addBtn{
+.addBtn {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -168,7 +233,7 @@
   background-color: #00c47e;
 }
 
-.plus{
+.plus {
   color: #fff;
   font-size: 32px;
   position: absolute;
