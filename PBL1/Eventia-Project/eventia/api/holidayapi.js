@@ -1,4 +1,4 @@
-const API_KEY = "IhUYcNZQXfSY91UfZRCGvDqv2WZl0jVR"; 
+const API_KEY = "vNRE92G2JIYIE1nCMHTLctiKfVoWhBQ3"; 
 
 export const fetchHolidays = async (countryCode, year) => {
   try {

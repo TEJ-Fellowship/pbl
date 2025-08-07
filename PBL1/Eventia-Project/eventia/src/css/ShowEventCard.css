@@ -15,7 +15,7 @@
 /* } */
 .showeventcard {
   position: absolute;     /* Position relative to .main-container */
-  top: 270px;              /* distance from top */
+  top: 250px;              /* distance from top */
   right: 405px;            /* distance from right */
   /* background-color: blue; */
   width: 500px;
@@ -44,7 +44,8 @@
     gap: 30px;
 }
 h3{
-    margin:12px;
+    margin:15px;
+    font-size: 25px;
     margin-bottom: 0;
     color: #565555;
 }
@@ -57,5 +58,6 @@ h4{
     margin: 13px;
 }
 .des{
-    margin-left: 23px;
+    margin-left: 15px;
+    font-size: 15px;
 }
