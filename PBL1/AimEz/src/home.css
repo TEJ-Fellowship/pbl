@@ -19,7 +19,7 @@
 
    .home-container {
     padding: 20px;
-    min-height: 100vh;
+    max-height: 100vh;
   }
   
   .goal-list {
@@ -81,4 +81,35 @@
 .delete-btn {
   background-color: #dc3545;
   color: white;
+}
+
+.home{
+  background-color: rgb(239, 245, 236);
+  min-height: 100vh;
+  width: 100%;
+  position: absolute;
+  top:0;
+  left: 200px;
+  max-width: 1500px;
+
+}
+.quote{
+ 
+
+  margin: 20px;
+  margin-right: 30px;
+  margin-top: 25px;
+  font-size: 25px;
+  text-shadow: 1px 1px 2px rgb(197, 164, 164), 0 0 25px rgb(209, 155, 219);
+  /* font-weight: bold; */
+  font-style: italic;
+  background-image: url(images/pastel.png);
+  background-position: left top;
+  padding: 25px;
+ 
+  max-width: fit-content;
+  border-radius:20px;
+  color: rgb(74, 8, 74);
+  height: 200px;
+  box-shadow: 0 9px 10px rgba(145, 14, 104, 0.25);
 }

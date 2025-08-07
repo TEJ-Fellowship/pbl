@@ -1,7 +1,7 @@
 import React from "react";
 import { FaPlus } from "react-icons/fa";
 import { useState } from "react";
-
+import CategoryCard from './CategoryCard';
 function GoalForm({ onSubmit }) {
   const [goalTitle, setGoalTitle] = useState("");
   //to change the state of input field, at first the input field is not displayed.
@@ -50,7 +50,7 @@ function GoalForm({ onSubmit }) {
   return (
     <div>
       <div id="container">
-        <h4>Fitness</h4>
+        
         <input
           type="text"
           placeholder="Goal title"

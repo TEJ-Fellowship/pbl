@@ -1,6 +1,6 @@
 import React from "react";
-import { useState,useEffect } from "react";
-import axios from 'axios';
+import { useState } from "react";
+// import axios from 'axios';
 
 import Sidebar from "./Sidebar";
 import Home from "./Home";
@@ -13,9 +13,9 @@ function Dashboard() {
   const [activeSection, setActiveSection] = useState("home");
   const [allGoals, setAllGoals] = useState([]); //store goals
 
-  useEffect(()=>{
-    axios.get('http://localhost:3001/goals').then(res => setAllGoals(res.data))
-  },[])
+  // useEffect(()=>{
+  //   axios.get('http://localhost:3001/goals').then(res => setAllGoals(res.data))
+  // },[])
 
   const addGoal = (goal) => {
     setAllGoals((prevGoals) => [...prevGoals, goal]); // Assuming `setGoals` is used to manage the list of goals
@@ -24,7 +24,7 @@ function Dashboard() {
   return (
     
  <>
-    <div className="parent" style={{ width: "100vw", height: "100vh", display:"flex" }}>
+    <div className="parent" style={{ width: "100vw", maxHeight: "1100vh", display:"flex" }}>
     
       <Sidebar setActiveSection={setActiveSection} />
 
