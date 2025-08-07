@@ -25,12 +25,15 @@ const Recipeformpage = () => {
       steps,
       preptime,
       image: imagePreview,
-      createdAt: new Date().toISOString(),
+      id: new Date().toISOString(),
     };
 
     const existingRecipes = JSON.parse(localStorage.getItem("recipes")) || [];
+
     const updatedRecipes = [...existingRecipes, newRecipe];
     localStorage.setItem("recipes", JSON.stringify(updatedRecipes));
+    console.log(newRecipe);
+    console.log(localStorage.getItem("recipes"));
 
     // Reset form
     setTitle("");
@@ -129,7 +132,11 @@ const Recipeformpage = () => {
             <button className={styles.cancelBtn} type="button">
               Cancel
             </button>
-            <button className={styles.saveBtn} type="button" onClick={handleSave}>
+            <button
+              className={styles.saveBtn}
+              type="button"
+              onClick={handleSave}
+            >
               Save Recipe
             </button>
           </div>
