@@ -78,7 +78,6 @@ function CalendarBody({
                 {week.map((day) => {
                   return (
                     <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div>
-                      {day.content}
                       {day.content !== "" &&
                         newEventsList
                           .filter((event) => {
