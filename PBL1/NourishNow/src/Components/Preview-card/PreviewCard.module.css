@@ -1,0 +1,73 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.wrapper {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  width: 90%;
+  padding: 20px;
+}
+
+.modal {
+  background-color: #1C1C1C;
+  padding: 20px;
+  width: 600px;
+  border-radius: 15px;
+  color: #FFFFFF;
+  overflow-y: auto;
+}
+
+.sideCards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 300px;
+}
+
+.alternative,
+.foodCalculator {
+  background-color: #2E2E2E;
+  padding: 15px;
+  border-radius: 10px;
+  color: #FFFFFF;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0 16px;
+  border: 1px solid #C4F000;
+  border-radius: 8px;
+  background-color: #1C1C1C;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.editBtn {
+  background-color: #C4F000;
+  color: #1C1C1C;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.editBtn:hover {
+  background-color: #a8d900;
+}

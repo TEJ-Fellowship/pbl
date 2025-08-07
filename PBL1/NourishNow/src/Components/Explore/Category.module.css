@@ -1,46 +1,78 @@
 .eachCategory {
-    margin-bottom: 30px;
+  margin-bottom: 30px;
 }
 
-.eachCategory > div {
-    height: 300px;
-    width: 200px;
-    background-color: #22c772; 
-    border-radius: 10px;
-    position: relative;
-    overflow: hidden;
-    background-repeat: no-repeat;
-    background-size: cover;
-    box-shadow: 0 0 6px #ccc;
+/* Card container with background image */
+.card {
+  height: 300px;
+  width: 200px;
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-size: cover;
+  box-shadow: 0 0 6px #ccc;
+  cursor: pointer;
+  transition: transform 0.4s ease;
 }
 
-.eachCategory > h5 {
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
+/* Hover effect for scaling */
+.card:hover {
+  transform: scale(1.05);
 }
 
-/* Background images mapped to classNames */
+/* Overlay appears on hover */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover .overlay {
+  opacity: 1;
+}
+
+/* Category name text inside the card */
+.categoryLabel {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  z-index: 2;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  text-align: center;
+}
+
+/* Individual background image classes */
 .quickeasy {
-    background-image: url('./category-images/easyandfast.jpg');
+  background-image: url('./category-images/easyandfast.jpg');
 }
 
 .vegetarian {
-    background-image: url('./category-images/vegeterian-food.jpg');
+  background-image: url('./category-images/vegeterian-food.jpg');
 }
 
 .desserts {
-    background-image: url('./category-images/desserts-item.jpg');
+  background-image: url('./category-images/desserts-item.jpg');
 }
 
 .italian {
-    background-image: url('./category-images/italian-food.jpg');
+  background-image: url('./category-images/italian-food.jpg');
 }
 
 .healthy {
-    background-image: url('./category-images/healthy-food.jpg');
+  background-image: url('./category-images/healthy-food.jpg');
 }
 
 .mexican {
-    background-image: url('./category-images/mexican-food.jpg');
+  background-image: url('./category-images/mexican-food.jpg');
 }
