@@ -3,11 +3,11 @@
 } */
 
 
-html, body {
+/* html, body {
   height: 100%;
   margin: 0;
   background-color: white;
-}
+} */
 
  #container {
   width: 700px;
@@ -138,3 +138,9 @@ li:hover{
 .right{
   padding:20px;
 } 
+
+
+
+/* .bini{
+  background-color: red;
+} */

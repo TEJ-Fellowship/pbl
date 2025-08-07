@@ -2,15 +2,15 @@ import React from 'react'
 import { FaPlus } from 'react-icons/fa'
 import './CategoryCard.css'
  
-function CategoryCard({title, image, showPlus}) {
+function CategoryCard({title, image, onPlusClick}) {
     return(
         <div className ="category-card">
             
                 <div className='card-title'>
-                    {title} {showPlus && <FaPlus size ={10} style={{ marginLeft: 5}} />}
+                    {title} {<FaPlus className="plus-icon" onClick={onPlusClick}/>}
                 </div>
             {image && <img src={image} alt ={title || 'Category'} className='card-image' />}
-            {/* {showPlus && <div> + </div>} */}
+
         </div>
     );
 }

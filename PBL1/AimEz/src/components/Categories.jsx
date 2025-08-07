@@ -1,4 +1,4 @@
-import React from 'react'
+import React,{useState} from 'react'
 
 
 import './Categories.css';
@@ -11,8 +11,10 @@ import Hygiene from '../assets/hygiene.png'
 import Finance from '../assets/finance.png'
 import Hobbies from '../assets/hobbies.png'
 import Career from '../assets/career.png'
+import GoalForm from './GoalForm'
 
-function Categories() {
+function Categories({addGoal,setActiveSection}) {
+    const[isClicked,setIsClicked] = useState(0)
     const categories = [
   { title: "Study", image:Study, showPlus: true },
   { title: "Exercise", image:Exercise , showPlus:true},
@@ -24,21 +26,35 @@ function Categories() {
   { title: "Career", image: Career},
   { title: "Others"},
 ];
-console.log('image: ',categories[0].image);
     return (
         <>
-        <div id ='cat'>
+            <div className="card-container">
+                {isClicked ? (
+                    <GoalForm
+                        onSubmit={(goal) => {
+                            addGoal(goal); // goal = task
+                            setIsClicked(false);
+                            setActiveSection("home");
+                        }}
+                    />
+                ) : (
+                    <div id="cat">
             {categories.map((cat, index) => (
                 <CategoryCard
                     key={index}
                     title={cat.title}
                     image={cat.image}
-                    showPlus={cat.showPlus}
+                                onPlusClick={() => {
+                                    setIsClicked(true);
+                                    console.log("clicked");
+                                }}
                 />
             ))}
+                    </div>
+                )}
         </div>
         </>
-    )
-}
+    );
+};
 
 export default Categories

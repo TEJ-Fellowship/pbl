@@ -1,9 +1,7 @@
 import React from "react";
-import { useState } from "react";
-
 import Sidebar from "./Sidebar";
 import Home from "./Home";
-import Goal from "./Goal";
+// import Goal from "./Goal";
 
 import { useState } from "react";
 import Categories from "./Categories";
@@ -24,6 +22,7 @@ function Dashboard() {
 
 
   return (
+ <>
     <div className="parent" style={{ width: "100vw", height: "100vh", display:"flex" }}>
     
       <Sidebar setActiveSection={setActiveSection} />
@@ -31,15 +30,15 @@ function Dashboard() {
 
       <div className='right'>
       {activeSection === 'home' && <Home goals={allGoals}/>}
-        {activeSection === 'goals' && <Goal addGoal = {addGoal} setActiveSection={setActiveSection}/>}
+        {/* {activeSection === 'goals' && <Goal addGoal = {addGoal} setActiveSection={setActiveSection}/>} */}
       <div style={{ flexGrow: 1, padding: "20px" }}>
-      {activeSection === 'home' && <h1>🏠 <Home/></h1>}
-        {activeSection === 'categories' && <Categories/>}
-        {activeSection === 'goals' && <h1>🎯 Set Your Goals</h1>}
+        {activeSection === 'goals' && <Categories addGoal ={addGoal} setActiveSection={setActiveSection}/>}
         {activeSection === 'calendar' && <h1>📅 View Calendar</h1>}
 
       </div>
+      </div>
     </div>
+    </>
   );
 }
 

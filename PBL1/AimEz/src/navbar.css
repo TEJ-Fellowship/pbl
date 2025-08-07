@@ -32,12 +32,14 @@ h3{
 .Nav a{
     margin-left: 40px;
     margin-top: 25px;
+    text-align: center;
+    line-height: 1;
     font-size: 23px;
     font: bolder;
     font-family: 'Courier New', Courier, monospace;
     font-weight: bold;
     color: azure;
-    height: 20px;
+    height: 25px;
     border-bottom: 3px solid transparent;
     transition: border-bottom-color 0.5s ease;
     padding-bottom: 5px;
@@ -50,7 +52,7 @@ h3{
     color: rgb(59, 5, 57);
     /* transition: 1s;
     border-bottom-color: rgb(59, 5, 57); */
-
+    /* text-decoration: underline; */
     
 }
 .Nav a::after{
@@ -59,6 +61,7 @@ h3{
     left: 0;
     bottom: 0;
     width: 0;
+
     height: 3px;
     background-color: rgb(59, 5, 57) ;
     transition: width 0.8s ease
@@ -66,6 +69,7 @@ h3{
 .Nav a:hover::after{
     width:100%;
 }
+
 .let{
     color: rgb(165, 127, 255);
     position: absolute;
@@ -75,13 +79,10 @@ h3{
     text-shadow: 1px 1px 2px rgb(71, 14, 15), 0 0 25px rgb(182, 174, 94), 0 0 5px rgb(155, 61, 61);
     border-width: 3px;
     border-color: rgb(196, 85, 179);
-}
-
-button{
-    color: rgb(224, 221, 206);
     border-style: dotted;
     border-end-end-radius: 2px;
     font-family: cursive;
-    /* background-color: rgba(123, 146, 151, 0.007); */
 }
+
+
 

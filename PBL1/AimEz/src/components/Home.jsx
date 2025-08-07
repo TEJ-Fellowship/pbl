@@ -1,7 +1,12 @@
-import React from "react";
+import React, { useState}from "react";
 import "../home.css";
 
 function Home({goals}) {
+
+ 
+  const url=`https://jsonplaceholder.typicode.com/todos`
+  
+
   return (
 
     <div className="home-container">

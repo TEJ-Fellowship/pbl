@@ -16,7 +16,7 @@ function Sidebar({setActiveSection}) {
               
               Home
             </li>
-            <li className='eachList' onClick={()=> setActiveSection("categories")}>
+            <li className='eachList' onClick={()=> setActiveSection("goals")}>
               <FaBullseye />
               
               Goals/Categories

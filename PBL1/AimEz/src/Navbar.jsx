@@ -10,7 +10,7 @@ function Navbar({setShowDashboard}) {
         <div>
             <div className="body">
             <div className="Nav">
-            <a>Home</a>q
+            <a>Home</a>
             <a>Goal</a>
             <a>Contact</a>
             <a>About Us</a>

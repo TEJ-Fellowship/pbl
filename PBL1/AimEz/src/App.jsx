@@ -5,6 +5,8 @@ import Navbar from "./Navbar.jsx";
 import Dashboard from "./components/Dashboard";
 function App() {
   const [showDashboard, setShowDashboard] = useState(false)
+  // console.log("showDashboard:", showDashboard); // Add this line
+
 
   return (
     <>
