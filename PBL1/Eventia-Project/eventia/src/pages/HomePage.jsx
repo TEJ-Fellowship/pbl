@@ -8,7 +8,7 @@ function HomePage({events,setEvents}) {
 
     <div className="main-calendar" >
       <Sidediv setEvents={setEvents} events={events}/>
-        <Calendar events={events}/>
+        <Calendar events={events} setEvents={setEvents}/>
 
     </div>
   );

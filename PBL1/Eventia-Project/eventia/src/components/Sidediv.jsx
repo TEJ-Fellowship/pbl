@@ -1,7 +1,7 @@
 import {React, useState} from 'react'
 import CreateButton from './CreateButton'
 import AddEventCard from './AddEventCard'
-
+import AskGeminiButton from './AskGeminiButton'
 function Sidediv({events,setEvents}) {
     const [popup,setpopup]=useState(false)
     function handleClick(){
@@ -11,6 +11,7 @@ function Sidediv({events,setEvents}) {
     return (
     <div className="sidediv">
     <CreateButton handleClick={handleClick} />
+    <AskGeminiButton />
     {popup && <AddEventCard handleClick={handleClick} events={events} setEvents={setEvents}/>}
   </div>
   )

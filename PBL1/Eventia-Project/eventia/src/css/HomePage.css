@@ -1,46 +1,42 @@
-
-.main-calendar{
-    width: 100vw;
-    height: 87vh;
-    display: flex;
-    gap: 0.5rem;
-    display: flex;
-    align-items: stretch;
-    justify-content: space-between;
-    padding: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-    /* background-color: blue; */
+.main-calendar {
+  width: 100vw;
+  height: 87vh;
+  display: flex;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  padding-right: 25px;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding-top: 15px;
+  padding-bottom: 15px;
 }
 
-.sidediv{
-  /* background-color: brown; */
-  width: 25%;
-  height: 100%;
-  border-radius: 0.4rem;
-  box-shadow: 0 0 4px 0;
+.sidediv {
+  margin-top: 1px;
   width: 320px;
   min-width: 280px;
   max-width: 350px;
-  height: 100vh;
-  margin-top: 1px;
+  border-radius: 0.4rem;
   padding: 2rem 1.5rem 1.5rem 1.5rem;
+  padding-bottom: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
   box-sizing: border-box;
+  box-shadow: 1px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .createbtn {
   background: #f8f9fa;
   border: 1px solid #e1e5e9;
   border-radius: 13px;
-  padding: 8px 1px;
-  font-size: 16px;
+  padding: 4px 1px;
+  font-size: 20px;
   color: #6c757d;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
   width: 80%;
   height: 6%;
@@ -50,93 +46,104 @@
   background: #e9ecef;
   transform: translateY(-1px);
 }
-.addeventcard{
-    width: 450px;
-    /* background-color: blue; */
+.addeventcard {
+  width: 450px;
   position: absolute;
-  top: 10px; /* or any offset */
-  left: 250px; /* or where you want to place it 22222222*/
+  top: 10px;
+  left: 250px;
   z-index: 100;
-  /* background: rgb(174, 105, 105); */
-  box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
 }
-/* .cross{
-    padding-left: 200px;
-    position: relative;
-    bottom: -10px;
-    background-color: purple;
-    height: 20px;
-    font-weight: 500;
-    font-size:x-large;
-    color: #646565;
-    border: none;
-} */
-.cross{
-    padding: 5px;
-    left: 200px;
-    border: none;
-    font-size: 20px;
+.cross {
+  padding: 5px;
+  left: 200px;
+  border: none;
+  font-size: 20px;
 }
-.crossntit{
-    display: flex;
-    /* justify-content: space-between; */
-    flex-direction: row-reverse;
+.crossntit {
+  display: flex;
+  flex-direction: row-reverse;
 }
-.date, .time, .categories,.invite,.description,.btnn{
-    display: flex;
-    margin-left: 20px;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    gap: 20px;
+.date,
+.time,
+.categories,
+.invite,
+.description,
+.btnn {
+  display: flex;
+  margin-left: 20px;
+  margin-top: 15px;
+  margin-bottom: 10px;
+  gap: 20px;
 }
-.btnn{
-    justify-content: flex-end;
-    padding-right: 25px;
+.btnn {
+  justify-content: flex-end;
+  padding-right: 25px;
 }
-.clear,.save{
-    padding: 5px;
-    border: 1px solid gray;
-    color: gray;
-    font-size: 20px;
-    border-radius: 10px;
+.clear,
+.save {
+  padding: 5px;
+  border: 1px solid gray;
+  color: gray;
+  font-size: 20px;
+  border-radius: 10px;
 }
-.save{
-    background-color: rgb(4, 4, 210);
-    color: white;
+.save {
+  background-color: rgb(4, 4, 210);
+  color: white;
 }
-input{
-    padding: 10px;
+input {
+  padding: 10px;
 }
-.time{
-    margin-left: 25px;
+.time {
+  margin-left: 25px;
 }
-.startingTime{
-    margin-left: 6px;
+.startingTime {
+  margin-left: 6px;
 }
-.inviteguest{
-    border: none;
-    padding: 4px;
-    color: rgb(65, 64, 64);
-    font-size: 15px;
+.inviteguest {
+  border: none;
+  padding: 4px;
+  color: rgb(65, 64, 64);
+  font-size: 15px;
 }
-.title{
-    border: none;
-    font-size: 24px;
-    margin-left: auto;
-
+.title {
+  border: none;
+  font-size: 24px;
+  margin-left: auto;
 }
-.tophr{
-    margin-left:auto;
+.tophr {
+  margin-left: auto;
 }
-.dash{
-    font-size: 30px;
-    font-weight: 500;
-    padding-top: 2px;
+.dash {
+  font-size: 30px;
+  font-weight: 500;
+  padding-top: 2px;
 }
-input,select{
-     border: none;
-  border-bottom: 1px solid #d4d4d4; /* or any color */
-  outline: none; /* removes default blue focus border */
+input,
+select {
+  border: none;
+  border-bottom: 1px solid #d4d4d4; 
+  outline: none; 
   padding: 4px 8px;
   color: gray;
+}
+.geminibtn{
+    margin-top: 600px;
+  background: #4c83ba;
+  border: 1px solid #e1e5e9;
+  border-radius: 13px;
+  padding: 4px 1px;
+  font-size: 20px;
+  color:white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(152, 152, 152, 0.1);
+  transition: all 0.2s;
+  width: 80%;
+  height: 6%;
+}
+.geminibtn:hover {
+  background: #29639d;
+  color: rgb(249, 249, 249);
+  transform: translateY(-1px);
 }

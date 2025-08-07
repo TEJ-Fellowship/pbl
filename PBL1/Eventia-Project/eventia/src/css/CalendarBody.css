@@ -5,6 +5,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: 75%;
   padding: 12px;
@@ -21,6 +22,7 @@ table{
     border-collapse: collapse;
     height: 100%;
     width: 100%
+
 }
 
 tr,th,td{
@@ -41,7 +43,7 @@ tr,th,td{
     border-radius: 50%;
 }
 
-.eventbtn{
+/* .eventbtn{
     font-size:12px;
     color:red;
     height: 25px;
@@ -49,4 +51,32 @@ tr,th,td{
     padding: 3px;
     margin-top: 2px;
     border: 1px solid rgb(233, 233, 233);
+} */
+ .pill {
+    margin-top: 9px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-radius: 50px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    border: none;
+    background-color: #81D4FA ;
+    /* background: linear-gradient(135deg, #B3E5FC 0%, #81D4FA 50%, #4FC3F7 100%); */
+    color: #022c4c;
+    box-shadow: 0 4px 15px rgba(79, 195, 247, 0.3);
+}
+
+.pill:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(79, 195, 247, 0.4);
+    filter: brightness(1.05) saturate(1.1);
+}
+
+.pill:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s ease;
 }

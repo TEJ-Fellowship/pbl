@@ -1,7 +1,7 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-function AddEventCard({ handleClick, events, setEvents }) {
+function AddEventCard({ handleClick, events, setEvents, selectedEvent }) {
   const [formData, setFormData] = useState({
     title: "",
     date: "",
@@ -11,31 +11,53 @@ function AddEventCard({ handleClick, events, setEvents }) {
     description: "",
     guests: [],
   });
+  console.log(selectedEvent);
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
       ...prevState,
+      id: prevState.id || generateId(),
       [name]: value,
     }));
   };
+  function generateId() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+      /[xy]/g,
+      function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      }
+    );
+  }
   const handleChangeDate = (e) => {
-  const { name, value } = e.target; // value is like "2025-09-25"
-  
-  const dateObj = new Date(value); // convert to Date object
-  dateObj.setMonth(dateObj.getMonth() - 1); // subtract 1 month
+    const { name, value } = e.target; // value is like "2025-09-25"
 
-  // Format back to "YYYY-MM-DD"
-  const newDate = dateObj.toISOString().split("T")[0];
+    const dateObj = new Date(value); // convert to Date object
+    dateObj.setMonth(dateObj.getMonth() - 1); // subtract 1 month
 
-  setFormData((prevState) => ({
-    ...prevState,
-    [name]: newDate, // update with new formatted date
-  }));
-};
+    const newDate = dateObj.toISOString().split("T")[0];
 
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: newDate, // update with new formatted date
+    }));
+  };
 
-    const handleSubmit = () => {
-    setEvents((prevEvents) => [...prevEvents, formData]);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.title || !formData.description || !formData.date) {
+      alert("All fields are required!");
+      return;
+    }
+    if (selectedEvent) {
+      const updatedEvents = events.map((event) =>
+        event.id === selectedEvent.id ? formData : event
+      );
+      setEvents(updatedEvents);
+    } else {
+      setEvents((prevEvents) => [...prevEvents, formData]);
+    }
     setFormData({
       title: "",
       date: "",
@@ -45,6 +67,7 @@ function AddEventCard({ handleClick, events, setEvents }) {
       description: "",
       guests: [],
     });
+    handleClick();
   };
   const handleClear = () => {
     setFormData({
@@ -58,23 +81,29 @@ function AddEventCard({ handleClick, events, setEvents }) {
     });
   };
 
+  useEffect(() => {
+    if (selectedEvent) {
+      setFormData(selectedEvent);
+    }
+  }, [selectedEvent]);
+
   return (
     <div className="addeventcard">
       <div>
         <div className="crossntit">
-        <div className="cross">
-          <button onClick={handleClick} className="cross">
-            X
-          </button>
-        </div>
+          <div className="cross">
+            <button onClick={handleClick} className="cross">
+              X
+            </button>
+          </div>
           <input
-          className="title"
-          type="text"
-          placeholder="Add Title"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-        />
+            className="title"
+            type="text"
+            placeholder="Add Title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+          />
         </div>
 
         <hr className="tophr" />
@@ -116,12 +145,12 @@ function AddEventCard({ handleClick, events, setEvents }) {
             onChange={handleChange}
           >
             <option value="">Select category</option>
-            <option value="tech">Meetings</option>
-            <option value="design">Webinars</option>
-            <option value="design">Birthday</option>
-            <option value="design">Exercises</option>
-            <option value="design">Networking</option>
-            <option value="marketing">Classes</option>
+            <option value="Meetings">Meetings</option>
+            <option value="Webinars">Webinars</option>
+            <option value="Birthday">Birthday</option>
+            <option value="Exercises">Exercises</option>
+            <option value="Networking">Networking</option>
+            <option value="Lecture">Lecture</option>
           </select>
         </div>
         <div className="description">
@@ -140,10 +169,18 @@ function AddEventCard({ handleClick, events, setEvents }) {
         </div>
         <hr />
         <div className="btnn">
-          <button className="clear" onClick={handleClear}>
-            Clear
+          {selectedEvent === undefined ? (
+            <button className="clear" onClick={handleClear}>
+              Clear
+            </button>
+          ) : (
+            <button className="clear" onClick={handleClick}>
+              Cancel
+            </button>
+          )}
+          <button className="save" onClick={handleSubmit}>
+            {selectedEvent === undefined ? "Save" : "Update"}
           </button>
-          <button className="save" onClick={handleSubmit}> Save</button>
         </div>
       </div>
     </div>

@@ -7,13 +7,14 @@ function CalendarBody({
   lastDate,
   currentYear,
   currentMonth,
-
   events,
+  setEvents
 }) {
-  const [showEvent,setShowEvent]=useState(false)
+  const [showEvent, setShowEvent] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
   const newEventsList = events.filter((event) => {
     const [eventYear, eventMonth] = event.date.split("-");
-    
+
     return eventYear == currentYear && eventMonth == currentMonth;
   });
   console.log(currentMonth);
@@ -54,9 +55,12 @@ function CalendarBody({
   };
   const calendarDays = generateCalendarDays();
 
-  function handleShowEvent(){
-    setShowEvent(!showEvent)
-  }
+function handleShowEvent(eventData) {
+  setShowEvent(!showEvent);
+  console.log("Clicked event:", eventData);
+  setSelectedEvent(eventData);
+}
+
   return (
     <div className="calendarbody">
       <table>
@@ -77,31 +81,36 @@ function CalendarBody({
               <tr key={i}>
                 {week.map((day) => {
                   return (
+
+
                     <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div>
+
                       {day.content !== "" &&
                         newEventsList
                           .filter((event) => {
-                            const eventDay = event.date.split("-")[2]; // get day part as string
+                            const eventDay = event.date.split("-")[2]; 
                             return (
                               eventDay === String(day.content).padStart(2, "0")
-                            ); 
+                            );
                           })
                           .map((event, idx) => (
-                            <button onClick={handleShowEvent} className='eventbtn'key={idx} >
+                            <button
+                              onClick={()=>handleShowEvent(event)}
+                              className="pill" 
+                              key={idx}
+                            >
                               {event.title}
                             </button>
                           ))}
                     </td>
                   );
-
                 })}
               </tr>
             );
           })}
         </tbody>
       </table>
-      {showEvent?<ShowEventCard handleShowEvent={handleShowEvent} />:''}
-      
+      {showEvent ? <ShowEventCard handleShowEvent={handleShowEvent} selectedEvent={selectedEvent} setSelectedEvent={setSelectedEvent} events={events} setEvents={setEvents} /> : ""}
     </div>
   );
 }
