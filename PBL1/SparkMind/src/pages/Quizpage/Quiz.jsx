@@ -4,10 +4,16 @@ import Quiz_timer from "./Quiz_timer";
 import { useNavigate } from "react-router-dom";
 import { GoogleGenAI } from "@google/genai";
 import { useLocation } from "react-router-dom";
+// const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+// const ai = new GoogleGenAI({
+//   apiKey: API_KEY,
+// });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-const ai = new GoogleGenAI({
-  apiKey: "AIzaSyBiX2E3HIrVqtbddMEuHVZmULrliNksLzI",
-});
+const ai = new GoogleGenAI({ apiKey });
+// const ai = new GoogleGenAI({
+//   apiKey: "AIzaSyBiX2E3HIrVqtbddMEuHVZmULrliNksLzI",
+// });
 
 function Quiz() {
   const location = useLocation();
@@ -62,9 +68,14 @@ function Quiz() {
         model: "gemini-2.5-flash",
         contents: quizPrompt,
       });
+      let cleanedResponse = response.text
+        .replace(/```json\n?/g, "") // Remove ```json
+        .replace(/```\n?/g, "") // Remove ```
+        .trim(); // Remove extra whitespace
       console.log(response.text);
       // const data = await response.json();
-      const data = JSON.parse(response.text);
+
+      const data = JSON.parse(cleanedResponse);
 
       console.log(data);
       const formatted = data.map((item) => {
