@@ -12,7 +12,7 @@ import toggle_dark from '../assets/day.png';
 import set_icon_light from '../assets/set_wb.png';
 import set_icon_dark from '../assets/set_bb.png';
 
-function Navbar() {
+function Navbar({searchTerm,setSearchTerm}) {
   const [darkMode, setDarkMode] = useState(false);
   const [setShow, setShowHandle] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('np');
@@ -49,7 +49,12 @@ function Navbar() {
         <img src={darkMode ? logo_light : logo_dark} alt="Hamro Calendar" className='logo' />
         
         <div className='search-box'>
-          <input type='text' placeholder='Search events...' />
+          <input
+      type='text'
+      placeholder='Search events...'
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
           <img src={darkMode ? search_icon_dark : search_icon_light} alt="Search" />
         </div>
         

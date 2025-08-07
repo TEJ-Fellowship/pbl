@@ -43,3 +43,19 @@
     flex-direction: row;
     gap: 30px;
 }
+h3{
+    margin:12px;
+    margin-bottom: 0;
+    color: #565555;
+}
+span{
+    font-size:medium;
+    font-weight: 100;
+    margin: 2px 23px;
+}
+h4{
+    margin: 13px;
+}
+.des{
+    margin-left: 23px;
+}
