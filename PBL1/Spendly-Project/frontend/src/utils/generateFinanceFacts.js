@@ -7,7 +7,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY1;
 
 export async function generateFinanceFact(category) {
   try {
-    const prompt = `Give me a short, practical finance tip or fact related to the category: ${category}. Limit to 1-2 sentences.`;
+    const prompt = `Give me a recent and interesting financial fact related to the "${category}" expense category. Keep it short and insightful.`;
 
     const res = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -23,7 +23,7 @@ export async function generateFinanceFact(category) {
         ]
         }
     );
-
+    console.log(res)
     // The Gemini API response structure is different from OpenAI's
     const text = res.data.candidates[0].content.parts[0].text;
     return text.trim();
