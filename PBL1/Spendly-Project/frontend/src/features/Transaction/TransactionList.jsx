@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import styles from "./TransactionList.module.css";
 import Calender from "./Calender";
 import filterByDateRange from "../Filter/filter";
 
 function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
-
   const [calender, setCalender] = useState(false);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -19,12 +18,12 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
     setCurrentPage(1);
   }, [startDate, endDate]);
 
-//   const filteredExpense = filterByDateRange(expenses, startDate, endDate);
-//   const indexOfLastItem = currentPage * itemPerPage;
-//   const indexOfFirstItem = indexOfLastItem - itemPerPage;
-//   const currentExpense = filteredExpense.slice(indexOfFirstItem, indexOfLastItem);
+  //   const filteredExpense = filterByDateRange(expenses, startDate, endDate);
+  //   const indexOfLastItem = currentPage * itemPerPage;
+  //   const indexOfFirstItem = indexOfLastItem - itemPerPage;
+  //   const currentExpense = filteredExpense.slice(indexOfFirstItem, indexOfLastItem);
 
-//   const toggleCalendar = () => setCalender(prev => !prev);
+  //   const toggleCalendar = () => setCalender(prev => !prev);
   const dateFiltered = filterByDateRange(expenses, startDate, endDate);
   const filteredExpense = dateFiltered.filter((expense) =>
     (
@@ -44,10 +43,10 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
     indexOfLastItem
   );
 
-  const handleClearAll = () =>{
-    localStorage.removeItem('expenses')
+  const handleClearAll = () => {
+    localStorage.removeItem("expenses");
     setExpenses([]);
-  }
+  };
 
   console.log("Current page:", currentPage);
   console.log("Current items:", currentExpense);
@@ -62,7 +61,11 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
       <div className={styles.row}>
         {/* Filter Controls */}
         <div className={styles.filterContainer}>
-          <select className={styles.categoryOption} name="transaction-category" id="category">
+          <select
+            className={styles.categoryOption}
+            name="transaction-category"
+            id="category"
+          >
             <option value="category">Category</option>
             <option value="Food">Food</option>
             <option value="Health">Health</option>
@@ -93,15 +96,17 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
             <option value="Expense">Expense</option>
             <option value="Income">Income</option>
           </select>
+          <button className={styles.clearBtn} onClick={handleClearAll}>
+            Clear All
+          </button>
         </div>
-        <button onClick={handleClearAll}>Clear All</button>
         {/* Pagination */}
         <div className={styles.paginationContainer}>
           <input
             className={styles.prevBtn}
             type="button"
             value="<"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
           />
           <span>{currentPage}</span>
@@ -110,11 +115,15 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
             type="button"
             value=">"
             onClick={() =>
-              setCurrentPage(prev =>
-                prev < Math.ceil(filteredExpense.length / itemPerPage) ? prev + 1 : prev
+              setCurrentPage((prev) =>
+                prev < Math.ceil(filteredExpense.length / itemPerPage)
+                  ? prev + 1
+                  : prev
               )
             }
-            disabled={currentPage === Math.ceil(filteredExpense.length / itemPerPage)}
+            disabled={
+              currentPage === Math.ceil(filteredExpense.length / itemPerPage)
+            }
           />
         </div>
       </div>
@@ -127,11 +136,18 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
               <li key={expense.id} className={styles.expenseItem}>
                 <div className={styles.expenseDetail}>
                   <div className={styles.right}>
-                    <h3 className={styles.expenseCategory}>{expense.category}</h3>
-                    <p className={styles.expenseDescription}>{expense.description}</p>
+                    <h3 className={styles.expenseCategory}>
+                      {expense.category}
+                    </h3>
+                    <p className={styles.expenseDescription}>
+                      {expense.description}
+                    </p>
                   </div>
                   <div className={styles.mid}>
-                    $<strong className={styles.expenseAmount}>{expense.amount}</strong>
+                    $
+                    <strong className={styles.expenseAmount}>
+                      {expense.amount}
+                    </strong>
                     <p className={styles.expenseDate}>{expense.date}</p>
                   </div>
                   <div className={styles.expenseAction}>
@@ -154,7 +170,9 @@ function TransactionList({ expenses, setExpenses, onDelete, searchQuery }) {
           </ul>
         ) : (
           <div className={styles.noExpense}>
-            <h3 style={{ textAlign: "center", margin: "1rem" }}>No Expenses Yet!</h3>
+            <h3 style={{ textAlign: "center", margin: "1rem" }}>
+              No Expenses Yet!
+            </h3>
             <p>Start tracking your expenses by adding your first one above.</p>
           </div>
         )}

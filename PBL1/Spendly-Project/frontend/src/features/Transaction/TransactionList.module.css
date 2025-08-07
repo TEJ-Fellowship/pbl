@@ -90,7 +90,7 @@
   text-align: center;
 }
 
-.expenseItem:hover{
+.expenseItem:hover {
   border-bottom: 1px solid #002218;
   transform: translateY(-2px);
 }
@@ -104,7 +104,6 @@
   border-radius: 8px;
   flex-wrap: wrap;
 }
-
 
 .expenseAction {
   display: flex;
@@ -122,34 +121,34 @@
   transition: background-color 0.2s ease;
 }
 
-.editButton{
+.editButton {
   color: #002218;
 }
 
-.deleteButton{
+.deleteButton {
   color: #ffffff;
   background-color: #002218;
 }
 
-.row{
+.row {
   display: flex;
   text-align: center;
   align-items: center;
   justify-content: space-between;
 }
 
-
-.paginationContainer{
+.paginationContainer {
   margin: 0;
   padding: 5px;
 }
 
-span{
+span {
   color: #ffffff;
   margin: 0px 6px;
 }
 
-.prevBtn, .nextBtn{
+.prevBtn,
+.nextBtn {
   padding: 2px 5px;
   font-size: 16px;
   font-weight: bolder;
@@ -165,7 +164,17 @@ span{
   cursor: not-allowed;
 }
 
-.noExpense{
-  margin:  auto;
+.clearBtn {
+  color: #ffffff;
+  font-family: "Source Sans 3", sans-serif;
+  font-size: 16px;
+  padding: 6px 12px;
+  background-color: #1c4a3f;
+  border: none;
+  border-radius: 8%;
+  cursor: pointer;
 }
 
+.noExpense {
+  margin: auto;
+}
