@@ -53,30 +53,51 @@ tr,th,td{
     border: 1px solid rgb(233, 233, 233);
 } */
  .pill {
-    margin-top: 9px;
-    display: inline-flex;
-    align-items: center;
-    padding: 0.6rem 1rem;
-    border-radius: 50px;
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    border: none;
-    background-color: #81D4FA ;
-    /* background: linear-gradient(135deg, #B3E5FC 0%, #81D4FA 50%, #4FC3F7 100%); */
-    color: #022c4c;
-    box-shadow: 0 4px 15px rgba(79, 195, 247, 0.3);
+  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 12px;
+  margin: 2px 0;
+  font-size: 0.95em;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.pill:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(79, 195, 247, 0.4);
-    filter: brightness(1.05) saturate(1.1);
+.pill:hover, .pill:focus {
+  background: linear-gradient(90deg, #1565c0 0%, #64b5f6 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.16);
 }
 
 .pill:active {
     transform: translateY(0) scale(0.98);
     transition: all 0.1s ease;
+}
+
+.holiday-pill {
+  background: linear-gradient(90deg, #43a047 0%, #66bb6a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 12px;
+  margin: 2px 0;
+  font-size: 0.95em;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(67, 160, 71, 0.08);
+  cursor: default;
+  display: block;
+  width: 100%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

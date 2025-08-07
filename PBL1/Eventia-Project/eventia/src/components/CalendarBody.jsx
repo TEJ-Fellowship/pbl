@@ -8,7 +8,9 @@ function CalendarBody({
   currentYear,
   currentMonth,
   events,
-  setEvents
+  setEvents,
+  holidays,
+  showHolidays
 }) {
   const [showEvent, setShowEvent] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -83,8 +85,19 @@ function handleShowEvent(eventData) {
                   return (
 
 
-                    <td key={day.key}><div className={day.isToday?'current':''}>{day.content}</div>
-
+                    <td key={day.key}>
+                      <div className={day.isToday ? 'current' : ''}>{day.content}</div>
+                      {day.content !== "" && showHolidays && holidays && holidays
+                        .filter(h => h.date === day.content && h.month === currentMonth && h.year === currentYear)
+                        .map((h, idx) => (
+                          <div
+                            key={idx}
+                            className="holiday-bar holiday-pill"
+                            title={h.title}
+                          >
+                            {h.title}
+                          </div>
+                        ))}
                       {day.content !== "" &&
                         newEventsList
                           .filter((event) => {
