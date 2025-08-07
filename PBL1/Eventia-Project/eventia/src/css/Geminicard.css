@@ -1,0 +1,38 @@
+
+.geminimain{
+    height: 400px;
+    width: 450px;
+    position: relative;
+    top: 100px;
+    left:100px;
+    padding-left: 20px;
+    /* background-color: red; */
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+}
+.geminiheader {
+    /* background-color: blue; */
+   display: flex;
+   margin-top: 5x;
+   gap: 100px;
+}
+
+.cross {
+
+}
+/* Close Button */
+.crossShoww {
+  padding: 5px;
+  left: 200px;
+  border: none;
+  font-size: 25pxpx;
+  cursor: pointer;
+
+}
+
+.tophrrshow {
+
+}
+
+.content {
+
+}
