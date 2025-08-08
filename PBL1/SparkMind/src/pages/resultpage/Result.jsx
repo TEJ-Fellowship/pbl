@@ -13,10 +13,6 @@ const Result = () => {
   };
 
   useEffect(() => {
-    // const prevHigh = JSON.parse(
-    //   localStorage.getItem("highScore") ||
-    //     JSON.stringify({ score: 0, duration: 30 })
-    // );
     const saved = localStorage.getItem("highScore");
     const prevHigh = saved ? JSON.parse(saved) : { score: 0, duration: 30 };
 

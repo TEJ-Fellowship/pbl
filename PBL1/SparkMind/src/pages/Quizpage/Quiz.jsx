@@ -46,7 +46,7 @@ function Quiz() {
 
   const fetchData = async () => {
     try {
-      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic} or Nepal topic if no topic is provided.
+      const quizPrompt = `Generate a quiz with exactly 5 multiple-choice questions about ${topic} or any random topic if no topic is provided.
       Return ONLY a valid JSON object with no explanations or markdown. Format it like this:
       [
     {
@@ -85,6 +85,7 @@ function Quiz() {
       setQuestions(formatted);
     } catch (error) {
       console.error("Error:", error);
+      setError("404 - Failed to load quiz.");
     }
   };
 

@@ -23,7 +23,7 @@ const Home = () => {
           />
           <h2 className="logoName">Spark Mind</h2>
         </div>
-        <p className="tagline">Play 30s Quiz</p>
+        <p className="tagline">Play 60s Quiz</p>
         <span>
           <input
             type="text"
