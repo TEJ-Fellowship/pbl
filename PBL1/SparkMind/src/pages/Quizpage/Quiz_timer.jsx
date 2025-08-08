@@ -1,29 +1,28 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from "react";
 
-const Quiz_timer = () => {
-    const[timeLeft, setTimeLeft] = useState(30);
+const Quiz_timer = ({ setTimeUp }) => {
+  const [timeLeft, setTimeLeft] = useState(60);
 
-    useEffect(()=>{
-        const interval = setInterval(()=>{
-            setTimeLeft(prev=>{
-                if(prev<=1){
-                    clearInterval(interval);
-                    console.log("Time's Up!")
-                    return 0;
-                }
-                return prev -1;
-            })
-
-        }, 1000);
+  useEffect(() => {
+    // 🕒 This sets the timer countdown
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
     return () => clearInterval(interval);
-    },[]);
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft === 0) {
+      console.log("Time's Up!");
+      setTimeUp(true);
+    }
+  }, [timeLeft, setTimeUp]);
 
   return (
-    <div className='timer'>
+    <div className="timer">
       <strong>{timeLeft}</strong>
     </div>
-  )
-}
+  );
+};
 
-export default Quiz_timer
+export default Quiz_timer;
