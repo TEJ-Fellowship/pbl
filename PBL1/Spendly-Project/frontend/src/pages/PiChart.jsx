@@ -27,10 +27,10 @@ const PiChart = ({ selectedPeriod, expenseData }) => {
                 borderRadius: "8px",
                 color: "#fff",
               }}
-              formatter={(value) => [
-                `${currentCategoryData.categories.name} $${value}`,
-                "",
-              ]}
+              formatter={(value, name, props) => {
+                const categoryName = props.payload?.name || "Unknown";
+                return [`${categoryName} $${value}`, ""];
+              }}
             />
           </PieChart>
         </ResponsiveContainer>
