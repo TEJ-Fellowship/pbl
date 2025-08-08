@@ -31,7 +31,16 @@ tr,th,td{
     padding: 15px;
     text-align: center; 
     height: 75px;
+    vertical-align: top; /* Keep content at top */
+    position: relative; /* Allow for absolute positioning of contents */
 }
+
+/* Each cell should have fixed maximum height for content */
+td {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
 .current{
     margin: 0px auto;
     display: flex;
@@ -43,16 +52,7 @@ tr,th,td{
     border-radius: 50%;
 }
 
-/* .eventbtn{
-    font-size:12px;
-    color:red;
-    height: 25px;
-    width: 120px;
-    padding: 3px;
-    margin-top: 2px;
-    border: 1px solid rgb(233, 233, 233);
-} */
- .pill {
+.pill {
   background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
   color: #fff;
   border: none;
@@ -70,6 +70,8 @@ tr,th,td{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-height: 28px; /* Fixed height */
+  line-height: 1.2;
 }
 
 .pill:hover, .pill:focus {
@@ -88,16 +90,27 @@ tr,th,td{
   color: #fff;
   border: none;
   border-radius: 16px;
-  padding: 4px 12px;
-  margin: 2px 0;
-  font-size: 0.95em;
-  font-weight: 500;
+  padding: 6px 1px;
+  margin: 8px 0;
+  font-size: 0.8em; /* Smaller font */
+  font-weight: 550;
   box-shadow: 0 2px 8px rgba(67, 160, 71, 0.08);
   cursor: default;
   display: block;
   width: 100%;
-  text-align: left;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-height: 25px; /* Fixed smaller height */
+  line-height: 1;
+}
+
+/* Add tooltip-style display for long holiday names */
+.holiday-pill:hover {
+  white-space: normal;
+  word-wrap: break-word;
+  height: auto;
+  position: relative;
+  z-index: 10;
 }

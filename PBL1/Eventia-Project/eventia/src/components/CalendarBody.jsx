@@ -57,11 +57,50 @@ function CalendarBody({
   };
   const calendarDays = generateCalendarDays();
 
-function handleShowEvent(eventData) {
-  setShowEvent(!showEvent);
-  console.log("Clicked event:", eventData);
-  setSelectedEvent(eventData);
-}
+  function handleShowEvent(eventData) {
+    setShowEvent(!showEvent);
+    console.log("Clicked event:", eventData);
+    setSelectedEvent(eventData);
+  }
+
+  // Function to limit number of holiday pills shown and add "more" indicator
+  const renderHolidayPills = (dayHolidays) => {
+    // Limit to max 2 holiday pills per cell to prevent layout shift
+    const MAX_VISIBLE_HOLIDAYS = 2;
+    
+    if (dayHolidays.length <= MAX_VISIBLE_HOLIDAYS) {
+      return dayHolidays.map((h, idx) => (
+        <div
+          key={idx}
+          className="holiday-bar holiday-pill"
+          title={h.title}
+        >
+          {h.title}
+        </div>
+      ));
+    } else {
+      // Show limited holidays and a "+X more" indicator
+      return (
+        <>
+          {dayHolidays.slice(0, MAX_VISIBLE_HOLIDAYS).map((h, idx) => (
+            <div
+              key={idx}
+              className="holiday-bar holiday-pill"
+              title={h.title}
+            >
+              {h.title}
+            </div>
+          ))}
+          <div 
+            className="holiday-bar holiday-pill"
+            title={dayHolidays.slice(MAX_VISIBLE_HOLIDAYS).map(h => h.title).join(", ")}
+          >
+            +{dayHolidays.length - MAX_VISIBLE_HOLIDAYS} more
+          </div>
+        </>
+      );
+    }
+  };
 
   return (
     <div className="calendarbody">
@@ -82,20 +121,24 @@ function handleShowEvent(eventData) {
             return (
               <tr key={i}>
                 {week.map((day) => {
+                  // Get holidays for this day
+                  const dayHolidays = day.content !== "" && showHolidays && holidays ? 
+                    holidays.filter(h => {
+                      return (
+                        h.date === day.content && 
+                        h.month === currentMonth && 
+                        h.year === currentYear
+                      );
+                    }) : [];
+                    
                   return (
                     <td key={day.key}>
                       <div className={day.isToday ? 'current' : ''}>{day.content}</div>
-                      {day.content !== "" && showHolidays && holidays && holidays
-                        .filter(h => h.date === day.content && h.month === currentMonth && h.year === currentYear)
-                        .map((h, idx) => (
-                          <div
-                            key={idx}
-                            className="holiday-bar holiday-pill"
-                            title={h.title}
-                          >
-                            {h.title}
-                          </div>
-                        ))}
+                      
+                      {/* Show holidays with limited display */}
+                      {dayHolidays.length > 0 && renderHolidayPills(dayHolidays)}
+                      
+                      {/* Show events */}
                       {day.content !== "" &&
                         newEventsList
                           .filter((event) => {
@@ -125,5 +168,5 @@ function handleShowEvent(eventData) {
     </div>
   );
 }
-console;
+
 export default CalendarBody;

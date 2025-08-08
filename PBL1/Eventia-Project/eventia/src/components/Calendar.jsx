@@ -13,12 +13,20 @@ function Calendar({events, setEvents, selectedCountry = "np", showHolidays}) {
   const [loadingHolidays, setLoadingHolidays] = useState(false);
   const [holidayError, setHolidayError] = useState(null);
 
+  // Add console log to track country changes
   useEffect(() => {
+    console.log("Country changed to:", selectedCountry);
     setLoadingHolidays(true);
     setHolidayError(null);
     fetchHolidays(selectedCountry, year)
-      .then((data) => setHolidays(formatHolidays(data)))
-      .catch((err) => setHolidayError("Failed to load holidays"))
+      .then((data) => {
+        console.log("Holidays fetched:", data ? data.length : 0);
+        setHolidays(formatHolidays(data));
+      })
+      .catch((err) => {
+        console.error("Holiday fetch error:", err);
+        setHolidayError("Failed to load holidays");
+      })
       .finally(() => setLoadingHolidays(false));
   }, [selectedCountry, year]);
 

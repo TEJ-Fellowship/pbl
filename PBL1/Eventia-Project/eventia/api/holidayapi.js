@@ -1,9 +1,15 @@
-
-const API_KEY =import.meta.env.VITE_GEMINI_HOLIDAY_API_KEY 
+const API_KEY = import.meta.env.VITE_GEMINI_HOLIDAY_API_KEY;
 
 export const fetchHolidays = async (countryCode, year) => {
   try {
-    const url = `https://calendarific.com/api/v2/holidays?api_key=${API_KEY}&country=${countryCode}&year=${year}`;
+    console.log(`Fetching holidays for ${countryCode} in ${year}`);
+    
+    // Ensure countryCode is valid - default to 'np' if not provided
+    const validCountryCode = countryCode || 'np';
+    
+    const url = `https://calendarific.com/api/v2/holidays?api_key=${API_KEY}&country=${validCountryCode}&year=${year}`;
+    console.log(`API URL: ${url}`);
+    
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -13,6 +19,7 @@ export const fetchHolidays = async (countryCode, year) => {
     const data = await response.json();
     
     if (data.meta.code === 200) {
+      console.log(`Successfully fetched ${data.response.holidays.length} holidays`);
       return data.response.holidays;
     } else {
       throw new Error(`API error: ${data.meta.error_type}`);

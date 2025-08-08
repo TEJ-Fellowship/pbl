@@ -24,6 +24,11 @@ function App() {
     }
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("np");
+
+  useEffect(() => {
+    console.log("App: Country is now", selectedCountry);
+  }, [selectedCountry]);
 
   const filteredEvents =
     searchTerm.length > 0
@@ -45,9 +50,15 @@ function App() {
           setTheme={setTheme}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          selectedCountry={selectedCountry}
+          setSelectedCountry={setSelectedCountry}
         />
-        <HomePage events={filteredEvents} setEvents={setEvents} />
-        <GeminiApi events={events}/>
+        <HomePage
+          events={filteredEvents}
+          setEvents={setEvents}
+          selectedCountry={selectedCountry}
+        />
+        <GeminiApi events={events} />
       </div>
     </>
   );

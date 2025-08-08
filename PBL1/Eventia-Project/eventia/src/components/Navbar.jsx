@@ -12,10 +12,9 @@ import toggle_dark from '../assets/day.png';
 import set_icon_light from '../assets/set_wb.png';
 import set_icon_dark from '../assets/set_bb.png';
 
-function Navbar({searchTerm,setSearchTerm}) {
+function Navbar({searchTerm, setSearchTerm, selectedCountry, setSelectedCountry}) {
   const [darkMode, setDarkMode] = useState(false);
   const [setShow, setShowHandle] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState('np');
 
   useEffect(() => {
     document.querySelector('.container')?.classList.toggle('dark', darkMode);
@@ -42,6 +41,12 @@ function Navbar({searchTerm,setSearchTerm}) {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [setShow]);
+
+  // Track country changes
+  const handleCountryChange = (code) => {
+    console.log("Navbar: Country changed to:", code);
+    setSelectedCountry(code);
+  };
 
   return (
     <>
@@ -73,7 +78,7 @@ function Navbar({searchTerm,setSearchTerm}) {
                   <li>
                     <span id="country-li">Country
                       <ReactFlagsSelect selected={selectedCountry}
-                        onSelect={(code) => setSelectedCountry(code)}
+                        onSelect={handleCountryChange}
                         id="flags-select"
                       />
                     </span>
