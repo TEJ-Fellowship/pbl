@@ -8,6 +8,7 @@ import InfoCard from '../../components/Cards/InfoCard'
 import { IoMdCard } from 'react-icons/io'
 import { LuHandCoins, LuWalletMinimal } from 'react-icons/lu'
 import { addThousandsSeparator } from '../../utils/helper'
+import RecentTransactions from '../../components/Dashboard/RecentTransactions'
 
 
 const Home = () => {
@@ -46,7 +47,7 @@ const Home = () => {
   return (
     <div>
       <DashboardLayout activeMenu="Dashboard">
-        <div className="my-5 mx-auto"></div>
+        <div className="my-5 mx-auto">
         <div
           className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <InfoCard
@@ -73,6 +74,14 @@ const Home = () => {
 
           />
 
+        </div>
+
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 '>
+          <RecentTransactions
+            transactions={dashboardData?.RecentTransactions}
+            onSeeMore={() => navigate("/expense")}
+          />
+          </div>
         </div>
       </DashboardLayout>
     </div>
