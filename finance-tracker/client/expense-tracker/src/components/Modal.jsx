@@ -30,7 +30,7 @@ const Modal = ({ children, isOpen, onClose, title }) => {
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 strokeWidth="2"
-                d="ml 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"
+                d="M1 6l6 6m0 0l6-6M7 12L1 6m6 6L13 6"
               />
             </svg>
             </button>

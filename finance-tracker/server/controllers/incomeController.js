@@ -76,8 +76,19 @@ exports.downloadIncomeExcel = async (req, res) => {
         const wb = xlsx.utils.book_new();
         const ws = xlsx.utils.json_to_sheet(data);
         xlsx.utils.book_append_sheet(wb, ws, "Income");
-        xlsx.write(wb, 'income_details.xlsx');
-        res.download('income_details.xlsx');
+          // Write workbook to buffer in memory
+    const buf = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+
+    // Set headers for file download
+    res.setHeader("Content-Disposition", "attachment; filename=income_details.xlsx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+    // Send buffer as response
+    res.send(buf);
+
+    
+        // xlsx.write(wb, 'income_details.xlsx');
+        // res.download('income_details.xlsx');
 
         //set headers for download
     } catch (error) {

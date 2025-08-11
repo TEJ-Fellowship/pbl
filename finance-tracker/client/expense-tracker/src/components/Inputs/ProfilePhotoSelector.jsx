@@ -5,19 +5,36 @@ const ProfilePhotoSelector = ({ image, setImage }) => {
   const inputRef = useRef(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
+  console.log("ProfilePhotoSelector render");
+  console.log("image prop:", image);
+  console.log("previewUrl state before logic:", previewUrl);
+
+  // Manual logic to update previewUrl on every render without useEffect
+  // Only update if previewUrl is null or if image changed (simple check)
+  if (image && !previewUrl) {
+    if (typeof image === "string") {
+      console.log("image is a string URL, setting previewUrl");
+      setPreviewUrl(image);
+    } else if (image instanceof File) {
+      const preview = URL.createObjectURL(image);
+      console.log("image is a File, creating preview URL:", preview);
+      setPreviewUrl(preview);
+    }
+  }
+
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
-      //update the image state
+      console.log("File selected:", file);
       setImage(file);
-
-      //Generate a preview URL from the file
       const preview = URL.createObjectURL(file);
       setPreviewUrl(preview);
+      console.log("Preview URL set:", preview);
     }
   };
 
   const handleRemoveImage = () => {
+    console.log("Removing image");
     setImage(null);
     setPreviewUrl(null);
   };
@@ -25,6 +42,9 @@ const ProfilePhotoSelector = ({ image, setImage }) => {
   const onChooseFile = () => {
     inputRef.current?.click();
   };
+
+  console.log("previewUrl state after logic:", previewUrl);
+
   return (
     <div className="flex justify-center mb-6">
       <input

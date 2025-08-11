@@ -32,8 +32,10 @@ const Expense = () => {
         `${API_PATHS.EXPENSE.GET_ALL_EXPENSE}`
       );
 
-      if (response.data) {
-        setExpenseData(response.data);
+      if (response.data && Array.isArray(response.data.expense)) {
+        setExpenseData(response.data.expense);
+      } else {
+        setExpenseData([]);
       }
     } catch (error) {
       console.log("Something went wrong. Please try again.", error);

@@ -23,8 +23,11 @@ const SignUp = () => {
   //Handle Sign Up Form Submit
   const handleSignUp = async (e) => {
     e.preventDefault();
+    console.log("handleSignUp called");
 
     let profileImageUrl = "";
+
+    console.log("Current profilePic:", profilePic);
 
     if (!fullName) {
       setError("Full name is required");
@@ -47,9 +50,19 @@ const SignUp = () => {
     try {
       //Upload image if present
       if (profilePic) {
-        const imgUploadRes = await uploadImage(profilePic);
-        profileImageUrl = imgUploadRes.imageUrl || "";
+        try {
+          console.log("Uploading image...");
+          const imgUploadRes = await uploadImage(profilePic);
+          console.log("Image upload response:", imgUploadRes);
+          profileImageUrl = imgUploadRes.imageUrl || imgUploadRes.photoUrl || "";
+        } catch (uploadError) {
+          console.error("Upload failed:", uploadError);
+        }
+      } else {
+        console.log("No profilePic to upload");
       }
+
+      console.log("Sending signup request with profileImageUrl:", profileImageUrl);
 
       const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
         fullName,
@@ -57,6 +70,8 @@ const SignUp = () => {
         password,
         profileImageUrl,
       });
+
+      console.log("Signup response data:", response.data);
 
       const { token, user } = response.data;
 
@@ -66,6 +81,7 @@ const SignUp = () => {
         navigate("/dashboard");
       }
     } catch (error) {
+      console.error("Signup failed:", error);
       if (error.response && error.response.data.message) {
         setError(error.response.data.message);
       } else {
@@ -117,7 +133,7 @@ const SignUp = () => {
           </button>
 
           <p className="text-[13px] text-slate-800 mt-3">
-            Already have an account?
+            Already have an account?{" "}
             <Link className="font-medium text-primary underline" to="/login">
               Login
             </Link>

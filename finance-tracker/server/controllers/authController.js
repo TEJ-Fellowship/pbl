@@ -9,6 +9,7 @@ const generateToken = (id) => {
 // register user
 exports.registerUser = async (req, res) => {
     const { fullName, email, password, profileImageUrl } = req.body;
+    console.log("Received profileImageUrl in registerUser:", profileImageUrl);
 
     if(!fullName || !email || !password){
         return res.status(400).json({

@@ -3,7 +3,7 @@ import { LuDownload } from 'react-icons/lu'
 import TransactionInfoCard from '../Cards/TransactionInfoCard'
 import moment from 'moment'
 
-const IncomeList = ({ transactions, onDelete, onDownload }) => {
+const IncomeList = ({ transactions=[], onDelete, onDownload }) => {
     return(
         <div className="card">
             <div className="flex items-center justify-between">

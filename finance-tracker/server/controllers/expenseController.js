@@ -9,11 +9,11 @@ exports.addExpense = async (req, res) => {
     try {
         const { icon, category, amount, date } = req.body;
 
-        if(!category || !amount || !date){
+        if (!category || !amount || !date) {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        const newExpense =  new Expense({
+        const newExpense = new Expense({
             userId,
             icon,
             category,
@@ -49,7 +49,7 @@ exports.deleteExpense = async (req, res) => {
     try {
         const expense = await Expense.findOneAndDelete({ _id: id, userId });
 
-        if(!expense){
+        if (!expense) {
             return res.status(404).json({ message: "Expense not found" });
         }
         res.status(200).json({ message: "Expense deleted successfully", expense });
@@ -76,8 +76,18 @@ exports.downloadExpenseExcel = async (req, res) => {
         const wb = xlsx.utils.book_new();
         const ws = xlsx.utils.json_to_sheet(data);
         xlsx.utils.book_append_sheet(wb, ws, "Expense");
-        xlsx.write(wb, 'expense_details.xlsx');
-        res.download('expense_details.xlsx');
+        // write workbook to buffer
+        const buf = xlsx.write(wb, { type: "buffer", bookType: "xlsx" });
+
+        // set headers for file download
+        res.setHeader("Content-Disposition", "attachment; filename=expense_details.xlsx");
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        // send buffer as response
+        res.send(buf);
 
         //set headers for download
     } catch (error) {

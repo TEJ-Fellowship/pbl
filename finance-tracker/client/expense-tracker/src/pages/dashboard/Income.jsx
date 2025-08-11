@@ -32,8 +32,11 @@ const Income = () => {
       const response = await axiosInstance.get(
         `${API_PATHS.INCOME.GET_ALL_INCOME}`
       );
-      if (response.data) {
-        setIncomeData(response.data);
+      console.log(response.data)
+      if (response.data && Array.isArray(response.data.income)) {
+        setIncomeData(response.data.income);  
+      } else {
+        setIncomeData([]);
       }
     } catch (error) {
       console.log("Something went wrong. Please try again", error)
@@ -145,7 +148,7 @@ const Income = () => {
             onDelete={(id) => {
               setOpenDeleteAlert({ show: true, data: id })
             }}
-            onDownloads={handleDownloadIncomeDetails}
+            onDownload={handleDownloadIncomeDetails}
           />
         </div>
 
@@ -160,7 +163,7 @@ const Income = () => {
 
         <Modal
           isOpen={openDeleteAlert.show}
-          onCLose={() => setOpenDeleteAlert({ show: false, data: null })}
+          onClose={() => setOpenDeleteAlert({ show: false, data: null })}
           title="Delete Income"
         >
           <DeleteAlert

@@ -6,6 +6,8 @@ import CharAvatar from '../Cards/CharAvatar'
 
 const SideMenu = ({ activeMenu }) => {
   const { user, clearUser } = useContext(UserContext)
+  console.log("User from context in SideMenu:", user);
+
   const navigate = useNavigate()
 
   const handleClick = (route) => {
