@@ -1,4 +1,5 @@
 import React from 'react';
+import moment from 'moment';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, AreaChart } from 'recharts';
 
 const CustomTooltip = ({ active, payload }) => {
