@@ -5,6 +5,9 @@ import axiosInstance from '../../utils/axiosInstance';
 import { API_PATHS } from '../../utils/apiPaths';
 import { toast } from 'react-hot-toast';
 import ExpenseOverview from '../../components/Expense/ExpenseOverview';
+import ExpenseList from "../../components/Expense/ExpenseList";
+import Modal from "../../components/Modal";
+import AddExpenseForm from "../../components/Expense/AddExpenseForm";
 
 const Expense = () => {
   useUserAuth();
@@ -93,6 +96,14 @@ const Expense = () => {
             />
           </div>
         </div>
+
+        <ExpenseList
+          transactions={expenseData}
+          onDelete={(id) => {
+            setOpenDeleteAlert({ show: true, data: id })
+          }}
+          onDownload={handleDownloadExpenseDetails}
+        />
 
         <Modal
           isOpen={openAddExpenseModal}
