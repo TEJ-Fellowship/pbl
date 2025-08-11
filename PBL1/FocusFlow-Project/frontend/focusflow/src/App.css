@@ -129,7 +129,7 @@ form button {
   width: 100%;
   padding: 0.75rem 1rem;
   margin-top: var(--gap);
-  background: #685fbc;
+  background: var(--primary);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -142,7 +142,7 @@ form button {
 }
 
 form button:hover {
-  background: #6454d8;
+  background: var(--tag-finance-text);
   /* a 10–15% darker purple */
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -157,6 +157,11 @@ form button:active {
 /*────────────────────────────────────────────
   4) NAVBAR (enhanced)
 ────────────────────────────────────────────*/
+#mynav{
+  position: fixed;
+  width: 100%;
+  margin: auto;
+}
 nav {
   background: var(--bg-white);
   padding: 0.5rem 1rem;
@@ -371,23 +376,96 @@ transition: all 0.3s;
   box-shadow: 2px 2px 3px rgb(192, 192, 255);
 }
 
+/*────────────────────────────────────────────
+  5) TASK GRID PLACEHOLDER
+────────────────────────────────────────────*/
+/*────────────────────────────────────────────
+   TASK LIST GRID & CARD STYLING
+────────────────────────────────────────────*/
 .TaskList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--gap);
-  min-height: 120px;
+  margin-top: var(--gap);
+  padding: 0;
+  /* reset any inherited padding */
+  list-style: none;
+  /* ensure no default bullets */
 }
 
-/* placeholder text */
-.TaskList>span {
-  grid-column: 1/-1;
+/* Each .mytask becomes a card */
+.TaskList .mytask {
+  display: flex;
+  flex-direction: column;
   background: var(--bg-white);
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   padding: var(--gap);
-  text-align: center;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+/* Lift effect on hover */
+.TaskList .mytask:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Remove default list formatting */
+.TaskList .mytask li {
+  list-style: none;
+  margin: 0.25rem 0;
+  padding: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/* Title styling (first li) */
+.TaskList .mytask li:first-child {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+/* Meta info (date & category) */
+.TaskList .mytask li:nth-child(2),
+.TaskList .mytask li:nth-child(4) {
+  font-size: 0.85rem;
   color: var(--text-light);
-  font-style: italic;
+}
+
+/* Description styling (third li) */
+.TaskList .mytask li:nth-child(3) {
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+/* If you want a colored strip per category, add: */
+.TaskList .mytask[data-category="work"] {
+  border-left: 4px solid var(--tag-study-text);
+}
+
+.TaskList .mytask[data-category="personal"] {
+  border-left: 4px solid var(--tag-health-text);
+}
+
+.TaskList .mytask[data-category="study"] {
+  border-left: 4px solid var(--tag-finance-text);
+}
+
+.TaskList .mytask[data-category="health"] {
+  border-left: 4px solid var(--tag-health-text);
+}
+
+.TaskList .mytask[data-category="finance"] {
+  border-left: 4px solid var(--tag-finance-text);
+}
+
+/* Optional: responsive adjustment */
+@media (max-width: 600px) {
+  .TaskList {
+    grid-template-columns: 1fr;
+  }
 }
 
 /*────────────────────────────────────────────
@@ -474,3 +552,249 @@ transition: all 0.3s;
   border: 0;
 }
 
+/* ::::::::::: Banner ::::::::::: */
+
+/* 1) SECTION LAYOUT */
+.banner {
+  /* Light primary → secondary gradient */
+  background: linear-gradient(135deg, var(--primary-light), var(--secondary-light));
+  color: var(--text);
+  padding: 5rem var(--gap);
+  text-align: center;
+}
+
+/* Constrain card width & center */
+.banner .cards {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* 2) TITLE */
+.banner-title {
+  font-family: var(--font-base);
+  font-size: 2.25rem;
+  color: var(--primary);
+  font-weight: 700;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.banner-title::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background-color: var(--primary);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
+}
+
+/* 3) QUOTE CARD */
+.card.quote-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  max-width: 100%;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.card.quote-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Quote text */
+.quote-card .card-text {
+  font-family: 'Georgia', serif;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+/* Author name */
+.quote-card .card-author {
+  font-family: var(--font-base);
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--primary);
+  text-align: right;
+}
+
+/* 4) BUTTON (reuses your Ideal form button style) */
+.banner .btn {
+  display: inline-block;
+  margin-top: var(--gap);
+  width: auto;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.banner .btn:hover {
+  background: #356bb3;
+  /* ~15% darker primary */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.banner .btn:active {
+  background: var(--primary);
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/*────────────────────────────────────────────
+  GEMINI AI SUGGESTIONS MODULE
+────────────────────────────────────────────*/
+#gemini {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+#gemini h2 {
+  font-size: 1.75rem;
+  color: #333333;
+  text-align: center;
+  margin-bottom: 1rem;
+  /* position: relative; */
+}
+
+#gemini h2::after {
+  content: '';
+  /* position: absolute; */
+  bottom: -0.5rem;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+#gemini>div:first-of-type {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--gap);
+  align-items: start;
+  margin-bottom: 1.5rem;
+}
+
+#gemini textarea {
+  width: 100%;
+  height: 70px;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-base);
+  font-size: 1rem;
+  resize: vertical;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+#gemini textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+  outline: none;
+}
+
+#gemini button {
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  margin: auto;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+#gemini button:hover {
+  background: var(--tag-finance-text);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#gemini button:active {
+  background: #356bb3;
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* RESULTS CONTAINER */
+#gemini .container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* EACH RESULT CARD */
+#gemini .fluid-container {
+  background: var(--secondary-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+#gemini .fluid-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+#gemini .fluid-container h5 {
+  font-size: 1.1rem;
+  color: var(--secondary);
+  margin-bottom: 0.5rem;
+}
+
+#gemini .fluid-container span {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-light);
+}
+
+#gemini .fluid-container hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.75rem 0;
+}
+
+/* SUGGESTIONS LIST */
+#gemini .fluid-container ul,
+#gemini .fluid-container li {
+  list-style: disc inside;
+  margin: 0;
+  padding: 0;
+}
+
+#gemini .fluid-container li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+/* RESPONSIVE */
+@media (max-width: 640px) {
+  #gemini>div:first-of-type {
+    grid-template-columns: 1fr;
+  }
+}
