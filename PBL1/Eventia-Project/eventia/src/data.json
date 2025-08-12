@@ -1,0 +1,101 @@
+[
+  {
+    "id": "c3d4e5f6-g7h8-9i0j-1k2l-m3n4o5p6q7r8",
+    "title": "Marketing Strategy Webinar",
+    "date": "2025-09-05",
+    "startTime": "14:00",
+    "endTime": "15:30",
+    "category": "Webinar",
+    "description": "Effective digital marketing techniques",
+    "guests": ["dave@example.com", "eve@example.com"],
+    "createdAt": 1725465600000
+  },
+  {
+    "id": "d4e5f6g7-h8i9-0j1k-2l3m-n4o5p6q7r8s9",
+    "title": "Quarterly Budget Review",
+    "date": "2025-09-08",
+    "startTime": "10:00",
+    "endTime": "11:00",
+    "category": "Meeting",
+    "description": "Review Q3 expenditures and forecast Q4",
+    "guests": ["frank@example.com"],
+    "createdAt": 1725734400000
+  },
+  {
+    "id": "e5f6g7h8-i9j0-1k2l-3m4n-o5p6q7r8s9t0",
+    "title": "Client Networking Event",
+    "date": "2025-09-10",
+    "startTime": "18:00",
+    "endTime": "20:00",
+    "category": "Networking",
+    "description": "Meet and greet with potential clients",
+    "guests": ["grace@example.com", "helen@example.com"],
+    "createdAt": 1725907200000
+  },
+  {
+    "id": "f6g7h8i9-j0k1-2l3m-4n5o-p6q7r8s9t0u1",
+    "title": "Product Launch Conference",
+    "date": "2025-09-15",
+    "startTime": "09:30",
+    "endTime": "16:00",
+    "category": "Conference",
+    "description": "Launching the new product line",
+    "guests": ["ian@example.com", "jack@example.com", "kate@example.com"],
+    "createdAt": 1726368000000
+  },
+  {
+    "id": "g7h8i9j0-k1l2-3m4n-5o6p-q7r8s9t0u1v2",
+    "title": "Team Building Outing",
+    "date": "2025-09-18",
+    "startTime": "13:00",
+    "endTime": "18:00",
+    "category": "Team Building",
+    "description": "Outdoor activities and games",
+    "guests": ["leo@example.com", "mia@example.com"],
+    "createdAt": 1726636800000
+  },
+  {
+    "id": "h8i9j0k1-l2m3-4n5o-6p7q-r8s9t0u1v2w3",
+    "title": "Annual General Meeting",
+    "date": "2025-09-20",
+    "startTime": "10:00",
+    "endTime": "12:00",
+    "category": "Meeting",
+    "description": "Discuss annual performance and plans",
+    "guests": ["nancy@example.com", "oliver@example.com"],
+    "createdAt": 1726809600000
+  },
+  {
+    "id": "i9j0k1l2-m3n4-5o6p-7q8r-s9t0u1v2w3x4",
+    "title": "Sales Presentation",
+    "date": "2025-08-25",
+    "startTime": "15:00",
+    "endTime": "16:30",
+    "category": "Meeting",
+    "description": "Presenting sales targets and strategies",
+    "guests": ["paul@example.com", "quincy@example.com"],
+    "createdAt": 1727251200000
+  },
+  {
+    "id": "j0k1l2m3-n4o5-6p7q-8r9s-t0u1v2w3x4y5",
+    "title": "Training Session",
+    "date": "2025-08-28",
+    "startTime": "09:00",
+    "endTime": "12:00",
+    "category": "Workshop",
+    "description": "Employee skill development training",
+    "guests": ["rachel@example.com", "steve@example.com"],
+    "createdAt": 1727510400000
+  },
+    {
+    "id": "i9j0k1l2-m3n4-5o6p-7q8r",
+    "title": "Workshop",
+    "date": "2025-08-25",
+    "startTime": "15:00",
+    "endTime": "16:30",
+    "category": "Meeting",
+    "description": "Presenting sales targets and strategies",
+    "guests": ["paul@example.com", "quincy@example.com"],
+    "createdAt": 1727251200000
+  }
+]

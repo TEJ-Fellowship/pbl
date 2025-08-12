@@ -1,0 +1,63 @@
+/* .showeventcard{
+    
+    background-color: blue;
+    width: 500px;
+    height: 200px; */
+    /* padding: 25px;
+    /*  */
+ 
+  /* position: absolute;
+  top: -150px; /* or any offset */
+  /* left: 400px; or where you want to place it */
+  /* z-index: 999;  */
+  /* background: rgb(174, 105, 105); */
+  /* box-shadow: 0px 4px 20px rgba(0,0,0,0.1); */ 
+/* } */
+.showeventcard {
+  position: absolute;     /* Position relative to .main-container */
+  top: 250px;              /* distance from top */
+  right: 405px;            /* distance from right */
+  /* background-color: blue; */
+  width: 500px;
+  height: 300px;
+  color: rgb(120, 120, 120);
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0px 4px 20px rgba(0,0,0,0.1);
+}
+
+.crossShow{
+    height: 40px;
+    font-weight: 500;
+    font-size:x-large;
+    color: #3e3e3e;
+    border: none;
+    margin-bottom: 10px;
+} 
+.tophrshow{
+    color: #646565;
+}
+.header{
+    margin-left: 300px;
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+}
+h3{
+    margin:15px;
+    font-size: 25px;
+    margin-bottom: 0;
+    color: #565555;
+}
+span{
+    font-size:medium;
+    font-weight: 100;
+    margin: 2px 23px;
+}
+h4{
+    margin: 13px;
+}
+.des{
+    margin-left: 15px;
+    font-size: 15px;
+}
