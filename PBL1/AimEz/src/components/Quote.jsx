@@ -3,7 +3,7 @@ import React from 'react'
 import {useState,useEffect} from 'react';
 
 const url = 'https://api.api-ninjas.com/v1/quotes'
-const apiKey = 'mG7jjf8pnpwOyb9ftaV0QQ==SPdwN7D25ThL5x0A'
+const apiKey = 'NV4/rx1TxpXG0gXBmAbiUw==KCarrbV5OD5cjzAM'
 
 
 
