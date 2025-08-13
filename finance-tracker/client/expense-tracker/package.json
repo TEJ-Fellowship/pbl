@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{js,jsx}\"",
-    "lint": "eslint \"src/**/*.{js,jsx}\" --quiet"
+    "lint": "eslint \"src/**/*.{js,jsx}\" --quiet",
+    "build:ui": "cd src && rm -rf dist build && rm -rf ../../../server/dist && npm run build && cp -r dist ../../../server"
   },
   "keywords": [],
   "author": "",
