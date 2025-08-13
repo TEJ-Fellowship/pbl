@@ -1,0 +1,33 @@
+.card {
+  background-color: #2E2E2E; /* Charcoal Gray */
+  color: #FAF8F2;            /* Beige White text for readability */
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  font-family: 'Segoe UI', sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+.card h3 {
+  color: #C4F000; /* Lime Green for heading */
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.card p {
+  font-size: 0.95rem;
+  color: #EDEDED; /* Light Gray for normal text */
+}
+
+.card pre {
+  font-size: 0.95rem;
+  color: #FAF8F2;  /* Beige White */
+  background-color: #1C1C1C; /* Jet Black */
+  padding: 10px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}

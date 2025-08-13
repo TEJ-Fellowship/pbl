@@ -1,0 +1,26 @@
+.leftcontainer {
+  padding: 1.5rem;
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+  color: #f1f1f1;
+  font-family: 'Poppins', sans-serif;
+}
+
+.datetime {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+  color: #cccccc;
+}
+
+.season {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  color: #A3B18A; /* Sage green */
+}
+
+.suggestion {
+  font-size: 1rem;
+  color: #DDA15E; /* Warm mustard */
+  margin-top: 0.5rem;
+}
