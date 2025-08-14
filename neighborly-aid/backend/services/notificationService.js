@@ -222,8 +222,9 @@ class NotificationService {
         .populate("helpers.userId", "name");
 
       const requester = await User.findById(requesterId, "name");
+      // Find the selected helper (who was previously completed but now reset to selected)
       const selectedHelper = task.helpers.find(
-        (helper) => helper.status === "completed"
+        (helper) => helper.status === "selected"
       );
 
       if (selectedHelper) {
