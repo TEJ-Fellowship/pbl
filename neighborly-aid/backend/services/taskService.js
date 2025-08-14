@@ -886,8 +886,8 @@ class TaskService {
             status: IN_PROGRESS,
             helperMarkedComplete: false,
             helperCompletedAt: null,
-            requesterApproved: false,
-            requesterApprovedAt: new Date(),
+            requesterApproved: null,
+            requesterApprovedAt: null,
             completionNotes: notes,
           },
           { new: true, runValidators: true }
@@ -897,27 +897,30 @@ class TaskService {
         );
 
         // Reset the helper's status back to selected
-        const selectedHelper = task.helpers.find(
-          (helper) => helper.status === "completed"
+        // Find the helper who was marked as completed and reset their status
+        await Task.updateOne(
+          {
+            _id: taskId,
+            "helpers.status": "completed",
+          },
+          {
+            $set: {
+              "helpers.$.status": "selected",
+            },
+          }
         );
-        if (selectedHelper) {
-          await Task.updateOne(
-            { _id: taskId, "helpers.userId": selectedHelper.userId },
-            {
-              $set: {
-                "helpers.$.status": "selected",
-              },
-            }
-          );
-        }
 
-        // Create notification for helper
+        // Get the updated task to pass to notification service
+        const updatedTaskWithHelpers = await this.getTaskWithHelpers(taskId);
+
+        // Create notification for helper (after status reset)
         await notificationService.notifyTaskCompletionRejected(
           taskId,
           requesterId
         );
 
-        return updatedTask;
+        // Return the updated task with the correct helper status
+        return updatedTaskWithHelpers;
       }
     } catch (error) {
       console.error("Error in approveTaskCompletion:", error);
