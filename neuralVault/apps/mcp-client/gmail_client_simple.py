@@ -284,13 +284,13 @@ class SimpleGmailClient:
         table = Table(title=title)
         table.add_column("Subject", style="cyan")
         table.add_column("From", style="magenta")
-        table.add_column("Date", style="green")
-        table.add_column("ID", style="dim")
+        table.add_column("Date", style="green",max_width=100)
+        table.add_column("ID", style="dim",overflow="fold")
         
         for email in emails:
             subject = email.get('subject', 'No Subject')[:50]
             sender = email.get('from', 'Unknown')[:30]
-            date = email.get('date', 'Unknown')[:20]
+            date = email.get('date', 'Unknown')[:50]
             email_id = email.get('id', 'Unknown')
             
             table.add_row(subject, sender, date, email_id)
