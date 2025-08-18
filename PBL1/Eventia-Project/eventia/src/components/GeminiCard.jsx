@@ -10,8 +10,7 @@ function GeminiCard({setAiResponse,aiResponse,handleGemini,handleaskGemini,isLoa
             handleaskGemini()
             setAiResponse('')
         }}>
-          X
-        </button>
+          X        </button>
       </div>
       <hr className="tophrrshow" />
       <div className="content"> {isLoading ? "Summarizing... Please wait few seconds" : aiResponse}</div>

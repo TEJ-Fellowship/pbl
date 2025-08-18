@@ -13,12 +13,14 @@
   /* background-color: blue; */
   display: flex;
   padding-top: 10px;
-  gap: 90px;
+  gap: 50px;
   padding-left: 35px;
   color: rgb(74, 74, 74);
 }
 
 .crossShoww {
+
+  color: rgb(107, 107, 107);
   padding: 5px;
   padding-top: 0;
   left: 200px;
