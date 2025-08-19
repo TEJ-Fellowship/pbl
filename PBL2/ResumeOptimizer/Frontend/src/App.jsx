@@ -12,7 +12,7 @@ import NavFeature from "./Pages/NavFeature.jsx";
 //   );
 // } 
 export default function App() {
-  return <h1 className="text-xl font-bold text-blue">Hello Tailwind!</h1>;
+  return <h1 className="text-xl font-bold text-blue-700">Hello Tailwind!</h1>;
 }
 
 
