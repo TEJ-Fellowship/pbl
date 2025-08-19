@@ -13,6 +13,8 @@ import Home from './pages/Dashboard/Home';
 import Income from './pages/Dashboard/Income';
 import Expense from './pages/Dashboard/Expense';
 import UserProvider from './context/userContext'; //look here 
+
+import { Toaster }  from 'react-hot-toast';
 const App = () => {
   return (
     <UserProvider>    
@@ -28,6 +30,15 @@ const App = () => {
         </Routes>
       </Router>
       </div>
+
+      <Toaster 
+        toastOptions={{
+          className: "",
+          style: { 
+            fontSize: '13px'
+          },
+        }}
+        />
     </UserProvider>
   )
 }

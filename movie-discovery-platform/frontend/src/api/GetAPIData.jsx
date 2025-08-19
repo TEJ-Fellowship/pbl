@@ -26,9 +26,13 @@ const getMoviesData = async ({ request }) => {
 
     const data = await response.json();
 
+    console.log(data);
+
+
     // The OMDb API returns "Response": "False" if no movies are found.
     // We should handle this gracefully.
     if (data.Response === "True") {
+      console.log(data);
       return data; // Returns an object like { Search: [], totalResults: "...", Response: "True" }
     } else {
       // If Response is False (e.g., no movie found for the search term)

@@ -8,7 +8,8 @@ const TransactionInfoCard = ({
     date, 
     amount, 
     type, 
-    hideDeleteBtn
+    hideDeleteBtn,
+    onDelete,
 }) => {
     const getAmountStyles =() =>{
        return type === "income" 

@@ -7,6 +7,7 @@ export const getMovieDetails = async ({ params }) => {
       `https://www.omdbapi.com/?i=${id}&apikey=${import.meta.env.VITE_API_KEY}`
     );
     const data = response.json();
+    console.log(data);
     return data;
   } catch (error) {
     console.log(error);
