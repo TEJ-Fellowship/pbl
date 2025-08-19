@@ -6,13 +6,13 @@ export default function NavFeature() {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;  // if nothing chosen
-    navigate("/Resume");  // ✅ go to Resume page
+    navigate("/Resume");  
   };
 
   return (
     <div>
       <h2>Upload Resume</h2>
-      <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+      <input className="p-40"type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
     </div>
   );
 }
