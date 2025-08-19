@@ -3,9 +3,13 @@ import Home from "./Components/Home";
 import MyBooks from "./Components/MyBooks";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+
 function App() {
+
+
   return (
     <>
+
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
