@@ -19,15 +19,15 @@ const Navbar = () => {
   // Toggle dark/light mode
   const handleThemeToggle = () => {
     setDarkMode(!darkMode);
-    if (!darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark");
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md transition-colors">
+    <div
+      className={`sticky top-0 z-50 shadow-md transition-colors duration-300 ${
+        darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-black"
+      }`}
+    >
       <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
         {/* Left: Logo + Links */}
         <div className="flex items-center gap-8">
@@ -40,14 +40,14 @@ const Navbar = () => {
           </div>
 
           {/* Links */}
-          <ul className="flex gap-6 font-medium text-gray-800 dark:text-gray-200">
+          <ul className="flex gap-6 font-medium text-black dark:text-gray-200">
             <li>
               <NavLink
                 to="/"
                 className={({ isActive }) =>
                   isActive
-                    ? "text-indigo-600 dark:text-indigo-400 underline decoration-indigo-600 dark:decoration-indigo-400 font-semibold"
-                    : "hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
+                    ? "text-primary dark:text-primary-light underline decoration-primary font-semibold"
+                    : "text-black dark:text-gray-500 hover:text-primary transition-colors"
                 }
               >
                 Home
@@ -58,8 +58,8 @@ const Navbar = () => {
                 to="/mybooks"
                 className={({ isActive }) =>
                   isActive
-                    ? "text-indigo-600 dark:text-indigo-400 underline decoration-indigo-600 dark:decoration-indigo-400 font-semibold"
-                    : "hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
+                    ? "text-primary dark:text-primary-light underline decoration-primary font-semibold"
+                    : "text-black dark:text-gray-500 hover:text-primary transition-colors"
                 }
               >
                 MyBooks
@@ -97,7 +97,7 @@ const Navbar = () => {
           {/* Add New Button */}
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white px-4 py-1 rounded-full font-semibold transition-colors"
+            className="flex items-center gap-2 bg-primary text-white px-4 py-1 rounded-full font-semibold hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
             Add New

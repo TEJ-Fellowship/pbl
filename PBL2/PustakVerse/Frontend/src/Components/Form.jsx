@@ -17,7 +17,7 @@ const Form = ({ onClose }) => {
     <>
       <form
         onSubmit={handleSubmit}
-        className="relative p-4 bg-white shadow-md rounded-lg space-y-2"
+        className="relative p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-lg space-y-2 transition-colors"
       >
         <button
           type="button"
@@ -49,7 +49,7 @@ const Form = ({ onClose }) => {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className="bg-blue-300 text-white px-4 py-2 rounded"
+            className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
             onClick={() => document.getElementById("coverInput").click()}
           >
             Choose Cover
@@ -77,7 +77,7 @@ const Form = ({ onClose }) => {
           ].map((g) => (
             <label
               key={g}
-              className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded cursor-pointer"
+              className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded cursor-pointer transition-colors"
             >
               <input
                 type="checkbox"
@@ -90,7 +90,7 @@ const Form = ({ onClose }) => {
                     setGenre(genre.filter((x) => x !== g));
                   }
                 }}
-                className="accent-indigo-500"
+                className="accent-primary"
               />
               {g}
             </label>
@@ -137,7 +137,7 @@ const Form = ({ onClose }) => {
         </label>
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
         >
           Submit
         </button>
