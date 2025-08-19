@@ -11,8 +11,9 @@ export default function NavFeature() {
 
   return (
     <div>
-      <h2>Upload Resume</h2>
-      <input className="p-40"type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+      {/* <h2>Upload Resume</h2>
+      <input className="p-40"type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} /> */}
+      
     </div>
   );
 }
