@@ -1,0 +1,116 @@
+import React, { useState } from "react";
+import { useNavigate, NavLink } from "react-router-dom";
+import {
+  SunIcon,
+  MoonIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const [darkMode, setDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Toggle dark/light mode
+  const handleThemeToggle = () => {
+    setDarkMode(!darkMode);
+    if (!darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  return (
+    <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-md transition-colors">
+      <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
+        {/* Left: Logo + Links */}
+        <div className="flex items-center gap-8">
+          {/* Logo */}
+          <div
+            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
+            onClick={() => navigate("/")}
+          >
+            Pustakverse
+          </div>
+
+          {/* Links */}
+          <ul className="flex gap-6 font-medium text-gray-800 dark:text-gray-200">
+            <li>
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-indigo-600 dark:text-indigo-400 underline decoration-indigo-600 dark:decoration-indigo-400 font-semibold"
+                    : "hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
+                }
+              >
+                Home
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/mybooks"
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-indigo-600 dark:text-indigo-400 underline decoration-indigo-600 dark:decoration-indigo-400 font-semibold"
+                    : "hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors"
+                }
+              >
+                MyBooks
+              </NavLink>
+            </li>
+          </ul>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-4">
+          {/* Theme Toggle */}
+          <button
+            onClick={handleThemeToggle}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          >
+            {darkMode ? (
+              <SunIcon className="w-5 h-5 text-yellow-400" />
+            ) : (
+              <MoonIcon className="w-5 h-5 text-gray-800" />
+            )}
+          </button>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search books..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-1 rounded-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:text-gray-200 transition-colors"
+            />
+            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300" />
+          </div>
+
+          {/* Add New Button */}
+          <button
+            onClick={() => navigate("/addbook")}
+            className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white px-4 py-1 rounded-full font-semibold transition-colors"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Add New
+          </button>
+
+          {/* Profile Picture */}
+          <div className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border-2 border-gray-300 dark:border-gray-600">
+            <img
+              src="https://randomuser.me/api/portraits/men/75.jpg"
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+export default Navbar;
