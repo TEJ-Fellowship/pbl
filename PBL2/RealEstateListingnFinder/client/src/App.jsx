@@ -1,11 +1,11 @@
-import { useState } from 'react'
 import './App.css'
+import SearchPage from './pages/Search/SearchPage'
 
 function App() {
 
   return (
     <>
-      
+      <SearchPage />
     </>
   )
 }
