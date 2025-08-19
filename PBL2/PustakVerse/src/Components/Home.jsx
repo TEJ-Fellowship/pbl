@@ -1,5 +1,7 @@
-import react, { useState } from "react";
+import React from "react";
+import Navbar from "./Navbar";
+const Home = () => {
+  return <>Home</>;
+};
 
-function Home() {
-    
-}
+export default Home;
