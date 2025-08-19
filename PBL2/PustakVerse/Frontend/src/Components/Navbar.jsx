@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
+import Form from "./Form";
 import {
   SunIcon,
   MoonIcon,
@@ -11,6 +12,9 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  //form showcase
+  const [showForm, setShowForm] = useState(false);
 
   // Toggle dark/light mode
   const handleThemeToggle = () => {
@@ -92,7 +96,7 @@ const Navbar = () => {
 
           {/* Add New Button */}
           <button
-            onClick={() => navigate("/addbook")}
+            onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white px-4 py-1 rounded-full font-semibold transition-colors"
           >
             <PlusIcon className="w-5 h-5" />
@@ -109,6 +113,19 @@ const Navbar = () => {
           </div>
         </div>
       </nav>
+      {showForm && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          onClick={() => setShowForm(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Form onClose={() => setShowForm(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
