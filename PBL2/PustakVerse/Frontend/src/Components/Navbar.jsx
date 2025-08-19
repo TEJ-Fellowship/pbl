@@ -8,9 +8,9 @@ import {
   PlusIcon,
 } from "@heroicons/react/24/outline";
 
-const Navbar = () => {
+const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(false);
+  // const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   //form showcase
@@ -122,7 +122,10 @@ const Navbar = () => {
             className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <Form onClose={() => setShowForm(false)} />
+            <Form
+              onClose={() => setShowForm(false)}
+              onAddBook={(newBook) => setBooks((prev) => [...prev, newBook])} // ← here
+            />
           </div>
         </div>
       )}
