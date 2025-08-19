@@ -2,7 +2,7 @@ import React, { useState } from "react";
 const Form = ({ onClose }) => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [genre, setGenre] = useState("");
+  const [genre, setGenre] = useState([]);
   const [year, setYear] = useState("");
   const [description, setDescription] = useState("");
   const [rating, setRating] = useState("");
@@ -64,22 +64,39 @@ const Form = ({ onClose }) => {
           className="hidden"
         />
 
-        <select>
-          type="text" value={genre}
-          onChange=
-          {(e) => {
-            setGenre(e.target.value);
-          }}
-          className="border p-2 w-full"
-          <option value="">Select a genre</option>
-          <option value="Fiction">Fiction</option>
-          <option value="Non-Fiction">Non-Fiction</option>
-          <option value="Science">Science</option>
-          <option value="Fantasy">Fantasy</option>
-          <option value="Biography">Biography</option>
-          <option value="Mystery">Mystery</option>
-          <option value="Self-Help">Self-Help</option>
-        </select>
+        <label className="block mb-1 font-semibold">Select Genres</label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {[
+            "Fiction",
+            "Non-Fiction",
+            "Science",
+            "Fantasy",
+            "Biography",
+            "Mystery",
+            "Self-Help",
+          ].map((g) => (
+            <label
+              key={g}
+              className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                value={g}
+                checked={genre.includes(g)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setGenre([...genre, g]);
+                  } else {
+                    setGenre(genre.filter((x) => x !== g));
+                  }
+                }}
+                className="accent-indigo-500"
+              />
+              {g}
+            </label>
+          ))}
+        </div>
+
         <input
           type="number"
           placeholder="Year"
@@ -90,7 +107,6 @@ const Form = ({ onClose }) => {
           className="border p-2 w-full"
         />
         <textarea
-          type="text"
           placeholder="Description"
           value={description}
           onChange={(e) => {
