@@ -1,10 +1,6 @@
-
 import React, { useState } from "react";
-<<<<<<< HEAD
 import { useNavigate } from "react-router-dom";
-=======
 import axios from "axios";
->>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
 
 const Home = () => {
   const navigate = useNavigate();
@@ -12,14 +8,13 @@ const Home = () => {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [uploadDate, setUploadDate] = useState(null);
-<<<<<<< HEAD
   const [isDragging, setIsDragging] = useState(false);
 
   const allowedTypes = [
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ]; 
+  ];
 
   // Validate file type
   const validateFile = (selectedFile) => {
@@ -33,19 +28,13 @@ const Home = () => {
     setUploadDate(new Date());
     return true;
   };
-=======
->>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
 
   // File select via input
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setUploadDate(new Date());
-    }
+    if (selectedFile) validateFile(selectedFile);
   };
 
-<<<<<<< HEAD
   // Drag & Drop
   const handleDrop = (e) => {
     e.preventDefault();
@@ -65,46 +54,8 @@ const Home = () => {
 
   // Upload to backend
   const handleUpload = async () => {
-    if (!title || title.trim() === "") {
-      alert("Please enter a title!");
-      return;
-    }
-
-    if (!file) {
-      alert("Please select a file before uploading!");
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", title);
-      formData.append("notes", notes);
-
-      const response = await fetch("http://localhost:5000/api/resumes", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const confirmUpload = window.confirm(
-          `File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`
-        );
-        if (confirmUpload) {
-          navigate("/resume");
-        }
-      } else {
-        alert("Error uploading resume! " + data.error);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error uploading resume! " + err.message);
-=======
-  const handleUpload = async () => {
     if (!title.trim()) {
-      alert("Title is required!");
+      alert("Please enter a title!");
       return;
     }
     if (!file) {
@@ -116,44 +67,47 @@ const Home = () => {
     formData.append("file", file);
     formData.append("title", title);
     formData.append("notes", notes);
-    formData.append("uploadDate", uploadDate);
 
     try {
       const res = await axios.post("http://localhost:5000/api/resumes", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert("Uploaded successfully!");
-      console.log(res.data);
+
+      if (res.data.success) {
+        const confirmUpload = window.confirm(
+          `File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`
+        );
+        if (confirmUpload) navigate("/resume");
+      } else {
+        alert("Error uploading resume! " + res.data.error);
+      }
     } catch (err) {
       console.error(err);
-      alert("Upload failed!");
->>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
+      alert("Error uploading resume! " + err.message);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-xl bg-white shadow-md rounded-lg p-8">
+        {/* Header */}
         <h1 className="text-2xl font-semibold text-gray-800">Upload Resume</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Upload your resume to get started.{" "}
+          <span className="text-blue-500">We support PDF and DOCX formats.</span>
+        </p>
 
-<<<<<<< HEAD
         {/* Resume Title */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700">
-            Resume Title*
+            Resume Title *
           </label>
-=======
-        {/* Title */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">Resume Title *</label>
->>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
           <input
             type="text"
             placeholder="e.g., Software Engineer Resume"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
           />
         </div>
 
@@ -169,31 +123,30 @@ const Home = () => {
           ></textarea>
         </div>
 
-<<<<<<< HEAD
-        {/* File Upload Box */}
-        <div className="mt-6">
-          <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition ${
-              isDragging
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300"
-            }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <p className="text-sm text-gray-500">
-              Drag and drop your resume here, or
-=======
         {/* File Upload */}
-        <div className="mt-4">
-          <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
+        <div
+          className={`mt-6 border-2 border-dashed rounded-lg p-6 text-center transition ${
+            isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+        >
+          <p className="text-sm text-gray-500">Drag and drop your resume here, or</p>
+          <label className="mt-2 inline-block px-4 py-2 bg-gray-100 rounded-md cursor-pointer hover:bg-gray-200 text-sm font-medium">
+            Select File
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </label>
           {file && (
-            <p className="text-sm text-green-600 mt-2">
-              Selected: {file.name} <br />
-              Upload Date: {uploadDate?.toLocaleString()}
->>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
-            </p>
+            <div className="mt-2 text-sm text-green-600 font-medium">
+              <p>Selected File: {file.name}</p>
+              <p>Upload Date: {uploadDate?.toLocaleString()}</p>
+            </div>
           )}
         </div>
 
