@@ -1,5 +1,6 @@
 import './App.css'
-import ManageProperty './pages/ManagePropery'
+
+import ManageProperty from './pages/ManageProperty'
 import Navbar from './components/Navbar/Navbar'
 import SearchPage from './pages/Search/SearchPage'
 
@@ -7,11 +8,9 @@ function App() {
 
   return (
     <>
-    
       <Navbar />
       <ManageProperty />
       <SearchPage />
-
     </>
   )
 }
