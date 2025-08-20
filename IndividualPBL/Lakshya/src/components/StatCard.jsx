@@ -138,7 +138,6 @@ const StatCard = () => {
         })}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-3 gap-4 pt-1">
-        {/* Career Interests Panel */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 h-96 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-slate-900/20 transition-all duration-300 group overflow-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
@@ -150,7 +149,6 @@ const StatCard = () => {
           </div>
 
           <div className="space-y-3">
-            {/* Interest Tags */}
             <div className="flex flex-wrap gap-2 mb-4">
               {userInterests.length > 0 ? (
                 userInterests.map((interest, index) => {
@@ -180,7 +178,6 @@ const StatCard = () => {
               )}
             </div>
 
-            {/* Interest Chart Visualization */}
             {userInterests.length > 0 && (
               <div className="h-52 flex items-center justify-center mb-3">
                 <PieChart
@@ -217,18 +214,17 @@ const StatCard = () => {
                     },
                   }}
                   colors={[
-                    "#6366f1", // indigo
-                    "#a855f7", // purple
-                    "#3b82f6", // blue
-                    "#ec4899", // pink
-                    "#10b981", // emerald
+                    "#6366f1", 
+                    "#a855f7", 
+                    "#3b82f6", 
+                    "#ec4899", 
+                    "#10b981", 
                   ]}
                   margin={{ top: 0, bottom: 30, left: 0, right: 0 }}
                 />
               </div>
             )}
 
-            {/* Interest Details */}
             <div className="space-y-4">
               {userInterests.length > 0 ? (
                 userInterests.slice(0, 3).map((interest, index) => {
@@ -279,7 +275,6 @@ const StatCard = () => {
           </div>
         </div>
 
-        {/* Goal Progress Panel */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 h-96 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-slate-900/20 transition-all duration-300 group overflow-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
@@ -397,7 +392,6 @@ const StatCard = () => {
           </div>
         </div>
 
-        {/* AI Recommendations Panel */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 h-96 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-xl hover:shadow-slate-200/20 dark:hover:shadow-slate-900/20 transition-all duration-300 group overflow-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
@@ -409,7 +403,6 @@ const StatCard = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Recommendation Chart */}
             {userInterests.length > 0 && (
               <div className="h-52 mb-4">
                 <PieChart
@@ -463,17 +456,16 @@ const StatCard = () => {
                     },
                   }}
                   colors={[
-                    "#a855f7", // purple
-                    "#3b82f6", // blue
-                    "#ec4899", // pink
-                    "#10b981", // emerald
+                    "#a855f7", 
+                    "#3b82f6", 
+                    "#ec4899", 
+                    "#10b981", 
                   ]}
                   margin={{ top: 0, bottom: 30, left: 0, right: 0 }}
                 />
               </div>
             )}
 
-            {/* Dynamic Recommendations based on interests */}
             {userInterests.map((interest, index) => {
               const recommendations = {
                 "AI/Machine Learning": {
@@ -504,8 +496,6 @@ const StatCard = () => {
               };
 
               const recommendation = recommendations[interest] || defaultRec;
-
-              // Only show the first 3 recommendations to avoid overflow
               if (index < 3) {
                 return (
                   <div

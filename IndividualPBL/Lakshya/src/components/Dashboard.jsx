@@ -2,8 +2,6 @@ import React from "react";
 import StatCard from "./StatCard";
 import Career from "../pages/Career.jsx";
 
-
-
 const Dashboard = () => {
   return (
     <>
