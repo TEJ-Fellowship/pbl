@@ -1,4 +1,5 @@
 import { Star, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
 const Navbar = () => {
   return (
     <>
@@ -13,18 +14,18 @@ const Navbar = () => {
             </h2>
           </div>
           <div className="flex items-center gap-9">
-            <a
+            <Link
+              to="/explore"
               className="text-gray-900 text-sm font-medium leading-normal hover:text-blue-600 cursor-pointer"
-              href="#"
             >
               Explore Property
-            </a>
-            <a
+            </Link>
+            <Link
               className="text-gray-900 text-sm font-medium leading-noraml hover:text-blue-600 cursor-pointer"
-              href="#"
+              to="/manage-property"
             >
               Manage Property
-            </a>
+            </Link>
           </div>
         </div>
 
