@@ -1,11 +1,11 @@
-import { useState } from 'react'
 import './App.css'
+import ManageProperty from './pages/ManageProperty'
 
 function App() {
 
   return (
     <>
-      
+      <ManageProperty />
     </>
   )
 }
