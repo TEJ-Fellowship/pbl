@@ -9,11 +9,12 @@ const Form = ({ onClose, onAddBook }) => {
   const [description, setDescription] = useState("");
   const [rating, setRating] = useState("");
   const [favorite, setFavorite] = useState(false);
-  const [cover, setCover] = useState(null);
+  // const [cover, setCover] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onAddBook({
+
+    const newBook = {
       title,
       author,
       genre,
@@ -21,9 +22,27 @@ const Form = ({ onClose, onAddBook }) => {
       description,
       rating,
       favorite,
-      cover,
-    });
-    onClose();
+      // cover: cover ? cover.name : null, // We'll just store the filename for now
+    };
+
+    try {
+      const res = await fetch("http://localhost:3001/books", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newBook),
+      });
+
+      if (!res.ok) throw new Error("Failed to add book");
+
+      const savedBook = await res.json();
+      onAddBook(savedBook); // Add the book to your React state
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Check console.");
+    }
   };
 
   return (
@@ -55,7 +74,7 @@ const Form = ({ onClose, onAddBook }) => {
         className="border p-2 w-full"
       />
 
-      <label className="block mb-1 font-semibold">Add Cover Image</label>
+      {/* <label className="block mb-1 font-semibold">Add Cover Image</label>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -72,7 +91,7 @@ const Form = ({ onClose, onAddBook }) => {
         id="coverInput"
         onChange={(e) => setCover(e.target.files[0])}
         className="hidden"
-      />
+      /> */}
 
       <label className="block mb-1 font-semibold">Select Genres</label>
       <GenreSelector selectedGenres={genre} setSelectedGenres={setGenre} />
