@@ -1,0 +1,42 @@
+{
+  "books": [
+    {
+      "id": "f5e2",
+      "title": "Happy",
+      "author": "Birthday",
+      "genre": [
+        "Fantasy"
+      ],
+      "year": "2009",
+      "description": "wewe",
+      "rating": "5",
+      "favorite": true
+    },
+    {
+      "id": "8104",
+      "title": "book 2",
+      "author": "wwe",
+      "genre": [
+        "Fiction",
+        "Fantasy"
+      ],
+      "year": "2323",
+      "description": "sasasas",
+      "rating": "3",
+      "favorite": true
+    },
+    {
+      "id": "110e",
+      "title": "New book",
+      "author": "sdsd",
+      "genre": [
+        "Fiction",
+        "Fantasy"
+      ],
+      "year": "2323",
+      "description": "sddsd",
+      "rating": "2",
+      "favorite": true
+    }
+  ]
+}
