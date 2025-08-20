@@ -30,7 +30,10 @@
     "mime-types": "^2.1.35",
     "mongoose": "^8.17.2",
     "multer": "^2.0.2",
+<<<<<<< HEAD
     "mypackage": "^0.1.0",
+=======
+>>>>>>> 4d9aead0aeb372175ad52511f4c2a6fcb416007f
     "proxy-from-env": "^1.1.0"
   },
   "scripts": {
