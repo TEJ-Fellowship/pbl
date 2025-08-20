@@ -1,9 +1,4 @@
-import React from "react";
 import {
-  Search,
-  Heart,
-  X,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
