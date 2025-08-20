@@ -1,0 +1,172 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "Ganesh",
+      "email": "[ganesh@example.com](mailto:ganesh@example.com)",
+      "passwordHash": "ganesh@1234",
+      "profile": {
+        "displayName": "Ganesh",
+        "avatar": "/avatars/ganesh.png",
+        "level": 11,
+        "rank": "Scholar",
+        "streakDays": 25,
+        "totalXP": 10052,
+        "badges": 15,
+        "bio": ""
+      },
+      "subjects": {
+        "math": {
+          "progress": 72,
+          "topicsCompleted": [
+            "Algebra",
+            "Geometry"
+          ],
+          "nextMilestone": "Quadratic Equations",
+          "lastPracticedAt": "2025-08-14T03:09:28.024Z",
+          "weeklySessions": 37,
+          "bestScore": 9,
+          "totalQuizzes": 1,
+          "averageScore": null
+        },
+        "science": {
+          "progress": 93,
+          "topicsCompleted": [
+            "Biology",
+            "Physics",
+            "Astronomy",
+            "Chemistry",
+            "Earth Science"
+          ],
+          "nextMilestone": "Chemical Reactions",
+          "lastPracticedAt": "2025-08-15T10:35:59.329Z",
+          "weeklySessions": 84,
+          "bestScore": 10,
+          "totalQuizzes": 4,
+          "averageScore": 6.75
+        },
+        "english": {
+          "progress": 79,
+          "topicsCompleted": [
+            "Grammar",
+            "Reading"
+          ],
+          "nextMilestone": "Essay Writing",
+          "lastPracticedAt": "2025-08-14T10:47:47.315Z",
+          "weeklySessions": 17,
+          "bestScore": 9,
+          "totalQuizzes": 2,
+          "averageScore": 3.5
+        },
+        "history": {
+          "weeklySessions": 20,
+          "lastPracticedAt": "2025-08-14T10:16:23.267Z",
+          "bestScore": 9,
+          "progress": 76,
+          "totalQuizzes": 3,
+          "averageScore": 4.333333333333333,
+          "topicsCompleted": [
+            "Economics"
+          ]
+        }
+      },
+      "achievements": [
+        {
+          "id": "math_prodigy",
+          "name": "Math Prodigy",
+          "earned": true,
+          "earnedAt": "2025-07-10T12:00:00.000Z"
+        },
+        {
+          "id": "speed_demon",
+          "name": "Speed Demon",
+          "earned": false,
+          "earnedAt": null
+        },
+        {
+          "id": "weekly_warrior",
+          "name": "Weekly Warrior",
+          "description": "Completed 20 quizzes in one week!",
+          "earned": true,
+          "earnedAt": "2025-08-14T03:09:28.027Z",
+          "xpReward": 400
+        },
+        {
+          "id": "perfect_score",
+          "name": "Perfect Score",
+          "description": "Got 100% on a quiz!",
+          "earned": true,
+          "earnedAt": "2025-08-14T03:11:31.364Z",
+          "xpReward": 100
+        },
+        {
+          "id": "scholar",
+          "name": "Scholar",
+          "description": "Reached level 10!",
+          "earned": true,
+          "earnedAt": "2025-08-14T10:16:23.268Z",
+          "xpReward": 300
+        }
+      ],
+      "quizHistory": [
+        {
+          "quizId": "quiz-20250801-001",
+          "subject": "math",
+          "score": 8,
+          "total": 10,
+          "takenAt": "2025-08-01T09:15:00.000Z",
+          "durationSeconds": 240
+        },
+        {
+          "quizId": "quiz-2025-08-14T10-18-13-196Z",
+          "subject": "science",
+          "score": 9,
+          "total": 10,
+          "takenAt": "2025-08-14T10:18:13.196Z",
+          "durationSeconds": 99
+        },
+        {
+          "quizId": "quiz-2025-08-14T10-47-47-314Z",
+          "subject": "english",
+          "score": 7,
+          "total": 10,
+          "takenAt": "2025-08-14T10:47:47.315Z",
+          "durationSeconds": 136
+        },
+        {
+          "quizId": "quiz-2025-08-15T10-35-59-328Z",
+          "subject": "science",
+          "score": 8,
+          "total": 10,
+          "takenAt": "2025-08-15T10:35:59.329Z",
+          "durationSeconds": 75
+        }
+      ],
+      "settings": {
+        "dailyReminder": true,
+        "dailyReminderTime": "18:30",
+        "language": "ne",
+        "notifications": {
+          "email": false,
+          "push": true,
+          "sms": false
+        },
+        "theme": "system"
+      },
+      "preferences": {
+        "preferredStudyDurationMins": 30,
+        "preferredStudyDays": [
+          "mon",
+          "wed",
+          "fri"
+        ],
+        "showHints": true
+      },
+      "activity": {
+        "createdAt": "2025-08-13T07:00:00.000Z",
+        "updatedAt": "2025-08-15T10:35:59.330Z",
+        "lastLogin": "2025-08-13T09:05:00.000Z"
+      }
+    }
+  ]
+}
