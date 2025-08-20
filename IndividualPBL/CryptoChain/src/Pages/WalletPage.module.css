@@ -1,0 +1,137 @@
+.pageContainer {
+  width: 90vw;
+  height: fit-content;
+  max-height: fit-content;
+  /* border: 1px solid white; */
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  margin-top: 1.5rem;
+  padding-bottom: 1rem;
+  position: relative;
+  gap: 1rem;
+}
+
+.createWallet {
+  width: 90vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-family: "Mozilla text", sans-serif;
+}
+.title {
+  color: #fff;
+  margin-left: 2rem;
+}
+
+.createWalletBtn {
+  padding: 0.6rem 0.9rem;
+  height: 2.5rem;
+  text-align: center;
+  border: none;
+  border-radius: 0.4rem;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.createWalletBtn span {
+  font-family: inherit;
+  font-weight: bolder;
+}
+
+.addWallet {
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.popupContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  background-color: black;
+  border: 2px solid white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.popup {
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem;
+}
+
+.popup input {
+  width: 24rem;
+  height: 2.5rem;
+  border-radius: 0.2rem;
+  border: none;
+  appearance: textfield;
+}
+
+.popup input:active,
+.pop input:hover {
+  border-color: 1px solid white;
+}
+
+.popup label {
+  font-family: "Mozilla Text", sans-serif;
+  font-size: 1.1rem;
+}
+
+.btnContainer {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.cancelBtn {
+  padding: 0.5rem 1rem;
+}
+
+.addBtn {
+  padding: 0.5rem 0.8rem;
+}
+
+.showWallet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
+  min-width: fit-content;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.showBlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  width: 100%;
+  min-width: fit-content;
+  align-items: flex-start;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+.blockTitle{
+    font-family: "Mozilla Text", sans-serif;
+    margin: 1.8rem;
+    font-size: 1.4rem;
+}

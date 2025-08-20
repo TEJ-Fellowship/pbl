@@ -1,0 +1,28 @@
+.header{
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Mozilla Text", sans-serif;
+    border-bottom: 1px solid white;
+}
+
+.heading{
+    color: #fff;
+    font-weight: 500;
+}
+
+.btnSimulation{
+    padding: 0.8rem;
+    margin: 0.5rem;
+    border: none;
+    border-radius: 1rem;
+    background-color: #fff;
+    color:black;
+    font-family: inherit;
+}
+
+.btnSimulation:active .btnSimulation:hover{
+    outline: none;
+}

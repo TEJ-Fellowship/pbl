@@ -1,0 +1,197 @@
+/* .blockContainer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin: 1rem;
+  color: white;
+}
+
+.block {
+  background-color: #000;
+  border: 2px solid #333;
+  border-radius: 8px;
+  padding: 24px;
+  width: 350px;
+  color: white;
+  font-family: "Arial", sans-serif;
+  margin: 10px;
+  position: relative;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #ffffff;
+}
+
+.subtitle {
+  color: #888;
+  font-size: 16px;
+  margin-left: 8px;
+}
+
+.fieldLabel {
+  color: #888;
+  font-size: 14px;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+.fieldValue {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 15px;
+}
+
+.column {
+  flex: 1;
+  margin-right: 20px;
+}
+
+.arrow {
+  position: absolute;
+  right: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 15px solid transparent;
+  border-bottom: 15px solid transparent;
+  border-left: 20px solid #fff;
+  z-index: 10;
+} */
+
+/* Block.css - Regular CSS format */
+
+.blockContainer {
+  background-color: #000;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 10px 0;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.blockTitle {
+  color: #fff;
+  margin: 0 0 15px 0;
+  font-size: 1.2em;
+  border-bottom: 2px solid #fff;
+  padding-bottom: 5px;
+}
+
+.blockInfo {
+  margin-bottom: 20px;
+}
+
+.infoRow {
+  margin: 8px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.infoRow strong {
+  color: #fff;
+  min-width: 120px;
+}
+
+.hashText {
+  font-family: "Courier New", monospace;
+  font-size: 0.9em;
+  background-color: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.transactionsSection {
+  margin-top: 20px;
+  border-top: 1px solid #555;
+  padding-top: 15px;
+}
+
+.transactionTitle {
+  color: #fff;
+  margin: 0 0 15px 0;
+  font-size: 1.1em;
+}
+
+.noTransactions {
+  color: #888;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+.transactionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.transaction {
+  background-color: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 15px;
+  border-left: 4px solid #2196f3;
+}
+
+.txnRow {
+  margin: 5px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.txnRow strong {
+  color: #fff;
+  min-width: 80px;
+}
+
+.address {
+  font-family: "Courier New", monospace;
+  background-color: #444;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.signature {
+  font-family: "Courier New", monospace;
+  background-color: #444;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  color: #ffb74d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .infoRow,
+  .txnRow {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .infoRow strong,
+  .txnRow strong {
+    min-width: auto;
+  }
+
+  .hashText {
+    word-break: break-all;
+  }
+}
