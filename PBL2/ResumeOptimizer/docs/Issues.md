@@ -36,7 +36,7 @@ This document tracks project tasks using the following status markers:
 - [ ] Match resume with job description → Fit score & missing keywords  
 - [ ] Weekly insights on trending skills *(Optional)*  
 - [ ] Export AI-optimized resume as PDF *(Optional)*  
-- [ ] Side-by-side comparison: Resume vs Job Description *(Optional)*  
+- [ ] Side-by-side comparison: Resume vs Job Description *(Optional)* 
 
 ---
 

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
+  const [title, setTitle] = useState("");
+  const [notes, setNotes] = useState("");
   const [uploadDate, setUploadDate] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -9,8 +13,9 @@ const Home = () => {
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
+  ]; 
 
+  // Validate file type
   const validateFile = (selectedFile) => {
     if (!allowedTypes.includes(selectedFile.type)) {
       alert("Please select PDF or DOCX files only!");
@@ -23,11 +28,13 @@ const Home = () => {
     return true;
   };
 
+  // File select via input
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) validateFile(selectedFile);
   };
 
+  // Drag & Drop
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -44,14 +51,45 @@ const Home = () => {
     setIsDragging(false);
   };
 
-  const handleUpload = () => {
+  // Upload to backend
+  const handleUpload = async () => {
+    if (!title || title.trim() === "") {
+      alert("Please enter a title!");
+      return;
+    }
+
     if (!file) {
       alert("Please select a file before uploading!");
       return;
     }
-    alert(
-      `File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`
-    );
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("title", title);
+      formData.append("notes", notes);
+
+      const response = await fetch("http://localhost:5000/api/resumes", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const confirmUpload = window.confirm(
+          `File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`
+        );
+        if (confirmUpload) {
+          navigate("/resume");
+        }
+      } else {
+        alert("Error uploading resume! " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading resume! " + err.message);
+    }
   };
 
   return (
@@ -67,11 +105,13 @@ const Home = () => {
         {/* Resume Title */}
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700">
-            Resume Title
+            Resume Title*
           </label>
           <input
             type="text"
             placeholder="e.g., Software Engineer Resume"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -83,6 +123,8 @@ const Home = () => {
           </label>
           <textarea
             placeholder="Add any notes about this resume"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
           ></textarea>
@@ -92,7 +134,9 @@ const Home = () => {
         <div className="mt-6">
           <div
             className={`border-2 border-dashed rounded-lg p-6 text-center transition ${
-              isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
+              isDragging
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300"
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
