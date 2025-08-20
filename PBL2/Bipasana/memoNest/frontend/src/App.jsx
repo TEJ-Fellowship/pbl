@@ -10,7 +10,7 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import Account from './pages/Account.jsx';
 
 function App() {
-  const [isLoggedIn,setIsLoggedIn] = useState(false)
+  const [isLoggedIn,setIsLoggedIn] = useState(true)
   
   return (
     <>
@@ -28,12 +28,10 @@ function App() {
         } />
         <Route path = "login" element= {<Login />} />
         <Route path = "signup" element= {<Signup />} />
-        <Route path = "account" element= {<ProtectedRoute isLoggedIn={isLoggedIn} >
+        <Route path = "account" element= {<ProtectedRoute  isLoggedIn={isLoggedIn} >
           <Account />
         </ProtectedRoute>} />
       </Route>
-      
-
     </Routes>
     </BrowserRouter>
     </>
