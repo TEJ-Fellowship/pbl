@@ -1,0 +1,11 @@
+/* Hide default date input icon in Chrome, Safari, Edge */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  display: none;
+  -webkit-appearance: none;
+}
+
+/* Hide in Firefox */
+input[type="date"] {
+  -moz-appearance: textfield;
+}
