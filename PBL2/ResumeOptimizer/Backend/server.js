@@ -61,4 +61,25 @@ app.get("/api/resumes", async (req, res) => {
   res.json(resumes);
 });
 
+
+// DELETE route: Remove resume by ID
+app.delete("/api/resumes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find and delete resume by ID
+    const deletedResume = await Resume.findByIdAndDelete(id);
+
+    if (!deletedResume) {
+      return res.status(404).json({ success: false, error: "Resume not found" });
+    }
+
+    res.json({ success: true, message: "Resume deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting resume:", err);
+    res.status(500).json({ success: false, error: "Failed to delete resume" });
+  }
+});
+
+
 app.listen(5000, () => console.log("✅ Server running on http://localhost:5000"));
