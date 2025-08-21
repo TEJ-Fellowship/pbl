@@ -5,11 +5,15 @@ const GenreSelector = ({ selectedGenres, setSelectedGenres }) => {
   const genres = [
     "Fiction",
     "Non-Fiction",
-    "Science",
+    "Sci-Fi",
     "Fantasy",
     "Biography",
     "Mystery",
     "Self-Help",
+    "Comedy",
+    "Romance",
+    "Horror",
+    "Art and Fashion"
   ];
 
   const toggleGenre = (genre) => {
