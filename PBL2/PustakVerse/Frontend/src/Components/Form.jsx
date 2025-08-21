@@ -26,7 +26,7 @@ const Form = ({ onClose, onAddBook }) => {
     };
 
     try {
-      const res = await fetch("http://localhost:3001/api/books", {
+      const res = await fetch("http://localhost:3001/books", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
