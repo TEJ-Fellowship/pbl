@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./Components/Navbar";
@@ -8,6 +8,14 @@ import Form from "./Components/Form";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
+
+  // ⬅ Lifted state here
+  useEffect(() => {
+    fetch("http://localhost:3001/books")
+      .then((res) => res.json())
+      .then((data) => setBooks(data))
+      .catch((err) => console.error(err));
+  }, []);
   const [books, setBooks] = useState([]);
   const [editingBook, setEditingBook] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -41,10 +49,13 @@ function App() {
         darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"
       }`}
     >
+      {/* Pass down state and setter */}
       {/* Navbar triggers form */}
       <Navbar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
+        books={books}
+        setBooks={setBooks}
         onAddClick={() => {
           setEditingBook(null);
           setShowForm(true);
@@ -53,6 +64,11 @@ function App() {
 
       {/* Routes */}
       <Routes>
+        
+        <Route
+          path="/mybooks"
+          element={<MyBooks books={books} setBooks={setBooks} />}
+        />
         <Route
           path="/"
           element={
@@ -60,10 +76,11 @@ function App() {
               books={books}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              setBooks={setBooks}
             />
           }
         />
-        <Route path="/mybooks" element={<MyBooks />} />
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 

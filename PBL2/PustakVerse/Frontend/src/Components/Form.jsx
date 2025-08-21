@@ -24,8 +24,9 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
     }
   }, [initialData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
     onAddBook({
       title,
       author,
@@ -36,6 +37,27 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
       favorite,
       cover,
     });
+  }
+      
+
+    try {
+      const res = await fetch("http://localhost:3001/books", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newBook),
+      });
+
+      if (!res.ok) throw new Error("Failed to add book");
+
+      const savedBook = await res.json();
+      onAddBook(savedBook); // Add the book to your React state
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Check console.");
+    }
   };
 
   return (
