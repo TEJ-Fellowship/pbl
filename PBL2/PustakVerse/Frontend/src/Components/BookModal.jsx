@@ -12,10 +12,22 @@ const BookModal = ({ book, onClose }) => {
         className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-lg p-6 max-w-3xl w-full overflow-y-auto flex flex-col md:flex-row gap-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left: Cover Placeholder */}
-        <div className="w-full md:w-1/3 h-auto min-h-[200px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded">
-          <span className="text-gray-500">No Cover</span>
-        </div>
+        {/* Left: Cover Image */}
+        {/* <div className="w-full md:w-1/3 h-auto min-h-[200px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded overflow-hidden">
+          {book.cover ? (
+            <img
+              src={
+                book.cover.startsWith("http")
+                  ? book.cover // external URL
+                  : `http://localhost:3001${book.cover}` // uploaded file
+              }
+              alt={book.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-gray-500">No Cover</span>
+          )}
+        </div> */}
 
         {/* Right: Book Details */}
         <div className="flex-1 flex flex-col relative">
@@ -31,7 +43,9 @@ const BookModal = ({ book, onClose }) => {
           <p className="text-gray-600 dark:text-gray-400 mb-2">
             by {book.author}
           </p>
-          <p className="text-sm mb-1">Genres: {book.genre.join(", ")}</p>
+          <p className="text-sm mb-1">
+            Genres: {Array.isArray(book.genre) ? book.genre.join(", ") : "N/A"}
+          </p>
           <p className="text-sm mb-2">Year: {book.year}</p>
           <p className="text-sm mb-2">⭐ {book.rating}</p>
           {book.favorite && <p className="text-pink-500 mb-2">❤️ Favorite</p>}

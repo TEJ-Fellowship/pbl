@@ -9,59 +9,59 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
   const [description, setDescription] = useState(initialData?.description || "");
   const [rating, setRating] = useState(initialData?.rating || "");
   const [favorite, setFavorite] = useState(initialData?.favorite || false);
-  const [cover, setCover] = useState(initialData?.cover || null);
+  // const [cover, setCover] = useState(initialData?.cover || null);
 
   useEffect(() => {
     if (initialData) {
-      setTitle(initialData.title);
-      setAuthor(initialData.author);
-      setGenre(initialData.genre);
-      setYear(initialData.year);
-      setDescription(initialData.description);
-      setRating(initialData.rating);
-      setFavorite(initialData.favorite);
-      setCover(initialData.cover);
+      setTitle(initialData.title || "");
+      setAuthor(initialData.author || "");
+      setGenre(initialData.genre || []);
+      setYear(initialData.year || "");
+      setDescription(initialData.description || "");
+      setRating(initialData.rating || "");
+      setFavorite(initialData.favorite || false);
+      // setCover(initialData.cover || null);
     }
   }, [initialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    onAddBook({
-      title,
-      author,
-      genre,
-      year,
-      description,
-      rating,
-      favorite,
-      cover,
-    });
-  }
-      
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("author", author);
+    formData.append("year", year);
+    formData.append("description", description);
+    formData.append("rating", rating);
+    formData.append("favorite", favorite);
+    formData.append("genre", JSON.stringify(genre));
+
+    // if (cover && cover instanceof File) {
+    //   formData.append("cover", cover);
+    // }
 
     try {
       const res = await fetch("http://localhost:3001/books", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newBook),
+        method: initialData ? "PUT" : "POST",
+        body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to add book");
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Failed to save book: ${errText}`);
+      }
 
       const savedBook = await res.json();
-      onAddBook(savedBook); // Add the book to your React state
+      onAddBook(savedBook);
       onClose();
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Check console.");
+      console.error("❌ Submit error:", err);
+      alert("Submit failed: " + err.message);
     }
   };
 
   return (
-    <div className="max-w-md w-full mx-4 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-lg">
+    <div className="max-w-md w-full mx-4 p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-lg relative">
       <form onSubmit={handleSubmit} className="space-y-3">
         <button
           type="button"
@@ -78,6 +78,7 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="border p-2 w-full rounded"
+          required
         />
         <input
           type="text"
@@ -85,10 +86,11 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
           className="border p-2 w-full rounded"
+          required
         />
 
-        <label className="block mb-1 font-semibold">Add Cover Image</label>
-        <div className="flex items-center gap-2">
+        {/* <label className="block mb-1 font-semibold">Add Cover Image</label> */}
+        {/* <div className="flex items-center gap-2">
           <button
             type="button"
             className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
@@ -96,15 +98,15 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
           >
             Choose Cover
           </button>
-          <span>{cover ? cover.name : "No file chosen"}</span>
-        </div>
-        <input
+          <span>{cover ? (cover.name || cover) : "No file chosen"}</span>
+        </div> */}
+        {/* <input
           type="file"
           accept="image/*"
           id="coverInput"
           onChange={(e) => setCover(e.target.files[0])}
           className="hidden"
-        />
+        /> */}
 
         <label className="block mb-1 font-semibold">Select Genres</label>
         <GenreSelector selectedGenres={genre} setSelectedGenres={setGenre} />
@@ -123,7 +125,7 @@ const Form = ({ onClose, onAddBook, initialData = null, titleText = "Add Book" }
           className="border p-2 w-full rounded"
         />
         <input
-          type="text"
+          type="number"
           min="0"
           max="5"
           placeholder="Rating (1-5)"
