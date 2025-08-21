@@ -18,6 +18,25 @@ export default function Resume() {
     fetchResumes();
   }, []);
 
+async function handelDelete(id) {
+  try {
+    const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete resume");
+    }
+
+    // Update frontend state after backend confirms deletion
+    setResumes((prev) => prev.filter((resume) => resume._id !== id));
+  } catch (err) {
+    console.error("Error deleting resume:", err);
+    alert("Could not delete resume. Please try again.");
+  }
+}
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navbar */}
@@ -77,7 +96,7 @@ export default function Resume() {
                   </td>
                   <td className="px-6 py-4 space-x-3 text-blue-600">
                     <button onClick={() => navigate("/preview")}>Preview</button>
-                    <button className="text-red-500">Delete</button>
+                    <button className="text-red-500" onClick={()=>handelDelete(resume._id)}>Delete</button>
                   </td>
                 </tr>
               ))}
