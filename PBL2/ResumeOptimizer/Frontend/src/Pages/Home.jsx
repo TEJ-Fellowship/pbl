@@ -113,7 +113,9 @@ const Home = () => {
 
         {/* Notes */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Notes (Optional)
+          </label>
           <textarea
             placeholder="Add any notes about this resume"
             value={notes}
@@ -150,11 +152,20 @@ const Home = () => {
           )}
         </div>
 
-        {/* Upload Button */}
-        <div className="mt-6 flex justify-end">
+        {/* Upload + See Resumes Buttons */}
+        <div className="mt-6 flex justify-between items-center">
+          {/* See your resumes button (green, left/middle side) */}
+          <button
+            onClick={() => navigate("/resume")}
+            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 active:scale-95 transition"
+          >
+            See Previous Resume
+          </button>
+
+          {/* Upload button (blue, right side) */}
           <button
             onClick={handleUpload}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:scale-95 transition"
           >
             Upload
           </button>

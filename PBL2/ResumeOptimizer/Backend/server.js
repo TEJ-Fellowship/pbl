@@ -9,7 +9,10 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection (clean, no deprecated options)
-mongoose.connect("mongodb://127.0.0.1:27017/resumes");
+// mongoose.connect("mongodb://127.0.0.1:27017/resumes");
+mongoose.connect('mongodb+srv://ashok:password98765@cluster0.3prgcdv.mongodb.net/CvDetails?retryWrites=true&w=majority&appName=Cluster0').then(()=>{
+  console.log('Database successfully connected')
+}).catch((error)=> console.log('Error connecting database', error.message))
 
 // Schema & Model
 const resumeSchema = new mongoose.Schema({
