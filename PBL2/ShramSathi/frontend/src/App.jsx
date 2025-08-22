@@ -6,9 +6,11 @@ function App() {
   const [activeSection, setActiveSection] = useState("dashboard")
 
   return (
-    <>
-    <DashboardLayout activeSection={activeSection} setActiveSection={setActiveSection}/>
-    </>
+    <div className="m-0 p-0"> 
+
+      <DashboardLayout activeSection={activeSection} setActiveSection={setActiveSection}/>
+    </div>
+
   )
 }
 
