@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+// Components/Form/Form.jsx
+import React, { useState, useEffect } from "react";
 import GenreSelector from "./GenreSelector";
 
-const Form = ({ onClose, onAddBook }) => {
+// MODIFIED: Added editingBook prop for edit functionality
+const Form = ({ onClose, onAddBook, editingBook }) => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [genre, setGenre] = useState([]);
@@ -11,10 +13,23 @@ const Form = ({ onClose, onAddBook }) => {
   const [favorite, setFavorite] = useState(false);
   // const [cover, setCover] = useState(null);
 
+  // ADDED: useEffect to populate form when editing
+  useEffect(() => {
+    if (editingBook) {
+      setTitle(editingBook.title || "");
+      setAuthor(editingBook.author || "");
+      setGenre(editingBook.genre || []);
+      setYear(editingBook.year || "");
+      setDescription(editingBook.description || "");
+      setRating(editingBook.rating || "");
+      setFavorite(editingBook.favorite || false);
+    }
+  }, [editingBook]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const newBook = {
+    const bookData = {
       title,
       author,
       genre,
@@ -26,22 +41,42 @@ const Form = ({ onClose, onAddBook }) => {
     };
 
     try {
-      const res = await fetch("http://localhost:3001/books", {
-        method: "POST",
+      // MODIFIED: Handle both add and edit operations
+      let url, method;
+
+      if (editingBook) {
+        // For editing, use the book's ID (json-server uses 'id', not '_id')
+        const bookId = editingBook.id || editingBook._id;
+        url = `http://localhost:3001/books/${bookId}`;
+        method = "PUT";
+        console.log("Updating book with ID:", bookId); // Debug log
+      } else {
+        // For adding new book
+        url = "http://localhost:3001/books";
+        method = "POST";
+        console.log("Adding new book"); // Debug log
+      }
+
+      const res = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newBook),
+        body: JSON.stringify(bookData),
       });
 
-      if (!res.ok) throw new Error("Failed to add book");
+      if (!res.ok) {
+        console.error("API response status:", res.status);
+        throw new Error(`Failed to ${editingBook ? "update" : "add"} book`);
+      }
 
       const savedBook = await res.json();
-      onAddBook(savedBook); // Add the book to your React state
+      console.log("API response:", savedBook); // Debug log
+      onAddBook(savedBook); // Add/Update the book in React state
       onClose();
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Check console.");
+      console.error("Form submission error:", err);
+      alert("Something went wrong. Check console for details.");
     }
   };
 
@@ -58,7 +93,8 @@ const Form = ({ onClose, onAddBook }) => {
         X
       </button>
 
-      <h2>Add a book</h2>
+      {/* MODIFIED: Dynamic title based on edit/add mode */}
+      <h2>{editingBook ? "Edit Book" : "Add a Book"}</h2>
       <input
         type="text"
         placeholder="Title"
@@ -133,7 +169,8 @@ const Form = ({ onClose, onAddBook }) => {
         type="submit"
         className="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition-colors"
       >
-        Submit
+        {/* MODIFIED: Dynamic button text */}
+        {editingBook ? "Update" : "Submit"}
       </button>
     </form>
   );
