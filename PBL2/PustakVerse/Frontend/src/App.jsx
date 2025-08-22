@@ -16,7 +16,7 @@ function App() {
       .catch((err) => console.error(err));
   }, []);
   return (
-    <divBirthday
+    <div
       className={`min-h-screen transition-colors duration-300 ${
         darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"
       }`}
@@ -37,7 +37,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </divBirthday>
+    </div>
   );
 }
 
