@@ -3,6 +3,7 @@ import NewJournalCard from "../components/NewJournalCard";
 import FlashBack from "../components/FlashBack";
 import Filter from "../components/FIlter";
 import Journal from "../components/Journal";
+import JournalForm from "../components/JournalForm";
 function Dashboard() {
   return (
     <div>
@@ -10,6 +11,7 @@ function Dashboard() {
       <FlashBack />
       <Filter  />
       <Journal />
+      <JournalForm />
     </div>
   )
 }
