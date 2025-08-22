@@ -1,8 +1,9 @@
 import React from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { SunIcon, MoonIcon, MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline";
+import Search from "./Search"
 
-const Navbar = ({ darkMode, setDarkMode, onAddClick }) => {
+const Navbar = ({ darkMode, setDarkMode, onAddClick, searchTerm, setSearchTerm }) => {
   const navigate = useNavigate();
 
   const handleThemeToggle = () => {
@@ -67,12 +68,8 @@ const Navbar = ({ darkMode, setDarkMode, onAddClick }) => {
           </button>
 
           <div className="relative">
-            <input
-              type="text"
-              placeholder="Search books..."
-              className="pl-10 pr-4 py-1 rounded-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:text-gray-200 transition-colors"
-            />
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300" />
+            <Search  searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
+            <MagnifyingGlassIcon className="w-5 h-5 absolute left-1 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300" />
           </div>
 
           <button

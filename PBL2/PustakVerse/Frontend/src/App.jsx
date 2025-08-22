@@ -11,6 +11,7 @@ function App() {
   const [books, setBooks] = useState([]);
   const [editingBook, setEditingBook] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Add or edit book
   const handleAddBook = (book) => {
@@ -49,6 +50,8 @@ function App() {
           setEditingBook(null);
           setShowForm(true);
         }}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
       />
 
       {/* Routes */}
@@ -57,7 +60,9 @@ function App() {
           path="/"
           element={
             <Home
-              books={books}
+              books={books.filter((book) => 
+              book.title.toLowerCase().includes(searchTerm.toLowerCase())
+            )}
               onDelete={handleDelete}
               onEdit={handleEdit}
             />
