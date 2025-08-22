@@ -1,13 +1,13 @@
-import './App.css'
-import Dashboard from './components/Dashboard'
-import {useState} from "react"
+import './App.css';
+import DashboardLayout from './components/DashboardLayout.jsx';
+import {useState} from "react";
 function App() {
 
-  const [activeSection,setActiveSection] = useState("dashboard")
+  const [activeSection, setActiveSection] = useState("dashboard")
 
   return (
     <>
-    <Dashboard activeSection={activeSection} setActiveSection={setActiveSection}/>
+    <DashboardLayout activeSection={activeSection} setActiveSection={setActiveSection}/>
     </>
   )
 }
