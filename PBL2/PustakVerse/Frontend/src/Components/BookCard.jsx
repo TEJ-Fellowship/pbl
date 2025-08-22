@@ -1,35 +1,11 @@
 // Components/Home/BookCard.jsx
 import React from "react";
-// ADDED: Import icons for edit and delete buttons
-import { PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+// MODIFIED: Updated icons import to use solid icons
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";
 
 // MODIFIED: Added onEdit and onDelete props
 const BookCard = ({ book, onEdit, onDelete }) => (
   <div className="border rounded-lg shadow p-4 bg-white dark:bg-gray-800 relative group">
-    {/* ADDED: Edit and Delete buttons - visible on hover */}
-    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
-      <button
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent modal from opening
-          onEdit(book);
-        }}
-        className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        title="Edit book"
-      >
-        <PencilIcon className="w-4 h-4" />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation(); // Prevent modal from opening
-          onDelete(book);
-        }}
-        className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-        title="Delete book"
-      >
-        <TrashIcon className="w-4 h-4" />
-      </button>
-    </div>
-
     {/* {book.cover ? (
       <img
         src={URL.createObjectURL(book.cover)}
@@ -47,6 +23,30 @@ const BookCard = ({ book, onEdit, onDelete }) => (
     <p className="text-sm">Year: {book.year}</p>
     <p className="text-sm">⭐ {book.rating}</p>
     {book.favorite && <p className="text-pink-500">❤️ Favorite</p>}
+
+    {/* MODIFIED: Moved Edit and Delete buttons to bottom right */}
+    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent modal from opening
+          onEdit(book);
+        }}
+        className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        title="Edit book"
+      >
+        <PencilSquareIcon className="w-4 h-4" />
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent modal from opening
+          onDelete(book);
+        }}
+        className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        title="Delete book"
+      >
+        <TrashIcon className="w-4 h-4" />
+      </button>
+    </div>
   </div>
 );
 
