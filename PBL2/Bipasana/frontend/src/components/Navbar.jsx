@@ -1,10 +1,13 @@
 import React from "react";
+import { useState } from "react";
 // import { useContext } from "react";
 // import { AuthContext } from "../AuthContext";
 // import { ThemeContext } from "../ThemeContext";
 function Navbar() {
-  let isLoggedIn=true;
-  let isDark=false
+  // let isLoggedIn=false;
+  let isDark=false;
+  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  // const [isDark,setIsDark] = useState(false)
   // const { isLoggedIn, logout } = useContext(AuthContext);
   // const { isDark, handleToggle } = useContext(ThemeContext);
   return (
@@ -21,15 +24,9 @@ function Navbar() {
                 <img
                   src="/logo.png"
                   alt="Your Company"
-                  className="h-12 w-auto"
+                  className="h-[128px] w-[160px]"
                 />
               </a>
-              <span
-                className="text-3xl italic"
-                style={{ fontFamily: "'Dancing Script', cursive" }}
-              >
-               MemoNest
-              </span>
             </div>
             {isLoggedIn ? (
               <div
@@ -83,10 +80,11 @@ function Navbar() {
 
                 <div className="flex items-center space-x-1">
                   <img
-                    src={isDark ? "/streakdark.png" : "/theme.png"}
+                  // onclick = {setIsDark(!isDark)}
+                    src={isDark ? "/streakdark.png" : "/sun.png"}
                     alt="theme"
                  
-                    className="h-5 w-4 transform -rotate-6 hover:cursor-pointer"
+                    className="h-8 w-8 transform -rotate-6 hover:cursor-pointer"
                   />
                 </div>
 
@@ -97,7 +95,9 @@ function Navbar() {
                     className="h-8 w-8 rounded-full"
                   />
                 </button>
-                <button
+                <button onClick={()=>{
+                  setIsLoggedIn(!isLoggedIn)
+                }}
               
                   className={`rounded-md px-3 py-2 text-md font-medium ${
                     isDark
@@ -132,11 +132,10 @@ function Navbar() {
                     SignUp
                   </a>
                      <div className="flex items-center space-x-1">
-                  <img
-                    src={isDark ? "/streakdark.png" : "/theme.png"}
+                  <img                   
+                    src={isDark ? "/streakdark.png" : "/sun.png"}
                     alt="theme"
-                   
-                    className="h-5 w-4 transform -rotate-6 hover:cursor-pointer"
+                    className="h-8 w-8 transform -rotate-6 hover:cursor-pointer"
                   />
                 </div>
                 </div>
@@ -148,5 +147,4 @@ function Navbar() {
     </div>
   );
 }
-
 export default Navbar;
