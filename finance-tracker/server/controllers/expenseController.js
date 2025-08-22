@@ -45,6 +45,7 @@ exports.getAllExpense = async (req, res) => {
 //Delete expense
 exports.deleteExpense = async (req, res) => {
     const userId = req.user.id;
+    const { id } = req.params;
 
     try {
         const expense = await Expense.findOneAndDelete({ _id: id, userId });

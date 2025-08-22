@@ -45,6 +45,7 @@ exports.getAllIncome = async (req, res) => {
 //Delete income source
 exports.deleteIncome = async (req, res) => {
     const userId = req.user.id;
+    const { id } = req.params;
 
     try {
         const income = await Income.findOneAndDelete({ _id: id, userId });
