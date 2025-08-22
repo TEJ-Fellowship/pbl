@@ -1,4 +1,4 @@
-// Components/Home/Home.jsx
+// Components/Home.jsx
 import React from "react";
 import BookGrid from "./BookGrid";
 

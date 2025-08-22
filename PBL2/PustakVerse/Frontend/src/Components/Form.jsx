@@ -1,4 +1,4 @@
-// Components/Form/Form.jsx
+// Components/Form.jsx
 import React, { useState, useEffect } from "react";
 import GenreSelector from "./GenreSelector";
 
@@ -33,9 +33,9 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
       title,
       author,
       genre,
-      year,
+      year: Number(year), // <-- convert here
       description,
-      rating,
+      rating: Number(rating), // <-- convert here
       favorite,
       // cover: cover ? cover.name : null, // We'll just store the filename for now
     };
@@ -47,12 +47,12 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
       if (editingBook) {
         // For editing, use the book's ID (json-server uses 'id', not '_id')
         const bookId = editingBook.id || editingBook._id;
-        url = `http://localhost:3001/books/${bookId}`;
+        url = `http://localhost:3001/api/books/${bookId}`;
         method = "PUT";
         console.log("Updating book with ID:", bookId); // Debug log
       } else {
         // For adding new book
-        url = "http://localhost:3001/books";
+        url = "http://localhost:3001/api/books";
         method = "POST";
         console.log("Adding new book"); // Debug log
       }
@@ -146,7 +146,7 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         className="border p-2 w-full"
       />
       <input
-        type="text"
+        type="number"
         min="0"
         max="5"
         placeholder="Rating (1-5)"

@@ -1,4 +1,4 @@
-// Components/Home/BookCard.jsx
+// Components/BookCard.jsx
 import React from "react";
 // MODIFIED: Updated icons import to use solid icons
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/solid";

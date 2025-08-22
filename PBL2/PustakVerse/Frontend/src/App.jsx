@@ -10,7 +10,7 @@ function App() {
   // ⬅ Lifted state here
   const [books, setBooks] = useState([]);
   useEffect(() => {
-    fetch("http://localhost:3001/books")
+    fetch("http://localhost:3001/api/books")
       .then((res) => res.json())
       .then((data) => setBooks(data))
       .catch((err) => console.error(err));

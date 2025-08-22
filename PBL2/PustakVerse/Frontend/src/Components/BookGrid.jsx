@@ -1,4 +1,4 @@
-// Components/Home/BookGrid.jsx
+// Components/BookGrid.jsx
 import React, { useState } from "react";
 import BookCard from "./BookCard";
 import BookModal from "./BookModal";
@@ -7,6 +7,8 @@ import Form from "./Form";
 
 // MODIFIED: Added setBooks prop for updating the books state
 const BookGrid = ({ books, setBooks }) => {
+  if (!Array.isArray(books) || books.length === 0)
+    return <p className="text-gray-500">No books added yet.</p>;
   const [selectedBook, setSelectedBook] = useState(null); // state for modal
   // ADDED: States for edit functionality
   const [editingBook, setEditingBook] = useState(null);
@@ -22,7 +24,7 @@ const BookGrid = ({ books, setBooks }) => {
   const handleDelete = async (book) => {
     if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
       try {
-        const res = await fetch(`http://localhost:3001/books/${book._id}`, {
+        const res = await fetch(`http://localhost:3001/api/books/${book._id}`, {
           method: "DELETE",
         });
 
