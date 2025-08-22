@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 
 export default function Resume() {
   const navigate = useNavigate();
-  const [resumes, setResumes] = useState([]);
+  const [resumes, setResumes] = useState([]); // all resumes from backend
+  const [query, setQuery] = useState(""); // search text
+  const [toggle, setToggle] = useState(false); // controls search vs all
 
+  // Fetch all resumes once
   useEffect(() => {
     const fetchResumes = async () => {
       try {
@@ -18,24 +21,40 @@ export default function Resume() {
     fetchResumes();
   }, []);
 
-async function handelDelete(id) {
-  try {
-    const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
-      method: "DELETE",
-    });
+  // Delete function
+  async function handelDelete(id) {
+    try {
+      const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
+        method: "DELETE",
+      });
 
-    if (!res.ok) {
-      throw new Error("Failed to delete resume");
+      if (!res.ok) {
+        throw new Error("Failed to delete resume");
+      }
+
+      // Update frontend state after backend confirms deletion
+      setResumes((prev) => prev.filter((resume) => resume._id !== id));
+    } catch (err) {
+      console.error("Error deleting resume:", err);
+      alert("Could not delete resume. Please try again.");
     }
-
-    // Update frontend state after backend confirms deletion
-    setResumes((prev) => prev.filter((resume) => resume._id !== id));
-  } catch (err) {
-    console.error("Error deleting resume:", err);
-    alert("Could not delete resume. Please try again.");
   }
-}
 
+  // Whenever query changes decide whether to toggle search
+  useEffect(() => {
+    if (query.trim() === "") {
+      setToggle(false); // show all
+    } else {
+      setToggle(true); // show filtered
+    }
+  }, [query]);
+
+  // Filter logic (title + notes search)
+  const filtered = resumes.filter(
+    (resume) =>
+      resume.title.toLowerCase().includes(query.toLowerCase()) ||
+      (resume.notes && resume.notes.toLowerCase().includes(query.toLowerCase()))
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,6 +87,8 @@ async function handelDelete(id) {
             type="text"
             placeholder="Search"
             className="bg-transparent outline-none w-full"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </div>
 
@@ -88,7 +109,7 @@ async function handelDelete(id) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-sm">
-              {resumes.map((resume) => (
+              {(toggle ? filtered : resumes).map((resume) => (
                 <tr key={resume._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">{resume.title}</td>
                   <td className="px-6 py-4 text-blue-600">
@@ -96,10 +117,24 @@ async function handelDelete(id) {
                   </td>
                   <td className="px-6 py-4 space-x-3 text-blue-600">
                     <button onClick={() => navigate("/preview")}>Preview</button>
-                    <button className="text-red-500" onClick={()=>handelDelete(resume._id)}>Delete</button>
+                    <button
+                      className="text-red-500"
+                      onClick={() => handelDelete(resume._id)}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
+
+              {/* If searching but nothing found */}
+              {toggle && filtered.length === 0 && (
+                <tr>
+                  <td colSpan="3" className="px-6 py-4 text-gray-500 text-center">
+                    No results found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -107,4 +142,3 @@ async function handelDelete(id) {
     </div>
   );
 }
-
