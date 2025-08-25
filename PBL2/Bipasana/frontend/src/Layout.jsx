@@ -1,15 +1,15 @@
 import React from 'react'
 import Navbar from './components/Navbar'
 import { Outlet } from 'react-router-dom'
-function Layout () {
+function Layout ({setIsLoggedIn, isLoggedIn}) {
   return (
     <div>
-        <Navbar />
-        <main>
+        <Navbar setIsLoggedIn={setIsLoggedIn} isLoggedIn={isLoggedIn}/>
+        
             <Outlet />
-        </main>
     </div>
   )
 }
 
 export default Layout
+

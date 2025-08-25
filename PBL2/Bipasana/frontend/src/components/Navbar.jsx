@@ -1,12 +1,13 @@
 import React from "react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 // import { useContext } from "react";
 // import { AuthContext } from "../AuthContext";
 // import { ThemeContext } from "../ThemeContext";
-function Navbar() {
+function Navbar({setIsLoggedIn, isLoggedIn}) {
   // let isLoggedIn=false;
   let isDark=false;
-  const [isLoggedIn, setIsLoggedIn] = useState(true)
+  // const [isLoggedIn, setIsLoggedIn] = useState(true)
   // const [isDark,setIsDark] = useState(false)
   // const { isLoggedIn, logout } = useContext(AuthContext);
   // const { isDark, handleToggle } = useContext(ThemeContext);
@@ -35,8 +36,8 @@ function Navbar() {
                 }`}
               >
                 <div className="hidden text-md sm:flex mr-16 space-x-4">
-                  <a
-                    href="#"
+                  <Link
+                    to="/Quotes"
                     className={`rounded-md px-3 py-2  font-medium ${
                       isDark
                         ? "text-white hover:bg-gray-700"
@@ -44,9 +45,9 @@ function Navbar() {
                     }`}
                   >
                     Quotes
-                  </a>
-                  <a
-                    href="#"
+                  </Link>
+                  <Link
+                    to="/Homepage"
                     className={`rounded-md px-3 py-2  font-medium ${
                       isDark
                         ? "text-white hover:bg-gray-700"
@@ -54,7 +55,7 @@ function Navbar() {
                     }`}
                   >
                   Home
-                  </a>
+                  </Link>
                   <a
                     href="#"
                     className={`rounded-md px-3 py-2  font-medium ${

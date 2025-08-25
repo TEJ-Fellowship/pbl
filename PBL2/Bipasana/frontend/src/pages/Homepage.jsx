@@ -4,7 +4,7 @@ import Card from '../components/Card';
 
 const Homepage = () => {
   return (
-    <div className="min-h-screen px-44 bg-[#FFF8F9]">
+    <div className="min-h-screen max-w-[1080px] mx-auto ">
 
       {/* Hero Section */}
       <div className="relative">
