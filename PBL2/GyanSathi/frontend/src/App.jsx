@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { Route, Routes, useNavigate } from "react-router";
 import Home from "./pages/Home";
-import Hero from "./pages/Hero";
+import Tips from "./pages/Tips";
 import toast from "react-hot-toast";
 import axios from "axios";
 import Navbar from "./components/Navbar";
@@ -70,7 +70,7 @@ function App() {
           path="/create"
           element={<Create handleSubmit={handleSubmit} />}
         />
-        <Route path="/hero" element={<Hero />} />
+        <Route path="/tips" element={<Tips />} />
       </Routes>
     </>
   );
