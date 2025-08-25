@@ -1,8 +1,81 @@
 import { Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ManageProperty = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [propertyDetail, setPropertyDetail] = useState({
+    title: "",
+    description: "",
+    price: "",
+    parking: "",
+    features: [],
+    beds: 0,
+    propertyType: "",
+    location: "",
+    images: [],
+  });
+  const [properties, setProperties] = useState([]);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/properties/get-all-property"
+        );
+        const data = await response.json();
+        setProperties(data);
+        console.log(data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target; //returns the name of input and value of inputs
+    setPropertyDetail((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  
+
+  const handleSubmit = async () => {
+    const formData = new FormData();
+
+    /* 
+    FormData is a builtin javascript object to send data(files, images) over HTTP
+
+    Json doesn't includes files
+
+    we could also do the regular way for other field but we have to call api 2 times,
+    which is not optimal
+  */
+
+    Object.keys(propertyDetail).forEach((key) => {
+      if (key !== "images") {
+        formData.append(key, propertyDetail[key]);
+      }
+    });
+
+    for (let i = 0; i < propertyDetail.images.length; i++) {
+      formData.append("images", propertyDetail.images[i]);
+    }
+
+    const response = await fetch(
+      "http://localhost:5000/api/properties/add-property",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+    console.log(data);
+  };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -58,106 +131,45 @@ const ManageProperty = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-t border-t-gray-200 hover:bg-gray-50">
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Cozy 2-Bedroom Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      $180000
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-nnoraml leading-normal">
-                      Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Kupondole, Achaar Ghar
-                    </td>
-                    <td className="h-16 px-4 py-2">
-                      <div className="flex gap-2">
-                        <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                          Edit
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button className="text-red-600 text-sm font-medium hover:text-red-800">
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-t border-t-gray-200 hover:bg-gray-50">
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Cozy 2-Bedroom Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      $180000
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-nnoraml leading-normal">
-                      Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Kupondole, Achaar Ghar
-                    </td>
-                    <td className="h-16 px-4 py-2">
-                      <div className="flex gap-2">
-                        <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                          Edit
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button className="text-red-600 text-sm font-medium hover:text-red-800">
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-t border-t-gray-200 hover:bg-gray-50">
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Cozy 2-Bedroom Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      $180000
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-nnoraml leading-normal">
-                      Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Kupondole, Achaar Ghar
-                    </td>
-                    <td className="h-16 px-4 py-2">
-                      <div className="flex gap-2">
-                        <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                          Edit
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button className="text-red-600 text-sm font-medium hover:text-red-800">
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-t border-t-gray-200 hover:bg-gray-50">
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Cozy 2-Bedroom Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      $180000
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-nnoraml leading-normal">
-                      Apartment
-                    </td>
-                    <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                      Kupondole, Achaar Ghar
-                    </td>
-                    <td className="h-16 px-4 py-2">
-                      <div className="flex gap-2">
-                        <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                          Edit
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button className="text-red-600 text-sm font-medium hover:text-red-800">
-                          Remove
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  {properties.map((property) => (
+                    <tr className="border-t border-t-gray-200 hover:bg-gray-50">
+                      <td
+                        key={property._id}
+                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
+                      >
+                        {property.title}
+                      </td>
+                      <td
+                        key={property._id}
+                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
+                      >
+                        {property.price}
+                      </td>
+                      <td
+                        key={property._id}
+                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
+                      >
+                        {property.propertyType}
+                      </td>
+                      <td
+                        key={property._id}
+                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
+                      >
+                        {property.location}
+                      </td>
+                      <td className="h-16 px-4 py-2">
+                        <div className="flex gap-2">
+                          <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                            Edit
+                          </button>
+                          <span className="text-gray-300">|</span>
+                          <button className="text-red-600 text-sm font-medium hover:text-red-800">
+                            Remove
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -188,8 +200,12 @@ const ManageProperty = () => {
                     Title
                   </label>
                   <input
+                    type="text"
+                    name="title"
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
                     placeholder="Eg., Spacious 3-Bedroom Apartment"
+                    value={propertyDetail.title}
+                    onChange={handleChange}
                   />
                 </div>
 
@@ -198,8 +214,11 @@ const ManageProperty = () => {
                     Description
                   </label>
                   <textarea
+                    name="description"
                     placeholder="Describe your property in detail"
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500 min-h-20 resize-none"
+                    value={propertyDetail.description}
+                    onChange={handleChange}
                   ></textarea>
                 </div>
 
@@ -209,22 +228,93 @@ const ManageProperty = () => {
                       Price
                     </label>
                     <input
+                      name="price"
                       placeholder="eg., 250000"
                       className="w-full px-4 py-3 border border-gray-200 rounded-g text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                      type="text"
+                      value={propertyDetail.price}
+                      onChange={handleChange}
                     />
                   </div>
 
                   <div>
                     <label className="block text-gray-900 text-base font-medium mb-2">
+                      Parking
+                    </label>
+                    <select
+                      name="parking"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                      value={propertyDetail.parking}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select Parking</option>
+                      <option value="true">True</option>
+                      <option value="false">False</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-900 text-base font-medium mb-2">
                       Property Type
                     </label>
-                    <select className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500">
+                    <select
+                      name="propertyType"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                      value={propertyDetail.propertyType}
+                      onChange={handleChange}
+                    >
                       <option value="">Select Property Type</option>
                       <option value="apartment">Apartmnet</option>
                       <option value="house">House</option>
                       <option value="condo">Condo</option>
                       <option value="TownHouse">Town House</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-gray-900 text-base font-medium mb-2">
+                      Beds
+                    </label>
+                    <input
+                      name="beds"
+                      placeholder=""
+                      className="w-full px-4 py-3 border border-gray-200 rounded-g text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                      type="text"
+                      value={propertyDetail.beds}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-gray-900 text-base font-medium mb-2">
+                    Features
+                  </label>
+                  <select
+                    name="features"
+                    multiple
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                    value={propertyDetail.features}
+                    onChange={(e) => {
+                      const selectedOptions = Array.from(
+                        e.target.selectedOptions
+                      ).map((option) => option.value);
+
+                      setPropertyDetail((prev) => ({
+                        ...prev,
+                        features: selectedOptions,
+                      }));
+                    }}
+                  >
+                    <option value="Apartment">Apartmnet</option>
+                    <option value="House">House</option>
+                    <option value="Condo">Condo</option>
+                    <option value="TownHouse">Town House</option>
+                  </select>
+                  <div className="mt-2">
+                    <strong>Selected Categories:</strong>{" "}
+                    {propertyDetail.features.join(", ") || "None"}
                   </div>
                 </div>
 
@@ -233,8 +323,12 @@ const ManageProperty = () => {
                     Location
                   </label>
                   <input
+                    type="text"
+                    name="location"
                     placeholder="e.g., 123 Main Street, Anytown"
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                    value={propertyDetail.location}
+                    onChange={handleChange}
                   />
                 </div>
 
@@ -245,6 +339,13 @@ const ManageProperty = () => {
                   <input
                     type="file"
                     multiple
+                    name="images"
+                    onChange={(e) =>
+                      setPropertyDetail((prev) => ({
+                        ...prev,
+                        images: e.target.files,
+                      }))
+                    }
                     className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-500 hover:file:bg-blue-100"
                   />
                 </div>
@@ -258,7 +359,10 @@ const ManageProperty = () => {
               >
                 Cancel
               </button>
-              <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+              <button
+                onClick={handleSubmit}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
                 Add Property
               </button>
             </div>
