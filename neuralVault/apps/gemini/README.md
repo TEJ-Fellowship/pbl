@@ -82,7 +82,12 @@ python oauth_server.py
 
 # Complete OAuth in browser
 # Visit: http://localhost:8000/auth
+
+# OR use the helper script
+python complete_oauth.py
 ```
+
+**Note**: Only OAuth authentication is needed. No need to run `run.py` for Gemini app integration.
 
 ### **5. Run the Bridge**
 
@@ -246,6 +251,7 @@ neuralVault/apps/gemini/
 
 - Ensure MCP client is properly set up in `../mcp-client/`
 - Check that `gmail_wrapper.py` exists
+- **Note**: Only the MCP client is needed, not the MCP server (`run.py`)
 
 ### **"Authentication required"**
 

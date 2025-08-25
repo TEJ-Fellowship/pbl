@@ -1,27 +1,21 @@
 # MCP Gmail Server
 
-This is a Model Context Protocol (MCP) server that provides Gmail integration capabilities.
+A Model Context Protocol (MCP) server that provides Gmail integration capabilities with OAuth 2.0 authentication.
 
 ## 📁 **Project Structure**
 
 ```
-apps/mcp-server/
-├── main.py              # MCP server (stdio transport)
-├── oauth_server.py      # OAuth authentication server
-├── run.py               # MCP server runner
-├── setup.py             # Initial setup script
+neuralVault/apps/mcp-server/
+├── main.py              # MCP server (stdio transport) - NOT needed for Gemini app
+├── oauth_server.py      # OAuth authentication server - REQUIRED
+├── run.py               # MCP server runner - NOT needed for Gemini app
 ├── config.py            # Configuration management
 ├── gmail_service.py     # Gmail API service
+├── complete_oauth.py    # OAuth helper script
 ├── requirements.txt     # Python dependencies
 ├── .env                 # Environment variables
-├── README.md           # This file
-└── tests/              # Test and debug files
-    ├── run_tests.py    # Test runner
-    ├── test_oauth.py   # OAuth tests
-    ├── debug_oauth.py  # OAuth debugger
-    ├── manual_test.py  # Component tests
-    ├── echo_test.py    # MCP communication tests
-    └── README.md       # Test documentation
+├── .gitignore          # Git ignore rules
+└── README.md           # This file
 ```
 
 ## 🚀 **Quick Start**
@@ -32,64 +26,38 @@ apps/mcp-server/
 pip install -r requirements.txt
 ```
 
-### **2. Setup Google OAuth**
+### **2. Configure Environment**
 
-```bash
-python setup.py
-```
-
-### **3. Configure Environment**
-
-Create a `.env` file with your Google OAuth credentials:
+The `.env` file should contain your Google OAuth credentials:
 
 ```env
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback
+HOST=0.0.0.0
+PORT=8000
 ```
 
-### **4. Run the Servers**
+### **3. Run OAuth Authentication (REQUIRED)**
 
-**Option A: Run MCP server only (for MCP clients):**
-
-```bash
-python run.py
-```
-
-**Option B: Run OAuth server (for web authentication):**
+**For Gemini App Integration:**
 
 ```bash
+# Start OAuth server
 python oauth_server.py
 ```
 
-Then visit http://localhost:8000/auth
+Then visit http://localhost:8000/auth to complete OAuth
 
-## 🧪 **Testing**
-
-### **Run All Tests**
+**OR use the helper script:**
 
 ```bash
-python tests/run_tests.py
+python complete_oauth.py
 ```
 
-### **Individual Tests**
+### **4. That's It!**
 
-```bash
-# OAuth configuration
-python tests/test_oauth.py
-
-# OAuth status checker
-python tests/check_oauth_status.py
-
-# Component tests
-python tests/manual_test.py
-
-# MCP communication
-python tests/echo_test.py
-
-# OAuth debugging
-python tests/debug_oauth.py
-```
+Once OAuth is complete, the Gemini app can use the credentials directly. No need to run `run.py`.
 
 ## 📧 **Features**
 
@@ -98,76 +66,130 @@ python tests/debug_oauth.py
 - **Send Emails** via Gmail
 - **Search Emails** with advanced queries
 - **Manage Email Labels**
-- **MCP Protocol** support for tool calls
+- **OAuth Credentials Management** for client integration
 
-## 🛠️ **MCP Tools**
+## 🔧 **Core Components**
 
-The server provides these tools:
+### **oauth_server.py** ⭐ **REQUIRED**
 
-- `gmail_list_emails` - List emails from Gmail
-- `gmail_read_email` - Read a specific email
-- `gmail_send_email` - Send an email
-- `gmail_search_emails` - Search emails
-- `gmail_get_labels` - Get Gmail labels
+- FastAPI-based OAuth authentication server
+- Handles Google OAuth 2.0 flow
+- Saves credentials to `credentials.json`
+- **This is the only component needed for Gemini app integration**
 
-## 🔧 **Configuration**
+### **complete_oauth.py** ⭐ **HELPER**
 
-### **Environment Variables**
+- Helper script for OAuth authentication
+- Automates OAuth flow completion
+- Tests OAuth server connectivity
 
-- `GOOGLE_CLIENT_ID` - Google OAuth Client ID
-- `GOOGLE_CLIENT_SECRET` - Google OAuth Client Secret
-- `GOOGLE_REDIRECT_URI` - OAuth redirect URI
-- `HOST` - Server host (default: 0.0.0.0)
-- `PORT` - Server port (default: 8000)
+### **config.py**
 
-### **Google Cloud Console Setup**
+- Configuration management
+- Environment variable handling
+- OAuth credential validation
 
-1. Create a project in Google Cloud Console
-2. Enable Gmail API
-3. Create OAuth 2.0 credentials
-4. Add redirect URI: `http://localhost:8000/auth/callback`
-5. Add test user: `sankar.jt68@gmail.com`
+### **gmail_service.py**
+
+- Gmail API integration service
+- Handles email operations (list, search, read, send)
+- Manages OAuth token refresh
+
+### **main.py** ❌ **NOT NEEDED**
+
+- MCP server implementation using stdio transport
+- Only needed for MCP protocol clients
+- **Not used by Gemini app**
+
+### **run.py** ❌ **NOT NEEDED**
+
+- MCP server runner
+- Only needed for MCP protocol clients
+- **Not used by Gemini app**
+
+## 🔒 **Authentication**
+
+The server uses OAuth 2.0 for secure Gmail access:
+
+1. **OAuth Server**: Runs on `http://localhost:8000`
+2. **Credentials Storage**: Saved to `credentials.json`
+3. **Token Refresh**: Automatic token renewal
+4. **Scope**: Full Gmail API access (read, send, modify)
+
+## 🎯 **Integration**
+
+### **With Gemini App** ⭐ **PRIMARY USE CASE**
+
+- Supplies OAuth credentials for Gmail access
+- Enables natural language email management
+- Provides secure authentication flow
+- **Only requires OAuth authentication, no MCP server needed**
+
+### **With MCP Client** (Alternative)
+
+- Provides Gmail operations via MCP protocol
+- Supports function calling for email management
+- Handles authentication automatically
+- **Requires both OAuth authentication AND MCP server**
 
 ## 🚨 **Troubleshooting**
 
-### **Common Issues**
+### **"OAuth server not running"**
 
-1. **"Missing required parameter: redirect_uri"**
+```bash
+python oauth_server.py
+```
 
-   - Add redirect URI in Google Cloud Console
-   - Make sure it matches exactly: `http://localhost:8000/auth/callback`
+### **"Authentication required"**
 
-2. **"Access blocked: Authorization Error"**
+```bash
+python complete_oauth.py
+```
 
-   - Add your email as a test user in OAuth consent screen
-   - Make sure app is in "Testing" mode
+### **"Configuration validation failed"**
 
-3. **OAuth server not starting**
-   - Check if port 8000 is available
-   - Verify all dependencies are installed
+- Check `.env` file exists with correct credentials
+- Verify Google OAuth client is configured properly
 
-### **Debug Tools**
+### **"MCP server not responding"** (Only for MCP clients)
 
-- Use `python tests/debug_oauth.py` for OAuth issues
-- Use `python tests/check_oauth_status.py` for status check
-- Use `python tests/manual_test.py` for component testing
+```bash
+python run.py
+```
 
-## 📚 **Documentation**
+## 📊 **Current Status**
 
-- **Setup Guide**: `tests/oauth_setup_guide.md`
-- **Visual Guide**: `tests/oauth_visual_guide.md`
-- **Test Documentation**: `tests/README.md`
+**✅ FULLY OPERATIONAL**
 
-## 🔒 **Security Notes**
+- ✅ OAuth authentication working
+- ✅ Gmail API integration functional
+- ✅ Credentials management operational
+- ✅ Token refresh working
+- ✅ Integration with Gemini app successful
+- ✅ MCP protocol communication active (for MCP clients)
 
-- Store client secrets securely
-- Never commit `.env` files to version control
-- Use test users for development
-- Implement proper token storage in production
+## 🔗 **Related Components**
 
-## 🎯 **Next Steps**
+- **MCP Client**: `../mcp-client/` - Python Gmail client (used by Gemini app)
+- **Gemini App**: `../gemini/` - TypeScript AI integration
+- **Credentials**: `credentials.json` - OAuth tokens
 
-1. **Test OAuth flow**: Visit http://localhost:8000/auth
-2. **Test MCP server**: Use an MCP client to connect
-3. **Test Gmail operations**: Try listing and sending emails
-4. **Deploy to production**: Update configuration for production use
+## 📞 **Support**
+
+For Gemini app integration:
+
+1. Check OAuth server is running
+2. Verify credentials in `.env` file
+3. Test with `python complete_oauth.py`
+4. **No need to run `run.py`**
+
+For MCP protocol clients:
+
+1. Complete OAuth authentication first
+2. Then run `python run.py`
+
+---
+
+**🎉 MCP Gmail Server is ready for integration!**
+
+**Note**: For Gemini app integration, only OAuth authentication is required. The MCP server (`run.py`) is not needed.
