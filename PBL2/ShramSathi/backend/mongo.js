@@ -37,7 +37,7 @@ const taskSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ["Social work", "Health", "Education"],
+        enum: ["Social Work", "Health", "Education"],
         required: true
     },
     assignee: String
