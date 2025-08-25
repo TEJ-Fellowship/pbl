@@ -95,7 +95,7 @@ async function handelDelete(id) {
                     {new Date(resume.uploadDate).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 space-x-3 text-blue-600">
-                    <button onClick={() => navigate("/preview")}>Preview</button>
+                    <button onClick={() => navigate(`/preview/${resume._id}`)}>Preview</button>
                     <button className="text-red-500" onClick={()=>handelDelete(resume._id)}>Delete</button>
                   </td>
                 </tr>
