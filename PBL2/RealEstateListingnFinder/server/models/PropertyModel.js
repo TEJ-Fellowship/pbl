@@ -15,7 +15,6 @@ const propertySchema = new Schema({
     features: [{ type: String, required: true }],
     beds: { type: Number, required: true },
     parking: { type: Boolean, required: true },
-    size: { type: Number, required: true },
     listedAt: { type: Date, required: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true })
