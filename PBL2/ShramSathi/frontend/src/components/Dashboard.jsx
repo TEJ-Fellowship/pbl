@@ -1,5 +1,6 @@
 import React from "react";
-
+import Overview from "./Overview";
+// import Tasks from "./Tasks";
 function Dashboard({ activeSection, setActiveSection }) {
     return (
         <div className="flex h-screen bg-gray-100">
@@ -64,11 +65,11 @@ function Dashboard({ activeSection, setActiveSection }) {
                 </div>
             </aside>
             <div className="flex-1 p-6 bg-gray-100">
-                {activeSection === 'dashboard' && <h1>hi dashboard</h1>}
+                {activeSection === 'dashboard' && <h1>hi</h1>}
                 {activeSection === 'programs' && <h1>hi program</h1>}
-                {activeSection === 'tasks' && <h1>hi tasks</h1>}
+                {activeSection === 'tasks' && <Tasks/>}
                 {activeSection === 'members' && <h1>hi members</h1>}
-                {activeSection === 'overview' && <h1>hi overview</h1>}
+                {activeSection === 'overview' && <Overview/>}
             </div>
 
 
