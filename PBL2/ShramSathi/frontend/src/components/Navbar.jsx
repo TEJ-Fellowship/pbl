@@ -1,12 +1,33 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import axios from 'axios';
 
 function Navbar({ setActiveSection }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [task, setTask] = useState("");
+    const [description, setDescription] = useState("");
+    const [date, setDate] = useState("");
+    const [category, setCategory] = useState("");
+    const [assignee, setAssignee] = useState("");
 
-    const handleAddTask = (e) => {
+    const handleAddTask = async (e) => {
         e.preventDefault();
-        console.log("New Task:", task); // Do whatever you want with task
+        console.log("New Task:", task);
+        const taskObj = {
+            taskName: task,
+            description,
+            date,
+            category,
+            assignee
+        }
+
+        try {
+            const response = await axios.post('http://localhost:3000/api/tasks', taskObj);
+            console.log('Response: ', response.data);
+            alert('Task is added successfully!')
+        } catch(err) {
+            console.log("Error: ", err);
+        }
+
         setIsModalOpen(false);
         setTask(""); // reset input
     };
@@ -78,27 +99,33 @@ function Navbar({ setActiveSection }) {
                             />
                             {/* Description */}
                             <textarea
+                                value={description}
+                                onChange={e => setDescription(e.target.value)}
                                 placeholder="Description"
                                 className="w-full border p-2 rounded-lg h-20"
                             ></textarea>
 
                             {/* Due Date */}
                             <input
+                                value={date}
+                                onChange={e => setDate(e.target.value)}
                                 type="date"
                                 className="w-full border p-2 rounded-lg"
                                 required
                             />
 
                             {/* Category Dropdown */}
-                            <select className="w-full border p-2 rounded-lg">
+                            <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border p-2 rounded-lg">
                                 <option value="">Select Category</option>
-                                <option value="social">Social Work</option>
-                                <option value="education">Education</option>
-                                <option value="health">Health</option>
+                                <option value="Social Work">Social Work</option>
+                                <option value="Education">Education</option>
+                                <option value="Health">Health</option>
                             </select>
 
                             {/* Assignee */}
                             <input
+                                value={assignee}
+                                onChange={e => setAssignee(e.target.value)}
                                 type="text"
                                 placeholder="Assignee (optional)"
                                 className="w-full border p-2 rounded-lg"
