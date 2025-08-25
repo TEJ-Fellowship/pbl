@@ -10,7 +10,7 @@ import ProtectedRoute from './ProtectedRoute.jsx';
 import Account from './pages/Account.jsx';
 
 function App() {
-  const [isLoggedIn,setIsLoggedIn] = useState(false)
+  const [isLoggedIn,setIsLoggedIn] = useState(true)
   
   return (
     <>
