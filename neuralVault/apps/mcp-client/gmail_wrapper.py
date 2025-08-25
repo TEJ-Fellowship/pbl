@@ -85,6 +85,88 @@ def main():
                 labels = []
             print(json.dumps({"success": True, "labels": labels}, ensure_ascii=False))
             
+        elif command == "mark-as-read":
+            if len(sys.argv) < 4:
+                print(json.dumps({"success": False, "error": "Email IDs and read status required"}))
+                return
+            
+            email_ids = sys.argv[2].split(',')
+            read = sys.argv[3].lower() == 'true'
+            
+            success = client.mark_as_read(email_ids, read)
+            print(json.dumps({"success": success, "message": f"Marked {len(email_ids)} email(s) as {'read' if read else 'unread'}"}))
+            
+        elif command == "star-emails":
+            if len(sys.argv) < 4:
+                print(json.dumps({"success": False, "error": "Email IDs and starred status required"}))
+                return
+            
+            email_ids = sys.argv[2].split(',')
+            starred = sys.argv[3].lower() == 'true'
+            
+            success = client.star_emails(email_ids, starred)
+            print(json.dumps({"success": success, "message": f"{'Starred' if starred else 'Unstarred'} {len(email_ids)} email(s)"}))
+            
+        elif command == "move-to-label":
+            if len(sys.argv) < 4:
+                print(json.dumps({"success": False, "error": "Email IDs and label name required"}))
+                return
+            
+            email_ids = sys.argv[2].split(',')
+            label_name = sys.argv[3]
+            
+            success = client.move_to_label(email_ids, label_name)
+            print(json.dumps({"success": success, "message": f"Moved {len(email_ids)} email(s) to label '{label_name}'"}))
+            
+        elif command == "reply-to-email":
+            if len(sys.argv) < 4:
+                print(json.dumps({"success": False, "error": "Email ID and reply body required"}))
+                return
+            
+            email_id = sys.argv[2]
+            body = sys.argv[3]
+            include_original = len(sys.argv) > 4 and sys.argv[4].lower() == 'true'
+            
+            success = client.reply_to_email(email_id, body, include_original)
+            print(json.dumps({"success": success, "message": "Reply sent" if success else "Failed to send reply"}))
+            
+        elif command == "forward-email":
+            if len(sys.argv) < 4:
+                print(json.dumps({"success": False, "error": "Email ID and recipient email required"}))
+                return
+            
+            email_id = sys.argv[2]
+            to_email = sys.argv[3]
+            message = sys.argv[4] if len(sys.argv) > 4 else ""
+            
+            success = client.forward_email(email_id, to_email, message)
+            print(json.dumps({"success": success, "message": "Email forwarded" if success else "Failed to forward email"}))
+            
+        elif command == "get-attachments":
+            if len(sys.argv) < 3:
+                print(json.dumps({"success": False, "error": "Email ID required"}))
+                return
+            
+            email_id = sys.argv[2]
+            attachments = client.get_attachments(email_id)
+            if attachments is None:
+                attachments = []
+            print(json.dumps({"success": True, "attachments": attachments}, ensure_ascii=False))
+            
+        elif command == "create-label":
+            if len(sys.argv) < 3:
+                print(json.dumps({"success": False, "error": "Label name required"}))
+                return
+            
+            label_name = sys.argv[2]
+            background_color = sys.argv[3] if len(sys.argv) > 3 else "#4285f4"
+            
+            created_label = client.create_label(label_name, background_color)
+            if created_label:
+                print(json.dumps({"success": True, "label": created_label}, ensure_ascii=False))
+            else:
+                print(json.dumps({"success": False, "error": "Failed to create label"}))
+            
         else:
             print(json.dumps({"success": False, "error": f"Unknown command: {command}"}))
             

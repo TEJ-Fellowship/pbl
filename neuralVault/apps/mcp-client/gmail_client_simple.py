@@ -141,9 +141,19 @@ class SimpleGmailClient:
             return None
         
         try:
+            # Resolve label name to label ID if it's not a system label
+            label_id = label
+            if label not in ["INBOX", "SENT", "DRAFT", "SPAM", "TRASH", "STARRED", "UNREAD", "IMPORTANT"]:
+                labels = self.get_labels()
+                if labels:
+                    for lbl in labels:
+                        if lbl['name'].lower() == label.lower():
+                            label_id = lbl['id']
+                            break
+            
             results = service.users().messages().list(
                 userId='me',
-                labelIds=[label],
+                labelIds=[label_id],
                 maxResults=max_results
             ).execute()
             
@@ -323,6 +333,309 @@ class SimpleGmailClient:
             return None
         except Exception as e:
             self._print(f"❌ Failed to get labels: {str(e)}", "red")
+            return None
+
+    def mark_as_read(self, email_ids: List[str], read: bool = True) -> bool:
+        """Mark emails as read or unread."""
+        service = self._get_gmail_service()
+        if not service:
+            return False
+        
+        try:
+            # Add or remove UNREAD label
+            # Gmail API only supports modifying one message at a time
+            successful_marks = 0
+            failed_marks = 0
+            
+            for email_id in email_ids:
+                try:
+                    if read:
+                        # Remove UNREAD label to mark as read
+                        service.users().messages().modify(
+                            userId='me',
+                            id=email_id,
+                            body={'removeLabelIds': ['UNREAD']}
+                        ).execute()
+                    else:
+                        # Add UNREAD label to mark as unread
+                        service.users().messages().modify(
+                            userId='me',
+                            id=email_id,
+                            body={'addLabelIds': ['UNREAD']}
+                        ).execute()
+                    successful_marks += 1
+                except Exception as e:
+                    self._print(f"⚠️  Failed to mark email {email_id}: {str(e)}", "yellow")
+                    failed_marks += 1
+            
+            status = "read" if read else "unread"
+            if successful_marks > 0:
+                self._print(f"✅ Marked {successful_marks} email(s) as {status}", "green")
+                if failed_marks > 0:
+                    self._print(f"⚠️  Failed to mark {failed_marks} email(s)", "yellow")
+                return True
+            else:
+                self._print(f"❌ Failed to mark any emails as {status}", "red")
+                return False
+        
+        except HttpError as error:
+            self._print(f"❌ Gmail API error: {error.resp.status} {error.content.decode()}", "red")
+            return False
+        except Exception as e:
+            self._print(f"❌ Failed to mark emails as {'read' if read else 'unread'}: {str(e)}", "red")
+            return False
+
+    def star_emails(self, email_ids: List[str], starred: bool = True) -> bool:
+        """Star or unstar emails."""
+        service = self._get_gmail_service()
+        if not service:
+            return False
+        
+        try:
+            # Gmail API only supports modifying one message at a time
+            successful_stars = 0
+            failed_stars = 0
+            
+            for email_id in email_ids:
+                try:
+                    if starred:
+                        # Add STARRED label
+                        service.users().messages().modify(
+                            userId='me',
+                            id=email_id,
+                            body={'addLabelIds': ['STARRED']}
+                        ).execute()
+                    else:
+                        # Remove STARRED label
+                        service.users().messages().modify(
+                            userId='me',
+                            id=email_id,
+                            body={'removeLabelIds': ['STARRED']}
+                        ).execute()
+                    successful_stars += 1
+                except Exception as e:
+                    self._print(f"⚠️  Failed to star/unstar email {email_id}: {str(e)}", "yellow")
+                    failed_stars += 1
+            
+            status = "starred" if starred else "unstarred"
+            if successful_stars > 0:
+                self._print(f"✅ {status.capitalize()} {successful_stars} email(s)", "green")
+                if failed_stars > 0:
+                    self._print(f"⚠️  Failed to star/unstar {failed_stars} email(s)", "yellow")
+                return True
+            else:
+                self._print(f"❌ Failed to star/unstar any emails", "red")
+                return False
+        
+        except HttpError as error:
+            self._print(f"❌ Gmail API error: {error.resp.status} {error.content.decode()}", "red")
+            return False
+        except Exception as e:
+            self._print(f"❌ Failed to {'star' if starred else 'unstar'} emails: {str(e)}", "red")
+            return False
+
+    def move_to_label(self, email_ids: List[str], label_name: str) -> bool:
+        """Move emails to a specific label."""
+        service = self._get_gmail_service()
+        if not service:
+            return False
+        
+        try:
+            # First, get the label ID
+            labels = self.get_labels()
+            if not labels:
+                self._print(f"❌ Failed to get labels", "red")
+                return False
+            
+            label_id = None
+            for label in labels:
+                if label['name'].lower() == label_name.lower():
+                    label_id = label['id']
+                    break
+            
+            if not label_id:
+                self._print(f"❌ Label '{label_name}' not found", "red")
+                return False
+            
+            # Move emails to the label
+            # Gmail API only supports modifying one message at a time
+            successful_moves = 0
+            failed_moves = 0
+            
+            for email_id in email_ids:
+                try:
+                    service.users().messages().modify(
+                        userId='me',
+                        id=email_id,
+                        body={'addLabelIds': [label_id]}
+                    ).execute()
+                    successful_moves += 1
+                except Exception as e:
+                    self._print(f"⚠️  Failed to move email {email_id}: {str(e)}", "yellow")
+                    failed_moves += 1
+            
+            if successful_moves > 0:
+                self._print(f"✅ Moved {successful_moves} email(s) to label '{label_name}'", "green")
+                if failed_moves > 0:
+                    self._print(f"⚠️  Failed to move {failed_moves} email(s)", "yellow")
+                return True
+            else:
+                self._print(f"❌ Failed to move any emails to label '{label_name}'", "red")
+                return False
+        
+        except HttpError as error:
+            self._print(f"❌ Gmail API error: {error.resp.status} {error.content.decode()}", "red")
+            return False
+        except Exception as e:
+            self._print(f"❌ Failed to move emails to label: {str(e)}", "red")
+            return False
+
+    def reply_to_email(self, email_id: str, body: str, include_original: bool = True) -> bool:
+        """Reply to a specific email."""
+        service = self._get_gmail_service()
+        if not service:
+            return False
+        
+        try:
+            # Get the original email
+            original_email = self.read_email(email_id)
+            if not original_email:
+                self._print(f"❌ Failed to read original email", "red")
+                return False
+            
+            # Extract sender from original email
+            from_header = original_email.get('from', '')
+            # Extract email address from "Name <email@domain.com>" format
+            import re
+            email_match = re.search(r'<(.+?)>', from_header)
+            if email_match:
+                reply_to = email_match.group(1)
+            else:
+                reply_to = from_header
+            
+            # Create reply subject
+            subject = original_email.get('subject', '')
+            if not subject.startswith('Re:'):
+                subject = f"Re: {subject}"
+            
+            # Create reply body
+            if include_original:
+                original_body = original_email.get('body', '')
+                reply_body = f"{body}\n\n--- Original Message ---\n{original_body}"
+            else:
+                reply_body = body
+            
+            # Send the reply
+            return self.send_email(reply_to, subject, reply_body)
+        
+        except Exception as e:
+            self._print(f"❌ Failed to reply to email: {str(e)}", "red")
+            return False
+
+    def forward_email(self, email_id: str, to_email: str, message: str = "") -> bool:
+        """Forward an email to new recipients."""
+        service = self._get_gmail_service()
+        if not service:
+            return False
+        
+        try:
+            # Get the original email
+            original_email = self.read_email(email_id)
+            if not original_email:
+                self._print(f"❌ Failed to read original email", "red")
+                return False
+            
+            # Create forward subject
+            subject = original_email.get('subject', '')
+            if not subject.startswith('Fwd:'):
+                subject = f"Fwd: {subject}"
+            
+            # Create forward body
+            original_body = original_email.get('body', '')
+            forward_body = f"{message}\n\n--- Forwarded Message ---\n{original_body}"
+            
+            # Send the forward
+            return self.send_email(to_email, subject, forward_body)
+        
+        except Exception as e:
+            self._print(f"❌ Failed to forward email: {str(e)}", "red")
+            return False
+
+    def get_attachments(self, email_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Get attachment information for an email."""
+        service = self._get_gmail_service()
+        if not service:
+            return None
+        
+        try:
+            message = service.users().messages().get(
+                userId='me',
+                id=email_id,
+                format='full'
+            ).execute()
+            
+            attachments = []
+            
+            def extract_attachments(payload):
+                if 'parts' in payload:
+                    for part in payload['parts']:
+                        if part.get('filename') and part.get('body', {}).get('attachmentId'):
+                            attachments.append({
+                                'id': part['body']['attachmentId'],
+                                'filename': part['filename'],
+                                'mimeType': part['mimeType'],
+                                'size': part['body'].get('size', 0)
+                            })
+                        elif 'parts' in part:
+                            extract_attachments(part)
+                elif payload.get('filename') and payload.get('body', {}).get('attachmentId'):
+                    attachments.append({
+                        'id': payload['body']['attachmentId'],
+                        'filename': payload['filename'],
+                        'mimeType': payload['mimeType'],
+                        'size': payload['body'].get('size', 0)
+                    })
+            
+            extract_attachments(message['payload'])
+            return attachments
+        
+        except HttpError as error:
+            self._print(f"❌ Gmail API error: {error.resp.status} {error.content.decode()}", "red")
+            return None
+        except Exception as e:
+            self._print(f"❌ Failed to get attachments: {str(e)}", "red")
+            return None
+
+    def create_label(self, name: str, background_color: str = "#4285f4") -> Optional[Dict[str, Any]]:
+        """Create a new Gmail label."""
+        service = self._get_gmail_service()
+        if not service:
+            return None
+        
+        try:
+            label_object = {
+                'name': name,
+                'labelListVisibility': 'labelShow',
+                'messageListVisibility': 'show'
+            }
+            
+            created_label = service.users().labels().create(
+                userId='me',
+                body=label_object
+            ).execute()
+            
+            self._print(f"✅ Created label '{name}' with ID: {created_label['id']}", "green")
+            return {
+                'id': created_label['id'],
+                'name': created_label['name'],
+                'type': created_label['type']
+            }
+        
+        except HttpError as error:
+            self._print(f"❌ Gmail API error: {error.resp.status} {error.content.decode()}", "red")
+            return None
+        except Exception as e:
+            self._print(f"❌ Failed to create label: {str(e)}", "red")
             return None
 
     def _extract_email_body(self, payload: Dict[str, Any]) -> str:

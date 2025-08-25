@@ -227,21 +227,122 @@ class GeminiService {
                 case 'get_labels':
                     const labelsResult = await mcpService_1.mcpService.getLabels();
                     if (labelsResult.success) {
-                        let labelsSummary = `Found ${labelsResult.count} labels:\n`;
-                        labelsResult.labels.forEach(label => {
-                            labelsSummary += `- ${label.name}\n`;
-                        });
                         return {
                             success: true,
                             message: labelsResult.message,
-                            summary: labelsSummary,
-                            labels: labelsResult.labels
+                            labels: labelsResult.labels,
+                            count: labelsResult.count
                         };
                     }
                     else {
                         return {
                             success: false,
                             message: labelsResult.message
+                        };
+                    }
+                case 'mark_as_read':
+                    const markResult = await mcpService_1.mcpService.markAsRead({
+                        emailIds: args.emailIds,
+                        read: args.read !== undefined ? args.read : true
+                    });
+                    if (markResult.success) {
+                        return {
+                            success: true,
+                            message: markResult.message
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: markResult.message
+                        };
+                    }
+                case 'star_emails':
+                    const starResult = await mcpService_1.mcpService.starEmails({
+                        emailIds: args.emailIds,
+                        starred: args.starred !== undefined ? args.starred : true
+                    });
+                    if (starResult.success) {
+                        return {
+                            success: true,
+                            message: starResult.message
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: starResult.message
+                        };
+                    }
+                case 'move_to_label':
+                    const moveResult = await mcpService_1.mcpService.moveToLabel({
+                        emailIds: args.emailIds,
+                        label: args.label
+                    });
+                    if (moveResult.success) {
+                        return {
+                            success: true,
+                            message: moveResult.message
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: moveResult.message
+                        };
+                    }
+                case 'reply_to_email':
+                    const replyResult = await mcpService_1.mcpService.replyToEmail({
+                        emailId: args.emailId,
+                        body: args.body,
+                        includeOriginal: args.includeOriginal !== undefined ? args.includeOriginal : true
+                    });
+                    if (replyResult.success) {
+                        return {
+                            success: true,
+                            message: replyResult.message
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: replyResult.message
+                        };
+                    }
+                case 'forward_email':
+                    const forwardResult = await mcpService_1.mcpService.forwardEmail({
+                        emailId: args.emailId,
+                        to: args.to,
+                        message: args.message || ''
+                    });
+                    if (forwardResult.success) {
+                        return {
+                            success: true,
+                            message: forwardResult.message
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: forwardResult.message
+                        };
+                    }
+                case 'get_attachments':
+                    const attachmentsResult = await mcpService_1.mcpService.getAttachments({
+                        emailId: args.emailId
+                    });
+                    if (attachmentsResult.success) {
+                        return {
+                            success: true,
+                            message: attachmentsResult.message,
+                            attachments: attachmentsResult.attachments,
+                            count: attachmentsResult.count
+                        };
+                    }
+                    else {
+                        return {
+                            success: false,
+                            message: attachmentsResult.message
                         };
                     }
                 default:

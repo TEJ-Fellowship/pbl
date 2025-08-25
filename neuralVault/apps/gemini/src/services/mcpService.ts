@@ -270,7 +270,7 @@ export class MCPService {
     try {
       console.log('🏷️ Fetching Gmail labels...');
       
-      const result = await this.executePythonCommand('labels');
+      const result = await this.executePythonCommand('get-labels');
 
       if (result.success && result.labels) {
         return {
@@ -293,6 +293,203 @@ export class MCPService {
         count: 0,
         labels: [],
         message: `Error getting labels: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Mark emails as read or unread
+   */
+  public async markAsRead(query: { emailIds: string[], read: boolean }): Promise<any> {
+    try {
+      const { emailIds, read } = query;
+      console.log(`📧 Marking ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}...`);
+      
+      const result = await this.executePythonCommand('mark-as-read', [
+        emailIds.join(','),
+        read.toString()
+      ]);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: `Marked ${emailIds.length} email(s) as ${read ? 'read' : 'unread'}`
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Failed to mark emails'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error marking emails: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Star or unstar emails
+   */
+  public async starEmails(query: { emailIds: string[], starred: boolean }): Promise<any> {
+    try {
+      const { emailIds, starred } = query;
+      console.log(`⭐ ${starred ? 'Starring' : 'Unstarring'} ${emailIds.length} email(s)...`);
+      
+      const result = await this.executePythonCommand('star-emails', [
+        emailIds.join(','),
+        starred.toString()
+      ]);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: `${starred ? 'Starred' : 'Unstarred'} ${emailIds.length} email(s)`
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Failed to star/unstar emails'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error starring emails: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Move emails to a specific label
+   */
+  public async moveToLabel(query: { emailIds: string[], label: string }): Promise<any> {
+    try {
+      const { emailIds, label } = query;
+      console.log(`🏷️ Moving ${emailIds.length} email(s) to label '${label}'...`);
+      
+      const result = await this.executePythonCommand('move-to-label', [
+        emailIds.join(','),
+        label
+      ]);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: `Moved ${emailIds.length} email(s) to label '${label}'`
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Failed to move emails to label'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error moving emails: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Reply to a specific email
+   */
+  public async replyToEmail(query: { emailId: string, body: string, includeOriginal?: boolean }): Promise<any> {
+    try {
+      const { emailId, body, includeOriginal = true } = query;
+      console.log(`📧 Replying to email ${emailId}...`);
+      
+      const result = await this.executePythonCommand('reply-to-email', [
+        emailId,
+        body,
+        includeOriginal.toString()
+      ]);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Reply sent successfully'
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Failed to send reply'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error sending reply: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Forward an email
+   */
+  public async forwardEmail(query: { emailId: string, to: string, message?: string }): Promise<any> {
+    try {
+      const { emailId, to, message = '' } = query;
+      console.log(`📤 Forwarding email ${emailId} to ${to}...`);
+      
+      const result = await this.executePythonCommand('forward-email', [
+        emailId,
+        to,
+        message
+      ]);
+
+      if (result.success) {
+        return {
+          success: true,
+          message: 'Email forwarded successfully'
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Failed to forward email'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Error forwarding email: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Get attachments for an email
+   */
+  public async getAttachments(query: { emailId: string }): Promise<any> {
+    try {
+      const { emailId } = query;
+      console.log(`📎 Getting attachments for email ${emailId}...`);
+      
+      const result = await this.executePythonCommand('get-attachments', [emailId]);
+
+      if (result.success && result.attachments) {
+        return {
+          success: true,
+          count: result.attachments.length,
+          attachments: result.attachments,
+          message: `Found ${result.attachments.length} attachment(s)`
+        };
+      } else {
+        return {
+          success: false,
+          count: 0,
+          attachments: [],
+          message: result.error || 'No attachments found or failed to fetch attachments'
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        count: 0,
+        attachments: [],
+        message: `Error getting attachments: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }

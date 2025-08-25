@@ -99,6 +99,125 @@ exports.GMAIL_FUNCTION_SCHEMAS = [
             properties: {},
             required: []
         }
+    },
+    {
+        name: "mark_as_read",
+        description: "Mark emails as read or unread",
+        parameters: {
+            type: "object",
+            properties: {
+                emailIds: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Array of email IDs to mark"
+                },
+                read: {
+                    type: "boolean",
+                    description: "True to mark as read, false to mark as unread",
+                    default: true
+                }
+            },
+            required: ["emailIds"]
+        }
+    },
+    {
+        name: "star_emails",
+        description: "Star or unstar emails",
+        parameters: {
+            type: "object",
+            properties: {
+                emailIds: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Array of email IDs to star/unstar"
+                },
+                starred: {
+                    type: "boolean",
+                    description: "True to star, false to unstar",
+                    default: true
+                }
+            },
+            required: ["emailIds"]
+        }
+    },
+    {
+        name: "move_to_label",
+        description: "Move emails to a specific label",
+        parameters: {
+            type: "object",
+            properties: {
+                emailIds: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Array of email IDs to move"
+                },
+                label: {
+                    type: "string",
+                    description: "Name of the label to move emails to"
+                }
+            },
+            required: ["emailIds", "label"]
+        }
+    },
+    {
+        name: "reply_to_email",
+        description: "Reply to a specific email",
+        parameters: {
+            type: "object",
+            properties: {
+                emailId: {
+                    type: "string",
+                    description: "ID of the email to reply to"
+                },
+                body: {
+                    type: "string",
+                    description: "Reply message content"
+                },
+                includeOriginal: {
+                    type: "boolean",
+                    description: "Whether to include the original email in the reply",
+                    default: true
+                }
+            },
+            required: ["emailId", "body"]
+        }
+    },
+    {
+        name: "forward_email",
+        description: "Forward an email to new recipients",
+        parameters: {
+            type: "object",
+            properties: {
+                emailId: {
+                    type: "string",
+                    description: "ID of the email to forward"
+                },
+                to: {
+                    type: "string",
+                    description: "Recipient email address"
+                },
+                message: {
+                    type: "string",
+                    description: "Optional message to add before the forwarded email",
+                    default: ""
+                }
+            },
+            required: ["emailId", "to"]
+        }
+    },
+    {
+        name: "get_attachments",
+        description: "Get attachment information for an email",
+        parameters: {
+            type: "object",
+            properties: {
+                emailId: {
+                    type: "string",
+                    description: "ID of the email to get attachments from"
+                }
+            },
+            required: ["emailId"]
+        }
     }
 ];
 // Gmail search query examples for Gemini
@@ -130,10 +249,17 @@ Available operations:
 3. Read specific emails by ID
 4. Send new emails
 5. Get Gmail labels
+6. Mark emails as read/unread
+7. Star/unstar emails
+8. Move emails to labels
+9. Reply to emails
+10. Forward emails
+11. Get email attachments
 
 When users ask about emails, use the appropriate function to help them. 
 For search queries, use Gmail's search syntax (e.g., "is:unread", "from:google.com").
 For email IDs, use the full ID returned from list_emails or search_emails.
+For email actions, you can work with multiple emails by collecting their IDs first.
 
 Always be helpful and provide clear responses about what you're doing.
 `;

@@ -121,6 +121,24 @@ npm start -- test
 - ✅ "Send an email to sarah@example.com about the meeting"
 - ✅ "Compose an email to the team about project updates"
 
+### **Email Management & Organization** 🆕
+
+- ✅ "Mark all unread emails from John as read"
+- ✅ "Star the latest 5 important emails"
+- ✅ "Move all emails about meetings to the 'Work' label"
+- ✅ "Mark email 198e18af09f54660 as unread"
+
+### **Email Communication** 🆕
+
+- ✅ "Reply to the latest email from Sarah with 'Thanks, I'll get back to you soon'"
+- ✅ "Forward the email about the project to john@example.com"
+- ✅ "Reply to email 198e18af09f54660 without including the original"
+
+### **Email Attachments** 🆕
+
+- ✅ "Show me attachments for email 198e18af09f54660"
+- ✅ "Get attachment details for the latest email"
+
 ### **Email Analysis**
 
 - ✅ "Summarize my inbox"
@@ -130,6 +148,8 @@ npm start -- test
 ## 🛠️ **Function Schemas**
 
 The bridge provides these Gemini functions:
+
+### **Core Email Operations**
 
 1. **`list_emails`** - List emails with filtering
    - Parameters: `maxResults`, `label`
@@ -149,6 +169,36 @@ The bridge provides these Gemini functions:
 
 5. **`get_labels`** - Get Gmail labels
    - Example: "Show all my Gmail labels"
+
+### **Email Management & Organization** 🆕
+
+6. **`mark_as_read`** - Mark emails as read/unread
+   - Parameters: `emailIds` (array), `read` (boolean)
+   - Example: "Mark emails 198e18af09f54660,198e124f5fae7a87 as read"
+
+7. **`star_emails`** - Star/unstar emails
+   - Parameters: `emailIds` (array), `starred` (boolean)
+   - Example: "Star the latest 3 emails"
+
+8. **`move_to_label`** - Move emails to a specific label
+   - Parameters: `emailIds` (array), `label` (string)
+   - Example: "Move emails to the 'Work' label"
+
+### **Email Communication** 🆕
+
+9. **`reply_to_email`** - Reply to a specific email
+   - Parameters: `emailId`, `body`, `includeOriginal` (optional)
+   - Example: "Reply to email 198e18af09f54660 with 'Thanks for the update'"
+
+10. **`forward_email`** - Forward an email to new recipients
+    - Parameters: `emailId`, `to`, `message` (optional)
+    - Example: "Forward email 198e18af09f54660 to john@example.com"
+
+### **Email Attachments** 🆕
+
+11. **`get_attachments`** - Get attachment information for an email
+    - Parameters: `emailId`
+    - Example: "Show attachments for email 198e18af09f54660"
 
 ## 🎯 **Usage Examples**
 
@@ -231,6 +281,15 @@ neuralVault/apps/gemini/
 - ✅ "get-labels" → Retrieves all Gmail labels
 - ✅ "list-emails 3" → Lists 3 emails from inbox
 - ✅ "search-emails is:unread 2" → Finds 2 unread emails
+
+### **✅ New Phase 1 Features Tested** 🆕
+
+- ✅ "mark-as-read emailId1,emailId2 true" → Marks emails as read
+- ✅ "star-emails emailId1,emailId2 true" → Stars emails
+- ✅ "move-to-label emailId1,emailId2 Work" → Moves emails to label
+- ✅ "reply-to-email emailId message" → Replies to email
+- ✅ "forward-email emailId recipient@example.com" → Forwards email
+- ✅ "get-attachments emailId" → Gets attachment information
 
 ## 🔒 **Security & Authentication**
 
