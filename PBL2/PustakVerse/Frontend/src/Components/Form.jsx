@@ -110,7 +110,7 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         className="border p-2 w-full"
       />
 
-      {/* <label className="block mb-1 font-semibold">Add Cover Image</label>
+      {/* <label className="block mb-1 font-semibold">Add Cover Images</label>
       <div className="flex items-center gap-2">
         <button
           type="button"
