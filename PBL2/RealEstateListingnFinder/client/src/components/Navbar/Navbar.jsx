@@ -26,6 +26,12 @@ const Navbar = () => {
             >
               Manage Property
             </Link>
+            <Link
+              className="text-gray-900 text-sm font-medium leading-noraml hover:text-blue-600 cursor-pointer"
+              to="/UserDashboard"
+            >
+              Dashboard
+            </Link>
           </div>
         </div>
 
