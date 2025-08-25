@@ -86,7 +86,7 @@ const Signup = () => {
               }}
             />
             <img
-              src={isShown ? "/close-eye.png" : "/view.png"}
+              src={isShown ? "/view.png" : "/close-eye.png"}
               alt="Toggle Password Visibility"
               onClick={()=>setIsShown(!isShown)}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer"
@@ -108,7 +108,7 @@ const Signup = () => {
               }}
             />
             <img
-              src={isConfirmShown ? "/close-eye.png" : "/view.png"}
+              src={isConfirmShown ? "/view.png" : "/close-eye.png"}
               alt="Toggle Password Visibility"
               onClick={()=>setIsConfirmShown(!isConfirmShown)}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer"

@@ -74,7 +74,7 @@ const Login = () => {
               }}
             />
             <img
-              src={isShown ? "/close-eye.png" : "/view.png"}
+              src={isShown ? "/view.png" : "/close-eye.png"}
               alt="Toggle Password Visibility"
               onClick={handlerFunc}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer"
