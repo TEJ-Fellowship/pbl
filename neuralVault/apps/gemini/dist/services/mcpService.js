@@ -45,28 +45,30 @@ class MCPService {
      */
     async executePythonCommand(command, args = []) {
         return new Promise((resolve, reject) => {
-            const mcpClientPath = path_1.default.resolve(__dirname, '../../../mcp-client/gmail_api.py');
+            const mcpClientPath = path_1.default.resolve(__dirname, '../../../mcp-client/gmail_wrapper.py');
             if (!fs_1.default.existsSync(mcpClientPath)) {
                 reject(new Error(`MCP client not found at: ${mcpClientPath}`));
                 return;
             }
-            const process = (0, child_process_1.spawn)(this.pythonPath, [mcpClientPath, command, ...args], {
+            const pythonProcess = (0, child_process_1.spawn)(this.pythonPath, [mcpClientPath, command, ...args], {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: path_1.default.dirname(mcpClientPath)
+                cwd: path_1.default.dirname(mcpClientPath),
+                env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
             });
             let stdout = '';
             let stderr = '';
-            process.stdout.on('data', (data) => {
+            pythonProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
-            process.stderr.on('data', (data) => {
+            pythonProcess.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
-            process.on('close', (code) => {
+            pythonProcess.on('close', (code) => {
                 if (code === 0) {
                     try {
-                        // Try to parse JSON response
-                        const result = JSON.parse(stdout);
+                        // Clean up the stdout and try to parse JSON response
+                        const cleanStdout = stdout.trim();
+                        const result = JSON.parse(cleanStdout);
                         resolve(result);
                     }
                     catch (error) {
@@ -78,7 +80,7 @@ class MCPService {
                     reject(new Error(`Python command failed (${code}): ${stderr}`));
                 }
             });
-            process.on('error', (error) => {
+            pythonProcess.on('error', (error) => {
                 reject(new Error(`Failed to execute Python command: ${error.message}`));
             });
         });
@@ -91,8 +93,8 @@ class MCPService {
             const { maxResults = 10, label = 'INBOX' } = query;
             console.log(`📧 Listing ${maxResults} emails from ${label}...`);
             const result = await this.executePythonCommand('list-emails', [
-                '--max-results', maxResults.toString(),
-                '--label', label
+                maxResults.toString(),
+                label
             ]);
             if (result.success && result.emails) {
                 return {
@@ -127,9 +129,9 @@ class MCPService {
         try {
             const { query: searchQuery, maxResults = 10 } = query;
             console.log(`🔍 Searching emails with query: '${searchQuery}'...`);
-            const result = await this.executePythonCommand('search', [
-                '--query', searchQuery,
-                '--max-results', maxResults.toString()
+            const result = await this.executePythonCommand('search-emails', [
+                searchQuery,
+                maxResults.toString()
             ]);
             if (result.success && result.emails) {
                 return {
@@ -167,7 +169,7 @@ class MCPService {
         try {
             const { emailId } = query;
             console.log(`📖 Reading email ${emailId}...`);
-            const result = await this.executePythonCommand('read', [emailId]);
+            const result = await this.executePythonCommand('read-email', [emailId]);
             if (result.success && result.email) {
                 return {
                     success: true,

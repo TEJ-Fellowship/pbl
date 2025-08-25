@@ -2,17 +2,25 @@
 
 A powerful TypeScript-based integration that connects Google's Gemini AI with Gmail through MCP (Model Context Protocol), enabling natural language email management.
 
-## 🏗️ **Architecture**
+## 🏗️ **System Architecture**
 
 ```
-User → Gemini (LLM) → TypeScript Bridge → MCP Client → MCP Server (Gmail) → Gmail API
+User Input (Natural Language)
+    ↓
+Gemini AI (Processes & Understands)
+    ↓
+TypeScript Bridge (Function Calling)
+    ↓
+MCP Client (Python Gmail API)
+    ↓
+Gmail Account
 ```
 
 ### **Components:**
 
 1. **TypeScript Bridge** - Handles Gemini API calls and function calling
-2. **MCP Client** - Your existing Python Gmail MCP client
-3. **MCP Server** - Your existing Python Gmail MCP server
+2. **MCP Client** - Python Gmail client with OAuth authentication
+3. **MCP Server** - Python OAuth server for Gmail authentication
 4. **Function Schemas** - Gemini function definitions matching MCP client API
 
 ## 🚀 **Quick Start**
@@ -21,233 +29,254 @@ User → Gemini (LLM) → TypeScript Bridge → MCP Client → MCP Server (Gmail
 
 ```bash
 npm install
-# or
-yarn install
 ```
 
 ### **2. Build the Project**
 
 ```bash
 npm run build
-# or
-yarn build
 ```
 
 ### **3. Set up Environment Variables**
 
-```bash
-cp .env.example .env
-# Edit .env with your Gemini API key
+Create a `.env` file with your configuration:
+
+```env
+# Gemini API Configuration (Required)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-pro
+GEMINI_MAX_TOKENS=4096
+GEMINI_TEMPERATURE=0.7
+
+# MCP Server Configuration
+MCP_SERVER_URL=http://localhost:8000
+
+# Application Configuration
+DEBUG=false
+LOG_LEVEL=info
+
+# Gmail Authentication - Using credentials file
+GMAIL_CREDENTIALS_PATH=./credentials.json
+
+# OAuth credentials (backup method)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback
 ```
 
-### **4. Ensure MCP Server is Running**
+### **4. Set up Gmail Authentication**
+
+#### **Option A: Use Existing Credentials (Recommended)**
 
 ```bash
+# Copy credentials from MCP server
+cp ../mcp-server/credentials.json .
+```
+
+#### **Option B: Complete OAuth Setup**
+
+```bash
+# Start OAuth server
 cd ../mcp-server
-python run.py
+python oauth_server.py
+
+# Complete OAuth in browser
+# Visit: http://localhost:8000/auth
 ```
 
 ### **5. Run the Bridge**
 
 ```bash
+# Start interactive mode
 npm start
-# or
-yarn start
+
+# Or test connections
+npm start -- test
 ```
 
 ## 📧 **Available Gmail Operations via Gemini**
 
 ### **Email Management**
 
-- "Show me my recent emails"
-- "List unread emails from Google"
-- "Search for emails about meetings"
-- "Read the latest email from John"
+- ✅ "Show me my recent emails"
+- ✅ "List 5 emails from my inbox"
+- ✅ "Get emails from SENT folder"
+- ✅ "Display unread emails"
+
+### **Email Search**
+
+- ✅ "Search for emails with TEJ"
+- ✅ "Find emails from Google"
+- ✅ "Show emails about meetings"
+- ✅ "Search for important emails"
 
 ### **Email Actions**
 
-- "Send an email to john@example.com about the meeting"
-- "Reply to the last email"
-- "Forward the email about project updates"
+- ✅ "Read the latest email from John"
+- ✅ "Send an email to sarah@example.com about the meeting"
+- ✅ "Compose an email to the team about project updates"
 
 ### **Email Analysis**
 
-- "Summarize my inbox"
-- "Find important emails from this week"
-- "Show emails with attachments"
+- ✅ "Summarize my inbox"
+- ✅ "Show emails from yesterday"
+- ✅ "Find emails larger than 10MB"
 
 ## 🛠️ **Function Schemas**
 
 The bridge provides these Gemini functions:
 
 1. **`list_emails`** - List emails with filtering
+   - Parameters: `maxResults`, `label`
+   - Example: "Show me 5 emails from INBOX"
+
 2. **`search_emails`** - Search emails with Gmail query syntax
+   - Parameters: `query`, `maxResults`
+   - Example: "Search for unread emails from Google"
+
 3. **`read_email`** - Read a specific email
+   - Parameters: `emailId`
+   - Example: "Read email 198e18af09f54660"
+
 4. **`send_email`** - Send a new email
+   - Parameters: `to`, `subject`, `body`, `cc`, `bcc`
+   - Example: "Send email to john@example.com"
+
 5. **`get_labels`** - Get Gmail labels
+   - Example: "Show all my Gmail labels"
 
 ## 🎯 **Usage Examples**
 
 ### **Natural Language Commands**
 
 ```
-User: "Show me my 5 most recent emails"
+User: "get latest 5 emails"
 Gemini: Calls list_emails(maxResults=5, label="INBOX")
+Result: Shows 5 most recent emails with details
 
-User: "Search for unread emails from Google"
-Gemini: Calls search_emails(query="is:unread from:google.com")
+User: "search any one latest emails with word TEJ"
+Gemini: Calls search_emails(query="TEJ", maxResults=10)
+Result: Finds 10 emails containing "TEJ"
 
-User: "Send an email to john@example.com about the meeting tomorrow"
-Gemini: Calls send_email(to="john@example.com", subject="Meeting Tomorrow", body="...")
+User: "read email 198e18af09f54660"
+Gemini: Calls read_email(emailId="198e18af09f54660")
+Result: Shows full email content
 ```
 
-## ✅ **Current Status**
+### **Gmail Search Syntax**
 
-The Gemini-Gmail Bridge is now **fully functional**!
+- `is:unread` - Unread emails
+- `from:domain.com` - Emails from specific domain
+- `subject:keyword` - Emails with subject containing keyword
+- `has:attachment` - Emails with attachments
+- `after:2024/01/01` - Emails after specific date
+- `larger:10M` - Emails larger than 10MB
 
-- ✅ **TypeScript Bridge**: Successfully built and running
-- ✅ **Python API**: Clean JSON responses without console interference
-- ✅ **Gemini Integration**: Function calling working properly
-- ✅ **MCP Communication**: Direct Gmail service integration
-- ✅ **Interactive Mode**: Ready for natural language Gmail management
-
-You can now use natural language commands like:
-
-- "Show me my recent emails"
-- "Search for unread emails"
-- "Get my Gmail labels"
-- "Read the latest email from John"
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-
-- `GEMINI_API_KEY` - Your Gemini API key
-- `GEMINI_MODEL` - Gemini model to use (default: gemini-1.5-pro)
-- `GEMINI_MAX_TOKENS` - Maximum tokens for responses (default: 4096)
-- `GEMINI_TEMPERATURE` - Response creativity (default: 0.7)
-- `MCP_SERVER_URL` - MCP server URL (default: http://localhost:8000)
-- `GMAIL_CREDENTIALS_PATH` - Path to Gmail credentials file
-- `DEBUG` - Enable debug mode (default: false)
-- `LOG_LEVEL` - Logging level (default: info)
-
-### **Gemini Model Options**
-
-- `gemini-1.5-pro` - Most capable model
-- `gemini-1.5-flash` - Faster, more efficient
-- `gemini-1.0-pro` - Legacy model
-
-## 📁 **Project Structure**
-
-```
-apps/gemini/
-├── src/
-│   ├── types/
-│   │   └── index.ts              # TypeScript type definitions
-│   ├── config/
-│   │   └── index.ts              # Configuration management
-│   ├── schemas/
-│   │   └── functionSchemas.ts    # Gemini function definitions
-│   ├── services/
-│   │   ├── geminiService.ts      # Gemini API service
-│   │   └── mcpService.ts         # MCP client adapter
-│   └── index.ts                  # Main application entry point
-├── dist/                         # Compiled JavaScript output
-├── package.json                  # Node.js dependencies
-├── tsconfig.json                 # TypeScript configuration
-├── .env.example                  # Environment variables template
-└── README.md                     # This file
-```
-
-## 🧪 **Testing**
-
-### **Test the Bridge**
-
-```bash
-npm run test
-# or
-yarn test
-```
-
-### **Test Individual Components**
-
-```bash
-npm run dev
-# Then use the test command in the CLI
-```
-
-## 🔒 **Security**
-
-- API keys are stored in environment variables
-- OAuth credentials are managed by MCP server
-- No sensitive data is logged
-- All communications are encrypted
-
-## 🚨 **Troubleshooting**
-
-### **Common Issues**
-
-1. **"Gemini API key not found"**
-   - Set GEMINI_API_KEY in .env file
-
-2. **"MCP server not responding"**
-   - Ensure MCP server is running
-   - Check server URL in configuration
-
-3. **"OAuth authentication required"**
-   - Complete OAuth setup in MCP server first
-
-4. **"Python not found"**
-   - Ensure Python is installed and in PATH
-   - Try using `python3` or `py` instead
-
-## 📋 **Development Commands**
-
-```bash
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-
-# Watch for changes
-npm run watch
-```
-
-## 🎯 **CLI Commands**
+## 🔧 **Available Commands**
 
 ```bash
 # Start interactive mode
 npm start
 
 # Test connections
-npm run test
+npm start -- test
 
 # Show help
 npm start -- --help
+
+# Build project
+npm run build
+
+# Development mode
+npm run dev
 ```
 
-## 🔄 **Integration with Existing MCP System**
+## 📁 **Project Structure**
 
-The TypeScript bridge integrates seamlessly with your existing Python MCP client:
+```
+neuralVault/apps/gemini/
+├── src/
+│   ├── config/          # Configuration management
+│   ├── services/        # Gemini and MCP services
+│   ├── schemas/         # Function schemas
+│   ├── types/           # TypeScript type definitions
+│   └── index.ts         # Main application entry
+├── dist/                # Compiled JavaScript (auto-generated)
+├── .env                 # Environment variables
+├── credentials.json     # Gmail OAuth credentials
+├── package.json         # Dependencies and scripts
+├── tsconfig.json        # TypeScript configuration
+└── README.md           # This file
+```
 
-1. **No Changes Required** - Your existing MCP client and server remain unchanged
-2. **Bridge Communication** - TypeScript bridge communicates with Python MCP client via subprocess
-3. **Function Mapping** - Gemini functions map directly to MCP client methods
-4. **Error Handling** - Comprehensive error handling across the entire stack
+## 🎉 **Success Features**
 
-## 🎉 **Ready to Use!**
+### **✅ Working Integrations**
 
-Your TypeScript Gemini-Gmail bridge is now ready to handle natural language email management with full type safety and modern JavaScript/TypeScript features!
+- **Gemini AI**: Natural language processing and function calling
+- **Gmail API**: Full email management capabilities
+- **OAuth Authentication**: Secure Gmail access
+- **MCP Protocol**: Seamless TypeScript-Python bridge
+- **Real-time Email Operations**: List, search, read, send emails
+
+### **✅ Tested Commands**
+
+- ✅ "get latest 5 emails" → Successfully lists 5 emails
+- ✅ "search any one latest emails with word TEJ" → Finds TEJ-related emails
+- ✅ "get-labels" → Retrieves all Gmail labels
+- ✅ "list-emails 3" → Lists 3 emails from inbox
+- ✅ "search-emails is:unread 2" → Finds 2 unread emails
+
+## 🔒 **Security & Authentication**
+
+- **OAuth 2.0**: Secure Gmail authentication
+- **API Key Management**: Secure Gemini API access
+- **Environment Variables**: Secure configuration storage
+- **Token Refresh**: Automatic OAuth token renewal
+
+## 🚨 **Troubleshooting**
+
+### **"Configuration validation failed"**
+
+- Ensure `.env` file exists with required variables
+- Check that `credentials.json` is present
+- Verify Gemini API key is valid
+
+### **"MCP client not found"**
+
+- Ensure MCP client is properly set up in `../mcp-client/`
+- Check that `gmail_wrapper.py` exists
+
+### **"Authentication required"**
+
+- Complete OAuth setup: `python ../mcp-server/oauth_server.py`
+- Copy credentials: `cp ../mcp-server/credentials.json .`
+
+### **"Python not found"**
+
+- Ensure Python is installed and in PATH
+- Try: `python --version` to verify installation
+
+## 🎯 **Current Status**
+
+**✅ FULLY OPERATIONAL**
+
+- ✅ Gemini AI integration working
+- ✅ Gmail API access functional
+- ✅ Natural language processing active
+- ✅ Email operations successful
+- ✅ OAuth authentication complete
+- ✅ MCP bridge operational
+
+## 📞 **Support**
+
+For issues or questions:
+
+1. Check the troubleshooting section above
+2. Verify all dependencies are installed
+3. Ensure environment variables are set correctly
+4. Test with simple commands first
+
+---
+
+**🎉 Your Gemini-Gmail Bridge is ready for natural language email management!**

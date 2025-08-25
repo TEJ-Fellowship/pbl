@@ -88,6 +88,9 @@ export interface GeminiConfig {
 export interface MCPConfig {
   serverUrl: string;
   credentialsPath: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
+  googleRedirectUri?: string;
 }
 
 export interface AppConfig {

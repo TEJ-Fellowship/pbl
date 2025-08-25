@@ -26,7 +26,11 @@ class Config {
         };
         const mcpConfig = {
             serverUrl: process.env.MCP_SERVER_URL || 'http://localhost:8000',
-            credentialsPath: process.env.GMAIL_CREDENTIALS_PATH || '../mcp-server/credentials.json'
+            credentialsPath: process.env.GMAIL_CREDENTIALS_PATH || '../mcp-server/credentials.json',
+            // New OAuth configuration
+            googleClientId: process.env.GOOGLE_CLIENT_ID || '',
+            googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+            googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:8000/auth/callback'
         };
         return {
             gemini: geminiConfig,
@@ -56,10 +60,14 @@ class Config {
         if (!this.config.gemini.apiKey) {
             errors.push('GEMINI_API_KEY is required');
         }
-        // Validate MCP configuration
+        // Validate MCP configuration - check for either credentials file or OAuth credentials
         const credentialsPath = path_1.default.resolve(this.config.mcp.credentialsPath);
-        if (!fs_1.default.existsSync(credentialsPath)) {
-            errors.push(`Gmail credentials file not found: ${credentialsPath}`);
+        const hasCredentialsFile = fs_1.default.existsSync(credentialsPath);
+        const hasOAuthCredentials = this.config.mcp.googleClientId && this.config.mcp.googleClientSecret;
+        if (!hasCredentialsFile && !hasOAuthCredentials) {
+            errors.push('Either Gmail credentials file or OAuth credentials (GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET) are required');
+            errors.push(`Credentials file path: ${credentialsPath}`);
+            errors.push('OAuth credentials should be set in environment variables');
         }
         if (errors.length > 0) {
             console.error('❌ Configuration validation failed:');
@@ -76,6 +84,19 @@ class Config {
         console.log(`  Log Level: ${this.config.logLevel}`);
         console.log(`  Credentials Path: ${this.config.mcp.credentialsPath}`);
         console.log(`  API Key: ${this.config.gemini.apiKey ? '✅ Set' : '❌ Not Set'}`);
+        // Show authentication method
+        const credentialsPath = path_1.default.resolve(this.config.mcp.credentialsPath);
+        const hasCredentialsFile = fs_1.default.existsSync(credentialsPath);
+        const hasOAuthCredentials = this.config.mcp.googleClientId && this.config.mcp.googleClientSecret;
+        if (hasCredentialsFile) {
+            console.log(`  Authentication: ✅ Credentials file found`);
+        }
+        else if (hasOAuthCredentials) {
+            console.log(`  Authentication: ✅ OAuth credentials configured`);
+        }
+        else {
+            console.log(`  Authentication: ❌ No authentication method found`);
+        }
     }
 }
 // Export singleton instance
