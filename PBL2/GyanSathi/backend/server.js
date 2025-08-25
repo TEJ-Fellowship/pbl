@@ -1,27 +1,20 @@
-import { createServer } from "http";
-const PORT = 8000;
+import express from "express";
+import cors from "cors";
+import router from "./routers/router.js";
+import { dataBase } from "./config/db.js";
+const PORT = process.env.PORT || 5001;
+const app = express();
 
-const users = [
-  {
-    id: 1,
-    name: "Ganesh",
-    age: 4,
-  },
-  {
-    id: 2,
-    name: "Nirajan",
-    age: 5,
-  },
-];
+app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
+app.use("/api/notes", router);
 
-const server = createServer((req, res) => {
-  if (req.url === "/api/users" && req.method === "GET") {
-    res.setHeader("Content-Type", "application/json");
-    res.write(JSON.stringify(users));
-    res.end();
-  }
-});
-
-server.listen(PORT, () => {
-  console.log(`The server is running ${PORT}`);
+dataBase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`The server is running at http://localhost:${PORT}`);
+  });
 });
