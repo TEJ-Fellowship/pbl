@@ -1,0 +1,100 @@
+:root {
+  --color-jet-black: #1C1C1C;
+  --color-charcoal: #2E2E2E;
+  --color-white: #FFFFFF;
+  --color-lime: #C4F000;
+  --color-gray: #7F7F7F;
+  --color-light-gray: #EDEDED;
+  --color-muted-green: #4D6F50;
+  --color-tomato: #D94A38;
+  --color-beige: #FAF8F2;
+}
+.navBar {
+  background-color: var(--color-charcoal);
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.brand {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-lime);
+}
+.brand:hover {
+  color: var(--color-white);
+}
+
+.links {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.link {
+  font-size: 0.95rem;
+  color: var(--color-white);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.link:hover {
+  color: var(--color-lime);
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.navSearch {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-jet-black);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  gap: 0.4rem;
+  height: 25px;
+}
+
+.navSearchInput {
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--color-white);
+  font-size: 0.9rem;
+}
+
+.icon {
+  font-size: 0.9rem;
+  color: var(--color-lime);
+  cursor: pointer;
+}
+.icon:hover {
+  color: var(--color-white);
+}
+
+.bookmark {
+  cursor: pointer;
+}
+.bookmark:hover .icon {
+  color: var(--color-white);
+}
+
+.avatarIcon {
+  font-size: 1.4rem;
+  color: var(--color-charcoal);
+  border-radius: 50%;
+  border: 2px solid var(--color-light-gray);
+  background-color: var(--color-light-gray);
+  padding: 1px;
+  cursor: pointer;
+}
+.avatarIcon:hover {
+  color: var(--color-lime);
+}

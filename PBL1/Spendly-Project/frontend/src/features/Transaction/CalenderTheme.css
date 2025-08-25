@@ -1,0 +1,88 @@
+/* === Base Wrapper === */
+.rdrCalendarWrapper {
+  background-color: #002218;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: 'Roboto', sans-serif;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.25);
+  position: absolute;
+  top: 19%;
+  left: 15%;
+  z-index: 100;
+}
+
+/* === Header (Month, Year, Arrows) === */
+.rdrMonthAndYearWrapper {
+  background: none;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.rdrMonthAndYearPickers select {
+  background-color: #152F29;
+  color: #ffffff;
+  border: none;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+/* === Week Days === */
+.rdrWeekDays {
+  color: #cccccc;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* === Days === */
+.rdrDayNumber span {
+  color: #ffffff;
+}
+
+/* === Today Circle (MUI-style) === */
+.rdrDayToday .rdrDayNumber span {
+  border: 1px solid #285E61;
+  border-radius: 50%;
+}
+
+/* === Range Selection Styling (Pill style) === */
+.rdrInRange,
+.rdrStartEdge,
+.rdrEndEdge {
+  background-color: #285E61 !important;
+  color: #ffffff !important;
+  border-radius: 16px !important; /* Pill shape */
+}
+
+/* === Hover Preview === */
+.rdrDay:hover:not(.rdrDayPassive) {
+  background-color: #285E61;
+  color: #ffffff;
+}
+
+/* === Passive (other-month) Days === */
+.rdrDayPassive .rdrDayNumber span {
+  color: #777777;
+  opacity: 0.4;
+}
+
+/* === Disabled Days === */
+.rdrDayDisabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* === Date Inputs === */
+.rdrDateDisplayWrapper {
+  background-color: transparent;
+  border-bottom: 1px solid #285E61;
+  color: #ffffff;
+}
+
+.rdrDateInput {
+  color: #ffffff;
+  background: transparent;
+  border: 1px solid #285E61;
+  border-radius: 6px;
+  padding: 6px 10px;
+}

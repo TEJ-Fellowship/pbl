@@ -1,0 +1,116 @@
+.calendar{
+  /* background-color: rgb(127, 162, 193); */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 75%;
+  padding: 12px;
+}
+
+.calendarbody{
+    width: 100%;
+    height: 100%;
+    margin: auto;
+}
+
+table{
+    border: 1px solid rgb(202, 202, 202);
+    border-collapse: collapse;
+    height: 100%;
+    width: 100%
+
+}
+
+tr,th,td{
+    table-layout: fixed;
+    border: 1px solid rgb(241, 241, 241);
+    padding: 15px;
+    text-align: center; 
+    height: 75px;
+    vertical-align: top; /* Keep content at top */
+    position: relative; /* Allow for absolute positioning of contents */
+}
+
+/* Each cell should have fixed maximum height for content */
+td {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.current{
+    margin: 0px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 4rem;
+    width: 4rem;
+    background-color: rgb(245, 179, 104);
+    border-radius: 50%;
+}
+
+.pill {
+  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 4px 12px;
+  margin: 2px 0;
+  font-size: 0.95em;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  display: block;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-height: 28px; /* Fixed height */
+  line-height: 1.2;
+}
+
+.pill:hover, .pill:focus {
+  background: linear-gradient(90deg, #1565c0 0%, #64b5f6 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.16);
+}
+
+.pill:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s ease;
+}
+
+.holiday-pill {
+  background: linear-gradient(90deg, #43a047 0%, #66bb6a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 6px 1px;
+  margin: 8px 0;
+  font-size: 0.8em; /* Smaller font */
+  font-weight: 550;
+  box-shadow: 0 2px 8px rgba(67, 160, 71, 0.08);
+  cursor: default;
+  display: block;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-height: 25px; /* Fixed smaller height */
+  line-height: 1;
+}
+
+/* Add tooltip-style display for long holiday names */
+.holiday-pill:hover {
+  white-space: normal;
+  word-wrap: break-word;
+  height: auto;
+  position: relative;
+  z-index: 10;
+}

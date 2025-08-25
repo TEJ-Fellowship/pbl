@@ -1,0 +1,21 @@
+*{
+    /* border: 2px solid red; */
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+    background-color: white;
+}
+
+.container{
+    width: 100vw;
+    /* background: #dcdddf; */
+    
+    background-color: white;
+    transition: 0.5s;
+
+}
+
+.container.dark{
+    background: #222;
+}

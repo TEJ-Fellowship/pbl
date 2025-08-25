@@ -1,0 +1,44 @@
+.container {
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 10px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 1rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.colorBox {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.5rem;
+  border-radius: 3px;
+}
+
+.label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.value {
+  margin-left: auto;
+  font-family: monospace;
+}
+
+.calories {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #00ffd0;
+}

@@ -1,0 +1,60 @@
+ @import url("https://fonts.googleapis.com/css2?family=Irish+Grover&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=VT323&display=swap");
+
+.navBar {
+  padding: 0 20px;
+  height: 77px;
+  background-color: #00160d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.titleContainer {
+  margin: 0 auto;
+  position: absolute;
+
+}
+
+.titleContainer h1 {
+  font-family: "Irish Grover", sans-serif;
+  font-size: 50px;
+  color: #ffffff;
+  margin: 0;
+}
+
+.searchContainer {
+  width: 200px;
+  height: 40px;
+  margin-left: auto ;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  right: 2%;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 35px 8px 10px;
+  background-color: #00160d;
+  border: 2px solid white;
+  border-radius: 4px;
+  color: white;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 100%;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  cursor: pointer;
+}

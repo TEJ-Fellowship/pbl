@@ -1,0 +1,18 @@
+.leftcontainer {
+  padding: 1.5rem;
+  background-color: #1e1e1e; /* Dark gray background */
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.greeting {
+  color: #f1f1f1; /* Light text for visibility */
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.username {
+  color: #DDA15E; /* Warm mustard (your CTA color) */
+}

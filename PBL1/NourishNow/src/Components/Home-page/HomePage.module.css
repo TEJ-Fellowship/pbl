@@ -1,0 +1,196 @@
+:root {
+  --color-jet-black: #1C1C1C;
+  --color-charcoal: #2E2E2E;
+  --color-white: #FFFFFF;
+  --color-lime: #C4F000;
+  --color-gray: #7F7F7F;
+  --color-light-gray: #EDEDED;
+  --color-muted-green: #4D6F50;
+  --color-tomato: #D94A38;
+  --color-beige: #FAF8F2;
+}
+
+.main{
+  display:flex;
+  flex-direction: row;
+}
+.leftcontainer, .rightcontainer{
+  height: 100%;
+  margin:10px;
+}
+.div1 {
+  width: 100%;
+  background-color: var(--color-charcoal);
+  display: flex;
+  flex-direction: column;
+  font-family: "Poppins", sans-serif;
+  border-radius: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  margin: 10px auto;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.funFactContainer {
+  width: 1000px;
+  height: 600px;
+  border-radius: 10px;
+  background-image: url("./pexels-pixabay-372882.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 12px var(--color-muted-green);
+  overflow: hidden;
+  margin: 30px 0;
+  position: relative;
+}
+
+.factContainer {
+  background-color: rgba(28, 28, 28, 0.6);
+  backdrop-filter: blur(6px);
+  border-radius: 10px;
+  text-align: center;
+  width: 90%;
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.factText {
+  font-size: 1.12rem;
+  color: var(--color-white);
+  line-height: 1.75;
+  display: flex;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.factLoading {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.factButton {
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  color: var(--color-white);
+  background-color: var(--color-lime);
+  font-weight: 500;
+  padding: 16px 12px;
+  margin-top: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 40px;
+  transition: transform 0.2s ease;
+}
+
+.factButton:hover {
+  transform: scale(1.05);
+}
+
+.searchEntity {
+  display: flex;
+  justify-content: center;
+  margin-top: 150px;
+}
+
+.searchBar {
+  width: 500px;
+  height: 50px;
+  border-radius: 10px;
+  background-color: rgba(44, 44, 44, 0.5);
+  backdrop-filter: blur(6px);
+  color: var(--color-white);
+  border: none;
+  font-size: 1.2rem;
+  padding: 0 20px;
+  outline: none;
+}
+
+.searchButton {
+  color: var(--color-white);
+  background-color: var(--color-lime);
+  font-weight: 500;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  margin-left: 20px;
+  transition: transform 0.2s ease;
+}
+
+.searchButton:hover {
+  transform: scale(1.05);
+}
+
+.headQuestion {
+  color: var(--color-white);
+  display: flex;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: 20px;
+  font-size: 1.4rem;
+}
+
+.funFact {
+  color: var(--color-white);
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  font-size: 1rem;
+  padding: 20px 50px;
+  margin-bottom: 200px;
+}
+
+.resultContainer {
+  margin-top: 24px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.previewCard {
+  display: flex;
+  gap: 24px;
+  width: 95%;
+  max-width: 950px;
+  padding: 20px;
+  border: 2px solid var(--color-gray);
+  border-radius: 12px;
+  background-color: var(--color-charcoal);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-bottom: 30px;
+  color: var(--color-white);
+}
+
+.recipeImage {
+  width: 250px;
+  height: auto;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.recipeDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.noResult {
+  color: var(--color-tomato);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
