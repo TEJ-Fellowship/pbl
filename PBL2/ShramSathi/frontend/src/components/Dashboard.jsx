@@ -50,7 +50,7 @@ function Setting({ options, details, icon }) {
 
 function Dashboard() {
     return (
-        <>
+        <div>
             <div className="text-3xl font-extrabold text-gray-800">Dashboard</div>
             <h3 className='text-xl font-bold text-gray-800 mt-10'>Available Programs</h3>
             <div className="flex space-x-5 mt-3">
@@ -68,13 +68,13 @@ function Dashboard() {
                 </div>
             </div>
 
-            <div className=''>
+            <div className='z-0'>
                 <h1 className="text-xl font-bold text-gray-800 mt-8 mb-2">Settings</h1>
                 <Setting options='Account Settings' details='Manage your account settings and preferences' icon={<CgProfile className="h-6 w-6" />} />
                 <Setting options='Invite Members' details='Invite new members to join your community' icon={< LuPlus className="h-6 w-6" />} />
                 <Setting options='Manage Programs' details='View and manages your community programs' icon={< MdFormatListBulleted className="h-6 w-6" />} />
             </div>
-        </>
+        </div>
     )
 }
 
