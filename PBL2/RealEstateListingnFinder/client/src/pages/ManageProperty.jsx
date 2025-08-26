@@ -1,5 +1,6 @@
 import { Plus, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useProperties } from "../hooks/useProperties";
 
 const ManageProperty = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,24 +15,26 @@ const ManageProperty = () => {
     location: "",
     images: [],
   });
-  const [properties, setProperties] = useState([]);
+  // const [properties, setProperties] = useState([]);
 
-  useEffect(() => {
-    const fetchProperties = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5000/api/properties/get-all-property"
-        );
-        const data = await response.json();
-        setProperties(data);
-        console.log(data);
-      } catch (err) {
-        console.log(err);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchProperties = async () => {
+  //     try {
+  //       const response = await fetch(
+  //         "http://localhost:5000/api/properties/get-all-property"
+  //       );
+  //       const data = await response.json();
+  //       setProperties(data);
+  //       console.log(data);
+  //     } catch (err) {
+  //       console.log(err);
+  //     }
+  //   };
 
-    fetchProperties();
-  }, []);
+  //   fetchProperties();
+  // }, []);
+
+  const {properties, refetch} = useProperties();
 
   const handleChange = (e) => {
     const { name, value } = e.target; //returns the name of input and value of inputs
@@ -75,6 +78,8 @@ const ManageProperty = () => {
 
     const data = await response.json();
     console.log(data);
+
+    refetch();
   };
 
   const openModal = () => setIsModalOpen(true);
