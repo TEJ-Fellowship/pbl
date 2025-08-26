@@ -8,6 +8,7 @@ import realstate5 from "../../assets/realstate5.jpg";
 import realstate6 from "../../assets/realstate6.jpg";
 import realstate7 from "../../assets/realstate7.jpg";
 import Search from "../Search/Search";
+import Navbar from "../Navbar/Navbar";
 import {
   Bath,
   Bed,
@@ -29,6 +30,8 @@ const Landing = () => {
     realstate6,
     realstate7,
   ];
+
+
 
   const [currentImage, setCurrentImage] = useState(0);
 
@@ -99,6 +102,8 @@ const Landing = () => {
     },
   ];
 
+
+      
   return (
     <>
       <div className="relative">
