@@ -54,7 +54,7 @@ const BookGrid = ({ books, setBooks }) => {
   return (
     <>
       {/* Book Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="absolute left-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
         {books.map((book, index) => (
           <div key={index} onClick={() => setSelectedBook(book)}>
             {/* MODIFIED: Added onEdit and onDelete props */}

@@ -1,18 +1,22 @@
-// Components/Home.jsx
 import React from "react";
 import BookGrid from "./BookGrid";
+import GoogleBooks from "./GoogleBooks";
 
-// MODIFIED: Added setBooks prop to pass down to BookGrid
-const Home = ({ books, setBooks }) => {
-  if (!books) return <p className="text-gray-500">Loading books...</p>;
-
+function Home({ books, setBooks }) {
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Book Store</h1>
-      {/* MODIFIED: Pass setBooks prop to BookGrid */}
-      <BookGrid books={books} setBooks={setBooks} />
+    <div className="space-y-6 max-w-7xl mx-auto p-6">
+      <h2 className="text-xl font-semibold">Google API Books</h2>
+
+      {/* Google Books Search Component */}
+      <GoogleBooks books={books} setBooks={setBooks} />
+
+      {/* Existing Saved Books */}
+      <h3 className="text-lg font-semibold mt-6">My Books</h3>
+      <div className="max-w-7xl mx-auto p-6">
+        <BookGrid books={books} setBooks={setBooks} />
+      </div>
     </div>
   );
-};
+}
 
 export default Home;
