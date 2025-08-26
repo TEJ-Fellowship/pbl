@@ -12,9 +12,29 @@ const BookModal = ({ book, onClose }) => {
         className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-lg p-6 max-w-3xl w-full overflow-y-auto flex flex-col md:flex-row gap-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Left: Cover Placeholder */}
-        <div className="w-full md:w-1/3 h-auto min-h-[200px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded">
-          <span className="text-gray-500">No Cover</span>
+        {/* Left: Cover Image */}
+        <div className="w-full md:w-1/3 h-auto min-h-[200px] flex items-center justify-center">
+          {book.coverImage ? (
+            <img
+              src={`http://localhost:3001/uploads/${book.coverImage}`}
+              alt={book.title}
+              className="w-full h-auto max-h-96 object-cover rounded shadow-lg"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.target.style.display = "none";
+                e.target.nextSibling.style.display = "flex";
+              }}
+            />
+          ) : null}
+
+          {/* Fallback placeholder */}
+          <div
+            className={`w-full h-64 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded ${
+              book.coverImage ? "hidden" : ""
+            }`}
+          >
+            <span className="text-gray-500">No Cover</span>
+          </div>
         </div>
 
         {/* Right: Book Details */}
@@ -22,7 +42,7 @@ const BookModal = ({ book, onClose }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 text-red-500 text-2xl"
+            className="absolute top-2 right-2 text-red-500 text-2xl hover:text-red-700 transition-colors"
           >
             ×
           </button>

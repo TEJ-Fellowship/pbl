@@ -6,17 +6,40 @@ import {
   MoonIcon,
   MagnifyingGlassIcon,
   PlusIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
   const navigate = useNavigate();
-  // const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  //form showcase
   const [showForm, setShowForm] = useState(false);
+  // ADDED: State for browse dropdown
+  const [showBrowseMenu, setShowBrowseMenu] = useState(false);
 
-  // Toggle dark/light mode
+  // ADDED: Handle search icon click
+  const handleSearchClick = () => {
+    navigate("/search");
+  };
+
+  // ADDED: Handle browse menu item click
+  const handleBrowseClick = (category) => {
+    navigate(`/browse/${category}`);
+    setShowBrowseMenu(false);
+  };
+
+  // ADDED: Browse categories
+  const browseCategories = [
+    { name: "All Books", value: "all" },
+    { name: "Fiction", value: "fiction" },
+    { name: "Non-Fiction", value: "non-fiction" },
+    { name: "Science", value: "science" },
+    { name: "Fantasy", value: "fantasy" },
+    { name: "Biography", value: "biography" },
+    { name: "Mystery", value: "mystery" },
+    { name: "Self-Help", value: "self-help" },
+    { name: "Favorites", value: "favorites" },
+    { name: "Recent Reads", value: "recent" },
+  ];
+
   const handleThemeToggle = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle("dark");
@@ -31,7 +54,6 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
       <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
         {/* Left: Logo + Links */}
         <div className="flex items-center gap-8">
-          {/* Logo */}
           <div
             className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
             onClick={() => navigate("/")}
@@ -39,7 +61,6 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
             Pustakverse
           </div>
 
-          {/* Links */}
           <ul className="flex gap-6 font-medium text-black dark:text-gray-200">
             <li>
               <NavLink
@@ -65,12 +86,52 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
                 MyBooks
               </NavLink>
             </li>
+
+            {/* ADDED: Browse dropdown menu */}
+            <li className="relative">
+              <button
+                onClick={() => setShowBrowseMenu(!showBrowseMenu)}
+                className="flex items-center gap-1 text-black dark:text-gray-500 hover:text-primary transition-colors font-medium"
+              >
+                Browse
+                <ChevronDownIcon
+                  className={`w-4 h-4 transition-transform ${
+                    showBrowseMenu ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* ADDED: Browse dropdown menu */}
+              {showBrowseMenu && (
+                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                  <div className="py-2">
+                    {browseCategories.map((category) => (
+                      <button
+                        key={category.value}
+                        onClick={() => handleBrowseClick(category.value)}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </li>
           </ul>
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-4">
-          {/* Theme Toggle */}
+          {/* MODIFIED: Search icon instead of input */}
+          <button
+            onClick={handleSearchClick}
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            title="Search books"
+          >
+            <MagnifyingGlassIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
+
           <button
             onClick={handleThemeToggle}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -82,19 +143,6 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
             )}
           </button>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search books..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-1 rounded-full border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-800 dark:text-gray-200 transition-colors"
-            />
-            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300" />
-          </div>
-
-          {/* Add New Button */}
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-primary text-white px-4 py-1 rounded-full font-semibold hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary transition-colors"
@@ -103,7 +151,6 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
             Add New
           </button>
 
-          {/* Profile Picture */}
           <div className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border-2 border-gray-300 dark:border-gray-600">
             <img
               src="https://randomuser.me/api/portraits/men/75.jpg"
@@ -113,6 +160,15 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
           </div>
         </div>
       </nav>
+
+      {/* ADDED: Overlay to close browse menu when clicking outside */}
+      {showBrowseMenu && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowBrowseMenu(false)}
+        />
+      )}
+
       {showForm && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
@@ -124,7 +180,7 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
           >
             <Form
               onClose={() => setShowForm(false)}
-              onAddBook={(newBook) => setBooks((prev) => [...prev, newBook])} // ← here
+              onAddBook={(newBook) => setBooks((prev) => [...prev, newBook])}
             />
           </div>
         </div>
