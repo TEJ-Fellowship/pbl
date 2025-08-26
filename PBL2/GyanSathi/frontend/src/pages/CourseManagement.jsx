@@ -1,55 +1,15 @@
 import { useState } from "react";
 
-import LessonForm from "../conpoment/LessonForm";
-import CourseForm from "../conpoment/CourseForm"
+import LessonForm from "../compoments/LessonForm";
+import CourseForm from "../compoments/CourseForm"
 
 
-const CourseManagement = ({  onAddCourse, onUpdateCourse, onDeleteCourse, onAddLesson, onUpdateLesson, onDeleteLesson, theme }) => {
+const CourseManagement = ({  onAddCourse, onUpdateCourse, onDeleteCourse, onAddLesson, onUpdateLesson, onDeleteLesson, theme, courses, setCourses }) => {
   const [showCourseForm, setShowCourseForm] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [showLessonForm, setShowLessonForm] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
-
-  const [courses, setCourses] = useState([
-    {
-      id: 'c1',
-      title: 'Introduction to Web Development',
-      description: 'Learn the fundamentals of web development, including HTML, CSS, and JavaScript. This course covers everything from basic syntax to building responsive layouts. Perfect for beginners!',
-      imageUrl: 'https://placehold.co/400x250/06B6D4/FFFFFF?text=Web+Dev',
-      lessons: [
-        { id: 'l1.1', title: 'HTML Basics', materials: ['https://www.w3schools.com/html/default.asp', 'HTML_Cheatsheet.pdf'], topics: ['HTML Structure', 'Tags', 'Elements', 'Attributes'], subjectCategory: 'Web Development' },
-        { id: 'l1.2', title: 'CSS Styling', materials: ['https://www.w3schools.com/css/default.asp', 'CSS_Layouts.mp4'], topics: ['Selectors', 'Box Model', 'Flexbox', 'Grid', 'Responsiveness'], subjectCategory: 'Web Development' },
-        { id: 'l1.3', title: 'JavaScript Fundamentals', materials: ['https://javascript.info/', 'JS_CrashCourse.mp4', 'Modern_JS_Book.pdf'], topics: ['Variables', 'Functions', 'DOM Manipulation', 'Events', 'ES6 Features'], subjectCategory: 'Programming' },
-        { id: 'l1.4', title: 'Introduction to Responsive Design', materials: ['https://developer.mozilla.org/en-US/docs/Web/Guide/Responsive'], topics: ['Media Queries', 'Mobile-First', 'Fluid Layouts', 'Viewport'], subjectCategory: 'Web Design' },
-        { id: 'l1.5', title: 'Introduction to Web Hosting', materials: ['Web_Hosting_Guide.pdf'], topics: ['Domains', 'Servers', 'Deployment'], subjectCategory: 'Web Development' },
-      ],
-    },
-    {
-      id: 'c2',
-      title: 'React Fundamentals',
-      description: 'Dive deep into React.js, component-based architecture, and state management. Build dynamic and interactive user interfaces with confidence.',
-      imageUrl: 'https://placehold.co/400x250/6366F1/FFFFFF?text=React+JS',
-      lessons: [
-        { id: 'l2.1', title: 'Understanding Components', materials: ['React_Components.pdf', 'React_Intro_Video.mp4'], topics: ['Functional Components', 'Class Components', 'Component Lifecycle'], subjectCategory: 'Programming' },
-        { id: 'l2.2', title: 'Props and State', materials: ['React_Props_State_Tutorial.html'], topics: ['Passing Props', 'useState Hook', 'Component Re-renders', 'State Management'], subjectCategory: 'Programming' },
-        { id: 'l2.3', title: 'Handling Events', materials: ['React_Events_Guide.doc'], topics: ['Synthetic Events', 'Event Handlers', 'Forms'], subjectCategory: 'Programming' },
-        { id: 'l2.4', title: 'Introduction to Hooks', materials: ['React_Hooks_CheatSheet.pdf'], topics: ['useEffect', 'useContext', 'useRef', 'Custom Hooks'], subjectCategory: 'Programming' },
-      ],
-    },
-    {
-      id: 'c3',
-      title: 'Data Science with Python',
-      description: 'Explore data analysis, machine learning, and visualization using Python. Learn to extract insights from data and build predictive models.',
-      imageUrl: 'https://placehold.co/400x250/EC4899/FFFFFF?text=Data+Science',
-      lessons: [
-        { id: 'l3.1', title: 'Python for Data Analysis', materials: ['Python_Data_Science_Workbook.pdf'], topics: ['Numpy', 'Pandas', 'Data Cleaning', 'Data Manipulation'], subjectCategory: 'Data Science' },
-        { id: 'l3.2', title: 'Machine Learning Basics', materials: ['ML_Algorithms_Overview.mp4', 'Scikit-learn_Docs.html'], topics: ['Supervised Learning', 'Unsupervised Learning', 'Regression', 'Classification', 'Model Evaluation'], subjectCategory: 'Data Science' },
-        { id: 'l3.3', title: 'Data Visualization', materials: ['Matplotlib_Seaborn_Tutorial.pdf'], topics: ['Matplotlib', 'Seaborn', 'Plotting Techniques'], subjectCategory: 'Data Science' },
-      ],
-    },
-  ]);
-
   const selectedCourse = courses.find(c => c.id === selectedCourseId);
 
   // Handlers for Course actions
