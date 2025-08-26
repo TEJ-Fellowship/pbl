@@ -1,49 +1,12 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import SearchComponenet from "../../components/Search/Search";
 import FilterOptions from "../../components/Filter/Filter";
+import { useProperties } from "../../hooks/useProperties";
 
 const SearchPage = () => {
-  const properties = [
-    {
-      id: 1,
-      featured: true,
-      title: "Charming 2-Bedroom Home in Pacific Heights",
-      specs: "2 beds · 2 baths · 1,200 sqft",
-      price: "$1,500,000",
-      image:
-        "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop",
-    },
-    {
-      id: 2,
-      featured: false,
-      title: "Spacious 3-Bedroom Apartment with City Views",
-      specs: "3 beds · 2 baths · 1,500 sqft",
-      price: "$2,200,000",
-      image:
-        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop",
-    },
-    {
-      id: 3,
-      featured: false,
-      title: "Cozy Studio in the Heart of Downtown",
-      specs: "Studio · 1 bath · 500 sqft",
-      price: "$800,000",
-      image:
-        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop",
-    },
-    {
-      id: 4,
-      featured: false,
-      title: "Luxury Penthouse with Panoramic Ocean Views",
-      specs: "4 beds · 3 baths · 2,500 sqft",
-      price: "$4,500,000",
-      image:
-        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop",
-    },
-  ];
+  const { properties } = useProperties();
+
+  
 
   return (
     <>
@@ -58,20 +21,19 @@ const SearchPage = () => {
 
               <SearchComponenet />
 
-              
-
               {/* Filter Buttons */}
 
               <FilterOptions />
 
               {/* Results Header */}
               <h2 className="text-slate-900 text-2xl font-bold leading-tight tracking-tight px-4 pb-3 pt-5">
-                1,234 results
+                {properties.length} results
               </h2>
 
               {/* Property Listings */}
               <div className="space-y-4">
                 {properties.map((property) => (
+                  
                   <div key={property.id} className="p-4">
                     <div className="flex items-stretch justify-between gap-4 rounded-lg hover:bg-slate-100 transition-colors p-4 -m-4 cursor-pointer">
                       <div className="flex flex-[2_2_0px] flex-col gap-4">
@@ -95,7 +57,11 @@ const SearchPage = () => {
                       <div
                         className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg flex-1"
                         style={{
-                          backgroundImage: `url("${property.image}")`,
+                          
+                          backgroundImage: `url("http://localhost:5000/${property.images[0].replace(
+                            /\\/g,
+                            "/"
+                          )}")`,
                         }}
                       />
                     </div>
