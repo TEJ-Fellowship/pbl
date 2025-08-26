@@ -3,16 +3,18 @@ import React, { useState } from "react";
 import login from '../assets/login.jpg'
 import GoogleButton from 'react-google-button'
 
-const handleSubmit = (e) => {
-  e.preventDefault()
+
+
+const handleGoogleSignIn = () => {
+  console.log("Google sign in clicked");
 };
 
-  const handleGoogleSignIn = () => {
-    console.log("Google sign in clicked");
-  };
-
 const Auth = () => {
-    const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log("clicked");
+  };
   return (
     <div className="flex items-center bg-white min-h-screen">
       <div className="container mx-auto px-6 py-6">
