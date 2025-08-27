@@ -1,5 +1,9 @@
 import { useState } from "react";
 import service from "../../services/service";
+import { Link } from "react-router-dom";
+const registerURL = import.meta.env.VITE_REGISTER_URL;
+
+
 
 const RegistrForm = () => {
   const [fullName, setFullName] = useState("");
@@ -14,7 +18,7 @@ const RegistrForm = () => {
     e.preventDefault();
     const data = { fullName, email, password };
     service
-      .create(data)
+      .create(registerURL, data)
       .then((response) => response.data)
       .catch((error) => console.log(error, "this is error"));
   };
@@ -52,7 +56,7 @@ const RegistrForm = () => {
             ></input>
           </p>
           <button>Sign Up</button> 
-          <p>Already have Account? Sign In</p>
+          <p>Already have an Account? <Link to="/login"> Sign In</Link></p>
         </form>
       </div>
     </>
