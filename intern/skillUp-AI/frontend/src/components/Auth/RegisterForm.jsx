@@ -3,8 +3,6 @@ import service from "../../services/service";
 import { Link } from "react-router-dom";
 const registerURL = import.meta.env.VITE_REGISTER_URL;
 
-
-
 const RegistrForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
