@@ -8,6 +8,11 @@ router.post("/register", async (request, response, next) => {
 
     const newUser = new User({ fullName, email, password });
 
+    const oldUser = User.findOne({email:email});
+    if(!oldUser){
+      return response.send({data:"User already exist"});
+    }
+
     await newUser.save();
 
     response
