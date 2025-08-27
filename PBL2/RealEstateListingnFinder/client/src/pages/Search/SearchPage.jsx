@@ -45,7 +45,7 @@ const SearchPage = () => {
               {/* Property Listings */}
               <div className="space-y-4">
                 {currentProperties.map((property) => (
-                  <div key={property.id} className="p-4">
+                  <div key={property._id} className="p-4">
                     <div className="flex items-stretch justify-between gap-4 rounded-lg hover:bg-slate-100 transition-colors p-4 -m-4 cursor-pointer">
                       <div className="flex flex-[2_2_0px] flex-col gap-4">
                         <div className="flex flex-col gap-1">
