@@ -1,11 +1,14 @@
-import express from 'express';
-import { addProperty, getAllProperty } from '../controllers/PropertyController.js';
-import upload from '../middlewares/upload.js';
+import express from "express";
+import { addProperty, getAllProperty, updateProperty } from "../controllers/PropertyController.js";
+import upload from "../middlewares/upload.js";
 
 const router = express.Router();
 
 router.get("/get-all-property", getAllProperty);
 
-router.post("/add-property", upload.array("images", 10), addProperty )
+// Upload up to 10 images per property
+router.post("/add-property", upload.array("images", 10), addProperty);
+
+router.put("/edit-property/:id", upload.array("images", 10), updateProperty );
 
 export default router;

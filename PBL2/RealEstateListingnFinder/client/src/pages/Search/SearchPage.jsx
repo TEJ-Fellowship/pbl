@@ -66,12 +66,14 @@ const SearchPage = () => {
                         </button>
                       </div>
                       <div
+                        key={`${property.id}-${currentPage}`}
                         className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg flex-1"
                         style={{
-                          backgroundImage: `url("http://localhost:5000/${property.images[0].replace(
-                            /\\/g,
-                            "/"
-                          )}")`,
+                          backgroundImage: `url(${
+                            property.images && property.images.length > 0
+                              ? property.images[0]
+                              : "/placeholder.jpg"
+                          })`,
                         }}
                       />
                     </div>
