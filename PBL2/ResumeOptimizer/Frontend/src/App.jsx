@@ -2,15 +2,17 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./Pages/Home.jsx";
 import Resume from "./Pages/MyResume.jsx";
 import Preview from "./Pages/Preview.jsx";
+import JobMatch from "./Pages/JobMatch.jsx";
 
 export default function App() {
   return (
-    <Routes>
+    // <Routes>
 
-      <Route path="/" element={<Home/>} />
-      <Route path="/resume" element={<Resume />} />
-      <Route path='/preview' element={<Preview/>}/>
-    </Routes>
+    //   <Route path="/" element={<Home/>} />
+    //   <Route path="/resume" element={<Resume />} />
+    //   <Route path='/preview' element={<Preview/>}/>
+    // </Routes>
+    <JobMatch/>
   );
 } 
 
