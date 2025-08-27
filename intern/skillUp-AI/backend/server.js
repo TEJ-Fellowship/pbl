@@ -1,8 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+require("dotenv").config();
 app.use(express.json());
 app.use(cors());
+
+
+const url = process.env.MONGODB_URL;
 
 app.get("/info", (request, response) => {
   response.send(`
@@ -10,13 +14,12 @@ app.get("/info", (request, response) => {
     `);
 });
 
-app.get("/api/skillup/register", (request, response)=>{
-    const {fullName, email, password}= request.body;
+app.post("/api/auth/register", (request, response) => {
+  const { fullName, email, password } = request.body;
+});
 
-})
 
 
-const PORT = 3001;
-app.listen(PORT, ()=>{
-    console.log(`server is running on port ${PORT}`);
-})
+app.listen(process.env.PORT, () => {
+  console.log(`server is running on port ${process.env.PORT}`);
+});
