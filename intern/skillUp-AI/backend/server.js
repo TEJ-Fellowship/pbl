@@ -8,6 +8,12 @@ app.get("/info", (request, response) => {
     `);
 });
 
+app.get("/api/skillup/register", (request, response)=>{
+    const {fullName, email, password}= request.body;
+    
+})
+
+
 const PORT = 3001;
 app.listen(PORT, ()=>{
     console.log(`server is running on port ${PORT}`);
