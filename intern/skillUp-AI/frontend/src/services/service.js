@@ -1,28 +1,23 @@
 import axios from "axios";
+const url = "http://localhost:3001/api/auth/register"; // correct URL
 
-const url = "http://localhost:3001/api/skillup";
+const getAll = () => {
+  return axios
+    .get(url)
+    .then((response) => response.data)
+    .catch((error) => {
+      // return error info so component can handle
+      return { error: error.response?.data || error.message };
+    });
+};
 
-const getAll=()=>{
+const create = (userData) => {
+  return axios
+    .post(url, userData)
+    .then((response) => response.data) // return response to caller
+    .catch((error) => {
+      return { error: error.response?.data || error.message }; // return error
+    });
+};
 
-return axios
-  .get(url)
-  .then((response) => {
-    return response.data;
-  })
-  .catch((errorData) => {
-    return errorData;
-  });
-}
-
-const create=(userData)=>{
-axios
-  .post(url, userData)
-  .then((response) => {
-    response.data;
-  })
-  .catch((error) => {
-    console.log("error", error);
-  });
-}
-
-  export default {getAll, create};
+export default { getAll, create };
