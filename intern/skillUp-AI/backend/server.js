@@ -1,22 +1,23 @@
 const express = require("express");
 const cors = require("cors");
-const app = express();
 require("dotenv").config();
+
+const app = express();
+const errorHandler = require("./middleware/errorHandler");
+// Middlewares
 app.use(express.json());
 app.use(cors());
 
 
-const url = process.env.MONGODB_URL;
 
-app.get("/info", (request, response) => {
-  response.send(`
-    <div>Hello from server</div>
-    `);
-});
+// Import the user route
+const authRouter = require("./routes/auth"); // wherever your route file is
+app.use("/api/auth", authRouter); // prefix all routes in authRouter with /api/auth
 
 
 
-
+//Global error handler
+app.use(errorHandler);
 
 app.listen(process.env.PORT, () => {
   console.log(`server is running on port ${process.env.PORT}`);
