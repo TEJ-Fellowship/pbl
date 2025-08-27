@@ -1,6 +1,6 @@
 import "./index.css";
 import LoginForm from "./components/Auth/LoginForm";
-import RegistrForm from "./components/Auth/RefisterForm";
+import RegistrForm from "./components/Auth/RegisterForm";
 function App() {
 
   return (
