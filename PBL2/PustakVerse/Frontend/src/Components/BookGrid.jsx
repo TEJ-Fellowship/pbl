@@ -13,7 +13,7 @@ const BookGrid = ({ books, setBooks }) => {
   const handleEdit = (book) => {
     if (book.source === "online" || book.googleId) {
       alert(
-        "Books from Google Books cannot be edited. You can only mark them as favorites."
+        "Books from Google Books cannot be edited. You can only mark them as favorites or delete them."
       );
       return;
     }
@@ -21,16 +21,15 @@ const BookGrid = ({ books, setBooks }) => {
     setShowEditForm(true);
   };
 
-  // Handle delete book - only for manually added books
+  // Handle delete book - now available for ALL books
   const handleDelete = async (book) => {
-    if (book.source === "online" || book.googleId) {
-      alert(
-        "Books from Google Books cannot be deleted. You can only remove them from favorites."
-      );
-      return;
-    }
+    // Different confirmation messages for online vs manual books
+    const isOnlineBook = book.source === "online" || book.googleId;
+    const confirmMessage = isOnlineBook
+      ? `Are you sure you want to remove "${book.title}" from your collection?`
+      : `Are you sure you want to delete "${book.title}"?`;
 
-    if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
+    if (window.confirm(confirmMessage)) {
       try {
         const res = await fetch(`http://localhost:3001/api/books/${book._id}`, {
           method: "DELETE",
