@@ -1,11 +1,9 @@
 import { useState } from "react";
 
 const LoginForm = () => {
-  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  console.log(userName, "username");
   console.log(email, "email");
   console.log(password, "password");
 
@@ -16,15 +14,6 @@ const LoginForm = () => {
     <>
       <div>
         <p>SkillUp AI</p>
-        <p>
-          Username:{" "}
-          <input
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
-            type="text"
-            placeholder="type username"
-          ></input>
-        </p>
         <p>
           Email:{" "}
           <input
