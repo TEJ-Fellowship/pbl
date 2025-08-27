@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { SparklesIcon } from "@heroicons/react/24/solid";
 
 const InsightsPage = ({ books }) => {
   const { bookId } = useParams();
+  const navigate = useNavigate();
   const [insights, setInsights] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,6 +17,8 @@ const InsightsPage = ({ books }) => {
     const fetchInsights = async () => {
       try {
         setIsLoading(true);
+        setError(null);
+
         const response = await fetch("http://localhost:3001/api/summarize", {
           method: "POST",
           headers: {
@@ -27,14 +31,16 @@ const InsightsPage = ({ books }) => {
           }),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error("Failed to fetch insights");
+          throw new Error(data.error || "Failed to fetch insights");
         }
 
-        const data = await response.json();
         setInsights(data);
       } catch (err) {
         setError(err.message);
+        console.error("Error fetching insights:", err);
       } finally {
         setIsLoading(false);
       }
@@ -59,13 +65,13 @@ const InsightsPage = ({ books }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <Link
-        to="/"
+    <div className="max-w-4xl mx-auto p-6 min-h-screen">
+      <button
+        onClick={() => navigate(-1)}
         className="inline-flex items-center text-blue-500 hover:underline mb-6"
       >
-        ← Back to Library
-      </Link>
+        ← Back
+      </button>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
         <div className="flex flex-col md:flex-row gap-6">
@@ -85,24 +91,82 @@ const InsightsPage = ({ books }) => {
             </div>
           )}
 
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
               {book.title}
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">
               by {book.author}
             </p>
-            <p className="text-gray-700 dark:text-gray-400">
-              {book.description}
-            </p>
+
+            {/* ADDED: Book details section */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {book.year && (
+                <div>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Published
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {book.year}
+                  </p>
+                </div>
+              )}
+
+              {book.rating && (
+                <div>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Rating
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    ⭐ {book.rating}/5
+                  </p>
+                </div>
+              )}
+
+              {book.genre && book.genre.length > 0 && (
+                <div className="col-span-2">
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300">
+                    Genres
+                  </h3>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {book.genre.map((genre, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                      >
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ADDED: Full description */}
+            {book.description && (
+              <div>
+                <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  Description
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  {book.description}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-          AI-Generated Insights
-        </h2>
+      {/* AI Insights Section */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+            <SparklesIcon className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            AI-Generated Insights
+          </h2>
+        </div>
 
         {isLoading && (
           <div className="space-y-4">
@@ -118,7 +182,14 @@ const InsightsPage = ({ books }) => {
 
         {error && (
           <div className="text-red-500 p-4 bg-red-50 dark:bg-red-900/20 rounded">
-            Error: {error}. Please try again later.
+            <p className="font-semibold">Error:</p>
+            <p>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
@@ -170,10 +241,9 @@ const InsightsPage = ({ books }) => {
       <div className="mt-6 p-4 bg-gray-100 dark:bg-gray-900 rounded text-sm text-gray-600 dark:text-gray-400">
         <p className="font-semibold">Disclaimer:</p>
         <p>
-          These insights are AI-generated and intended for educational purposes
-          only. They represent an analytical interpretation rather than a
-          summary of the content. These insights do not substitute for reading
-          the original work. Please support authors by purchasing their books.
+          These AI-generated insights from Pustakverse are for educational
+          purposes only and do not replace reading the original work. Support
+          authors by purchasing their books.
         </p>
       </div>
     </div>
