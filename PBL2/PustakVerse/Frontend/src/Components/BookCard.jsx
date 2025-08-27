@@ -7,6 +7,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
 import InsightsButton from "./InsightsButton";
+
 const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
   // Check if this is an online book using your existing field names
   const isOnlineBook = book.source === "online" || book.googleId;
@@ -53,6 +54,7 @@ const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
       {/* Action buttons */}
       <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
         <InsightsButton book={book} />
+
         {/* Favorite button - available for all books */}
         <button
           onClick={(e) => {
@@ -87,19 +89,17 @@ const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
           </button>
         )}
 
-        {/* Delete button - only for manually added books */}
-        {!isOnlineBook && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(book);
-            }}
-            className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-            title="Delete book"
-          >
-            <TrashIcon className="w-4 h-4" />
-          </button>
-        )}
+        {/* Delete button - available for ALL books (both manual and online) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(book);
+          }}
+          className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          title="Delete book"
+        >
+          <TrashIcon className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
