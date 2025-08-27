@@ -88,7 +88,7 @@ export const updateProperty = async (req, res) => {
     const property = await Property.findById(propertyId);
 
     if (!property) {
-      return response.status(401).json({ message: "Property not found" });
+      return res.status(401).json({ message: "Property not found" });
     }
 
     let uploadedImages = [];
@@ -133,5 +133,20 @@ export const updateProperty = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+  }
+};
+
+export const deleteProperty = async (req, res) => {
+  try {
+    const deletePropertyId = req.params.id;
+    if (!deletePropertyId) return "Not Delete Property";
+
+    const deletedProperty = await Property.findByIdAndDelete(deletePropertyId);
+    if (!deletedProperty)
+      return res.status(401).json({ message: "Property not Found" });
+
+    res.status(200).json({ message: "Property deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };

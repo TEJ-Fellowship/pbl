@@ -18,9 +18,35 @@ const ManageProperty = () => {
 
   const [editPropertyId, setEditPropertyId] = useState(null);
 
+  const handleDelete = async (property) => {
+    const deletePropertyId = property._id;
+
+    if (!window.confirm("Are you sure you want to delete it ?")) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/properties/delete-property/${deletePropertyId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // setProperties((prev) => prev.filter((p) => p._id !== propertyId));
+        refetch();
+      } else {
+        console.log("Failed to delete property");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   const openEditModal = (property) => {
     setEditPropertyId(property._id);
-    console.log(property)
+    console.log(property);
 
     setPropertyDetail({
       title: property.title,
@@ -74,7 +100,7 @@ const ManageProperty = () => {
 
     try {
       let response;
-      console.log(editPropertyId)
+      console.log(editPropertyId);
       if (editPropertyId) {
         // Edit existing property
         response = await fetch(
@@ -193,7 +219,10 @@ const ManageProperty = () => {
                             Edit
                           </button>
                           <span className="text-gray-300">|</span>
-                          <button className="text-red-600 text-sm font-medium hover:text-red-800">
+                          <button
+                            onClick={() => handleDelete(property)}
+                            className="text-red-600 text-sm font-medium hover:text-red-800"
+                          >
                             Remove
                           </button>
                         </div>
