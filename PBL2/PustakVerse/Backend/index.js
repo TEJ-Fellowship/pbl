@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const https = require("https");
+const http = require("http");
 require("dotenv").config();
 
 const app = express();
@@ -62,6 +64,46 @@ const upload = multer({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ----------------------------
+// Helper function to download image from URL
+// ----------------------------
+const downloadImage = (url, filename) => {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(path.join(uploadsDir, filename));
+    const protocol = url.startsWith("https") ? https : http;
+
+    const request = protocol.get(url, (response) => {
+      // Check if the response is successful
+      if (response.statusCode !== 200) {
+        reject(new Error(`Failed to download image: ${response.statusCode}`));
+        return;
+      }
+
+      response.pipe(file);
+
+      file.on("finish", () => {
+        file.close();
+        resolve(filename);
+      });
+
+      file.on("error", (err) => {
+        fs.unlink(path.join(uploadsDir, filename), () => {}); // Delete the file on error
+        reject(err);
+      });
+    });
+
+    request.on("error", (err) => {
+      reject(err);
+    });
+
+    // Set timeout for the request
+    request.setTimeout(10000, () => {
+      request.abort();
+      reject(new Error("Download timeout"));
+    });
+  });
+};
+
+// ----------------------------
 // MongoDB connection
 // ----------------------------
 const password = process.env.MONGODB_PASSWORD;
@@ -74,7 +116,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // ----------------------------
-// Book Schema & Model (Updated with coverImage field)
+// Book Schema & Model (Updated to match your existing schema)
 // ----------------------------
 const bookSchema = new mongoose.Schema(
   {
@@ -86,6 +128,8 @@ const bookSchema = new mongoose.Schema(
     rating: Number,
     favorite: Boolean,
     coverImage: String, // Store the filename of the uploaded image
+    source: { type: String, default: "manual" }, // 'manual' or 'online'
+    googleId: String, // Store Google Books ID for online books
   },
   {
     timestamps: true, // Add createdAt and updatedAt fields
@@ -123,16 +167,21 @@ app.get("/api/books", async (req, res) => {
   }
 });
 
-// Add new book (with image upload)
+// Add new book (with image upload or URL download)
 app.post("/api/books", upload.single("coverImage"), async (req, res) => {
   try {
-    // Parse genre from JSON string
+    // Parse genre from JSON string if it's a string, otherwise use as array
     let genre = [];
     if (req.body.genre) {
       try {
-        genre = JSON.parse(req.body.genre);
+        genre =
+          typeof req.body.genre === "string"
+            ? JSON.parse(req.body.genre)
+            : req.body.genre;
       } catch (e) {
-        genre = [req.body.genre]; // Fallback if not JSON
+        genre = Array.isArray(req.body.genre)
+          ? req.body.genre
+          : [req.body.genre];
       }
     }
 
@@ -142,13 +191,29 @@ app.post("/api/books", upload.single("coverImage"), async (req, res) => {
       genre: genre,
       year: parseInt(req.body.year),
       description: req.body.description,
-      rating: parseFloat(req.body.rating),
-      favorite: req.body.favorite === "true",
+      rating: req.body.rating ? parseFloat(req.body.rating) : 0,
+      favorite: req.body.favorite === "true" || req.body.favorite === true,
+      source: req.body.source || "manual", // Use your existing field
+      googleId: req.body.googleId || null, // Use your existing field
     };
 
-    // Add cover image filename if uploaded
+    // Handle cover image
     if (req.file) {
+      // Manual upload
       bookData.coverImage = req.file.filename;
+    } else if (req.body.coverUrl) {
+      // Download from URL (for Google Books)
+      try {
+        const fileExtension = ".jpg"; // Default to jpg for downloaded images
+        const filename = `downloaded_${Date.now()}_${Math.round(
+          Math.random() * 1e9
+        )}${fileExtension}`;
+        await downloadImage(req.body.coverUrl, filename);
+        bookData.coverImage = filename;
+      } catch (downloadError) {
+        console.error("Failed to download cover image:", downloadError);
+        // Continue without cover image if download fails
+      }
     }
 
     const newBook = new Book(bookData);
@@ -176,13 +241,18 @@ app.put("/api/books/:id", upload.single("coverImage"), async (req, res) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
-    // Parse genre from JSON string
+    // Parse genre from JSON string if it's a string, otherwise use as array
     let genre = [];
     if (req.body.genre) {
       try {
-        genre = JSON.parse(req.body.genre);
+        genre =
+          typeof req.body.genre === "string"
+            ? JSON.parse(req.body.genre)
+            : req.body.genre;
       } catch (e) {
-        genre = [req.body.genre];
+        genre = Array.isArray(req.body.genre)
+          ? req.body.genre
+          : [req.body.genre];
       }
     }
 
@@ -192,11 +262,13 @@ app.put("/api/books/:id", upload.single("coverImage"), async (req, res) => {
       genre: genre,
       year: parseInt(req.body.year),
       description: req.body.description,
-      rating: parseFloat(req.body.rating),
-      favorite: req.body.favorite === "true",
+      rating: req.body.rating
+        ? parseFloat(req.body.rating)
+        : existingBook.rating,
+      favorite: req.body.favorite === "true" || req.body.favorite === true,
     };
 
-    // Handle image update
+    // Handle image update (only for manually added books or if new file is uploaded)
     if (req.file) {
       // Delete old image if exists
       if (existingBook.coverImage) {
@@ -230,6 +302,9 @@ app.delete("/api/books/:id", async (req, res) => {
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
+
+    // Check if this is an online book (should not be deletable from frontend for security)
+    // But we'll allow it from backend for admin purposes
 
     // Delete associated image file
     if (book.coverImage) {

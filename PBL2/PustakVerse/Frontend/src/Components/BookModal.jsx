@@ -1,3 +1,4 @@
+// Components/BookModal.jsx
 import React from "react";
 
 const BookModal = ({ book, onClose }) => {
@@ -14,13 +15,29 @@ const BookModal = ({ book, onClose }) => {
       >
         {/* Left: Cover Image */}
         <div className="w-full md:w-1/3 h-auto min-h-[200px] flex items-center justify-center">
+          {/* UPDATED: Handle both coverImage and coverUrl */}
           {book.coverImage ? (
             <img
               src={`http://localhost:3001/uploads/${book.coverImage}`}
               alt={book.title}
               className="w-full h-auto max-h-96 object-cover rounded shadow-lg"
               onError={(e) => {
-                // Fallback if image fails to load
+                // Fallback to coverUrl if coverImage fails
+                if (book.coverUrl) {
+                  e.target.src = book.coverUrl;
+                } else {
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "flex";
+                }
+              }}
+            />
+          ) : book.coverUrl ? (
+            <img
+              src={book.coverUrl}
+              alt={book.title}
+              className="w-full h-auto max-h-96 object-cover rounded shadow-lg"
+              onError={(e) => {
+                // Fallback if URL image fails to load
                 e.target.style.display = "none";
                 e.target.nextSibling.style.display = "flex";
               }}
@@ -30,7 +47,7 @@ const BookModal = ({ book, onClose }) => {
           {/* Fallback placeholder */}
           <div
             className={`w-full h-64 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded ${
-              book.coverImage ? "hidden" : ""
+              book.coverImage || book.coverUrl ? "hidden" : ""
             }`}
           >
             <span className="text-gray-500">No Cover</span>
@@ -46,6 +63,15 @@ const BookModal = ({ book, onClose }) => {
           >
             ×
           </button>
+
+          {/* ADDED: Source indicator */}
+          {book.source === "google" && (
+            <div className="mb-2">
+              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
+                Google Books
+              </span>
+            </div>
+          )}
 
           <h2 className="text-2xl font-bold mb-2">{book.title}</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-2">
