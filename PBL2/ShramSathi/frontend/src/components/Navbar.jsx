@@ -1,13 +1,17 @@
+import { useState } from 'react';
 
-function Navbar({ setActiveSection , setIsModalOpen}) {
+function Navbar({ setActiveSection, setIsModalOpen }) {
+    const [isShowTasksBtn, setIsShowTasksBtn] = useState(true);
 
     return (
         <nav className="">
             <a
                 href="#"
                 className="block px-4 py-2 rounded-lg hover:bg-blue-100 hover:text-blue-600 m-4"
-                
-                onClick={() => setActiveSection("dashboard")}
+                onClick={() => {
+                    setActiveSection("dashboard")
+                    setIsShowTasksBtn(true)
+                }}
             >
 
                 Dashboard
@@ -17,8 +21,9 @@ function Navbar({ setActiveSection , setIsModalOpen}) {
             <a
                 href="#"
                 className="block px-4 py-2 rounded-lg hover:bg-blue-100 hover:text-blue-600 m-4"
-                onClick={() => setActiveSection("programs")}
-
+                onClick={() => {setActiveSection("programs")
+                    setIsShowTasksBtn(true)
+                }}
             >
                 Programs
             </a>
@@ -26,16 +31,20 @@ function Navbar({ setActiveSection , setIsModalOpen}) {
             <a
                 href="#"
                 className="block px-4 py-2 rounded-lg hover:bg-blue-100 hover:text-blue-600 m-4"
-                onClick={() => setActiveSection("tasks")}
+                onClick={() => {
+                    setActiveSection("tasks")
+                    setIsShowTasksBtn(false)
+                }}
             >
-                Tasks
+                Tasks Manager
             </a>
 
             <a
                 href="#"
                 className="block px-4 py-2 rounded-lg hover:bg-blue-100 hover:text-blue-600 m-4"
-
-                onClick={() => setActiveSection("members")}
+                onClick={() => {setActiveSection("members")
+                    setIsShowTasksBtn(true)
+                }}
             >
                 Members
             </a>
@@ -43,15 +52,20 @@ function Navbar({ setActiveSection , setIsModalOpen}) {
             <a
                 href="#"
                 className="block px-4 py-2 rounded-lg hover:bg-blue-100 hover:text-blue-600 m-4"
-                onClick={() => setActiveSection("overview")}
+                onClick={() => {setActiveSection("overview")
+                    setIsShowTasksBtn(true)
+                }}
             >
                 Overview
             </a>
-
-            <button className="w-56 m-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                onClick={() => setIsModalOpen(true)}>
-                Add tasks
-            </button>
+            {
+                isShowTasksBtn && (
+                    <button className="w-56 m-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        onClick={() => setIsModalOpen(true)}>
+                        Add tasks
+                    </button>
+                )
+            }
         </nav>
     );
 }

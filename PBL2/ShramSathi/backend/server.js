@@ -12,6 +12,15 @@ app.get('/', (req, res) => {
     res.send('Get request is tested and implemented successfully');
 })
 
+app.get('/api/tasks', async (req, res) => {
+    try {
+        const tasks = await Task.find();
+        res.status(200).json(tasks);
+    } catch (err) {
+        res.status(500).json({ message: "Error fetching tasks", err});
+    }
+})
+
 app.post('/api/tasks', async (req, res) => {
     try {
         const task = new Task(req.body);
@@ -23,6 +32,20 @@ app.post('/api/tasks', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 })
+
+app.patch('/api/tasks/:id', async (req, res) => {
+  try {
+    const task = await Task.findByIdAndUpdate(
+      req.params.id,
+      { completed: req.body.completed },
+      { new: true }
+    );
+    res.json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 const port = process.env.PORT || 3000;
 
