@@ -54,15 +54,16 @@ const Home = () => {
 
   // Upload to backend
   const handleUpload = async () => {
+
     if (!title.trim()) {
-      alert("Please enter a title!");
-      return;
-    }
-    if (!file) {
+       if (!file) {
       alert("Please select a PDF or DOCX file!");
       return;
     }
-
+      alert("Please enter a title!");
+      return;
+    }
+   
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title);
