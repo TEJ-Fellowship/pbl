@@ -21,7 +21,7 @@ axios
     response.data;
   })
   .catch((error) => {
-    console.log("this is error", error);
+    console.log("error", error);
   });
 }
 
