@@ -1,6 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "./Pages/Home.jsx";
-import Resume from "./Pages/MyResume.jsx";
+import ResumePage from "./Pages/MyResume.jsx";
 import Preview from "./Pages/Preview.jsx";
 
 export default function App() {
@@ -8,8 +8,8 @@ export default function App() {
     <Routes>
 
       <Route path="/" element={<Home/>} />
-      <Route path="/resume" element={<Resume />} />
-      <Route path='/preview' element={<Preview/>}/>
+      <Route path="/resume" element={<ResumePage />} />
+      <Route path="/preview/:id"element={<Preview/>}/>
     </Routes>
   );
 } 

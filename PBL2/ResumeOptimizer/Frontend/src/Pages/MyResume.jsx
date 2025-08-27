@@ -115,13 +115,26 @@ export default function Resume() {
                   <td className="px-6 py-4 text-blue-600">
                     {new Date(resume.uploadDate).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 space-x-3 text-blue-600">
-                    <button onClick={() => navigate("/preview")}>Preview</button>
+                  <td className="px-6 py-4 flex items-center gap-4">
+                    <a
+                      href={`/preview/${resume._id}`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Ai Summarize
+                    </a>
+
                     <button
-                      className="text-red-500"
+                      className="text-red-500 darker hover:underline"
                       onClick={() => handelDelete(resume._id)}
                     >
                       Delete
+                    </button>
+
+                    <button
+                      className="text-green-600 hover:underline"
+                      onClick={() => navigate(`/match/${resume._id}`)}
+                    >
+                      Match
                     </button>
                   </td>
                 </tr>
