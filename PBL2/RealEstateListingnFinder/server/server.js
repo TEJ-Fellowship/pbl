@@ -17,6 +17,7 @@ app.use(express.json())
 app.use('/uploads', express.static("uploads"))
 
 
+console.log(process.env.CLOUDINARY_API_KEY)
 const PORT = process.env.PORT || 5001;
 
 
