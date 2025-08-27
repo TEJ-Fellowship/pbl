@@ -7,10 +7,15 @@ import Search from "./Components/Search";
 import Browse from "./Components/Browse";
 import { Routes, Route, Navigate } from "react-router-dom";
 import InsightsPage from "./Components/InsightsPage";
+import Signup from "./Components/Sign"; // make sure filename is correct
+import Login from "./Components/Login";
+import Profile from "./Components/Profile";
+
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [books, setBooks] = useState([]);
+  const[user, setUser] = useState(null);
 
   useEffect(() => {
     fetch("http://localhost:3001/api/books")
@@ -30,6 +35,8 @@ function App() {
         setDarkMode={setDarkMode}
         books={books}
         setBooks={setBooks}
+        user={user}
+        setUser={setUser}
       />
 
       <Routes>
@@ -51,6 +58,9 @@ function App() {
           path="/insights/:bookId"
           element={<InsightsPage books={books} />}
         />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/login" element={<Login onLogin={setUser} />} />
+        <Route path="/profile" element={<Profile user={user} onLogout={() => setUser(null)} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

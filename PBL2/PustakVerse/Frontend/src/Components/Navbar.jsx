@@ -9,24 +9,17 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
-const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
+const Navbar = ({ darkMode, setDarkMode, books, setBooks, user, setUser }) => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
-  // ADDED: State for browse dropdown
   const [showBrowseMenu, setShowBrowseMenu] = useState(false);
 
-  // ADDED: Handle search icon click
-  const handleSearchClick = () => {
-    navigate("/search");
-  };
-
-  // ADDED: Handle browse menu item click
+  const handleSearchClick = () => navigate("/search");
   const handleBrowseClick = (category) => {
     navigate(`/browse/${category}`);
     setShowBrowseMenu(false);
   };
 
-  // ADDED: Browse categories
   const browseCategories = [
     { name: "All Books", value: "all" },
     { name: "Fiction", value: "fiction" },
@@ -87,7 +80,7 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
               </NavLink>
             </li>
 
-            {/* ADDED: Browse dropdown menu */}
+            {/* Browse Dropdown */}
             <li className="relative">
               <button
                 onClick={() => setShowBrowseMenu(!showBrowseMenu)}
@@ -101,7 +94,6 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
                 />
               </button>
 
-              {/* ADDED: Browse dropdown menu */}
               {showBrowseMenu && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                   <div className="py-2">
@@ -123,7 +115,7 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-4">
-          {/* MODIFIED: Search icon instead of input */}
+          {/* Search */}
           <button
             onClick={handleSearchClick}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -132,6 +124,7 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
             <MagnifyingGlassIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
 
+          {/* Dark mode toggle */}
           <button
             onClick={handleThemeToggle}
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
@@ -143,25 +136,59 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
             )}
           </button>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-primary text-white px-4 py-1 rounded-full font-semibold hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            Add New
-          </button>
+          {/* Add New Book */}
+          {user && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-2 bg-primary text-white px-4 py-1 rounded-full font-semibold hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              Add New
+            </button>
+          )}
 
-          <div className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border-2 border-gray-300 dark:border-gray-600">
-            <img
-              src="https://randomuser.me/api/portraits/men/75.jpg"
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+          {/* Authentication / Profile */}
+          <div className="flex items-center gap-2">
+            {!user ? (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="px-3 py-1 bg-green-500 text-white rounded"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="px-3 py-1 bg-blue-500 text-white rounded"
+                >
+                  Sign Up
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/profile")}
+                  className="px-3 py-1 bg-primary text-white rounded"
+                >
+                  {user.username}
+                </button>
+                <button
+                  onClick={() => {
+                    setUser(null);
+                    localStorage.removeItem("token");
+                    navigate("/");
+                  }}
+                  className="px-3 py-1 bg-red-500 text-white rounded"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
-      {/* ADDED: Overlay to close browse menu when clicking outside */}
+      {/* Overlay for browse menu click outside */}
       {showBrowseMenu && (
         <div
           className="fixed inset-0 z-40"
@@ -169,6 +196,7 @@ const Navbar = ({ darkMode, setDarkMode, setBooks }) => {
         />
       )}
 
+      {/* Form modal */}
       {showForm && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
