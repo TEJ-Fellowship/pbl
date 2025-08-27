@@ -23,10 +23,16 @@ const GoogleBooks = ({ books, setBooks }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [defaultResults, setDefaultResults] = useState([]);
   const [addingBooks, setAddingBooks] = useState(new Set());
 
-  const fetchBooks = async (searchQuery, isDefault = false) => {
+  // Clear results when input is empty
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+    }
+  }, [query]);
+
+  const fetchBooks = async (searchQuery) => {
     setLoading(true);
     try {
       const res = await fetch(
@@ -37,23 +43,13 @@ const GoogleBooks = ({ books, setBooks }) => {
       const data = await res.json();
       const items = Array.isArray(data.items) ? data.items : [];
       const normalized = items.map(normalizeGoogleBook);
-
-      if (isDefault) {
-        setDefaultResults(normalized);
-      } else {
-        setResults(normalized);
-      }
+      setResults(normalized);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
-
-  // Load default books on mount
-  useEffect(() => {
-    fetchBooks("bestsellers", true);
-  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -62,7 +58,6 @@ const GoogleBooks = ({ books, setBooks }) => {
   };
 
   const addBook = async (book) => {
-    // Check if book is already in collection
     if (books.some((b) => b.googleId === book.id || b._id === book.id)) {
       alert("Book already in your collection!");
       return;
@@ -106,9 +101,7 @@ const GoogleBooks = ({ books, setBooks }) => {
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to add book");
-      }
+      if (!res.ok) throw new Error("Failed to add book");
 
       const savedBook = await res.json();
       setBooks((prevBooks) => [...prevBooks, savedBook]);
@@ -217,28 +210,29 @@ const GoogleBooks = ({ books, setBooks }) => {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSearch} className="flex gap-2">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Google Books..."
-          className="flex-1 border rounded px-4 py-2"
-        />
+        <div className="relative flex-1">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Google Books..."
+            className="w-full border rounded px-4 py-2 pr-10" // extra padding for X inside
+          />
+
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
         <button type="submit" className="px-4 py-2 bg-black text-white rounded">
           {loading ? "Searching..." : "Search"}
         </button>
       </form>
-
-      {/* Show default popular books if no search query */}
-      {defaultResults.length > 0 && results.length === 0 && (
-        <>
-          <h3 className="text-lg font-semibold mt-4">Popular Books</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {defaultResults.map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
-          </div>
-        </>
-      )}
 
       {/* Show search results */}
       {results.length > 0 && (
