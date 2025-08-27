@@ -8,10 +8,6 @@ const RegistrForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  console.log(fullName, "fullName");
-  console.log(email, "email");
-  console.log(password, "password");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = { fullName, email, password };
@@ -19,6 +15,10 @@ const RegistrForm = () => {
       .create(registerURL, data)
       .then((response) => response.data)
       .catch((error) => console.log(error, "this is error"));
+
+      setFullName("");
+      setEmail("");
+      setPassword("");
   };
 
   return (

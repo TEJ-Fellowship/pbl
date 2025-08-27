@@ -9,9 +9,6 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  console.log(email, "email");
-  console.log(password, "password");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const loginData = { email, password };
@@ -20,6 +17,9 @@ const LoginForm = () => {
       .create(loginURL, loginData)
       .then((response) => response.data)
       .catch((error) => console.log("Error on login", error));
+
+      setEmail("");
+      setPassword("");
   };
 
   return (
