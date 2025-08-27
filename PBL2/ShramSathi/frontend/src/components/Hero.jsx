@@ -46,7 +46,7 @@ function Hero({setShowLanding}) {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
             Don’t just volunteer! <br />
             volunteer smartly with{" "}
-            <span className="text-blue-700">ShramSathi</span>.
+            <span className="text-blue-700">CommunityFlow</span>
           </h1>
 
           <p className="mt-6 text-lg text-white">
@@ -57,15 +57,8 @@ function Hero({setShowLanding}) {
           <div className="flex flex-col mb-8 lg:mb-16 space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4">
             <a
               href="#"
-              className="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-gray-900 rounded-lg border border-gray-300 
-              bg-blue-700
-              
-              hover:bg-gray-100 focus:ring-4 focus:ring-gray-100 dark:text-white dark:border-blue-700 dark:hover:bg-blue-700
-
-            
-
-               dark:focus:ring-gray-800 mt-5"
-
+              className="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-gray-900 rounded-lg border-none
+              bg-blue-700 hover:scale-105 transition-transform duration-300 focus:border-none"
                onClick={()=>setShowLanding(false) }
             >
               GET STARTED

@@ -28,7 +28,7 @@ const taskSchema = new mongoose.Schema({
     description: {
         type: String,
         minlength: 3,
-        maxlength: 50,
+        maxlength: 100,
         required: true
     },
     date: {
@@ -40,7 +40,11 @@ const taskSchema = new mongoose.Schema({
         enum: ["Social Work", "Health", "Education"],
         required: true
     },
-    assignee: String
+    assignee: String,
+    completed: { 
+      type: Boolean, 
+      default: false 
+    }
 });
 
 const Task = mongoose.model('Task', taskSchema);
