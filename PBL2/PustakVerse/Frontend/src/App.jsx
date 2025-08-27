@@ -6,6 +6,7 @@ import Search from "./Components/Search";
 // ADDED: Import Browse component
 import Browse from "./Components/Browse";
 import { Routes, Route, Navigate } from "react-router-dom";
+import InsightsPage from "./Components/InsightsPage";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -35,11 +36,7 @@ function App() {
         <Route path="/" element={<Home books={books} setBooks={setBooks} />} />
         <Route
           path="/mybooks"
-          element={<MyBooks 
-            books={books}
-            setBooks={setBooks}
-            
-            />}
+          element={<MyBooks books={books} setBooks={setBooks} />}
         />
         <Route
           path="/search"
@@ -49,6 +46,10 @@ function App() {
         <Route
           path="/browse/:category"
           element={<Browse books={books} setBooks={setBooks} />}
+        />
+        <Route
+          path="/insights/:bookId"
+          element={<InsightsPage books={books} />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

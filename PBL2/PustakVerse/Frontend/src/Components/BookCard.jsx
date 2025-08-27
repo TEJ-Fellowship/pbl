@@ -6,7 +6,7 @@ import {
   HeartIcon,
 } from "@heroicons/react/24/solid";
 import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
-
+import InsightsButton from "./InsightsButton";
 const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
   // Check if this is an online book using your existing field names
   const isOnlineBook = book.source === "online" || book.googleId;
@@ -52,6 +52,7 @@ const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
 
       {/* Action buttons */}
       <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+        <InsightsButton book={book} />
         {/* Favorite button - available for all books */}
         <button
           onClick={(e) => {
