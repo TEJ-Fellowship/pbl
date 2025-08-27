@@ -1,14 +1,25 @@
 import "./index.css";
 import LoginForm from "./components/Auth/LoginForm";
 import RegistrForm from "./components/Auth/RegisterForm";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 function App() {
 
+  const isAuthenticated = localStorage.getItem("tokan");
   return (
-    <>
-     <LoginForm />
-     <RegistrForm />
-    </>
-  )
+    <Router>
+      <Routes>
+       <Route path="/login" element={isAuthenticated ? <Navigate to="/"/> : <LoginForm />} />
+       <Route path="/register" element={isAuthenticated ? <Navigate to="/"/> : <RegistrForm />} />
+       <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login"/>} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;
