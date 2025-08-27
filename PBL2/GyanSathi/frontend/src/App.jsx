@@ -1,173 +1,79 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import toast from "react-hot-toast";
 import HomePage from "./pages/Homepage";
 import CourseDetail from "./pages/CourseDetail";
 import CourseManagement from "./pages/CourseManagement";
 import LessonDetail from "./pages/LessonDetail";
 
 const App = () => {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [view, setView] = useState("home"); // 'home', 'manage', 'courseDetail', 'lessonDetail'
   const [selectedCourseId, setSelectedCourseId] = useState(null);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [theme, setTheme] = useState("light"); // 'light' or 'dark'
 
+  useEffect(() => {
+    const fetchCourse = async () => {
+      try {
+        setLoading(true);
+
+        // First, fetch all courses
+        const coursesResponse = await axios.get(
+          "http://localhost:8000/api/courses"
+        );
+        const courses = coursesResponse.data.data;
+        // Then, fetch lessons for each course
+        const coursesWithLessons = await Promise.all(
+          courses.map(async (course) => {
+            try {
+              const lessonsResponse = await axios.get(
+                `http://localhost:8000/api/courses/${course._id}`
+              );
+              // Normalize lessons: if lessons is an object with a lessons array, flatten it
+              let lessons = lessonsResponse.data.data;
+              if (
+                lessons &&
+                typeof lessons === "object" &&
+                Array.isArray(lessons.lessons)
+              ) {
+                lessons = lessons.lessons;
+              } else if (!Array.isArray(lessons)) {
+                lessons = [];
+              }
+              return {
+                ...course,
+                id: course._id,
+                lessons,
+              };
+            } catch (error) {
+              console.log(
+                `Error fetching lessons for course ${course._id}:`,
+                error
+              );
+              return {
+                ...course,
+                id: course._id,
+                lessons: [],
+              };
+            }
+          })
+        );
+        console.log(coursesWithLessons);
+        setCourses(coursesWithLessons);
+        toast.success("All courses and lessons successfully fetched!");
+      } catch (error) {
+        console.log("Error during Fetch", error);
+        toast.error("Failed to fetch courses data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCourse();
+  }, []);
+
   // Initial dummy data for courses and lessons
-  const [courses, setCourses] = useState([
-    {
-      id: "c1",
-      title: "Introduction to Web Development",
-      description:
-        "Learn the fundamentals of web development, including HTML, CSS, and JavaScript. This course covers everything from basic syntax to building responsive layouts. Perfect for beginners!",
-      imageUrl: "https://placehold.co/400x250/06B6D4/FFFFFF?text=Web+Dev",
-      lessons: [
-        {
-          id: "l1.1",
-          title: "HTML Basics",
-          materials: [
-            "https://www.w3schools.com/html/default.asp",
-            "HTML_Cheatsheet.pdf",
-          ],
-          topics: ["HTML Structure", "Tags", "Elements", "Attributes"],
-          subjectCategory: "Web Development",
-        },
-        {
-          id: "l1.2",
-          title: "CSS Styling",
-          materials: [
-            "https://www.w3schools.com/css/default.asp",
-            "CSS_Layouts.mp4",
-          ],
-          topics: [
-            "Selectors",
-            "Box Model",
-            "Flexbox",
-            "Grid",
-            "Responsiveness",
-          ],
-          subjectCategory: "Web Development",
-        },
-        {
-          id: "l1.3",
-          title: "JavaScript Fundamentals",
-          materials: [
-            "https://javascript.info/",
-            "JS_CrashCourse.mp4",
-            "Modern_JS_Book.pdf",
-          ],
-          topics: [
-            "Variables",
-            "Functions",
-            "DOM Manipulation",
-            "Events",
-            "ES6 Features",
-          ],
-          subjectCategory: "Programming",
-        },
-        {
-          id: "l1.4",
-          title: "Introduction to Responsive Design",
-          materials: [
-            "https://developer.mozilla.org/en-US/docs/Web/Guide/Responsive",
-          ],
-          topics: [
-            "Media Queries",
-            "Mobile-First",
-            "Fluid Layouts",
-            "Viewport",
-          ],
-          subjectCategory: "Web Design",
-        },
-        {
-          id: "l1.5",
-          title: "Introduction to Web Hosting",
-          materials: ["Web_Hosting_Guide.pdf"],
-          topics: ["Domains", "Servers", "Deployment"],
-          subjectCategory: "Web Development",
-        },
-      ],
-    },
-    {
-      id: "c2",
-      title: "React Fundamentals",
-      description:
-        "Dive deep into React.js, component-based architecture, and state management. Build dynamic and interactive user interfaces with confidence.",
-      imageUrl: "https://placehold.co/400x250/6366F1/FFFFFF?text=React+JS",
-      lessons: [
-        {
-          id: "l2.1",
-          title: "Understanding Components",
-          materials: ["React_Components.pdf", "React_Intro_Video.mp4"],
-          topics: [
-            "Functional Components",
-            "Class Components",
-            "Component Lifecycle",
-          ],
-          subjectCategory: "Programming",
-        },
-        {
-          id: "l2.2",
-          title: "Props and State",
-          materials: ["React_Props_State_Tutorial.html"],
-          topics: [
-            "Passing Props",
-            "useState Hook",
-            "Component Re-renders",
-            "State Management",
-          ],
-          subjectCategory: "Programming",
-        },
-        {
-          id: "l2.3",
-          title: "Handling Events",
-          materials: ["React_Events_Guide.doc"],
-          topics: ["Synthetic Events", "Event Handlers", "Forms"],
-          subjectCategory: "Programming",
-        },
-        {
-          id: "l2.4",
-          title: "Introduction to Hooks",
-          materials: ["React_Hooks_CheatSheet.pdf"],
-          topics: ["useEffect", "useContext", "useRef", "Custom Hooks"],
-          subjectCategory: "Programming",
-        },
-      ],
-    },
-    {
-      id: "c3",
-      title: "Data Science with Python",
-      description:
-        "Explore data analysis, machine learning, and visualization using Python. Learn to extract insights from data and build predictive models.",
-      imageUrl: "https://placehold.co/400x250/EC4899/FFFFFF?text=Data+Science",
-      lessons: [
-        {
-          id: "l3.1",
-          title: "Python for Data Analysis",
-          materials: ["Python_Data_Science_Workbook.pdf"],
-          topics: ["Numpy", "Pandas", "Data Cleaning", "Data Manipulation"],
-          subjectCategory: "Data Science",
-        },
-        {
-          id: "l3.2",
-          title: "Machine Learning Basics",
-          materials: ["ML_Algorithms_Overview.mp4", "Scikit-learn_Docs.html"],
-          topics: [
-            "Supervised Learning",
-            "Unsupervised Learning",
-            "Regression",
-            "Classification",
-            "Model Evaluation",
-          ],
-          subjectCategory: "Data Science",
-        },
-        {
-          id: "l3.3",
-          title: "Data Visualization",
-          materials: ["Matplotlib_Seaborn_Tutorial.pdf"],
-          topics: ["Matplotlib", "Seaborn", "Plotting Techniques"],
-          subjectCategory: "Data Science",
-        },
-      ],
-    },
-  ]);
 
   // Functions to manage courses in the main App state
   const handleAddCourse = (newCourse) => {
@@ -273,7 +179,9 @@ const App = () => {
   };
 
   const currentCourse = selectedCourseId
-    ? courses.find((c) => c.id === selectedCourseId)
+    ? courses.find(
+        (c) => c.id === selectedCourseId || c._id === selectedCourseId
+      )
     : null;
   const currentLesson =
     currentCourse && selectedLessonId
