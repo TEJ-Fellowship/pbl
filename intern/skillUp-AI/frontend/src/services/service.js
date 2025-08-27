@@ -1,5 +1,5 @@
 import axios from "axios";
-const url = "http://localhost:3001/api/auth/register"; // correct URL
+const url = "http://localhost:3001/"; // correct URL
 
 const getAll = () => {
   return axios
@@ -11,9 +11,9 @@ const getAll = () => {
     });
 };
 
-const create = (userData) => {
+const create = (userDefineUrl, userData) => {
   return axios
-    .post(url, userData)
+    .post(userDefineUrl, userData)
     .then((response) => response.data) // return response to caller
     .catch((error) => {
       return { error: error.response?.data || error.message }; // return error
