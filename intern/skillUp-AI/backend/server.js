@@ -14,9 +14,7 @@ app.get("/info", (request, response) => {
     `);
 });
 
-app.post("/api/auth/register", (request, response) => {
-  const { fullName, email, password } = request.body;
-});
+
 
 
 
