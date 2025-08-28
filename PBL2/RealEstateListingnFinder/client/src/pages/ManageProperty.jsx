@@ -15,26 +15,55 @@ const ManageProperty = () => {
     location: "",
     images: [],
   });
-  // const [properties, setProperties] = useState([]);
 
-  // useEffect(() => {
-  //   const fetchProperties = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         "http://localhost:5000/api/properties/get-all-property"
-  //       );
-  //       const data = await response.json();
-  //       setProperties(data);
-  //       console.log(data);
-  //     } catch (err) {
-  //       console.log(err);
-  //     }
-  //   };
+  const [editPropertyId, setEditPropertyId] = useState(null);
 
-  //   fetchProperties();
-  // }, []);
+  const handleDelete = async (property) => {
+    const deletePropertyId = property._id;
 
-  const {properties, refetch} = useProperties();
+    if (!window.confirm("Are you sure you want to delete it ?")) return;
+
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/properties/delete-property/${deletePropertyId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // setProperties((prev) => prev.filter((p) => p._id !== propertyId));
+        refetch();
+      } else {
+        console.log("Failed to delete property");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const openEditModal = (property) => {
+    setEditPropertyId(property._id);
+    console.log(property);
+
+    setPropertyDetail({
+      title: property.title,
+      description: property.description,
+      price: property.price,
+      parking: property.price,
+      features: Array.isArray(property.features) ? property.features : [],
+      beds: property.beds,
+      propertyType: property.propertyType,
+      location: property.location,
+      images: [],
+    });
+
+    setIsModalOpen(true);
+  };
+
+  const { properties, refetch } = useProperties();
 
   const handleChange = (e) => {
     const { name, value } = e.target; //returns the name of input and value of inputs
@@ -44,7 +73,8 @@ const ManageProperty = () => {
     }));
   };
 
-  
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const handleSubmit = async () => {
     const formData = new FormData();
@@ -68,22 +98,49 @@ const ManageProperty = () => {
       formData.append("images", propertyDetail.images[i]);
     }
 
-    const response = await fetch(
-      "http://localhost:5000/api/properties/add-property",
-      {
-        method: "POST",
-        body: formData,
+    try {
+      let response;
+      console.log(editPropertyId);
+      if (editPropertyId) {
+        // Edit existing property
+        response = await fetch(
+          `http://localhost:5000/api/properties/edit-property/${editPropertyId}`,
+          {
+            method: "PUT",
+            body: formData,
+          }
+        );
+      } else {
+        // Add new property
+        response = await fetch(
+          "http://localhost:5000/api/properties/add-property",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
       }
-    );
 
-    const data = await response.json();
-    console.log(data);
-
-    refetch();
+      const data = await response.json();
+      console.log(data);
+      refetch();
+      closeModal();
+      setEditPropertyId(null);
+      setPropertyDetail({
+        title: "",
+        description: "",
+        price: "",
+        parking: "",
+        features: [],
+        beds: 0,
+        propertyType: "",
+        location: "",
+        images: [],
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
-
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
 
   return (
     <>
@@ -137,38 +194,35 @@ const ManageProperty = () => {
                 </thead>
                 <tbody>
                   {properties.map((property) => (
-                    <tr className="border-t border-t-gray-200 hover:bg-gray-50">
-                      <td
-                        key={property._id}
-                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
-                      >
+                    <tr
+                      key={property._id}
+                      className="border-t border-t-gray-200 hover:bg-gray-50"
+                    >
+                      <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
                         {property.title}
                       </td>
-                      <td
-                        key={property._id}
-                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
-                      >
+                      <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
                         {property.price}
                       </td>
-                      <td
-                        key={property._id}
-                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
-                      >
+                      <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
                         {property.propertyType}
                       </td>
-                      <td
-                        key={property._id}
-                        className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal"
-                      >
+                      <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
                         {property.location}
                       </td>
                       <td className="h-16 px-4 py-2">
                         <div className="flex gap-2">
-                          <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
+                          <button
+                            onClick={() => openEditModal(property)}
+                            className="text-blue-600 text-sm font-medium hover:text-blue-800"
+                          >
                             Edit
                           </button>
                           <span className="text-gray-300">|</span>
-                          <button className="text-red-600 text-sm font-medium hover:text-red-800">
+                          <button
+                            onClick={() => handleDelete(property)}
+                            className="text-red-600 text-sm font-medium hover:text-red-800"
+                          >
                             Remove
                           </button>
                         </div>

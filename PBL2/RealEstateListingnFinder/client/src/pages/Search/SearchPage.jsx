@@ -45,7 +45,7 @@ const SearchPage = () => {
               {/* Property Listings */}
               <div className="space-y-4">
                 {currentProperties.map((property) => (
-                  <div key={property.id} className="p-4">
+                  <div key={property._id} className="p-4">
                     <div className="flex items-stretch justify-between gap-4 rounded-lg hover:bg-slate-100 transition-colors p-4 -m-4 cursor-pointer">
                       <div className="flex flex-[2_2_0px] flex-col gap-4">
                         <div className="flex flex-col gap-1">
@@ -66,12 +66,14 @@ const SearchPage = () => {
                         </button>
                       </div>
                       <div
+                        key={`${property.id}-${currentPage}`}
                         className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg flex-1"
                         style={{
-                          backgroundImage: `url("http://localhost:5000/${property.images[0].replace(
-                            /\\/g,
-                            "/"
-                          )}")`,
+                          backgroundImage: `url(${
+                            property.images && property.images.length > 0
+                              ? property.images[0]
+                              : "/placeholder.jpg"
+                          })`,
                         }}
                       />
                     </div>
