@@ -3,7 +3,11 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 const express = require("express");
+const cors = require('cors')
 const app = express();
+app.use(cors({
+  origin: 'http://localhost:5173' 
+}));
 app.use(express.json());
 
 const { User } = require("./Mongo.js");
