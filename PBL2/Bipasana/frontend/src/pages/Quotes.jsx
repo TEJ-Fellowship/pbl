@@ -33,7 +33,6 @@ function Quotes() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-purple-300 flex items-center justify-center p-6">
             <div className="max-w-2xl w-full">
-                {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-5xl font-bold text-gray-800 mb-4 tracking-tight">
                         Daily Quotes
@@ -41,7 +40,6 @@ function Quotes() {
                     <div className="w-24 h-1 bg-gradient-to-r from-pink-400 to-purple-500 mx-auto rounded-full"></div>
                 </div>
 
-                {/* Quote Card */}
                 <div className="bg-white/40 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border border-white/30 mb-8">
                     {error && (
                         <div className="text-center py-8">
