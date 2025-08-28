@@ -5,7 +5,7 @@ import GoogleBooks from "./GoogleBooks";
 function Home({ books, setBooks }) {
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-6">
-      <h2 className="text-xl font-semibold">Google API Books</h2>
+      <h2 className="text-xl font-semibold">Add Books Online</h2>
 
       {/* Google Books Search Component */}
       <GoogleBooks books={books} setBooks={setBooks} />

@@ -84,7 +84,7 @@ const Navbar = ({
                     : "text-black dark:text-gray-500 hover:text-primary transition-colors"
                 }
               >
-                MyBooks
+                Favorites
               </NavLink>
             </li>
 

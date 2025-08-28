@@ -13,93 +13,94 @@ const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
   const isOnlineBook = book.source === "online" || book.googleId;
 
   return (
-    <div className="border rounded-lg shadow p-4 bg-white dark:bg-gray-800 relative group">
-      {/* Updated image display logic */}
+    <div className="border rounded-2xl shadow-lg p-6 bg-white dark:bg-gray-800 relative flex flex-col justify-between min-h-[400px] hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+      {/* Image */}
       {book.coverImage ? (
         <img
           src={`http://localhost:3001/uploads/${book.coverImage}`}
           alt={book.title}
-          className="w-full h-40 object-cover rounded"
+          className="w-full h-48 object-cover rounded-xl shadow-lg mb-4 hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            // Fallback if image fails to load
             e.target.style.display = "none";
             e.target.nextSibling.style.display = "flex";
           }}
         />
       ) : null}
 
-      {/* Fallback placeholder (shown when no image or image fails to load) */}
       <div
-        className={`w-full h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded ${
+        className={`w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-xl mb-4 ${
           book.coverImage ? "hidden" : ""
         }`}
       >
         <span className="text-gray-500">No Cover</span>
       </div>
 
-      <h2 className="text-lg font-semibold mt-2">{book.title}</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400">{book.author}</p>
-      <p className="text-sm">{book.genre.join(", ")}</p>
-      <p className="text-sm">Year: {book.year}</p>
-      <p className="text-sm">⭐ {book.rating}</p>
-      {book.favorite && <p className="text-pink-500">❤️ Favorite</p>}
-
-      {/* Show if it's from online source */}
-      {isOnlineBook && (
-        <p className="text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded mt-1">
-          From Google Books
+      {/* Minimal Text */}
+      <div>
+        <h2 className="text-xl font-bold mb-1 truncate">{book.title}</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 truncate">
+          {book.author}
         </p>
-      )}
+        <p className="text-sm font-semibold">⭐ {book.rating}</p>
 
-      {/* Action buttons */}
-      <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
-        <InsightsButton book={book} />
+        {isOnlineBook && (
+          <p className="text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded mt-2 inline-block">
+            From Google Books
+          </p>
+        )}
+      </div>
 
-        {/* Favorite button - available for all books */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(book);
-          }}
-          className={`p-1 rounded transition-colors ${
-            book.favorite
-              ? "bg-pink-500 text-white hover:bg-pink-600"
-              : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-          }`}
-          title={book.favorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          {book.favorite ? (
-            <HeartIcon className="w-4 h-4" />
-          ) : (
-            <HeartOutline className="w-4 h-4" />
-          )}
-        </button>
+      {/* Action Buttons */}
+      <div className="mt-4 flex flex-col gap-2">
+        <InsightsButton
+          book={book}
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-lg font-semibold hover:scale-105 transition-transform duration-200"
+        />
 
-        {/* Edit button - only for manually added books */}
-        {!isOnlineBook && (
+        <div className="flex gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onEdit(book);
+              onToggleFavorite(book);
             }}
-            className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            title="Edit book"
+            className={`flex-1 p-2 rounded-full text-white ${
+              book.favorite
+                ? "bg-pink-500 hover:bg-pink-600"
+                : "bg-gray-400 hover:bg-gray-500"
+            } transition-colors hover:scale-105 duration-200`}
+            title={book.favorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <PencilSquareIcon className="w-4 h-4" />
+            {book.favorite ? (
+              <HeartIcon className="w-5 h-5 mx-auto" />
+            ) : (
+              <HeartOutline className="w-5 h-5 mx-auto" />
+            )}
           </button>
-        )}
 
-        {/* Delete button - available for ALL books (both manual and online) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(book);
-          }}
-          className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          title="Delete book"
-        >
-          <TrashIcon className="w-4 h-4" />
-        </button>
+          {!isOnlineBook && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(book);
+              }}
+              className="flex-1 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium"
+              title="Edit book"
+            >
+              <PencilSquareIcon className="w-5 h-5 mx-auto" />
+            </button>
+          )}
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(book);
+            }}
+            className="flex-1 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 font-medium"
+            title="Delete book"
+          >
+            <TrashIcon className="w-5 h-5 mx-auto" />
+          </button>
+        </div>
       </div>
     </div>
   );

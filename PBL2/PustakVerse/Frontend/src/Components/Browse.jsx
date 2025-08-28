@@ -95,44 +95,46 @@ const Browse = ({ books, setBooks }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      {/* ADDED: Category header with stats */}
+      {/* Category header with stats */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">{categoryTitle}</h1>
+        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900 dark:text-white tracking-tight">
+          {categoryTitle}
+        </h1>
 
-        {/* ADDED: Category description and stats */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold text-primary">
+        {/* Category description and stats */}
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 mb-6 shadow-md border border-gray-100 dark:border-gray-700">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div className="transition-transform hover:scale-105 duration-200">
+              <p className="text-3xl md:text-4xl font-bold text-primary">
                 {filteredBooks.length}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
                 {category === "all" ? "Total Books" : "Books in Category"}
               </p>
             </div>
             {category === "all" && (
               <>
-                <div>
-                  <p className="text-2xl font-bold text-pink-500">
+                <div className="transition-transform hover:scale-105 duration-200">
+                  <p className="text-3xl md:text-4xl font-bold text-pink-500">
                     {stats.favorites}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
                     Favorites
                   </p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-blue-500">
+                <div className="transition-transform hover:scale-105 duration-200">
+                  <p className="text-3xl md:text-4xl font-bold text-blue-500">
                     {stats.avgRating}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
                     Avg Rating
                   </p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-green-500">
+                <div className="transition-transform hover:scale-105 duration-200">
+                  <p className="text-3xl md:text-4xl font-bold text-green-500">
                     {stats.fiction + stats.nonFiction}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm md:text-base text-gray-500 dark:text-gray-400">
                     Genres
                   </p>
                 </div>
@@ -141,41 +143,43 @@ const Browse = ({ books, setBooks }) => {
           </div>
         </div>
 
-        {/* ADDED: Category description */}
+        {/* Category description */}
         <div className="mb-6">
           {category === "favorites" && (
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl">
               Your most loved books, marked as favorites ❤️
             </p>
           )}
           {category === "recent" && (
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl">
               Recently added books to your collection
             </p>
           )}
           {category === "all" && (
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl">
               Your complete book collection
             </p>
           )}
           {!["favorites", "recent", "all"].includes(category) && (
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl">
               Books in the {categoryTitle.toLowerCase()} category
             </p>
           )}
         </div>
       </div>
 
-      {/* ADDED: Books display */}
+      {/* Books display */}
       {filteredBooks.length > 0 ? (
         <BookGrid books={filteredBooks} setBooks={setBooks} />
       ) : (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">📚</div>
-          <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+        <div className="text-center py-16">
+          <div className="text-gray-300 dark:text-gray-600 text-7xl mb-4 animate-bounce">
+            📚
+          </div>
+          <h3 className="text-2xl md:text-3xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
             No books found in {categoryTitle.toLowerCase()}
           </h3>
-          <p className="text-gray-500 dark:text-gray-500">
+          <p className="text-gray-500 dark:text-gray-500 text-lg">
             {category === "favorites"
               ? "Mark some books as favorites to see them here!"
               : `Add some ${categoryTitle.toLowerCase()} to your collection.`}
