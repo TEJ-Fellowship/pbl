@@ -76,7 +76,7 @@ export default function LoginSignup() {
 
       try {
         const response = await axios.post("http://localhost:5000/api/users", {
-          fullname: formData.fullName,  // must match backend
+          fullname: formData.fullName,  
           email: formData.email,
           password: formData.password,
         });
