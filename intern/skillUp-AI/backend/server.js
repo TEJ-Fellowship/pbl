@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const app = express();
 const errorHandler = require("./middleware/errorHandler");
+
 // Middlewares
 app.use(express.json());
 app.use(cors());
