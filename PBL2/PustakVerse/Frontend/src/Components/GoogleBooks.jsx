@@ -1,4 +1,6 @@
+// Components/GoogleBooks.jsx
 import React, { useState, useEffect } from "react";
+import { authFetch, handleApiError } from "../utils/api";
 
 const normalizeGoogleBook = (volume) => {
   const v = volume || {};
@@ -6,15 +8,15 @@ const normalizeGoogleBook = (volume) => {
   return {
     id: v.id,
     title: info.title || "Untitled",
-    authors: info.authors || [],
+    authors: info.authors || ["Unknown Author"],
     thumbnail:
       (info.imageLinks &&
         (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) ||
       "",
     description: info.description || "",
-    categories: info.categories || [],
+    categories: info.categories || ["General"],
     publishedDate: info.publishedDate || "",
-    averageRating: info.averageRating || null,
+    averageRating: info.averageRating || 0,
     raw: v,
   };
 };
@@ -24,6 +26,7 @@ const GoogleBooks = ({ books, setBooks }) => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [addingBooks, setAddingBooks] = useState(new Set());
+  const [error, setError] = useState("");
 
   // Clear results when input is empty
   useEffect(() => {
@@ -34,6 +37,7 @@ const GoogleBooks = ({ books, setBooks }) => {
 
   const fetchBooks = async (searchQuery) => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch(
         `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
@@ -46,6 +50,7 @@ const GoogleBooks = ({ books, setBooks }) => {
       setResults(normalized);
     } catch (err) {
       console.error(err);
+      setError("Failed to fetch books from Google Books API");
     } finally {
       setLoading(false);
     }
@@ -58,12 +63,20 @@ const GoogleBooks = ({ books, setBooks }) => {
   };
 
   const addBook = async (book) => {
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to add books to your collection");
+      return;
+    }
+
     if (books.some((b) => b.googleId === book.id || b._id === book.id)) {
       alert("Book already in your collection!");
       return;
     }
 
     setAddingBooks((prev) => new Set(prev).add(book.id));
+    setError("");
 
     try {
       const formData = new FormData();
@@ -72,20 +85,23 @@ const GoogleBooks = ({ books, setBooks }) => {
       formData.append(
         "genre",
         JSON.stringify(
-          book.categories.length > 0 ? book.categories : ["General"]
+          book.categories && book.categories.length > 0
+            ? book.categories
+            : ["General"]
         )
       );
       formData.append(
         "year",
         book.publishedDate
-          ? parseInt(book.publishedDate.split("-")[0])
+          ? parseInt(book.publishedDate.split("-")[0]) ||
+              new Date().getFullYear()
           : new Date().getFullYear()
       );
       formData.append(
         "description",
-        book.description.length > 500
+        book.description && book.description.length > 500
           ? book.description.slice(0, 500) + "..."
-          : book.description
+          : book.description || "No description available"
       );
       formData.append("rating", book.averageRating || 0);
       formData.append("favorite", false);
@@ -96,19 +112,28 @@ const GoogleBooks = ({ books, setBooks }) => {
         formData.append("coverUrl", book.thumbnail);
       }
 
-      const res = await fetch("http://localhost:3001/api/books", {
+      // Use authFetch for authenticated requests
+      const res = await authFetch("http://localhost:3001/api/books", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to add book");
+      // Log the response for debugging
+      console.log("Add book response status:", res.status);
+
+      // Handle API errors
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Server error response:", errorText);
+        throw new Error(`Failed to add book: ${res.status} ${res.statusText}`);
+      }
 
       const savedBook = await res.json();
-      setBooks((prevBooks) => [...prevBooks, savedBook]);
+      setBooks((prev) => [...prev, savedBook]);
       alert("Book added to your collection!");
     } catch (error) {
       console.error("Error adding book:", error);
-      alert("Failed to add book. Please try again.");
+      setError(error.message || "Failed to add book. Please try again.");
     } finally {
       setAddingBooks((prev) => {
         const newSet = new Set(prev);
@@ -134,7 +159,8 @@ const GoogleBooks = ({ books, setBooks }) => {
       formData.append("source", existingBook.source);
       formData.append("googleId", existingBook.googleId);
 
-      const res = await fetch(
+      // Use authFetch for authenticated requests
+      const res = await authFetch(
         `http://localhost:3001/api/books/${existingBook._id}`,
         {
           method: "PUT",
@@ -142,7 +168,8 @@ const GoogleBooks = ({ books, setBooks }) => {
         }
       );
 
-      if (!res.ok) throw new Error("Failed to update favorite");
+      // Handle API errors
+      await handleApiError(res);
 
       const savedBook = await res.json();
       setBooks((prevBooks) =>
@@ -150,7 +177,7 @@ const GoogleBooks = ({ books, setBooks }) => {
       );
     } catch (error) {
       console.error("Error updating favorite:", error);
-      alert("Failed to update favorite status.");
+      setError("Failed to update favorite status.");
     }
   };
 
@@ -160,7 +187,7 @@ const GoogleBooks = ({ books, setBooks }) => {
     const isAdding = addingBooks.has(book.id);
 
     return (
-      <div className="border rounded-lg p-4 shadow bg-white hover:shadow-lg transition-shadow">
+      <div className="border rounded-lg p-4 shadow bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow">
         {book.thumbnail ? (
           <img
             src={book.thumbnail}
@@ -168,13 +195,15 @@ const GoogleBooks = ({ books, setBooks }) => {
             className="w-full h-40 object-cover rounded"
           />
         ) : (
-          <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded text-gray-500">
+          <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded text-gray-500 dark:text-gray-400">
             No cover
           </div>
         )}
-        <h3 className="font-semibold mt-2 truncate">{book.title}</h3>
+        <h3 className="font-semibold mt-2 truncate text-gray-900 dark:text-white">
+          {book.title}
+        </h3>
         {book.authors.length > 0 && (
-          <p className="text-sm text-gray-500 truncate">
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {book.authors.join(", ")}
           </p>
         )}
@@ -184,7 +213,7 @@ const GoogleBooks = ({ books, setBooks }) => {
             <button
               onClick={() => addBook(book)}
               disabled={isAdding}
-              className="flex-1 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
+              className="flex-1 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
             >
               {isAdding ? "Adding..." : "Add to Collection"}
             </button>
@@ -194,7 +223,7 @@ const GoogleBooks = ({ books, setBooks }) => {
               className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
                 bookInCollection?.favorite
                   ? "bg-pink-500 text-white hover:bg-pink-600"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
               }`}
             >
               {bookInCollection?.favorite
@@ -215,35 +244,55 @@ const GoogleBooks = ({ books, setBooks }) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Google Books..."
-            className="w-full border rounded px-4 py-2 pr-10" // extra padding for X inside
+            className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
           />
 
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
             >
               ×
             </button>
           )}
         </div>
 
-        <button type="submit" className="px-4 py-2 bg-black text-white rounded">
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+        >
           {loading ? "Searching..." : "Search"}
         </button>
       </form>
 
+      {error && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
       {/* Show search results */}
       {results.length > 0 && (
         <>
-          <h3 className="text-lg font-semibold mt-4">Search Results</h3>
+          <h3 className="text-lg font-semibold mt-4 text-gray-900 dark:text-white">
+            Search Results
+          </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {results.map((book) => (
               <BookCard key={book.id} book={book} />
             ))}
           </div>
         </>
+      )}
+
+      {!loading && results.length === 0 && query && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            No results found for "{query}"
+          </p>
+        </div>
       )}
     </div>
   );
