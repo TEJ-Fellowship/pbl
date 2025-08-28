@@ -9,7 +9,15 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
-const Navbar = ({ darkMode, setDarkMode, books, setBooks, user, setUser }) => {
+const Navbar = ({
+  darkMode,
+  setDarkMode,
+  books,
+  setBooks,
+  user,
+  setUser,
+  onLogout,
+}) => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [showBrowseMenu, setShowBrowseMenu] = useState(false);

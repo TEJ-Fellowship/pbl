@@ -1,7 +1,6 @@
-// services/Googlebooks.jsx
+// Components/GoogleBooks.jsx
 import React, { useState, useEffect } from "react";
-import { HeartIcon } from "@heroicons/react/24/outline";
-import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
+import { authFetch, handleApiError } from "../utils/api";
 
 const normalizeGoogleBook = (volume) => {
   const v = volume || {};
@@ -15,8 +14,8 @@ const normalizeGoogleBook = (volume) => {
         (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) ||
       "",
     description: info.description || "",
-    publishedDate: info.publishedDate || "",
     categories: info.categories || [],
+    publishedDate: info.publishedDate || "",
     averageRating: info.averageRating || null,
     raw: v,
   };
@@ -26,10 +25,19 @@ const GoogleBooks = ({ books, setBooks }) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [defaultResults, setDefaultResults] = useState([]);
+  const [addingBooks, setAddingBooks] = useState(new Set());
+  const [error, setError] = useState("");
 
-  const fetchBooks = async (searchQuery, isDefault = false) => {
+  // Clear results when input is empty
+  useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+    }
+  }, [query]);
+
+  const fetchBooks = async (searchQuery) => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch(
         `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
@@ -39,23 +47,14 @@ const GoogleBooks = ({ books, setBooks }) => {
       const data = await res.json();
       const items = Array.isArray(data.items) ? data.items : [];
       const normalized = items.map(normalizeGoogleBook);
-
-      if (isDefault) {
-        setDefaultResults(normalized);
-      } else {
-        setResults(normalized);
-      }
+      setResults(normalized);
     } catch (err) {
       console.error(err);
+      setError("Failed to fetch books from Google Books API");
     } finally {
       setLoading(false);
     }
   };
-
-  // Load default books on mount
-  useEffect(() => {
-    fetchBooks("bestsellers", true);
-  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -63,247 +62,227 @@ const GoogleBooks = ({ books, setBooks }) => {
     fetchBooks(query);
   };
 
-  // UPDATED: Enhanced addBook function to handle cover images and favorites
-  const addBook = async (book, addToFavorites = false) => {
+  const addBook = async (book) => {
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to add books to your collection");
+      return;
+    }
+
+    if (books.some((b) => b.googleId === book.id || b._id === book.id)) {
+      alert("Book already in your collection!");
+      return;
+    }
+
+    setAddingBooks((prev) => new Set(prev).add(book.id));
+    setError("");
+
     try {
-      // Check if book already exists in the collection
-      const existingBook = books.find(
-        (b) => b.googleId === book.id || b.title === book.title
+      const formData = new FormData();
+      formData.append("title", book.title);
+      formData.append("author", book.authors.join(", "));
+      formData.append(
+        "genre",
+        JSON.stringify(
+          book.categories.length > 0 ? book.categories : ["General"]
+        )
       );
+      formData.append(
+        "year",
+        book.publishedDate
+          ? parseInt(book.publishedDate.split("-")[0])
+          : new Date().getFullYear()
+      );
+      formData.append(
+        "description",
+        book.description.length > 500
+          ? book.description.slice(0, 500) + "..."
+          : book.description
+      );
+      formData.append("rating", book.averageRating || 0);
+      formData.append("favorite", false);
+      formData.append("source", "online");
+      formData.append("googleId", book.id);
 
-      if (existingBook) {
-        // If book exists, just toggle favorite status
-        if (addToFavorites && !existingBook.favorite) {
-          const res = await fetch(
-            `http://localhost:3001/api/books/${existingBook._id}`,
-            {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                ...existingBook,
-                favorite: true,
-              }),
-            }
-          );
-
-          if (res.ok) {
-            const updatedBook = await res.json();
-            setBooks((prev) =>
-              prev.map((b) => (b._id === updatedBook._id ? updatedBook : b))
-            );
-          }
-        }
-        return;
-      }
-
-      // Prepare book data for backend
-      const bookData = {
-        title: book.title,
-        author: book.authors.join(", ") || "Unknown",
-        genre: book.categories || ["Uncategorized"],
-        year: book.publishedDate
-          ? parseInt(book.publishedDate.slice(0, 4))
-          : null,
-        description: book.description || "",
-        rating: book.averageRating || null,
-        favorite: addToFavorites,
-        source: "google", // IMPORTANT: Mark as Google Books source
-        googleId: book.id, // Store Google Books ID
-      };
-
-      // If there's a thumbnail, add the URL
       if (book.thumbnail) {
-        bookData.coverUrl = book.thumbnail;
+        formData.append("coverUrl", book.thumbnail);
       }
 
-      console.log("Sending book data:", bookData); // Debug log
-
-      // Send to backend
-      const res = await fetch("http://localhost:3001/api/books", {
+      // Use authFetch for authenticated requests
+      const res = await authFetch("http://localhost:3001/api/books", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bookData),
+        body: formData,
       });
 
-      if (res.ok) {
-        const savedBook = await res.json();
-        console.log("Book saved:", savedBook); // Debug log
-        setBooks((prev) => [...prev, savedBook]);
-      } else {
-        const errorText = await res.text();
-        console.error("Server error:", errorText);
-        throw new Error("Failed to add book");
-      }
-    } catch (err) {
-      console.error("Error adding book:", err);
-      alert("Failed to add book. Please try again.");
+      // Handle API errors
+      await handleApiError(res);
+
+      const savedBook = await res.json();
+      setBooks((prev) => [...prev, savedBook]);
+      alert("Book added to your collection!");
+    } catch (error) {
+      console.error("Error adding book:", error);
+      setError(error.message || "Failed to add book. Please try again.");
+    } finally {
+      setAddingBooks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(book.id);
+        return newSet;
+      });
     }
   };
 
-  // ADDED: Check if book is already in favorites
-  const isBookInFavorites = (googleBook) => {
-    return books.some(
-      (b) =>
-        (b.googleId === googleBook.id || b.title === googleBook.title) &&
-        b.favorite
-    );
+  const toggleFavorite = async (book) => {
+    try {
+      const existingBook = books.find((b) => b.googleId === book.id);
+      if (!existingBook) return;
+
+      const formData = new FormData();
+      formData.append("title", existingBook.title);
+      formData.append("author", existingBook.author);
+      formData.append("genre", JSON.stringify(existingBook.genre));
+      formData.append("year", existingBook.year);
+      formData.append("description", existingBook.description);
+      formData.append("rating", existingBook.rating);
+      formData.append("favorite", !existingBook.favorite);
+      formData.append("source", existingBook.source);
+      formData.append("googleId", existingBook.googleId);
+
+      // Use authFetch for authenticated requests
+      const res = await authFetch(
+        `http://localhost:3001/api/books/${existingBook._id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
+
+      // Handle API errors
+      await handleApiError(res);
+
+      const savedBook = await res.json();
+      setBooks((prevBooks) =>
+        prevBooks.map((b) => (b._id === savedBook._id ? savedBook : b))
+      );
+    } catch (error) {
+      console.error("Error updating favorite:", error);
+      setError("Failed to update favorite status.");
+    }
   };
 
-  // ADDED: Check if book is already added (but not necessarily favorited)
-  const isBookAdded = (googleBook) => {
-    return books.some(
-      (b) => b.googleId === googleBook.id || b.title === googleBook.title
+  const BookCard = ({ book }) => {
+    const isInCollection = books.some((b) => b.googleId === book.id);
+    const bookInCollection = books.find((b) => b.googleId === book.id);
+    const isAdding = addingBooks.has(book.id);
+
+    return (
+      <div className="border rounded-lg p-4 shadow bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow">
+        {book.thumbnail ? (
+          <img
+            src={book.thumbnail}
+            alt={book.title}
+            className="w-full h-40 object-cover rounded"
+          />
+        ) : (
+          <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded text-gray-500 dark:text-gray-400">
+            No cover
+          </div>
+        )}
+        <h3 className="font-semibold mt-2 truncate text-gray-900 dark:text-white">
+          {book.title}
+        </h3>
+        {book.authors.length > 0 && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {book.authors.join(", ")}
+          </p>
+        )}
+
+        <div className="mt-2 flex gap-2">
+          {!isInCollection ? (
+            <button
+              onClick={() => addBook(book)}
+              disabled={isAdding}
+              className="flex-1 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+            >
+              {isAdding ? "Adding..." : "Add to Collection"}
+            </button>
+          ) : (
+            <button
+              onClick={() => toggleFavorite(book)}
+              className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+                bookInCollection?.favorite
+                  ? "bg-pink-500 text-white hover:bg-pink-600"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              {bookInCollection?.favorite
+                ? "Remove from Favorites"
+                : "Add to Favorites"}
+            </button>
+          )}
+        </div>
+      </div>
     );
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={handleSearch} className="flex gap-2">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Google Books..."
-          className="flex-1 border rounded px-4 py-2"
-        />
-        <button type="submit" className="px-4 py-2 bg-black text-white rounded">
+        <div className="relative flex-1">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search Google Books..."
+            className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+          />
+
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
+        >
           {loading ? "Searching..." : "Search"}
         </button>
       </form>
 
-      {/* Show default popular books if no search query */}
-      {defaultResults.length > 0 && results.length === 0 && (
-        <>
-          <h3 className="text-lg font-semibold mt-4">Popular Books</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {defaultResults.map((b) => (
-              <div
-                key={b.id}
-                className="border rounded-lg p-4 shadow bg-white hover:shadow-lg transition-shadow"
-              >
-                {b.thumbnail ? (
-                  <img
-                    src={b.thumbnail}
-                    alt={b.title}
-                    className="w-full h-40 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded text-gray-500">
-                    No cover
-                  </div>
-                )}
-                <h3 className="font-semibold mt-2 truncate">{b.title}</h3>
-                {b.authors.length > 0 && (
-                  <p className="text-sm text-gray-500 truncate">
-                    {b.authors.join(", ")}
-                  </p>
-                )}
-
-                {/* ADDED: Action buttons */}
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => addBook(b, false)}
-                    disabled={isBookAdded(b)}
-                    className={`flex-1 px-3 py-1 text-xs rounded transition-colors ${
-                      isBookAdded(b)
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
-                  >
-                    {isBookAdded(b) ? "Added" : "Add to Library"}
-                  </button>
-
-                  <button
-                    onClick={() => addBook(b, true)}
-                    className={`p-1 rounded transition-colors ${
-                      isBookInFavorites(b)
-                        ? "text-red-500"
-                        : "text-gray-400 hover:text-red-500"
-                    }`}
-                    title={
-                      isBookInFavorites(b) ? "In favorites" : "Add to favorites"
-                    }
-                  >
-                    {isBookInFavorites(b) ? (
-                      <HeartSolidIcon className="w-4 h-4" />
-                    ) : (
-                      <HeartIcon className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+      {error && (
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
+          {error}
+        </div>
       )}
 
       {/* Show search results */}
       {results.length > 0 && (
         <>
-          <h3 className="text-lg font-semibold mt-4">Search Results</h3>
+          <h3 className="text-lg font-semibold mt-4 text-gray-900 dark:text-white">
+            Search Results
+          </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {results.map((b) => (
-              <div
-                key={b.id}
-                className="border rounded-lg p-4 shadow bg-white hover:shadow-lg transition-shadow"
-              >
-                {b.thumbnail ? (
-                  <img
-                    src={b.thumbnail}
-                    alt={b.title}
-                    className="w-full h-40 object-cover rounded"
-                  />
-                ) : (
-                  <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded text-gray-500">
-                    No cover
-                  </div>
-                )}
-                <h3 className="font-semibold mt-2 truncate">{b.title}</h3>
-                {b.authors.length > 0 && (
-                  <p className="text-sm text-gray-500 truncate">
-                    {b.authors.join(", ")}
-                  </p>
-                )}
-
-                {/* ADDED: Action buttons */}
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={() => addBook(b, false)}
-                    disabled={isBookAdded(b)}
-                    className={`flex-1 px-3 py-1 text-xs rounded transition-colors ${
-                      isBookAdded(b)
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
-                  >
-                    {isBookAdded(b) ? "Added" : "Add to Library"}
-                  </button>
-
-                  <button
-                    onClick={() => addBook(b, true)}
-                    className={`p-1 rounded transition-colors ${
-                      isBookInFavorites(b)
-                        ? "text-red-500"
-                        : "text-gray-400 hover:text-red-500"
-                    }`}
-                    title={
-                      isBookInFavorites(b) ? "In favorites" : "Add to favorites"
-                    }
-                  >
-                    {isBookInFavorites(b) ? (
-                      <HeartSolidIcon className="w-4 h-4" />
-                    ) : (
-                      <HeartIcon className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
+            {results.map((book) => (
+              <BookCard key={book.id} book={book} />
             ))}
           </div>
         </>
+      )}
+
+      {!loading && results.length === 0 && query && (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            No results found for "{query}"
+          </p>
+        </div>
       )}
     </div>
   );

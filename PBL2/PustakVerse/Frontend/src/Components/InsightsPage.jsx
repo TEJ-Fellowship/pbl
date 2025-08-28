@@ -1,6 +1,8 @@
+// Components/InsightsPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { SparklesIcon } from "@heroicons/react/24/solid";
+import { authFetch, handleApiError } from "../utils/api"; // Import the utility functions
 
 const InsightsPage = ({ books }) => {
   const { bookId } = useParams();
@@ -19,17 +21,24 @@ const InsightsPage = ({ books }) => {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch("http://localhost:3001/api/summarize", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: book.title,
-            author: book.author,
-            description: book.description,
-          }),
-        });
+        // Use authFetch for authenticated requests
+        const response = await authFetch(
+          "http://localhost:3001/api/summarize",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: book.title,
+              author: book.author,
+              description: book.description,
+            }),
+          }
+        );
+
+        // Handle API errors
+        await handleApiError(response);
 
         const data = await response.json();
 
@@ -39,8 +48,8 @@ const InsightsPage = ({ books }) => {
 
         setInsights(data);
       } catch (err) {
-        setError(err.message);
         console.error("Error fetching insights:", err);
+        setError(err.message);
       } finally {
         setIsLoading(false);
       }

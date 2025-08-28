@@ -7,6 +7,8 @@ const path = require("path");
 const fs = require("fs");
 const https = require("https");
 const http = require("http");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 const app = express();
@@ -116,7 +118,58 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // ----------------------------
-// Book Schema & Model (Updated to match your existing schema)
+// User Schema & Model
+// ----------------------------
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 30,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Compare password method
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+const User = mongoose.model("User", userSchema);
+
+// ----------------------------
+// Book Schema & Model (Updated to include user reference)
 // ----------------------------
 const bookSchema = new mongoose.Schema(
   {
@@ -130,6 +183,12 @@ const bookSchema = new mongoose.Schema(
     coverImage: String, // Store the filename of the uploaded image
     source: { type: String, default: "manual" }, // 'manual' or 'online'
     googleId: String, // Store Google Books ID for online books
+    user: {
+      // Add user reference
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true, // Add createdAt and updatedAt fields
@@ -150,6 +209,26 @@ const deleteFile = (filename) => {
       }
     });
   }
+};
+
+// ----------------------------
+// Authentication Middleware
+// ----------------------------
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: "Access token required" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid or expired token" });
+    }
+    req.user = user;
+    next();
+  });
 };
 
 // ----------------------------
@@ -246,13 +325,114 @@ async function generateBookInsights(bookData) {
 }
 
 // ----------------------------
-// Routes
+// Auth Routes
 // ----------------------------
 
-// Get all books
-app.get("/api/books", async (req, res) => {
+// Signup route
+app.post("/api/auth/signup", async (req, res) => {
   try {
-    const books = await Book.find().sort({ createdAt: -1 }); // Sort by newest first
+    const { username, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "User with this email or username already exists",
+      });
+    }
+
+    // Create new user
+    const user = new User({ username, email, password });
+    await user.save();
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({
+      message: "User created successfully",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Signup error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Login route
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Protected route example (get user profile)
+app.get("/api/auth/profile", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Profile error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ----------------------------
+// Book Routes (Protected)
+// ----------------------------
+
+// Get all books (for authenticated users)
+app.get("/api/books", authenticateToken, async (req, res) => {
+  try {
+    const books = await Book.find({ user: req.user.userId }).sort({
+      createdAt: -1,
+    }); // Sort by newest first
     res.json(books);
   } catch (err) {
     console.error(err);
@@ -260,144 +440,155 @@ app.get("/api/books", async (req, res) => {
   }
 });
 
-// Add new book (with image upload or URL download)
-app.post("/api/books", upload.single("coverImage"), async (req, res) => {
-  try {
-    // Parse genre from JSON string if it's a string, otherwise use as array
-    let genre = [];
-    if (req.body.genre) {
-      try {
-        genre =
-          typeof req.body.genre === "string"
-            ? JSON.parse(req.body.genre)
-            : req.body.genre;
-      } catch (e) {
-        genre = Array.isArray(req.body.genre)
-          ? req.body.genre
-          : [req.body.genre];
+// Add new book (for authenticated users)
+app.post(
+  "/api/books",
+  authenticateToken,
+  upload.single("coverImage"),
+  async (req, res) => {
+    try {
+      // Parse genre from JSON string if it's a string, otherwise use as array
+      let genre = [];
+      if (req.body.genre) {
+        try {
+          genre =
+            typeof req.body.genre === "string"
+              ? JSON.parse(req.body.genre)
+              : req.body.genre;
+        } catch (e) {
+          genre = Array.isArray(req.body.genre)
+            ? req.body.genre
+            : [req.body.genre];
+        }
       }
-    }
 
-    const bookData = {
-      title: req.body.title,
-      author: req.body.author,
-      genre: genre,
-      year: parseInt(req.body.year),
-      description: req.body.description,
-      rating: req.body.rating ? parseFloat(req.body.rating) : 0,
-      favorite: req.body.favorite === "true" || req.body.favorite === true,
-      source: req.body.source || "manual", // Use your existing field
-      googleId: req.body.googleId || null, // Use your existing field
-    };
+      const bookData = {
+        title: req.body.title,
+        author: req.body.author,
+        genre: genre,
+        year: parseInt(req.body.year),
+        description: req.body.description,
+        rating: req.body.rating ? parseFloat(req.body.rating) : 0,
+        favorite: req.body.favorite === "true" || req.body.favorite === true,
+        source: req.body.source || "manual", // Use your existing field
+        googleId: req.body.googleId || null, // Use your existing field
+        user: req.user.userId, // Add user reference
+      };
 
-    // Handle cover image
-    if (req.file) {
-      // Manual upload
-      bookData.coverImage = req.file.filename;
-    } else if (req.body.coverUrl) {
-      // Download from URL (for Google Books)
-      try {
-        const fileExtension = ".jpg"; // Default to jpg for downloaded images
-        const filename = `downloaded_${Date.now()}_${Math.round(
-          Math.random() * 1e9
-        )}${fileExtension}`;
-        await downloadImage(req.body.coverUrl, filename);
-        bookData.coverImage = filename;
-      } catch (downloadError) {
-        console.error("Failed to download cover image:", downloadError);
-        // Continue without cover image if download fails
+      // Handle cover image
+      if (req.file) {
+        // Manual upload
+        bookData.coverImage = req.file.filename;
+      } else if (req.body.coverUrl) {
+        // Download from URL (for Google Books)
+        try {
+          const fileExtension = ".jpg"; // Default to jpg for downloaded images
+          const filename = `downloaded_${Date.now()}_${Math.round(
+            Math.random() * 1e9
+          )}${fileExtension}`;
+          await downloadImage(req.body.coverUrl, filename);
+          bookData.coverImage = filename;
+        } catch (downloadError) {
+          console.error("Failed to download cover image:", downloadError);
+          // Continue without cover image if download fails
+        }
       }
-    }
 
-    const newBook = new Book(bookData);
-    const savedBook = await newBook.save();
-    res.status(201).json(savedBook);
-  } catch (err) {
-    // Delete uploaded file if database save fails
-    if (req.file) {
-      deleteFile(req.file.filename);
+      const newBook = new Book(bookData);
+      const savedBook = await newBook.save();
+      res.status(201).json(savedBook);
+    } catch (err) {
+      // Delete uploaded file if database save fails
+      if (req.file) {
+        deleteFile(req.file.filename);
+      }
+      console.error("Add book error:", err.message, err);
+      res.status(500).json({ error: "Failed to add book" });
     }
-    console.error("Add book error:", err.message, err);
-    res.status(500).json({ error: "Failed to add book" });
   }
-});
+);
 
 // Update book (with image upload)
-app.put("/api/books/:id", upload.single("coverImage"), async (req, res) => {
-  try {
-    const { id } = req.params;
+app.put(
+  "/api/books/:id",
+  authenticateToken,
+  upload.single("coverImage"),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    // Find existing book to get old image filename
-    const existingBook = await Book.findById(id);
-    if (!existingBook) {
-      if (req.file) deleteFile(req.file.filename); // Clean up uploaded file
-      return res.status(404).json({ error: "Book not found" });
-    }
-
-    // Parse genre from JSON string if it's a string, otherwise use as array
-    let genre = [];
-    if (req.body.genre) {
-      try {
-        genre =
-          typeof req.body.genre === "string"
-            ? JSON.parse(req.body.genre)
-            : req.body.genre;
-      } catch (e) {
-        genre = Array.isArray(req.body.genre)
-          ? req.body.genre
-          : [req.body.genre];
+      // Find existing book to get old image filename
+      const existingBook = await Book.findOne({
+        _id: id,
+        user: req.user.userId,
+      });
+      if (!existingBook) {
+        if (req.file) deleteFile(req.file.filename); // Clean up uploaded file
+        return res.status(404).json({ error: "Book not found" });
       }
-    }
 
-    const updateData = {
-      title: req.body.title,
-      author: req.body.author,
-      genre: genre,
-      year: parseInt(req.body.year),
-      description: req.body.description,
-      rating: req.body.rating
-        ? parseFloat(req.body.rating)
-        : existingBook.rating,
-      favorite: req.body.favorite === "true" || req.body.favorite === true,
-    };
-
-    // Handle image update (only for manually added books or if new file is uploaded)
-    if (req.file) {
-      // Delete old image if exists
-      if (existingBook.coverImage) {
-        deleteFile(existingBook.coverImage);
+      // Parse genre from JSON string if it's a string, otherwise use as array
+      let genre = [];
+      if (req.body.genre) {
+        try {
+          genre =
+            typeof req.body.genre === "string"
+              ? JSON.parse(req.body.genre)
+              : req.body.genre;
+        } catch (e) {
+          genre = Array.isArray(req.body.genre)
+            ? req.body.genre
+            : [req.body.genre];
+        }
       }
-      updateData.coverImage = req.file.filename;
-    }
 
-    const updatedBook = await Book.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
+      const updateData = {
+        title: req.body.title,
+        author: req.body.author,
+        genre: genre,
+        year: parseInt(req.body.year),
+        description: req.body.description,
+        rating: req.body.rating
+          ? parseFloat(req.body.rating)
+          : existingBook.rating,
+        favorite: req.body.favorite === "true" || req.body.favorite === true,
+      };
 
-    res.json(updatedBook);
-  } catch (err) {
-    // Delete uploaded file if update fails
-    if (req.file) {
-      deleteFile(req.file.filename);
+      // Handle image update (only for manually added books or if new file is uploaded)
+      if (req.file) {
+        // Delete old image if exists
+        if (existingBook.coverImage) {
+          deleteFile(existingBook.coverImage);
+        }
+        updateData.coverImage = req.file.filename;
+      }
+
+      const updatedBook = await Book.findByIdAndUpdate(id, updateData, {
+        new: true,
+      });
+
+      res.json(updatedBook);
+    } catch (err) {
+      // Delete uploaded file if update fails
+      if (req.file) {
+        deleteFile(req.file.filename);
+      }
+      console.error("Update book error:", err);
+      res.status(500).json({ error: "Failed to update book" });
     }
-    console.error("Update book error:", err);
-    res.status(500).json({ error: "Failed to update book" });
   }
-});
+);
 
 // Delete book (and associated image)
-app.delete("/api/books/:id", async (req, res) => {
+app.delete("/api/books/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
     // Find book to get image filename before deletion
-    const book = await Book.findById(id);
+    const book = await Book.findOne({ _id: id, user: req.user.userId });
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
-
-    // Check if this is an online book (should not be deletable from frontend for security)
-    // But we'll allow it from backend for admin purposes
 
     // Delete associated image file
     if (book.coverImage) {
@@ -413,7 +604,7 @@ app.delete("/api/books/:id", async (req, res) => {
 });
 
 // New API Route for Book Insights
-app.post("/api/summarize", async (req, res) => {
+app.post("/api/summarize", authenticateToken, async (req, res) => {
   try {
     const { title, author, description } = req.body;
 

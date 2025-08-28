@@ -1,6 +1,7 @@
 // Components/Form.jsx
 import React, { useState, useEffect } from "react";
 import GenreSelector from "./GenreSelector";
+import { authFetch, handleApiError } from "../utils/api"; // Import the utility functions
 
 const Form = ({ onClose, onAddBook, editingBook }) => {
   const [title, setTitle] = useState("");
@@ -102,17 +103,15 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         method = "POST";
       }
 
-      const res = await fetch(url, {
+      // Use the authFetch utility instead of regular fetch
+      const res = await authFetch(url, {
         method,
         body: formData,
+        // Note: Don't set Content-Type header for FormData - let the browser set it
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `Failed to ${editingBook ? "update" : "add"} book`
-        );
-      }
+      // Handle API errors
+      await handleApiError(res);
 
       const savedBook = await res.json();
       setUploadStatus("Success!");

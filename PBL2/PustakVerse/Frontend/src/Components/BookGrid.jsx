@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import BookCard from "./BookCard";
 import BookModal from "./BookModal";
 import Form from "./Form";
+import { authFetch, handleApiError } from "../utils/api"; // Import the utility functions
 
 const BookGrid = ({ books, setBooks }) => {
   const [selectedBook, setSelectedBook] = useState(null);
@@ -31,11 +32,16 @@ const BookGrid = ({ books, setBooks }) => {
 
     if (window.confirm(confirmMessage)) {
       try {
-        const res = await fetch(`http://localhost:3001/api/books/${book._id}`, {
-          method: "DELETE",
-        });
+        // Use the authFetch utility instead of regular fetch
+        const res = await authFetch(
+          `http://localhost:3001/api/books/${book._id}`,
+          {
+            method: "DELETE",
+          }
+        );
 
-        if (!res.ok) throw new Error("Failed to delete book");
+        // Handle API errors
+        await handleApiError(res);
 
         setBooks((prev) => prev.filter((b) => b._id !== book._id));
       } catch (err) {
@@ -59,15 +65,19 @@ const BookGrid = ({ books, setBooks }) => {
       if (book.source) formData.append("source", book.source);
       if (book.googleId) formData.append("googleId", book.googleId);
 
-      const res = await fetch(`http://localhost:3001/api/books/${book._id}`, {
-        method: "PUT",
-        body: formData,
-      });
+      // Use the authFetch utility instead of regular fetch
+      const res = await authFetch(
+        `http://localhost:3001/api/books/${book._id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
 
-      if (!res.ok) throw new Error("Failed to update favorite status");
+      // Handle API errors
+      await handleApiError(res);
 
       const savedBook = await res.json();
-
       setBooks((prev) =>
         prev.map((b) => (b._id === savedBook._id ? savedBook : b))
       );
