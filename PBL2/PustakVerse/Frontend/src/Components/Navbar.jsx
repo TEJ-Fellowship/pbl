@@ -49,27 +49,27 @@ const Navbar = ({
   return (
     <div
       className={`sticky top-0 z-50 shadow-md transition-colors duration-300 ${
-        darkMode ? "bg-gray-900 text-gray-200" : "bg-white text-black"
+        darkMode ? "bg-dark text-light" : "bg-light text-black"
       }`}
     >
       <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
         {/* Left: Logo + Links */}
         <div className="flex items-center gap-8">
           <div
-            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
+            className="text-primary font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
             onClick={() => navigate("/")}
           >
             Pustakverse
           </div>
 
-          <ul className="flex gap-6 font-medium text-black dark:text-gray-200">
+          <ul className="flex gap-6 font-medium text-black dark:text-light">
             <li>
               <NavLink
                 to="/"
                 className={({ isActive }) =>
                   isActive
-                    ? "text-primary dark:text-primary-light underline decoration-primary font-semibold"
-                    : "text-black dark:text-gray-500 hover:text-primary transition-colors"
+                    ? "text-primary underline decoration-primary font-semibold"
+                    : "text-black dark:text-light hover:text-primary transition-colors"
                 }
               >
                 Home
@@ -80,8 +80,8 @@ const Navbar = ({
                 to="/mybooks"
                 className={({ isActive }) =>
                   isActive
-                    ? "text-primary dark:text-primary-light underline decoration-primary font-semibold"
-                    : "text-black dark:text-gray-500 hover:text-primary transition-colors"
+                    ? "text-primary underline decoration-primary font-semibold"
+                    : "text-black dark:text-light hover:text-primary transition-colors"
                 }
               >
                 Favorites
@@ -92,7 +92,7 @@ const Navbar = ({
             <li className="relative">
               <button
                 onClick={() => setShowBrowseMenu(!showBrowseMenu)}
-                className="flex items-center gap-1 text-black dark:text-gray-500 hover:text-primary transition-colors font-medium"
+                className="flex items-center gap-1 text-black dark:text-light hover:text-primary transition-colors font-medium"
               >
                 Browse
                 <ChevronDownIcon
@@ -103,13 +103,13 @@ const Navbar = ({
               </button>
 
               {showBrowseMenu && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                <div className="absolute top-full left-0 mt-2 w-48 bg-light dark:bg-dark border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
                   <div className="py-2">
                     {browseCategories.map((category) => (
                       <button
                         key={category.value}
                         onClick={() => handleBrowseClick(category.value)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-black dark:text-light hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       >
                         {category.name}
                       </button>
@@ -129,7 +129,7 @@ const Navbar = ({
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             title="Search books"
           >
-            <MagnifyingGlassIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <MagnifyingGlassIcon className="w-5 h-5 text-black dark:text-light" />
           </button>
 
           {/* Dark mode toggle */}
@@ -138,9 +138,9 @@ const Navbar = ({
             className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
             {darkMode ? (
-              <SunIcon className="w-5 h-5 text-yellow-400" />
+              <SunIcon className="w-5 h-5 text-primary" />
             ) : (
-              <MoonIcon className="w-5 h-5 text-gray-800" />
+              <MoonIcon className="w-5 h-5 text-black" />
             )}
           </button>
 
@@ -148,7 +148,7 @@ const Navbar = ({
           {user && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-primary text-white px-4 py-1 rounded-full font-semibold hover:bg-primary-dark dark:bg-primary-dark dark:hover:bg-primary transition-colors"
+              className="flex items-center gap-2 bg-primary text-black px-4 py-1 rounded-full font-semibold hover:bg-yellow-500 dark:bg-primary dark:hover:bg-yellow-500 transition-colors"
             >
               <PlusIcon className="w-5 h-5" />
               Add New
@@ -161,13 +161,13 @@ const Navbar = ({
               <>
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-3 py-1 bg-green-500 text-white rounded"
+                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
-                  className="px-3 py-1 bg-blue-500 text-white rounded"
+                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
                 >
                   Sign Up
                 </button>
@@ -176,7 +176,7 @@ const Navbar = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate("/profile")}
-                  className="px-3 py-1 bg-primary text-white rounded"
+                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
                 >
                   {user.username}
                 </button>
@@ -186,7 +186,7 @@ const Navbar = ({
                     localStorage.removeItem("token");
                     navigate("/");
                   }}
-                  className="px-3 py-1 bg-red-500 text-white rounded"
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                 >
                   Logout
                 </button>
@@ -211,7 +211,7 @@ const Navbar = ({
           onClick={() => setShowForm(false)}
         >
           <div
-            className="bg-white dark:bg-gray-800 p-6 rounded shadow-lg w-full max-w-md"
+            className="bg-light dark:bg-dark p-6 rounded shadow-lg w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <Form
