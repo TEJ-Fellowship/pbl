@@ -1,17 +1,33 @@
-import React, { useState } from 'react';
-import {Link} from 'react-router-dom'
+import React, { useEffect, useState } from 'react';
+import {Link} from 'react-router-dom';
+import axios from 'axios'
 
 const Signup = () => {
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confrimPassword, setConfirmPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isShown,setIsShown] = useState(false)
   const [isConfirmShown,setIsConfirmShown] = useState(false)
+  const [passwordMatch, setPasswordMatch] = useState(true)
+
+  useEffect(()=>{
+    setPasswordMatch(password === confirmPassword)
+  },[password,confirmPassword])
+
+  const handleSignup = ()=>{
+    if(passwordMatch){
+      const signupDetails = {userName, email, password, confirmPassword}
+      axios.post('http://localhost:3001/api/users', signupDetails)
+      .then(response=> 
+      console.log("signup successful", response.data))
+      .catch(error => console.error("error in signup", error))  
+    }
+  }
 
   return (
     <div 
-      className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: 'url("/notemain2.jpg")',
         backgroundSize: "cover",
@@ -98,7 +114,7 @@ const Signup = () => {
             <input
               type={isConfirmShown?'text':"password"}
               placeholder="Confirm Password"
-              value={confrimPassword}
+              value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-white/30 backdrop-blur-sm placeholder-gray-600 text-black border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
               style={{
@@ -117,15 +133,16 @@ const Signup = () => {
           
           {/* Forgot Password */}
           <div className="text-right mb-6">
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-800">
-              <span>Already a member? </span>
-              <span className='text-[#BF40BF] font-bold'><Link to='/login'>sign in here</Link></span>
-            </a>
+            <Link to='/login' className="text-sm text-gray-600 hover:text-gray-800">
+              <span>Already a member? </span></Link>
+              <span className='text-[#BF40BF] font-bold'>
+              <Link to='/login'>sign in here</Link></span>
+            
           </div>
           
-          
+          {!passwordMatch && <span className='text-red-600'> Please make sure both passwords match.</span>}
           {/* Login Button */}
-          <button className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors">
+          <button className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors" onClick={handleSignup}>
             Sign Up
           </button>
           {/* OR Divider */}
