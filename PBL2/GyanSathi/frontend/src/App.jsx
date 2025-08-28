@@ -75,79 +75,152 @@ const App = () => {
 
   // Initial dummy data for courses and lessons
 
-  // Functions to manage courses in the main App state
-  const handleAddCourse = (newCourse) => {
-    setCourses([
-      ...courses,
-      { ...newCourse, id: `c${Date.now()}`, lessons: [] },
-    ]);
-  };
-
-  const handleUpdateCourse = (updatedCourse) => {
-    setCourses(
-      courses.map((c) => (c.id === updatedCourse.id ? updatedCourse : c))
-    );
-  };
-
-  const handleDeleteCourse = (courseId) => {
-    setCourses(courses.filter((c) => c.id !== courseId));
-    // Also clear selected course/lesson if they belong to the deleted course
-    if (selectedCourseId === courseId) {
-      setSelectedCourseId(null);
-      setSelectedLessonId(null);
-      setView("home");
+  // Functions to manage courses in the main App state (CRUD via API)
+  const fetchAllCourses = async () => {
+    try {
+      setLoading(true);
+      const coursesResponse = await axios.get(
+        "http://localhost:8000/api/courses"
+      );
+      const courses = coursesResponse.data.data;
+      const coursesWithLessons = await Promise.all(
+        courses.map(async (course) => {
+          try {
+            const lessonsResponse = await axios.get(
+              `http://localhost:8000/api/courses/${course._id}`
+            );
+            let lessons = lessonsResponse.data.data;
+            if (
+              lessons &&
+              typeof lessons === "object" &&
+              Array.isArray(lessons.lessons)
+            ) {
+              lessons = lessons.lessons;
+            } else if (!Array.isArray(lessons)) {
+              lessons = [];
+            }
+            return {
+              ...course,
+              id: course._id,
+              lessons,
+            };
+          } catch (error) {
+            return {
+              ...course,
+              id: course._id,
+              lessons: [],
+            };
+          }
+        })
+      );
+      setCourses(coursesWithLessons);
+    } catch (error) {
+      toast.error("Failed to fetch courses data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Functions to manage lessons for a specific course
-  const handleAddLesson = (courseId, newLesson) => {
-    setCourses(
-      courses.map((course) =>
-        course.id === courseId
-          ? {
-              ...course,
-              lessons: [
-                ...course.lessons,
-                { ...newLesson, id: `l${Date.now()}` },
-              ],
-            }
-          : course
-      )
-    );
+  const handleAddCourse = async (newCourse) => {
+    try {
+      setLoading(true);
+      await axios.post("http://localhost:8000/api/courses", newCourse);
+      toast.success("Course created!");
+      await fetchAllCourses();
+    } catch (error) {
+      toast.error("Failed to create course");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleUpdateLesson = (courseId, updatedLesson) => {
-    setCourses(
-      courses.map((course) =>
-        course.id === courseId
-          ? {
-              ...course,
-              lessons: course.lessons.map((lesson) =>
-                lesson.id === updatedLesson.id ? updatedLesson : lesson
-              ),
-            }
-          : course
-      )
-    );
+  const handleUpdateCourse = async (updatedCourse) => {
+    try {
+      setLoading(true);
+      await axios.put(
+        `http://localhost:8000/api/courses/${
+          updatedCourse.id || updatedCourse._id
+        }`,
+        updatedCourse
+      );
+      toast.success("Course updated!");
+      await fetchAllCourses();
+    } catch (error) {
+      toast.error("Failed to update course");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteLesson = (courseId, lessonId) => {
-    setCourses(
-      courses.map((course) =>
-        course.id === courseId
-          ? {
-              ...course,
-              lessons: course.lessons.filter(
-                (lesson) => lesson.id !== lessonId
-              ),
-            }
-          : course
-      )
-    );
-    // Clear selected lesson if it's the one being deleted
-    if (selectedCourseId === courseId && selectedLessonId === lessonId) {
-      setSelectedLessonId(null);
-      setView("courseDetail"); // Go back to course detail
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      setLoading(true);
+      await axios.delete(`http://localhost:8000/api/courses/${courseId}`);
+      toast.success("Course deleted!");
+      await fetchAllCourses();
+      if (selectedCourseId === courseId) {
+        setSelectedCourseId(null);
+        setSelectedLessonId(null);
+        setView("home");
+      }
+    } catch (error) {
+      toast.error("Failed to delete course");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Functions to manage lessons for a specific course (CRUD via API)
+  const handleAddLesson = async (courseId, newLesson) => {
+    try {
+      setLoading(true);
+      await axios.post(
+        `http://localhost:8000/api/courses/${courseId}/lessons`,
+        newLesson
+      );
+      toast.success("Lesson created!");
+      await fetchAllCourses();
+    } catch (error) {
+      toast.error("Failed to create lesson");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateLesson = async (courseId, updatedLesson) => {
+    try {
+      setLoading(true);
+      await axios.put(
+        `http://localhost:8000/api/courses/${courseId}/lessons/${
+          updatedLesson.id || updatedLesson._id
+        }`,
+        updatedLesson
+      );
+      toast.success("Lesson updated!");
+      await fetchAllCourses();
+    } catch (error) {
+      toast.error("Failed to update lesson");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteLesson = async (courseId, lessonId) => {
+    try {
+      setLoading(true);
+      await axios.delete(
+        `http://localhost:8000/api/courses/${courseId}/lessons/${lessonId}`
+      );
+      toast.success("Lesson deleted!");
+      await fetchAllCourses();
+      if (selectedCourseId === courseId && selectedLessonId === lessonId) {
+        setSelectedLessonId(null);
+        setView("courseDetail");
+      }
+    } catch (error) {
+      toast.error("Failed to delete lesson");
+    } finally {
+      setLoading(false);
     }
   };
 
