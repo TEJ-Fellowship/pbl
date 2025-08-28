@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios"
 import { useLocation } from "react-router-dom";
 import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 import { FaEye, FaEyeSlash } from "react-icons/fa"
@@ -62,13 +63,41 @@ export default function LoginSignup() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validate()) {
-      alert(isLogin ? "Login successful!" : "Sign Up successful!");
-      // proceed with API call
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (validate()) {
+    if (!isLogin) {
+      // Signup flow
+      if (!formData.fullName || !formData.email || !formData.password) {
+        alert("All fields are required");
+        return;
+      }
+
+      try {
+        const response = await axios.post("http://localhost:5000/api/users", {
+          fullname: formData.fullName,  // must match backend
+          email: formData.email,
+          password: formData.password,
+        });
+
+        alert(response.data.message || "Signup successful!");
+        // Reset form
+        setFormData({
+          fullName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+      } catch (error) {
+        alert(error.response?.data?.error || "Signup failed");
+      }
+    } else {
+      // Login flow (later)
+      alert("Login successful!");
     }
-  };
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-blue-100">
