@@ -3,7 +3,7 @@ import Home from "./Pages/Home.jsx";
 import ResumePage from "./Pages/MyResume.jsx";
 import Preview from "./Pages/Preview.jsx";
 import LandingPage from "./Pages/LandingPage.jsx";
-import LoginSignup from "./components/loginsignup/LoginSignup.jsx.jsx";
+import LoginSignup from "./components/loginsignup/LoginSignup.jsx";
 
 export default function App() {
   return (

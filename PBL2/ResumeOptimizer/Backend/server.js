@@ -1,11 +1,12 @@
 import express from "express";
 import mongoose from "mongoose";
-import os from "os";
 import multer from "multer";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { extractText, isValidFileType } from "./Extractor/extractor.js";
+import userRouter from "./controllers/users.js"
+
 
 const app = express();
 app.use(cors());
@@ -14,15 +15,16 @@ app.use(express.json());
 mongoose.connect('mongodb+srv://ashok:password98765@cluster0.3prgcdv.mongodb.net/CvDetails?retryWrites=true&w=majority&appName=Cluster0')
   .then(() => console.log('Database successfully connected'))
   .catch((error) => console.log('Error connecting database', error.message));
+app.use("/api/users", userRouter);
 
 // Schema & Model
 const resumeSchema = new mongoose.Schema({
   title: { type: String, required: true },
-  notes: String,
+  notes: String, 
   uploadDate: { type: Date, default: Date.now },
   filePath: String, // Will store the local file path
   rawText: String, // Extracted text from PDF/DOCX
-});
+}); 
 const Resume = mongoose.model("Resume", resumeSchema);
 
 // Create uploads directory if it doesn't exist
@@ -191,5 +193,3 @@ app.delete("/api/resumes/:id", async (req, res) => {
 app.use('/uploads', express.static(uploadsDir));
 
 app.listen(5000, () => console.log("✅ Server running on http://localhost:5000"));
-
-console.log("Hello");
