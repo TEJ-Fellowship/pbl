@@ -1,10 +1,13 @@
-const { signup, signin } = require('../controllers/AuthController');
-const { signupValidation, signinValidation } = require('../middlewares/AuthValidation');
+import { signup, signin } from "../controllers/AuthController.js";
+import {
+  signupValidation,
+  signinValidation,
+} from "../middlewares/AuthValidation.js";
+import { Router } from "express";
 
-const router = require('express').Router();
+const router = Router();
 
-router.post('/signin', signinValidation, signin)
+router.post("/signin", signinValidation, signin);
 router.post("/signup", signupValidation, signup);
 
-
-module.exports = router
+export default router;
