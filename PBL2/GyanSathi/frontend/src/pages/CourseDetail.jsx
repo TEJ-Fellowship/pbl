@@ -77,7 +77,7 @@ export function CourseDetailLightInitial({
                 </div>
                 <button
                   onClick={() => onViewLesson(lesson.id || lesson._id)}
-                  className="mt-4 bg-blue-600 text-white py-2 px-5 rounded-lg shadow-md hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 self-start"
+                  className="mt-4 bg-indigo-600 text-white py-2 px-5 rounded-lg shadow-md hover:bg-indigo-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-300 self-start"
                 >
                   View Lesson
                 </button>
@@ -129,7 +129,7 @@ function LessonCard({ lesson = {}, onViewLesson }) {
       <div>
         <button
           onClick={() => onViewLesson(id)}
-          className="inline-flex items-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="inline-flex items-center gap-2 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
           aria-label={`View lesson ${title}`}
         >
           View Lesson
