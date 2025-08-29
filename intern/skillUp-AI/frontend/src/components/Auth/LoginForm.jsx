@@ -45,8 +45,8 @@ const LoginForm = () => {
               placeholder="type password"
             ></input>
           </p>
-        </form>
         <button>Sign In</button> {/* onClick={handleLogin} */}
+        </form>
         <p>
           Don't have an Account? <Link to="/register"> Sign Up</Link>
         </p>
