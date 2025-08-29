@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { authenticateToken } from "./middleware/auth.js";
@@ -27,6 +28,7 @@ mongoose
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
 // Set uploads directory
