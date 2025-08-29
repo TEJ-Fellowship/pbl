@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-// import notebg from '../assets/notemain2.jpg'
-// import showIcon from '../assets/view.png';
-// import hideIcon from '../assets/close-eye.png';
+import axios from 'axios'
 import {Link} from 'react-router-dom'
 
 const Login = () => {
@@ -13,9 +11,16 @@ const Login = () => {
     setIsShown(!isShown)        
   }
 
+  const handleLogin = () =>{
+    const loginData = {email, password}
+    axios.post('http://localhost:3001/api/user', loginData)
+    .then(response=>console.log("login successful",response.data))
+    .catch((error)=>console.error('something went wrong',error))
+  }
+
   return (
     <div 
-      className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4"
+    className="min-h-screen flex items-center justify-center p-4"
       style={{
         backgroundImage: 'url("/notemain2.jpg")',
         backgroundSize: "cover",
@@ -50,7 +55,7 @@ const Login = () => {
               placeholder="Email or username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/30 backdrop-blur-sm placeholder-gray-600 text-black border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
+              className="w-full px-4 py-3 rounded-xl bg-white/30 placeholder-gray-600 text-black border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/30"
               style={{
                 background: 'rgba(255, 255, 255, 0.3)',
                 backdropFilter: 'blur(10px)',
@@ -91,7 +96,7 @@ const Login = () => {
           
           
           {/* Login Button */}
-          <button className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors">
+          <button className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors" onClick={handleLogin}>
             Login
           </button>
           {/* OR Divider */}

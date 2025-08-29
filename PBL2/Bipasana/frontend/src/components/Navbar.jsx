@@ -1,151 +1,120 @@
 import React from "react";
-import { useState } from "react";
-import { Link } from "react-router-dom";
-// import { useContext } from "react";
-// import { AuthContext } from "../AuthContext";
-// import { ThemeContext } from "../ThemeContext";
-function Navbar({setIsLoggedIn, isLoggedIn}) {
-  // let isLoggedIn=false;
-  let isDark=false;
-  // const [isLoggedIn, setIsLoggedIn] = useState(true)
-  // const [isDark,setIsDark] = useState(false)
-  // const { isLoggedIn, logout } = useContext(AuthContext);
-  // const { isDark, handleToggle } = useContext(ThemeContext);
+import { useNavigate } from 'react-router-dom';
+
+function Navbar({ setIsLoggedIn, isLoggedIn }) {
+    const navigate = useNavigate()
+    // isLoggedIn = false;
+    let isDark = false;
+
+  const handleNavigation = (path) => {
+    navigate(path);
+  };
+
+  const handleLogin = () => {
+    handleNavigation('/login');
+    // You can add your login logic here
+    setIsLoggedIn(false); // Uncomment this when integrating with your auth system
+  };
+
+  const handleSignUp = () => {
+    handleNavigation('/signup');
+    // You can add your signup logic here  
+    // setIsLoggedIn(true); // Uncomment this when integrating with your auth system
+  };
+
   return (
-    <div>
-      <nav
-        className={`sticky top-0 z-50 w-full  shadow-lg after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10 ${
-          isDark ? "bg-black text-white" : "bg-white text-black"
-        }`}
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <a href="/">
-                <img
-                  src="/logo.png"
-                  alt="Your Company"
-                  className="h-[128px] w-[160px]"
-                />
-              </a>
+    <nav
+      className={`sticky top-0 z-50 w-full shadow-lg after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10 ${
+        isDark ? "bg-black text-white" : "bg-white text-black"
+      }`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Logo Section */}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center">
+              <div className="h-8 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-sm">M</span>
+              </div>
             </div>
-            {isLoggedIn ? (
-              <div
-                className={`flex items-center  space-x-6 ${
-                  isDark ? "bg-black text-white" : "bg-white text-black"
-                }`}
-              >
-                <div className="hidden text-md sm:flex mr-16 space-x-4">
-                  <Link
-                    to="/Quotes"
-                    className={`rounded-md px-3 py-2  font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    Quotes
-                  </Link>
-                  <Link
-                    to="/Homepage"
-                    className={`rounded-md px-3 py-2  font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                  Home
-                  </Link>
-                  <a
-                    href="#"
-                    className={`rounded-md px-3 py-2  font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                   About
-                  </a>
-                  <a
-                    href="#"
-                    className={`rounded-md px-3 py-2  font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                   Journals
-                  </a>
-                </div>
+            <span className="font-bold text-xl">MemoNest</span>
+          </div>
 
+          {/* Navigation Links */}
+          <div className="flex items-center space-x-6">
+            {/* About Us */}
+            <button
+              onClick={() => handleNavigation('/about')}
+              className={`rounded-md px-3 py-2 text-md font-medium transition-colors ${
+                isDark
+                  ? "text-white hover:bg-gray-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              About Us
+            </button>
 
-                <div className="flex items-center space-x-1">
-                  <img
-                  // onclick = {setIsDark(!isDark)}
-                    src={isDark ? "/streakdark.png" : "/sun.png"}
-                    alt="theme"
-                 
-                    className="h-8 w-8 transform -rotate-6 hover:cursor-pointer"
-                  />
-                </div>
+            {/* Theme Toggle */}
+            <button
+              className={`p-2 rounded-lg transition-colors ${
+                isDark
+                  ? "text-white hover:bg-gray-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" 
+                />
+              </svg>
+            </button>
 
-                <button className="relative flex rounded-full focus:outline-none">
-                  <img
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt="Profile"
-                    className="h-8 w-8 rounded-full"
-                  />
-                </button>
-                <button onClick={()=>{
-                  setIsLoggedIn(!isLoggedIn)
-                }}
-              
-                  className={`rounded-md px-3 py-2 text-md font-medium ${
-                    isDark
-                      ? "text-white hover:bg-gray-700"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center  space-x-6">
-                <div className="hidden sm:flex space-x-4">
-                  <a
-                    href="/login"
-                    className={`rounded-md px-3 py-2 text-md font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    Login
-                  </a>
-                  <a
-                    href="/signup"
-                    className={`rounded-md px-3 py-2 text-md font-medium ${
-                      isDark
-                        ? "text-white hover:bg-gray-700"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    SignUp
-                  </a>
-                     <div className="flex items-center space-x-1">
-                  <img                   
-                    src={isDark ? "/streakdark.png" : "/sun.png"}
-                    alt="theme"
-                    className="h-8 w-8 transform -rotate-6 hover:cursor-pointer"
-                  />
-                </div>
-                </div>
-              </div>
-            )}
+            {/* Login Button */}
+            <button
+              onClick={handleLogin}
+              className={`rounded-md px-4 py-2 text-md font-medium transition-colors border ${
+                isDark
+                  ? "text-white hover:bg-gray-700 border-gray-600"
+                  : "text-gray-700 hover:bg-gray-100 border-gray-300"
+              }`}
+            >
+              Login
+            </button>
+
+            {/* Sign Up Button */}
+            <button
+              onClick={handleSignUp}
+              className={`rounded-md px-4 py-2 text-md font-medium transition-colors ${
+                isDark
+                  ? "bg-white text-black hover:bg-gray-100"
+                  : "bg-black text-white hover:bg-gray-800"
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Mobile menu button - Optional for responsive design */}
+          <div className="sm:hidden">
+            <button
+              className={`p-2 rounded-lg ${
+                isDark
+                  ? "text-white hover:bg-gray-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 }
+
 export default Navbar;

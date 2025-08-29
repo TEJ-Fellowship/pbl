@@ -14,7 +14,6 @@ function Dashboard() {
       <Filter  />
       <Journal />
       <JournalForm />
-
     </div>
   )
 }

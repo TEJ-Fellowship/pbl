@@ -1,15 +1,19 @@
-import React from 'react'
-import Navbar from './components/Navbar'
-import { Outlet } from 'react-router-dom'
-function Layout ({setIsLoggedIn, isLoggedIn}) {
+import React from 'react';
+import Navbar from './components/Navbar';
+import Sidebar from './components/SideBar';
+import { Outlet } from 'react-router-dom';
+
+function Layout({ setIsLoggedIn, isLoggedIn }) {
   return (
     <div>
-        <Navbar setIsLoggedIn={setIsLoggedIn} isLoggedIn={isLoggedIn}/>
-        
-            <Outlet />
+      {isLoggedIn ? (
+        <Sidebar setIsLoggedIn={setIsLoggedIn} />
+      ) : (
+        <Navbar />
+      )}
+      <Outlet />
     </div>
-  )
+  );
 }
 
-export default Layout
-
+export default Layout;
