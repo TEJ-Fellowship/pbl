@@ -1,0 +1,182 @@
+/* MiningStatus.css */
+
+.miningContainer {
+  background-color: black;
+  border: 2px solid white;
+  border-radius: 1rem;
+  padding: 25px;
+  margin: 20px 0;
+  color: white;
+  font-family: "Mozilla Text", sans-serif;
+  box-shadow: rgba(190, 190, 190, 0.1) 0px 54px 55px,
+    rgba(190, 190, 190, 0.1) 0px -12px 30px,
+    rgba(190, 190, 190, 0.1) 0px 4px 6px, 
+    rgba(190, 190, 190, 0.1) 0px 12px 13px,
+    rgba(190, 190, 190, 0.1) 0px -3px 5px;
+}
+
+.miningHeader {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.miningTitle {
+  color: white;
+  font-size: 1.4em;
+  margin: 0;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.miningStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.statCard {
+  background-color: black;
+  border: 1px solid white;
+  border-radius: 1rem;
+  padding: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: rgba(190, 190, 190, 0.1) 0px 4px 6px,
+    rgba(190, 190, 190, 0.1) 0px 12px 13px,
+    rgba(190, 190, 190, 0.1) 0px -3px 5px;
+}
+
+.statCard:hover {
+  box-shadow: rgba(190, 190, 190, 0.2) 0px 54px 55px,
+    rgba(190, 190, 190, 0.2) 0px -12px 30px,
+    rgba(190, 190, 190, 0.2) 0px 4px 6px,
+    rgba(190, 190, 190, 0.2) 0px 12px 13px,
+    rgba(190, 190, 190, 0.2) 0px -3px 5px;
+}
+
+.statLabel {
+  display: block;
+  font-size: 0.85em;
+  color: white;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.statValue {
+  display: block;
+  font-size: 1.3em;
+  font-weight: bold;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+.miningProgress {
+  background-color: black;
+  border: 1px solid white;
+  border-radius: 1rem;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.progressInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background-color: black;
+  border: 1px solid white;
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: white;
+  border-radius: 0.4rem;
+  transition: width 0.3s ease;
+}
+
+.nonceInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  font-size: 0.9em;
+  color: white;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.hashingAnimation {
+  color: white;
+}
+
+.miningActions {
+  text-align: center;
+}
+
+.startMiningButton {
+  background-color: white;
+  color: black;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  font-size: 1rem;
+  font-family: "Mozilla Text", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.startMiningButton:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  color: black;
+}
+
+.startMiningButton:disabled {
+  background-color: #888;
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.miningInfo {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: black;
+  border: 1px solid white;
+  border-radius: 1rem;
+}
+
+.miningInfo p {
+  margin: 0;
+  color: white;
+  font-size: 0.9em;
+  line-height: 1.5;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .miningStats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .progressInfo,
+  .nonceInfo {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .startMiningButton {
+    width: 100%;
+    padding: 12px 20px;
+  }
+}
