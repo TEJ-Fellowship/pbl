@@ -43,11 +43,9 @@ const BookCard = ({ book, onEdit, onDelete, onToggleFavorite }) => {
         </p>
         <p className="text-sm font-semibold">⭐ {book.rating}</p>
 
-        {isOnlineBook && (
-          <p className="text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded mt-2 inline-block">
-            From Google Books
-          </p>
-        )}
+        <p className="text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded mt-2 inline-block">
+          {isOnlineBook ? "Online" : "Manual"}
+        </p>
       </div>
 
       {/* Action Buttons */}

@@ -126,10 +126,11 @@ const Browse = ({ books, setBooks }) => {
 
       {/* Category header with stats */}
       <div className="mb-8">
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-extrabold mb-4 text-gray-900 dark:text-white tracking-tight">
           {categoryTitle}
         </h1>
 
+        {/* Category description and stats */}
         {/* Category description and stats */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 mb-6 shadow-md border border-gray-100 dark:border-gray-700">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
