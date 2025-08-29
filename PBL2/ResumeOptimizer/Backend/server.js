@@ -1,9 +1,10 @@
 import express from "express";
+import cors from "cors";
 import fs from "fs";
 import path from "path";
-import Resume from "./models/Resume.js";
 import { authenticateToken } from "./middleware/auth.js";
 import usersRouter from "./controllers/users.js";
+import Resume from "./models/Resume.js";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import multer from "multer";
@@ -27,6 +28,7 @@ mongoose
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
 // Set uploads directory
