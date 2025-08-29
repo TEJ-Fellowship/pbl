@@ -13,12 +13,10 @@ const app = express();
 
 app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
 
+app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
-app.use(express.json())
-app.use('/uploads', express.static("uploads"))
-
-
-console.log(process.env.CLOUDINARY_API_KEY)
+console.log(process.env.CLOUDINARY_API_KEY);
 
 const PORT = process.env.PORT || 8080; // Changed to 8080 to match the client API_URL
 
