@@ -59,7 +59,7 @@ const Navbar = ({
             className="text-primary font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
             onClick={() => navigate("/")}
           >
-            Pustakverse
+            PV
           </div>
 
           <ul className="flex gap-6 font-medium text-black dark:text-light">
@@ -148,48 +148,47 @@ const Navbar = ({
           {user && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-primary text-black px-4 py-1 rounded-full font-semibold hover:bg-yellow-500 dark:bg-primary dark:hover:bg-yellow-500 transition-colors"
+              className="flex items-center gap-2 
+      bg-primary text-black 
+      px-6 py-2 
+      rounded-full font-medium 
+      shadow-sm hover:shadow-md 
+      hover:bg-yellow-500 
+      transition-colors duration-200
+      dark:bg-primary dark:hover:bg-yellow-500"
             >
               <PlusIcon className="w-5 h-5" />
-              Add New
+              <span className="text-sm tracking-wide">Add New</span>
             </button>
           )}
 
           {/* Authentication / Profile */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {!user ? (
               <>
                 <button
                   onClick={() => navigate("/login")}
-                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
+                  className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
                 >
                   Login
                 </button>
                 <button
                   onClick={() => navigate("/signup")}
-                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
+                  className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
                 >
                   Sign Up
                 </button>
               </>
             ) : (
               <div className="flex items-center gap-2">
-                <button
+                {/* Profile name styled as text, not button */}
+                <span
                   onClick={() => navigate("/profile")}
-                  className="px-3 py-1 bg-primary text-black rounded hover:bg-yellow-500 transition-colors"
+                  className="cursor-pointer font-semibold text-gray-700 dark:text-gray-200 hover:text-yellow-500 transition-colors"
                 >
                   {user.username}
-                </button>
-                <button
-                  onClick={() => {
-                    setUser(null);
-                    localStorage.removeItem("token");
-                    navigate("/");
-                  }}
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                >
-                  Logout
-                </button>
+                </span>
+                {/* Logout hidden for now */}
               </div>
             )}
           </div>

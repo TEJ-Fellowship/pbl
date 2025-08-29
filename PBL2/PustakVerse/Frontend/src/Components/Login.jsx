@@ -37,16 +37,27 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-      <form onSubmit={handleLogin} className="space-y-4">
+    <div className="max-w-md mx-auto p-8 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+      {/* Title */}
+      <h2 className="text-3xl font-extrabold text-center text-primary mb-2">
+        Welcome Back
+      </h2>
+      <p className="text-center text-gray-500 dark:text-gray-400 mb-6">
+        Sign in to enter the pustakverse
+      </p>
+
+      {/* Form */}
+      <form onSubmit={handleLogin} className="space-y-5">
         <div>
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 
+                       bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+                       placeholder-gray-400 dark:placeholder-gray-500 
+                       focus:ring-2 focus:ring-primary focus:border-primary transition"
             required
           />
         </div>
@@ -56,23 +67,33 @@ const Login = ({ onLogin }) => {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-600 
+                       bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 
+                       placeholder-gray-400 dark:placeholder-gray-500 
+                       focus:ring-2 focus:ring-primary focus:border-primary transition"
             required
           />
         </div>
+
+        {/* Login Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          className="w-full py-3 rounded-xl font-semibold 
+                     bg-primary text-white hover:bg-primary/90 
+                     transition-all disabled:opacity-50 disabled:cursor-not-allowed 
+                     shadow-md"
         >
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
-      <p className="mt-4 text-center text-gray-600 dark:text-gray-400">
-        Don't have an account?{" "}
+
+      {/* Signup Redirect */}
+      <p className="mt-6 text-center text-gray-600 dark:text-gray-400">
+        Don’t have an account?{" "}
         <button
           onClick={() => navigate("/signup")}
-          className="text-blue-500 hover:underline"
+          className="text-secondary font-medium hover:underline"
         >
           Sign up
         </button>
