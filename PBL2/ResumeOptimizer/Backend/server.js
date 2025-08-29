@@ -1,7 +1,6 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
-import Resume from "./models/Resume.js";
 import { authenticateToken } from "./middleware/auth.js";
 import usersRouter from "./controllers/users.js";
 import dotenv from "dotenv";
