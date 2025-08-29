@@ -6,23 +6,21 @@ const BookModal = ({ book, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 rounded-lg p-6 max-w-3xl w-full overflow-y-auto flex flex-col md:flex-row gap-6"
+        className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-200 rounded-2xl p-6 max-w-3xl w-full overflow-y-auto flex flex-col md:flex-row gap-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Left: Cover Image */}
         <div className="w-full md:w-1/3 h-auto min-h-[200px] flex items-center justify-center">
-          {/* UPDATED: Handle both coverImage and coverUrl */}
           {book.coverImage ? (
             <img
               src={`http://localhost:3001/uploads/${book.coverImage}`}
               alt={book.title}
-              className="w-full h-auto max-h-96 object-cover rounded shadow-lg"
+              className="w-full h-auto max-h-96 object-cover rounded-lg shadow-md"
               onError={(e) => {
-                // Fallback to coverUrl if coverImage fails
                 if (book.coverUrl) {
                   e.target.src = book.coverUrl;
                 } else {
@@ -35,9 +33,8 @@ const BookModal = ({ book, onClose }) => {
             <img
               src={book.coverUrl}
               alt={book.title}
-              className="w-full h-auto max-h-96 object-cover rounded shadow-lg"
+              className="w-full h-auto max-h-96 object-cover rounded-lg shadow-md"
               onError={(e) => {
-                // Fallback if URL image fails to load
                 e.target.style.display = "none";
                 e.target.nextSibling.style.display = "flex";
               }}
@@ -46,7 +43,7 @@ const BookModal = ({ book, onClose }) => {
 
           {/* Fallback placeholder */}
           <div
-            className={`w-full h-64 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded ${
+            className={`w-full h-64 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 ${
               book.coverImage || book.coverUrl ? "hidden" : ""
             }`}
           >
@@ -59,33 +56,61 @@ const BookModal = ({ book, onClose }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 text-red-500 text-2xl hover:text-red-700 transition-colors"
+            className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 rounded-full shadow-md p-3 text-red-500 text-xl hover:text-red-600 transition-colors"
           >
             ×
           </button>
 
-          {/* ADDED: Source indicator */}
+          {/* Source indicator */}
           {book.source === "google" && (
-            <div className="mb-2">
-              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
-                Google Books
-              </span>
-            </div>
+            <span className="self-start mb-3 bg-primary/90 text-white text-xs font-medium px-2 py-1 rounded-full shadow-sm">
+              Online
+            </span>
+          )}
+          {book.source === "manual" && (
+            <span className="self-start mb-3 bg-gray-500 text-white text-xs font-medium px-2 py-1 rounded-full shadow-sm">
+              Manual
+            </span>
           )}
 
-          <h2 className="text-2xl font-bold mb-2">{book.title}</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-2">
-            by {book.author}
+          {/* Title & Author */}
+          <h2 className="text-2xl md:text-3xl font-bold mb-1 leading-snug pr-8">
+            {book.title}
+          </h2>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
+            by <span className="font-medium">{book.author}</span>
           </p>
-          <p className="text-sm mb-1">Genres: {book.genre.join(", ")}</p>
-          <p className="text-sm mb-2">Year: {book.year}</p>
-          <p className="text-sm mb-2">⭐ {book.rating}</p>
-          {book.favorite && <p className="text-pink-500 mb-2">❤️ Favorite</p>}
+
+          {/* Metadata */}
+          <div className="flex flex-wrap gap-3 text-sm mb-4">
+            {book.genre?.length > 0 && (
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-700 dark:text-gray-300">
+                {book.genre.join(", ")}
+              </span>
+            )}
+            {book.year && (
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-700 dark:text-gray-300">
+                {book.year}
+              </span>
+            )}
+            {book.rating > 0 && (
+              <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-700 text-yellow-700 dark:text-yellow-200 rounded-full">
+                ⭐ {book.rating}
+              </span>
+            )}
+            {book.favorite && (
+              <span className="px-3 py-1 bg-pink-100 dark:bg-pink-700 text-pink-600 dark:text-pink-200 rounded-full">
+                ❤️ Favorite
+              </span>
+            )}
+          </div>
 
           {/* Description */}
-          <div className="mt-2 max-w-full md:max-w-[500px]">
-            <p className="font-semibold mb-1">Description</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+          <div className="mt-2 max-w-full md:max-w-[500px] space-y-2">
+            <p className="font-semibold text-base border-b border-gray-200 dark:border-gray-700 pb-1">
+              Description
+            </p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
               {book.description || "No description provided."}
             </p>
           </div>

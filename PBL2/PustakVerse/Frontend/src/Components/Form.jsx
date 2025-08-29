@@ -127,27 +127,33 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative p-4 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-md rounded-lg space-y-4 transition-colors max-h-[90vh] overflow-y-auto"
+      className="relative p-6 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 
+             shadow-xl rounded-2xl space-y-5 transition-colors max-h-[90vh] overflow-y-auto"
     >
+      {/* Close Button */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl font-bold z-10"
+        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 
+               dark:hover:text-gray-300 text-2xl font-bold z-10"
       >
         ×
       </button>
 
-      <h2 className="text-xl font-bold mb-4">
-        {editingBook ? "Edit Book" : "Add a Book Manually"}
+      {/* Heading */}
+      <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+        {editingBook ? "✏️ Edit Book" : "📚 Add a Book"}
       </h2>
 
       {/* Title & Author */}
       <input
         type="text"
-        placeholder="Title"
+        placeholder="Book Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        className="border border-gray-300 dark:border-gray-700 p-3 w-full 
+               rounded-lg focus:ring-2 focus:ring-primary focus:border-primary
+               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         required
       />
       <input
@@ -155,24 +161,29 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         placeholder="Author"
         value={author}
         onChange={(e) => setAuthor(e.target.value)}
-        className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        className="border border-gray-300 dark:border-gray-700 p-3 w-full 
+               rounded-lg focus:ring-2 focus:ring-primary focus:border-primary
+               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         required
       />
 
       {/* Cover Image */}
       <div className="space-y-3">
-        <label className="block font-semibold">Book Cover Image</label>
+        <label className="block font-medium text-gray-700 dark:text-gray-300">
+          Book Cover
+        </label>
         {imagePreview && (
           <div className="relative inline-block">
             <img
               src={imagePreview}
               alt="Book cover preview"
-              className="w-32 h-48 object-cover rounded-lg border"
+              className="w-32 h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-700"
             />
             <button
               type="button"
               onClick={removeImage}
-              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+              className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white 
+                     rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold shadow-md"
             >
               ×
             </button>
@@ -181,10 +192,11 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         <div className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            className="bg-primary hover:bg-yellow-500 text-black font-medium 
+                   px-4 py-2 rounded-lg transition-colors"
             onClick={() => document.getElementById("coverInput").click()}
           >
-            {imagePreview ? "Change Cover" : "Choose Cover"}
+            {imagePreview ? "Change Cover" : "Upload Cover"}
           </button>
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {cover ? cover.name : "No file chosen"}
@@ -199,25 +211,31 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         />
       </div>
 
-      {/* Genre Selection */}
+      {/* Genre Selector */}
       <div>
-        <label className="block mb-2 font-semibold">Select Genres</label>
+        <label className="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+          Genres
+        </label>
         <GenreSelector selectedGenres={genre} setSelectedGenres={setGenre} />
       </div>
 
       {/* Other Fields */}
       <input
         type="number"
-        placeholder="Year"
+        placeholder="Publication Year"
         value={year}
         onChange={(e) => setYear(e.target.value)}
-        className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        className="border border-gray-300 dark:border-gray-700 p-3 w-full 
+               rounded-lg focus:ring-2 focus:ring-primary focus:border-primary
+               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
       />
       <textarea
-        placeholder="Description"
+        placeholder="Short Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg h-24 resize-vertical bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        className="border border-gray-300 dark:border-gray-700 p-3 w-full rounded-lg 
+               h-28 resize-none focus:ring-2 focus:ring-primary focus:border-primary
+               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
       />
       <input
         type="number"
@@ -229,22 +247,31 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
         onChange={(e) =>
           setRating(e.target.value ? Number(e.target.value) : null)
         }
-        className="border border-gray-300 dark:border-gray-600 p-3 w-full rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        className="border border-gray-300 dark:border-gray-700 p-3 w-full 
+               rounded-lg focus:ring-2 focus:ring-primary focus:border-primary
+               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
       />
+
+      {/* Favorite Checkbox */}
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
           checked={favorite}
           onChange={() => setFavorite(!favorite)}
-          className="w-4 h-4"
+          className="w-4 h-4 accent-yellow-500 focus:ring-yellow-500 border-gray-300 rounded"
         />
-        <span>Mark as Favorite</span>
+
+        <span className="text-gray-700 dark:text-gray-300">
+          Mark as Favorite
+        </span>
       </label>
 
+      {/* Submit Button */}
       <button
         type="submit"
         disabled={uploadStatus === "Uploading..."}
-        className="w-full bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
+        className="w-full bg-primary hover:bg-yellow-500 text-black font-semibold 
+               px-6 py-3 rounded-lg transition-colors disabled:opacity-50"
       >
         {uploadStatus === "Uploading..."
           ? "Uploading..."
@@ -253,6 +280,7 @@ const Form = ({ onClose, onAddBook, editingBook }) => {
           : "Add Book"}
       </button>
 
+      {/* Status */}
       {uploadStatus && uploadStatus !== "Uploading..." && (
         <p
           className={`text-sm text-center ${

@@ -1,7 +1,7 @@
 // Components/GoogleBooks.jsx
 import React, { useState, useEffect } from "react";
 import { authFetch, handleApiError } from "../utils/api";
-
+import { XMarkIcon } from "@heroicons/react/24/outline";
 const normalizeGoogleBook = (volume) => {
   const v = volume || {};
   const info = v.volumeInfo || {};
@@ -28,11 +28,18 @@ const GoogleBooks = ({ books, setBooks }) => {
   const [addingBooks, setAddingBooks] = useState(new Set());
   const [error, setError] = useState("");
 
-  // Clear results when input is empty
+  // ADDED: Debounced dynamic search
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      return;
     }
+
+    const delayDebounce = setTimeout(() => {
+      fetchBooks(query);
+    }, 500); // wait 0.5s after typing
+
+    return () => clearTimeout(delayDebounce);
   }, [query]);
 
   const fetchBooks = async (searchQuery) => {
@@ -56,14 +63,7 @@ const GoogleBooks = ({ books, setBooks }) => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
-    fetchBooks(query);
-  };
-
   const addBook = async (book) => {
-    // Check if user is logged in
     const token = localStorage.getItem("token");
     if (!token) {
       alert("Please log in to add books to your collection");
@@ -84,11 +84,7 @@ const GoogleBooks = ({ books, setBooks }) => {
       formData.append("author", book.authors.join(", "));
       formData.append(
         "genre",
-        JSON.stringify(
-          book.categories && book.categories.length > 0
-            ? book.categories
-            : ["General"]
-        )
+        JSON.stringify(book.categories?.length ? book.categories : ["General"])
       );
       formData.append(
         "year",
@@ -99,7 +95,7 @@ const GoogleBooks = ({ books, setBooks }) => {
       );
       formData.append(
         "description",
-        book.description && book.description.length > 500
+        book.description?.length > 500
           ? book.description.slice(0, 500) + "..."
           : book.description || "No description available"
       );
@@ -112,20 +108,14 @@ const GoogleBooks = ({ books, setBooks }) => {
         formData.append("coverUrl", book.thumbnail);
       }
 
-      // Use authFetch for authenticated requests
       const res = await authFetch("http://localhost:3001/api/books", {
         method: "POST",
         body: formData,
       });
 
-      // Log the response for debugging
-      console.log("Add book response status:", res.status);
-
-      // Handle API errors
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Server error response:", errorText);
-        throw new Error(`Failed to add book: ${res.status} ${res.statusText}`);
+        throw new Error(`Failed to add book: ${res.status} ${errorText}`);
       }
 
       const savedBook = await res.json();
@@ -149,17 +139,18 @@ const GoogleBooks = ({ books, setBooks }) => {
       if (!existingBook) return;
 
       const formData = new FormData();
-      formData.append("title", existingBook.title);
-      formData.append("author", existingBook.author);
-      formData.append("genre", JSON.stringify(existingBook.genre));
-      formData.append("year", existingBook.year);
-      formData.append("description", existingBook.description);
-      formData.append("rating", existingBook.rating);
-      formData.append("favorite", !existingBook.favorite);
-      formData.append("source", existingBook.source);
-      formData.append("googleId", existingBook.googleId);
+      Object.entries({
+        title: existingBook.title,
+        author: existingBook.author,
+        genre: JSON.stringify(existingBook.genre),
+        year: existingBook.year,
+        description: existingBook.description,
+        rating: existingBook.rating,
+        favorite: !existingBook.favorite,
+        source: existingBook.source,
+        googleId: existingBook.googleId,
+      }).forEach(([key, val]) => formData.append(key, val));
 
-      // Use authFetch for authenticated requests
       const res = await authFetch(
         `http://localhost:3001/api/books/${existingBook._id}`,
         {
@@ -168,12 +159,10 @@ const GoogleBooks = ({ books, setBooks }) => {
         }
       );
 
-      // Handle API errors
       await handleApiError(res);
-
       const savedBook = await res.json();
-      setBooks((prevBooks) =>
-        prevBooks.map((b) => (b._id === savedBook._id ? savedBook : b))
+      setBooks((prev) =>
+        prev.map((b) => (b._id === savedBook._id ? savedBook : b))
       );
     } catch (error) {
       console.error("Error updating favorite:", error);
@@ -187,19 +176,19 @@ const GoogleBooks = ({ books, setBooks }) => {
     const isAdding = addingBooks.has(book.id);
 
     return (
-      <div className="border rounded-lg p-4 shadow bg-white dark:bg-gray-800 hover:shadow-lg transition-shadow">
+      <div className="border rounded-xl p-4 shadow-sm bg-white dark:bg-gray-800 hover:shadow-md transition-all flex flex-col">
         {book.thumbnail ? (
           <img
             src={book.thumbnail}
             alt={book.title}
-            className="w-full h-40 object-cover rounded"
+            className="w-full h-48 object-cover rounded-lg"
           />
         ) : (
-          <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded text-gray-500 dark:text-gray-400">
+          <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400">
             No cover
           </div>
         )}
-        <h3 className="font-semibold mt-2 truncate text-gray-900 dark:text-white">
+        <h3 className="font-semibold mt-3 truncate text-gray-900 dark:text-white text-base">
           {book.title}
         </h3>
         {book.authors.length > 0 && (
@@ -208,19 +197,19 @@ const GoogleBooks = ({ books, setBooks }) => {
           </p>
         )}
 
-        <div className="mt-2 flex gap-2">
+        <div className="mt-3 flex gap-2">
           {!isInCollection ? (
             <button
               onClick={() => addBook(book)}
               disabled={isAdding}
-              className="flex-1 text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              className="flex-1 text-xs bg-primary text-white px-3 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
               {isAdding ? "Adding..." : "Add to Collection"}
             </button>
           ) : (
             <button
               onClick={() => toggleFavorite(book)}
-              className={`flex-1 text-xs px-2 py-1 rounded transition-colors ${
+              className={`flex-1 text-xs px-3 py-2 rounded-lg transition-colors ${
                 bookInCollection?.favorite
                   ? "bg-pink-500 text-white hover:bg-pink-600"
                   : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -238,61 +227,93 @@ const GoogleBooks = ({ books, setBooks }) => {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Google Books..."
-            className="w-full border border-gray-300 dark:border-gray-600 rounded px-4 py-2 pr-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          />
+      {/* Search input */}
+      <div className="relative flex-1">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search Google Books..."
+          className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary transition-colors"
+        />
 
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300"
-            >
-              ×
-            </button>
-          )}
+        {/* Search icon SVG */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+            />
+          </svg>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors disabled:opacity-50"
-        >
-          {loading ? "Searching..." : "Search"}
-        </button>
-      </form>
+        {/* Clear button */}
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        )}
+      </div>
 
+      {/* Error */}
       {error && (
-        <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
+        <div className="bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
-      {/* Show search results */}
-      {results.length > 0 && (
+      {/* Search results */}
+      {loading ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className="border rounded-lg p-4 shadow bg-white dark:bg-gray-800 animate-pulse flex flex-col gap-3"
+            >
+              {/* Image placeholder */}
+              <div className="w-full h-40 bg-gray-200 dark:bg-gray-700 rounded" />
+
+              {/* Title placeholder */}
+              <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-600 rounded" />
+
+              {/* Author placeholder */}
+              <div className="h-3 w-1/2 bg-gray-200 dark:bg-gray-600 rounded" />
+
+              {/* Button placeholder */}
+              <div className="h-6 w-full bg-gray-300 dark:bg-gray-600 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : results.length > 0 ? (
         <>
           <h3 className="text-lg font-semibold mt-4 text-gray-900 dark:text-white">
             Search Results
           </h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {results.map((book) => (
               <BookCard key={book.id} book={book} />
             ))}
           </div>
         </>
-      )}
-
-      {!loading && results.length === 0 && query && (
-        <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">
-            No results found for "{query}"
-          </p>
-        </div>
+      ) : (
+        query && (
+          <div className="text-center py-8">
+            <p className="text-gray-500 dark:text-gray-400">
+              No results found for "{query}"
+            </p>
+          </div>
+        )
       )}
     </div>
   );

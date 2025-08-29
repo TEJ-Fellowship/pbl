@@ -17,10 +17,11 @@ const InsightsButton = ({ book }) => {
   return (
     <button
       onClick={handleClick}
-      className="p-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-purple-500/30"
+      className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:scale-105 hover:from-purple-600 hover:to-pink-600 transition-transform duration-200"
       title="Get AI Insights"
     >
-      <SparklesIcon className="w-4 h-4" />
+      <SparklesIcon className="w-5 h-5" />
+      <span>AI Insights</span>
     </button>
   );
 };
