@@ -13,7 +13,7 @@ const ManageProperty = () => {
     features: [],
     beds: 0,
     propertyType: "",
-    location: "",
+    location: null,
     images: [],
   });
 
@@ -26,7 +26,7 @@ const ManageProperty = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/properties/delete-property/${deletePropertyId}`,
+        `http://localhost:/api/properties/delete-property/${deletePropertyId}`,
         {
           method: "DELETE",
         }
@@ -90,10 +90,24 @@ const ManageProperty = () => {
   */
 
     Object.keys(propertyDetail).forEach((key) => {
-      if (key !== "images") {
+      if (key !== "images" && key != "location") {
         formData.append(key, propertyDetail[key]);
       }
     });
+
+    if (propertyDetail.location) {
+      formData.append(
+        "location",
+        JSON.stringify({
+          type: "Point",
+          coordinates: [
+            propertyDetail.location.lng,
+
+            propertyDetail.location.lat,
+          ],
+        })
+      );
+    }
 
     for (let i = 0; i < propertyDetail.images.length; i++) {
       formData.append("images", propertyDetail.images[i]);
@@ -105,7 +119,7 @@ const ManageProperty = () => {
       if (editPropertyId) {
         // Edit existing property
         response = await fetch(
-          `http://localhost:8080/api/properties/edit-property/${editPropertyId}`,
+          `http://localhost:5000/api/properties/edit-property/${editPropertyId}`,
           {
             method: "PUT",
             body: formData,
@@ -114,7 +128,7 @@ const ManageProperty = () => {
       } else {
         // Add new property
         response = await fetch(
-          "http://localhost:8080/api/properties/add-property",
+          "http://localhost:5000/api/properties/add-property",
           {
             method: "POST",
             body: formData,
@@ -209,7 +223,9 @@ const ManageProperty = () => {
                         {property.propertyType}
                       </td>
                       <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                        {property.location}
+                        {property.location?.coordinates
+                          ? `${property.location.coordinates[1]}, ${property.location.coordinates[0]}`
+                          : "N/A"}
                       </td>
                       <td className="h-16 px-4 py-2">
                         <div className="flex gap-2">
@@ -388,13 +404,14 @@ const ManageProperty = () => {
                     onLocationSelect={(loc) =>
                       setPropertyDetail((prev) => ({
                         ...prev,
-                        location: `${loc.lat},${loc.lng}`,
+                        location: { lat: loc.lat, lng: loc.lng },
                       }))
                     }
                   />
                   {propertyDetail.location && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Selected Location: {propertyDetail.location}
+                      Selected Location: {propertyDetail.location.lat},{" "}
+                      {propertyDetail.location.lng}
                     </p>
                   )}
                 </div>

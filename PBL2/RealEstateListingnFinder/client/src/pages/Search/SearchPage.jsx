@@ -65,7 +65,7 @@ const SearchPage = () => {
                             {property.title}
                           </p>
                           <p className="text-slate-500 text-sm font-normal leading-normal">
-                            {property.location} . {property.beds} beds
+                            {property.beds} beds
                           </p>
                         </div>
                         <button className="flex min-w-21 max-w-120 cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-slate-200 text-slate-900 text-sm font-medium leading-normal w-fit hover:bg-slate-300 transition-colors">
