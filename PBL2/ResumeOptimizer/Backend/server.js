@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { authenticateToken } from "./middleware/auth.js";
 import usersRouter from "./controllers/users.js";
+import Resume from "./models/Resume.js";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import multer from "multer";
