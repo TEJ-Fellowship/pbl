@@ -14,7 +14,9 @@ const getAll = () => {
 const create = (userDefineUrl, userData) => {
   return axios
     .post(userDefineUrl, userData)
-    .then((response) => response.data) // return response to caller
+    .then((response) => {
+      return response.data;
+    }) // return response to caller
     .catch((error) => {
       return { error: error.response?.data || error.message }; // return error
     });
