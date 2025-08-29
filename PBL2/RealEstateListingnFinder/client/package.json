@@ -12,6 +12,7 @@
   "dependencies": {
     "@material-tailwind/react": "^2.1.10",
     "axios": "^1.11.0",
+    "bootstrap-icons": "^1.13.1",
     "lucide-react": "^0.540.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

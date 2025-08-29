@@ -16,4 +16,4 @@ cloudinary.config({
   api_secret: "PvlIvX5VsKfQfw9pboNeljTivaM",
 });
 
-export default cloudinary;2122
+export default cloudinary;

@@ -1,11 +1,9 @@
 import React from 'react'
-import { Button, Input, Textarea, Typography } from "@material-tailwind/react";
-import "bootstrap-icons/font/bootstrap-icons.css";
 
-
-const Contact = () => {
+const Reviews = () => {
   return (
     <>
+      <div>Reviews</div>
       <div className="fixed bottom-0 w-full bg-white">
         <div className="max-w-screen-xl px-4 py-9 mx-auto space-y-7 overflow-hidden sm:px-6 lg:px-8">
           <footer className="flex flex-wrap justify-center -mx-5 -my-2">
@@ -69,4 +67,4 @@ const Contact = () => {
   );
 }
 
-export default Contact
+export default Reviews

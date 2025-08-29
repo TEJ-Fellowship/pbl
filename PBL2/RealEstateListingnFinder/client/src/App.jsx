@@ -16,6 +16,8 @@ import Contact from "./pages/Contact";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RestrictedAccess from "./components/RestrictedAccess";
 import { AuthProvider } from "./contexts/AuthContext";
+import Reviews from "./pages/Reviews";
+import Team from "./pages/Team";
 
 function AppContent() {
   const location = useLocation();
@@ -26,6 +28,8 @@ function AppContent() {
         <Route path="/" element={<Landing />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/reviews" element={<Reviews />} />
+        <Route path="/teams" element={<Team />} />
         <Route path="/auth" element={<Auth />} />
 
         {/* Protected Routes */}

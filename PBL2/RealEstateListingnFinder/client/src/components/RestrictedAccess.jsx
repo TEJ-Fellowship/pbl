@@ -13,7 +13,7 @@ const RestrictedAccess = () => {
       </h2>
       <p className="text-lg text-gray-600 mb-8 max-w-lg">
         You need to sign in to access this content and explore all the features
-        of Mero Ghar.
+        of MA Properties Inc.
       </p>
       <Link
         to="/auth"

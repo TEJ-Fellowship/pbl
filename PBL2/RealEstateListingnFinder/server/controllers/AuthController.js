@@ -7,12 +7,10 @@ const signup = async (req, res) => {
     const { name, email, password } = req.body;
     const user = await UserModel.findOne({ email });
     if (user) {
-      return res
-        .status(409)
-        .json({
-          message: "User already exist, Login with your credentials",
-          success: false,
-        });
+      return res.status(401).json({
+        message: "User already exist, Login with your credentials",
+        success: false,
+      });
     }
     const userModel = new UserModel({ name, email, password });
     userModel.password = await bcrypt.hash(password, 10);

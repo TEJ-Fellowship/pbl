@@ -143,7 +143,11 @@ const Auth = () => {
           <div className="flex flex-col lg:flex-row rounded-xl shadow-xl overflow">
             {/* Left Part */}
             <div>
-              <img src={logo} className="absolute size-24 p-3 mt-6 ml-3" />
+              <img
+                src={logo}
+                className="absolute size-24 p-3 mt-6 ml-3 cursor-pointer"
+                onClick={() => (window.location.href = "/")}
+              />
             </div>
             <div className="w-full lg:w-1/2 p-44">
               <div className="flex flex-col">
