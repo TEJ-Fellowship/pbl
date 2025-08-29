@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useProperties } from "../hooks/useProperties";
+import MapPicker from "../components/Map/MapPicker";
 
 const ManageProperty = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -379,16 +380,23 @@ const ManageProperty = () => {
 
                 <div>
                   <label className="block text-gray-900 text-base font-medium mb-2">
-                    Location
+                    Select Property Location
                   </label>
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="e.g., 123 Main Street, Anytown"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-                    value={propertyDetail.location}
-                    onChange={handleChange}
+                  <MapPicker
+                    initialLat={27.7} // optional default latitude
+                    initialLng={85.3} // optional default longitude
+                    onLocationSelect={(loc) =>
+                      setPropertyDetail((prev) => ({
+                        ...prev,
+                        location: `${loc.lat},${loc.lng}`,
+                      }))
+                    }
                   />
+                  {propertyDetail.location && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Selected Location: {propertyDetail.location}
+                    </p>
+                  )}
                 </div>
 
                 <div>
