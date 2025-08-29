@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import Form from "./Form";
+// import logo from "";
 
 import {
   SunIcon,
@@ -39,7 +40,7 @@ const Navbar = ({ darkMode, setDarkMode, books, setBooks, user, setUser }) => {
             className="text-primary font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
             onClick={() => navigate("/")}
           >
-            PV
+            <img src="/logo.svg" alt="" className="h-10 w-auto" />
           </div>
 
           {/* Desktop Links */}
