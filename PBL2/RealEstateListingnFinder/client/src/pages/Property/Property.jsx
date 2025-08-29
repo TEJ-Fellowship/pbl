@@ -31,7 +31,8 @@ const Property = () => {
   if (!property) return <p>Property not found</p>;
 
   const location = property.location;
-  const [lat, lng] = location.split(",");
+  const lat = location?.coordinates ? location.coordinates[1] : null;
+  const lng = location?.coordinates ? location.coordinates[0] : null;
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans overflow-y-hidden">
