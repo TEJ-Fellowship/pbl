@@ -7,19 +7,27 @@ const RegistrForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [users, setUsers] = useState()
+  const [token, setToken] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = { fullName, email, password };
     service
       .create(registerURL, data)
-      .then((response) => response.data)
+      .then((response) => {
+       setUsers(response);
+        setToken(response.token);
+      })
       .catch((error) => console.log(error, "this is error"));
 
-      setFullName("");
-      setEmail("");
-      setPassword("");
+    setFullName("");
+    setEmail("");
+    setPassword("");
   };
+
+  console.log("token is ", token);
+  localStorage.setItem("token", JSON.stringify(token));
 
   return (
     <>
@@ -53,8 +61,10 @@ const RegistrForm = () => {
               placeholder="type password"
             ></input>
           </p>
-          <button>Sign Up</button> 
-          <p>Already have an Account? <Link to="/login"> Sign In</Link></p>
+          <button>Sign Up</button>
+          <p>
+            Already have an Account? <Link to="/login"> Sign In</Link>
+          </p>
         </form>
       </div>
     </>
