@@ -1,4 +1,5 @@
 import React from 'react'
+import {Link} from "react-router-dom"
 
 function LandingNavbar() {
     return (
@@ -18,6 +19,8 @@ function LandingNavbar() {
     
             {/* Buttons */}
             <div className="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+              
+              <Link to="/login">
               <button
                 type="button"
                 className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 
@@ -27,7 +30,11 @@ function LandingNavbar() {
               >
                 Login
               </button>
+              </Link>
     
+
+
+    <Link to="/signUp">
               <button
                 type="button"
                 className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 
@@ -37,6 +44,8 @@ function LandingNavbar() {
               >
                 Sign Up
               </button>
+
+              </Link>
             </div>
     
             {/* Menu Links */}
