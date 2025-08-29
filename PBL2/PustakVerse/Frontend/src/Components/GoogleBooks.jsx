@@ -1,7 +1,7 @@
 // Components/GoogleBooks.jsx
 import React, { useState, useEffect } from "react";
 import { authFetch, handleApiError } from "../utils/api";
-
+import { XMarkIcon } from "@heroicons/react/24/outline";
 const normalizeGoogleBook = (volume) => {
   const v = volume || {};
   const info = v.volumeInfo || {};
@@ -228,32 +228,42 @@ const GoogleBooks = ({ books, setBooks }) => {
   return (
     <div className="space-y-6">
       {/* Search input */}
-      <div className="relative flex">
+      <div className="relative flex-1">
         <input
           value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            if (e.target.value.trim()) fetchBooks(e.target.value); // dynamic search
-          }}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Search Google Books..."
-          className="flex-1 border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pr-14 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary transition-colors"
+          className="w-full border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 pl-10 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary transition-colors"
         />
+
+        {/* Search icon SVG */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"
+            />
+          </svg>
+        </div>
 
         {/* Clear button */}
         {query && (
           <button
             type="button"
             onClick={() => setQuery("")}
-            className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-300 text-xl font-bold hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
-            ×
+            <XMarkIcon className="w-6 h-6" />
           </button>
         )}
-
-        {/* Search icon */}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-primary text-lg">
-          🔍
-        </span>
       </div>
 
       {/* Error */}

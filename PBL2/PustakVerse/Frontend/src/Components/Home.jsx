@@ -12,9 +12,8 @@ function Home({ books, setBooks }) {
 
       {/* Existing Saved Books */}
       <h3 className="text-lg font-semibold mt-6">My Books</h3>
-      <div className="max-w-7xl mx-auto p-6">
-        <BookGrid books={books} setBooks={setBooks} />
-      </div>
+
+      <BookGrid books={books} setBooks={setBooks} />
     </div>
   );
 }
