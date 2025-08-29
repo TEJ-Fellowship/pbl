@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Property } from "../models/PropertyModel.js";
 import cloudinary from "../utils/cloudinary.js";
 
@@ -8,6 +9,22 @@ export const getAllProperty = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getPropertyById = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid property id" });
+    }
+
+    const property = await Property.findById(id);
+    if (!property) return res.status(400).json({ error: "Property not found" });
+    return res.status(200).json(property);
+  } catch (err) {
+    res.status(500).json({ error: "server error" });
   }
 };
 

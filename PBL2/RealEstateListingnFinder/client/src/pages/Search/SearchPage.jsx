@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import SearchComponenet from "../../components/Search/Search";
 import FilterOptions from "../../components/Filter/Filter";
 import { useProperties } from "../../hooks/useProperties";
+import { useNavigate } from "react-router-dom";
 
 const SearchPage = () => {
   const { properties } = useProperties();
@@ -14,6 +15,8 @@ const SearchPage = () => {
   const currentProperties = properties.slice(indexOfFirst, indexOfLast);
 
   const totalPages = Math.ceil(properties.length / itemsPerPage);
+
+  const navigate = useNavigate();
 
   const handlePageChange = (page) => {
     if (page < 1 || page > totalPages) return;
@@ -45,7 +48,11 @@ const SearchPage = () => {
               {/* Property Listings */}
               <div className="space-y-4">
                 {currentProperties.map((property) => (
-                  <div key={property._id} className="p-4">
+                  <div
+                    key={property._id}
+                    onClick={() => navigate(`/property/${property._id}`)}
+                    className="p-4"
+                  >
                     <div className="flex items-stretch justify-between gap-4 rounded-lg hover:bg-slate-100 transition-colors p-4 -m-4 cursor-pointer">
                       <div className="flex flex-[2_2_0px] flex-col gap-4">
                         <div className="flex flex-col gap-1">

@@ -18,6 +18,7 @@ import RestrictedAccess from "./components/RestrictedAccess";
 import { AuthProvider } from "./contexts/AuthContext";
 import Reviews from "./pages/Reviews";
 import Team from "./pages/Team";
+import Property from "./pages/Property/Property";
 
 function AppContent() {
   const location = useLocation();
@@ -26,6 +27,7 @@ function AppContent() {
       {location.pathname !== "/auth" && <Navbar />}
       <Routes>
         <Route path="/" element={<Landing />} />
+
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/reviews" element={<Reviews />} />
@@ -60,6 +62,7 @@ function AppContent() {
 
         {/* Fallback route for unauthorized access attempts */}
         <Route path="/restricted" element={<RestrictedAccess />} />
+        <Route path="/property/:id" element={<Property />} />
       </Routes>
     </>
   );
