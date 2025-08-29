@@ -1,46 +1,24 @@
 import React, { useState } from "react";
-import { useNavigate, NavLink } from "react-router-dom";
+import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import Form from "./Form";
+
 import {
   SunIcon,
   MoonIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  ChevronDownIcon,
+  HomeIcon,
+  BookOpenIcon,
+  Squares2X2Icon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
-const Navbar = ({
-  darkMode,
-  setDarkMode,
-  books,
-  setBooks,
-  user,
-  setUser,
-  onLogout,
-}) => {
+const Navbar = ({ darkMode, setDarkMode, books, setBooks, user, setUser }) => {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
-  const [showBrowseMenu, setShowBrowseMenu] = useState(false);
+  const location = useLocation();
 
   const handleSearchClick = () => navigate("/search");
-  const handleBrowseClick = (category) => {
-    navigate(`/browse/${category}`);
-    setShowBrowseMenu(false);
-  };
-
-  const browseCategories = [
-    { name: "All Books", value: "all" },
-    { name: "Fiction", value: "fiction" },
-    { name: "Non-Fiction", value: "non-fiction" },
-    { name: "Science", value: "science" },
-    { name: "Fantasy", value: "fantasy" },
-    { name: "Biography", value: "biography" },
-    { name: "Mystery", value: "mystery" },
-    { name: "Self-Help", value: "self-help" },
-    { name: "Favorites", value: "favorites" },
-    { name: "Recent Reads", value: "recent" },
-  ];
-
   const handleThemeToggle = () => {
     setDarkMode(!darkMode);
     document.documentElement.classList.toggle("dark");
@@ -52,9 +30,11 @@ const Navbar = ({
         darkMode ? "bg-dark text-light" : "bg-light text-black"
       }`}
     >
-      <nav className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
-        {/* Left: Logo + Links */}
+      {/* Top Bar */}
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-6 sm:px-8 py-4">
+        {/* Left section: logo + main nav links */}
         <div className="flex items-center gap-8">
+          {/* Logo */}
           <div
             className="text-primary font-extrabold text-3xl tracking-wide cursor-pointer select-none transition-transform hover:scale-105"
             onClick={() => navigate("/")}
@@ -62,14 +42,15 @@ const Navbar = ({
             PV
           </div>
 
-          <ul className="flex gap-6 font-medium text-black dark:text-light">
+          {/* Desktop Links */}
+          <ul className="hidden md:flex gap-6 font-medium text-black dark:text-light">
             <li>
               <NavLink
                 to="/"
                 className={({ isActive }) =>
                   isActive
-                    ? "text-primary underline decoration-primary font-semibold"
-                    : "text-black dark:text-light hover:text-primary transition-colors"
+                    ? "text-yellow-500 font-semibold underline decoration-yellow-500"
+                    : "text-black dark:text-light hover:text-yellow-500 transition-colors"
                 }
               >
                 Home
@@ -87,41 +68,22 @@ const Navbar = ({
                 Favorites
               </NavLink>
             </li>
-
-            {/* Browse Dropdown */}
-            <li className="relative">
-              <button
-                onClick={() => setShowBrowseMenu(!showBrowseMenu)}
-                className="flex items-center gap-1 text-black dark:text-light hover:text-primary transition-colors font-medium"
+            <li>
+              <NavLink
+                to="/browse/all"
+                className={({ isActive }) =>
+                  isActive
+                    ? "text-primary underline decoration-primary font-semibold"
+                    : "text-black dark:text-light hover:text-primary transition-colors"
+                }
               >
                 Browse
-                <ChevronDownIcon
-                  className={`w-4 h-4 transition-transform ${
-                    showBrowseMenu ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showBrowseMenu && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-light dark:bg-dark border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                  <div className="py-2">
-                    {browseCategories.map((category) => (
-                      <button
-                        key={category.value}
-                        onClick={() => handleBrowseClick(category.value)}
-                        className="w-full text-left px-4 py-2 text-sm text-black dark:text-light hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              </NavLink>
             </li>
           </ul>
         </div>
 
-        {/* Right: Actions */}
+        {/* Right section: actions */}
         <div className="flex items-center gap-4">
           {/* Search */}
           <button
@@ -148,60 +110,97 @@ const Navbar = ({
           {user && (
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 
-      bg-primary text-black 
-      px-6 py-2 
-      rounded-full font-medium 
-      shadow-sm hover:shadow-md 
-      hover:bg-yellow-500 
-      transition-colors duration-200
-      dark:bg-primary dark:hover:bg-yellow-500"
+              className="flex items-center gap-2 bg-primary text-black px-4 py-1.5 rounded-full font-medium shadow-sm hover:shadow-md hover:bg-yellow-500 transition-colors duration-200 dark:bg-primary dark:hover:bg-yellow-500"
             >
               <PlusIcon className="w-5 h-5" />
               <span className="text-sm tracking-wide">Add New</span>
             </button>
           )}
 
-          {/* Authentication / Profile */}
-          <div className="flex items-center gap-3">
-            {!user ? (
-              <>
-                <button
-                  onClick={() => navigate("/login")}
-                  className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => navigate("/signup")}
-                  className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
-                >
-                  Sign Up
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-2">
-                {/* Profile name styled as text, not button */}
-                <span
-                  onClick={() => navigate("/profile")}
-                  className="cursor-pointer font-semibold text-gray-700 dark:text-gray-200 hover:text-yellow-500 transition-colors"
-                >
-                  {user.username}
-                </span>
-                {/* Logout hidden for now */}
-              </div>
-            )}
-          </div>
+          {/* Desktop Profile Section */}
+          {user && (
+            <div className="hidden md:flex items-center gap-2">
+              <span
+                onClick={() => navigate("/profile")}
+                className="cursor-pointer font-semibold text-gray-700 dark:text-gray-200 hover:text-yellow-500 transition-colors"
+              >
+                {user.username}
+              </span>
+            </div>
+          )}
+          {!user && (
+            <div className="hidden md:flex items-center gap-2">
+              <button
+                onClick={() => navigate("/login")}
+                className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate("/signup")}
+                className="px-4 py-1.5 bg-primary text-black font-medium rounded-full hover:bg-yellow-500 transition-colors"
+              >
+                Sign Up
+              </button>
+            </div>
+          )}
         </div>
-      </nav>
+      </div>
 
-      {/* Overlay for browse menu click outside */}
-      {showBrowseMenu && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowBrowseMenu(false)}
-        />
-      )}
+      {/* Bottom Navigation (Mobile) */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-light dark:bg-dark border-t border-gray-200 dark:border-gray-700 shadow-inner">
+        <div className="flex justify-around items-center py-2">
+          <button
+            onClick={() => navigate("/")}
+            className={`flex flex-col items-center transition-colors ${
+              location.pathname === "/"
+                ? "text-yellow-500 dark:text-yellow-500"
+                : "text-black dark:text-light hover:text-primary dark:hover:text-yellow-500"
+            }`}
+          >
+            <HomeIcon className="w-6 h-6" />
+            <span className="text-xs mt-0.5">Home</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/mybooks")}
+            className={`flex flex-col items-center transition-colors ${
+              location.pathname === "/mybooks"
+                ? "text-yellow-500 dark:text-yellow-500"
+                : "text-black dark:text-light hover:text-primary dark:hover:text-yellow-500"
+            }`}
+          >
+            <BookOpenIcon className="w-6 h-6" />
+            <span className="text-xs mt-0.5">Favorites</span>
+          </button>
+
+          <button
+            onClick={() => navigate("/browse/all")}
+            className={`flex flex-col items-center transition-colors ${
+              location.pathname.startsWith("/browse")
+                ? "text-yellow-500 dark:text-yellow-500"
+                : "text-black dark:text-light hover:text-primary dark:hover:text-yellow-500"
+            }`}
+          >
+            <Squares2X2Icon className="w-6 h-6" />
+            <span className="text-xs mt-0.5">Browse</span>
+          </button>
+
+          {user && (
+            <button
+              onClick={() => navigate("/profile")}
+              className={`flex flex-col items-center transition-colors ${
+                location.pathname === "/profile"
+                  ? "text-yellow-500 dark:text-yellow-500"
+                  : "text-black dark:text-light hover:text-primary dark:hover:text-yellow-500"
+              }`}
+            >
+              <UserCircleIcon className="w-6 h-6" />
+              <span className="text-xs mt-0.5">Profile</span>
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Form modal */}
       {showForm && (

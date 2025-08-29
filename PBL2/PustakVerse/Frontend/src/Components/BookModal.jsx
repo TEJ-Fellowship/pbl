@@ -56,7 +56,7 @@ const BookModal = ({ book, onClose }) => {
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 rounded-full shadow-md p-2 text-gray-600 dark:text-gray-300 hover:text-red-500 transition-colors"
+            className="absolute -top-3 -right-3 bg-white dark:bg-gray-800 rounded-full shadow-md p-3 text-red-500 text-xl hover:text-red-600 transition-colors"
           >
             ×
           </button>

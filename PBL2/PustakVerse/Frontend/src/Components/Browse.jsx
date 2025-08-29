@@ -1,10 +1,11 @@
 // Components/Browse.jsx
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import BookGrid from "./BookGrid";
 
 const Browse = ({ books, setBooks }) => {
   const { category } = useParams(); // Get category from URL
+  const navigate = useNavigate();
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [categoryTitle, setCategoryTitle] = useState("");
 
@@ -28,16 +29,14 @@ const Browse = ({ books, setBooks }) => {
         title = "Favorite Books";
         break;
       case "recent":
-        // Sort by createdAt if available, otherwise use reverse ID order
         filtered = [...books]
           .sort((a, b) => {
             if (a.createdAt && b.createdAt) {
               return new Date(b.createdAt) - new Date(a.createdAt);
             }
-            // Fallback to reverse order if no timestamps
             return books.indexOf(b) - books.indexOf(a);
           })
-          .slice(0, 20); // Show last 20 books
+          .slice(0, 20);
         title = "Recent Reads";
         break;
       case "fiction":
@@ -47,8 +46,7 @@ const Browse = ({ books, setBooks }) => {
       case "biography":
       case "mystery":
       case "self-help":
-        // Filter by genre (case-insensitive)
-        const genreName = category.replace("-", " "); // Convert "non-fiction" to "non fiction"
+        const genreName = category.replace("-", " ");
         filtered = books.filter(
           (book) =>
             book.genre &&
@@ -70,10 +68,8 @@ const Browse = ({ books, setBooks }) => {
     setCategoryTitle(title);
   }, [category, books]);
 
-  // ADDED: Category statistics
   const getCategoryStats = () => {
     if (!books || books.length === 0) return {};
-
     return {
       total: books.length,
       favorites: books.filter((b) => b.favorite).length,
@@ -93,8 +89,41 @@ const Browse = ({ books, setBooks }) => {
 
   if (!books) return <p className="text-gray-500">Loading books...</p>;
 
+  // Category buttons
+  const browseCategories = [
+    { name: "All Books", value: "all" },
+    { name: "Favorites", value: "favorites" },
+    { name: "Recent Reads", value: "recent" },
+    { name: "Fiction", value: "fiction" },
+    { name: "Non-Fiction", value: "non-fiction" },
+    { name: "Science", value: "science" },
+    { name: "Fantasy", value: "fantasy" },
+    { name: "Biography", value: "biography" },
+    { name: "Mystery", value: "mystery" },
+    { name: "Self-Help", value: "self-help" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {/* Category filter bar */}
+      <div className="mb-6 overflow-x-auto">
+        <div className="flex gap-3 md:gap-4">
+          {browseCategories.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => navigate(`/browse/${cat.value}`)}
+              className={`px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors ${
+                category === cat.value
+                  ? "bg-primary text-black"
+                  : "bg-gray-200 dark:bg-gray-700 text-black dark:text-light hover:bg-yellow-500 dark:hover:bg-yellow-500"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Category header with stats */}
       <div className="mb-8">
         <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900 dark:text-white tracking-tight">
