@@ -3,52 +3,53 @@ import { useState, useMemo } from "react";
 
 const UserDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const listings = [
     {
       id: 1,
       name: "Cozy Apartment in Downtown",
       status: "Active",
       price: "$250,000",
-      statusColor: "green"
+      statusColor: "green",
     },
     {
       id: 2,
       name: "Spacious House in Suburbia",
       status: "Pending",
       price: "$550,000",
-      statusColor: "yellow"
+      statusColor: "yellow",
     },
     {
       id: 3,
       name: "Luxury Condo with Ocean View",
       status: "Active",
       price: "$1,200,000",
-      statusColor: "green"
+      statusColor: "green",
     },
     {
       id: 4,
       name: "Rustic Cabin in the Woods",
       status: "Inactive",
       price: "$180,000",
-      statusColor: "gray"
+      statusColor: "gray",
     },
     {
       id: 5,
       name: "Modern Townhouse in the City",
       status: "Active",
       price: "$420,000",
-      statusColor: "green"
-    }
+      statusColor: "green",
+    },
   ];
 
   const filteredListings = useMemo(() => {
     if (!searchTerm) return listings;
-    
-    return listings.filter(listing =>
-      listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      listing.price.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return listings.filter(
+      (listing) =>
+        listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.price.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [searchTerm]);
   return (
@@ -70,29 +71,41 @@ const UserDashboard = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 font-medium text-gray-900">Property</th>
-                  <th className="text-left py-3 font-medium text-gray-900">Status</th>
-                  <th className="text-left py-3 font-medium text-gray-900">Price</th>
+                  <th className="text-left py-3 font-medium text-gray-900">
+                    Property
+                  </th>
+                  <th className="text-left py-3 font-medium text-gray-900">
+                    Status
+                  </th>
+                  <th className="text-left py-3 font-medium text-gray-900">
+                    Price
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredListings.map((listing) => (
                   <tr key={listing.id}>
                     <td className="py-4">
-                      <div className="text-sm text-gray-900">{listing.name}</div>
+                      <div className="text-sm text-gray-900">
+                        {listing.name}
+                      </div>
                     </td>
                     <td className="py-4">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        listing.statusColor === 'green' 
-                          ? 'text-green-700 bg-green-100'
-                          : listing.statusColor === 'yellow'
-                          ? 'text-yellow-700 bg-yellow-100'
-                          : 'text-gray-700 bg-gray-100'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          listing.statusColor === "green"
+                            ? "text-green-700 bg-green-100"
+                            : listing.statusColor === "yellow"
+                            ? "text-yellow-700 bg-yellow-100"
+                            : "text-gray-700 bg-gray-100"
+                        }`}
+                      >
                         {listing.status}
                       </span>
                     </td>
-                    <td className="py-4 text-sm text-gray-900">{listing.price}</td>
+                    <td className="py-4 text-sm text-gray-900">
+                      {listing.price}
+                    </td>
                   </tr>
                 ))}
                 {filteredListings.length === 0 && searchTerm && (
@@ -112,8 +125,12 @@ const UserDashboard = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-2">Charming Cottage by the Lake</h3>
-                  <p className="text-gray-600 text-sm">3 beds • 2 baths • 1,800 sq ft</p>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Charming Cottage by the Lake
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    3 beds • 2 baths • 1,800 sq ft
+                  </p>
                 </div>
                 <div className="w-80 h-40 ml-6">
                   <img
@@ -134,7 +151,9 @@ const UserDashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">Profile</h3>
-                  <p className="text-sm text-gray-500">Manage your profile information</p>
+                  <p className="text-sm text-gray-500">
+                    Manage your profile information
+                  </p>
                 </div>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center">
@@ -143,7 +162,9 @@ const UserDashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-medium text-gray-900">Billing</h3>
-                  <p className="text-sm text-gray-500">Update your payment methods</p>
+                  <p className="text-sm text-gray-500">
+                    Update your payment methods
+                  </p>
                 </div>
               </div>
               <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center">
@@ -161,7 +182,6 @@ const UserDashboard = () => {
       </div>
     </div>
   );
-}
+};
 
-
-export default UserDashboard
+export default UserDashboard;
