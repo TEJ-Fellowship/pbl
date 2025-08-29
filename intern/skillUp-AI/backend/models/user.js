@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+
 require("dotenv").config();
 
 const url = process.env.MONGODB_URL;
@@ -34,11 +36,31 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  try {
+    console.log("Pre-save middleware running...");
+    console.log("Password modified:", this.isModified("password"));
+    
+    if (!this.isModified("password")) return next();
+    console.log("Original password:", this.password); // Before hashing
+
+    const saltRounds = 10;
+    this.password = await bcrypt.hash(this.password, saltRounds);
+    console.log("Hashed password:", this.password); // After hashing
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 userSchema.set("toJSON", {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString();
     delete returnedObject._id;
     delete returnedObject.__v;
+    delete returnedObject.password; // ADD THIS LINE to never send password in JSON response
   },
 });
 
