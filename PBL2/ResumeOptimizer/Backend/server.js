@@ -1,176 +1,86 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
+import Resume from "./models/Resume.js";
+import { authenticateToken } from "./middleware/auth.js";
+import usersRouter from "./controllers/users.js";
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import multer from "multer";
-import cors from "cors";
-import path from "path";
-import fs from "fs";
 import { extractText, isValidFileType } from "./Extractor/extractor.js";
-import userRouter from "./controllers/users.js"
+dotenv.config();
 
+// Connect to MongoDB
+mongoose
+  .connect(
+    process.env.MONGODB_URI || "mongodb://localhost:27017/resumeoptimizer",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect('mongodb+srv://ashok:password98765@cluster0.3prgcdv.mongodb.net/CvDetails?retryWrites=true&w=majority&appName=Cluster0')
-  .then(() => console.log('Database successfully connected'))
-  .catch((error) => console.log('Error connecting database', error.message));
-app.use("/api/users", userRouter);
-
-// Schema & Model
-const resumeSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  notes: String, 
-  uploadDate: { type: Date, default: Date.now },
-  filePath: String, // Will store the local file path
-  rawText: String, // Extracted text from PDF/DOCX
-}); 
-const Resume = mongoose.model("Resume", resumeSchema);
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(process.cwd(), 'uploads');
+// Set uploads directory
+const uploadsDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// File storage config - Updated to save in uploads folder
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir); // Save in uploads folder instead of temp
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
-  },
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
+const upload = multer({ storage });
 
-// Add file filter for validation
-const upload = multer({ 
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (isValidFileType(file)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF and DOCX files are allowed'), false);
-    }
-  }
-});
+// --- User routes ---
+app.use("/api/users", usersRouter);
 
-// POST route: Save resume - Updated to handle file path and text extraction
-app.post("/api/resumes", upload.single("file"), async (req, res) => {
-  try {
-    const { title, notes } = req.body;
-    
-    if (!title || title.trim() === "") {
-      return res.status(400).json({ success: false, error: "Title is required!" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: "File is required!" });
-    }
-
-    let rawText = "";
-    let filePath = null;
-
-    try {
-      // Extract text from the uploaded file
-      rawText = await extractText(req.file);
-      
-      // Store the relative file path
-      filePath = `uploads/${req.file.filename}`;
-      
-      console.log(`File saved at: ${filePath}`);
-      console.log(`Extracted text length: ${rawText.length} characters`);
-      
-    } catch (extractionError) {
-      console.error('Text extraction failed:', extractionError);
-      // Still save the file info even if extraction fails
-      filePath = `uploads/${req.file.filename}`;
-      rawText = `[Text extraction failed: ${extractionError.message}]`;
-    }
-
-    const newResume = new Resume({
-      title,
-      notes: notes || "",
-      uploadDate: new Date(),
-      filePath, // Now properly stores the file path
-      rawText,  // Contains extracted text
-    });
-
-    await newResume.save();
-
-    res.json({
-      success: true,
-      resume: {
-        _id: newResume._id,
-        title: newResume.title,
-        notes: newResume.notes,
-        uploadDate: newResume.uploadDate,
-        filePath: newResume.filePath,
-        textLength: rawText.length
-      },
-      extractedTextPreview: rawText.slice(0, 500) + (rawText.length > 500 ? "..." : ""),
-    });
-
-  } catch (err) {
-    console.error('Upload error:', err);
-    
-    // Clean up uploaded file if there's an error
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (cleanupError) {
-        console.error('Error cleaning up file:', cleanupError);
-      }
-    }
-    
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// GET route: Fetch all resumes
-app.get("/api/resumes", async (req, res) => {
+// --- Protected: List resumes ---
+app.get("/api/resumes", authenticateToken, async (req, res) => {
   try {
     const resumes = await Resume.find().sort({ uploadDate: -1 });
     res.json(resumes);
   } catch (err) {
-    console.error('Error fetching resumes:', err);
+    console.error("Error fetching resumes:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// GET route: Fetch single resume with full text
-app.get("/api/resumes/:id", async (req, res) => {
+// --- Protected: Get single resume ---
+app.get("/api/resumes/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const resume = await Resume.findById(id);
-    
-    if (!resume) {
-      return res.status(404).json({ success: false, error: "Resume not found" });
-    }
-    
+    if (!resume)
+      return res
+        .status(404)
+        .json({ success: false, error: "Resume not found" });
     res.json({ success: true, resume });
   } catch (err) {
-    console.error('Error fetching resume:', err);
+    console.error("Error fetching resume:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// DELETE route: Remove resume by ID - Updated to also delete the file
-app.delete("/api/resumes/:id", async (req, res) => {
+// --- Protected: Delete resume ---
+app.delete("/api/resumes/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
     const deletedResume = await Resume.findByIdAndDelete(id);
-    
-    if (!deletedResume) {
-      return res.status(404).json({ success: false, error: "Resume not found" });
-    }
+    if (!deletedResume)
+      return res
+        .status(404)
+        .json({ success: false, error: "Resume not found" });
 
-    // Delete the associated file if it exists
     if (deletedResume.filePath) {
       const fullFilePath = path.join(process.cwd(), deletedResume.filePath);
       if (fs.existsSync(fullFilePath)) {
@@ -178,18 +88,59 @@ app.delete("/api/resumes/:id", async (req, res) => {
           fs.unlinkSync(fullFilePath);
           console.log(`Deleted file: ${fullFilePath}`);
         } catch (fileDeleteError) {
-          console.error('Error deleting file:', fileDeleteError);
+          console.error("Error deleting file:", fileDeleteError);
         }
       }
     }
-    
-    res.json({ success: true, message: "Resume and associated file deleted successfully" });
+
+    res.json({
+      success: true,
+      message: "Resume and associated file deleted successfully",
+    });
   } catch (err) {
     console.error("Error deleting resume:", err);
     res.status(500).json({ success: false, error: "Failed to delete resume" });
   }
 });
 
-app.use('/uploads', express.static(uploadsDir));
+// --- Protected: Upload resume ---
+app.post(
+  "/api/resumes",
+  authenticateToken,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file || !isValidFileType(file)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid or missing file" });
+      }
 
-app.listen(5000, () => console.log("✅ Server running on http://localhost:5000"));
+      const text = await extractText(file);
+
+      const resume = new Resume({
+        user: req.user.id,
+        filePath: path.relative(process.cwd(), file.path),
+        originalName: file.originalname,
+        uploadDate: new Date(),
+        extractedText: text,
+      });
+      await resume.save();
+
+      res.status(201).json({ success: true, resume });
+    } catch (err) {
+      console.error("Error uploading resume:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+);
+
+// Static files
+app.use("/uploads", express.static(uploadsDir));
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`✅ Server running on http://localhost:${PORT}`)
+);
