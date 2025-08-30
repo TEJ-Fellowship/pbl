@@ -63,7 +63,7 @@ router.post("/login", async (request, response, next) => {
     console.log("User found, comparing passwords..."); // Debug log
     console.log("Password from database:", loginUser.password); // 🔍 ADD THIS LINE
     console.log(
-      "Database password starts with $2a$ (hashed)?",
+      "Database password starts with $2b$ (hashed)?",
       loginUser.password.startsWith("$2b$")
     ); // 🔍 ADD THIS LINE
 
