@@ -16,7 +16,7 @@ const Dashboard = () => {
   return (
     <>
       <div>
-       <button onClick={handleLogout} style={{ float: 'right' }}>Logout</button>
+       <button onClick={handleLogout}>Logout</button>
 
         <p>
           Choose a topic to study :
