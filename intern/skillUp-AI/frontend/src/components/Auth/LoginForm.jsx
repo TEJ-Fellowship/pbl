@@ -1,7 +1,7 @@
 // src/components/Auth/LoginForm.jsx
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import service from "../../services/service";
 import { AuthContext } from "../../context/AuthContext";
 const loginURL = import.meta.env.VITE_LOGIN_URL;
@@ -23,7 +23,8 @@ const LoginForm = () => {
     const loginData = { email, password };
     try {
       service.create(loginURL, loginData).then((response) => {
-        localStorage.setItem("token", JSON.stringify(response.token));
+        localStorage.setItem("token", response.token);
+        setIsAuthenticated(true); // Update auth state
         setUsers(response);
         navigate("/dashboard");
       });
