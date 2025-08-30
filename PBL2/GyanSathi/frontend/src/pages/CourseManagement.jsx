@@ -167,12 +167,12 @@ const CourseManagement = () => {
 
   if (!canManageCourses()) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-colors duration-500">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Access Denied
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
             You need admin or manager privileges to access course management.
           </p>
         </div>
@@ -181,22 +181,22 @@ const CourseManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-500">
               Course Management
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-500">
               Create and manage your courses and lessons
             </p>
           </div>
 
           <button
             onClick={() => openCourseForm()}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
+            className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300 font-medium flex items-center gap-2 shadow-md"
           >
             <Plus className="w-5 h-5" />
             New Course
@@ -209,27 +209,27 @@ const CourseManagement = () => {
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl p-6 shadow-sm animate-pulse"
+                className="bg-white/80 dark:bg-gray-900/90 rounded-xl p-6 shadow-2xl animate-pulse border border-gray-200 dark:border-gray-700 backdrop-blur-md transition-colors duration-500"
               >
-                <div className="h-6 bg-gray-200 rounded mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded mb-4 transition-colors duration-500"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded mb-2 transition-colors duration-500"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4 transition-colors duration-500"></div>
               </div>
             ))}
           </div>
         ) : courses.length === 0 ? (
           <div className="text-center py-16">
-            <div className="bg-white rounded-2xl p-12 shadow-sm border border-gray-200 max-w-md mx-auto">
-              <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-6" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            <div className="bg-white/80 dark:bg-gray-900/90 rounded-2xl p-12 shadow-2xl border border-gray-200 dark:border-gray-700 max-w-md mx-auto backdrop-blur-md transition-colors duration-500">
+              <BookOpen className="w-16 h-16 text-gray-400 dark:text-gray-700 mx-auto mb-6 transition-colors duration-500" />
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3 transition-colors duration-500">
                 No Courses Yet
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-300 mb-6 transition-colors duration-500">
                 Start building your curriculum by creating your first course.
               </p>
               <button
                 onClick={() => openCourseForm()}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300 font-medium shadow-md"
               >
                 Create Your First Course
               </button>
@@ -305,36 +305,36 @@ const CourseManagementCard = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white/80 dark:bg-gray-900/90 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-md transition-colors duration-500">
       {/* Course Header */}
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-start justify-between">
           <div className="flex-grow">
             <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-500">
                 {course.title}
               </h3>
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(
                   course.difficulty
-                )}`}
+                )} dark:bg-opacity-80 dark:text-opacity-90 transition-colors duration-500`}
               >
                 {course.difficulty || "Beginner"}
               </span>
               {!course.isPublished && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
+                <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 rounded-full text-xs font-medium transition-colors duration-500">
                   Draft
                 </span>
               )}
             </div>
 
-            <p className="text-gray-600 mb-4 line-clamp-2">
+            <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 transition-colors duration-500">
               {course.description}
             </p>
 
-            <div className="flex items-center gap-6 text-sm text-gray-500">
+            <div className="flex items-center gap-6 text-sm text-gray-500 dark:text-gray-400 transition-colors duration-500">
               <div className="flex items-center gap-1">
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <span>{course.lessons?.length || 0} lessons</span>
               </div>
               <div className="flex items-center gap-1">
@@ -352,21 +352,21 @@ const CourseManagementCard = ({
           <div className="flex items-center gap-2 ml-4">
             <button
               onClick={onToggleExpand}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-300"
               title={isExpanded ? "Collapse" : "Expand"}
             >
               <Eye className="w-5 h-5" />
             </button>
             <button
               onClick={onEditCourse}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors duration-300"
               title="Edit Course"
             >
               <Edit className="w-5 h-5" />
             </button>
             <button
               onClick={onDeleteCourse}
-              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors duration-300"
               title="Delete Course"
             >
               <Trash2 className="w-5 h-5" />
@@ -377,12 +377,14 @@ const CourseManagementCard = ({
 
       {/* Lessons Section */}
       {isExpanded && (
-        <div className="p-6 bg-gray-50">
+        <div className="p-6 bg-gray-50 dark:bg-gray-900 transition-colors duration-500">
           <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-semibold text-gray-900">Lessons</h4>
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white transition-colors duration-500">
+              Lessons
+            </h4>
             <button
               onClick={onAddLesson}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2 text-sm"
+              className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300 font-medium flex items-center gap-2 text-sm shadow-md"
             >
               <Plus className="w-4 h-4" />
               Add Lesson
@@ -422,14 +424,16 @@ const CourseManagementCard = ({
 };
 
 const LessonManagementCard = ({ lesson, index, onEdit, onDelete }) => (
-  <div className="bg-white rounded-lg p-4 border border-gray-200 flex items-center justify-between">
+  <div className="bg-white/80 dark:bg-gray-900/90 rounded-lg p-4 border border-gray-200 dark:border-gray-700 flex items-center justify-between backdrop-blur-md transition-colors duration-500">
     <div className="flex items-center gap-4">
-      <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-medium">
+      <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-500">
         {index + 1}
       </div>
       <div>
-        <h5 className="font-medium text-gray-900">{lesson.title}</h5>
-        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+        <h5 className="font-medium text-gray-900 dark:text-white transition-colors duration-500">
+          {lesson.title}
+        </h5>
+        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-500">
           {lesson.duration && (
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -445,14 +449,14 @@ const LessonManagementCard = ({ lesson, index, onEdit, onDelete }) => (
     <div className="flex items-center gap-2">
       <button
         onClick={onEdit}
-        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+        className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900 rounded-lg transition-colors duration-300"
         title="Edit Lesson"
       >
         <Edit className="w-4 h-4" />
       </button>
       <button
         onClick={onDelete}
-        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+        className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 hover:bg-red-50 dark:hover:bg-red-900 rounded-lg transition-colors duration-300"
         title="Delete Lesson"
       >
         <Trash2 className="w-4 h-4" />
