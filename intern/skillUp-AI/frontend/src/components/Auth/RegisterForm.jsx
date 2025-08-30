@@ -12,7 +12,6 @@ const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -45,7 +44,6 @@ const RegisterForm = () => {
       } else {
         localStorage.setItem("token", response.token);
         console.log(response.token, "token after register");
-        setUsers(response);
         setIsAuthenticated(true);
         navigate("/dashboard", { state: { user: response } });
         setFullName("");
