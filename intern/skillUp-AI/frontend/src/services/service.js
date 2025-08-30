@@ -1,5 +1,5 @@
 import axios from "axios";
-const url = "http://localhost:3001/"; // correct URL
+const url = "http://localhost:3001"; // correct URL
 
 const getAll = () => {
   return axios
