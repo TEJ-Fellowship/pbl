@@ -1,3 +1,5 @@
+// backend/routes/auth.js
+
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -102,7 +104,7 @@ router.get("/validate-token", async (request, response, next) => {
       return response.status(401).json({ error: "No token provided" });
     }
 
-    jwt.verify(token, secret, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
         return response.status(403).json({ error: "Invalid or expired token" });
       }
