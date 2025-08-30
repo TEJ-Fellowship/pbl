@@ -17,6 +17,7 @@ app.use("/api/auth", authRouter); // prefix all routes in authRouter with /api/a
 
 
 
+
 //Global error handler
 app.use(errorHandler);
 
