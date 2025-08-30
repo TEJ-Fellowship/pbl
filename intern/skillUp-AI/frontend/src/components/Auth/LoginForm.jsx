@@ -36,7 +36,7 @@ const LoginForm = () => {
         localStorage.setItem("token", response.token);
         setIsAuthenticated(true); // Update auth state
         setUsers(response);
-        navigate("/dashboard");
+        navigate("/dashboard", { state: { user: response } });
 
         setEmail("");
         setPassword("");

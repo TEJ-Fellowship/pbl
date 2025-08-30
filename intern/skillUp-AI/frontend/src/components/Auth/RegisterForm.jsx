@@ -47,7 +47,7 @@ const RegisterForm = () => {
         console.log(response.token, "token after register");
         setUsers(response);
         setIsAuthenticated(true);
-        navigate("/dashboard");
+        navigate("/dashboard", { state: { user: response } });
         setFullName("");
         setEmail("");
         setPassword("");
