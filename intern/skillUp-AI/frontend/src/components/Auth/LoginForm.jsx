@@ -12,6 +12,7 @@ const LoginForm = () => {
   const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
+  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
