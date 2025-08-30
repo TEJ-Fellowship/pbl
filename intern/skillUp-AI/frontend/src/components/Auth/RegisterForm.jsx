@@ -37,13 +37,14 @@ const RegisterForm = () => {
     }
 
     try {
-      const response = service.create(registerURL, data);
+      const response = await service.create(registerURL, data);
 
       if (!response.token) {
-        console.log("no token in register after submit");
+        console.log("no token in register after submit",response.token);
         return;
       } else {
         localStorage.setItem("token", response.token);
+        console.log(response.token, "token after register");
         setUsers(response);
         setIsAuthenticated(true);
         navigate("/dashboard");

@@ -28,7 +28,7 @@ const LoginForm = () => {
       return;
     }
     try {
-      const response = service.create(loginURL, loginData);
+      const response = await service.create(loginURL, loginData);
       if (!response.token) {
         console.log("this is error no token");
         return;
