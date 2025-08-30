@@ -3,10 +3,10 @@
 import { useState } from "react";
 import service from "../../services/service";
 import { Link, useNavigate } from "react-router-dom";
-const registerURL = import.meta.env.VITE_REGISTER_URL;
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext.jsx";
+const registerURL = import.meta.env.VITE_REGISTER_URL;
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
@@ -30,16 +30,20 @@ const RegisterForm = () => {
       password: password.trim(),
     };
 
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      setError("All fields are required");
-      return;
-    }
 
+      if (!fullName.trim() || !email.trim() || !password.trim()) {
+        setError("All fields are required");
+         setTimeout(()=>{
+        setError(""); 
+      },500)
+        return;
+      }
+    
     try {
       const response = await service.create(registerURL, data);
 
       if (!response.token) {
-        console.log("no token in register after submit",response.token);
+        console.log("no token in register after submit", response.token);
         return;
       } else {
         localStorage.setItem("token", response.token);
@@ -56,6 +60,7 @@ const RegisterForm = () => {
   };
   return (
     <>
+      {error && <div>{error}</div>}
       <div>
         <form onSubmit={handleSubmit}>
           <p>SkillUp AI</p>
