@@ -10,7 +10,6 @@ const loginURL = import.meta.env.VITE_LOGIN_URL;
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -35,7 +34,6 @@ const LoginForm = () => {
       } else {
         localStorage.setItem("token", response.token);
         setIsAuthenticated(true); // Update auth state
-        setUsers(response);
         navigate("/dashboard", { state: { user: response } });
 
         setEmail("");
