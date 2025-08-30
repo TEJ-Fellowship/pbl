@@ -19,7 +19,7 @@ const create = async (userDefineUrl, userData) => {
     const response = await axios.post(userDefineUrl, userData);
     return response.data;
   }catch(error){
-    throw new Error (error.response?.data?.message || error?.message)
+    return {error: error.response?.data?.message || error?.message};
   }
   // return axios
   //   .post(userDefineUrl, userData)
