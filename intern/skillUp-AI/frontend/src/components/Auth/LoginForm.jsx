@@ -14,6 +14,10 @@ const LoginForm = () => {
 
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
 
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const loginData = { email, password };
