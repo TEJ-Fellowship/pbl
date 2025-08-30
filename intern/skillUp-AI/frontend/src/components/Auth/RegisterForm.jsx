@@ -1,34 +1,38 @@
 import { useState } from "react";
 import service from "../../services/service";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 const registerURL = import.meta.env.VITE_REGISTER_URL;
 
 const RegistrForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [users, setUsers] = useState()
+  const [users, setUsers] = useState([]);
   const [token, setToken] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = { fullName, email, password };
-    service
-      .create(registerURL, data)
-      .then((response) => {
-       setUsers(response);
+    try {
+      service.create(registerURL, data).then((response) => {
+        setUsers(response);
         setToken(response.token);
-      })
-      .catch((error) => console.log(error, "this is error"));
-
+        navigate("/dashboard");
+      });
+    } catch (error) {
+      console.log(error, "this is error");
+    }
     setFullName("");
     setEmail("");
     setPassword("");
+
+    navigate("/");
   };
 
-  console.log("token is ", token);
   localStorage.setItem("token", JSON.stringify(token));
 
+  console.log("token is ", token);
   return (
     <>
       <div>
