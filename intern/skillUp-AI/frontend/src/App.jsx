@@ -1,9 +1,11 @@
+//   src/App.jsx
+
 import "./index.css";
 import LoginForm from "./components/Auth/LoginForm";
 import RegisterForm from "./components/Auth/RegisterForm";
 import Dashboard from "./pages/Dashboard";
-import { AuthProvider } from "./context/AuthContext";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import {
   BrowserRouter as Router,
   Routes,
@@ -33,15 +35,4 @@ function App() {
     </AuthProvider>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
 export default App;
