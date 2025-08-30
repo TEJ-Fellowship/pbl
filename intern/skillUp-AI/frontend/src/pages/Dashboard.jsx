@@ -1,7 +1,23 @@
+// src/pages/Dashboard.jsx
+import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext.jsx";
+
 const Dashboard = () => {
+
+  const { setIsAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+    navigate("/login");
+  };
   return (
     <>
       <div>
+       <button onClick={handleLogout}>Logout</button>
+
         <p>
           Choose a topic to study :
           <select>

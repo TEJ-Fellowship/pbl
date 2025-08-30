@@ -1,3 +1,5 @@
+// backend/routes/auth.js
+
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -13,7 +15,7 @@ const generateToken = (userId, email) => {
 router.post("/register", async (request, response, next) => {
   try {
     const { fullName, email, password } = request.body;
-     console.log("Registration attempt for:", email);
+    console.log("Registration attempt for:", email);
     console.log("Plain text password received:", password); // Debug log
 
     const oldUser = await User.findOne({ email: email });
@@ -54,17 +56,24 @@ router.post("/login", async (request, response, next) => {
     const loginUser = await User.findOne({ email: email });
 
     if (!loginUser) {
-     return response.status(400).send({ error: "Invalid credentials from email check" });
+      return response
+        .status(400)
+        .send({ error: "Invalid credentials from email check" });
     }
     console.log("User found, comparing passwords..."); // Debug log
     console.log("Password from database:", loginUser.password); // 🔍 ADD THIS LINE
-    console.log("Database password starts with $2a$ (hashed)?", loginUser.password.startsWith('$2b$')); // 🔍 ADD THIS LINE
+    console.log(
+      "Database password starts with $2a$ (hashed)?",
+      loginUser.password.startsWith("$2b$")
+    ); // 🔍 ADD THIS LINE
 
     const isPasswordValid = await bcrypt.compare(password, loginUser.password);
     console.log("Password comparison result:", isPasswordValid);
 
     if (!isPasswordValid) {
-      return response.status(400).json({ error: "Invalid credentials from password check" });
+      return response
+        .status(400)
+        .json({ error: "Invalid credentials from password check" });
     }
 
     console.log("Password valid:", isPasswordValid); // Debug log
@@ -73,15 +82,35 @@ router.post("/login", async (request, response, next) => {
     response.json({
       message: "Login Successful",
       token: token,
-      user:{
-        id:loginUser.id,
-        fullName:loginUser.fullName,
-        email:loginUser.email
-      }
+      user: {
+        id: loginUser.id,
+        fullName: loginUser.fullName,
+        email: loginUser.email,
+      },
     });
   } catch (error) {
     console.log("Login error:", error); // Debug log
 
+    next(error);
+  }
+});
+
+router.get("/validate-token", async (request, response, next) => {
+  try {
+    const authHeader = request.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return response.status(401).json({ error: "No token provided" });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return response.status(403).json({ error: "Invalid or expired token" });
+      }
+      response.json({ valid: true, user: decoded });
+    });
+  } catch (error) {
     next(error);
   }
 });

@@ -1,6 +1,9 @@
+// src/context/AuthContext.jsx
+
 import { createContext, useEffect, useState } from "react";
 import service from "../services/service";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -10,9 +13,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      // (optional) validate token with API
-      service.validateToken(token)
-        .then(() => setIsAuthenticated(true))
+      service
+        .validateToken(token)
+        .then((response) => {
+          if (response.valid) {
+            setIsAuthenticated(true);
+          }
+        })
         .catch(() => {
           localStorage.removeItem("token");
           setIsAuthenticated(false);
@@ -24,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

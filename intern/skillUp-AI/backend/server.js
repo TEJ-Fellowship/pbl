@@ -1,3 +1,5 @@
+// backend/server.js
+
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -14,6 +16,7 @@ app.use(cors());
 // Import the user route
 const authRouter = require("./routes/auth"); // wherever your route file is
 app.use("/api/auth", authRouter); // prefix all routes in authRouter with /api/auth
+
 
 
 

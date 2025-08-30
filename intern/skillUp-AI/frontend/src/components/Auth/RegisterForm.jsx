@@ -1,38 +1,61 @@
+// src/components/Auth/RegisterForm.jsx
+
 import { useState } from "react";
 import service from "../../services/service";
 import { Link, useNavigate } from "react-router-dom";
 const registerURL = import.meta.env.VITE_REGISTER_URL;
+import { Navigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext.jsx";
 
-const RegistrForm = () => {
+const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [users, setUsers] = useState([]);
-  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = { fullName, email, password };
+    const data = {
+      fullName: fullName.trim(),
+      email: email.trim(),
+      password: password.trim(),
+    };
+
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      setError("All fields are required");
+      return;
+    }
+
     try {
-      service.create(registerURL, data).then((response) => {
+      const response = await service.create(registerURL, data);
+
+      if (!response.token) {
+        console.log("no token in register after submit",response.token);
+        return;
+      } else {
+        localStorage.setItem("token", response.token);
+        console.log(response.token, "token after register");
         setUsers(response);
-        setToken(response.token);
+        setIsAuthenticated(true);
         navigate("/dashboard");
-      });
+        setFullName("");
+        setEmail("");
+        setPassword("");
+      }
     } catch (error) {
       console.log(error, "this is error");
     }
-    setFullName("");
-    setEmail("");
-    setPassword("");
-
-    navigate("/");
   };
-
-  localStorage.setItem("token", JSON.stringify(token));
-
-  console.log("token is ", token);
   return (
     <>
       <div>
@@ -74,4 +97,4 @@ const RegistrForm = () => {
     </>
   );
 };
-export default RegistrForm;
+export default RegisterForm;
