@@ -1,5 +1,6 @@
 import axios from "axios";
 const url = "http://localhost:3001"; // correct URL
+const validateTokenURL = import.meta.env.VITE_VALIDATE_TOKEN_URL;
 
 const getAll = () => {
   return axios
@@ -22,4 +23,16 @@ const create = (userDefineUrl, userData) => {
     });
 };
 
-export default { getAll, create };
+const validateToken = (token) => {
+  return axios
+    .get(validateTokenURL, {
+      header: { Authorization: `Bearer ${token}` },
+    })
+    .then((response) => {
+      return response.data;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+export default { getAll, create, validateToken };
