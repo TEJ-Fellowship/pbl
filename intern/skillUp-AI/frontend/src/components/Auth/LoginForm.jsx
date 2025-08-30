@@ -24,6 +24,9 @@ const LoginForm = () => {
     const loginData = { email: email.trim(), password: password.trim() };
     if ((!email.trim(), !password.trim())) {
       setError("All fields are required");
+      setTimeout(()=>{
+        setError("");
+      },500);
       return;
     }
     try {
@@ -40,12 +43,18 @@ const LoginForm = () => {
         setPassword("");
       }
     } catch (error) {
-      setError(error);
+      setError(error.error);
+      console.log(error.error);
     }
   };
 
   return (
     <>
+    {error &&(
+      <div>
+        {error}
+      </div>
+    )}
       <div>
         <p>SkillUp AI</p>
         <form onSubmit={handleSubmit}>
