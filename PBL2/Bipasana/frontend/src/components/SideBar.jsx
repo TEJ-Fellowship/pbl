@@ -104,7 +104,7 @@ function Sidebar({ setIsLoggedIn, isLoggedIn })
             </button>
 
             <button
-              onClick={() => handleNavigation('/Journals')}
+              onClick={() => handleNavigation('/journals')}
               className={`flex items-center space-x-3 w-full px-3 py-2 rounded-lg transition-colors text-left ${
                 isDark
                   ? "text-white hover:bg-gray-800"

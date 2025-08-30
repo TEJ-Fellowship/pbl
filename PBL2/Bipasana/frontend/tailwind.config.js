@@ -5,6 +5,8 @@ export default {
     extend: {
       fontFamily: {
         montserrat: ['Montserrat', 'sans-serif'],
+        kaushan: ['"Kaushan Script"', 'cursive'],
+        merriweather: ["Merriweather", 'serif']
       },
     },
   },

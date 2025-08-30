@@ -8,11 +8,12 @@ import Homepage from './pages/Homepage.jsx';
 import Quotes from './pages/Quotes.jsx';
 import Aboutus from './pages/Aboutus.jsx';
 import Layout from './Layout.jsx';
+import Journals from './pages/Journals.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import Account from './pages/Account.jsx';
 
 function App() {
-  const [isLoggedIn,setIsLoggedIn] = useState(false)
+  const [isLoggedIn,setIsLoggedIn] = useState(true)
   
   return (
     <>
@@ -31,6 +32,7 @@ function App() {
         <Route path = "login" element= {<Login />} />
         <Route path = "signup" element= {<Signup />} />
         <Route path = "Quotes" element= {<Quotes />} />
+        <Route path = "Journals" element= {<Journals />} />
         <Route path = "About" element= {<Aboutus />} />
         <Route path = "account" element= {<ProtectedRoute  isLoggedIn={isLoggedIn} >
           <Account />
