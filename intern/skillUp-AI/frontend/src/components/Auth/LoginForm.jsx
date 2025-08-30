@@ -1,15 +1,17 @@
 // src/components/Auth/LoginForm.jsx
 
 import { useState } from "react";
+import { useContext } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import service from "../../services/service";
-import { AuthContext } from "../../context/AuthContext";
+import { AuthContext } from "../../context/AuthContext.jsx";
 const loginURL = import.meta.env.VITE_LOGIN_URL;
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [users, setUsers] = useState([]);
+  const [ error, setError] = useState("");
   const navigate = useNavigate();
 
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -20,9 +22,18 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loginData = { email, password };
+    const loginData = { email:email.trim(), password:password.trim() };
+    if(!email.trim(), !password.trim()){
+      setError("All fields are required");
+      return ;
+    }
+
     try {
       service.create(loginURL, loginData).then((response) => {
+        if(!response.token){
+          console.log("this is error no token");
+          return ;
+        }
         localStorage.setItem("token", response.token);
         setIsAuthenticated(true); // Update auth state
         setUsers(response);
