@@ -11,7 +11,7 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [users, setUsers] = useState([]);
-  const [ error, setError] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -22,28 +22,28 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const loginData = { email:email.trim(), password:password.trim() };
-    if(!email.trim(), !password.trim()){
+    const loginData = { email: email.trim(), password: password.trim() };
+    if ((!email.trim(), !password.trim())) {
       setError("All fields are required");
-      return ;
+      return;
     }
-
     try {
-      service.create(loginURL, loginData).then((response) => {
-        if(!response.token){
-          console.log("this is error no token");
-          return ;
-        }
+      const response = service.create(loginURL, loginData);
+      if (!response.token) {
+        console.log("this is error no token");
+        return;
+      } else {
         localStorage.setItem("token", response.token);
         setIsAuthenticated(true); // Update auth state
         setUsers(response);
         navigate("/dashboard");
-      });
+
+        setEmail("");
+        setPassword("");
+      }
     } catch (error) {
-      console.log("Error on login", error);
+      setError(error);
     }
-    setEmail("");
-    setPassword("");
   };
 
   return (
