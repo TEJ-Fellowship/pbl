@@ -1,34 +1,17 @@
 // src/pages/Dashboard.jsx
 import { useContext } from "react";
-import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext.jsx";
+import Logout from "../components/Auth/Logout.jsx";
+import TopicSelector from "../components/chat/TopicSelector.jsx";
+import ChatInterface from "../components/chat/ChatInterface.jsx";
 
 const Dashboard = () => {
-
   const { setIsAuthenticated } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setIsAuthenticated(false);
-    navigate("/login");
-  };
   return (
     <>
-      <div>
-       <button onClick={handleLogout}>Logout</button>
-
-        <p>
-          Choose a topic to study :
-          <select>
-            <option>Select a topic</option>
-            <option>JavaScript</option>
-            <option>React</option>
-            <option>Python</option>
-            <option>HTML/CSS</option>
-          </select>
-        </p>
-      </div>
+      <Logout setIsAuthenticated={setIsAuthenticated} />
+      <TopicSelector />
+      <ChatInterface />
     </>
   );
 };
