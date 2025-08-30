@@ -16,6 +16,7 @@ const RegistrForm = () => {
     const data = { fullName, email, password };
     try {
       service.create(registerURL, data).then((response) => {
+        localStorage.setItem("token", JSON.stringify(token));
         setUsers(response);
         setToken(response.token);
         navigate("/dashboard");
@@ -30,7 +31,6 @@ const RegistrForm = () => {
     navigate("/");
   };
 
-  localStorage.setItem("token", JSON.stringify(token));
 
   console.log("token is ", token);
   return (
