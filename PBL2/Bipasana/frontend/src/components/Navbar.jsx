@@ -1,10 +1,11 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext";
 function Navbar() {
+  const { isDark, handleToggle } = useContext(ThemeContext);
   const { setIsLoggedIn } = useContext(AuthContext);
   const navigate = useNavigate();
-  let isDark = false;
 
   const handleNavigation = (path) => {
     navigate(path);
@@ -31,8 +32,8 @@ function Navbar() {
           {/* Logo Section */}
           <div className="flex items-center space-x-3">
             <div className="flex items-center">
-              <div className="h-8 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
+              <div className="h-12 w-28 flex items-center justify-center">
+                <img src={isDark?'invLogo.png':'logo.png'} alt="logo" />
               </div>
             </div>
             <span className="font-bold text-xl">MemoNest</span>
@@ -54,25 +55,13 @@ function Navbar() {
 
             {/* Theme Toggle */}
             <button
-              className={`p-2 rounded-lg transition-colors ${
-                isDark
-                  ? "text-white hover:bg-gray-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
+              onClick={handleToggle}
+              className={`p-2 rounded-lg transition-colors`}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
+              <img 
+              src={isDark?'/streakdark.png':'brightness.png'}
+              alt="theme icon"
+              className="w-6 h-6 flex-shrink-0" />
             </button>
 
             {/* Login Button */}

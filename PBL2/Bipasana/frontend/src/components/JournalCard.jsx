@@ -1,22 +1,24 @@
 import React from "react";
 
-function JournalCard() {
+function JournalCard({ journal, onClick }) {
   return (
-    <div class="w-[250px] bg-white shadow-2xl rounded-lg overflow-hidden">
-      <div class="h-[150px] bg-gray-100 flex items-center justify-center">
+    <div
+      className="w-full bg-white shadow-2xl rounded-lg overflow-hidden cursor-pointer transform hover:scale-105 transition-transform duration-200"
+      onClick={onClick}
+    >
+      {/* Image Section */}
+      <div className="h-[180px] bg-gray-100 flex items-center justify-center">
         <img
-          src="../../public/travel.svg"
-          alt="Travel"
-          class="w-20 h-20 object-cover"
+          src="/journalCard.png" 
+          alt={journal.title}
+          className="w-20 h-20 object-cover"
         />
       </div>
 
-      <div class="p-3 flex gap-2">
-        <h2 class="font-semibold text-gray-800">Trip to Pokhara</h2>
-
-        <div class="flex items-center text-sm text-gray-500 gap-2 mt-1">
-          <p>August 2, 2024</p>
-        </div>
+      {/* Text Section */}
+      <div className="p-3">
+        <h2 className="font-semibold text-gray-800 mb-1 line-clamp-2">{journal.title}</h2>
+        <p className="text-sm text-gray-500">{journal.date}</p>
       </div>
     </div>
   );

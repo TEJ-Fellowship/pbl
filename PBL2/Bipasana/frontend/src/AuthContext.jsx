@@ -2,7 +2,7 @@ import React, { useEffect, useState, createContext } from "react";
 export const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
 
@@ -34,17 +34,17 @@ export const AuthContextProvider = ({ children }) => {
     return payload.exp * 1000 > Date.now();
   }
 
-  useEffect(() => {
-    const StoredToken = localStorage.getItem("token");
-    if (StoredToken && isTokenValid(StoredToken)) {
-      setToken(StoredToken);
-      setIsLoggedIn(true);
-    } else {
-      localStorage.removeItem("token");
-      setToken(null);
-      setIsLoggedIn(false);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const StoredToken = localStorage.getItem("token");
+  //   if (StoredToken && isTokenValid(StoredToken)) {
+  //     setToken(StoredToken);
+  //     setIsLoggedIn(true);
+  //   } else {
+  //     localStorage.removeItem("token");
+  //     setToken(null);
+  //     setIsLoggedIn(false);
+  //   }
+  // }, []);
   return (
     <AuthContext.Provider
       value={{ isLoggedIn, handleLogout,setIsLoggedIn, user, setUser, token,setToken }}
