@@ -6,7 +6,7 @@ export const useProperties = () => {
 
     const fetchProperties = async () => {
         try {
-            const response = await fetch("http://localhost:5000/api/properties/get-all-property");
+            const response = await fetch("http://localhost:8080/api/properties/get-all-property");
             const data = await response.json();
             setProperties(data)
 

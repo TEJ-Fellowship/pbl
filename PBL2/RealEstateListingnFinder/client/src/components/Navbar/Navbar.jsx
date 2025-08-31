@@ -2,8 +2,7 @@ import { Star, Bell, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Themetoggle from "../Theme/Themetoggle";
 import { useAuth } from "../../contexts/AuthContext";
-import logo from '../../assets/logo.png'
-import logo1 from '../../assets/logo-1.png'
+import logo1 from "../../assets/logo-1.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -15,7 +14,11 @@ const Navbar = () => {
       <div className="flex items-center justify-between w-full gap-8">
         <div className="flex items-center gap-4 text-gray-900">
           <div className="w-14 h-14">
-            <img src={logo1} />
+            <img
+              src={logo1}
+              className="cursor-pointer"
+              onClick={() => (window.location.href = "/")}
+            />
           </div>
 
           {/* Show About and Contact only when not authenticated */}
@@ -32,6 +35,18 @@ const Navbar = () => {
                 className="p-4 text-gray-900 text-base font-medium leading-normal hover:text-blue-600 cursor-pointer"
               >
                 Contact
+              </Link>
+              <Link
+                to="/reviews"
+                className="p-4 text-gray-900 text-base font-medium leading-normal hover:text-blue-600 cursor-pointer"
+              >
+                Reviews
+              </Link>
+              <Link
+                to="/teams"
+                className="p-4 text-gray-900 text-base font-medium leading-normal hover:text-blue-600 cursor-pointer"
+              >
+                Teams
               </Link>
             </>
           ) : (
