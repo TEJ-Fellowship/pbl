@@ -1,17 +1,76 @@
 import React, { useState, useEffect, useContext } from "react";
+import { GoogleGenAI } from "@google/genai";
+import PromptInput from "../components/PromptInput";
+import AIguide from "../components/AIguide";
 import { useParams, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { getCourseById } from "../api/api";
 import toast from "react-hot-toast";
 import { ArrowLeft, Clock, ExternalLink, BookOpen, Tag } from "lucide-react";
 
+const apiKey = import.meta.env.VITE_GEMINI_KEY;
+const ai = new GoogleGenAI({ apiKey });
+
+// Prompt template for quiz generation
+const QUIZ_PROMPT_TEMPLATE = (userGoal) => `
+You are a world-class instructor and mentor. Based on the provided user topic, evaluate the topic in depth and generate structured study resources. For each entry, provide:
+
+Format (strict JSON only, no extra text or explanations):
+{ 
+  "id": number, 
+  "topic": <related subtopic>, 
+  "study_notes": <concise and practical study notes>, 
+  "materials": [<list of best resources including at least one high-quality YouTube video link, articles, or documentation>], 
+  "roadmap": <step-by-step roadmap for mastering this subtopic>, 
+  "timeline": <realistic timeline to complete it> 
+}
+
+Rules:
+- Generate at least 20 entries.
+- Ensure every "materials" field contains a mix of resources with at least one YouTube video link that is best suited for the user's goal.
+- Keep all content practical, structured, and beginner-to-advanced friendly.
+- Output must be valid JSON only (no extra text, no explanations).
+
+User's Topic: "${userGoal}"
+
+`;
+
 const LessonDetail = () => {
   const { courseId, lessonId } = useParams();
   const navigate = useNavigate();
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const [course, setCourse] = useState(null);
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Gemini AI state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState([]);
+  const [prompt, setPrompt] = useState("");
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  // Gemini AI handler
+  const handleGemini = async () => {
+    setAiLoading(true);
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-pro",
+        contents: QUIZ_PROMPT_TEMPLATE(prompt),
+      });
+
+      let cleanedResponse = response.text
+        .replace(/```json\n?/g, "") // Remove ```json
+        .replace(/```\n?/g, "") // Remove ```
+        .trim();
+
+      let finalData = JSON.parse(cleanedResponse);
+      setAiResponse(finalData.map((qtn) => qtn));
+      setAiLoading(false);
+    } catch (error) {
+      setAiResponse([]);
+      setAiLoading(false);
+      toast.error("AI failed: " + (error.message || "Unknown error"));
+    }
+  };
 
   useEffect(() => {
     fetchCourseAndLesson();
@@ -20,9 +79,40 @@ const LessonDetail = () => {
   const fetchCourseAndLesson = async () => {
     try {
       setLoading(true);
+      setAccessDenied(false);
       const response = await getCourseById(courseId, token);
+
       if (response.success) {
         setCourse(response.data);
+
+        const isAdminOrManager =
+          user && (user.role === "admin" || user.role === "manager");
+        const isCreator =
+          user &&
+          response.data.createdBy &&
+          response.data.createdBy._id === user._id;
+
+        // Check enrollment status
+        let isEnrolled = false;
+        if (typeof response.data.isEnrolled === "boolean") {
+          isEnrolled = response.data.isEnrolled;
+        } else if (Array.isArray(response.data.enrolledUsers) && user) {
+          isEnrolled = response.data.enrolledUsers.some(
+            (en) =>
+              en.user && (en.user._id === user._id || en.user === user._id)
+          );
+        }
+
+        // Access control: Admin/Manager have full access, creators have full access, users need enrollment
+        const hasAccess = isAdminOrManager || isCreator || isEnrolled;
+
+        if (!hasAccess) {
+          setAccessDenied(true);
+          setLesson(null);
+          return;
+        }
+
+        // Find the specific lesson
         const foundLesson = response.data.lessons?.find(
           (l) => l.id === lessonId
         );
@@ -49,6 +139,27 @@ const LessonDetail = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-yellow-400"></div>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-700 dark:text-red-400 mb-4">
+            Access Denied
+          </h2>
+          <p className="mb-4 text-gray-700 dark:text-gray-300">
+            You must be enrolled in this course to view its lessons.
+          </p>
+          <button
+            onClick={() => navigate(`/courses/${courseId}`)}
+            className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300"
+          >
+            Back to Course
+          </button>
+        </div>
       </div>
     );
   }
@@ -214,6 +325,27 @@ const LessonDetail = () => {
                   No additional content available for this lesson.
                 </p>
               </div>
+            )}
+          </div>
+
+          {/* Gemini AI Study Resource Generator */}
+          <div className="p-8 border-t border-gray-100 dark:border-gray-800">
+            <h3 className="text-lg font-semibold text-indigo-700 dark:text-indigo-400 mb-4 transition-colors duration-500">
+              AI-Powered Study Resources & Quiz Generator
+            </h3>
+            <PromptInput
+              prompt={prompt}
+              setPrompt={setPrompt}
+              handleGemini={handleGemini}
+              loading={aiLoading}
+            />
+            {aiLoading && (
+              <div className="text-center text-indigo-600 dark:text-indigo-400 mt-4 animate-pulse">
+                Generating resources...
+              </div>
+            )}
+            {Array.isArray(aiResponse) && aiResponse.length > 0 && (
+              <AIguide aiResponse={aiResponse} />
             )}
           </div>
         </div>
