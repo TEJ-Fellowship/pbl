@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Property } from "../models/PropertyModel.js";
 import cloudinary from "../utils/cloudinary.js";
 
@@ -11,18 +12,26 @@ export const getAllProperty = async (req, res) => {
   }
 };
 
+export const getPropertyById = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid property id" });
+    }
+
+    const property = await Property.findById(id);
+    if (!property) return res.status(400).json({ error: "Property not found" });
+    return res.status(200).json(property);
+  } catch (err) {
+    res.status(500).json({ error: "server error" });
+  }
+};
+
 export const addProperty = async (req, res) => {
   try {
-    const {
-      title,
-      description,
-      location,
-      beds,
-      price,
-      features,
-      parking,
-      propertyType,
-    } = req.body;
+    const { title, description, beds, price, features, parking, propertyType } =
+      req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No images uploaded" });
@@ -44,6 +53,8 @@ export const addProperty = async (req, res) => {
           })
       )
     );
+
+    const location = req.body.location ? JSON.parse(req.body.location) : null;
 
     const newProperty = new Property({
       title,
@@ -74,16 +85,8 @@ export const updateProperty = async (req, res) => {
   try {
     const propertyId = req.params.id;
 
-    const {
-      title,
-      description,
-      location,
-      beds,
-      price,
-      features,
-      parking,
-      propertyType,
-    } = req.body;
+    const { title, description, beds, price, features, parking, propertyType } =
+      req.body;
 
     const property = await Property.findById(propertyId);
 
@@ -112,9 +115,13 @@ export const updateProperty = async (req, res) => {
       );
     }
 
+    const location = req.body.location
+      ? JSON.parse(req.body.location)
+      : property.location;
+
     property.title = title || property.title;
     property.description = description || property.description;
-    property.location = location || property.location;
+    property.location = location;
     property.beds = beds ?? property.beds;
     property.price = price ?? property.price;
     property.features = features ? features.split(",") : property.features;

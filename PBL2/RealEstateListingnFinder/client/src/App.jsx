@@ -18,6 +18,7 @@ import RestrictedAccess from "./components/RestrictedAccess";
 import { AuthProvider } from "./contexts/AuthContext";
 import Reviews from "./pages/Reviews";
 import Team from "./pages/Team";
+import Property from "./pages/Property/Property";
 
 function AppContent() {
   const location = useLocation();
@@ -33,6 +34,9 @@ function AppContent() {
         <Route path="/auth" element={<Auth />} />
 
         {/* Protected Routes */}
+
+        <Route path="/manage-property" element={<ManageProperty />} />
+        <Route path="/explore" element={<SearchPage />} />
         <Route
           path="/manage-property"
           element={
@@ -60,6 +64,7 @@ function AppContent() {
 
         {/* Fallback route for unauthorized access attempts */}
         <Route path="/restricted" element={<RestrictedAccess />} />
+        <Route path="/property/:id" element={<Property />} />
       </Routes>
     </>
   );

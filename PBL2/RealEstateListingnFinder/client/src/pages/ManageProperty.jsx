@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useProperties } from "../hooks/useProperties";
+import MapPicker from "../components/Map/MapPicker";
 
 const ManageProperty = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,7 +13,7 @@ const ManageProperty = () => {
     features: [],
     beds: 0,
     propertyType: "",
-    location: "",
+    location: null,
     images: [],
   });
 
@@ -89,10 +90,24 @@ const ManageProperty = () => {
   */
 
     Object.keys(propertyDetail).forEach((key) => {
-      if (key !== "images") {
+      if (key !== "images" && key != "location") {
         formData.append(key, propertyDetail[key]);
       }
     });
+
+    if (propertyDetail.location) {
+      formData.append(
+        "location",
+        JSON.stringify({
+          type: "Point",
+          coordinates: [
+            propertyDetail.location.lng,
+
+            propertyDetail.location.lat,
+          ],
+        })
+      );
+    }
 
     for (let i = 0; i < propertyDetail.images.length; i++) {
       formData.append("images", propertyDetail.images[i]);
@@ -208,7 +223,9 @@ const ManageProperty = () => {
                         {property.propertyType}
                       </td>
                       <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                        {property.location}
+                        {property.location?.coordinates
+                          ? `${property.location.coordinates[1]}, ${property.location.coordinates[0]}`
+                          : "N/A"}
                       </td>
                       <td className="h-16 px-4 py-2">
                         <div className="flex gap-2">
@@ -379,16 +396,24 @@ const ManageProperty = () => {
 
                 <div>
                   <label className="block text-gray-900 text-base font-medium mb-2">
-                    Location
+                    Select Property Location
                   </label>
-                  <input
-                    type="text"
-                    name="location"
-                    placeholder="e.g., 123 Main Street, Anytown"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-                    value={propertyDetail.location}
-                    onChange={handleChange}
+                  <MapPicker
+                    initialLat={27.7} // optional default latitude
+                    initialLng={85.3} // optional default longitude
+                    onLocationSelect={(loc) =>
+                      setPropertyDetail((prev) => ({
+                        ...prev,
+                        location: { lat: loc.lat, lng: loc.lng },
+                      }))
+                    }
                   />
+                  {propertyDetail.location && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Selected Location: {propertyDetail.location.lat},{" "}
+                      {propertyDetail.location.lng}
+                    </p>
+                  )}
                 </div>
 
                 <div>
