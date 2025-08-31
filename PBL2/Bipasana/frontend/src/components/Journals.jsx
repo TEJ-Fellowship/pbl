@@ -1,6 +1,6 @@
 import React from "react";
 import JournalCard from "./JournalCard";
-function Journal() {
+function Journals() {
   return (
     <div className="w-[65%] mx-auto" >
       <h1 className="text-2xl text-bold">Recent Journals</h1>
@@ -29,4 +29,4 @@ function Journal() {
   );
 }
 
-export default Journal;
+export default Journals;

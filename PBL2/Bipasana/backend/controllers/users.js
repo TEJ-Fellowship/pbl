@@ -1,28 +1,22 @@
-require("dotenv").config();
+const express = require('express');
+const usersRouter = express.Router()
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
-const express = require("express");
-const cors = require('cors')
-const app = express();
-app.use(cors({
-  origin: 'http://localhost:5173' 
-}));
-app.use(express.json());
-
-const { User } = require("./Mongo.js");
+const {User}=require("../models/user.js")
 const saltRounds = 10;
 
-app.get("/api/users", async (req, res, next) => {
+usersRouter.get("/", async (req, res, next) => {
   try {
-    const users = await User.find({});
+  const users = await User
+    .find({}).populate('journals')
     res.status(200).send(users);
   } catch (error) {
     next(error);
   }
 });
 
-app.post("/api/users", async (req, res) => {
+usersRouter.post("/", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -53,7 +47,7 @@ app.post("/api/users", async (req, res) => {
 
     const verificationLink = `http://localhost:${
       process.env.PORT || 3001
-    }/api/verify?token=${user.verificationToken}`;
+    }/api/users/verify?token=${user.verificationToken}`;
 
     await transporter.sendMail({
       to: user.email,
@@ -71,7 +65,7 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
-app.get("/api/verify", async (req, res) => {
+usersRouter.get("/verify", async (req, res) => {
   try {
     const token = req.query.token; 
     if (!token) {
@@ -86,7 +80,7 @@ app.get("/api/verify", async (req, res) => {
     user.isVerified = true;
     user.verificationToken = undefined;
     await user.save();
-
+    
     res.send("Email verified successfully! You can now login.");
   } catch (err) {
     console.error(err);
@@ -94,8 +88,4 @@ app.get("/api/verify", async (req, res) => {
   }
 });
 
-
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports=usersRouter
