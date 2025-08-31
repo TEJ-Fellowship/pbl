@@ -5,6 +5,7 @@ import logourl from "../assets/projectLogo.png";
 import LandingPage from "../pages/LandingPage.jsx";
 import Taskform from "./Taskform.jsx";
 import Tasks from './Tasks.jsx';
+import Programs from "./Programs.jsx";
 
 function DashboardLayout({ activeSection, setActiveSection }) {
   const [showLanding, setShowLanding] = useState(true);
@@ -28,7 +29,7 @@ function DashboardLayout({ activeSection, setActiveSection }) {
           </aside>
           <div className="flex-1 ml-64 p-6 bg-gray-100 overflow-y-auto">
             {activeSection === "dashboard" && <Dashboard />}
-            {activeSection === "programs" && <h1>hi program</h1>}
+            {activeSection === "programs" && <Programs />}
             {activeSection === "tasks" && <Tasks />}
             {activeSection === "members" && <h1>hi members</h1>}
             {activeSection === "overview" && <h1>hi overview</h1>}
