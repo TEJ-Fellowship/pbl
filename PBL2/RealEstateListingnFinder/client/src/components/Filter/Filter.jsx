@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { ChevronDown, X, Filter } from "lucide-react";
+import { useEffect } from "react";
 
-const FilterOptions = () => {
+const FilterOptions = ({ onFilterChange, onSortChange }) => {
   const [activeFilters, setActiveFilters] = useState({});
+  const [sortBy, setSortBy] = useState("Relevance");
 
   const filterCategories = {
     beds: {
@@ -50,17 +52,6 @@ const FilterOptions = () => {
         "$1.5M+",
       ],
     },
-    size: {
-      label: "Size",
-      options: [
-        "Any",
-        "Under 500 sqft",
-        "500-1000 sqft",
-        "1000-1500 sqft",
-        "1500-2000 sqft",
-        "2000+ sqft",
-      ],
-    },
     listingAge: {
       label: "Listed",
       options: ["Any Time", "Last 24 hours", "Last Week", "Last Month"],
@@ -75,6 +66,18 @@ const FilterOptions = () => {
     "Size: Largest First",
     "Most Popular",
   ];
+
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange(activeFilters);
+    }
+  }, [activeFilters, onFilterChange]);
+
+  useEffect(() => {
+    if (onSortChange) {
+      onSortChange(sortBy);
+    }
+  }, [sortBy, onSortChange]);
 
   const handleFilterSelect = (category, option) => {
     setActiveFilters((prevFilters) => {
@@ -101,10 +104,15 @@ const FilterOptions = () => {
     });
   };
 
-  const clearFilter = (category) => {
+  const clearFilter = (category, value) => {
     setActiveFilters((prev) => {
       const newFilters = { ...prev };
-      delete newFilters[category];
+      if (newFilters[category]) {
+        newFilters[category] = newFilters[category].filter((v) => v !== value);
+        if (newFilters[category].length === 0) {
+          delete newFilters[category];
+        }
+      }
       return newFilters;
     });
   };
@@ -138,13 +146,13 @@ const FilterOptions = () => {
           <div className="absolute top-12 left-0 z-50 bg-white border border-slate-300 rounded-lg shadow-lg min-w-48 max-h-64 overflow-y-auto">
             {data.options.map((option) => (
               <button
-                key={category}
+                key={option}
                 onClick={() => {
                   handleFilterSelect(category, option);
                   setIsOpen(false);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors ${
-                  activeValue === category
+                  activeValue && activeValue.includes(option)
                     ? "bg-blue-50 text-blue-700"
                     : "text-slate-700"
                 }`}
@@ -160,7 +168,6 @@ const FilterOptions = () => {
 
   const SortDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [sortBy, setSortBy] = useState("Relevance");
 
     return (
       <div className="relative">

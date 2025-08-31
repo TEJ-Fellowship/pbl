@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useProperty } from "../../hooks/useProperties";
 import MapwithStreetView from "../../components/Map/MapwithStreetView";
+import PropertyImageSlider from "../../components/ImageSlider/ImageSlider";
+import { getPlaceName } from "../../components/Map/utils/GetPlaceName";
 
 const Property = () => {
   const { id } = useParams();
 
   const { property, loading, error } = useProperty(id);
+  const [placeName, setPlaceName] = useState("");
 
   const neighborhoodData = {
     tabs: ["News & Trends", "Local Buzz", "Nearby Places", "Community Chatter"],
@@ -34,29 +37,22 @@ const Property = () => {
   const lat = location?.coordinates ? location.coordinates[1] : null;
   const lng = location?.coordinates ? location.coordinates[0] : null;
 
+  // const fetchPlaceName = async () => {
+  //   if (lat && lng) {
+  //     const name = await getPlaceName(lat, lng);
+  //     setPlaceName(name);
+  //   }
+  // };
+
+  // fetchPlaceName();
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans overflow-y-hidden">
       <main className="px-10 py-5 flex justify-center flex-1">
         <div className="max-w-4xl w-full flex flex-col gap-4">
           {/* Hero Section */}
-          <div
-            className="relative w-full h-80 rounded-lg bg-cover bg-center"
-            style={{
-              backgroundImage:
-                'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCaCbNlPyn4lhGITrb--WQK655oU-rRhZoOjoBbwW7Y6TybF9xa0kX9tlPGHlPTPf6pM9WIHCG-ZLxMx4rMpB1ioYVxbICBEbEgeJDhDVbfdzeMZxN0ZTQp1QTR8pBP5ujsqU6RR-PZKPhYIUSJRJ0OIavFPxXMLiJgK_aWUVHi_h0rBTIj7UEx239VYsZXRVZxgvTXLWZ1o0dTRyHJ-WJgKjicrFgCoLVcmrnTHSANcC6C39n-FMa8NsfZKYM4PrHh142Gcl19T7mx")',
-            }}
-          >
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {[...Array(5)].map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-3 h-3 rounded-full bg-white ${
-                    i === 0 ? "" : "opacity-50"
-                  }`}
-                ></span>
-              ))}
-            </div>
-          </div>
+          <PropertyImageSlider images={property.images} />
+
           {/* Property Info */}
           <h1 className="text-2xl font-bold text-gray-900">{property.title}</h1>
           <p className="text-gray-900 text-base">{property.description}</p>
@@ -75,32 +71,32 @@ const Property = () => {
             </div>
             <div className="flex flex-col gap-1 border-t border-solid border-t-[#cedde8] py-4 pl-2">
               <p className="text-[#49779c] text-sm font-normal leading-normal">
-                Bathrooms
+                Parking
               </p>
               <p className="text-[#0d151c] text-sm font-normal leading-normal">
-                3
+                {property.parking}
               </p>
             </div>
             <div className="flex flex-col gap-1 border-t border-solid border-t-[#cedde8] py-4 pr-2">
               <p className="text-[#49779c] text-sm font-normal leading-normal">
-                Square Footage
+                Bathroom
               </p>
               <p className="text-[#0d151c] text-sm font-normal leading-normal">
-                2,500 sq ft
+                4
               </p>
             </div>
             <div className="flex flex-col gap-1 border-t border-solid border-t-[#cedde8] py-4 pl-2">
               <p className="text-[#49779c] text-sm font-normal leading-normal">
-                Lot Size
+                Property Type
               </p>
               <p className="text-[#0d151c] text-sm font-normal leading-normal">
-                0.25 acres
+                {property.propertyType}
               </p>
             </div>
           </div>
           {/* Address */}
           <h3 className="text-lg font-bold text-gra-900 mt-4">Address</h3>
-          <p className="text-gray-900 text-base">Kupondole, Lalitpur</p>
+          <p className="text-gray-900 text-base">{property.placeName}</p>
           {/* image */}
 
           <MapwithStreetView initialLat={lat} initialLng={lng} />

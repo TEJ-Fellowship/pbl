@@ -4,11 +4,76 @@ import SearchComponenet from "../../components/Search/Search";
 import FilterOptions from "../../components/Filter/Filter";
 import { useProperties } from "../../hooks/useProperties";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const SearchPage = () => {
-  const { properties } = useProperties();
+  const { properties, setProperties } = useProperties();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
+  const [filters, setFilters] = useState({});
+  const [sortBy, setSortBy] = useState("Relevance");
+  const [loading, setLoading] = useState(false);
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
+  const fetchProperties = async () => {
+    setLoading(true);
+    try {
+      const query = new URLSearchParams();
+
+      // Add filters to query
+      Object.entries(filters).forEach(([key, values]) => {
+        if (values && values.length > 0) {
+          query.append(key, values.join(","));
+        }
+      });
+
+      // Add sort parameter
+      if (sortBy && sortBy !== "Relevance") {
+        query.append("sort", sortBy);
+      }
+
+      const res = await fetch(
+        `http://localhost:5000/api/properties/get-all-property?${query.toString()}`
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch properties");
+      }
+
+      const data = await res.json();
+      console.log("fdsf", data);
+
+      setProperties(data);
+
+      // Reset to first page when filters change
+      setCurrentPage(1);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+      setProperties([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, [filters, sortBy]);
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleSortChange = (newSort) => {
+    setSortBy(newSort);
+  };
 
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -17,11 +82,6 @@ const SearchPage = () => {
   const totalPages = Math.ceil(properties.length / itemsPerPage);
 
   const navigate = useNavigate();
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages) return;
-    setCurrentPage(page);
-  };
 
   return (
     <>
@@ -38,7 +98,10 @@ const SearchPage = () => {
 
               {/* Filter Buttons */}
 
-              <FilterOptions />
+              <FilterOptions
+                onFilterChange={handleFilterChange}
+                onSortChange={handleSortChange}
+              />
 
               {/* Results Header */}
               <h2 className="text-slate-900 text-2xl font-bold leading-tight tracking-tight px-4 pb-3 pt-5">

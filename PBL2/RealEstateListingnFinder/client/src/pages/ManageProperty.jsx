@@ -2,6 +2,8 @@ import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useProperties } from "../hooks/useProperties";
 import MapPicker from "../components/Map/MapPicker";
+import { useEffect } from "react";
+import { getPlaceName } from "../components/Map/utils/GetPlaceName";
 
 const ManageProperty = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +20,7 @@ const ManageProperty = () => {
   });
 
   const [editPropertyId, setEditPropertyId] = useState(null);
+  const [placeName, setPlaceName] = useState("");
 
   const handleDelete = async (property) => {
     const deletePropertyId = property._id;
@@ -26,7 +29,7 @@ const ManageProperty = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/api/properties/delete-property/${deletePropertyId}`,
+        `http://localhost:5000/api/properties/delete-property/${deletePropertyId}`, // Fixed: Added port 5000
         {
           method: "DELETE",
         }
@@ -35,7 +38,6 @@ const ManageProperty = () => {
       const data = await res.json();
 
       if (res.ok) {
-        // setProperties((prev) => prev.filter((p) => p._id !== propertyId));
         refetch();
       } else {
         console.log("Failed to delete property");
@@ -53,7 +55,7 @@ const ManageProperty = () => {
       title: property.title,
       description: property.description,
       price: property.price,
-      parking: property.price,
+      parking: property.parking, // Fixed: was property.price
       features: Array.isArray(property.features) ? property.features : [],
       beds: property.beds,
       propertyType: property.propertyType,
@@ -67,7 +69,7 @@ const ManageProperty = () => {
   const { properties, refetch } = useProperties();
 
   const handleChange = (e) => {
-    const { name, value } = e.target; //returns the name of input and value of inputs
+    const { name, value } = e.target;
     setPropertyDetail((prev) => ({
       ...prev,
       [name]: value,
@@ -80,14 +82,11 @@ const ManageProperty = () => {
   const handleSubmit = async () => {
     const formData = new FormData();
 
-    /* 
-    FormData is a builtin javascript object to send data(files, images) over HTTP
-
-    Json doesn't includes files
-
-    we could also do the regular way for other field but we have to call api 2 times,
-    which is not optimal
-  */
+    if (propertyDetail.location) {
+      const { lat, lng } = propertyDetail.location;
+      const placeNameValue = await getPlaceName(lat, lng); // your existing function
+      propertyDetail.placeName = placeNameValue;
+    }
 
     Object.keys(propertyDetail).forEach((key) => {
       if (key !== "images" && key != "location") {
@@ -102,7 +101,6 @@ const ManageProperty = () => {
           type: "Point",
           coordinates: [
             propertyDetail.location.lng,
-
             propertyDetail.location.lat,
           ],
         })
@@ -117,7 +115,6 @@ const ManageProperty = () => {
       let response;
       console.log(editPropertyId);
       if (editPropertyId) {
-        // Edit existing property
         response = await fetch(
           `http://localhost:8080/api/properties/edit-property/${editPropertyId}`,
           {
@@ -126,7 +123,6 @@ const ManageProperty = () => {
           }
         );
       } else {
-        // Add new property
         response = await fetch(
           "http://localhost:8080/api/properties/add-property",
           {
@@ -150,6 +146,7 @@ const ManageProperty = () => {
         beds: 0,
         propertyType: "",
         location: "",
+        placeName: "",
         images: [],
       });
     } catch (err) {
@@ -183,10 +180,10 @@ const ManageProperty = () => {
           </div>
 
           <h3 className="text-gray-900 text-lg font-bold leading-tight tracking tight px-4 pb-2 pt-2">
-            Exisiting Listing
+            Existing Listing
           </h3>
           <div className="px-4 py-3">
-            <div className="flex  overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="flex overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
               <table className="flex-1">
                 <thead>
                   <tr className="bg-gray-50">
@@ -217,15 +214,13 @@ const ManageProperty = () => {
                         {property.title}
                       </td>
                       <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                        {property.price}
+                        ${property.price?.toLocaleString()}
                       </td>
                       <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
                         {property.propertyType}
                       </td>
                       <td className="h-16 px-4 py-2 text-gray-900 text-sm font-normal leading-normal">
-                        {property.location?.coordinates
-                          ? `${property.location.coordinates[1]}, ${property.location.coordinates[0]}`
-                          : "N/A"}
+                        {property.placeName}
                       </td>
                       <td className="h-16 px-4 py-2">
                         <div className="flex gap-2">
@@ -255,11 +250,11 @@ const ManageProperty = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl  max-w-2xl w-full mx-4 my-8 max-h-[85vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4 my-8 max-h-[85vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900">
-                Add New Property
+                {editPropertyId ? "Edit Property" : "Add New Property"}
               </h3>
               <button
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -306,8 +301,8 @@ const ManageProperty = () => {
                     <input
                       name="price"
                       placeholder="eg., 250000"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-g text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-                      type="text"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                      type="number"
                       value={propertyDetail.price}
                       onChange={handleChange}
                     />
@@ -319,13 +314,15 @@ const ManageProperty = () => {
                     </label>
                     <select
                       name="parking"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500"
                       value={propertyDetail.parking}
                       onChange={handleChange}
                     >
                       <option value="">Select Parking</option>
-                      <option value="true">True</option>
-                      <option value="false">False</option>
+                      <option value="No Parking">No Parking</option>
+                      <option value="1 Space">1 Space</option>
+                      <option value="2+ Spaces">2+ Spaces</option>
+                      <option value="Covered">Covered</option>
                     </select>
                   </div>
                 </div>
@@ -337,15 +334,17 @@ const ManageProperty = () => {
                     </label>
                     <select
                       name="propertyType"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500"
                       value={propertyDetail.propertyType}
                       onChange={handleChange}
                     >
                       <option value="">Select Property Type</option>
-                      <option value="apartment">Apartmnet</option>
                       <option value="house">House</option>
+                      <option value="apartment">Apartment</option>
                       <option value="condo">Condo</option>
-                      <option value="TownHouse">Town House</option>
+                      <option value="townhouse">Townhouse</option>
+                      <option value="villa">Villa</option>
+                      <option value="studio">Studio</option>
                     </select>
                   </div>
                   <div>
@@ -354,9 +353,10 @@ const ManageProperty = () => {
                     </label>
                     <input
                       name="beds"
-                      placeholder=""
-                      className="w-full px-4 py-3 border border-gray-200 rounded-g text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
-                      type="text"
+                      placeholder="Number of bedrooms"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500 placeholder:text-slate-500"
+                      type="number"
+                      min="0"
                       value={propertyDetail.beds}
                       onChange={handleChange}
                     />
@@ -370,7 +370,7 @@ const ManageProperty = () => {
                   <select
                     name="features"
                     multiple
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 foucs:outline-0 focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-0 focus:ring-2 focus:ring-blue-500"
                     value={propertyDetail.features}
                     onChange={(e) => {
                       const selectedOptions = Array.from(
@@ -383,13 +383,18 @@ const ManageProperty = () => {
                       }));
                     }}
                   >
-                    <option value="Apartment">Apartmnet</option>
-                    <option value="House">House</option>
-                    <option value="Condo">Condo</option>
-                    <option value="TownHouse">Town House</option>
+                    <option value="Swimming Pool">Swimming Pool</option>
+                    <option value="Gym">Gym</option>
+                    <option value="Parking">Parking</option>
+                    <option value="Balcony">Balcony</option>
+                    <option value="Garden">Garden</option>
+                    <option value="Security">Security</option>
+                    <option value="Elevator">Elevator</option>
+                    <option value="AC">AC</option>
+                    <option value="Furnished">Furnished</option>
                   </select>
                   <div className="mt-2">
-                    <strong>Selected Categories:</strong>{" "}
+                    <strong>Selected Features:</strong>{" "}
                     {propertyDetail.features.join(", ") || "None"}
                   </div>
                 </div>
@@ -399,19 +404,25 @@ const ManageProperty = () => {
                     Select Property Location
                   </label>
                   <MapPicker
-                    initialLat={27.7} // optional default latitude
-                    initialLng={85.3} // optional default longitude
-                    onLocationSelect={(loc) =>
+                    initialLat={27.7}
+                    initialLng={85.3}
+                    onLocationSelect={async (loc) => {
+                      // Set location in state
                       setPropertyDetail((prev) => ({
                         ...prev,
                         location: { lat: loc.lat, lng: loc.lng },
-                      }))
-                    }
+                      }));
+
+                      // Get place name directly without useEffect
+                      if (loc.lat && loc.lng) {
+                        const name = await getPlaceName(loc.lat, loc.lng);
+                        setPlaceName(name);
+                      }
+                    }}
                   />
                   {propertyDetail.location && (
                     <p className="text-sm text-gray-600 mt-2">
-                      Selected Location: {propertyDetail.location.lat},{" "}
-                      {propertyDetail.location.lng}
+                      Selected Location: {placeName}
                     </p>
                   )}
                 </div>
@@ -424,6 +435,7 @@ const ManageProperty = () => {
                     type="file"
                     multiple
                     name="images"
+                    accept="image/*"
                     onChange={(e) =>
                       setPropertyDetail((prev) => ({
                         ...prev,
@@ -447,7 +459,7 @@ const ManageProperty = () => {
                 onClick={handleSubmit}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Add Property
+                {editPropertyId ? "Update Property" : "Add Property"}
               </button>
             </div>
           </div>

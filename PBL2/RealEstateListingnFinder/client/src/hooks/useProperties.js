@@ -27,7 +27,7 @@ export const useProperties = () => {
             const data = await response.json();
             setProperties(data)
 
-  return { properties, refetch: fetchProperties };
+  return { properties, refetch: fetchProperties, setProperties };
 };
 
 export const useProperty = (id) => {
