@@ -8,7 +8,7 @@ import JobMatch from "./Pages/JobMatch.jsx";
 
 // --- Protected Route Wrapper ---
 const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("jwtToken");
   return token ? children : <Navigate to="/login" replace />;
 };
 

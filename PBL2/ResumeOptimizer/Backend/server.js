@@ -1,16 +1,12 @@
-// server.js
 import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import multer from "multer";
 
-import { authenticateToken } from "./middleware/auth.js";
-import usersRouter from "./controllers/users.js"; // ✅ Make sure this file exists
-import Resume from "./models/Resume.js";
-import { extractText, isValidFileType } from "./Extractor/extractor.js";
+import usersRouter from "./routes/users.js";
+import resumeRoutes from "./routes/resumeRoutes.js";
 
 dotenv.config();
 
@@ -27,112 +23,27 @@ mongoose
   });
 
 const app = express();
-app.use(express.json());
+
+// --- Middleware ---
 app.use(cors());
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// --- Uploads directory ---
+// --- Ensure uploads folder exists ---
 const uploadsDir = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Multer storage config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
-});
-const upload = multer({ storage });
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // --- Routes ---
-app.use("/api/users", usersRouter); // User auth routes
+app.use("/api/users", usersRouter);
+app.use("/api/resumes", resumeRoutes); // all resume routes handled in router
 
-// Get all resumes (protected)
-app.get("/api/resumes", authenticateToken, async (req, res) => {
-  try {
-    const resumes = await Resume.find().sort({ uploadDate: -1 });
-    res.json(resumes);
-  } catch (err) {
-    console.error("Error fetching resumes:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Get single resume (protected)
-app.get("/api/resumes/:id", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const resume = await Resume.findById(id);
-    if (!resume) {
-      return res.status(404).json({ success: false, error: "Resume not found" });
-    }
-    res.json({ success: true, resume });
-  } catch (err) {
-    console.error("Error fetching resume:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Delete resume (protected)
-app.delete("/api/resumes/:id", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedResume = await Resume.findByIdAndDelete(id);
-    if (!deletedResume) {
-      return res.status(404).json({ success: false, error: "Resume not found" });
-    }
-
-    // Delete file from uploads folder
-    if (deletedResume.filePath) {
-      const fullFilePath = path.join(process.cwd(), deletedResume.filePath);
-      if (fs.existsSync(fullFilePath)) {
-        try {
-          fs.unlinkSync(fullFilePath);
-          console.log(`Deleted file: ${fullFilePath}`);
-        } catch (fileDeleteError) {
-          console.error("Error deleting file:", fileDeleteError);
-        }
-      }
-    }
-
-    res.json({
-      success: true,
-      message: "Resume and associated file deleted successfully",
-    });
-  } catch (err) {
-    console.error("Error deleting resume:", err);
-    res.status(500).json({ success: false, error: "Failed to delete resume" });
-  }
-});
-
-// Upload resume (protected)
-app.post("/api/resumes", authenticateToken, upload.single("file"), async (req, res) => {
-  try {
-    const file = req.file;
-    if (!file || !isValidFileType(file)) {
-      return res.status(400).json({ success: false, error: "Invalid or missing file" });
-    }
-
-    const text = await extractText(file);
-
-    const resume = new Resume({
-      user: req.user.id,
-      filePath: path.relative(process.cwd(), file.path),
-      originalName: file.originalname,
-      uploadDate: new Date(),
-      extractedText: text,
-    });
-    await resume.save();
-
-    res.status(201).json({ success: true, resume });
-  } catch (err) {
-    console.error("Error uploading resume:", err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-// Serve uploaded files statically
+// --- Serve uploaded files ---
 app.use("/uploads", express.static(uploadsDir));
+
+// --- Error handling for unknown routes ---
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
 
 // --- Start server ---
 const PORT = process.env.PORT || 5000;
