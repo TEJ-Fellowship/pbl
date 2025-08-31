@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// --- Skeleton Loader Component (using Tailwind CSS) ---
+// --- Skeleton Loader Component ---
 const SkeletonLoader = () => (
   <div className="w-full max-w-3xl mx-auto p-8 bg-white rounded-lg shadow-md animate-pulse">
     <div className="h-4 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -18,12 +18,6 @@ const SkeletonLoader = () => (
       <div className="h-4 bg-gray-200 rounded col-span-1"></div>
       <div className="h-4 bg-gray-200 rounded col-span-1"></div>
       <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-    </div>
-    <div className="h-6 bg-gray-300 rounded w-1/3 mb-4"></div>
-    <div className="space-y-3">
-      <div className="h-3 bg-gray-200 rounded"></div>
-      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
     </div>
   </div>
 );
@@ -36,24 +30,39 @@ const JobMatch = () => {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [matchResult, setMatchResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // fetch resume once
+  // Fetch resume with Authorization
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/resumes/${id}`);
+        const token = localStorage.getItem("jwtToken");
+        if (!token) throw new Error("You must be logged in to view this resume.");
+
+        const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 403) throw new Error("Access denied to this resume.");
+        if (res.status === 404) throw new Error("Resume not found.");
         if (!res.ok) throw new Error(`Failed to fetch resume: ${res.status}`);
+
         const data = await res.json();
-        setResumeText(data.resume.rawText);
+        setResumeText(data.extractedText || data.resume?.rawText || "");
+        setLoading(false);
       } catch (err) {
         setError(err.message);
+        setLoading(false);
       }
     };
+
     fetchResume();
   }, [id]);
 
+  // Handle AI Match
   const handleMatch = async () => {
     if (!jobDescription.trim()) {
       setError("Please paste a job description first.");
@@ -89,45 +98,44 @@ const JobMatch = () => {
       `;
 
       const response = await model.generateContent(prompt);
-      const responseText =
-        response.response.candidates[0].content.parts[0].text;
+      const responseText = response.response.candidates[0].content.parts[0].text;
 
-      const cleanedText = responseText
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
-        .trim();
-
+      const cleanedText = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
       setMatchResult(JSON.parse(cleanedText));
     } catch (err) {
-      console.error("AI Error:", err);
-      setError(err.message);
+      setError("AI Error: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Render Logic ---
-  if (loading) {
-    return (
-      <div className="bg-gray-50 min-h-screen py-12">
-        <SkeletonLoader />
-      </div>
-    );
-  }
+  // --- Render ---
+  if (loading) return <div className="bg-gray-50 min-h-screen py-12"><SkeletonLoader /></div>;
 
   return (
+    <>
+        {/* Navbar */}
+      <nav className="w-full bg-white border-b shadow-sm fixed top-0 left-0 z-50">
+        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+          <div className="text-xl font-bold text-gray-800">
+            {/* ResumeOptimizer */}
+              <img src="/Logo.png" alt="ResumeOptimizer Logo" className="h-14 w-auto" />
+
+          </div>
+          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
+            <span className="text-sm font-semibold">U</span>
+          </div>
+        </div>
+      </nav>
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="bg-white shadow-md rounded-xl max-w-2xl w-full p-8">
-        {/* Header */}
         <h1 className="text-2xl font-semibold text-gray-800 mb-2">
           Match Resume to Job Description
         </h1>
         <p className="text-gray-600 mb-6">
-          Paste the job description below to see how well your resume aligns
-          with the requirements.
+          Paste the job description below to see how well your resume aligns with the requirements.
         </p>
 
-        {/* Textarea */}
         <textarea
           value={jobDescription}
           onChange={(e) => setJobDescription(e.target.value)}
@@ -135,7 +143,6 @@ const JobMatch = () => {
           className="w-full h-32 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 resize-none"
         />
 
-        {/* Button */}
         <button
           onClick={handleMatch}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
@@ -143,19 +150,12 @@ const JobMatch = () => {
           Match Resume
         </button>
 
-        {/* Error */}
-        {error && (
-          <p className="text-red-500 text-sm mt-4">Error: {error}</p>
-        )}
+        {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
 
-        {/* Conditional Results */}
         {matchResult && (
           <div className="mt-8 border-t pt-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">
-              Matching Results
-            </h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Matching Results</h2>
 
-            {/* Score */}
             <p className="text-gray-600 mb-2">Resume Match Score</p>
             <div className="w-full bg-gray-200 rounded-full h-3 mb-3">
               <div
@@ -164,34 +164,23 @@ const JobMatch = () => {
               ></div>
             </div>
             <p className="text-blue-600 text-sm mb-4">
-              {matchResult.summary || "No summary available"} (
-              {matchResult.matchScore}%)
+              {matchResult.summary || "No summary available"} ({matchResult.matchScore}%)
             </p>
 
-            {/* Key Strengths */}
             {matchResult.keyStrengths?.length > 0 && (
               <div className="mb-4">
-                <h3 className="font-semibold text-gray-700 mb-1">
-                  Key Strengths
-                </h3>
+                <h3 className="font-semibold text-gray-700 mb-1">Key Strengths</h3>
                 <ul className="list-disc list-inside text-gray-600 text-sm">
-                  {matchResult.keyStrengths.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
+                  {matchResult.keyStrengths.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
               </div>
             )}
 
-            {/* Missing Keywords */}
             {matchResult.missingKeywords?.length > 0 && (
               <div>
-                <h3 className="font-semibold text-gray-700 mb-1">
-                  Missing Keywords
-                </h3>
+                <h3 className="font-semibold text-gray-700 mb-1">Missing Keywords</h3>
                 <ul className="list-disc list-inside text-gray-600 text-sm">
-                  {matchResult.missingKeywords.map((k, i) => (
-                    <li key={i}>{k}</li>
-                  ))}
+                  {matchResult.missingKeywords.map((k, i) => <li key={i}>{k}</li>)}
                 </ul>
               </div>
             )}
@@ -199,6 +188,7 @@ const JobMatch = () => {
         )}
       </div>
     </div>
+      </>
   );
 };
 

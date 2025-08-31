@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 
-const resumeSchema = new mongoose.Schema({
+const ResumeSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  title: { type: String, required: true },          // ✅ add title
+  notes: { type: String },                          // ✅ add notes
   filePath: { type: String, required: true },
   originalName: { type: String, required: true },
   uploadDate: { type: Date, default: Date.now },
-  extractedText: { type: String },
+  extractedText: { type: String, required: true },
 });
 
-const Resume = mongoose.model("Resume", resumeSchema);
-
-export default Resume;
+export default mongoose.model("Resume", ResumeSchema);

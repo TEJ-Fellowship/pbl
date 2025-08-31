@@ -1,14 +1,12 @@
 import { useState } from "react";
-import axios from "axios"
-import { useLocation } from "react-router-dom";
-import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
-import { FaEye, FaEyeSlash } from "react-icons/fa"
+import { useLocation, useNavigate } from "react-router-dom";
+import { FaUser, FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
+import API from "../../utils/axios";
 
 export default function LoginSignup() {
   const location = useLocation();
-  const [isLogin, setIsLogin] = useState(
-    location.state?.initialForm === "signup" ? false : true
-  );
+  const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(location.state?.initialForm === "signup" ? false : true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -21,42 +19,20 @@ export default function LoginSignup() {
 
   const [errors, setErrors] = useState({});
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const validate = () => {
     let tempErrors = {};
-
-    if (!isLogin && !formData.fullName.trim()) {
-      tempErrors.fullName = "Full Name is required";
-    }
-
-    if (!formData.email) {
-      tempErrors.email = "Email is required";
-    } else if (
-      !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)
-    ) {
-      tempErrors.email = "Email is invalid";
-    }
-
-    if (!formData.password) {
-      tempErrors.password = "Password is required";
-    } else if (
-      !/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(
-        formData.password
-      )
-    ) {
-      tempErrors.password =
-        "Password must be at least 8 chars, include uppercase, number, and special char";
-    }
+    if (!isLogin && !formData.fullName.trim()) tempErrors.fullName = "Full Name is required";
+    if (!formData.email) tempErrors.email = "Email is required";
+    else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) tempErrors.email = "Email is invalid";
+    if (!formData.password) tempErrors.password = "Password is required";
+    else if (!/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/.test(formData.password))
+      tempErrors.password = "Password must be at least 8 chars, include uppercase, number, and special char";
 
     if (!isLogin) {
-      if (!formData.confirmPassword) {
-        tempErrors.confirmPassword = "Confirm Password is required";
-      } else if (formData.password !== formData.confirmPassword) {
-        tempErrors.confirmPassword = "Passwords do not match";
-      }
+      if (!formData.confirmPassword) tempErrors.confirmPassword = "Confirm Password is required";
+      else if (formData.password !== formData.confirmPassword) tempErrors.confirmPassword = "Passwords do not match";
     }
 
     setErrors(tempErrors);
@@ -64,47 +40,36 @@ export default function LoginSignup() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    if (!validate()) return;
 
-  if (validate()) {
-    if (!isLogin) {
-      // Signup flow
-      if (!formData.fullName || !formData.email || !formData.password) {
-        alert("All fields are required");
-        return;
-      }
-
-      try {
-        const response = await axios.post("http://localhost:5000/api/users", {
-          fullname: formData.fullName,  
+    try {
+      if (!isLogin) {
+        // Signup
+        await API.post("/users", {
+          fullname: formData.fullName,
           email: formData.email,
           password: formData.password,
         });
-
-        alert(response.data.message || "Signup successful!");
-        // Reset form
-        setFormData({
-          fullName: "",
-          email: "",
-          password: "",
-          confirmPassword: "",
-        });
-      } catch (error) {
-        alert(error.response?.data?.error || "Signup failed");
+        // Auto-login after signup
+        const loginRes = await API.post("/users/login", { email: formData.email, password: formData.password });
+        localStorage.setItem("jwtToken", loginRes.data.token);
+        navigate("/resume");
+      } else {
+        // Login
+        const res = await API.post("/users/login", { email: formData.email, password: formData.password });
+        localStorage.setItem("jwtToken", res.data.token);
+        navigate("/resume");
       }
-    } else {
-      // Login flow (later)
-      alert("Login successful!");
+    } catch (error) {
+      alert(error.response?.data?.error || "Authentication failed");
     }
-  }
-};
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-blue-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white shadow-lg rounded-xl">
-        <h2 className="text-2xl font-bold text-center text-blue-600">
-          {isLogin ? "Login" : "Sign Up"}
-        </h2>
+        <h2 className="text-2xl font-bold text-center text-blue-600">{isLogin ? "Login" : "Sign Up"}</h2>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {!isLogin && (
@@ -118,9 +83,7 @@ export default function LoginSignup() {
                 onChange={handleChange}
                 className="w-full px-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
-              {errors.fullName && (
-                <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>
-              )}
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
           )}
 
@@ -134,9 +97,7 @@ export default function LoginSignup() {
               onChange={handleChange}
               className="w-full px-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           </div>
 
           <div className="relative">
@@ -155,13 +116,8 @@ export default function LoginSignup() {
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
           </div>
-
-
-
 
           {!isLogin && (
             <div className="relative">
@@ -180,12 +136,9 @@ export default function LoginSignup() {
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </span>
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-              )}
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
             </div>
           )}
-
 
           <button
             type="submit"
@@ -197,10 +150,7 @@ export default function LoginSignup() {
 
         <p className="text-sm text-center text-gray-600">
           {isLogin ? "Don’t have an account?" : "Already have an account?"}{" "}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:underline"
-          >
+          <button onClick={() => setIsLogin(!isLogin)} className="text-blue-600 hover:underline">
             {isLogin ? "Sign Up" : "Login"}
           </button>
         </p>
