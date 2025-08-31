@@ -26,7 +26,7 @@ const ManageProperty = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:/api/properties/delete-property/${deletePropertyId}`,
+        `http://localhost:8080/api/properties/delete-property/${deletePropertyId}`,
         {
           method: "DELETE",
         }
@@ -119,7 +119,7 @@ const ManageProperty = () => {
       if (editPropertyId) {
         // Edit existing property
         response = await fetch(
-          `http://localhost:5000/api/properties/edit-property/${editPropertyId}`,
+          `http://localhost:8080/api/properties/edit-property/${editPropertyId}`,
           {
             method: "PUT",
             body: formData,
@@ -128,7 +128,7 @@ const ManageProperty = () => {
       } else {
         // Add new property
         response = await fetch(
-          "http://localhost:5000/api/properties/add-property",
+          "http://localhost:8080/api/properties/add-property",
           {
             method: "POST",
             body: formData,

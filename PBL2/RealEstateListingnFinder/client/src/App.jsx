@@ -27,7 +27,6 @@ function AppContent() {
       {location.pathname !== "/auth" && <Navbar />}
       <Routes>
         <Route path="/" element={<Landing />} />
-
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/reviews" element={<Reviews />} />
@@ -35,8 +34,25 @@ function AppContent() {
         <Route path="/auth" element={<Auth />} />
 
         {/* Protected Routes */}
+
         <Route path="/manage-property" element={<ManageProperty />} />
         <Route path="/explore" element={<SearchPage />} />
+        <Route
+          path="/manage-property"
+          element={
+            <ProtectedRoute>
+              <ManageProperty />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/explore"
+          element={
+            <ProtectedRoute>
+              <SearchPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/UserDashboard"
           element={
