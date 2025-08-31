@@ -1,25 +1,23 @@
-import React from "react";
-import { useNavigate } from 'react-router-dom';
-
-function Navbar({ setIsLoggedIn, isLoggedIn }) {
-    const navigate = useNavigate()
-    // isLoggedIn = false;
-    let isDark = false;
+import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../AuthContext";
+function Navbar() {
+  const { setIsLoggedIn } = useContext(AuthContext);
+  const navigate = useNavigate();
+  let isDark = false;
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
   const handleLogin = () => {
-    handleNavigation('/login');
-    // You can add your login logic here
-    setIsLoggedIn(false); // Uncomment this when integrating with your auth system
+    if (!setIsLoggedIn) {
+      handleNavigation("/login");
+    }
   };
 
   const handleSignUp = () => {
-    handleNavigation('/signup');
-    // You can add your signup logic here  
-    // setIsLoggedIn(true); // Uncomment this when integrating with your auth system
+    handleNavigation("/signup");
   };
 
   return (
@@ -44,7 +42,7 @@ function Navbar({ setIsLoggedIn, isLoggedIn }) {
           <div className="flex items-center space-x-6">
             {/* About Us */}
             <button
-              onClick={() => handleNavigation('/about')}
+              onClick={() => handleNavigation("/about")}
               className={`rounded-md px-3 py-2 text-md font-medium transition-colors ${
                 isDark
                   ? "text-white hover:bg-gray-700"
@@ -62,12 +60,17 @@ function Navbar({ setIsLoggedIn, isLoggedIn }) {
                   : "text-gray-700 hover:bg-gray-100"
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" 
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
                 />
               </svg>
             </button>
@@ -106,8 +109,18 @@ function Navbar({ setIsLoggedIn, isLoggedIn }) {
                   : "text-gray-700 hover:bg-gray-100"
               }`}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
