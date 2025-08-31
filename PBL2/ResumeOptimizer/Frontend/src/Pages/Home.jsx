@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../utils/axios";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ const Home = () => {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ];
 
-  // Validate file type
   const validateFile = (selectedFile) => {
     if (!allowedTypes.includes(selectedFile.type)) {
       alert("Please select PDF or DOCX files only!");
@@ -29,13 +28,11 @@ const Home = () => {
     return true;
   };
 
-  // File select via input
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) validateFile(selectedFile);
   };
 
-  // Drag & Drop
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -48,37 +45,31 @@ const Home = () => {
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
+  const handleDragLeave = () => setIsDragging(false);
 
-  // Upload to backend
   const handleUpload = async () => {
-
     if (!title.trim()) {
-       if (!file) {
-      alert("Please select a PDF or DOCX file!");
-      return;
-    }
+      if (!file) {
+        alert("Please select a PDF or DOCX file!");
+        return;
+      }
       alert("Please enter a title!");
       return;
     }
-   
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", title);
     formData.append("notes", notes);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/resumes", formData, {
+      const res = await API.post("/resumes", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (res.data.success) {
-        const confirmUpload = window.confirm(
-          `File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`
-        );
-        if (confirmUpload) navigate("/resume");
+        alert(`File "${file.name}" uploaded successfully on ${uploadDate.toLocaleString()}`);
+        navigate("/resume");
       } else {
         alert("Error uploading resume! " + res.data.error);
       }
@@ -91,18 +82,13 @@ const Home = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-xl bg-white shadow-md rounded-lg p-8">
-        {/* Header */}
         <h1 className="text-2xl font-semibold text-gray-800">Upload Resume</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Upload your resume to get started.{" "}
-          <span className="text-blue-500">We support PDF and DOCX formats.</span>
+          Upload your resume to get started. <span className="text-blue-500">We support PDF and DOCX formats.</span>
         </p>
 
-        {/* Resume Title */}
         <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700">
-            Resume Title *
-          </label>
+          <label className="block text-sm font-medium text-gray-700">Resume Title *</label>
           <input
             type="text"
             placeholder="e.g., Software Engineer Resume"
@@ -112,11 +98,8 @@ const Home = () => {
           />
         </div>
 
-        {/* Notes */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Notes (Optional)
-          </label>
+          <label className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
           <textarea
             placeholder="Add any notes about this resume"
             value={notes}
@@ -126,11 +109,8 @@ const Home = () => {
           ></textarea>
         </div>
 
-        {/* File Upload */}
         <div
-          className={`mt-6 border-2 border-dashed rounded-lg p-6 text-center transition ${
-            isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"
-          }`}
+          className={`mt-6 border-2 border-dashed rounded-lg p-6 text-center transition ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -138,12 +118,7 @@ const Home = () => {
           <p className="text-sm text-gray-500">Drag and drop your resume here, or</p>
           <label className="mt-2 inline-block px-4 py-2 bg-gray-100 rounded-md cursor-pointer hover:bg-gray-200 text-sm font-medium">
             Select File
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFileChange} />
           </label>
           {file && (
             <div className="mt-2 text-sm text-green-600 font-medium">
@@ -153,9 +128,7 @@ const Home = () => {
           )}
         </div>
 
-        {/* Upload + See Resumes Buttons */}
         <div className="mt-6 flex justify-between items-center">
-          {/* See your resumes button (green, left/middle side) */}
           <button
             onClick={() => navigate("/resume")}
             className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 active:scale-95 transition"
@@ -163,7 +136,6 @@ const Home = () => {
             See Previous Resume
           </button>
 
-          {/* Upload button (blue, right side) */}
           <button
             onClick={handleUpload}
             className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 active:scale-95 transition"

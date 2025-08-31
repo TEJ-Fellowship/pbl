@@ -1,19 +1,20 @@
+// controllers/users.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import User from "../models/User.js"; // ✅ ensure file is named User.js (not Users.js)
 import { authenticateToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Helper to sign JWT
+// Helper: Sign JWT
 const signToken = (user) =>
   jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "1d",
   });
 
 // --- Signup ---
-router.post("/", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
     const { fullname, email, password } = req.body;
 
@@ -40,8 +41,8 @@ router.post("/", async (req, res) => {
       user: { id: user._id, fullname: user.fullname, email: user.email },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Server error during signup" });
   }
 });
 
@@ -71,8 +72,22 @@ router.post("/login", async (req, res) => {
       user: { id: user._id, fullname: user.fullname, email: user.email },
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error during login" });
+  }
+});
+
+// --- Example Protected Route ---
+router.get("/profile", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-passwordHash -__v");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ user });
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ error: "Server error while fetching profile" });
   }
 });
 

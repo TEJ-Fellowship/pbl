@@ -1,59 +1,43 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../utils/axios";
 
 export default function Resume() {
   const navigate = useNavigate();
-  const [resumes, setResumes] = useState([]); // all resumes from backend
-  const [query, setQuery] = useState(""); // search text
-  const [toggle, setToggle] = useState(false); // controls search vs all
+  const [resumes, setResumes] = useState([]);
+  const [query, setQuery] = useState("");
+  const [toggle, setToggle] = useState(false);
 
-  // Fetch all resumes once
   useEffect(() => {
     const fetchResumes = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/resumes");
-        const data = await res.json();
-        setResumes(data);
+        const res = await API.get("/resumes");
+        setResumes(res.data);
       } catch (err) {
-        console.error("Error fetching resumes:", err);
+        console.error(err);
       }
     };
     fetchResumes();
   }, []);
 
-  // Delete function
-  async function handelDelete(id) {
+  const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete resume");
-      }
-
-      // Update frontend state after backend confirms deletion
+      await API.delete(`/resumes/${id}`);
       setResumes((prev) => prev.filter((resume) => resume._id !== id));
     } catch (err) {
-      console.error("Error deleting resume:", err);
-      alert("Could not delete resume. Please try again.");
+      console.error(err);
+      alert("Could not delete resume.");
     }
-  }
+  };
 
-  // Whenever query changes decide whether to toggle search
   useEffect(() => {
-    if (query.trim() === "") {
-      setToggle(false); // show all
-    } else {
-      setToggle(true); // show filtered
-    }
+    setToggle(query.trim() !== "");
   }, [query]);
 
-  // Filter logic (title + notes search)
   const filtered = resumes.filter(
-    (resume) =>
-      resume.title.toLowerCase().includes(query.toLowerCase()) ||
-      (resume.notes && resume.notes.toLowerCase().includes(query.toLowerCase()))
+    (r) =>
+      r.title.toLowerCase().includes(query.toLowerCase()) ||
+      (r.notes && r.notes.toLowerCase().includes(query.toLowerCase()))
   );
 
   return (
@@ -62,94 +46,69 @@ export default function Resume() {
       <nav className="w-full bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
           <div className="text-xl font-bold text-gray-800">ResumeOptimizer</div>
-          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
-            <span className="text-sm font-semibold">U</span>
+          <div className="flex gap-2">
+            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
+              <span className="text-sm font-semibold">U</span>
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem("jwtToken");
+                navigate("/login");
+              }}
+              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Page Content */}
+      {/* Content */}
       <main className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">My Resumes</h1>
           <button
             onClick={() => navigate("/home")}
-            className="bg-green-100 text-green-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-green-200"
+            className="bg-green-100 text-green-700 px-4 py-2 rounded-md hover:bg-green-200"
           >
             Upload Resume
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="bg-green-50 flex items-center px-4 py-2 rounded-md mb-6">
-          <span className="text-gray-500 mr-2">🔍</span>
+        <div className="bg-green-50 p-4 rounded mb-4">
           <input
             type="text"
-            placeholder="Search"
-            className="bg-transparent outline-none w-full"
+            placeholder="Search resumes..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            className="w-full px-3 py-2 rounded border focus:outline-none focus:ring-2 focus:ring-green-400"
           />
         </div>
 
-        {/* Resume Table */}
-        <div className="bg-white shadow rounded-md overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-sm font-semibold text-gray-600">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-sm font-semibold text-gray-600">
-                  Uploaded
-                </th>
-                <th className="px-6 py-3 text-sm font-semibold text-gray-600">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 text-sm">
-              {(toggle ? filtered : resumes).map((resume) => (
-                <tr key={resume._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">{resume.title}</td>
-                  <td className="px-6 py-4 text-blue-600">
-                    {new Date(resume.uploadDate).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 flex items-center gap-4">
-                    <a
-                      href={`/preview/${resume._id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Ai Summarize
-                    </a>
-
-                    <button
-                      className="text-red-500 darker hover:underline"
-                      onClick={() => handelDelete(resume._id)}
-                    >
-                      Delete
-                    </button>
-
-                    <button
-                      className="text-green-600 hover:underline"
-                      onClick={() => navigate(`/match/${resume._id}`)}
-                    >
-                      Match
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {/* If searching but nothing found */}
-              {toggle && filtered.length === 0 && (
-                <tr>
-                  <td colSpan="3" className="px-6 py-4 text-gray-500 text-center">
-                    No results found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="grid md:grid-cols-3 gap-4">
+          {(toggle ? filtered : resumes).map((r) => (
+            <div key={r._id} className="bg-white p-4 rounded shadow">
+              <h2 className="font-semibold text-gray-800">{r.title}</h2>
+              <p className="text-gray-600 text-sm">{r.notes}</p>
+              <p className="text-gray-500 text-xs mt-1">
+                Uploaded: {new Date(r.createdAt).toLocaleString()}
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={() => navigate(`/preview/${r._id}`)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => handleDelete(r._id)}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
     </div>

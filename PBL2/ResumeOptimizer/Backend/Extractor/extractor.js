@@ -1,7 +1,9 @@
+// Extractor/extractor.js
 import fs from "fs";
 import path from "path";
 import mammoth from "mammoth";
 
+// --- PDF Extraction ---
 async function extractPDFText(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
@@ -10,13 +12,11 @@ async function extractPDFText(filePath) {
 
     console.log("Attempting PDF text extraction with pdf2json...");
 
-    // Dynamic import of pdf2json
-    const PDF2Json = (await import("pdf2json")).default;
+    // ✅ Correct import of PDFParser
+    const { PDFParser } = await import("pdf2json");
+    const pdfParser = new PDFParser();
 
     return new Promise((resolve, reject) => {
-      const pdfParser = new PDF2Json();
-
-      // Set up event handlers
       pdfParser.on("pdfParser_dataError", (errData) => {
         console.error("PDF parsing error:", errData.parserError);
         reject(new Error(`PDF parsing failed: ${errData.parserError}`));
@@ -27,7 +27,6 @@ async function extractPDFText(filePath) {
           let fullText = "";
 
           if (pdfData && pdfData.Pages) {
-            // Extract text from each page
             pdfData.Pages.forEach((page) => {
               if (page.Texts) {
                 const pageText = page.Texts.map((textObj) => {
@@ -54,7 +53,6 @@ async function extractPDFText(filePath) {
         }
       });
 
-      // Load and parse the PDF
       try {
         pdfParser.loadPDF(filePath);
       } catch (loadError) {
@@ -68,6 +66,7 @@ async function extractPDFText(filePath) {
   }
 }
 
+// --- Basic PDF info fallback ---
 async function extractPDFBasicInfo(filePath) {
   try {
     const stats = fs.statSync(filePath);
@@ -86,6 +85,7 @@ Status: PDF uploaded successfully - Text extraction in progress...
   }
 }
 
+// --- DOCX Extraction ---
 async function extractDOCXText(filePath) {
   try {
     if (!fs.existsSync(filePath)) {
@@ -107,21 +107,23 @@ async function extractDOCXText(filePath) {
   }
 }
 
+// --- Text Cleaning ---
 function cleanText(text) {
   if (!text) return "";
 
   return text
-    .replace(/\s+/g, " ") // Multiple spaces to single space
+    .replace(/\s+/g, " ") // Multiple spaces to single
     .replace(/\n\s*\n/g, "\n") // Remove empty lines
-    .replace(/\u00A0/g, " ") // Non-breaking spaces
-    .replace(/\u2022/g, "•") // Bullet points
-    .replace(/[\u2018\u2019]/g, "'") // Smart quotes
+    .replace(/\u00A0/g, " ") // Non-breaking space
+    .replace(/\u2022/g, "•") // Bullet
+    .replace(/[\u2018\u2019]/g, "'") // Smart single quotes
     .replace(/[\u201C\u201D]/g, '"') // Smart double quotes
     .replace(/\u2013/g, "-") // En dash
     .replace(/\u2014/g, "--") // Em dash
     .trim();
 }
 
+// --- Main extractor ---
 export async function extractText(file) {
   const startTime = Date.now();
 
@@ -140,11 +142,9 @@ export async function extractText(file) {
     switch (fileExtension) {
       case ".pdf":
         try {
-          // Try advanced PDF extraction first
           rawText = await extractPDFText(file.path);
         } catch (pdfError) {
           console.warn("Advanced PDF extraction failed, using basic info:", pdfError.message);
-          // Fallback to basic file info
           rawText = await extractPDFBasicInfo(file.path);
         }
         break;
@@ -163,22 +163,18 @@ export async function extractText(file) {
     const cleanedText = cleanText(rawText);
     const duration = Date.now() - startTime;
 
-    console.log(`✅ Completed in ${duration}ms`);
-    console.log(`📝 Result: ${cleanedText.length} characters`);
+    console.log(`✅ Extraction completed in ${duration}ms`);
+    console.log(`📝 Extracted: ${cleanedText.length} characters`);
 
     return cleanedText || `[${fileExtension.toUpperCase()} file uploaded successfully]`;
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ Failed after ${duration}ms:`, error.message);
+    console.error(`❌ Extraction failed after ${duration}ms:`, error.message);
     throw error;
   }
 }
 
-/**
- * Validate file type
- * @param {Object} file - Multer file object
- * @returns {boolean} - True if supported
- */
+// --- File type validation ---
 export function isValidFileType(file) {
   if (!file?.originalname || !file?.mimetype) return false;
 

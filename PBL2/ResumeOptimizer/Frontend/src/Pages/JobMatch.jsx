@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// --- Skeleton Loader Component (using Tailwind CSS) ---
+// --- Skeleton Loader ---
 const SkeletonLoader = () => (
   <div className="w-full max-w-3xl mx-auto p-8 bg-white rounded-lg shadow-md animate-pulse">
     <div className="h-4 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -12,19 +12,6 @@ const SkeletonLoader = () => (
       <div className="h-3 bg-gray-200 rounded w-5/6"></div>
       <div className="h-3 bg-gray-200 rounded w-11/12"></div>
     </div>
-    <div className="h-6 bg-gray-300 rounded w-1/3 my-8"></div>
-    <div className="grid grid-cols-4 gap-2 mb-8">
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-      <div className="h-4 bg-gray-200 rounded col-span-1"></div>
-    </div>
-    <div className="h-6 bg-gray-300 rounded w-1/3 mb-4"></div>
-    <div className="space-y-3">
-      <div className="h-3 bg-gray-200 rounded"></div>
-      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-    </div>
   </div>
 );
 
@@ -33,17 +20,27 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const JobMatch = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+
   const [jobDescription, setJobDescription] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [matchResult, setMatchResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // fetch resume once
+  // Redirect if not logged in
+  if (!token) {
+    navigate("/login");
+  }
+
+  // Fetch resume
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/resumes/${id}`);
+        const res = await fetch(`http://localhost:5000/api/resumes/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) throw new Error(`Failed to fetch resume: ${res.status}`);
         const data = await res.json();
         setResumeText(data.resume.rawText);
@@ -52,7 +49,7 @@ const JobMatch = () => {
       }
     };
     fetchResume();
-  }, [id]);
+  }, [id, token]);
 
   const handleMatch = async () => {
     if (!jobDescription.trim()) {
@@ -72,7 +69,7 @@ const JobMatch = () => {
 
       const prompt = `
         Compare the following resume against the job description and return a JSON object with:
-        - "matchScore" (percentage from 0 to 100)
+        - "matchScore" (percentage 0-100)
         - "keyStrengths" (array of strings)
         - "missingKeywords" (array of strings)
         - "summary" (short paragraph explaining match quality)
@@ -106,7 +103,6 @@ const JobMatch = () => {
     }
   };
 
-  // --- Render Logic ---
   if (loading) {
     return (
       <div className="bg-gray-50 min-h-screen py-12">
@@ -123,8 +119,7 @@ const JobMatch = () => {
           Match Resume to Job Description
         </h1>
         <p className="text-gray-600 mb-6">
-          Paste the job description below to see how well your resume aligns
-          with the requirements.
+          Paste the job description below to see how well your resume aligns.
         </p>
 
         {/* Textarea */}
@@ -135,7 +130,7 @@ const JobMatch = () => {
           className="w-full h-32 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 resize-none"
         />
 
-        {/* Button */}
+        {/* Match Button */}
         <button
           onClick={handleMatch}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
@@ -144,11 +139,9 @@ const JobMatch = () => {
         </button>
 
         {/* Error */}
-        {error && (
-          <p className="text-red-500 text-sm mt-4">Error: {error}</p>
-        )}
+        {error && <p className="text-red-500 text-sm mt-4">Error: {error}</p>}
 
-        {/* Conditional Results */}
+        {/* Results */}
         {matchResult && (
           <div className="mt-8 border-t pt-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">
@@ -171,13 +164,9 @@ const JobMatch = () => {
             {/* Key Strengths */}
             {matchResult.keyStrengths?.length > 0 && (
               <div className="mb-4">
-                <h3 className="font-semibold text-gray-700 mb-1">
-                  Key Strengths
-                </h3>
+                <h3 className="font-semibold text-gray-700 mb-1">Key Strengths</h3>
                 <ul className="list-disc list-inside text-gray-600 text-sm">
-                  {matchResult.keyStrengths.map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
+                  {matchResult.keyStrengths.map((s, i) => <li key={i}>{s}</li>)}
                 </ul>
               </div>
             )}
@@ -185,13 +174,9 @@ const JobMatch = () => {
             {/* Missing Keywords */}
             {matchResult.missingKeywords?.length > 0 && (
               <div>
-                <h3 className="font-semibold text-gray-700 mb-1">
-                  Missing Keywords
-                </h3>
+                <h3 className="font-semibold text-gray-700 mb-1">Missing Keywords</h3>
                 <ul className="list-disc list-inside text-gray-600 text-sm">
-                  {matchResult.missingKeywords.map((k, i) => (
-                    <li key={i}>{k}</li>
-                  ))}
+                  {matchResult.missingKeywords.map((k, i) => <li key={i}>{k}</li>)}
                 </ul>
               </div>
             )}

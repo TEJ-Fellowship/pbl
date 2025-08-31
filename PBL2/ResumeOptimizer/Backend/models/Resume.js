@@ -1,13 +1,27 @@
+// models/Resume.js
 import mongoose from "mongoose";
 
-const resumeSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  filePath: { type: String, required: true },
-  originalName: { type: String, required: true },
-  uploadDate: { type: Date, default: Date.now },
-  extractedText: { type: String },
-});
+const resumeSchema = new mongoose.Schema(
+  {
+    fileName: {
+      type: String,
+      required: true,
+    },
+    filePath: {
+      type: String,
+      required: true,
+    },
+    extractedText: {
+      type: String,
+      required: true,
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Links resume to a user
+      required: true,
+    },
+  },
+  { timestamps: true } // adds createdAt & updatedAt automatically
+);
 
-const Resume = mongoose.model("Resume", resumeSchema);
-
-export default Resume;
+export default mongoose.model("Resume", resumeSchema);
