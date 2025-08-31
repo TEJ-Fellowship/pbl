@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { ThemeContext } from "../ThemeContext";
+
 const Signup = () => {
+  const {isDark} = useContext(ThemeContext)
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,12 +39,18 @@ const Signup = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        backgroundImage: 'url("/notemain2.jpg")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className={`min-h-screen flex items-center justify-center p-4 ${
+        isDark ? 'bg-gradient-to-br from-gray-900 via-gray-600 to-gray-900' : ''
+      }`}
+      style={
+        !isDark
+          ? {
+              backgroundImage: 'url("/notemain2.jpg")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }
+          : {}
+      }
     >
       <div className="w-full max-w-md">
         <div
@@ -143,11 +152,11 @@ const Signup = () => {
           <div className="text-right mb-6">
             <Link
               to="/login"
-              className="text-sm text-gray-600 hover:text-gray-800"
+              className="text-sm text-purple-900 hover:text-gray-900"
             >
               <span>Already a member? </span>
             </Link>
-            <span className="text-[#BF40BF] font-bold">
+            <span className="${isDark? text-[#45b3e0] : text-[#BF40BF]} font-bold">
               <Link to="/login">sign in here</Link>
             </span>
           </div>
@@ -160,7 +169,7 @@ const Signup = () => {
           )}
           {/* Login Button */}
           <button
-            className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
+            className={`w-full py-3 mb-6 ${isDark?'bg-purple-600 hover:bg-purple-700' : 'bg-[#BF40BF] hover:bg-purple-700'} text-white font-semibold rounded-xl transition-colors`}
             onClick={handleSignup}
           >
             Sign Up
