@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/SideBar';
 import { Outlet } from 'react-router-dom';
-
-function Layout({ setIsLoggedIn, isLoggedIn }) {
+import { AuthContext } from './AuthContext';
+function Layout() {
+const {isLoggedIn}=useContext(AuthContext)
   return (
     <div>
       {isLoggedIn ? (
-        <Sidebar setIsLoggedIn={setIsLoggedIn} />
+        <Sidebar/>
       ) : (
         <Navbar />
       )}
