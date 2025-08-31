@@ -181,7 +181,7 @@ const Landing = () => {
             <footer className="flex flex-wrap justify-center -mx-5 -my-2">
               <div className="px-5 py-2">
                 <a
-                  href="#"
+                  href="/about"
                   className="text-base leading-6 text-gray-500 hover:text-gray-900"
                 >
                   About
@@ -205,7 +205,7 @@ const Landing = () => {
               </div>
               <div className="px-5 py-2">
                 <a
-                  href="#"
+                  href="/contact"
                   className="text-base leading-6 text-gray-500 hover:text-gray-900"
                 >
                   Contact
@@ -231,7 +231,7 @@ const Landing = () => {
               </a>
             </div>
             <p className="mt-5 text-base leading-2 text-center text-gray-700">
-              © 2025 MeroGhar, Inc. All rights reserved.
+              © 2025 MA Properties Inc., Inc. All rights reserved.
             </p>
           </div>
         </section>
