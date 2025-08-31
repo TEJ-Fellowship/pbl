@@ -58,15 +58,8 @@ const Property = () => {
             </div>
           </div>
           {/* Property Info */}
-          <h1 className="text-2xl font-bold text-gray-900">
-            Modern Family Home
-          </h1>
-          <p className="text-gray-900 text-base">
-            This stunning family home offers a perfect blend of modern design
-            and comfortable living. Featuring spacious interiors, high-end
-            finishes, and a beautifully landscaped backyard, it's an ideal
-            retreat for families seeking both style and functionality.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{property.title}</h1>
+          <p className="text-gray-900 text-base">{property.description}</p>
           {/* features */}
           <h3 className="text-[#0d151c] text-lg font-bold leading-tight tracking-[-0.015em] px-4 pb-2 pt-4">
             Key Features
@@ -77,7 +70,7 @@ const Property = () => {
                 Bedrooms
               </p>
               <p className="text-[#0d151c] text-sm font-normal leading-normal">
-                4
+                {property.beds}
               </p>
             </div>
             <div className="flex flex-col gap-1 border-t border-solid border-t-[#cedde8] py-4 pl-2">
