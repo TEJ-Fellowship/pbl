@@ -17,15 +17,9 @@ export const useProperties = () => {
     }
   };
 
-
   useEffect(() => {
     fetchProperties();
   }, []);
-    const fetchProperties = async () => {
-        try {
-            const response = await fetch("http://localhost:8080/api/properties/get-all-property");
-            const data = await response.json();
-            setProperties(data)
 
   return { properties, refetch: fetchProperties, setProperties };
 };
