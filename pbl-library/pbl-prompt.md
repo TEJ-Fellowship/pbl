@@ -3,8 +3,9 @@
 ## Prompt
 
 You are a world-class product manager and technical mentor.  
-Your task is to generate a **catalog of 5–10 startup-flavored project ideas** that:  
-- Are **fresh, and YC-inspired** (not generic CRUD apps).  
+Your task is to generate a **catalog of 5–10 startup-flavored project ideas** that:
+- Map to parts of the [Full Stack Open curriculum](https://fullstackopen.com/en/) (Parts 1–7 for initial tiers).
+- Are **fresh, YC-inspired, and genuinely useful** (not generic CRUD apps).  
 - Are broken into **progressive tiers** of requirements (Tier 1 → Tier 4).  
 - Always include **at least one AI-powered feature** (Gemini, OpenAI, or similar).  
 - Are explained simply enough for beginners (Tier 1) but aspirational enough for advanced fellows (Tiers 3–4).  
@@ -12,6 +13,12 @@ Your task is to generate a **catalog of 5–10 startup-flavored project ideas** 
 **Stack/technology to use:** [INSERT STACK HERE — e.g. MERN, Next.js + Prisma, Django + React, Flutter + Firebase, etc.]  
 **Domain/theme (optional):** [INSERT DOMAIN — e.g. education, healthcare, social, creative, fintech]  
  
+### Tier-to-Curriculum Mapping:
+- **Tier 1 (CRUD + JWT Auth):** React fundamentals, Node.js/Express backend, token auth, user registration (Fullstack Open Parts 1–4).
+- **Tier 2 (Production-Grade State & API):** Testing React apps, client-server interaction, Redux/React Query state, Routing, custom hooks (Part 5–7).
+- **Tier 3 (AI & Growth Hooks):** AI personalization/gamification
+- **Tier 4 (Moonshot):** visionary features
+
 ---  
  
 **Output format per project:**  
@@ -21,13 +28,13 @@ Your task is to generate a **catalog of 5–10 startup-flavored project ideas** 
 **Overview**  
 - 1–2 short paragraphs in **YC pitch style** (what it does, who it’s for, why it’s interesting).  
  
-**Tier 1: Basic [Chosen Stack] + JWT Auth**  
+**Tier 1: Basic [Chosen Stack] + JWT Auth (Parts 1–4)**  
 - Core CRUD functionality (auth, lists, forms, filtering).  
 - Tailwind/responsive UI (or stack-appropriate styling).  
 - Local state with hooks (`useState`, `useEffect`), light context for auth.  
 - 3–4 core components identified.  
  
-**Tier 2: Production-Grade State & API Integration**  
+**Tier 2: Production-Grade State, Routing (Parts 5–7)** 
 - Introduce **global state management** (Redux/Toolkit or `useReducer+Context`).  
 - Add **API client/service layer** for networking.  
 - Integrate at least **one external API** relevant to the project (display new data in a clear place).  
@@ -99,3 +106,15 @@ Pick 2–3 per project to keep things exciting and varied.
 - **AI Challenge Generator**: Creates custom puzzles or tasks daily.  
 - **Smart Opponents**: AI acts as a rival in challenges/battles.  
 - **Adaptive Difficulty**: Adjusts challenge level
+
+## How to Use
+- Pick a stack and (optionally) domain.  
+- Use the prompt to generate a catalog.  
+- Projects should build logically across Fullstack Open parts.  
+- Ensure Tier 3 pulls at least two distinct AI ideas from the packs.
+
+---
+
+## Example Invocation
+
+> “Generate 6 YC-style MERN project ideas for the **education** domain, aligned with Full Stack Open Parts 1–7, with AI features in Tier 3.”
