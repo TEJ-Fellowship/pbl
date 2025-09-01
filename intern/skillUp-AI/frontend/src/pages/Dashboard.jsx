@@ -25,6 +25,7 @@ const Dashboard = () => {
           </div>
           <TopicSelector />
           <ChatInterface />
+          
         </div>
       </div>
     </>
