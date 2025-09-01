@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Navbar from "./Navbar.jsx";
 import Dashboard from "./Dashboard.jsx";
@@ -56,9 +55,7 @@ function b({ activeSection, setActiveSection }) {
             {activeSection === "dashboard" && <Dashboard />}
             {activeSection === "programs" && <h1>hi program</h1>}
             {activeSection === "tasks" && <Tasks />}
-            {/* {activeSection === "members" && <h1>hi members</h1>} */}
             {activeSection === "gemini" && <Test />}
-            {activeSection === "overview" && <h1>hi overview</h1>}
           </div>
         </div>
       ) : (

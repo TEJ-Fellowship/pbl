@@ -11,36 +11,6 @@ function LandingPage({ showLanding, setShowLanding }) {
       <LandingNavbar />
       <Hero setShowLanding={setShowLanding} showLanding={showLanding} />
       <Footer />
-
-      {/* <Routes>
-      <Route path="/login" element={<LoginPage/>}/>
-      <Route path="/signUp" element={<SignUpPage/>}/>
-    </Routes> */}
-
-      {/* <LandingNavbar/>
-        <Hero setShowLanding={setShowLanding} showLanding={showLanding}/>
-        <Footer/> */}
-
-   
-        {/* Auth pages */}
-       
-
-        {/* Landing page */}
-
-        {/* <Route
-          path="/"
-          element={
-            <>
-              <LandingNavbar />
-              <Hero
-                setShowLanding={setShowLanding}
-                showLanding={showLanding}
-              />
-              <Footer />
-            </>
-          }
-          /> */}
-     
     </>
   );
 }
