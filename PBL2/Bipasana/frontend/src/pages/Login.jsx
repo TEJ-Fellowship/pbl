@@ -21,15 +21,12 @@ const Login = () => {
       const loginData = { email, password };
       const res = await axios.post("http://localhost:3001/api/login", loginData);
       const {token,name}=res.data;
-      console.log(token);
-      console.log(name);
        localStorage.setItem("token", token);
          setToken(token);
           setUser(name);
       setIsLoggedIn(true);
       navigate("/")
     } catch(error) {
-      console.log('login failed',error);
        if (error.response && error.response.data && error.response.data.error) {
       alert(error.response.data.error); 
     } else{

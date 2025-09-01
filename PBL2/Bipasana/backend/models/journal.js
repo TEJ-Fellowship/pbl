@@ -17,24 +17,8 @@ const journalSchema = new mongoose.Schema({
   title: String,
   content: String,
   mood: {
-    type: String,
-    enum: [
-      "happy",
-      "sad",
-      "neutral",
-      "excited",
-      "anxious",
-      "angry",
-      "grateful",
-      "tired",
-      "bored",
-      "stressed",
-    ],
-    default: "neutral",
-  },
-  images: {
-    type: [String],
-    default: undefined,
+    symbol: String,
+    label: String,
   },
   createdAt: {
     type: Date,

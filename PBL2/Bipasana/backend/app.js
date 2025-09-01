@@ -10,6 +10,8 @@ const journalRouter=require('./controllers/journals.js')
 const loginRouter=require('./controllers/login.js')
 const cors = require("cors");
 const app=express()
+app.use(express.json({ limit: '10mb' })); // or higher if needed
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 logger.info('connecting to',config.MONGODB_URL);
 app.use(cors());
 mongoose.connect(config.MONGODB_URL)

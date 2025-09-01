@@ -55,8 +55,10 @@ function Sidebar() {
       <nav className="flex-1 p-4">
         <div className="space-y-4">
           <button
-            onClick={() => handleNavigation('/homepage')}
-            className="flex items-center space-x-4 w-full px-4 py-3 rounded-lg isDark transition-colors text-left hover:bg-black/10"
+            onClick={() => handleNavigation('/')}
+            className="flex items-center space-x-4 w-full px-4 py-3 rounded-lg transition-colors text-left hover:bg-black/10"
+
+
           >
             <svg className={`w-6 h-6 flex-shrink-0 ${isDark?'text-gray-200':'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />

@@ -6,7 +6,7 @@ export const ThemeContextProvider=({children})=>{
         setIsDark(!isDark)
     }
     return(
-        <ThemeContext.Provider value={{isDark,setIsDark,handleToggle}}>
+        <ThemeContext.Provider value={{isDark,handleToggle}}>
             {children}
         </ThemeContext.Provider>
     )

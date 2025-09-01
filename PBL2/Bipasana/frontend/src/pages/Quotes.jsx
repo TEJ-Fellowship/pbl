@@ -21,7 +21,6 @@ function Quotes() {
             setCurrentQuotes(formattedQuote);
 
         } catch (err) {
-            console.warn('API Failed', err);
             setCurrentQuotes(null);
             setError('Quotes are not available right now. Please try again later.');
         }

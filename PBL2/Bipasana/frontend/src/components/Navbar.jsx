@@ -12,9 +12,7 @@ function Navbar() {
   };
 
   const handleLogin = () => {
-    if (!setIsLoggedIn) {
       handleNavigation("/login");
-    }
   };
 
   const handleSignUp = () => {
