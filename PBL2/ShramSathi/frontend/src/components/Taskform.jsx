@@ -14,6 +14,14 @@ function Taskform({ setIsModalOpen }) {
     const today = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
+        setProgramsDropDown([
+            { id: "1", title: "Program A" },
+            { id: "2", title: "Program B" }
+        ]);
+    }, []);
+
+
+    useEffect(() => {
         axios.get("http://localhost:3000/api/programs")
             .then(response => {
                 setProgramsDropDown(
@@ -30,13 +38,13 @@ function Taskform({ setIsModalOpen }) {
         e.preventDefault();
 
         // ✅ Include programId
-        const taskObj = { 
-            taskName: task, 
-            description, 
-            date, 
-            category, 
-            assignee, 
-            programId: program 
+        const taskObj = {
+            taskName: task,
+            description,
+            date,
+            category,
+            assignee,
+            programId: program
         };
 
         try {
@@ -48,7 +56,7 @@ function Taskform({ setIsModalOpen }) {
         }
 
         setIsModalOpen(false);
-        setTask(""); 
+        setTask("");
         setDescription("");
         setDate("");
         setCategory("");
@@ -62,7 +70,7 @@ function Taskform({ setIsModalOpen }) {
 
     return (
 
-        
+
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-96">
                 <h2 className="text-xl font-bold mb-4">Add New Task</h2>

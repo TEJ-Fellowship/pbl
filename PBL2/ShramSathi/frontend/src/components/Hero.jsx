@@ -44,7 +44,7 @@ function Hero() {
           </p> */}
 
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">
-            <span className="text-blue-700">ShramSathi</span>:Helping NGOs & small teams organize smarter with AI-powered local insights.
+            <span className="text-blue-700">CommunityFlow</span>:Helping NGOs & small teams organize smarter with AI-powered local insights.
           </h1>
 
           <p className="mt-6 text-lg text-white">

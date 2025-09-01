@@ -124,7 +124,7 @@ function DashboardLayout({ activeSection, setActiveSection }) {
 
   return (
     <>
-//       {showLanding ? <LandingPage showLanding={showLanding} setShowLanding={setShowLanding} /> :(
+{/* //       {showLanding ? <LandingPage showLanding={showLanding} setShowLanding={setShowLanding} /> :( */}
           <div className="flex h-screen bg-gray-100">
           <aside className="fixed top-0 left-0 w-64 h-screen bg-white shadow-md flex flex-col">
             <div className="flex items-center justify-center font-bold border-b">
@@ -157,9 +157,9 @@ function DashboardLayout({ activeSection, setActiveSection }) {
           {activeSection === "gemini" && <Test />}
           {activeSection === "overview" && <h1>hi overview</h1>}
         </div>
+      {isModalOpen && <Taskform setIsModalOpen={setIsModalOpen} />}
       </div>
 
-      {isModalOpen && <Taskform setIsModalOpen={setIsModalOpen} />}
     </>
   );
 }
