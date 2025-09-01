@@ -4,7 +4,7 @@ import Editor from "../components/Editor";
 import emojis from "../emojis";
 import moreEmojis from "../moreEmojis";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
+import  jwtDecode  from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
 function Journal() {

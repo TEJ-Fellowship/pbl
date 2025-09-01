@@ -5,7 +5,7 @@ import emojis from "../emojis";
 import moreEmojis from "../moreEmojis";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 import Content from "./Content";
 function EditJournalModal({
   journal,

@@ -16,9 +16,8 @@ function Editor({
   content = "",
   setContent = () => {},
   handleSave = () => {},
-  editorRef
+  editorRef,
 }) {
-  
   const [selectedFormat, setSelectedFormat] = useState(new Set());
   const fileInputRef = React.useRef();
 
@@ -161,7 +160,7 @@ function Editor({
 
       {/* Rich Text Editor - Fixed text direction */}
       <div
-       ref={editorRef}
+        ref={editorRef}
         contentEditable
         suppressContentEditableWarning={true}
         onInput={(e) => {
@@ -191,11 +190,7 @@ function Editor({
             }
           }, 0);
         }}
-        ref={(el) => {
-          if (el && !el.innerHTML && !content) {
-            el.innerHTML = "";
-          }
-        }}
+        ref={editorRef}
         placeholder="Write your journal here..."
         className="min-h-80 mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         style={{
