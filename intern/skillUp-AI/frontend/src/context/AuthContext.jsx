@@ -9,6 +9,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [ user, setUser] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -17,6 +18,8 @@ export const AuthProvider = ({ children }) => {
         .validateToken(token)
         .then((response) => {
           if (response.valid) {
+            setUser(response);
+            console.log(response.fullName,"this is fullname from authContext")
             setIsAuthenticated(true);
           }
         })
@@ -28,10 +31,10 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, []);
+  },[]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

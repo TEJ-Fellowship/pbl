@@ -19,16 +19,8 @@ const create = async (userDefineUrl, userData) => {
     const response = await axios.post(userDefineUrl, userData);
     return response.data;
   }catch(error){
-    throw new Error (error.response?.data?.message || error?.message)
+    return {error: error.response?.data?.message || error?.message};
   }
-  // return axios
-  //   .post(userDefineUrl, userData)
-  //   .then((response) => {
-  //     return response.data;
-  //   }) // return response to caller
-  //   .catch((error) => {
-  //     return { error: error.response?.data || error.message }; // return error
-  //   });
 };
 
 const validateToken = (token) => {
@@ -37,6 +29,7 @@ const validateToken = (token) => {
       headers: { Authorization: `Bearer ${token}` },
     })
     .then((response) => {
+      console.log(response.data.fullName,"this is fullname from services")
       return response.data;
     })
     .catch((error) => {

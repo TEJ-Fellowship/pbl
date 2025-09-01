@@ -10,14 +10,14 @@ const loginURL = import.meta.env.VITE_LOGIN_URL;
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, setIsAuthenticated, user } = useContext(AuthContext);
 
+  console.log(user.fullName,"this is user name in login");
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard" replace state={{user: user}} />;
   }
 
   const handleSubmit = async (e) => {
@@ -25,6 +25,9 @@ const LoginForm = () => {
     const loginData = { email: email.trim(), password: password.trim() };
     if ((!email.trim(), !password.trim())) {
       setError("All fields are required");
+      setTimeout(()=>{
+        setError("");
+      },500);
       return;
     }
     try {
@@ -34,20 +37,27 @@ const LoginForm = () => {
         return;
       } else {
         localStorage.setItem("token", response.token);
+        console.log(response.token, "token after login");
+
         setIsAuthenticated(true); // Update auth state
-        setUsers(response);
-        navigate("/dashboard");
+        navigate("/dashboard", { state: { user: response.user } });
 
         setEmail("");
         setPassword("");
       }
     } catch (error) {
-      setError(error);
+      setError(error.error);
+      console.log(error.error);
     }
   };
 
   return (
     <>
+    {error &&(
+      <div>
+        {error}
+      </div>
+    )}
       <div>
         <p>SkillUp AI</p>
         <form onSubmit={handleSubmit}>

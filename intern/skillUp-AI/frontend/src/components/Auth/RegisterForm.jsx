@@ -3,24 +3,24 @@
 import { useState } from "react";
 import service from "../../services/service";
 import { Link, useNavigate } from "react-router-dom";
-const registerURL = import.meta.env.VITE_REGISTER_URL;
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext.jsx";
+const registerURL = import.meta.env.VITE_REGISTER_URL;
 
 const RegisterForm = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, setIsAuthenticated, user } = useContext(AuthContext);
+  console.log(user.fullName,"this is user name in register");
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard" replace state={{ user: user }}/>;
   }
 
   const handleSubmit = async (e) => {
@@ -31,23 +31,26 @@ const RegisterForm = () => {
       password: password.trim(),
     };
 
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
-      setError("All fields are required");
-      return;
-    }
 
+      if (!fullName.trim() || !email.trim() || !password.trim()) {
+        setError("All fields are required");
+         setTimeout(()=>{
+        setError(""); 
+      },500)
+        return;
+      }
+    
     try {
       const response = await service.create(registerURL, data);
 
       if (!response.token) {
-        console.log("no token in register after submit",response.token);
+        console.log("no token in register after submit", response.token);
         return;
       } else {
         localStorage.setItem("token", response.token);
         console.log(response.token, "token after register");
-        setUsers(response);
         setIsAuthenticated(true);
-        navigate("/dashboard");
+        navigate("/dashboard", { state: { user: response.user } });
         setFullName("");
         setEmail("");
         setPassword("");
@@ -58,6 +61,7 @@ const RegisterForm = () => {
   };
   return (
     <>
+      {error && <div>{error}</div>}
       <div>
         <form onSubmit={handleSubmit}>
           <p>SkillUp AI</p>
