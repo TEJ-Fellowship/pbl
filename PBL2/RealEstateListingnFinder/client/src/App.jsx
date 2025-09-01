@@ -34,9 +34,7 @@ function AppContent() {
         <Route path="/auth" element={<Auth />} />
 
         {/* Protected Routes */}
-
-        <Route path="/manage-property" element={<ManageProperty />} />
-        <Route path="/explore" element={<SearchPage />} />
+        
         <Route
           path="/manage-property"
           element={
