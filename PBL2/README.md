@@ -1,11 +1,11 @@
 # 📘 2nd Project-Based Learning (PBL) Partners & Projects
 
 ## 1. Binita Hamal & Bijay Pokhrel  
-### 📝 ShramSathi – Your Intelligent Community Task Manager  
+### 📝 Community Flow – Your Intelligent Community Task Manager  
 _"Don’t just volunteer — volunteer smartly with ShramSathi."_  
 
 🌍 **Overview**  
-ShramSathi is a platform for small teams, NGOs, or student groups to create, organize, and track tasks efficiently.  
+Community Flow is a platform for small teams, NGOs, or student groups to create, organize, and track tasks efficiently.  
 
 ---
 
