@@ -3,10 +3,27 @@ import { Link, useNavigate } from "react-router-dom";
 import Themetoggle from "../Theme/Themetoggle";
 import { useAuth } from "../../contexts/AuthContext";
 import logo1 from "../../assets/logo-1.png";
+import { useState, useEffect, useRef } from "react";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileMenuRef]);
 
   return (
     <header className="flex items-center  h-16 justify-between whitespace-nowrap border-b border-solid border-b-gray-200 px-10 py-3">
@@ -50,7 +67,6 @@ const Navbar = () => {
               </Link>
             </>
           ) : (
-            /* Show these links when authenticated */
             <>
               <Link
                 to="/UserDashboard"
@@ -85,8 +101,11 @@ const Navbar = () => {
             </button>
 
             {/* User profile dropdown */}
-            <div className="relative group">
-              <div className="flex items-center gap-2 cursor-pointer">
+            <div className="relative" ref={profileMenuRef}>
+              <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              >
                 <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white">
                   <User className="w-5 h-5" />
                 </div>
@@ -96,32 +115,34 @@ const Navbar = () => {
               </div>
 
               {/* Dropdown menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
-                <Link
-                  to="/UserDashboard"
-                  className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/manage-property"
-                  className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-                >
-                  Manage Property
-                </Link>
-                <button
-                  onClick={() => {
-                    logout();
-                    navigate("/");
-                  }}
-                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-                >
-                  <div className="flex items-center">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    <span>Logout</span>
-                  </div>
-                </button>
-              </div>
+              {isProfileMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                  <Link
+                    to="/UserDashboard"
+                    className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/manage-property"
+                    className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  >
+                    Manage Property
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout();
+                      navigate("/");
+                    }}
+                    className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  >
+                    <div className="flex items-center">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      <span>Logout</span>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

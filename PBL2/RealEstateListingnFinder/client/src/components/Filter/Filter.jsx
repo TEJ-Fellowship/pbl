@@ -5,6 +5,7 @@ import { useEffect } from "react";
 const FilterOptions = ({ onFilterChange, onSortChange }) => {
   const [activeFilters, setActiveFilters] = useState({});
   const [sortBy, setSortBy] = useState("Relevance");
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   const filterCategories = {
     beds: {
@@ -79,6 +80,20 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
     }
   }, [sortBy, onSortChange]);
 
+  useEffect(() => {
+    function handleClickOutside(event) {
+      const isDropdownClick = event.target.closest("[data-dropdown]");
+      if (openDropdown && !isDropdownClick) {
+        setOpenDropdown(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openDropdown]);
+
   const handleFilterSelect = (category, option) => {
     setActiveFilters((prevFilters) => {
       const currentOptions = prevFilters[category] || [];
@@ -88,14 +103,10 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
           [category]: [],
         };
       }
-
-      // Check if the option is already selected
       const isSelected = currentOptions.includes(option);
-
-      // Toggle option
       const updatedOptions = isSelected
-        ? currentOptions.filter((o) => o !== option) // Remove if already selected
-        : [...currentOptions, option]; // Add if not selected
+        ? currentOptions.filter((o) => o !== option)
+        : [...currentOptions, option];
 
       return {
         ...prevFilters,
@@ -122,15 +133,17 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
   };
 
   const FilterDropdown = ({ category, data }) => {
-    const [isOpen, setIsOpen] = useState(false);
     const activeValue = activeFilters[category];
+    const isOpen = openDropdown === category;
 
     return (
-      <div className="relative">
+      <div className="relative" data-dropdown>
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            setOpenDropdown(isOpen ? null : category);
+          }}
           className={`flex h-10 px-4 items-center justify-center gap-x-2 rounded-lg border transition-colors ${
-            activeValue
+            activeValue && activeValue.length > 0
               ? "bg-blue-100 border-blue-300 text-blue-800"
               : "bg-white border-slate-300 hover:bg-slate-50"
           }`}
@@ -149,7 +162,7 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
                 key={option}
                 onClick={() => {
                   handleFilterSelect(category, option);
-                  setIsOpen(false);
+                  setOpenDropdown(null);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors ${
                   activeValue && activeValue.includes(option)
@@ -167,12 +180,12 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
   };
 
   const SortDropdown = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const isOpen = openDropdown === "sort";
 
     return (
-      <div className="relative">
+      <div className="relative" data-dropdown>
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => setOpenDropdown(isOpen ? null : "sort")}
           className="flex h-10 px-4 items-center justify-center gap-x-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
         >
           <span className="text-sm font-medium">Sort: {sortBy}</span>
@@ -189,7 +202,7 @@ const FilterOptions = ({ onFilterChange, onSortChange }) => {
                 key={option}
                 onClick={() => {
                   setSortBy(option);
-                  setIsOpen(false);
+                  setOpenDropdown(null);
                 }}
                 className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 transition-colors ${
                   sortBy === option
