@@ -43,77 +43,31 @@ const Test = () => {
         Get latest news
       </button>
 
-      {/* <p>{aiResponse.relevantNews.headline}</p> */}
-      {/* <p>{aiResponse.text?.relevantNews?.[0]?.headline}</p> */}
-
-      {/* 
-<div className="w-full mx-auto mt-10">
-      <div className="bg-white shadow-lg rounded-2xl p-6">
-        <p className="text-gray-700 text-lg font-medium">
-          {aiResponse.text}
-        </p>
-      </div>
-    </div> */}
-
-    {aiResponse.text?.relevantNews ? (
-  aiResponse.text.relevantNews.map((news, index) => (
-    <div key={index} className="w-full mx-auto mt-10">
-      <div className="bg-white shadow-lg rounded-2xl p-6">
-        <h2>{news.headline}</h2>
-        <a
-          href={news.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 underline font-medium transition-colors duration-200"
-        >
-          Read More →
-        </a>
-        <p>{news.summary}</p>
-        <p>
-          <strong>Suggested program:</strong> {news.suggestedProgram}
-        </p>
-      </div>
-    </div>
-  ))
-) : aiResponse.text?.message ? (
-  <p className="mt-10 text-gray-600">{aiResponse.text.message}</p>
-) : null}
-
-   
-
-
-
-      
+      {aiResponse.text?.relevantNews ? (
+        aiResponse.text.relevantNews.map((news, index) => (
+          <div key={index} className="w-full mx-auto mt-10">
+            <div className="bg-white shadow-lg rounded-2xl p-6">
+              <h2>{news.headline}</h2>
+              <a
+                href={news.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline font-medium transition-colors duration-200"
+              >
+                Read More →
+              </a>
+              <p>{news.summary}</p>
+              <p>
+                <strong>Suggested program:</strong> {news.suggestedProgram}
+              </p>
+            </div>
+          </div>
+        ))
+      ) : aiResponse.text?.message ? (
+        <p className="mt-10 text-gray-600">{aiResponse.text.message}</p>
+      ) : null}
     </div>
   );
 };
 
 export default Test;
-
-
-
-
-
-
-// {aiResponse.text?.relevantNews?.map((news, index) => (
-//     <div key={index} className="w-full mx-auto mt-10">
-//       <div className="bg-white shadow-lg rounded-2xl p-6">
-//         <h2>{news.headline}</h2>
-//         {/* <a href={news.link}>Link</a> */}
-
-//         <a
-//           href={news.link}
-//           target="_blank"
-//           rel="noopener noreferrer"
-//           className="text-blue-600 hover:text-blue-800 underline font-medium transition-colors duration-200"
-//         >
-//           Read More →
-//         </a>
-
-//         <p>{news.summary}</p>
-//         <p>
-//           <strong>Suggested program:</strong> {news.suggestedProgram}
-//         </p>
-//       </div>
-//     </div>
-//   ))}
