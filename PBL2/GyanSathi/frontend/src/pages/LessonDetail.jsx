@@ -53,7 +53,7 @@ const LessonDetail = () => {
     setAiLoading(true);
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.5-flash",
         contents: QUIZ_PROMPT_TEMPLATE(prompt),
       });
 
