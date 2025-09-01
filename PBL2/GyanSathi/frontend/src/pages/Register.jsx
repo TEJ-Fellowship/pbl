@@ -81,7 +81,7 @@ const Register = () => {
       const response = await apiRegister(formData);
       if (response.success) {
         login(response.data.user, response.data.token);
-        toast.success(`Welcome to FinallMS, ${response.data.user.username}!`);
+        toast.success(`Welcome to GyaanSathi, ${response.data.user.username}!`);
         navigate("/");
       }
     } catch (error) {
@@ -105,7 +105,7 @@ const Register = () => {
             Create Account
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-500">
-            Join FinallMS and start your learning journey
+            Join GyaanSathi and start your learning journey
           </p>
         </div>
 

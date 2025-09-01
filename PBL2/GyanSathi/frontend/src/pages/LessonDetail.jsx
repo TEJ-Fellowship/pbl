@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import { GoogleGenAI } from "@google/genai";
 import PromptInput from "../components/PromptInput";
 import AIguide from "../components/AIguide";
 import { useParams, useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 import { getCourseById } from "../api/api";
 import toast from "react-hot-toast";
 import { ArrowLeft, Clock, ExternalLink, BookOpen, Tag } from "lucide-react";
@@ -43,17 +43,17 @@ const LessonDetail = () => {
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   // Gemini AI state
+  const [accessDenied, setAccessDenied] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState([]);
   const [prompt, setPrompt] = useState("");
-  const [accessDenied, setAccessDenied] = useState(false);
 
   // Gemini AI handler
   const handleGemini = async () => {
     setAiLoading(true);
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-pro",
+        model: "gemini-2.5-flash",
         contents: QUIZ_PROMPT_TEMPLATE(prompt),
       });
 
@@ -143,26 +143,26 @@ const LessonDetail = () => {
     );
   }
 
-  if (accessDenied) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-700 dark:text-red-400 mb-4">
-            Access Denied
-          </h2>
-          <p className="mb-4 text-gray-700 dark:text-gray-300">
-            You must be enrolled in this course to view its lessons.
-          </p>
-          <button
-            onClick={() => navigate(`/courses/${courseId}`)}
-            className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300"
-          >
-            Back to Course
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // if (accessDenied) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 transition-colors duration-500">
+  //       <div className="text-center">
+  //         <h2 className="text-2xl font-bold text-red-700 dark:text-red-400 mb-4">
+  //           Access Denied
+  //         </h2>
+  //         <p className="mb-4 text-gray-700 dark:text-gray-300">
+  //           You must be enrolled in this course to view its lessons.
+  //         </p>
+  //         <button
+  //           onClick={() => navigate(`/courses/${courseId}`)}
+  //           className="bg-indigo-600 dark:bg-indigo-500 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-purple-600 transition-colors duration-300"
+  //         >
+  //           Back to Course
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!lesson || !course) {
     return (

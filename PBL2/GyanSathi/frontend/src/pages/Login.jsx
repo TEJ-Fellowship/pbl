@@ -83,7 +83,7 @@ const Login = () => {
             Welcome Back
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-500">
-            Sign in to your FinallMS account
+            Sign in to your GyaanSathi account
           </p>
         </div>
 

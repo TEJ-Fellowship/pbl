@@ -190,6 +190,7 @@ const CourseDetail = () => {
                 {user?.role === "user" && course.isPublished && (
                   <button
                     onClick={handleEnrollment}
+                    disabled={false}
                     className={`px-6 py-3 rounded-xl font-medium transition-colors duration-300 shadow-md ${
                       course.isEnrolled
                         ? "bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800 text-white"
@@ -228,7 +229,7 @@ const CourseDetail = () => {
                   lesson={lesson}
                   index={index}
                   onViewLesson={handleViewLesson}
-                  canAccess={course.isEnrolled || canManageCourses()}
+                  canAccess={true}
                 />
               ))}
             </div>
