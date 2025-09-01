@@ -1,0 +1,96 @@
+{
+  "books": [
+    {
+      "title": "hahaha",
+      "author": "Birthday",
+      "genre": [
+        "Fantasy"
+      ],
+      "year": "2009",
+      "description": "wewe",
+      "rating": "5",
+      "favorite": true,
+      "id": "f5e2"
+    },
+    {
+      "id": "8104",
+      "title": "book 2",
+      "author": "wwe",
+      "genre": [
+        "Fiction",
+        "Fantasy"
+      ],
+      "year": "2323",
+      "description": "sasasas",
+      "rating": "3",
+      "favorite": true
+    },
+    {
+      "id": "110e",
+      "title": "New book",
+      "author": "sdsd",
+      "genre": [
+        "Fiction",
+        "Fantasy"
+      ],
+      "year": "2323",
+      "description": "sddsd",
+      "rating": "2",
+      "favorite": true
+    },
+    {
+      "title": "lalalala",
+      "author": "dsdssssssssssss",
+      "genre": [
+        "Fiction",
+        "Fantasy",
+        "Self-Help"
+      ],
+      "year": "2344",
+      "description": "lalalalalal",
+      "rating": "4.5",
+      "favorite": true,
+      "id": "533c"
+    },
+    {
+      "id": "203c",
+      "title": "new",
+      "author": "",
+      "genre": [],
+      "year": "",
+      "description": "",
+      "rating": "",
+      "favorite": false
+    },
+    {
+      "id": "9af4",
+      "title": "zsas",
+      "author": "",
+      "genre": [],
+      "year": "",
+      "description": "",
+      "rating": "",
+      "favorite": false
+    },
+    {
+      "id": "29ae",
+      "title": "Swikar",
+      "author": "",
+      "genre": [],
+      "year": "",
+      "description": "",
+      "rating": "",
+      "favorite": false
+    },
+    {
+      "id": "0d64",
+      "title": "sds",
+      "author": "",
+      "genre": [],
+      "year": "",
+      "description": "",
+      "rating": "",
+      "favorite": false
+    }
+  ]
+}
