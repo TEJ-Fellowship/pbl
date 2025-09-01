@@ -1,11 +1,11 @@
 # 📘 2nd Project-Based Learning (PBL) Partners & Projects
 
 ## 1. Binita Hamal & Bijay Pokhrel  
-### 📝 ShramSathi – Your Intelligent Community Task Manager  
+### 📝 Community Flow – Your Intelligent Community Task Manager  
 _"Don’t just volunteer — volunteer smartly with ShramSathi."_  
 
 🌍 **Overview**  
-ShramSathi is a platform for small teams, NGOs, or student groups to create, organize, and track tasks efficiently.  
+Community Flow is a platform for small teams, NGOs, or student groups to create, organize, and track tasks efficiently.  
 
 ---
 
@@ -27,11 +27,11 @@ PustakVerse is a mini E-Library platform where users can browse, search, and sav
 ---
 
 ## 4. Anu Ale Magar & Rahul Karna  
-### 📝 Bipasana – Your Mental Well-being Journal  
+### 📝 Memo Nest – Your Mental Well-being Journal  
 _"Inspired by Vipassana, Bipasana helps you reflect, track, and gain clarity in your daily life."_  
 
 🌍 **Overview**  
-Bipasana is a platform for individuals to track their daily moods, write reflections, and receive motivational quotes or AI-powered insights.  
+Memo Nest is a platform for individuals to track their daily moods, write reflections, and receive motivational quotes or AI-powered insights.  
 
 ---
 
