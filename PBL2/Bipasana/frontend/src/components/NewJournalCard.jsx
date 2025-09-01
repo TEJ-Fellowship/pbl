@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
-
+import { ThemeContext
+ } from '../ThemeContext';
 function NewJournalCard() {
-  
+  const {isDark} = useContext(ThemeContext)
   const navigate = useNavigate();
   return (
           <div class="flex items-center justify-center mt-16">
-        <div class="w-[65%] h-[390px] flex flex-col items-center text-center bg-blue-200 rounded-2xl shadow-lg p-8">
+        <div class={`w-[65%] h-[390px] flex flex-col items-center text-center ${isDark?'bg-gray-500':'bg-blue-200'} rounded-2xl shadow-lg p-8`}>
           <h1 class="text-4xl md:text-5xl font-extrabold mb-6 mt-4">
             How was your day today?
           </h1>
@@ -19,7 +20,7 @@ function NewJournalCard() {
             <button class="px-6 py-3 rounded-full bg-green-500 text-white shadow-md hover:bg-green-600 transition cursor-pointer" onClick={()=>navigate('/createjournal')}>
               ✨ Create New Journal
             </button>
-            <button class="px-6 py-3 rounded-full border-2 border-purple-500 text-purple-600 shadow-md hover:bg-purple-100 transition cursor-pointer">
+            <button class={`px-6 py-3 rounded-full border-2 ${isDark?'border-purple-200 text-yellow-400': 'border-purple-500 text-purple-600'} shadow-md hover:bg-purple-100 transition cursor-pointer`}>
               🎨 Browse Templates
             </button>
           </div>

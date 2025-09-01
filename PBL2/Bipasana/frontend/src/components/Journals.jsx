@@ -49,7 +49,7 @@ function Journals({ journals, setJournals, originalJournals, setOriginalJournals
 
   return (
     <div className="w-[65%] mx-auto">
-      <h1 className="text-2xl font-bold mb-8">Recent Journals</h1>
+      <h1 className={`text-2xl font-bold mb-8 ${isDark?'text-gray-200':'text-gray-800'}`}>Recent Journals</h1>
       <div className="flex flex-wrap gap-3">
         {journals?.map((journal) => {
           return (

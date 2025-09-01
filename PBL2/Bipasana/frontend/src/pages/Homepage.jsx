@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import Card from '../components/Card';
+import { ThemeContext } from '../ThemeContext';
  
 
 const Homepage = () => {
+  const {isDark} = useContext(ThemeContext)
   return (
-    <div className="min-h-screen max-w-[1080px] mx-auto bg-red-500 ">
+    <div className='bg-color-gray-800'>
+    <div className="min-h-screen max-w-[1080px] mx-auto bg-red-100 ">
 
       {/* Hero Section */}
       <div className="relative">
@@ -40,6 +43,7 @@ const Homepage = () => {
          
         </div>
       </div>
+    </div>
     </div>
   );
 };

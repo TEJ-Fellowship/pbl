@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { ThemeContext } from "../ThemeContext";
 import {
   Bold,
   Italic,
@@ -18,7 +19,7 @@ function Editor({
   handleSave = () => {},
   editorRef
 }) {
-  
+  const {isDark} = useContext(ThemeContext)
   const [selectedFormat, setSelectedFormat] = useState(new Set());
   const fileInputRef = React.useRef();
 
@@ -51,14 +52,14 @@ function Editor({
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100">
+    <div className="${isDark?bg-gray-800:bg-gray-200} shadow-lg rounded-2xl p-6 border border-gray-100">
       {/* Title */}
       <input
         type="text"
         placeholder="Add a title..."
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full text-2xl font-semibold text-gray-800 placeholder-gray-400 border-none outline-none mb-4 bg-transparent"
+        className={`w-full text-2xl font-semibold ${isDark?'text-gray-200 placeholder-gray-400':'text-gray-800 placeholder-gray-500'} border-none outline-none mb-4 bg-transparent`}
         style={{ direction: "ltr", textAlign: "left" }}
       />
 
@@ -211,9 +212,9 @@ function Editor({
       {/* Footer */}
       <div className="flex justify-between items-center mt-4 pt-2 border-t border-gray-100">
         <div className="flex items-center gap-4 text-sm text-gray-500">
-          <span>Last saved: Never</span>
+        <span className={isDark?`text-gray-200`:`text-gray-600`}>Last saved: Never</span>
           <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-          <span>Auto-save enabled</span>
+          <span className={isDark?`text-gray-200`:`text-gray-600`}>Auto-save enabled</span>
         </div>
         <div className="flex gap-2">
           <button

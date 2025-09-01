@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { ChevronLeft, Calendar, Hand } from "lucide-react";
 import Editor from "../components/Editor";
 import emojis from "../emojis";
 import moreEmojis from "../moreEmojis";
 import axios from "axios";
+import { ThemeContext } from "../ThemeContext";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 
 function Journal() {
+  const {isDark} = useContext(ThemeContext)
   const editorRef = React.useRef();
   const navigate=useNavigate()
   const [selectedEmoji, setSelectedEmoji] = useState({});
@@ -76,15 +78,15 @@ function Journal() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-6">
+    <div className={`min-h-screen ${isDark?'bg-gradient-to-br from-gray-900 via-gray-600 to-gray-900':'bg-gradient-to-br from-purple-50 to-pink-50'} p-6`}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between bg-white shadow-lg p-4 rounded-2xl mb-6 border border-gray-100">
-          <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
+        <div className={`flex items-center justify-between {isDark?bg-gray-600:bg-white} shadow-lg p-4 rounded-2xl mb-6 border border-gray-100`}>
+          <button className={`flex items-center gap-2 ${isDark?'text-gray-200 hover:text-gray-300':`text-gray-600 hover:text-gray-800`} transition-colors`}>
             <ChevronLeft size={18} />
             <span className="font-medium">Back</span>
           </button>
-          <h1 className="text-lg font-semibold text-gray-800">
+          <h1 className={`text-lg font-semibold ${isDark?'text-gray-200':'text-gray-800'}`}>
             New Journal Entry
           </h1>
           <button
@@ -96,23 +98,23 @@ function Journal() {
         </div>
 
         {/* Date Section */}
-        <div className="bg-white shadow-lg rounded-2xl flex justify-between mb-4 p-2 border border-gray-100">
+        <div className={`${isDark?'bg-gray-600':'bg-white'} shadow-lg rounded-2xl flex justify-between mb-4 p-2 border border-gray-100`}>
           <div className="flex items-center gap-4 mb-1 ml-4">
             <div className="flex items-center gap-3">
-              <div className="text-4xl font-bold text-purple-600">
+              <div className={`text-4xl font-bold ${isDark?'text-[#63C8FF]':'text-purple-600'}`}>
                 {formatDate(selectedDate)}
               </div>
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">
+                <span className={`text-sm ${isDark?'text-gray-200':'text-gray-500'} font-medium`}>
                   {getMonthYear(selectedDate)}
                 </span>
-                <span className="text-sm text-gray-600">
+                <span className={`text-sm ${isDark?'text-gray-200':'text-gray-500'}`}>
                   {getDayOfWeek(selectedDate)}
                 </span>
               </div>
             </div>
             <div className="relative">
-              <Calendar className="text-gray-400" size={20} />
+              <Calendar className={isDark?'text-gray-200':'text-gray-500'} size={20} />
               <input
                 type="date"
                 value={selectedDate}
@@ -127,13 +129,13 @@ function Journal() {
               <span className="text-2xl">
                 {selectedEmoji.symbol} {selectedEmoji.label}
               </span>
-              <h2 className="text-lg font-medium text-gray-700">
+              <h2 className={`text-lg font-medium ${isDark?'text-gray-200':'text-gray-700'}`}>
                 {selected ? "" : "Select Your Mood"}
               </h2>
               {!showEmojiPanel && (
                 <button
                   onClick={() => setShowEmojiPanel(true)}
-                  className="text-sm text-purple-600 hover:text-purple-700 font-medium ml-2"
+                  className={`text-sm ${isDark?'text-gray-200':'text-purple-600 hover:text-purple-700'} font-medium ml-2`}
                 >
                   Change
                 </button>
@@ -144,7 +146,7 @@ function Journal() {
 
         {/* Mood Section */}
         {showEmojiPanel && (
-          <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-4 border border-purple-200 shadow-2xl mb-2 mt-0">
+          <div className={`${isDark?'bg-gradient-to-r from-gray-500 to gray-900' : 'bg-gradient-to-r from-purple-100 to-pink-100'} rounded-2xl p-4 border border-purple-200 shadow-2xl mb-2 mt-0`}>
             <div className="grid grid-cols-5 gap-3 mb-4">
               {displayEmojis.map((emojiObj, index) => (
                 <button
@@ -164,13 +166,13 @@ function Journal() {
             <div className="flex justify-between items-center">
               <button
                 onClick={() => setShowMoreEmojis(!showMoreEmojis)}
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium px-3 py-1 rounded-lg hover:bg-white/50 transition-colors"
+                className={`text-sm ${isDark?`text-yellow-300 hover:text-yellow-700`:'text-purple-600 hover:text-purple-700'} font-medium px-3 py-1 rounded-lg hover:bg-white/50 transition-colors`}
               >
                 {showMoreEmojis ? "Show Less" : "More"}
               </button>
               <button
                 onClick={() => setShowEmojiPanel(false)}
-                className="text-sm text-gray-600 hover:text-gray-800 font-medium px-3 py-1 rounded-lg hover:bg-white/50 transition-colors"
+                className={`text-sm  ${isDark?'text-[#AE75DA] hover:text-gray-800':'text-gray-600 hover:text-gray-800'} font-bold px-3 py-1 rounded-lg hover:bg-white/50 transition-colors`}
               >
                 Done
               </button>
