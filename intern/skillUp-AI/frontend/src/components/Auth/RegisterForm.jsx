@@ -15,11 +15,12 @@ const RegisterForm = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, setIsAuthenticated, user } = useContext(AuthContext);
+  console.log(user.fullName,"this is user name in register");
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard" replace state={{ user: user }}/>;
   }
 
   const handleSubmit = async (e) => {
@@ -49,7 +50,7 @@ const RegisterForm = () => {
         localStorage.setItem("token", response.token);
         console.log(response.token, "token after register");
         setIsAuthenticated(true);
-        navigate("/dashboard", { state: { user: response } });
+        navigate("/dashboard", { state: { user: response.user } });
         setFullName("");
         setEmail("");
         setPassword("");

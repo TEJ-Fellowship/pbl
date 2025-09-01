@@ -104,11 +104,21 @@ router.get("/validate-token", async (request, response, next) => {
       return response.status(401).json({ error: "No token provided" });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        return response.status(403).json({ error: "Invalid or expired token" });
-      }
-      response.json({ valid: true, user: decoded });
+    // Verify token (promise-based)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Find user in DB
+    const verifyUser = await User.findOne({ email: decoded.email });
+    if (!verifyUser) {
+      return response.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Send back safe info
+    return response.json({
+      success: true,
+      valid: true,
+      fullName: verifyUser.fullName,
+      email: verifyUser.email,
     });
   } catch (error) {
     next(error);
