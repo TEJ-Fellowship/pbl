@@ -7,10 +7,11 @@ import { getPlaceName } from "../../components/Map/utils/GetPlaceName";
 
 const Property = () => {
   const { id } = useParams();
+  const [activeTab, setActiveTab] = useState(0);
 
   const { property, loading, error } = useProperty(id);
-  const [placeName, setPlaceName] = useState("");
-
+  const [nearbyPlace, setNearByPlace] = useState([]);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const neighborhoodData = {
     tabs: ["News & Trends", "Local Buzz", "Nearby Places", "Community Chatter"],
     insights: [
@@ -27,8 +28,6 @@ const Property = () => {
     ],
   };
 
-  const [activeTab, setActiveTab] = useState(0);
-
   if (loading) return <p>Loading property details</p>;
   if (error) return console.log(error);
   if (!property) return <p>Property not found</p>;
@@ -37,14 +36,30 @@ const Property = () => {
   const lat = location?.coordinates ? location.coordinates[1] : null;
   const lng = location?.coordinates ? location.coordinates[0] : null;
 
-  // const fetchPlaceName = async () => {
-  //   if (lat && lng) {
-  //     const name = await getPlaceName(lat, lng);
-  //     setPlaceName(name);
-  //   }
-  // };
+  if (property && !hasInitialized) {
+    setHasInitialized(true);
 
-  // fetchPlaceName();
+    if (lat && lng) {
+      // Use setTimeout to avoid state update during render
+      setTimeout(async () => {
+        const API_KEY_GEOAPIFY = "3189e3be1660433b899f5936bcd4f742";
+        const radius = 2000;
+
+        try {
+          const response = await fetch(
+            `https://api.geoapify.com/v2/places?categories=education.school,healthcare.hospital&filter=circle:${lng},${lat},${radius}&limit=20&apiKey=${API_KEY_GEOAPIFY}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setNearByPlace(data.features);
+          }
+        } catch (error) {
+          console.log(error.message);
+        }
+      }, 0);
+    }
+  }
+  console.log(nearbyPlace);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 font-sans overflow-y-hidden">
