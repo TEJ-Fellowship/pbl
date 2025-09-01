@@ -56,7 +56,13 @@ function Taskform({ setIsModalOpen }) {
         setProgram(""); // reset program after submit
     };
 
+
+
+
+
     return (
+
+        
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-96">
                 <h2 className="text-xl font-bold mb-4">Add New Task</h2>
