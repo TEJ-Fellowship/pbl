@@ -94,6 +94,7 @@
 // export default DashboardLayout;
 
 import React, { useEffect, useState } from "react";
+import {Link} from "react-router-dom"
 import Navbar from "./Navbar.jsx";
 import Dashboard from "./Dashboard.jsx";
 import logourl from "../assets/projectLogo.png";
@@ -135,6 +136,8 @@ function DashboardLayout({ activeSection, setActiveSection }) {
           />
 
           <div className="mt-auto p-4 border-t">
+
+          <Link to="/">
             <button
               className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
               onClick={() => {
@@ -144,6 +147,7 @@ function DashboardLayout({ activeSection, setActiveSection }) {
             >
               Logout
             </button>
+            </Link>
           </div>
         </aside>
         <div className="flex-1 ml-64 p-6 bg-gray-100 overflow-y-auto">
