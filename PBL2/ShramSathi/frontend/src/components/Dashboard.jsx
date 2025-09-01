@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { CgProfile } from "react-icons/cg";
 import { LuPlus } from "react-icons/lu";
 import { MdFormatListBulleted } from "react-icons/md";
@@ -21,7 +22,6 @@ function Programs({ style, title, description }) {
   );
 }
 
-
 function Summary({ stats, value }) {
   return (
     <div className="w-80 h-28 pl-7 p-6 border border-gray-200 rounded-md shadow-md shadow-gray-400">
@@ -30,7 +30,6 @@ function Summary({ stats, value }) {
     </div>
   );
 }
-
 
 function Setting({ options, details, icon, onClick }) {
   return (
@@ -85,9 +84,35 @@ function InviteModal({ isOpen, onClose }) {
   );
 }
 
-// ----------------- Dashboard -----------------
 function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // --- State for overview ---
+  const [completedTasks, setCompletedTasks] = useState(0);
+  const [activeMembers, setActiveMembers] = useState(0);
+  const [totalPrograms, setTotalPrograms] = useState(0);
+
+  // Fetch data from API
+  useEffect(() => {
+    // Completed tasks
+    axios.get("http://localhost:3000/api/tasks?completed=true")
+      .then(res => setCompletedTasks(res.data.length))
+      .catch(err => console.error("Error fetching completed tasks:", err));
+
+      axios.get("http://localhost:3000/api/tasks")
+        .then(res => {
+          const tasks = res.data;
+          // Get unique assignees
+          const uniqueAssignees = [...new Set(tasks.map(task => task.assignee))];
+          setActiveMembers(uniqueAssignees.length);
+        })
+        .catch(err => console.error("Error fetching tasks:", err));
+
+    // Total programs
+    axios.get("http://localhost:3000/api/programs")
+      .then(res => setTotalPrograms(res.data.length))
+      .catch(err => console.error("Error fetching programs:", err));
+  }, []);
 
   return (
     <div>
@@ -117,9 +142,9 @@ function Dashboard() {
       <div>
         <h1 className="text-xl font-bold text-gray-800 mt-8 mb-5">Overview</h1>
         <div className="flex gap-4">
-          <Summary stats="Task Completed" value="125" />
-          <Summary stats="Active Members" value="87" />
-          <Summary stats="Program Supported" value="5" />
+          <Summary stats="Task Completed" value={completedTasks} />
+          <Summary stats="Active Members" value={activeMembers} />
+          <Summary stats="Program Supported" value={totalPrograms} />
         </div>
       </div>
 
@@ -146,6 +171,11 @@ function Dashboard() {
 
       {/* Invite Members Modal */}
       <InviteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <div className="mt-10">
+        <footer className="mt-auto w-full text-center pt-2 text-gray-500 text-sm">
+          {'© Community Flow'}<h1></h1>{'Empowering communities through smart task management'}
+        </footer>
+      </div>
     </div>
   );
 }

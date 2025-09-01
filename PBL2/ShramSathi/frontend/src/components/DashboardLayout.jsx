@@ -100,7 +100,8 @@ import Dashboard from "./Dashboard.jsx";
 import logourl from "../assets/projectLogo.png";
 import LandingPage from "../pages/LandingPage.jsx";
 import Taskform from "./Taskform.jsx";
-import Tasks from "./Tasks.jsx";
+import Tasks from './Tasks.jsx';
+import Programs from "./Programs.jsx";
 import Test from "../components/Test.jsx";
 
 function DashboardLayout({ activeSection, setActiveSection }) {
@@ -123,20 +124,18 @@ function DashboardLayout({ activeSection, setActiveSection }) {
 
   return (
     <>
-      {/* {showLanding ? <LandingPage showLanding={showLanding} setShowLanding={setShowLanding} /> */}
-
-      <div className="flex h-screen bg-gray-100">
-        <aside className="fixed top-0 left-0 w-64 h-screen bg-white shadow-md flex flex-col">
-          <div className="flex items-center justify-center font-bold border-b">
-            <img src={logourl} className="h-[90px] w-auto" />
-          </div>
+//       {showLanding ? <LandingPage showLanding={showLanding} setShowLanding={setShowLanding} /> :(
+          <div className="flex h-screen bg-gray-100">
+          <aside className="fixed top-0 left-0 w-64 h-screen bg-white shadow-md flex flex-col">
+            <div className="flex items-center justify-center font-bold border-b">
+              <img src={logourl} className="h-[90px] w-auto" />
+            </div>
           <Navbar
             setActiveSection={setActiveSection}
             setIsModalOpen={setIsModalOpen}
           />
 
           <div className="mt-auto p-4 border-t">
-
           <Link to="/">
             <button
               className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
@@ -152,7 +151,7 @@ function DashboardLayout({ activeSection, setActiveSection }) {
         </aside>
         <div className="flex-1 ml-64 p-6 bg-gray-100 overflow-y-auto">
           {activeSection === "dashboard" && <Dashboard />}
-          {activeSection === "programs" && <h1>hi program</h1>}
+          {activeSection === "programs" && <Programs /> }
           {activeSection === "tasks" && <Tasks />}
           {/* {activeSection === "members" && <h1>hi members</h1>} */}
           {activeSection === "gemini" && <Test />}

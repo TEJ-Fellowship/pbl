@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from "axios";
+import { IoIosArrowDown } from "react-icons/io";
 
 function Taskform({ setIsModalOpen }) {
     const [task, setTask] = useState("");
@@ -7,24 +8,52 @@ function Taskform({ setIsModalOpen }) {
     const [date, setDate] = useState("");
     const [category, setCategory] = useState("");
     const [assignee, setAssignee] = useState("");
+    const [program, setProgram] = useState("");  // stores selected programId
+    const [programsDropDown, setProgramsDropDown] = useState([]);
 
     const today = new Date().toISOString().split('T')[0];
-    
+
+    useEffect(() => {
+        axios.get("http://localhost:3000/api/programs")
+            .then(response => {
+                setProgramsDropDown(
+                    response.data.map(program => ({
+                        id: program._id,
+                        title: program.title
+                    }))
+                );
+            })
+            .catch(err => console.log('Error:', err));
+    }, []); // ✅ only fetch once, not on every change
+
     const handleAddTask = async (e) => {
         e.preventDefault();
-        const taskObj = { taskName: task, description, date, category, assignee };
+
+        // ✅ Include programId
+        const taskObj = { 
+            taskName: task, 
+            description, 
+            date, 
+            category, 
+            assignee, 
+            programId: program 
+        };
 
         try {
             const response = await axios.post("http://localhost:3000/api/tasks", taskObj);
             console.log("Response:", response.data);
-            // setTasks((prev)=>prev.concat(response.data))
             alert("Task added successfully!");
         } catch (err) {
             console.log("Error:", err);
         }
 
         setIsModalOpen(false);
-        setTask(""); // reset
+        setTask(""); 
+        setDescription("");
+        setDate("");
+        setCategory("");
+        setAssignee("");
+        setProgram(""); // reset program after submit
     };
 
 
@@ -60,10 +89,30 @@ function Taskform({ setIsModalOpen }) {
                         className="w-full border p-2 rounded-lg"
                         required
                     />
+
+                    {/* Program Dropdown with arrow */}
+                    <div className="relative">
+                        <select
+                            value={program}
+                            onChange={(e) => setProgram(e.target.value)}
+                            className="w-full border p-2 rounded-lg appearance-none"
+                            required
+                        >
+                            <option value="">Select Program</option>
+                            {programsDropDown.map((program) => (
+                                <option key={program.id} value={program.id}>
+                                    {program.title}
+                                </option>
+                            ))}
+                        </select>
+                        <IoIosArrowDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
+                    </div>
+
                     <select
                         value={category}
                         onChange={(e) => setCategory(e.target.value)}
                         className="w-full border p-2 rounded-lg"
+                        required
                     >
                         <option value="">Select Category</option>
                         <option value="Social Work">Social Work</option>
