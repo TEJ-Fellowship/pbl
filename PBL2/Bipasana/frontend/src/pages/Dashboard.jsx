@@ -5,9 +5,11 @@ import Filter from "../components/Filter";
 import Journals from "../components/Journals";
 import JournalReadCard from "../components/JournalReadCard";
 import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext";
 import axios from "axios";
 
 function Dashboard() {
+  const {isDark} = useContext(ThemeContext)
   const { isLoggedIn } = useContext(AuthContext);
   const [originalJournals, setOriginalJournals] = useState([]); // Store original data
   const [journals, setJournals] = useState([]); // Store filtered data
@@ -56,7 +58,7 @@ function Dashboard() {
   }, [isLoggedIn]);
 
   return (
-    <div>
+    <div className={`min-h-screen ${isDark?'bg-gray-900':'bg-gray-200'}`}>
       <NewJournalCard addJournal={addJournal} />
       <FlashBack />
       <Filter 

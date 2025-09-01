@@ -11,11 +11,13 @@ import Layout from "./Layout.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import Account from "./pages/Account.jsx";
 import { AuthContext } from "./AuthContext.jsx";
+import { ThemeContext } from "./ThemeContext.jsx";
 import Journal from "./pages/Journal.jsx";
 import Journals from "./components/Journals.jsx";
 
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
+  const { isDark} = useContext(ThemeContext);
 
 
 
