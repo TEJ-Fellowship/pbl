@@ -27,11 +27,11 @@ PustakVerse is a mini E-Library platform where users can browse, search, and sav
 ---
 
 ## 4. Anu Ale Magar & Rahul Karna  
-### 📝 Bipasana – Your Mental Well-being Journal  
+### 📝 Memo Nest – Your Mental Well-being Journal  
 _"Inspired by Vipassana, Bipasana helps you reflect, track, and gain clarity in your daily life."_  
 
 🌍 **Overview**  
-Bipasana is a platform for individuals to track their daily moods, write reflections, and receive motivational quotes or AI-powered insights.  
+Memo Nest is a platform for individuals to track their daily moods, write reflections, and receive motivational quotes or AI-powered insights.  
 
 ---
 
