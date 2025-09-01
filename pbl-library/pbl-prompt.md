@@ -18,7 +18,7 @@ Your task is to generate a **catalog of 5–10 startup-flavored project ideas** 
 ### Tier-to-Curriculum Mapping:
 
 - **Tier 1 (CRUD + JWT Auth):** React fundamentals, Node.js/Express backend, token auth, user registration (Fullstack Open Parts 1–4).
-- **Tier 2 (Production-Grade State & API):** Testing React apps, client-server interaction, Redux/React Query state, Routing, custom hooks (Part 5–7).
+- **Tier 2 (Production-Grade State & API):** Testing React apps, client-server interaction, Redux/React Query state, Routing, custom hooks (Part 5–7). Use OAuth.
 - **Tier 3 (AI & Growth Hooks):** AI personalization/gamification
 - **Tier 4 (Moonshot):** visionary features
 
@@ -50,7 +50,7 @@ Briefly mention which YC startup or product archetype this project is inspired b
 - Implement **loading/error/empty/skeleton states**.
 - Add search/filter/sort + pagination or infinite scroll.
 - Support **optimistic UI updates with rollback**.
-- Optional: WebSockets, file uploads, or offline sync.
+- Optional: OAuth, WebSockets, file uploads, or offline sync.
 
 **Tier 3: AI & Growth Hooks**
 
