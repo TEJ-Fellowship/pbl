@@ -116,7 +116,7 @@ const ManageProperty = () => {
       console.log(editPropertyId);
       if (editPropertyId) {
         response = await fetch(
-          `http://localhost:8080/api/properties/edit-property/${editPropertyId}`,
+          `http://localhost:5000/api/properties/edit-property/${editPropertyId}`,
           {
             method: "PUT",
             body: formData,
@@ -124,7 +124,7 @@ const ManageProperty = () => {
         );
       } else {
         response = await fetch(
-          "http://localhost:8080/api/properties/add-property",
+          "http://localhost:5000/api/properties/add-property",
           {
             method: "POST",
             body: formData,
