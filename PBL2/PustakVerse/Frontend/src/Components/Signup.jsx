@@ -103,7 +103,7 @@ const Signup = ({ onLogin }) => {
             className="absolute right-3 top-1/2 transform -translate-y-1/2 
                        text-gray-500 dark:text-gray-400 hover:text-primary transition"
           >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
+            {showPassword ? <FaEye /> : <FaEyeSlash />}
           </button>
         </div>
         <div className="relative">
@@ -124,7 +124,7 @@ const Signup = ({ onLogin }) => {
             className="absolute right-3 top-1/2 transform -translate-y-1/2 
                        text-gray-500 dark:text-gray-400 hover:text-primary transition"
           >
-            {showConfirm ? <FaEyeSlash /> : <FaEye />}
+            {showConfirm ? <FaEye /> : <FaEyeSlash />}
           </button>
         </div>
 
