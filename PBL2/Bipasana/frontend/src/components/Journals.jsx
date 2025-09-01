@@ -5,6 +5,7 @@ import { ThemeContext } from "../ThemeContext";
 
 function Journals({ journals, setJournals, originalJournals, setOriginalJournals }) {
   const { isDark } = useContext(ThemeContext);
+
   const [selectedJournal, setSelectedJournal] = useState(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
@@ -17,7 +18,6 @@ function Journals({ journals, setJournals, originalJournals, setOriginalJournals
     setSelectedJournal(null);
     setIsPopupOpen(false);
   };
-
   // Function to handle journal updates
   const handleJournalUpdate = (updatedJournal) => {
     // Update both original and filtered journals
@@ -53,11 +53,13 @@ function Journals({ journals, setJournals, originalJournals, setOriginalJournals
       <div className="flex flex-wrap gap-3">
         {journals?.map((journal) => {
           return (
+
             <JournalCard
               key={journal.id}
               journal={journal}
               onClick={() => openPopup(journal)}
             />
+
           );
         })}
       </div>
@@ -71,6 +73,7 @@ function Journals({ journals, setJournals, originalJournals, setOriginalJournals
           onUpdate={handleJournalUpdate}
           onDelete={handleJournalDelete}
         />
+
       )}
     </div>
   );

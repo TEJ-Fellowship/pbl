@@ -2,7 +2,10 @@ import React, { useContext, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext";
+
 const Login = () => {
+  const {isDark} = useContext(ThemeContext)
   const {setToken,setUser,setIsLoggedIn}=useContext(AuthContext)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,14 +36,21 @@ const Login = () => {
   };
 
   return (
-    <div
-      className="min-h-[91vh] flex items-center justify-center p-4"
-      style={{
-        backgroundImage: 'url("/notemain2.jpg")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
+<div
+  className={`min-h-screen flex items-center justify-center p-4 ${
+    isDark ? 'bg-gradient-to-br from-gray-900 via-gray-600 to-gray-900' : ''
+  }`}
+  style={
+    !isDark
+      ? {
+          backgroundImage: 'url("/notemain2.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }
+      : {}
+  }
+>
+
       <div className="w-full max-w-md">
         <div
           className="backdrop-blur-md bg-white/20 rounded-[50px] p-8 shadow-2xl border border-white/30"
@@ -102,14 +112,14 @@ const Login = () => {
 
           {/* Forgot Password */}
           <div className="text-right mb-6">
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-800">
+            <a href="#" className={`text-sm ${isDark?'text-gray-800 hover:text-gray-900':'text-gray-600 hover:text-gray-800'}`}>
               Forgot password?
             </a>
           </div>
 
           {/* Login Button */}
           <button
-            className="w-full py-3 mb-6 bg-[#BF40BF] hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
+            className={`w-full py-3 mb-6 ${isDark?'bg-purple-600 hover:bg-purple-700' : 'bg-[#BF40BF] hover:bg-purple-700'} text-white font-semibold rounded-xl transition-colors`}
             onClick={handleLogin}
           >
             Login
@@ -117,7 +127,7 @@ const Login = () => {
           {/* OR Divider */}
           <div className="mb-4">
             <span>Don't have an account?</span>
-            <Link to="/signup" className="text-purple-700 ">
+            <Link to="/signup" className={isDark? 'text-[#45b3e0]': 'text-purple-700'} >
               Sign-up here
             </Link>
           </div>

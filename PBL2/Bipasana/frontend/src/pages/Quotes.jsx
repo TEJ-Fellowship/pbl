@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Loader2 } from 'lucide-react';
+import { ThemeContext } from '../ThemeContext';
 
 function Quotes() {
+    const {isDark} = useContext(ThemeContext)
     const [currentQuotes, setCurrentQuotes] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,10 +32,10 @@ function Quotes() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-200 to-purple-300 flex items-center justify-center p-6">
+        <div className={`min-h-screen flex items-center justify-center p-6 ${isDark?'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900':'bg-gradient-to-br from-pink-200 via-purple-200 to-purple-300'}`}>
             <div className="max-w-2xl w-full">
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl font-bold text-gray-800 mb-4 tracking-tight">
+                    <h1 className={`text-5xl font-bol mb-4 tracking-tight ${isDark?'text-gray-300' : 'text-gray-800'}`}>
                         Daily Quotes
                     </h1>
                     <div className="w-24 h-1 bg-gradient-to-r from-pink-400 to-purple-500 mx-auto rounded-full"></div>
@@ -49,7 +51,8 @@ function Quotes() {
 
                     {currentQuotes ? (
                         <div className="text-center">
-                            <div className="text-6xl text-purple-400 mb-6 opacity-60">"</div>
+                            <div className={`text-6xl mb-6 opacity-60 ${isDark ? 'text-gray-800' : 'text-purple-400'}`}>“</div>
+
                             
                             <p className="font-montserrat text-2xl md:text-3xl font-light text-gray-800 leading-relaxed mb-8 italic">
                                 "{currentQuotes.content}"
@@ -67,9 +70,9 @@ function Quotes() {
                         !error && (
                             <div className="text-center py-12">
                                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-400/30 mb-4">
-                                <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
+                                <Loader2 className={`w-6 h-6 ${isDark ?'text-[#84cdee]': 'text-purple-500'} animate-spin`} />
                                 </div>
-                                <p className="text-purple-700 font-medium">Loading...</p>
+                                <p className={`${isDark?'text-[#3744a0]' : 'text-purple-700'} font-medium`}>Loading...</p>
                             </div>
                         )
                     )}
@@ -79,7 +82,7 @@ function Quotes() {
                 <div className="text-center">
                     <button 
                         onClick={fetchQuote}
-                        className="bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95"
+                        className={`text-white font-bold py-4 px-8 rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95 ${isDark?'bg-gradient-to-r from-pink-600 to-purple-700 hover:from-pink-700 hover:to-purple-800':'bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600'}`}
                     >
                         Load New Quotes
                     </button>
@@ -87,7 +90,7 @@ function Quotes() {
 
                 {/* Footer */}
                 <div className="text-center mt-8">
-                    <p className="text-purple-600/70 text-sm">
+                    <p className={`text-sm ${isDark? 'text-[#84cdee]' : 'text-purple-600/70'} `}>
                         Inspiring words to brighten your day ✨
                     </p>
                 </div>

@@ -20,6 +20,7 @@ journalRouter.post("/", async (req, res, next) => {
   try {
     const { title, content, mood, createdAt } = req.body;
 
+
     const journal = new Journal({
       userId: req.user.id, // Use authenticated user ID
       title,

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { X, Trash2, Edit } from "lucide-react";
 import axios from "axios";
@@ -127,3 +128,4 @@ function JournalReadCard({
 }
 
 export default JournalReadCard;
+
