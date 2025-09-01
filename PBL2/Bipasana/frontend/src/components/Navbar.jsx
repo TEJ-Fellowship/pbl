@@ -1,19 +1,17 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext";
 function Navbar() {
-  const { setIsLoggedIn } = useContext(AuthContext);
+  const {isDark,handleToggle}=useContext(ThemeContext)
   const navigate = useNavigate();
-  let isDark = false;
 
   const handleNavigation = (path) => {
     navigate(path);
   };
 
   const handleLogin = () => {
-    if (!setIsLoggedIn) {
       handleNavigation("/login");
-    }
   };
 
   const handleSignUp = () => {

@@ -23,12 +23,10 @@ const Signup = () => {
         .post("http://localhost:3001/api/users", signupDetails)
         .then((response) => {
           alert("User registered successfully");
-          console.log("signup successful", response.data);
           navigate('/login')
         })
         .catch((error) => {
           alert(error);
-          console.error("error in signup", error);
           navigate("/signup")
         });
     }

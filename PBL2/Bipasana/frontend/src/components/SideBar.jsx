@@ -56,7 +56,7 @@ function Sidebar() {
       <nav className="flex-1 p-6">
         <div className="space-y-4">
           <button
-            onClick={() => handleNavigation('/homepage')}
+            onClick={() => handleNavigation('/')}
             className="flex items-center space-x-4 w-full px-4 py-3 rounded-lg transition-colors text-left hover:bg-black/10"
           >
             <svg className="w-6 h-6 flex-shrink-0 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">

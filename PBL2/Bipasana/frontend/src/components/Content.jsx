@@ -10,17 +10,23 @@ import {
   ListOrdered,
 } from "lucide-react";
 
-function Editor({
+function Content({
   setTitle = () => {},
-  title = "",
-  content = "",
+  title,
+  content,
   setContent = () => {},
   handleSave = () => {},
-  editorRef
+  editorRef,
 }) {
-  
   const [selectedFormat, setSelectedFormat] = useState(new Set());
   const fileInputRef = React.useRef();
+
+  // Initialize editor content when mounted or content changes
+  React.useEffect(() => {
+    if (editorRef.current && content) {
+      editorRef.current.innerHTML = content;
+    }
+  }, [content, editorRef]);
 
   const toggleFormat = (format) => {
     const newFormats = new Set(selectedFormat);
@@ -161,40 +167,56 @@ function Editor({
 
       {/* Rich Text Editor - Fixed text direction */}
       <div
-       ref={editorRef}
+        ref={editorRef}
         contentEditable
         suppressContentEditableWarning={true}
         onInput={(e) => {
+          // Save current selection state
           const selection = window.getSelection();
           const range =
-            selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-          const cursorPosition = range ? range.startOffset : 0;
-          const parentNode = range ? range.startContainer : null;
+            selection.getRangeCount() > 0 ? selection.getRangeAt(0) : null;
 
+          // Remember complete cursor/selection state
+          let savedSelection = null;
+          if (range) {
+            savedSelection = {
+              startContainer: range.startContainer,
+              startOffset: range.startOffset,
+              endContainer: range.endContainer,
+              endOffset: range.endOffset,
+              collapsed: range.collapsed,
+            };
+          }
+
+          // Update content
           setContent(e.target.innerHTML);
 
           // Restore cursor position after state update
-          setTimeout(() => {
-            if (parentNode && parentNode.nodeType === Node.TEXT_NODE) {
+          requestAnimationFrame(() => {
+            if (savedSelection) {
               try {
                 const newRange = document.createRange();
                 newRange.setStart(
-                  parentNode,
-                  Math.min(cursorPosition, parentNode.textContent.length)
+                  savedSelection.startContainer,
+                  savedSelection.startOffset
                 );
-                newRange.collapse(true);
+
+                if (!savedSelection.collapsed) {
+                  newRange.setEnd(
+                    savedSelection.endContainer,
+                    savedSelection.endOffset
+                  );
+                } else {
+                  newRange.collapse(true);
+                }
+
                 selection.removeAllRanges();
                 selection.addRange(newRange);
               } catch (err) {
-                // If cursor restoration fails, just continue
+                console.debug("Failed to restore cursor position:", err);
               }
             }
-          }, 0);
-        }}
-        ref={(el) => {
-          if (el && !el.innerHTML && !content) {
-            el.innerHTML = "";
-          }
+          });
         }}
         placeholder="Write your journal here..."
         className="min-h-80 mb-4 p-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -228,4 +250,4 @@ function Editor({
   );
 }
 
-export default Editor;
+export default Content;

@@ -1,5 +1,5 @@
 import "./App.css";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -12,11 +12,14 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import Account from "./pages/Account.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import Journal from "./pages/Journal.jsx";
-import Journals from "./components/Journals.jsx"
+import Journals from "./components/Journals.jsx";
 
 function App() {
-  // const [isLoggedIn,setIsLoggedIn] = useState(false)
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
+
+
+
+
   return (
     <>
       <BrowserRouter>
@@ -31,8 +34,23 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route path="Quotes" element={<Quotes />} />
-            <Route path="journals" element={<Journals />} />
-            <Route path="createjournal" element={<Journal />} />
+            <Route
+              path="journals"
+              element={
+                <ProtectedRoute>
+                  <Journals 
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="createjournal"
+              element={
+                <ProtectedRoute>
+                  <Journal />
+                </ProtectedRoute>
+              }
+            />
             <Route path="About" element={<Aboutus />} />
             <Route
               path="account"
