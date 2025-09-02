@@ -5,19 +5,18 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/user");
+const config = require("../utils/config");
 
 const generateToken = (userId, email) => {
-  return jwt.sign({ userId, email }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+  return jwt.sign({ userId, email }, config.JWT_SECRET, {
+    expiresIn: "2h",
   });
 };
 
 router.post("/register", async (request, response, next) => {
   try {
     const { fullName, email, password } = request.body;
-    console.log("Registration attempt for:", email);
-    console.log("Plain text password received:", password); // Debug log
-
+    
     const oldUser = await User.findOne({ email: email });
 
     if (oldUser) {
@@ -25,10 +24,8 @@ router.post("/register", async (request, response, next) => {
     }
 
     const newUser = new User({ fullName, email, password });
-    console.log("Before save - password:", newUser.password); // Debug log
 
     await newUser.save();
-    console.log("After save - user created with ID:", newUser.id); // Debug log
 
     const token = generateToken(newUser.id, newUser.email);
 
@@ -42,7 +39,6 @@ router.post("/register", async (request, response, next) => {
       },
     });
   } catch (error) {
-    console.log("Registration error:", error); // Debug log
     next(error);
   }
 });
@@ -50,9 +46,7 @@ router.post("/register", async (request, response, next) => {
 router.post("/login", async (request, response, next) => {
   try {
     const { email, password } = request.body;
-    console.log("Login attempt for:", email); // Debug log
-    console.log("Plain text password from request:", password);
-
+    
     const loginUser = await User.findOne({ email: email });
 
     if (!loginUser) {
@@ -60,15 +54,8 @@ router.post("/login", async (request, response, next) => {
         .status(400)
         .send({ error: "Invalid credentials from email check" });
     }
-    console.log("User found, comparing passwords..."); // Debug log
-    console.log("Password from database:", loginUser.password); // 🔍 ADD THIS LINE
-    console.log(
-      "Database password starts with $2b$ (hashed)?",
-      loginUser.password.startsWith("$2b$")
-    ); // 🔍 ADD THIS LINE
-
+    
     const isPasswordValid = await bcrypt.compare(password, loginUser.password);
-    console.log("Password comparison result:", isPasswordValid);
 
     if (!isPasswordValid) {
       return response
@@ -76,7 +63,6 @@ router.post("/login", async (request, response, next) => {
         .json({ error: "Invalid credentials from password check" });
     }
 
-    console.log("Password valid:", isPasswordValid); // Debug log
 
     const token = generateToken(loginUser.id, loginUser.email);
     response.json({
@@ -89,7 +75,6 @@ router.post("/login", async (request, response, next) => {
       },
     });
   } catch (error) {
-    console.log("Login error:", error); // Debug log
 
     next(error);
   }
@@ -105,7 +90,7 @@ router.get("/validate-token", async (request, response, next) => {
     }
 
     // Verify token (promise-based)
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.JWT_SECRET);
 
     // Find user in DB
     const verifyUser = await User.findOne({ email: decoded.email });
@@ -124,5 +109,6 @@ router.get("/validate-token", async (request, response, next) => {
     next(error);
   }
 });
+
 
 module.exports = router;
