@@ -10,6 +10,7 @@ import { useState } from "react";
 
 const Dashboard = () => {
   const [topic, setTopic] = useState("");
+  console.log("selected topic ",topic);
 
   // const location = useLocation();
   // const user = location.state?.user;
@@ -37,7 +38,7 @@ const Dashboard = () => {
               </select>
             </p>
           </div>
-          <ChatInterface />
+          <ChatInterface  topic={topic} user={user}/>
         </div>
       </div>
     </>
