@@ -6,10 +6,17 @@ const notificationSchema = new mongoose.Schema({
   rippleId: { type: String },
   type: {
     type: String,
-    enum: ["friend_ripple", "global_ripple"],
+    enum: [
+      "friend_ripple",
+      "global_ripple",
+      "friend_request",
+      " friend_accept",
+    ],
     required: true,
   },
   message: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now() },
   read: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now() },
 });
+
+export default mongoose.Schema("Notification", notificationSchema);
