@@ -1,0 +1,117 @@
+.flexContainer {
+  display: flex;
+}
+
+.walletContainer {
+  width: 350px;
+  min-height: 350px;
+  border: 2px solid white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 1rem auto auto 1rem;
+  border-radius: 1rem;
+  font-family: "Mozilla Text", sans-serif;
+}
+
+.amountBlock {
+  text-align: center;
+  width: 10rem;
+  margin: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  box-shadow: rgba(190, 190, 190, 0.1) 0px 54px 55px,
+    rgba(190, 190, 190, 0.1) 0px -12px 30px,
+    rgba(190, 190, 190, 0.1) 0px 4px 6px, rgba(190, 190, 190, 0.1) 0px 12px 13px,
+    rgba(190, 190, 190, 0.1) 0px -3px 5px;
+}
+.walletAmt,
+.amt,
+.walletAdd {
+  color: white;
+}
+
+.sendBtn {
+  margin: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: 0.4rem;
+  font-family: inherit;
+  font-size: 1.2rem;
+}
+.walletAdd {
+  padding: 0.4rem;
+}
+
+.transactionContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  background-color: black;
+  border: 2px solid white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.transactionPopupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.transaction {
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem;
+}
+
+.transactionTitle {
+  color: #fff;
+  font-family: "Mozilla Text", sans-serif;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.transaction select {
+  padding: 0.5rem 0.8rem;
+}
+
+.transaction input {
+  width: 24rem;
+  height: 2.5rem;
+  border-radius: 0.2rem;
+  border: none;
+  appearance: textfield;
+}
+
+.transaction input:active,
+.transaction input:hover {
+  border-color: 1px solid white;
+}
+
+.transaction label {
+  font-family: "Mozilla Text", sans-serif;
+  font-size: 1.1rem;
+}
+
+.txnBtn {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.sendBtn {
+  padding: 0.5rem 1rem;
+  font-family: "Mozilla Text", sans-serif;
+  font-size: 1rem;
+}
