@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema({
     unique: true,
   },
   passwordHash: { type: String, required: true },
-  friends: [{ type: Mongoose.Schema.Types.ObjectId, ref: "User" }],
   streak: { type: streakSchema, default: () => ({}) },
   badges: [{ type: String }],
   createdAt: { type: Date, default: Date.now() },
