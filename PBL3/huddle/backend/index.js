@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import router from "./routes/route.js";
 import { Database } from "./config/db.js";
+import { login, register } from "./controllers/authController.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
@@ -11,6 +12,8 @@ const app = express();
 app.use(express.json());
 
 app.use("/api/users", router);
+app.post("/register", register);
+app.post("/login", login);
 
 Database()
   .then(() => {
