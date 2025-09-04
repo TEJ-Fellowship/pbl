@@ -1,13 +1,17 @@
 import React, { useState } from 'react'
-
+import {Link} from 'react-router-dom'
 const LogIn = () => {
     const [password, setPassword] = useState('')
+    const [userName, setUserName] = useState('')
     const [isShown, setIsShown] = useState(false)
-
-    const handlerFunc = (e)=>{
+      
+      const handleLogin =(e)=>{
         e.preventDefault();
-        setIsShown(!isShown)
-    }
+        const loginDetails = {userName, password}
+        console.log(loginDetails)
+      }
+
+    
   return (
     <div className='min-h-screen flex items-center justify-center px-4'
     style={{
@@ -20,10 +24,12 @@ const LogIn = () => {
 
         <h2 className="text-center text-xl font-semibold mb-6 text-white">Welcome Back</h2>
          {/* Form */}
-         <form className="flex flex-col gap-4">
+         <form className="flex flex-col gap-4" onSubmit={handleLogin}>
           <input
             type="text"
-            placeholder="Username or Email"
+            value={userName}
+            onChange={(e)=>setUserName(e.target.value)}
+            placeholder="Email"
             className="w-full px-4 py-3 rounded-md bg-transparent border border-secondary text-text-secondary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <div className='mb-4 relative'>
@@ -34,23 +40,29 @@ const LogIn = () => {
             onChange={(e)=>setPassword(e.target.value)}
             className="w-full px-4 py-3 pr-16 rounded-md bg-transparent border border-secondary text-text-secondary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <button
-          type='button'
-           onClick={handlerFunc} 
-           className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-white bg-primary px-2 py-1 rounded">{isShown?'hide':'show'}</button>
+          <img
+          src = {isShown?'/openEye.png':'/closeEye.png'}
+          alt='toggle password visibility'
+          
+          onClick={()=> setIsShown(!isShown)}
+           className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded" />
           </div>
           <button
             type="submit"
             className="bg-primary text-text-primary font-semibold py-3 rounded-md hover:bg-accent transition"
           >
-            Login
+            Log In
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-text-secondary">
           Don't have an account?{' '}
-          <a href="#" className="text-primary font-semibold hover:underline">
+          
+          <span className="text-primary font-semibold hover:underline">
+          <Link
+          to="/SignUP">
             Sign Up
-          </a>
+          </Link>
+          </span>
         </p>
         </div>
     </div>
