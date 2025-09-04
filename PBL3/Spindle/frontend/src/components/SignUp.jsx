@@ -1,0 +1,126 @@
+import React, { useState } from "react"
+
+function SignUp() {
+    const [fullname, setFullname] = useState("")
+    const [username, setUsername] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        try {
+            const res = await fetch("http://localhost:5000/api/users", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ fullname, username, email, password }),
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                alert("User registered successfully!")
+                setFullname("")
+                setUsername("")
+                setEmail("")
+                setPassword("")
+            } else {
+                alert(` ${data.error || "Something went wrong"}`)
+            }
+        } catch (err) {
+            console.error(err)
+            alert("Server error, please try again later")
+        }
+    }
+
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
+            <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+                <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
+                    Create Your Account
+                </h2>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Full Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Full Name
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Enter your full name"
+                            value={fullname}
+                            onChange={(e) => setFullname(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Username */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Username
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Choose a username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Password
+                        </label>
+                        <input
+                            type="password"
+                            placeholder="Create a password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-400 focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg shadow-md transition-transform transform hover:scale-105"
+                    >
+                        Register
+                    </button>
+                </form>
+
+                {/* Already have account */}
+                <p className="text-sm text-gray-600 text-center mt-6">
+                    Already have an account?{" "}
+                    <a href="/login" className="text-red-500 hover:underline font-medium">
+                        Log in
+                    </a>
+                </p>
+            </div>
+        </div>
+    )
+}
+
+export default SignUp
