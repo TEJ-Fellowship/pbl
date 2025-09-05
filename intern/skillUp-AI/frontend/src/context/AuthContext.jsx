@@ -9,7 +9,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [ user, setUser] = useState("");
+  const [ user, setUser] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem("token");
