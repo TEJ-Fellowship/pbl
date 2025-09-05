@@ -5,8 +5,14 @@ const mongoose = require('mongoose')
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   passwordHash: { type: String, required: true },
-  name: { type: String },
-  createdAt: { type: Date, default: Date.now },
+  username: { type: String, required: true },
+  // createdAt: { type: Date, default: Date.now },
+  // clips: [
+  //   {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: 'Clip'
+  //   }
+  // ]
 });
 
 userSchema.set('toJSON', {
