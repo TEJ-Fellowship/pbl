@@ -1,10 +1,16 @@
-import React from 'react'
+import React from 'react';
+import { Routes, Route, Navigate } from "react-router-dom";
+import AuthForm from './components/AuthForm';
 
 const App = () => {
   return (
-<div class="p-4 bg-blue-500 text-white">Hello Tailwind!</div>
-
+    <Routes>
+      <Route path="/login" element={<AuthForm mode = "login"/>}/>
+      <Route path="/signup" element={<AuthForm mode = "signup"/>}/>
+      {/* Redirect root → login */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
 
-export default App
+export default App;
