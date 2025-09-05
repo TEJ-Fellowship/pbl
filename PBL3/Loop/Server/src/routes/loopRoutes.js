@@ -1,9 +1,9 @@
 import express from "express";
-import { saveDoodle, getDoodles } from "../controllers/doodleController.js";
+import { saveLoop, getLoop } from "../controllers/loopController.js";
 import { protect } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
-router.post("/", protect, saveDoodle);
-router.get("/:roomId", protect, getDoodles);
+router.post("/", protect, saveLoop);
+router.get("/:roomId", protect, getLoop);
 
 export default router;

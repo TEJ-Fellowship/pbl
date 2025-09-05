@@ -34,4 +34,4 @@ const loopSchema = new mongoose.Schema({
   },
 },{timestamps: true});
 
-export default mongoose.model("Loop", doodleSchema);
+export default mongoose.model("Loop", loopSchema);

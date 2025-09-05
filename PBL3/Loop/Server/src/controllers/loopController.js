@@ -1,26 +1,26 @@
-import Doodle from "../models/Doodle.js";
+import Loop from "../models/Loop.js";
 
-// Save Doodle
-export const saveDoodle = async (req, res) => {
+// Save Loop
+export const saveLoop = async (req, res) => {
   const { roomId, imageData } = req.body;
   try {
-    const doodle = await Doodle.create({
+    const doodle = await Loop.create({
       room: roomId,
       createdBy: req.user._id,
       imageData,
     });
-    res.status(201).json(doodle);
+    res.status(201).json(loop);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 // Get Doodles by Room
-export const getDoodles = async (req, res) => {
+export const getLoop = async (req, res) => {
   const { roomId } = req.params;
   try {
-    const doodles = await Doodle.find({ room: roomId }).populate("createdBy", "username email");
-    res.json(doodles);
+    const loop = await Loop.find({ room: roomId }).populate("createdBy", "username email");
+    res.json(loop);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
