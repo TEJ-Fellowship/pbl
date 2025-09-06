@@ -26,6 +26,8 @@ const errorhandler = (error, request, response, next) => {
     return response.status(400).json({ error: "Duplicate field value" });
   } else if (error.name === "TokenExpiredError") {
     return response.status(400).json({ error: error.message });
+  }else if(error.name === "SyntaxError"){
+    return response.status(400).json({error:error.message});
   }
 
   next(error);
