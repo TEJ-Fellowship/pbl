@@ -13,11 +13,10 @@ const LoginForm = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const { isAuthenticated, setIsAuthenticated, user } = useContext(AuthContext);
+  const { isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
 
-  console.log(user.fullName,"this is user name in login");
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace state={{user: user}} />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -37,10 +36,12 @@ const LoginForm = () => {
         return;
       } else {
         localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+
         console.log(response.token, "token after login");
 
         setIsAuthenticated(true); // Update auth state
-        navigate("/dashboard", { state: { user: response.user } });
+        navigate("/dashboard");
 
         setEmail("");
         setPassword("");
