@@ -9,12 +9,11 @@ const ChatInterface = ({ user }) => {
   const [topic, setTopic] = useState("");
   const textareaRef = useRef(null); // Added ref for textarea
 
-  console.log(user.id, "the user id from props ?");
   console.log(userRequest, "the user search is ?");
 
   useEffect(()=>{
     const topicLocal = JSON.parse(localStorage.getItem("topic"));
-    setTopic(topicLocal);
+    setTopic(topicLocal || "");
   },[]);
 
   // Auto-resize textarea function
@@ -59,7 +58,7 @@ const ChatInterface = ({ user }) => {
       const result = await service.create(url, {
         topic,
         userRequest: currentRequest,
-        user,
+        user:user.id,
       });
 
       if (result) {
@@ -95,7 +94,7 @@ const ChatInterface = ({ user }) => {
           <div className="flex-1">
             <div className="relative">
               <select
-                value={topic}
+                value={topic || ""}
                 onChange={(e) => setTopic(e.target.value)}
                 aria-label="Choose a language to study"
                 className="w-1xl h-9 px-4 py-1 bg-gradient-to-r from-slate-700/70 via-slate-800/70 to-slate-700/70 
