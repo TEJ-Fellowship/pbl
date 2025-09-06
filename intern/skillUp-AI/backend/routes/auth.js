@@ -16,7 +16,7 @@ const generateToken = (userId, email) => {
 router.post("/register", async (request, response, next) => {
   try {
     const { fullName, email, password } = request.body;
-    
+
     const oldUser = await User.findOne({ email: email });
 
     if (oldUser) {
@@ -46,7 +46,7 @@ router.post("/register", async (request, response, next) => {
 router.post("/login", async (request, response, next) => {
   try {
     const { email, password } = request.body;
-    
+
     const loginUser = await User.findOne({ email: email });
 
     if (!loginUser) {
@@ -54,7 +54,7 @@ router.post("/login", async (request, response, next) => {
         .status(400)
         .send({ error: "Invalid credentials from email check" });
     }
-    
+
     const isPasswordValid = await bcrypt.compare(password, loginUser.password);
 
     if (!isPasswordValid) {
@@ -62,7 +62,6 @@ router.post("/login", async (request, response, next) => {
         .status(400)
         .json({ error: "Invalid credentials from password check" });
     }
-
 
     const token = generateToken(loginUser.id, loginUser.email);
     response.json({
@@ -75,7 +74,6 @@ router.post("/login", async (request, response, next) => {
       },
     });
   } catch (error) {
-
     next(error);
   }
 });
@@ -95,7 +93,9 @@ router.get("/validate-token", async (request, response, next) => {
     // Find user in DB
     const verifyUser = await User.findOne({ email: decoded.email });
     if (!verifyUser) {
-      return response.status(404).json({ success: false, message: "User not found" });
+      return response
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Send back safe info
@@ -104,11 +104,11 @@ router.get("/validate-token", async (request, response, next) => {
       valid: true,
       fullName: verifyUser.fullName,
       email: verifyUser.email,
+      id: verifyUser.id,
     });
   } catch (error) {
     next(error);
   }
 });
-
 
 module.exports = router;
