@@ -12,6 +12,7 @@ router.post("/chats", async (request, response, next) => {
   const topic = request.body.topic;
   const userRequest = request.body.userRequest;
   const user = request.body.user;
+  console.log(user, " expecting id fron front end send");
 
   const prompt = `
 You are a highly experienced ${topic} expert with 10+ years of teaching experience. 
@@ -49,7 +50,7 @@ VALIDATION RULES:
     console.log("cleanedResponse", answer);
 
     const newChat = new Chat({
-      userId: user.id,
+      userId: user,
       topic: topic,
       userRequest: userRequest,
       answer: answer[0].answer,
