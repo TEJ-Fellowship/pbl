@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }) => {
         .then((response) => {
           if (response.valid) {
             setUser(response);
+            console.log(response.id, "this is id ho hai");
             console.log(response.fullName,"this is fullname from authContext")
             setIsAuthenticated(true);
           }
