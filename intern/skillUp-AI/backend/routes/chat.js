@@ -57,6 +57,7 @@ VALIDATION RULES:
 
     await newChat.save();
 
+
     return response.status(200).json({ data: answer });
   } catch (error) {
     next(error);
