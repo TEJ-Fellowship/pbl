@@ -25,6 +25,12 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6, // optional: set a minimum password length
   },
+  chats:[
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chat",
+    },
+  ],
 });
 
 // Hash password before saving
