@@ -21,11 +21,7 @@ const ChatHistory = ({ user }) => {
       <div className="p-6 relative z-10 flex flex-col h-full -mt-4">
         {/* Welcome Section - Fixed at top // mb-6 flex-shrink-0*/}
         <div className=" flex items-center gap-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-xl mb-3 shadow-lg">
-            <span className="text-lg font-bold text-white">
-              {user.fullName.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          
           <div className="relative flex-1">
             <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-1">
               Welcome back!
