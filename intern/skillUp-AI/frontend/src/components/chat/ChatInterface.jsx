@@ -2,9 +2,10 @@ import { useState } from "react";
 import service from "../../services/service";
 const url = import.meta.env.VITE_AI_URL;
 
-const ChatInterface = ({ topic, user }) => {
+const ChatInterface = ({ user }) => {
   const [userRequest, setUserRequest] = useState("");
   const [aiResponse, setAiResponse] = useState([]);
+  const [topic, setTopic] = useState("");
 
   console.log(user.id, "the user id from props ?");
   console.log(userRequest, "the user search is ?");
@@ -34,14 +35,70 @@ const ChatInterface = ({ topic, user }) => {
       <div className="absolute -top-2 -right-2 w-20 h-20 bg-gradient-to-br from-violet-400/20 to-fuchsia-400/20 rounded-full blur-xl"></div>
 
       <div className="flex flex-col h-[600px] p-6 relative z-10">
-        {/* Chat Header */}
-        <div className="mb-4">
-          <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-1">
-            AI Chat Assistant
-          </h3>
-          <p className="text-slate-300 text-sm">
-            {topic ? `Learning ${topic}` : "Select a topic to start chatting"}
-          </p>
+        {/* Row: header + select */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 -mt-4">
+          {/* Left: Chat Header (keeps natural width) //  */}
+          <div className="sm:mr-2">
+            <h3 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-1">
+              AI Chat Assistant
+            </h3>
+            <p  className="text-slate-300 text-sm">
+              {topic ? (`Learning ${topic}`) : ("Select a topic to start chatting")}
+            </p>
+          </div>
+
+          {/* Right: select takes remaining space */}
+          <div className="flex-1">
+            <div className="relative">
+              <select
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                aria-label="Choose a language to study"
+                className="w-1xl px-4 py-3 bg-gradient-to-r from-slate-700/70 via-slate-800/70 to-slate-700/70 
+       backdrop-blur-sm border border-slate-600/50 rounded-xl 
+       text-white font-semibold
+       focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50
+       hover:from-slate-600/70 hover:via-slate-700/70 hover:to-slate-600/70
+       transition-all duration-300"
+              >
+                <option
+                  value=""
+                  disabled
+                  hidden
+                  className="bg-slate-800 text-slate-300"
+                >
+                  Select a language to study
+                </option>
+                <option
+                  value="JavaScript"
+                  className="bg-slate-800 text-white font-medium py-2 hover:bg-slate-700"
+                >
+                  JavaScript
+                </option>
+                <option
+                  value="React"
+                  className="bg-slate-800 text-white font-medium py-2 hover:bg-slate-700"
+                >
+                  React
+                </option>
+                <option
+                  value="Python"
+                  className="bg-slate-800 text-white font-medium py-2 hover:bg-slate-700"
+                >
+                  Python
+                </option>
+                <option
+                  value="HTML/CSS"
+                  className="bg-slate-800 text-white font-medium py-2 hover:bg-slate-700"
+                >
+                  HTML/CSS
+                </option>
+              </select>
+
+              {/* decorative overlay */}
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            </div>
+          </div>
         </div>
 
         {/* Scrollable chat container - Only this area scrolls //  scrollbar-thin scrollbar-thumb-violet-400/50 scrollbar-track-slate-700/50*/}
@@ -53,26 +110,12 @@ const ChatInterface = ({ topic, user }) => {
               <p className="text-slate-200 relative z-10">User: Hello AI 👋</p>
             </div>
           </div>
-          
-          <div className="flex justify-start">
-            <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-xs relative overflow-hidden">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-              <p className="text-slate-200 relative z-10">AI: Hi there! How can I help you today?</p>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <div className="bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl max-w-xs relative overflow-hidden">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-              <p className="text-slate-200 relative z-10">User: Tell me about {topic || 'programming'}</p>
-            </div>
-          </div>
 
           <div className="flex justify-start">
             <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-xs relative overflow-hidden">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
               <p className="text-slate-200 relative z-10">
-                {aiResponse || `I'd be happy to help you learn about ${topic || 'programming'}! What specific aspect would you like to explore?`}
+                AI: Hi there! How can I help you today?
               </p>
             </div>
           </div>
@@ -80,7 +123,30 @@ const ChatInterface = ({ topic, user }) => {
           <div className="flex justify-end">
             <div className="bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl max-w-xs relative overflow-hidden">
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-              <p className="text-slate-200 relative z-10">User: Tell me a joke 😂</p>
+              <p className="text-slate-200 relative z-10">
+                User: Tell me about {topic || "programming"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-start">
+            <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-xs relative overflow-hidden">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
+              <p className="text-slate-200 relative z-10">
+                {aiResponse ||
+                  `I'd be happy to help you learn about ${
+                    topic || "programming"
+                  }! What specific aspect would you like to explore?`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <div className="bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl max-w-xs relative overflow-hidden">
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
+              <p className="text-slate-200 relative z-10">
+                User: Tell me a joke 😂
+              </p>
             </div>
           </div>
 
@@ -90,14 +156,19 @@ const ChatInterface = ({ topic, user }) => {
               <div className="flex justify-end mb-3">
                 <div className="bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl max-w-xs relative overflow-hidden">
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-                  <p className="text-slate-200 relative z-10">User: Question {num}</p>
+                  <p className="text-slate-200 relative z-10">
+                    User: Question {num}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="flex justify-start">
                 <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-xs relative overflow-hidden">
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-                  <p className="text-slate-200 relative z-10">AI: Answer {num} - This is a longer response to show how the chat scrolling works properly.</p>
+                  <p className="text-slate-200 relative z-10">
+                    AI: Answer {num} - This is a longer response to show how the
+                    chat scrolling works properly.
+                  </p>
                 </div>
               </div>
             </div>
@@ -109,11 +180,11 @@ const ChatInterface = ({ topic, user }) => {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Type your message..."
+              placeholder="Ask your question..."
               className="w-full px-4 py-3 bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50 transition-all duration-300 placeholder-slate-400 text-white hover:bg-slate-700/70 hover:border-slate-500/50"
               value={userRequest}
               onChange={(e) => setUserRequest(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleRequest()}
+              onKeyPress={(e) => e.key === "Enter" && handleRequest()}
             />
             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
           </div>
