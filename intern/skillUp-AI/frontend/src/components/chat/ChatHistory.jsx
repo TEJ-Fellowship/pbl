@@ -1,17 +1,26 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-const ChatHistory = ({ user }) => {
+const ChatHistory = () => {
   const navigate = useNavigate();
 
   const { setIsAuthenticated } = useContext(AuthContext);
 
+  const [user, setUser] = useState({});
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     setIsAuthenticated(false);
     navigate("/login");
   };
+
+  useEffect(()=>{
+   setUser(JSON.parse(localStorage.getItem("user")));
+  },[])
+
   return (
     <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden h-full flex flex-col ">
       {/* Decorative elements - same as login */}
