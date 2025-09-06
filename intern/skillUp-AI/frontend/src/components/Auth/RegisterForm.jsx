@@ -173,7 +173,7 @@ const RegisterForm = () => {
         </div>
 
         {/* Add custom keyframes for animations */}
-        <style jsx>{`
+        {/* <style>{`
           @keyframes blob {
             0% {
               transform: translate(0px, 0px) scale(1);
@@ -197,7 +197,7 @@ const RegisterForm = () => {
           .animation-delay-4000 {
             animation-delay: 4s;
           }
-        `}</style>
+        `}</style> */}
       </div>
     </div>
   );
