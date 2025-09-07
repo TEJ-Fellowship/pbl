@@ -10,7 +10,7 @@ mongoose.set("strictQuery", false);
 const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
-    minlength: 6,
+    minlength: 4,
     maxlength: 20,
     required: true,
   },
@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6, // optional: set a minimum password length
+    minlength: 4, // optional: set a minimum password length
   },
   chats:[
     {
