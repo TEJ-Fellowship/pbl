@@ -6,6 +6,7 @@ require("dotenv").config();
 
 const authRouter = require("./routes/auth"); // wherever your route file is
 const chatsRouter = require("./routes/chat");
+const allChatsRouter = require("./routes/allchats");
 const config = require("./utils/config");
 const middleWare = require("./utils/middleware");
 
@@ -28,6 +29,7 @@ mongoose
 app.use(middleWare.requestLogger);
 app.use("/api/auth", authRouter); // prefix all routes in authRouter with /api/auth
 app.use("/api/chat", chatsRouter);
+app.use("/api/user", allChatsRouter);
 //Global error handler
 app.use(middleWare.errorhandler);
 app.use(middleWare.unknownEndpoint);
