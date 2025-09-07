@@ -45,7 +45,7 @@ const ChatInterface = ({ user }) => {
 
   const handleRequest = async () => {
     if (!topic) return console.log("Select topic first");
-    if (!userRequest && userRequest=== "") return console.log("type your question");
+    if (!userRequest || userRequest.trim() === "") return console.log("type your question");
 
     localStorage.setItem("topic", JSON.stringify(topic));
     const currentRequest = userRequest;
@@ -165,24 +165,6 @@ const ChatInterface = ({ user }) => {
             </div>
           ))}
         </div>
-
-        {/* Scrollable chat container - Only this area scrolls //  scrollbar-thin scrollbar-thumb-violet-400/50 scrollbar-track-slate-700/50*/}
-        {/* <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4  custom-scrollbar"> */}
-        {/* Sample messages with improved styling */}
-        {/* <div className="flex justify-end mt-5">
-            <div className="bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 p-3 rounded-xl max-w-3xl relative overflow-hidden">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-              <p className="text-slate-200 relative z-10">{userRequest}</p>
-            </div>
-          </div>
-
-          <div className="flex justify-start">
-            <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-3xl relative overflow-hidden">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
-              <p className="text-slate-200 relative z-10">{aiResponse}</p>
-            </div>
-          </div>
-        </div> */}
 
         {/* Input box with send button inside textarea */}
         <div className="relative">
