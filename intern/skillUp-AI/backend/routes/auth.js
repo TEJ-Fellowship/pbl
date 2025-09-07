@@ -98,6 +98,7 @@ router.get("/validate-token", async (request, response, next) => {
         .json({ success: false, message: "User not found" });
     }
 
+    console.log(verifyUser.id,"this is id check in backinde of user");
     // Send back safe info
     return response.json({
       success: true,
