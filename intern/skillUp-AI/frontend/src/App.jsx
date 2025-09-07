@@ -1,6 +1,11 @@
+//   src/App.jsx
+
 import "./index.css";
 import LoginForm from "./components/Auth/LoginForm";
-import RegistrForm from "./components/Auth/RegisterForm";
+import RegisterForm from "./components/Auth/RegisterForm";
+import Dashboard from "./pages/Dashboard";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,17 +14,25 @@ import {
 } from "react-router-dom";
 
 function App() {
-
-  const isAuthenticated = localStorage.getItem("tokan");
   return (
-    <Router>
-      <Routes>
-       <Route path="/login" element={isAuthenticated ? <Navigate to="/"/> : <LoginForm />} />
-       <Route path="/register" element={isAuthenticated ? <Navigate to="/"/> : <RegistrForm />} />
-       <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login"/>} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/register" element={<RegisterForm />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
-
 export default App;

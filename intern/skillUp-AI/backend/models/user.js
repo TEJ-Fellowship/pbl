@@ -1,25 +1,16 @@
+// backend/models/user.js
+
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-require("dotenv").config();
 
-const url = process.env.MONGODB_URL;
 
 mongoose.set("strictQuery", false);
-
-mongoose
-  .connect(url)
-  .then((result) => {
-    console.log("Connected to mongoDB");
-  })
-  .catch((error) => {
-    console.log(error, "error on mongoDB connection");
-  });
 
 const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
-    minlength: 6,
+    minlength: 4,
     maxlength: 20,
     required: true,
   },
@@ -32,8 +23,14 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 6, // optional: set a minimum password length
+    minlength: 4, // optional: set a minimum password length
   },
+  chats:[
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Chat",
+    },
+  ],
 });
 
 // Hash password before saving
