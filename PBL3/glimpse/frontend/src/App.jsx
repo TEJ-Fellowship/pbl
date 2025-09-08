@@ -1,3 +1,4 @@
+
 import "./App.css";
 import { useContext } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
@@ -10,6 +11,7 @@ import Layout from "./Layout.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
+
 
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
