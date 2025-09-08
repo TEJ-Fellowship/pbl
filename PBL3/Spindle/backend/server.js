@@ -3,7 +3,6 @@ import mongoose from "mongoose"
 import cors from "cors"
 import dotenv from "dotenv"
 import userRouter from "./routes/userRouter.js"
-
 dotenv.config() // load .env file
 
 const app = express()
@@ -21,8 +20,8 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err))
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err))
 
 // start server
 const PORT = process.env.PORT || 5000
