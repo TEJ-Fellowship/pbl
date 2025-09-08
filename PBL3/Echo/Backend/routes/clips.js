@@ -7,5 +7,3 @@ const { uploadClip } = require("../controllers/clipController");
 
 router.post("/", upload.single("audio"), uploadClip);
 module.exports = router;
-
-// app.post("/api/clips", upload.single("audio"), (req, res) => {

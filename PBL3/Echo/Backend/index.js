@@ -8,6 +8,7 @@ app.use(cors());
 
 app.use("/uploads", express.static("uploads"));
 app.use("/api/clips", clipRoutes);
+
 app.listen(5000, () => {
   console.log("Listening at port 5000");
 });

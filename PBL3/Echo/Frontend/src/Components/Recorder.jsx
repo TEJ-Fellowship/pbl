@@ -6,7 +6,8 @@ const Recorder = () => {
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const mediaRecorderRef = useRef(null);
-
+  const [seconds, setSeconds] = useState(0);
+  const timerRef = useRef(null);
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); //asking for permission to use microphone
@@ -22,6 +23,10 @@ const Recorder = () => {
       };
       mediaRecorderRef.current.start();
       setRecording(true);
+      setSeconds(0);
+      timerRef.current = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
     } catch (error) {
       console.log("Mic access denied :", error);
     }
@@ -29,6 +34,7 @@ const Recorder = () => {
   const stopRecording = async () => {
     mediaRecorderRef.current.stop();
     setRecording(false);
+    clearInterval(timerRef.current);
   };
   const handleUpload = async () => {
     if (!audioBlob) return alert("No recording yet!");
@@ -37,9 +43,17 @@ const Recorder = () => {
     setAudioBlob(null);
     setAudioURL(null);
   };
+  const resetRecording = () => {
+    setAudioBlob(null);
+    setAudioURL(null);
+    setSeconds(0);
+  };
   return (
     <div>
       <h2>Record your confession</h2>
+      {recording && (
+        <p className="text-sm text-gray-600">Recording: {seconds}</p>
+      )}
       <div className="flex gap-2 mb-4">
         {!recording ? (
           <button
@@ -65,6 +79,12 @@ const Recorder = () => {
             className="px-4 py-2 bg-blue-600 text-white rounded-lg"
           >
             Upload Recording
+          </button>
+          <button
+            onClick={resetRecording}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg"
+          >
+            Re-record
           </button>
         </div>
       )}
