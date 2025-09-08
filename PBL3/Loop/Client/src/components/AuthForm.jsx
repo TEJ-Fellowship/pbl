@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Lock, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const BACKEND_URL = "http://localhost:3001"; // Your Express server
 
 export default function AuthForm({ mode }) {
+  
   const isLogin = mode === "login";
   const navigate = useNavigate();
 
@@ -59,6 +61,13 @@ export default function AuthForm({ mode }) {
   };
 
   return (
+    <motion.div
+  className="flex items-center justify-center min-h-screen bg-[#ffe9e3]"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -20 }}
+  transition={{ duration: 0.5 }}
+>
     <div className="flex items-center justify-center min-h-screen bg-[#ffe9e3]">
       <div className="w-full max-w-sm p-6 bg-[#1a1a1a] border-0 rounded-2xl shadow-lg">
         <div className="flex justify-center items-center w-12 h-12 bg-green-500 rounded-full mb-4 mx-auto">
@@ -159,5 +168,6 @@ export default function AuthForm({ mode }) {
         </p>
       </div>
     </div>
+    </motion.div>
   );
 }

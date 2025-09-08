@@ -1,10 +1,16 @@
-// components/LandingPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-[#ffe9e3]">
+    <motion.div
+      className="flex flex-col items-center justify-center min-h-screen bg-[#ffe9e3]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8 }}
+    >
       <h1 className="text-4xl font-bold mb-6 text-[#1a1a1a]">Welcome to Doodle Together</h1>
       <p className="text-gray-700 mb-8 text-center">
         Join our creative canvas and draw with friends!
@@ -23,6 +29,6 @@ export default function LandingPage() {
           Sign Up
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 }
