@@ -6,7 +6,7 @@ export default function LeftSidebar({ setTool }) {
   const [showShapeTools, setShowShapeTools] = useState(false);
 
   return (
-    <div className="w-16 bg-purple-400 flex flex-col items-center py-4 space-y-4 relative">
+    <div className="w-16 bg-blue-700 flex flex-col items-center py-4 space-y-4 relative">
       <button
         className="p-2 hover:bg-purple-700 rounded"
         onClick={() => setTool("pen")}

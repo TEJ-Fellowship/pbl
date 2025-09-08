@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import { database } from "../firebase/firebaseConfig";
-import { ref, push, onChildAdded, remove, set, onValue, onDisconnect } from "firebase/database";
+import axios from "axios";
+
+const BACKEND_URL = "http://localhost:5000"; // match your Express port
 
 // Helper to generate unique user ID
 const generateUserId = () => Math.random().toString(36).substr(2, 9);
@@ -13,7 +14,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  const [cursors, setCursors] = useState({});
+  const [cursors, setCursors] = useState([]);
 
   // Initialize canvas
   useEffect(() => {
@@ -24,9 +25,11 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
     ctx.lineCap = "round";
     ctx.lineWidth = brushSize;
     ctx.strokeStyle = brushColor;
+
+    loadDrawings();
+    loadCursors();
   }, []);
 
-  // Update brush size/color dynamically
   useEffect(() => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.lineWidth = brushSize;
@@ -37,34 +40,32 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
     ctx.strokeStyle = brushColor;
   }, [brushColor]);
 
-  // Listen for drawings from Firebase
-  useEffect(() => {
+  // Fetch all drawings from backend
+  const loadDrawings = async () => {
+    const res = await axios.get(`${BACKEND_URL}/api/drawings`);
     const ctx = canvasRef.current.getContext("2d");
-    const drawingsRef = ref(database, "drawings");
-
-    onChildAdded(drawingsRef, (snapshot) => {
-      const { tool, color, size, start, end } = snapshot.val();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = size;
-      drawShape(ctx, tool, start, end);
-      setUndoStack((prev) => [...prev, snapshot.key]);
+    res.data.forEach((d) => {
+      ctx.strokeStyle = d.color;
+      ctx.lineWidth = d.size;
+      drawShape(ctx, d.tool, d.start, d.end);
     });
-  }, []);
+    setUndoStack(res.data.map((d) => d._id));
+  };
 
-  // Listen for cursor updates
-  useEffect(() => {
-    const cursorsRef = ref(database, "cursors");
-    onValue(cursorsRef, (snapshot) => {
-      setCursors(snapshot.val() || {});
+  // Fetch cursors
+  const loadCursors = async () => {
+    const res = await axios.get(`${BACKEND_URL}/api/drawings/cursors`);
+    setCursors(res.data);
+  };
+
+  const updateCursor = async (x, y) => {
+    await axios.post(`${BACKEND_URL}/api/drawings/cursors`, {
+      userId: userId.current,
+      x,
+      y,
+      color: brushColor,
     });
-    // Remove cursor on disconnect
-    const myCursorRef = ref(database, `cursors/${userId.current}`);
-    onDisconnect(myCursorRef).remove();
-  }, []);
-
-  const updateCursor = (x, y) => {
-    const cursorRef = ref(database, `cursors/${userId.current}`);
-    set(cursorRef, { x, y, color: brushColor, userId: userId.current });
+    loadCursors();
   };
 
   const startDrawingHandler = (e) => {
@@ -84,8 +85,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
     if (!drawing) return;
     if (tool !== "pen") return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvasRef.current.getContext("2d");
     ctx.beginPath();
     ctx.moveTo(startPos.x, startPos.y);
     ctx.lineTo(x, y);
@@ -106,15 +106,15 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
     setDrawing(false);
   };
 
-  const sendDrawing = (start, end) => {
-    const drawingsRef = ref(database, "drawings");
-    push(drawingsRef, {
+  const sendDrawing = async (start, end) => {
+    const res = await axios.post(`${BACKEND_URL}/api/drawings`, {
       tool,
       color: brushColor,
       size: brushSize,
       start,
       end,
     });
+    setUndoStack((prev) => [...prev, res.data._id]);
   };
 
   const drawShape = (ctx, tool, start, end) => {
@@ -138,30 +138,19 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
     }
   };
 
-  // Undo last drawing
-  const undo = () => {
+  const undo = async () => {
     if (!undoStack.length) return;
-    const lastKey = undoStack.pop();
-    remove(ref(database, `drawings/${lastKey}`));
+    const lastId = undoStack.pop();
+    await axios.delete(`${BACKEND_URL}/api/drawings/${lastId}`);
     setUndoStack([...undoStack]);
-    setRedoStack((prev) => [...prev, lastKey]);
+    setRedoStack((prev) => [...prev, lastId]);
     redrawCanvas();
   };
 
-  // Redraw all drawings from Firebase
-  const redrawCanvas = () => {
+  const redrawCanvas = async () => {
     const ctx = canvasRef.current.getContext("2d");
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    const drawingsRef = ref(database, "drawings");
-    onValue(drawingsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-      Object.values(data).forEach(({ tool, color, size, start, end }) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = size;
-        drawShape(ctx, tool, start, end);
-      });
-    });
+    loadDrawings();
   };
 
   return (
@@ -176,7 +165,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
       />
 
       {/* Render other users' cursors */}
-      {Object.values(cursors).map(
+      {cursors.map(
         (cursor) =>
           cursor.userId !== userId.current && (
             <div
