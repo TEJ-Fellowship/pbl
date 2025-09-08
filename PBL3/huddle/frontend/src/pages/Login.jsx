@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { loginUser } from "../api/auth";
 import { MessageCircle, Eye, EyeOff, Mail, Lock, X } from "lucide-react";
+import { toast } from "react-toastify";
+import Cookies from "js-cookie";
 
-const Login = ({ onSwitchToSignup, onClose }) => {
+const Login = ({ onSwitchToSignup, onClose, onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -17,8 +20,25 @@ const Login = ({ onSwitchToSignup, onClose }) => {
     }));
   };
 
-  const handleSubmit = () => {
-    console.log("Login submitted:", formData);
+  const handleSubmit = async () => {
+    try {
+      const res = await loginUser({
+        email: formData.email,
+        password: formData.password,
+      });
+      const userObj = res?.data?.user;
+      const token = res?.data?.token;
+      const username = userObj?.username || "User";
+      if (token) {
+        Cookies.set("token", token, { secure: true, sameSite: "strict" });
+      }
+      toast.success(`Welcome, ${username}!`);
+      if (userObj && typeof onLoginSuccess === "function") {
+        onLoginSuccess(userObj);
+      }
+    } catch (err) {
+      toast.error("Login failed. Please check your credentials.");
+    }
   };
 
   return (

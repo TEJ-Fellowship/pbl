@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { registerUser } from "../api/auth";
+import { toast } from "react-toastify";
 import {
   MessageCircle,
   Eye,
@@ -30,8 +32,21 @@ const Register = ({ onSwitchToLogin, onClose }) => {
     }));
   };
 
-  const handleSubmit = () => {
-    console.log("Signup submitted:", formData);
+  const handleSubmit = async () => {
+    try {
+      // Send registration data to backend
+      await registerUser({
+        email: formData.email,
+        password: formData.password,
+        username: formData.username,
+        phone: formData.phone,
+      });
+      toast.success("Registration successful! Please login.");
+      // Navigate to login page
+      if (onSwitchToLogin) onSwitchToLogin();
+    } catch (err) {
+      toast.error("Registration failed. Please try again.");
+    }
   };
 
   return (
