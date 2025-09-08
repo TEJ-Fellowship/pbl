@@ -16,4 +16,4 @@ const ContactSchema = new mongoose.Schema({
 
 ContactSchema.index({ owner: 1, contact: 1 }, { unique: true });
 
-export default mongoose.model("Friendship", ContactSchema);
+export default mongoose.model("Contact", ContactSchema);
