@@ -1,31 +1,31 @@
-// for authentication 
+// for authentication
 const authMiddleWare = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader.split(' ')[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader.split(" ")[1];
 
-    if (!token) {
-        return res.status(401).json({error: "No token provided"});
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ error: "Invalid token" });
     }
-
-    jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ error: "Invalid token" });
-        }
-        req.user = decoded;
-        next();
-    });
+    req.user = decoded;
+    next();
+  });
 };
 
 const errorHandler = (error, request, response, next) => {
-  logger.error(error.message)
+  console.error(error.message);
 
-  if (error.name === 'CastError') {
-    return response.status(400).send({ error: 'malformatted id' })
-  } else if (error.name === 'ValidationError') {
-    return response.status(400).json({ error: error.message })
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
 
-  next(error)
-}
+  next(error);
+};
 
 module.exports = { authMiddleWare, errorHandler };
