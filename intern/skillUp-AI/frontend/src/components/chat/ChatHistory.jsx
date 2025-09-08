@@ -29,12 +29,8 @@ const ChatHistory = () => {
 
     async function fetchdata(userId){
     const result = await service.getAllchats(userId);
-    const arr = result.chats.map((chat)=>chat.summary)
+    const arr = result.chats.slice().reverse().map((chat)=>chat.summary)
     setAllChatsSummary(arr);
-    // .then((result)=>{//const arr =
-    //    result.chats.map((chat)=>{console.log(chat.summary, "this is for test")})
-    //   // setAllChatsSummary(arr);
-    // })
   }
   fetchdata(userId);
   },[user]);
