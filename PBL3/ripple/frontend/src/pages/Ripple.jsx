@@ -39,7 +39,7 @@ const Main = () => {
       "
         ></button>
 
-        <div className="fixed bottom-4 text-white/90 text-4xl font-bold tracking-tight mt-12 text-center">
+        <div className="fixed bottom-4 text-primary text-4xl font-bold tracking-tight mt-12 text-center">
           <h1>Tap . Ripple . Connect</h1>
         </div>
       </div>

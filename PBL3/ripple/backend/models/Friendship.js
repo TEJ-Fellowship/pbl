@@ -1,22 +1,19 @@
 import mongoose from "mongoose";
 
-const FriendshipSchema = new mongoose.Schema({
-  requester: {
+const ContactSchema = new mongoose.Schema({
+  owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  receipent: {
+  contact: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
-  },
-  status: {
-    type: String,
-    enum: ["pending", "success", "declined", "blocked"],
-    default: "pending",
   },
   createdAt: { type: Date, default: Date.now() },
 });
 
-export default mongoose.model("Friendship", FriendshipSchema);
+ContactSchema.index({ owner: 1, contact: 1 }, { unique: true });
+
+export default mongoose.model("Friendship", ContactSchema);
