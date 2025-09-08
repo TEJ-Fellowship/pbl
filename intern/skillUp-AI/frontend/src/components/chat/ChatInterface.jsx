@@ -2,19 +2,33 @@ import { useState, useRef, useEffect } from "react";
 import service from "../../services/service";
 const url = import.meta.env.VITE_AI_URL;
 
-const ChatInterface = ({ user }) => {
+const ChatInterface = () => {
   const [userRequest, setUserRequest] = useState("");
   // const [aiResponse, setAiResponse] = useState([]);
   const [messages, setMessages] = useState([]); // array of { sender: "user" | "ai", text: string }
   const [topic, setTopic] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef(null); // Added ref for textarea
+  const messagesContainerRef = useRef(null); // Add ref for auto-scroll
 
   console.log(userRequest, "the user search is ?");
 
-  useEffect(()=>{
+  useEffect(() => {
     const topicLocal = JSON.parse(localStorage.getItem("topic"));
     setTopic(topicLocal || "");
-  },[]);
+  }, []);
+
+  // Auto-scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]); // Also scroll when loading state changes
 
   // Auto-resize textarea function
   const adjustHeight = () => {
@@ -43,34 +57,75 @@ const ChatInterface = ({ user }) => {
     adjustHeight();
   }, [userRequest]);
 
+ 
+
+  useEffect(() => {
+    const userfromlocal = JSON.parse(localStorage.getItem("user"));
+    const userId = userfromlocal.id;
+    console.log(userId, " id before send backend");
+
+    async function fetchdata(userId) {
+      const result = await service.getAllchats(userId);
+      result.chats.map((chat) => {
+        setMessages((prev) => [
+          ...prev,
+          { sender: "user", text: chat.userRequest },
+          { sender: "ai", text: chat.answer },
+        ]);
+      });
+    }
+    fetchdata(userId);
+  }, []);
+
   const handleRequest = async () => {
+    setIsLoading(true);
     if (!topic) return console.log("Select topic first");
-    if (!userRequest || userRequest.trim() === "") return console.log("type your question");
+    if (!userRequest || userRequest.trim() === "") {
+       setIsLoading(false);
+      return console.log("type your question");
+    }
 
     localStorage.setItem("topic", JSON.stringify(topic));
-    const currentRequest = userRequest;
+    const currentRequest = userRequest.trim();
     setUserRequest(""); // clear input immediately
 
     // push user message into conversation
     setMessages((prev) => [...prev, { sender: "user", text: currentRequest }]);
-    
+    const user = JSON.parse(localStorage.getItem("user"));
     try {
       const result = await service.create(url, {
         topic,
         userRequest: currentRequest,
-        user:user.id,
+        user: user.id,
       });
 
       if (result) {
         const aiText = result.data[0].answer;
+        setIsLoading(false);
         // push AI response into conversation
         setMessages((prev) => [...prev, { sender: "ai", text: aiText }]);
       }
     } catch (error) {
+      setIsLoading(false);
       console.log(error, "Error to connect with AI");
     }
   };
-
+// Loading animation component
+  const LoadingAnimation = () => (
+    <div className="flex justify-start">
+      <div className="bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30 p-3 rounded-xl max-w-3xl relative overflow-hidden">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
+        <div className="flex items-center space-x-2 relative z-10">
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+          <span className="text-slate-300 text-sm">AI is thinking...</span>
+        </div>
+      </div>
+    </div>
+  );
   return (
     <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
       {/* Decorative elements - same as login */}
@@ -97,12 +152,7 @@ const ChatInterface = ({ user }) => {
                 value={topic || ""}
                 onChange={(e) => setTopic(e.target.value)}
                 aria-label="Choose a language to study"
-                className="w-1xl h-9 px-4 py-1 bg-gradient-to-r from-slate-700/70 via-slate-800/70 to-slate-700/70 
-       backdrop-blur-sm border border-slate-600/50 rounded-xl 
-       text-white font-semibold
-       focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50
-       hover:from-slate-600/70 hover:via-slate-700/70 hover:to-slate-600/70
-       transition-all duration-300"
+                className="w-1xl h-9 px-4 py-1 bg-gradient-to-r from-slate-700/70 via-slate-800/70 to-slate-700/70 backdrop-blur-sm border border-slate-600/50 rounded-xl text-white font-semibold focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50 hover:from-slate-600/70 hover:via-slate-700/70 hover:to-slate-600/70 transition-all duration-300"
               >
                 <option
                   value=""
@@ -144,7 +194,7 @@ const ChatInterface = ({ user }) => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
           {messages.map((msg, index) => (
             <div
               key={index}
@@ -164,6 +214,7 @@ const ChatInterface = ({ user }) => {
               </div>
             </div>
           ))}
+          {isLoading && <LoadingAnimation />}
         </div>
 
         {/* Input box with send button inside textarea */}
@@ -185,6 +236,7 @@ const ChatInterface = ({ user }) => {
             onKeyDown={(e) =>
               e.key === "Enter" && !e.shiftKey && handleRequest()
             }
+            disabled={isLoading}
           />
 
           {/* Decorative overlay for textarea */}
