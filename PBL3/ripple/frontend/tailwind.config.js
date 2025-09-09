@@ -1,6 +1,6 @@
 export default {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  darkMode: "class", // important!
+  darkMode: "class", // enables dark mode via "class"
   theme: {
     extend: {
       colors: {
@@ -15,9 +15,12 @@ export default {
       },
       keyframes: {
         rippleEffect: {
-          from: { transform: "scale(0.5,0.5)", opacity: "0.5" },
-          to: { transform: "scale(2.5,2.5)", opacity: "0" },
+          "0%": { transform: "scale(0.5)", opacity: "0.5" },
+          "100%": { transform: "scale(2.5)", opacity: "0" },
         },
+      },
+      animation: {
+        ripple: "rippleEffect 1.5s ease-out forwards",
       },
     },
   },

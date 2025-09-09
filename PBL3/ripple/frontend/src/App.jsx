@@ -15,6 +15,7 @@ function App() {
           <Route path="/ripple" element={<Ripple />} />
         </Routes>
       </BrowserRouter>
+
     </>
   );
 }
