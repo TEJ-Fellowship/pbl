@@ -1,11 +1,18 @@
 import Recorder from "../Components/Recorder";
 import Feed from "../Components/Feed";
-const HomePage = () => {
+const HomePage = ({ setIsLoggedIn }) => {
+  function handleLogout() {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+  }
+
   return (
     <div className="max-w-2xl mx-auto mt-8">
+      <h1>Welcome to HomePage 🎉</h1>
+
       <Recorder />
       <Feed />
-      {/* Later we’ll add Feed here */}
+      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 };

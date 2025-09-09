@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const someRoutes = require("./controller/somes");
 const { authMiddleWare, errorHandler } = require("./utils/middleware");
 const { secret_key } = require("./utils/config");
 const User = require("./models/User");
@@ -59,7 +58,5 @@ app.post("/signin", async (req, res) => {
 
 app.use(authMiddleWare);
 app.use(errorHandler);
-
-app.use("/api/someData", someRoutes);
 
 module.exports = app;
