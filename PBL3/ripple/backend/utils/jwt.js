@@ -1,5 +1,16 @@
 import jwt from "jsonwebtoken";
 
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Fix for ES modules (__dirname not available by default)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Tell dotenv exactly where .env is
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 class JWTUtils {
   static generateTokens(user) {
     const payload = {
