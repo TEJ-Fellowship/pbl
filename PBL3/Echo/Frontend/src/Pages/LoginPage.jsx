@@ -1,7 +1,15 @@
+//src/Pages/LoginPage.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-function SignIn({ username, setUsername, password, setPassword, setIsSignUp, setIsLoggedIn }) {
+function SignIn({
+  username,
+  setUsername,
+  password,
+  setPassword,
+  setIsSignUp,
+  setIsLoggedIn,
+}) {
   function handleSubmit(e) {
     e.preventDefault();
 
@@ -87,7 +95,9 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
       axios
         .post("http://localhost:3001/signup", { username, password })
         .then((response) => {
-          alert(`The account is created with username: ${response.data.username}`);
+          alert(
+            `The account is created with username: ${response.data.username}`
+          );
           setIsSignUp(false);
         })
         .catch((err) => console.log("Error:", err));
@@ -160,44 +170,42 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
   );
 }
 
-function Dashboard({ handleLogout }) {
-  return (
-    <div className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-96 text-center">
-      <h1 className="text-2xl font-bold mb-4">✅ You are logged in!</h1>
-      <button
-        onClick={handleLogout}
-        className="mt-5 p-2 w-full bg-red-600 rounded-lg text-white font-semibold"
-      >
-        Logout
-      </button>
-    </div>
-  );
-}
+// function Dashboard({ handleLogout }) {
+//   return (
+//     <div className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-96 text-center">
+//       <h1 className="text-2xl font-bold mb-4">✅ You are logged in!</h1>
+//       <button
+//         onClick={handleLogout}
+//         className="mt-5 p-2 w-full bg-red-600 rounded-lg text-white font-semibold"
+//       >
+//         Logout
+//       </button>
+//     </div>
+//   );
+// }
 
-function LoginForm() {
+function LoginForm({ setIsLoggedIn }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // ✅ check if token exists on mount
-  useEffect(() => {
-    const token = localStorage.getItem("token"); // fixed typo
-    if (token) {
-      setIsLoggedIn(true);
-    }
-  }, []);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token"); // fixed typo
+  //   if (token) {
+  //     setIsLoggedIn(true);
+  //   }
+  // }, []);
 
-  function handleLogout() {
-    localStorage.removeItem("token");
-    setIsLoggedIn(false);
-  }
+  // function handleLogout() {
+  //   localStorage.removeItem("token");
+  //   setIsLoggedIn(false);
+  // }
 
   return (
     <div className="h-screen flex justify-center items-center">
-      {isLoggedIn ? (
-        <Dashboard handleLogout={handleLogout} />
-      ) : isSignUp ? (
+      {isSignUp ? (
         <SignUp
           username={username}
           setUsername={setUsername}

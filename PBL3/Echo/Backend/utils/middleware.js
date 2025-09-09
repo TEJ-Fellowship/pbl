@@ -1,3 +1,4 @@
+//utils/middleware
 // for authentication
 const authMiddleWare = (req, res, next) => {
   const authHeader = req.headers["authorization"];

@@ -2,15 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const someRoutes = require("./controller/somes");
 const { authMiddleWare, errorHandler } = require("./utils/middleware");
 const { secret_key } = require("./utils/config");
 const User = require("./models/User");
-
+const clipRoutes = require("./routes/clips");
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.use("/uploads", express.static("uploads"));
+app.use("/api/clips", clipRoutes);
 app.post("/signup", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -58,7 +58,5 @@ app.post("/signin", async (req, res) => {
 
 app.use(authMiddleWare);
 app.use(errorHandler);
-
-app.use("/api/someData", someRoutes);
 
 module.exports = app;
