@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "type" : "module",
     "start": "node --watch server.js"
   },
   "dependencies": {

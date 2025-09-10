@@ -29,7 +29,7 @@ function Login() {
       } else {
         alert(`${data.error || "Login failed"}`)
       }
-    } catch (err) {
+    } catch (error) {
       alert("Server error, try again later")
     }
   }
