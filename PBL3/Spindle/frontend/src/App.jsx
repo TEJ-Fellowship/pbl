@@ -3,11 +3,8 @@ import SignUp from './pages/SignUp'
 import LogIn from './pages/LogIn'
 import Dashboard from './pages/dashboard'
 
-import Home from './components/Home'
-import MyPolls from './components/MyPolls'
-import CreatePoll from './components/CreatePoll'
-
 import LandingPage from './pages/LandingPage'
+import PollResult from './components/PollResult'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 function App() {
 
@@ -20,9 +17,9 @@ function App() {
           <Route path="/login" element={<LogIn/>} />
           <Route path="/dashboard" element={<Dashboard/>} />
 
-          <Route path="/home" element={<Home/>} />
-          <Route path="/myPolls" element={<MyPolls/>} />
-          <Route path="/createPoll" element={<CreatePoll/>} />
+          <Route path="/polls/:id/results" element={PollResult}/>
+
+    
 
 
           
