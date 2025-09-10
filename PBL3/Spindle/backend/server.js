@@ -3,6 +3,7 @@ import mongoose from "mongoose"
 import cors from "cors"
 import dotenv from "dotenv"
 import userRouter from "./routes/userRouter.js"
+import pollRouter from "./routes/pollRouter.js"
 dotenv.config() 
 
 const app = express()
@@ -13,6 +14,7 @@ app.use(express.json())
 
 // routes
 app.use("/api/users", userRouter)
+app.use("/api/createPoll",pollRouter)
 
 // connect to DB
 mongoose

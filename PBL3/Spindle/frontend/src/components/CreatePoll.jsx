@@ -197,13 +197,17 @@
 
 
 
-import React, { useState } from "react";
+import React, {useState } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid"; // npm install @heroicons/react
+import axios from "axios"
 
 function CreatePoll() {
   const [options, setOptions] = useState(["", ""]); // start with 2 options
 
   const [timer,setTimer] = useState("")
+
+  const[titleText,setTitleText] = useState("")
+
 
   const handleOptionChange = (index, value) => {
     const newOptions = [...options];
@@ -221,10 +225,37 @@ function CreatePoll() {
     }
   };
 
-  const handleSubmit = (e) => {
+
+
+  const handleSubmit = async(e) => {
     e.preventDefault();
-    console.log("Poll submitted:", options);
-    alert("Poll created!");
+
+
+    try {
+      let obj={
+        question:titleText,
+        options,
+        timer
+      }
+  
+      const response = await axios.post('http://localhost:5000/api/createPoll',obj)
+      console.log("poll created",response.data)
+
+      setTitleText("")
+      setOptions(["", ""])
+      setTimer("")
+      alert("Poll created!");
+
+      
+    } catch (error) {
+      console.log(error)
+      
+    }
+
+   
+
+
+
   };
 
   return (
@@ -253,6 +284,9 @@ function CreatePoll() {
               className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5"
               placeholder="e.g. Where should we go for a birthday party?"
               required
+              value={titleText}
+              onChange={(e)=> setTitleText(e.target.value)}
+              
             />
           </div>
 
