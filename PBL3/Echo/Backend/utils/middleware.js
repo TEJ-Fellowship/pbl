@@ -1,4 +1,6 @@
 //utils/middleware
+const jwt = require("jsonwebtoken");
+
 // for authentication
 const authMiddleWare = (req, res, next) => {
   const authHeader = req.headers["authorization"];

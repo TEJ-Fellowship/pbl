@@ -59,7 +59,7 @@ app.post("/signin", async (req, res) => {
 });
 
 // Protected Routes
-app.use("/api/clips", authMiddleWare, clipRoutes);
+app.use("/api/clips", clipRoutes);
 
 app.use(errorHandler);
 
