@@ -40,7 +40,8 @@ const Recorder = ({ setClips }) => {
   const handleUpload = async () => {
     if (!audioBlob) return alert("No recording yet!");
     try {
-      const newClip = await uploadClip(audioBlob);
+      const token = localStorage.getItem("token");
+      const newClip = await uploadClip(audioBlob, token);
       alert("Audio Uploaded");
       setClips((prevClips) => [newClip, ...prevClips]);
       setAudioBlob(null);
