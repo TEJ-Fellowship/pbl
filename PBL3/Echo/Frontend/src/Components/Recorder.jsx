@@ -1,13 +1,14 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import uploadClip from "../api/clipApi";
-const Recorder = () => {
+const Recorder = ({ setClips }) => {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
   const mediaRecorderRef = useRef(null);
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef(null);
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); //asking for permission to use microphone
@@ -38,10 +39,17 @@ const Recorder = () => {
   };
   const handleUpload = async () => {
     if (!audioBlob) return alert("No recording yet!");
-    await uploadClip(audioBlob);
-    alert("Audio Uploaded");
-    setAudioBlob(null);
-    setAudioURL(null);
+    try {
+      const newClip = await uploadClip(audioBlob);
+      alert("Audio Uploaded");
+      setClips((prevClips) => [newClip, ...prevClips]);
+      setAudioBlob(null);
+      setAudioURL(null);
+      setSeconds(0);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload clip");
+    }
   };
   const resetRecording = () => {
     setAudioBlob(null);

@@ -1,28 +1,19 @@
 import React from "react";
-const dummyClips = [
-  {
-    id: 1,
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    reactions: { heart: 1, happy: 3, sad: 6 },
-  },
-  {
-    id: 2,
-    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-    reactions: { heart: 12, happy: 32, sad: 0 },
-  },
-];
-const Feed = () => {
-  const handleReactions = (clip, type) => {};
+
+const Feed = ({ clips }) => {
+  const handleReactions = (clipId, type) => {
+    console.log("React", clipId, type);
+  };
   return (
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">Latest Confessions</h2>
       <div className="flex flex-col gap-4">
-        {dummyClips.map((clip) => (
+        {clips.map((clip) => (
           <div
             key={clip.id}
             className="p-4 border rounded-lg shadow-sm bg-white"
           >
-            <audio controls src="{clip.url}" className="w-full"></audio>
+            <audio controls src={clip.url} className="w-full"></audio>
             <div className="flex gap-2 mt-2">
               <button
                 className="px-3 py-1 bg-pink-500 text-white rounded-r-lg"
