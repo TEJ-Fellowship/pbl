@@ -13,7 +13,7 @@ const rippleSchema = new mongoose.Schema({
   visibility: [
     {
       type: String,
-      enum: ["friends", "gloabl"],
+      enum: ["friends", "global"],
       default: ["friends"],
     },
   ],
