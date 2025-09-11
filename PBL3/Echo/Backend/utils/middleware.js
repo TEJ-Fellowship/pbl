@@ -1,11 +1,13 @@
 //utils/middleware
+const jwt = require("jsonwebtoken");
+
 // for authentication
 const authMiddleWare = (req, res, next) => {
   const authHeader = req.headers["authorization"];
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
   const token = authHeader.split(" ")[1];
-
   if (!token) {
-    return res.status(401).json({ error: "No token provided" });
+    return res.status(401).json({ error: "Malformed token" });
   }
 
   jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {

@@ -11,6 +11,8 @@ app.use(express.json());
 app.use(cors());
 app.use("/uploads", express.static("uploads"));
 app.use("/api/clips", clipRoutes);
+
+// public routes
 app.post("/signup", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -56,7 +58,9 @@ app.post("/signin", async (req, res) => {
   }
 });
 
-app.use(authMiddleWare);
+// Protected Routes
+app.use("/api/clips", clipRoutes);
+
 app.use(errorHandler);
 
 module.exports = app;
