@@ -9,7 +9,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const Home = ({ onLogin, onSignup }) => {
+const Home = ({ onLogin, onSignup, username, onLogout }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
@@ -23,6 +23,11 @@ const Home = ({ onLogin, onSignup }) => {
               <span className="text-2xl font-bold text-slate-900">
                 Shambaad
               </span>
+              {username && (
+                <span className="ml-4 text-blue-600 font-semibold">
+                  Welcome, {username}!
+                </span>
+              )}
             </div>
 
             <nav className="hidden md:flex items-center space-x-8">
@@ -53,18 +58,29 @@ const Home = ({ onLogin, onSignup }) => {
             </nav>
 
             <div className="flex items-center space-x-4">
-              <button
-                className="hidden md:block px-4 py-2 text-slate-700 hover:text-blue-600 font-medium transition-colors"
-                onClick={onLogin}
-              >
-                Log In
-              </button>
-              <button
-                className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                onClick={onSignup}
-              >
-                Sign Up
-              </button>
+              {username ? (
+                <button
+                  className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                  onClick={onLogout}
+                >
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="hidden md:block px-4 py-2 text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    onClick={onLogin}
+                  >
+                    Log In
+                  </button>
+                  <button
+                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    onClick={onSignup}
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
               <button className="md:hidden p-2 text-slate-700">
                 <Menu className="w-6 h-6" />
               </button>
