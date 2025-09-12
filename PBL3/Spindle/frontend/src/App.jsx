@@ -5,7 +5,8 @@ import Dashboard from './pages/dashboard'
 
 import LandingPage from './pages/LandingPage'
 import PollResult from './components/PollResult'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import MyPolls from './components/MyPolls'
+import { BrowserRouter as Router, Route, Routes,Navigate } from 'react-router-dom'
 function App() {
 
   return (
@@ -15,11 +16,14 @@ function App() {
           <Route path="/" element={<LandingPage/>} />
           <Route path="/signUp" element={<SignUp/>} />
           <Route path="/login" element={<LogIn/>} />
-          <Route path="/dashboard" element={<Dashboard/>} />
-
-          <Route path="/polls/:id/results" element={PollResult}/>
+          {/* <Route path="/dashboard" element={<Dashboard/>} /> */}
+{/* 
+          <Route path="/mypolls" element={<MyPolls/>} />
+          <Route path="/polls/:id/results" element={PollResult}/> */}
 
     
+          <Route path="/" element={<Navigate to="/dashboard/home" />}/>
+          <Route path="/dashboard/*" element={<Dashboard/>}/>
 
 
           

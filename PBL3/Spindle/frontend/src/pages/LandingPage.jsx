@@ -1,6 +1,8 @@
 import React from 'react'
 import { useNavigate } from "react-router-dom"
 import img from '../assets/23.png'
+import Hero from '../components/Hero';
+import Footer from '../components/Footer';
 
 
 function App() {
@@ -55,6 +57,14 @@ function App() {
 
           </div>
         </main>
+
+
+<Hero/>
+<Footer/>
+
+
+
+
       </div>
     </div>
   )

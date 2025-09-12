@@ -89,6 +89,13 @@ const pollSchema = new mongoose.Schema({
     expiresAt:{
         type:Date
     },
+
+    userId:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User"
+    }
+
+
 })
 
 
