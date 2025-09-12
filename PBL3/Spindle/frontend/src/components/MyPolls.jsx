@@ -52,7 +52,7 @@ function MyPolls() {
 
               {/* View Results Link */}
               <Link
-                to={`/polls/${poll._id || poll.id}/results`}
+                to={`../polls/${poll._id || poll.id}/results`}
                 className="text-indigo-600 font-medium hover:underline"
               >
                 View Results →

@@ -44,3 +44,18 @@ export const getPoll= async(req,res)=>{
         
     }
 }
+
+
+export const getPollById = async(req,res)=>{
+  try {
+    const pollId = req.params.id
+    const poll = await Poll.findById(pollId)
+
+    if(!poll){
+      return res.status(404).json({message:"poll not found"})
+    }
+    res.json(poll)
+  } catch (error) {
+    console.log(error)
+  }
+}

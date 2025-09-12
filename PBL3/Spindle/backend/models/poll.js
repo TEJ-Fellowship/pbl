@@ -94,4 +94,24 @@ const pollSchema = new mongoose.Schema({
 });
 
 const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
-export default Poll;
+export default Poll
+// export default Poll;
+//     createdAt:{
+//         type: Date,
+//         default:Date.now()
+//     },
+//     expiresAt:{
+//         type:Date
+//     },
+
+//     userId:{
+//         type:mongoose.Schema.Types.ObjectId,
+//         ref:"User"
+//     }
+
+
+// })
+
+
+// const Poll = mongoose.model("Poll",pollSchema)
+// export default Poll

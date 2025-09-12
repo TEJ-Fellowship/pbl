@@ -1,40 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { Link, Routes, Route, Navigate } from "react-router-dom";
 import Home from "../components/Home";
 import MyPolls from "../components/MyPolls";
 import CreatePoll from "../components/CreatePoll";
-import AllPoll from "../components/AllPolls";
-import { useNavigate } from "react-router-dom";
-import { FiSettings } from "react-icons/fi";
-
+import PollResult from "../components/PollResult";
 function Dashboard() {
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState("home");
-  const [showSettings, setShowSettings] = useState(false);
-  const [user, setUser] = useState(null);
-
-  function logout() {
-    const confirmLogout = window.confirm("Do you want to logout?");
-    if (confirmLogout) {
-      localStorage.removeItem("token");
-      window.alert("Logged out successfully!");
-      navigate("/login");
-    }
-  }
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    fetch("http://localhost:5000/api/users/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(data => setUser(data))
-      .catch(err => console.error(err));
-  }, []);
-
   return (
     <div className="flex">
       {/* Sidebar */}
@@ -79,6 +49,26 @@ function Dashboard() {
           >
             🗳️ All Polls
           </button>
+          <Link
+            to="/dashboard/home"
+            className="block w-full text-left px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white"
+          >
+            🏠 Home
+          </Link>
+
+          <Link
+            to="/dashboard/mypolls"
+            className="block w-full text-left px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white"
+          >
+            📊 My Polls
+          </Link>
+
+          <Link
+            to="/dashboard/createpolls"
+            className="block w-full text-left px-4 py-2 rounded-lg hover:bg-red-600 hover:text-white"
+          >
+            ➕ Create Polls
+          </Link>
         </nav>
         <div className="mt-auto">
           <button
@@ -117,7 +107,24 @@ function Dashboard() {
         {activeSection === "mypolls" && <MyPolls />}
         {activeSection === "createpolls" && <CreatePoll />}
         {activeSection === "allpolls" && <AllPoll/>}
+      <Routes>
+
+      <Route path="/" element={<Navigate to="home"/>} />
+
+
+
+      <Route path="home" element={<Home/>}/>
+
+      <Route path="mypolls" element={<MyPolls/>}/>
+      <Route path="polls/:id/results" element={<PollResult/>}/>
+
+
+      <Route path="createpolls" element={<CreatePoll/>}/>
+
+      </Routes>
+
       </div>
+     
     </div>
   );
 }
