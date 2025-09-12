@@ -1,6 +1,22 @@
 import Contact from "../models/Contact.js";
 import User from "../models/User.js";
 
+const getFriends = async (userId) => {
+  const contacts = await Contact.find({
+    $or: [{ owner: userId }, { contact: userId }],
+  }).populate("owner contact", "username _id");
+
+  const friends = contacts.map((c) => {
+    if (c.owner._id.toString() === userId.toString()) {
+      return c.contact; // friend is the contact
+    } else {
+      return c.owner; // friend is the owner
+    }
+  });
+
+  return friends;
+};
+
 const addContact = async (ownerId, contactId) => {
   if (ownerId === contactId) throw new Error("Cannot add yourself");
 
@@ -22,4 +38,4 @@ const removeContact = async (ownerId, contactId) => {
   });
 };
 
-export default { addContact, listContacts, removeContact };
+export default { getFriends, addContact, listContacts, removeContact };
