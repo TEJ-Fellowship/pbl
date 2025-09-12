@@ -1,14 +1,39 @@
 import React, { useState } from 'react'
-import {Link} from 'react-router-dom'
+import {Link, useNavigate} from 'react-router-dom'
+
 const LogIn = () => {
     const [password, setPassword] = useState('')
-    const [userName, setUserName] = useState('')
+    const [email, setEmail] = useState('')
     const [isShown, setIsShown] = useState(false)
+    const navigate = useNavigate();
+    const url = "http://localhost:5000";
+
       
-      const handleLogin =(e)=>{
+      const handleLogin = (e)=>{
         e.preventDefault();
-        const loginDetails = {userName, password}
-        console.log(loginDetails)
+        const loginDetails = {email, password}
+          fetch(`${url}/api/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(loginDetails)
+        })
+        .then((response)=>{
+          if(!response.ok){
+            throw new Error('Login Failed')
+          }
+          return response.json()
+        })
+        .then((data)=>{
+          console.log('login data ',data)
+          navigate('/Dashboard')
+        })
+        .catch((error)=>{
+          console.error('Login Failed', error)
+          alert('wrong credentials')
+        })
       }
 
     
@@ -26,9 +51,9 @@ const LogIn = () => {
          {/* Form */}
          <form className="flex flex-col gap-4" onSubmit={handleLogin}>
           <input
-            type="text"
-            value={userName}
-            onChange={(e)=>setUserName(e.target.value)}
+            type="email"
+            value={email}
+            onChange={(e)=>setEmail(e.target.value)}
             placeholder="Email"
             className="w-full px-4 py-3 rounded-md bg-transparent border border-secondary text-text-secondary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
           />
