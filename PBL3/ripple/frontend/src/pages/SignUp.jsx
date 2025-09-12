@@ -1,21 +1,23 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
-    userName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: ""
   });
 
+  const url = "http://localhost:5000";
   const [showPassword, setShowPassword] = useState({
     password: false,
     confirmPassword: false
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,15 +32,46 @@ const SignUp = () => {
     e.preventDefault();
     setSubmitted(true);
 
-    if (formData.password === formData.confirmPassword) {
-      axios.post('http://localhost:3001/api/users', {
-        userName: formData.userName,
+    // Check if all fields are filled
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+      return setErrorMessage("Please fill in all the fields.");
+    }
+
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      return setErrorMessage("Passwords do not match.");
+    }
+
+    // Check password strength (min 8 characters, 1 uppercase letter, 1 number)
+    const isPasswordValid = formData.password.length >= 8 && /[A-Z]/.test(formData.password) && /\d/.test(formData.password);
+    if (!isPasswordValid) {
+      return setErrorMessage("Password must be at least 8 characters long and contain at least one uppercase letter and one number.");
+    }
+
+    // Reset error message if everything is valid
+    setErrorMessage("");
+
+    axios
+      .post(`${url}/api/auth/signup`, {
+        username: formData.username,
         email: formData.email,
         password: formData.password
       })
-      .then(() => console.log("User registered successfully"))
-      .catch((error) => console.error(error));
-    }
+      .then(() => {
+        console.log("User registered successfully");
+        alert('login successful')
+      })
+      .catch((error) => {
+        console.error("Error during signup:", error.response ? error.response.data : error);
+        setErrorMessage(error.response ? error.response.data.message : "An error occurred during signup.");
+      });
+
+    setFormData({
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: ""
+    })
   };
 
   const passwordsMatch = formData.password === formData.confirmPassword;
@@ -60,8 +93,8 @@ const SignUp = () => {
         <form className="flex flex-col gap-4" onSubmit={handleSignUp}>
           <input
             type="text"
-            name="userName"
-            value={formData.userName}
+            name="username"
+            value={formData.username}
             onChange={handleChange}
             placeholder="Enter your username"
             className="w-full px-4 py-3 rounded-md bg-transparent border border-secondary text-text-secondary"
@@ -113,6 +146,10 @@ const SignUp = () => {
 
           {submitted && !passwordsMatch && (
             <span className="text-red-400">Please check your passwords</span>
+          )}
+
+          {errorMessage && (
+            <span className="text-red-400 mt-4">{errorMessage}</span>
           )}
 
           <button
