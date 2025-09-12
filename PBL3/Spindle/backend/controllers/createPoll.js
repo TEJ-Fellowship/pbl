@@ -21,7 +21,8 @@ export const postPoll = async (req, res) => {
       question,
       options: options.map((op) => ({ text: op })),
       timer,
-      expiresAt,
+      expiresAt, 
+      createdBy: req.user.id,
     });
 
     await poll.save();
@@ -35,7 +36,7 @@ export const postPoll = async (req, res) => {
 export const getPoll= async(req,res)=>{
     try {
 
-        const polls = await Poll.find({})
+        const polls = await Poll.find({}).populate("createdBy", "username email");
         res.json(polls)
         
     } catch (error) {
