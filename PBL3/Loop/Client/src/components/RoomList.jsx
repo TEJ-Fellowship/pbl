@@ -1,76 +1,248 @@
-import React, { useEffect, useState } from "react";
+// src/components/RoomList.jsx
+import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const DEFAULT_ROOMS = [
-  { id: 1, name: "Room 1: Collaborative Canvas", participants: 2 },
-  { id: 2, name: "Room 2: Doodle Together", participants: 4 },
-  { id: 3, name: "Room 3: Shared Sketchpad", participants: 1 },
-  { id: 4, name: "Room 4: Creative Space", participants: 3 },
-  { id: 5, name: "Room 5: Drawing Circle", participants: 2 },
-  { id: 6, name: "Room 6: Art Jam", participants: 5 },
-];
+// Helper to generate unique room codes
+const generateRoomCode = () =>
+  Math.random().toString(36).substring(2, 8).toUpperCase();
 
-export default function MyRoomPage() {
-  const [rooms, setRooms] = useState([]);
+export default function RoomList() {
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("rooms") || "null");
-    if (stored && Array.isArray(stored) && stored.length > 0) {
-      setRooms(stored);
-    } else {
-      localStorage.setItem("rooms", JSON.stringify(DEFAULT_ROOMS));
-      setRooms(DEFAULT_ROOMS);
+  // Lazy init from localStorage to avoid overwrite-on-mount
+  const [rooms, setRooms] = useState(() => {
+    try {
+      const raw = localStorage.getItem("rooms");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error("Failed to parse rooms from localStorage", e);
+      return [];
     }
-  }, []);
+  });
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [roomName, setRoomName] = useState("");
+  const [participants, setParticipants] = useState(1);
+
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [joinCode, setJoinCode] = useState("");
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Persist whenever rooms change
+  useEffect(() => {
+    try {
+      localStorage.setItem("rooms", JSON.stringify(rooms));
+    } catch (e) {
+      console.error("Failed to save rooms to localStorage", e);
+    }
+  }, [rooms]);
+
+  const handleCreateRoom = () => {
+    const name = (roomName || "").trim();
+    if (!name) return;
+
+    const newRoom = {
+      id: Date.now(),
+      name,
+      participants: Number(participants) || 1,
+      code: generateRoomCode(),
+    };
+
+    // Prepend so newest appears first
+    setRooms((prev) => [newRoom, ...prev]);
+    setRoomName("");
+    setParticipants(1);
+    setShowCreateModal(false);
+  };
+
+  const handleJoinClick = (room) => {
+    setSelectedRoom(room);
+    setJoinCode("");
+    setShowJoinModal(true);
+  };
+
+  const confirmJoin = () => {
+    if (!selectedRoom) return;
+    if (joinCode.trim().toUpperCase() !== selectedRoom.code) {
+      alert("Invalid room code ❌");
+      return;
+    }
+
+    // increment participant count (persisted by effect)
+    setRooms((prev) =>
+      prev.map((r) =>
+        r.id === selectedRoom.id
+          ? { ...r, participants: (Number(r.participants) || 0) + 1 }
+          : r
+      )
+    );
+
+    setShowJoinModal(false);
+    navigate(`/room/${selectedRoom.id}`);
+  };
+
+  const filteredRooms = rooms.filter((r) =>
+    r.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="h-full bg-[#0f1c14] text-white px-12 py-8">
-      {/* Header row with title + right side controls */}
-      <div className="flex justify-between items-center mb-8">
+    <div className="h-full bg-[#0f1c14] text-white px-12 py-8 relative">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Available Rooms</h2>
 
         <div className="flex items-center space-x-4">
-          <button className="flex items-center space-x-2 bg-green-600 hover:bg-green-500 px-4 py-2 rounded-full">
-            <Plus size={18} />
-            <span>Create Room</span>
-          </button>
-          <img
-            src="https://randomuser.me/api/portraits/men/32.jpg"
-            alt="profile"
-            className="w-10 h-10 rounded-full border-2 border-gray-700"
+          <input
+            type="text"
+            placeholder="Search rooms"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-[#1a2b20] px-4 py-2 rounded-full focus:outline-none border border-gray-700"
           />
+
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg"
+          >
+            <Plus className="mr-2" /> Create Room
+          </button>
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="mb-8">
-        <input
-          type="text"
-          placeholder="Search rooms"
-          className="w-full max-w-md bg-[#1a2b20] px-4 py-2 rounded-full focus:outline-none border border-gray-700"
-        />
-      </div>
-
-      {/* Rooms grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {rooms.map((room) => (
-          <div
-            key={room.id}
-            className="bg-[#1a2b20] rounded-lg p-6 shadow-md flex flex-col justify-between"
+      {/* Content */}
+      {filteredRooms.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+          <p className="mb-4">
+            {rooms.length === 0
+              ? "No rooms available. Create one to get started!"
+              : `No rooms match "${searchQuery}".`}
+          </p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg"
           >
-            <div>
-              <h3 className="font-semibold">{room.name}</h3>
-              <p className="text-sm text-gray-400">
-                {room.participants} participant
-                {room.participants !== 1 ? "s" : ""}
-              </p>
+            Create Room
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {filteredRooms.map((room) => (
+            <div
+              key={room.id}
+              className="bg-[#1a2b20] rounded-lg p-6 shadow-md flex flex-col justify-between"
+            >
+              <div>
+                <h3 className="font-semibold">{room.name}</h3>
+                <p className="text-sm text-gray-400">
+                  {room.participants} participant
+                  {room.participants !== 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Code: <span className="font-mono">{room.code}</span>
+                </p>
+              </div>
+
+              <div className="mt-4 flex justify-between items-center">
+                <button
+                  onClick={() => handleJoinClick(room)}
+                  className="bg-green-700 hover:bg-green-600 py-2 px-4 rounded-lg"
+                >
+                  Join
+                </button>
+
+                {/* optional quick-enter (if you want) */}
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(room.code);
+                    alert("Copied room code to clipboard");
+                  }}
+                  className="text-xs text-gray-400 underline"
+                >
+                  Copy Code
+                </button>
+              </div>
             </div>
-            <button className="mt-4 bg-green-700 hover:bg-green-600 py-2 rounded-lg">
-              Join
-            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Create Room Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-[#1a2b20] p-6 rounded-lg shadow-lg w-96 relative">
+            <h3 className="text-xl font-bold mb-4">Create New Room</h3>
+
+            <input
+              type="text"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              placeholder="Room Name"
+              className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-3"
+            />
+
+            <input
+              type="number"
+              min="1"
+              value={participants}
+              onChange={(e) => setParticipants(parseInt(e.target.value || "1"))}
+              className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-4"
+            />
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateRoom}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
+              >
+                Create
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Join Room Modal */}
+      {showJoinModal && selectedRoom && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-[#1a2b20] p-6 rounded-lg shadow-lg w-96 relative">
+            <h3 className="text-xl font-bold mb-4">Join {selectedRoom.name}</h3>
+            <p className="text-sm text-gray-400 mb-3">Enter the room code</p>
+
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              placeholder="Enter code"
+              className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-4"
+            />
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmJoin}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
+              >
+                Join
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

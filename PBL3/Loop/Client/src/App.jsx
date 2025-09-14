@@ -6,10 +6,14 @@ import LandingPage from "./components/LandingPage";
 import GalleryPage from "./components/GalleryPage";
 import RoomList from "./components/RoomList";
 import Layout from "./components/Layout";
+import RoomPage from "./components/RoomPage";
+import { SocketProvider } from "./context/SocketContext";
+
 
 const App = () => {
   return (
-    <Routes>
+    <SocketProvider>
+      <Routes>
       {/* Public pages */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<AuthForm mode="login" />} />
@@ -20,12 +24,14 @@ const App = () => {
         <Route path="/home" element={<Home />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/my-room" element={<RoomList />} />
+        <Route path="/room/:id" element={<RoomPage />} />
       </Route>
 
 
       {/* Catch-all → redirect */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
+    </SocketProvider>
   );
 };
 

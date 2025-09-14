@@ -1,205 +1,76 @@
-import React, { useRef, useEffect, useState } from "react";
-import axios from "axios";
+import { useRef, useEffect, useState } from "react";
+import { useSocket } from "../context/SocketContext";
 
-const BACKEND_URL = "http://localhost:5000"; // match your Express port
-
-// Helper to generate unique user ID
-const generateUserId = () => Math.random().toString(36).substr(2, 9);
-
-export default function CanvasBoard({ brushColor, brushSize, tool }) {
+export default function Canvas({ roomCode }) {
+  const socket = useSocket();
   const canvasRef = useRef(null);
-  const userId = useRef(generateUserId());
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
 
-  const [drawing, setDrawing] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-  const [undoStack, setUndoStack] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
-  const [cursors, setCursors] = useState([]);
-
-  // Initialize canvas
+  // Join room and listen for updates
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    ctx.lineCap = "round";
-    ctx.lineWidth = brushSize;
-    ctx.strokeStyle = brushColor;
+    if (!socket) return;
 
-    loadDrawings();
-    loadCursors();
-  }, []);
+    // Join the room
+    socket.emit("joinRoom", roomCode);
 
-  useEffect(() => {
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.lineWidth = brushSize;
-  }, [brushSize]);
-
-  useEffect(() => {
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.strokeStyle = brushColor;
-  }, [brushColor]);
-
-  // Fetch all drawings from backend
-  const loadDrawings = async () => {
-    const res = await axios.get(`${BACKEND_URL}/api/drawings`);
-    const ctx = canvasRef.current.getContext("2d");
-    res.data.forEach((d) => {
-      ctx.strokeStyle = d.color;
-      ctx.lineWidth = d.size;
-      drawShape(ctx, d.tool, d.start, d.end);
+    // Listen for canvas updates from others
+    socket.on("canvasUpdate", (data) => {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx.beginPath();
+      ctx.moveTo(data.x1, data.y1);
+      ctx.lineTo(data.x2, data.y2);
+      ctx.stroke();
     });
-    setUndoStack(res.data.map((d) => d._id));
+
+    return () => {
+      socket.off("canvasUpdate");
+    };
+  }, [socket, roomCode]);
+
+  // Drawing functions
+  const startDrawing = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    setLastPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setIsDrawing(true);
   };
 
-  // Fetch cursors
-  const loadCursors = async () => {
-    const res = await axios.get(`${BACKEND_URL}/api/drawings/cursors`);
-    setCursors(res.data);
-  };
+  const draw = (e) => {
+    if (!isDrawing) return;
 
-  const updateCursor = async (x, y) => {
-    await axios.post(`${BACKEND_URL}/api/drawings/cursors`, {
-      userId: userId.current,
-      x,
-      y,
-      color: brushColor,
-    });
-    loadCursors();
-  };
-
-  const startDrawingHandler = (e) => {
-    const x = e.nativeEvent.offsetX;
-    const y = e.nativeEvent.offsetY;
-    updateCursor(x, y);
-
-    setStartPos({ x, y });
-    setDrawing(true);
-  };
-
-  const drawHandler = (e) => {
-    const x = e.nativeEvent.offsetX;
-    const y = e.nativeEvent.offsetY;
-    updateCursor(x, y);
-
-    if (!drawing) return;
-    if (tool !== "pen") return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const newX = e.clientX - rect.left;
+    const newY = e.clientY - rect.top;
 
     const ctx = canvasRef.current.getContext("2d");
     ctx.beginPath();
-    ctx.moveTo(startPos.x, startPos.y);
-    ctx.lineTo(x, y);
+    ctx.moveTo(lastPos.x, lastPos.y);
+    ctx.lineTo(newX, newY);
     ctx.stroke();
 
-    sendDrawing(startPos, { x, y });
-    setStartPos({ x, y });
-  };
-
-  const stopDrawingHandler = (e) => {
-    if (!drawing) return;
-    const x = e.nativeEvent.offsetX;
-    const y = e.nativeEvent.offsetY;
-
-    if (["circle", "square", "rectangle"].includes(tool)) {
-      sendDrawing(startPos, { x, y });
-    }
-    setDrawing(false);
-  };
-
-  const sendDrawing = async (start, end) => {
-    const res = await axios.post(`${BACKEND_URL}/api/drawings`, {
-      tool,
-      color: brushColor,
-      size: brushSize,
-      start,
-      end,
+    // Send update to backend
+    socket?.emit("canvasUpdate", {
+      roomCode,
+      data: { x1: lastPos.x, y1: lastPos.y, x2: newX, y2: newY },
     });
-    setUndoStack((prev) => [...prev, res.data._id]);
+
+    setLastPos({ x: newX, y: newY });
   };
 
-  const drawShape = (ctx, tool, start, end) => {
-    if (tool === "pen") {
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-    } else if (tool === "circle") {
-      const radius = Math.sqrt(
-        Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
-      );
-      ctx.beginPath();
-      ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
-      ctx.stroke();
-    } else if (tool === "square") {
-      const size = Math.max(Math.abs(end.x - start.x), Math.abs(end.y - start.y));
-      ctx.strokeRect(start.x, start.y, size, size);
-    } else if (tool === "rectangle") {
-      ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
-    }
-  };
-
-  const undo = async () => {
-    if (!undoStack.length) return;
-    const lastId = undoStack.pop();
-    await axios.delete(`${BACKEND_URL}/api/drawings/${lastId}`);
-    setUndoStack([...undoStack]);
-    setRedoStack((prev) => [...prev, lastId]);
-    redrawCanvas();
-  };
-
-  const redrawCanvas = async () => {
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    loadDrawings();
+  const stopDrawing = () => {
+    setIsDrawing(false);
   };
 
   return (
-    <div className="flex-1 flex justify-center items-center bg-white relative">
-      <canvas
-        ref={canvasRef}
-        className="border border-gray-300 w-full h-full max-w-4xl max-h-full"
-        onMouseDown={startDrawingHandler}
-        onMouseMove={drawHandler}
-        onMouseUp={stopDrawingHandler}
-        onMouseLeave={stopDrawingHandler}
-      />
-
-      {/* Render other users' cursors */}
-      {cursors.map(
-        (cursor) =>
-          cursor.userId !== userId.current && (
-            <div
-              key={cursor.userId}
-              style={{
-                position: "absolute",
-                left: cursor.x,
-                top: cursor.y,
-                width: 10,
-                height: 10,
-                backgroundColor: cursor.color,
-                borderRadius: "50%",
-                pointerEvents: "none",
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          )
-      )}
-
-      {/* Undo/Redo buttons */}
-      <div className="absolute top-4 right-4 flex space-x-2">
-        <button
-          onClick={undo}
-          className="bg-yellow-500 px-2 py-1 rounded hover:bg-yellow-400"
-        >
-          Undo
-        </button>
-        <button
-          onClick={() => redrawCanvas()}
-          className="bg-green-500 px-2 py-1 rounded hover:bg-green-400"
-        >
-          Redraw
-        </button>
-      </div>
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={800}
+      height={600}
+      className="border"
+      onMouseDown={startDrawing}
+      onMouseMove={draw}
+      onMouseUp={stopDrawing}
+      onMouseLeave={stopDrawing}
+    />
   );
 }
