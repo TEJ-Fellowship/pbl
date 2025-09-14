@@ -43,7 +43,8 @@ const Recorder = ({ setClips }) => {
       const token = localStorage.getItem("token");
       const newClip = await uploadClip(audioBlob, token);
       alert("Audio Uploaded");
-      setClips((prevClips) => [newClip, ...prevClips]);
+      const clipWithOwnerFlag = {...newClip, isOwner : true}
+      setClips((prevClips) => [clipWithOwnerFlag, ...prevClips]);
       setAudioBlob(null);
       setAudioURL(null);
       setSeconds(0);
