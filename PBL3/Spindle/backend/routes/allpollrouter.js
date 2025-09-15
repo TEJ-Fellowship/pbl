@@ -5,7 +5,7 @@ import auth from "./middleware.js";
 
 const router = express.Router();
 
-// ✅ Get all polls + whether the user has voted in each
+// Get all polls + whether the user has voted in each
 router.get("/", auth, async (req, res) => {
   try {
     const polls = await Poll.find({}).populate("createdBy", "username");
@@ -31,8 +31,8 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
-// ✅ Cast one vote per poll per user
-router.post("/:pollId/vote", auth, async (req, res) => {
+// Cast one vote per poll per user
+router.put("/:pollId/vote", auth, async (req, res) => {
   const { pollId } = req.params;
   const { optionId } = req.body;
 

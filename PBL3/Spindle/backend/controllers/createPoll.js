@@ -36,8 +36,7 @@ export const postPoll = async (req, res) => {
 export const getPoll= async(req,res)=>{
     try {
 
-        const polls = await Poll.find({}).populate("createdBy", "username email");
-        res.json(polls)
+        const polls = await Poll.find({})
         
     } catch (error) {
         console.log(error)
