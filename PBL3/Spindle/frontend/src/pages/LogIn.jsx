@@ -25,6 +25,10 @@ function Login() {
         // Save JWT in localStorage (or sessionStorage)
         localStorage.setItem("token", data.token)
         window.alert("Login successful!")
+
+        localStorage.setItem("user",JSON.stringify(data.user))
+
+
         navigate("/dashboard")
       } else {
         alert(`${data.error || "Login failed"}`)

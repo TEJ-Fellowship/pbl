@@ -5,31 +5,15 @@ function MyPolls() {
   const [myPolls, setMyPolls] = useState([]);
 
   useEffect(() => {
+
+    const storedUser = JSON.parse(localStorage.getItem("user"))
     axios
-      .get("http://localhost:5000/api/createPoll")
+      .get(`http://localhost:5000/api/createPoll?userId=${storedUser._id}`)
       .then((res) => setMyPolls(res.data))
       .catch((err) => console.log(err));
   }, []);
 
-  // return (
-  //   <>
-  //     <div>
-  //       <h1 className="text-4xl font-semibold text-center text-gray-900 mb-8">
-  //         My Polls
-  //       </h1>
 
-  //       {myPolls.length === 0 ? (
-  //         <p>you haven't created any polls yet</p>
-  //       ) : (
-  //         <ul>
-  //           {myPolls.map((poll) => (
-  //             <li key={poll.id}>{poll.question}</li>
-  //           ))}
-  //         </ul>
-  //       )}
-  //     </div>
-  //   </>
-  // );
 
 
   return (

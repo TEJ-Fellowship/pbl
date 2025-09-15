@@ -1,7 +1,7 @@
 import express from "express"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import User from "../models/User.js"
+import User from "../models/user.js"
 
 const router = express.Router()
 
@@ -39,7 +39,7 @@ router.post("/", async (req, res) => {
     res.status(201).json({
       message: "User created successfully",
       user: {
-        id: savedUser._id,
+        _id: savedUser._id,
         fullname: savedUser.fullname,
         username: savedUser.username,
         email: savedUser.email,
@@ -83,7 +83,7 @@ router.post("/login", async (req, res) => {
       message: "Login successful",
       token,
       user: {
-        id: user._id,
+        _id: user._id,
         fullname: user.fullname,
         username: user.username,
         email: user.email,
@@ -96,3 +96,15 @@ router.post("/login", async (req, res) => {
 })
 
 export default router
+
+
+
+
+router.get('/',async(req,res)=>{
+  const users = await User.find({}).populate("polls",{
+    question:1,
+    options:1
+  })
+
+  res.json(users)
+})
