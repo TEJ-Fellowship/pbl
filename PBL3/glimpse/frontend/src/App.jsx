@@ -12,7 +12,7 @@ import ProtectedRoute from "./ProtectedRoute.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
 import Timeline from "./pages/Timeline.jsx";
-
+import VideoUpload from "./pages/VideoUpload.jsx";
 
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
@@ -56,7 +56,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+              <Route
+              path="videoupload"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <VideoUpload />
+                </ProtectedRoute>
+              }
+            />
           </Route>
+          
         </Routes>
       </BrowserRouter>
     </>

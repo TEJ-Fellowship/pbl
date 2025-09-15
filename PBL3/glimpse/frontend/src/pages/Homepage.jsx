@@ -7,7 +7,6 @@ const BACKGROUND_IMAGES = [
   "https://picsum.photos/1080/1920?random=4",
   "https://picsum.photos/1080/1920?random=5",
 ];
-
 const HomePage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -31,6 +30,7 @@ const HomePage = () => {
   return (
     <div className="relative min-h-[calc(100vh-90px)] flex flex-col items-center justify-center overflow-hidden">
       {/* Backgrounds */}
+     
       {BACKGROUND_IMAGES.map((img, index) => (
         <div
           key={index}

@@ -27,7 +27,7 @@ const Navbar = () => {
           </Link>
           <Link to="/" className="nav-link">
             <img
-              src="../../public/images/themeicon.png"
+              src="/images/themeicon.png"
               alt="theme"
               className="w-16 h-16"
             />
