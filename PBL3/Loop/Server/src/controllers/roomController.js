@@ -2,9 +2,7 @@ import Room from "../models/Room.js";
 import crypto from "crypto";
 
 // Helper: generate random 6-char alphanumeric code
-const generateRoomCode = () => {
-  return crypto.randomBytes(3).toString("hex"); // e.g., 'a1b2c3'
-};
+const generateRoomCode = () => crypto.randomBytes(3).toString("hex");
 
 // Create Room
 export const createRoom = async (req, res) => {
@@ -19,7 +17,7 @@ export const createRoom = async (req, res) => {
     const room = await Room.create({
       name,
       code,
-      users: [req.user._id],
+      players: [req.user._id], // ✅ match schema
       isActive: true,
     });
 
@@ -32,7 +30,7 @@ export const createRoom = async (req, res) => {
 // Get All Rooms
 export const getRooms = async (req, res) => {
   try {
-    const rooms = await Room.find().populate("users", "username email");
+    const rooms = await Room.find().populate("players", "username email");
     res.json(rooms);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -41,15 +39,15 @@ export const getRooms = async (req, res) => {
 
 // Join Room by Code
 export const joinRoomByCode = async (req, res) => {
-  const { code } = req.body; // join with { code: "a1b2c3" }
+  const { code } = req.body; // { code: "a1b2c3" }
   try {
     const room = await Room.findOne({ code });
 
     if (!room) return res.status(404).json({ message: "Room not found" });
     if (!room.isActive) return res.status(403).json({ message: "Room is not active" });
 
-    if (!room.users.includes(req.user._id)) {
-      room.users.push(req.user._id);
+    if (!room.players.includes(req.user._id)) {
+      room.players.push(req.user._id);
       await room.save();
     }
 
