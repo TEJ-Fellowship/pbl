@@ -73,7 +73,7 @@ const Login = ({ onSwitchToSignup, onClose, onLoginSuccess }) => {
                 htmlFor="email"
                 className="block text-sm font-semibold text-slate-700 mb-2 text-left"
               >
-                Email Address
+                Email Address or Username
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -87,7 +87,7 @@ const Login = ({ onSwitchToSignup, onClose, onLoginSuccess }) => {
                   value={formData.email}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or username"
                 />
               </div>
             </div>
