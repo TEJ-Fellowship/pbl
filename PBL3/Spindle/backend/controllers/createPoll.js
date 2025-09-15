@@ -1,8 +1,18 @@
-import express from "express";
 import Poll from "../models/poll.js";
+import User from "../models/user.js";
+
+
+
 export const postPoll = async (req, res) => {
+
   try {
-    const { question, options, timer } = req.body;
+    const { question, options, timer ,userId} = req.body;
+
+    const user = await User.findById(userId) //fetch user from database
+
+    if(!user){
+      return res.status(400).json({error:"userId missing or invalid"})
+    }
 
     //calculate expiry time
     let expiresAt = null;
@@ -22,10 +32,16 @@ export const postPoll = async (req, res) => {
       options: options.map((op) => ({ text: op })),
       timer,
       expiresAt,
+      user : user._id
+     
     });
 
-    await poll.save();
-    res.status(201).json(poll);
+    const savePoll = await poll.save()
+    
+    user.polls = user.polls.concat(savePoll._id)
+    await user.save();
+
+    res.status(201).json(savePoll);
   } catch (error) {
     console.log(error);
   }
@@ -35,7 +51,15 @@ export const postPoll = async (req, res) => {
 export const getPoll= async(req,res)=>{
     try {
 
-        const polls = await Poll.find({})
+        // const polls = await Poll.find({})
+        // res.json(polls)
+        const userId = req.query.userId
+
+        const polls = await Poll.find({user:userId}).populate("user",{
+          username:1,
+          name:1
+        })
+
         res.json(polls)
         
     } catch (error) {
