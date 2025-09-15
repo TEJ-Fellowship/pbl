@@ -48,7 +48,7 @@ class AuthService {
   static async refreshToken(refreshToken) {
     const decoded = JWTUtils.verifyRefreshToken(refreshToken);
 
-    const storedToken = RefreshToken.findOne({
+    const storedToken =  await RefreshToken.findOne({
       token: refreshToken,
       userId: decoded.userId,
       expiresAt: { $gt: new Date() },
@@ -56,7 +56,7 @@ class AuthService {
 
     if (!storedToken) throw new Error("Invalid Refresh Token");
 
-    const user = await User.findOne(decoded.userId);
+    const user = await User.findOne({_id: decoded.userId});
 
     if (!user) throw new Error("User not found");
 

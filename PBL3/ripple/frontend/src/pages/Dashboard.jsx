@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Ripple from './Ripple';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ const Dashboard = () => {
 
   return (
     <div>
-      <Navbar />
+      <Ripple />
       
     </div>
   );
