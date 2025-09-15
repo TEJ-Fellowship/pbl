@@ -35,7 +35,7 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
                 href="#"
                 className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
               >
-                Product
+                Chat
               </a>
               <a
                 href="#feature"
