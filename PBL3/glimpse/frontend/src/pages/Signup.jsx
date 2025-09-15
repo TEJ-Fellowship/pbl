@@ -8,7 +8,7 @@ import { ThemeContext } from "../ThemeContext";
 const Signup = () => {
   const { isDark } = useContext(ThemeContext);
   const navigate = useNavigate();
-  const [userName, setUserName] = useState("");
+  const [username, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -22,11 +22,11 @@ const Signup = () => {
 
   const handleSignup = () => {
     if (passwordMatch) {
-      const signupDetails = { userName, email, password, confirmPassword };
+      const signupDetails = { username, email, password};
       axios
         .post("http://localhost:3001/api/users", signupDetails)
         .then((response) => {
-          alert("User registered successfully");
+          alert("User registered successfully! Check your mail to verify before login");
           navigate('/login')
         })
         .catch((error) => {
@@ -63,7 +63,7 @@ const Signup = () => {
             <input
               type="text"
               placeholder="Your Name"
-              value={userName}
+              value={username}
               onChange={(e) => setUserName(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl bg-[#f4f5f7] placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
             />
@@ -141,7 +141,7 @@ const Signup = () => {
             className="w-full py-3 mb-5 rounded-2xl text-white font-medium transition-all duration-200 
               bg-[#7383b2] hover:bg-[#62649a] transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSignup}
-            disabled={!passwordMatch || !userName || !email || !password || !confirmPassword}
+            disabled={!passwordMatch || !username || !email || !password || !confirmPassword}
           >
             Create Account
           </button>

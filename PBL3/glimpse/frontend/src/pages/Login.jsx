@@ -13,6 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isShown, setIsShown] = useState(false);
 
+
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -25,7 +26,7 @@ const Login = () => {
       const { token, name } = res.data;
       localStorage.setItem("token", token);
       setToken(token);
-      setUser(name);
+      setUser({username:name});
       setIsLoggedIn(true);
       navigate("/");
     } catch (error) {

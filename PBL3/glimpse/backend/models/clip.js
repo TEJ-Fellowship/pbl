@@ -2,10 +2,11 @@ const mongoose = require('mongoose')
 
 const clipSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  videoUrl: { type: String, required: true }, // Cloudinary or S3
+  videoUrl: { type: String, required: true }, // Cloudinary or S3b
   thumbnailUrl: { type: String },
-  day: { type: Date, required: true }, // which day the clip belongs to
-  captions: { type: String }, // AI auto-captions (optional, Tier 3)
+  downloadUrl: { type: String },
+  // day: { type: Date, required: true }, // which day the clip belongs to
+  caption: { type: String }, // AI auto-captions (optional, Tier 3)
   createdAt: { type: Date, default: Date.now },
 });
 

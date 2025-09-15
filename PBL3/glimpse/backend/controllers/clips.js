@@ -12,7 +12,7 @@ const getTokenFrom = request => {
 }
 
 clipsRouter.post('/', async (request, response) => {
-  const body = request.body
+  const {videoUrl,caption,thumbnailUrl,downloadUrl} = request.body
 
   const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET)
   if (!decodedToken.id) {
@@ -25,14 +25,15 @@ clipsRouter.post('/', async (request, response) => {
   }
 
   const clip = new Clip({
-    videoUrl: body.content,
-    important: body.important || false,
-    user: user._id
+    videoUrl,caption,thumbnailUrl,downloadUrl,
+    user: user.id
   })
 
   const savedClip = await clip.save()
-  user.clips = user.notes.concat(savedClip._id)
+  user.clips = user.clips.concat(savedClip.id)
   await user.save()
 
   response.status(201).json(savedClip)
 })
+
+module.exports = clipsRouter;

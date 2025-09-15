@@ -11,14 +11,12 @@ import Layout from "./Layout.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
+import Timeline from "./pages/Timeline.jsx";
 
 
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
   const { isDark} = useContext(ThemeContext);
-
-
-
 
   return (
     <>
@@ -34,10 +32,10 @@ function App() {
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route
-              path="video"
+              path="timelines"
               element={
                 <ProtectedRoute>
-                   <Aboutus />
+                   <Timeline />
                 </ProtectedRoute>
               }
             />

@@ -2,10 +2,10 @@ import React from "react";
 import Navbar from "./components/Navbar";
 import { Outlet } from "react-router-dom";
 
-function Layout() {
+function Layout({isLoggedIn}) {
   return (
     <div>
-      <Navbar />
+      {!isLoggedIn && <Navbar />}
       <Outlet />
     </div>
   );

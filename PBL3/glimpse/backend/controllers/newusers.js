@@ -1,41 +1,42 @@
+const express = require('express');
+const usersRouter = express.Router()
 const bcrypt = require("bcrypt");
-const usersRouter = require("express").Router();
-const User = require("../models/user");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const {User}=require("../models/user.js")
 const saltRounds = 10;
-const Clip=require('../models/clip')
 
-usersRouter.get("/", async (request, response, next) => {
+usersRouter.get("/", async (req, res, next) => {
   try {
-    const users = await User.find({}).populate("clips");
-    response.status(200).send(users);
+  const users = await User
+    .find({}).populate('journals')
+    res.status(200).send(users);
   } catch (error) {
     next(error);
   }
 });
 
-usersRouter.post("/", async (request, response) => {
+usersRouter.post("/", async (req, res) => {
   try {
-    const { email, password, username } = request.body;
+    const { username, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return response.status(400).send("Email already exists");
+      return res.status(400).send("Email already exists");
     }
 
-    const passwordHash = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
     const user = new User({
-      email,
-      passwordHash,
       username,
+      email,
+      password: hashedPassword,
       verificationToken,
     });
-
     await user.save();
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -54,38 +55,37 @@ usersRouter.post("/", async (request, response) => {
       html: `<a href="${verificationLink}">Click to Verify</a>`,
     });
 
-    response.status(201).json({
+    res.status(201).json({
       message: "User registered. Check your email for verification link.",
     });
     console.log("User saved & email sent!");
-
   } catch (err) {
     console.error(err);
-    response.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-usersRouter.get("/verify", async (request, response) => {
+usersRouter.get("/verify", async (req, res) => {
   try {
-    const token = request.query.token; 
+    const token = req.query.token; 
     if (!token) {
-      return response.status(400).send("Token is missing");
+      return res.status(400).send("Token is missing");
     }
 
     const user = await User.findOne({ verificationToken: token });
     if (!user) {
-      return response.status(400).send("Invalid token");
+      return res.status(400).send("Invalid token");
     }
 
     user.isVerified = true;
     user.verificationToken = undefined;
     await user.save();
     
-    response.send("Email verified successfully! You can now login.");
+    res.send("Email verified successfully! You can now login.");
   } catch (err) {
     console.error(err);
-    response.status(500).send("Internal server error");
+    res.status(500).send("Internal server error");
   }
 });
 
-module.exports = usersRouter;
+module.exports=usersRouter
