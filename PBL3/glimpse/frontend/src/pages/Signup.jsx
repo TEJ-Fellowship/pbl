@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { ThemeContext } from "../ThemeContext";
 
@@ -22,42 +21,44 @@ const Signup = () => {
 
   const handleSignup = () => {
     if (passwordMatch) {
-      const signupDetails = { username, email, password};
+      const signupDetails = { username, email, password };
       axios
         .post("http://localhost:3001/api/users", signupDetails)
-        .then((response) => {
+        .then(() => {
           alert("User registered successfully! Check your mail to verify before login");
-          navigate('/login')
+          navigate("/login");
         })
         .catch((error) => {
           alert(error);
-          navigate("/signup")
+          navigate("/signup");
         });
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#f4f5f7]">
-      <div className="w-full max-w-md rounded-3xl shadow-xl bg-white relative overflow-hidden">
+    <div className=" min-h-[calc(100vh-90px)] flex items-center justify-center bg-[#f4f5f7]">
+      <div className="w-full max-w-md rounded-[40px] shadow-lg bg-white relative overflow-hidden">
         {/* Gradient Top Border */}
         <div className="h-1 bg-gradient-to-r from-[#7383b2] via-[#809dc6] to-[#98c9e9]" />
 
         {/* Inner Card */}
-        <div className="p-6">
+        <div className="p-5">
           {/* Logo + Title */}
-          <div className="flex flex-col items-center mb-6">
-            <div className="w-14 h-14 mb-2 rounded-full bg-gradient-to-br from-[#7383b2] to-[#98c9e9] flex items-center justify-center">
-              <span className="text-white text-lg font-bold">G</span>
+          <div className="flex flex-col items-center mb-5">
+            <div className="w-12 h-12 mb-2 rounded-full bg-gradient-to-br from-[#7383b2] to-[#98c9e9] flex items-center justify-center">
+              <span className="text-white text-base font-bold">G</span>
             </div>
-            <h1 className="text-2xl font-semibold text-[#62649a] mb-1">Create Account</h1>
+            <h1 className="text-xl font-semibold text-[#62649a] mb-1">
+              Create Account
+            </h1>
             <p className="text-[#7383b2] text-xs font-medium">
               Join Glimpse today
             </p>
           </div>
 
           {/* Name Field */}
-          <div className="mb-4">
-            <label className="block text-[#62649a] text-sm font-semibold mb-2">
+          <div className="mb-3">
+            <label className="block text-[#62649a] text-sm font-semibold mb-1">
               Full Name
             </label>
             <input
@@ -65,13 +66,13 @@ const Signup = () => {
               placeholder="Your Name"
               value={username}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-[#f4f5f7] placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
             />
           </div>
 
           {/* Email Field */}
-          <div className="mb-4">
-            <label className="block text-[#62649a] text-sm font-semibold mb-2">
+          <div className="mb-3">
+            <label className="block text-[#62649a] text-sm font-semibold mb-1">
               Email
             </label>
             <input
@@ -79,13 +80,13 @@ const Signup = () => {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-[#f4f5f7] placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
             />
           </div>
 
           {/* Password Field */}
-          <div className="mb-4">
-            <label className="block text-[#62649a] text-sm font-semibold mb-2">
+          <div className="mb-3">
+            <label className="block text-[#62649a] text-sm font-semibold mb-1">
               Password
             </label>
             <div className="relative">
@@ -94,21 +95,21 @@ const Signup = () => {
                 placeholder="Create password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-12 rounded-2xl bg-[#f4f5f7] placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
+                className="w-full px-4 py-2.5 pr-10 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
               />
               <button
                 type="button"
                 onClick={() => setIsShown(!isShown)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
               >
-                {isShown ? <EyeOff size={18} /> : <Eye size={18} />}
+                {isShown ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
           {/* Confirm Password Field */}
           <div className="mb-4">
-            <label className="block text-[#62649a] text-base font-bold mb-2">
+            <label className="block text-[#62649a] text-sm font-semibold mb-1">
               Confirm Password
             </label>
             <div className="relative">
@@ -117,16 +118,18 @@ const Signup = () => {
                 placeholder="Confirm password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full px-4 py-3 pr-12 rounded-2xl bg-[#f4f5f7] placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 transition-all duration-200 font-medium ${
-                  !passwordMatch && confirmPassword ? 'focus:ring-red-400 ring-2 ring-red-400' : 'focus:ring-[#7383b2]'
+                className={`w-full px-4 py-2.5 pr-10 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 transition-all duration-200 font-medium ${
+                  !passwordMatch && confirmPassword
+                    ? "focus:ring-red-400 ring-2 ring-red-400"
+                    : "focus:ring-[#7383b2]"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setIsConfirmShown(!isConfirmShown)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
               >
-                {isConfirmShown ? <EyeOff size={18} /> : <Eye size={18} />}
+                {isConfirmShown ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             {!passwordMatch && confirmPassword && (
@@ -138,10 +141,12 @@ const Signup = () => {
 
           {/* Sign Up Button */}
           <button
-            className="w-full py-3 mb-5 rounded-2xl text-white font-medium transition-all duration-200 
+            className="w-full py-2.5 mb-4 rounded-xl text-white font-medium transition-all duration-200 
               bg-[#7383b2] hover:bg-[#62649a] transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleSignup}
-            disabled={!passwordMatch || !username || !email || !password || !confirmPassword}
+            disabled={
+              !passwordMatch || !username || !email || !password || !confirmPassword
+            }
           >
             Create Account
           </button>

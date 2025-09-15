@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 const Navbar = () => {
   return (
-    <nav className="relative p-4 md:p-6 sticky top-0 bg-white bg-opacity-95 backdrop-filter backdrop-blur-lg border-b border-gray-200 z-10">
+    <nav className="relative md:px-8 md:py-3 sticky top-0 bg-white bg-opacity-95 backdrop-filter backdrop-blur-lg border-b border-gray-200 z-10">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center space-x-2">

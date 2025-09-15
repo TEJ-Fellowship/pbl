@@ -13,7 +13,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isShown, setIsShown] = useState(false);
 
-
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -26,7 +25,7 @@ const Login = () => {
       const { token, name } = res.data;
       localStorage.setItem("token", token);
       setToken(token);
-      setUser({username:name});
+      setUser({ username: name });
       setIsLoggedIn(true);
       navigate("/");
     } catch (error) {
@@ -35,7 +34,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#f4f5f7]">
+    <div className="min-h-[calc(100vh-90px)]  flex items-center justify-center bg-[#f4f5f7]">
       <div className="w-full max-w-md rounded-[40px] shadow-xl bg-white relative overflow-hidden">
         {/* Gradient Top Border */}
         <div className="h-1 bg-gradient-to-r from-[#7383b2] via-[#809dc6] to-[#98c9e9]" />
