@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { ThemeContext } from "../ThemeContext";
-
 const Signup = () => {
   const { isDark } = useContext(ThemeContext);
   const navigate = useNavigate();
