@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from "react";
-import {Link} from "react-router-dom";
+import { Link } from "react-router-dom";
 import axios from "axios";
 function MyPolls() {
   const [myPolls, setMyPolls] = useState([]);
-
   useEffect(() => {
-
     const storedUser = JSON.parse(localStorage.getItem("user"))
     axios
       .get(`http://localhost:5000/api/createPoll?userId=${storedUser._id}`)
       .then((res) => setMyPolls(res.data))
       .catch((err) => console.log(err));
   }, []);
-
-
-
 
   return (
     <div className="p-6">
@@ -47,7 +42,6 @@ function MyPolls() {
       )}
     </div>
   );
-
 
 }
 

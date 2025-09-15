@@ -169,7 +169,7 @@ function CreatePoll() {
                     placeholder={`Option ${index + 1}`}
                     required
                   />
-                  {/* ❌ remove button */}
+                  {/* remove button */}
                   <button
                     type="button"
                     onClick={() => removeOption(index)}

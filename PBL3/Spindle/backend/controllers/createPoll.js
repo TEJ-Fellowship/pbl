@@ -1,17 +1,14 @@
 import Poll from "../models/poll.js";
 import User from "../models/user.js";
 
-
-
 export const postPoll = async (req, res) => {
-
   try {
-    const { question, options, timer ,userId} = req.body;
+    const { question, options, timer, userId } = req.body;
 
-    const user = await User.findById(userId) //fetch user from database
+    const user = await User.findById(userId); //fetch user from database
 
-    if(!user){
-      return res.status(400).json({error:"userId missing or invalid"})
+    if (!user) {
+      return res.status(400).json({ error: "userId missing or invalid" });
     }
 
     //calculate expiry time
@@ -32,13 +29,12 @@ export const postPoll = async (req, res) => {
       options: options.map((op) => ({ text: op })),
       timer,
       expiresAt,
-      user : user._id
-     
+      user: user._id,
     });
 
-    const savePoll = await poll.save()
-    
-    user.polls = user.polls.concat(savePoll._id)
+    const savePoll = await poll.save();
+
+    user.polls = user.polls.concat(savePoll._id);
     await user.save();
 
     res.status(201).json(savePoll);
@@ -47,38 +43,31 @@ export const postPoll = async (req, res) => {
   }
 };
 
-
-export const getPoll= async(req,res)=>{
-    try {
-
-        // const polls = await Poll.find({})
-        // res.json(polls)
-        const userId = req.query.userId
-
-        const polls = await Poll.find({user:userId}).populate("user",{
-          username:1,
-          name:1
-        })
-
-        res.json(polls)
-        
-    } catch (error) {
-        console.log(error)
-        
-    }
-}
-
-
-export const getPollById = async(req,res)=>{
+export const getPoll = async (req, res) => {
   try {
-    const pollId = req.params.id
-    const poll = await Poll.findById(pollId)
+    const userId = req.query.userId;
 
-    if(!poll){
-      return res.status(404).json({message:"poll not found"})
-    }
-    res.json(poll)
+    const polls = await Poll.find({ user: userId }).populate("user", {
+      username: 1,
+      name: 1,
+    });
+
+    res.json(polls);
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
-}
+};
+
+export const getPollById = async (req, res) => {
+  try {
+    const pollId = req.params.id;
+    const poll = await Poll.findById(pollId);
+
+    if (!poll) {
+      return res.status(404).json({ message: "poll not found" });
+    }
+    res.json(poll);
+  } catch (error) {
+    console.log(error);
+  }
+};

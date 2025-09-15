@@ -2,7 +2,6 @@ import './App.css'
 import SignUp from './pages/SignUp'
 import LogIn from './pages/LogIn'
 import Dashboard from './pages/dashboard'
-
 import LandingPage from './pages/LandingPage'
 import PollResult from './components/PollResult'
 import MyPolls from './components/MyPolls'
@@ -16,17 +15,9 @@ function App() {
           <Route path="/" element={<LandingPage/>} />
           <Route path="/signUp" element={<SignUp/>} />
           <Route path="/login" element={<LogIn/>} />
-          {/* <Route path="/dashboard" element={<Dashboard/>} /> */}
-{/* 
-          <Route path="/mypolls" element={<MyPolls/>} />
-          <Route path="/polls/:id/results" element={PollResult}/> */}
-
-    
           <Route path="/" element={<Navigate to="/dashboard/home" />}/>
           <Route path="/dashboard/*" element={<Dashboard/>}/>
-
-
-          
+          <Route path="/dashboard/results" element={<MyPolls/>}/>
         </Routes>
       </Router>
     </>
