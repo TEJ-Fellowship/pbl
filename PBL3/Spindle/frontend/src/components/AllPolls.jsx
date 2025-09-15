@@ -21,7 +21,7 @@ function AllPolls() {
     <div className="min-h-screen text-white p-6">
       <h1 className="text-3xl font-bold mb-6 text-red-500">🔥 All Polls</h1>
       <div className="space-y-4">
-        {polls.map(poll => (
+        {polls.map((poll) => (
           <PollCard key={poll._id} poll={poll} />
         ))}
       </div>

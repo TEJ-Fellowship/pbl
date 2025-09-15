@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { Link, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FiSettings } from "react-icons/fi";
-
-// Components
 import Home from "../components/Home";
 import MyPolls from "../components/MyPolls";
 import CreatePoll from "../components/CreatePoll";

@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all polls + whether the user has voted in each
 router.get("/", auth, async (req, res) => {
   try {
-    const polls = await Poll.find({}).populate("createdBy", "username");
+    const polls = await Poll.find({});
 
     // add `hasVoted` flag for frontend
     const pollsWithVoteStatus = await Promise.all(
@@ -42,28 +42,36 @@ router.put("/:pollId/vote", auth, async (req, res) => {
 
     const userId = req.user._id || req.user.id;
 
-    // Check if already voted in this poll
+    // check if user already voted
     const existingVote = await Vote.findOne({ pollId, userId });
     if (existingVote) {
       return res.status(400).json({ error: "You already voted in this poll" });
     }
 
-    // Save vote
+    // increment vote count directly in MongoDB
+    const updatedPoll = await Poll.findOneAndUpdate(
+      { _id: pollId, "options._id": optionId },
+      { $inc: { "options.$.votes": 1 } },
+      { new: true } 
+    );
+
+    if (!updatedPoll) {
+      return res.status(400).json({ error: "Option not found" });
+    }
+
+    // save user vote record
     const vote = new Vote({ pollId, userId, optionId });
     await vote.save();
 
-    // Update poll option count
-    const option = poll.options.id(optionId);
-    if (!option) return res.status(400).json({ error: "Option not found" });
-
-    option.votes += 1;
-    await poll.save();
-
-    res.json({ message: "Vote cast successfully", poll });
+    res.json({
+      message: "Vote cast successfully",
+      poll: updatedPoll,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 export default router;

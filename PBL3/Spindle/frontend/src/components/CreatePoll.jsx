@@ -31,11 +31,15 @@ function CreatePoll() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const storedUser = JSON.parse(localStorage.getItem("user"))
+
     try {
       let obj = {
         question: titleText,
         options,
         timer,
+        userId: storedUser?._id || storedUser?.id
+      
       };
 
       const response = await axios.post(
