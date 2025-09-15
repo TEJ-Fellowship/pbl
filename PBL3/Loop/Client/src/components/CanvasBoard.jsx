@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
-import { useSocket } from "../context/SocketContext";
+
 
 const BACKEND_URL = "http://localhost:5000"; // match your Express port
 
@@ -140,13 +140,28 @@ export default function CanvasBoard({ brushColor, brushSize, tool }) {
   };
 
   const undo = async () => {
-    if (!undoStack.length) return;
-    const lastId = undoStack.pop();
-    await axios.delete(`${BACKEND_URL}/api/drawings/${lastId}`);
-    setUndoStack([...undoStack]);
-    setRedoStack((prev) => [...prev, lastId]);
-    redrawCanvas();
-  };
+  if (!undoStack.length) return;
+
+  // Create a copy so we don't mutate state directly
+  const newUndoStack = [...undoStack];
+  const lastId = newUndoStack.pop();
+
+  await axios.delete(`${BACKEND_URL}/api/drawings/${lastId}`);
+
+  setUndoStack(newUndoStack);
+  setRedoStack((prev) => [...prev, lastId]);
+
+  // Only redraw remaining strokes
+  const res = await axios.get(`${BACKEND_URL}/api/drawings`);
+  const ctx = canvasRef.current.getContext("2d");
+  ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  res.data.forEach((d) => {
+    ctx.strokeStyle = d.color;
+    ctx.lineWidth = d.size;
+    drawShape(ctx, d.tool, d.start, d.end);
+  });
+};
+
 
   const redrawCanvas = async () => {
     const ctx = canvasRef.current.getContext("2d");
