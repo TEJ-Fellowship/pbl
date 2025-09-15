@@ -34,7 +34,7 @@ function Login() {
         alert(`${data.error || "Login failed"}`)
       }
     } catch (error) {
-      alert("Server error, try again later")
+      alert("Server error, try again later",error)
     }
   }
 
