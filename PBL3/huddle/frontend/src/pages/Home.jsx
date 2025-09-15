@@ -3,7 +3,6 @@ import {
   MessageCircle,
   Users,
   Share2,
-  Download,
   Menu,
   LogInIcon,
   ChevronRight,
@@ -195,12 +194,12 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
             Join the Shambaad Community Today
           </h2>
           <p className="text-xl text-blue-100 mb-10 leading-relaxed">
-            Download the app and start connecting with others through the power
-            of voice.
+            Sign Up for the app, Log In and start connecting with others through
+            the power of voice.
           </p>
           <button className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl flex items-center space-x-2 mx-auto group">
-            <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span>Download the App</span>
+            <span>Sign Up</span>
+            <LogInIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
         </div>
       </section>
