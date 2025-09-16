@@ -24,7 +24,7 @@ const ChatHistory = () => {
 
   useEffect(() => {
     const userfromlocal = JSON.parse(localStorage.getItem("user"))
-    const userId = userfromlocal.id;
+    const userId = userfromlocal?.id;
     console.log(userId, " id before send backend");
 
     async function fetchdata(userId){
