@@ -1,31 +1,14 @@
-// src/components/RoomList.jsx
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-// Helper to generate unique room codes
-const generateRoomCode = () =>
-  Math.random().toString(36).substring(2, 8).toUpperCase();
+import api from "../utils/axios"; // ✅ updated import
 
 export default function RoomList() {
   const navigate = useNavigate();
 
-  // Lazy init from localStorage to avoid overwrite-on-mount
-  const [rooms, setRooms] = useState(() => {
-    try {
-      const raw = localStorage.getItem("rooms");
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.error("Failed to parse rooms from localStorage", e);
-      return [];
-    }
-  });
-
+  const [rooms, setRooms] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roomName, setRoomName] = useState("");
-  const [participants, setParticipants] = useState(1);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -33,31 +16,29 @@ export default function RoomList() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Persist whenever rooms change
+  // Fetch rooms from backend
   useEffect(() => {
-    try {
-      localStorage.setItem("rooms", JSON.stringify(rooms));
-    } catch (e) {
-      console.error("Failed to save rooms to localStorage", e);
-    }
-  }, [rooms]);
-
-  const handleCreateRoom = () => {
-    const name = (roomName || "").trim();
-    if (!name) return;
-
-    const newRoom = {
-      id: Date.now(),
-      name,
-      participants: Number(participants) || 1,
-      code: generateRoomCode(),
+    const fetchRooms = async () => {
+      try {
+        const res = await api.get("/rooms");
+        setRooms(res.data);
+      } catch (err) {
+        console.error("Failed to fetch rooms", err);
+      }
     };
+    fetchRooms();
+  }, []);
 
-    // Prepend so newest appears first
-    setRooms((prev) => [newRoom, ...prev]);
-    setRoomName("");
-    setParticipants(1);
-    setShowCreateModal(false);
+  const handleCreateRoom = async () => {
+    if (!roomName.trim()) return;
+    try {
+      const res = await api.post("/rooms", { name: roomName });
+      setRooms((prev) => [res.data, ...prev]);
+      setRoomName("");
+      setShowCreateModal(false);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create room");
+    }
   };
 
   const handleJoinClick = (room) => {
@@ -66,24 +47,19 @@ export default function RoomList() {
     setShowJoinModal(true);
   };
 
-  const confirmJoin = () => {
+  const confirmJoin = async () => {
     if (!selectedRoom) return;
-    if (joinCode.trim().toUpperCase() !== selectedRoom.code) {
-      alert("Invalid room code ❌");
-      return;
+    try {
+      const res = await api.post("/rooms/join", { code: joinCode });
+      // Update participant count locally
+      setRooms((prev) =>
+        prev.map((r) => (r._id === res.data._id ? res.data : r))
+      );
+      setShowJoinModal(false);
+      navigate(`/room/${res.data._id}`);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to join room");
     }
-
-    // increment participant count (persisted by effect)
-    setRooms((prev) =>
-      prev.map((r) =>
-        r.id === selectedRoom.id
-          ? { ...r, participants: (Number(r.participants) || 0) + 1 }
-          : r
-      )
-    );
-
-    setShowJoinModal(false);
-    navigate(`/room/${selectedRoom.id}`);
   };
 
   const filteredRooms = rooms.filter((r) =>
@@ -133,14 +109,14 @@ export default function RoomList() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filteredRooms.map((room) => (
             <div
-              key={room.id}
+              key={room._id}
               className="bg-[#1a2b20] rounded-lg p-6 shadow-md flex flex-col justify-between"
             >
               <div>
                 <h3 className="font-semibold">{room.name}</h3>
                 <p className="text-sm text-gray-400">
-                  {room.participants} participant
-                  {room.participants !== 1 ? "s" : ""}
+                  {room.users?.length || 0} participant
+                  {(room.users?.length || 0) !== 1 ? "s" : ""}
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
                   Code: <span className="font-mono">{room.code}</span>
@@ -155,7 +131,6 @@ export default function RoomList() {
                   Join
                 </button>
 
-                {/* optional quick-enter (if you want) */}
                 <button
                   onClick={() => {
                     navigator.clipboard?.writeText(room.code);
@@ -183,14 +158,6 @@ export default function RoomList() {
               onChange={(e) => setRoomName(e.target.value)}
               placeholder="Room Name"
               className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-3"
-            />
-
-            <input
-              type="number"
-              min="1"
-              value={participants}
-              onChange={(e) => setParticipants(parseInt(e.target.value || "1"))}
-              className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-4"
             />
 
             <div className="flex justify-end space-x-2">
