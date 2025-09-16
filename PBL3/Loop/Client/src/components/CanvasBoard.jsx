@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
 
 
-const BACKEND_URL = "http://localhost:5000"; // match your Express port
+const BACKEND_URL = "http://localhost:3001"; // match your Express port
 
 // Helper to generate unique user ID
 const generateUserId = () => Math.random().toString(36).substr(2, 9);
