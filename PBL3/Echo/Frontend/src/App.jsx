@@ -3,6 +3,7 @@ import Recorder from "./Components/Recorder";
 import LoginForm from "./Pages/LoginPage.jsx";
 import HomePage from "./Pages/HomePage.jsx";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import RoomsPage from "./features/rooms/RoomsPage.jsx";
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
   return (
@@ -27,6 +28,10 @@ function App() {
               <Navigate to="/" />
             )
           }
+        />
+        <Route
+          path="/rooms"
+          element={isLoggedIn ? <RoomsPage /> : <Navigate to="/" />}
         />
       </Routes>
     </BrowserRouter>
