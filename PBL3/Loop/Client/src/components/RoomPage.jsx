@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Home from "./Home";
-import api from "../utils/axios"; // ✅ updated import
+import api from "../utils/axios";
 
 export default function RoomPage() {
   const { id } = useParams();
@@ -24,11 +24,44 @@ export default function RoomPage() {
 
   const leaveRoom = async () => {
     try {
-      await api.patch(`/rooms/${id}/deactivate`); // mark inactive
+      await api.patch(`/rooms/${id}/deactivate`);
     } catch (err) {
       console.error("Failed to leave room", err);
     }
     navigate("/my-room");
+  };
+
+  const copyToClipboard = async (text) => {
+    if (!text) return false;
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "absolute";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      return true;
+    } catch (e) {
+      console.error("Fallback copy failed", e);
+      return false;
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!room?.code) {
+      alert("No room code available to copy!");
+      return;
+    }
+    const ok = await copyToClipboard(room.code);
+    if (ok) alert(`Room code "${room.code}" copied! 📋`);
+    else alert("Couldn't copy automatically. Please copy manually: " + room.code);
   };
 
   if (!room) {
@@ -54,9 +87,18 @@ export default function RoomPage() {
             {room.users?.length || 0} participant
             {(room.users?.length || 0) !== 1 ? "s" : ""}
           </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Room Code: <span className="font-mono">{room.code}</span>
+          </p>
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={handleInvite}
+            className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg"
+          >
+            Invite
+          </button>
           <button
             onClick={leaveRoom}
             className="bg-red-600 hover:bg-red-500 px-3 py-2 rounded"
