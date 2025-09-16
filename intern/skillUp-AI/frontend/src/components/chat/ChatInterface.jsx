@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import service from "../../services/service";
+import { Link } from "react-router-dom";
+
 const url = import.meta.env.VITE_AI_URL;
 
 const ChatInterface = () => {
@@ -11,6 +13,7 @@ const ChatInterface = () => {
   const textareaRef = useRef(null); // Added ref for textarea
   const messagesContainerRef = useRef(null); // Add ref for auto-scroll
 
+  
   console.log(userRequest, "the user search is ?");
 
   useEffect(() => {
@@ -126,6 +129,8 @@ const ChatInterface = () => {
       </div>
     </div>
   );
+
+
   return (
     <div className="bg-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden">
       {/* Decorative elements - same as login */}
@@ -192,6 +197,13 @@ const ChatInterface = () => {
               <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </div>
           </div>
+           <Link 
+                to="/quize" 
+                className="w-20 px-4 py-2 text-sm text-white font-semibold rounded-xl shadow-lg bg-gradient-to-r hover:scale-105 hover:shadow-xl active:scale-95 transform transition duration-300 ease-in-out"
+              >
+                Quize
+              </Link>
+          {/* <div className="w-20 px-4 py-2 text-sm text-white font-semibold rounded-xl shadow-lg bg-gradient-to-r hover:scale-105 hover:shadow-xl active:scale-95 transform transition duration-300 ease-in-out">Quize</div> */}
         </div>
 
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
