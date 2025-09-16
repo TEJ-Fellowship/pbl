@@ -14,6 +14,8 @@ const Quize = () => {
             >
               Chats
             </Link>
+
+            <div>Hello</div>
           </div>
         </div>
       </div>
