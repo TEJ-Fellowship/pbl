@@ -6,6 +6,8 @@ import RegisterForm from "./components/Auth/RegisterForm";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import Quize from "./pages/Quize.jsx";
+
 import {
   BrowserRouter as Router,
   Routes,
@@ -30,6 +32,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/quize" element={<Quize />} />
+
         </Routes>
       </Router>
     </AuthProvider>
