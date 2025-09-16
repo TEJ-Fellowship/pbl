@@ -27,6 +27,44 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const cloudName = "ddfvqm9wq"
+  const uploadPreset = "glimpse"
+
+  const openCloudinaryWidget = () => {
+    const myWidget = window.cloudinary.openUploadWidget(
+      {
+        cloudName: cloudName,
+        uploadPreset: uploadPreset,
+        sources: ['local', 'camera'], 
+        resourceType: 'video', 
+        clientAllowedFormats: ["mp4", "webm", "mov"],
+        maxFileSize: 20000000, // Optional: Maximum file size in bytes (e.g., 20MB)
+        folder: "glimpses", // Optional: Store uploads in a specific folder
+        cropping: false,
+        multiple: false, 
+      },
+      (error, result) => {
+        if (!error && result && result.event === "success") {
+          console.log('Done! Here is the video info: ', result.info);
+          const videoUrl = result.info.secure_url;
+          
+          // Here, you would typically handle the uploaded video URL:
+          // 1. Send it to your backend API to save the glimpse
+          // 2. Update a React state to show the uploaded video to the user
+          // 3. Display a success message
+          
+          alert(`Glimpse uploaded successfully! URL: ${videoUrl}`);
+        } else if (result.event === "abort") {
+          console.log("Upload aborted.");
+        } else if (error) {
+          console.error("Upload error:", error);
+        }
+      }
+    );
+
+    myWidget.open();
+  };
+
   return (
     <div className="relative min-h-[calc(100vh-90px)] flex flex-col items-center justify-center overflow-hidden">
       {/* Backgrounds */}
@@ -57,7 +95,10 @@ const HomePage = () => {
           deeply personal. Over time, your collection of glimpses becomes the
           most authentic and memorable way to look back on your life.
         </p>
-        <button className="px-8 py-4 bg-black text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 active:scale-95 duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50">
+        <button
+          onClick={openCloudinaryWidget}
+          className="px-8 py-4 bg-black text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 active:scale-95 duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50"
+        >
           Upload Today's Glimpse
         </button>
       </div>
@@ -65,4 +106,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomePage
