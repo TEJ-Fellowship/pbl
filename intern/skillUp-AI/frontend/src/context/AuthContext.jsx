@@ -7,9 +7,9 @@ import service from "../services/service";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);// here need to false but for check i make it true
   const [loading, setLoading] = useState(true);
-  const [ user, setUser] = useState({});
+  const [user, setUser] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
         .then((response) => {
           if (response.valid) {
             setUser(response);
-            console.log(response.id, "this is id ho hai");
+            console.log(response.id, "this is id from authContext");
             console.log(response.fullName,"this is fullname from authContext")
             setIsAuthenticated(true);
           }
