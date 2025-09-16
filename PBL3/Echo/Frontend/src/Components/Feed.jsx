@@ -58,8 +58,9 @@ const AudioPlayer = ({ src, clipId }) => {
   const waveformBars = Array.from({ length: 20 }, (_, i) => (
     <div
       key={i}
-      className={`w-1 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-full transition-all duration-150 ${isPlaying ? "animate-pulse" : ""
-        }`}
+      className={`w-1 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-full transition-all duration-150 ${
+        isPlaying ? "animate-pulse" : ""
+      }`}
       style={{
         height: `${Math.random() * 20 + 8}px`,
         animationDelay: `${i * 50}ms`,
@@ -187,9 +188,10 @@ const ReactionButton = ({ type, count, onReact, isActive }) => {
         onClick={handleClick}
         className={`
           relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium
-          ${isActive
-            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
-            : "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white"
+          ${
+            isActive
+              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
+              : "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white"
           }
           ${isAnimating ? "scale-110" : "hover:scale-105"}
           backdrop-blur-sm border border-white/10 hover:border-white/20
@@ -199,8 +201,9 @@ const ReactionButton = ({ type, count, onReact, isActive }) => {
           {emojis[type]}
         </span>
         <span
-          className={`transition-all duration-300 ${isAnimating ? "scale-125 font-bold" : ""
-            }`}
+          className={`transition-all duration-300 ${
+            isAnimating ? "scale-125 font-bold" : ""
+          }`}
         >
           {count || 0}
         </span>
@@ -304,11 +307,12 @@ const Feed = ({ clips, setClips }) => {
       console.error("Reaction failed:", error);
       showAlert("Failed to send reaction", "error");
     }
-
   };
 
   const handleDelete = async (clipId) => {
-    const confirmed = await confirm("Are you sure you want to delete this clip?");
+    const confirmed = await confirm(
+      "Are you sure you want to delete this clip?"
+    );
     if (!confirmed) return;
 
     try {
@@ -323,7 +327,6 @@ const Feed = ({ clips, setClips }) => {
       showAlert("Failed to delete clip", "error");
     }
   };
-
 
   return (
     <div className="mt-8">
@@ -343,10 +346,11 @@ const Feed = ({ clips, setClips }) => {
             {/* Owner / Anonymous badge at top-right */}
             <div className="absolute top-4 right-4 z-10">
               <span
-                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${clip.isOwner
-                  ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
-                  : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
-                  }`}
+                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${
+                  clip.isOwner
+                    ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
+                    : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
+                }`}
               >
                 {clip.isOwner ? "👑" : "👤"}
               </span>
@@ -385,7 +389,6 @@ const Feed = ({ clips, setClips }) => {
           </div>
         ))}
       </div>
-
       <style jsx>{`
         @keyframes fadeInUp {
           0% {
@@ -398,8 +401,7 @@ const Feed = ({ clips, setClips }) => {
           }
         }
       `}</style>
-      {AlertComponent};
-      {ConfirmComponent};
+      {AlertComponent};{ConfirmComponent};
     </div>
   );
 };

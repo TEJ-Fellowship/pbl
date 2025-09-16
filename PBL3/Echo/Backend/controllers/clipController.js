@@ -15,11 +15,13 @@ const uploadClip = async (req, res) => {
       req.file.filename
     }`;
 
+    const newCaption = req.body.caption ? req.body.caption : '';
     const newClip = await Clip.create({
       userId: req.user.id,
       filename: req.file.filename,
       url: fileURL,
       size: req.file.size,
+      caption: newCaption,
       duration: 0,
       processingStatus: "pending",
       roomId: req.body.roomId || null,
