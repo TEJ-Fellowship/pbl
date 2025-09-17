@@ -1,8 +1,10 @@
-import Recorder from "../Components/Recorder";
+import AddConfession from "../Components/Addconfession";
 import Feed from "../Components/Feed";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import Navbar from "../Components/Navbar";
+import Recorder from "../Components/Recorder";
+
 const HomePage = ({ setIsLoggedIn }) => {
   const [clips, setClips] = useState([]);
 

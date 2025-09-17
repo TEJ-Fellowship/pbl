@@ -2,7 +2,14 @@
 import React, { useState, useRef } from "react";
 import uploadClip from "../api/clipApi";
 
-const Recorder = ({ onSave, roomId }) => {
+const Recorder = ({
+  onSave,
+  showUpload,
+  caption,
+  setCaption,
+  setUpload,
+  roomId,
+}) => {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -49,8 +56,10 @@ const Recorder = ({ onSave, roomId }) => {
 
       if (onSave) onSave(newClip); // send full clip object, not just _id
       setAudioBlob(null);
+      setCaption("");
       setAudioURL(null);
       setSeconds(0);
+      setUpload(false);
     } catch (err) {
       console.error(err);
       alert("Failed to upload clip");
@@ -95,7 +104,7 @@ const Recorder = ({ onSave, roomId }) => {
             onClick={handleUpload}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg"
           >
-            Upload Recording
+            Upload
           </button>
           <button
             onClick={resetRecording}

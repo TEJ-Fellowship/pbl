@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const clipSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -14,6 +15,7 @@ const clipSchema = new mongoose.Schema({
     default: null,
   },
   size: { type: Number },
+  caption: { type: String, maxLength: 200 },
 
   // AI / processing fields (filled asynchronously by a worker)
   transcript: { type: String, default: "" },
