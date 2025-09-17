@@ -1,4 +1,4 @@
-import Recorder from "../Components/Recorder";
+import AddConfession from "../Components/Addconfession";
 import Feed from "../Components/Feed";
 import axios from "axios";
 import { useState, useEffect } from "react";
@@ -28,6 +28,8 @@ const HomePage = ({ setIsLoggedIn }) => {
     <div className="max-w-2xl mx-auto mt-8">
       <Navbar setIsLoggedIn={setIsLoggedIn} />
       <Recorder onSave={(clip) => setClips((prev) => [clip, ...prev])} />
+
+      <AddConfession setClips={setClips} />
       <Feed setClips={setClips} clips={clips} />
     </div>
   );

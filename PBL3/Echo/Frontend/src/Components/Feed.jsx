@@ -20,14 +20,15 @@ const Feed = ({ clips, setClips }) => {
       alert("Failed to send reaction");
     }
   };
-  const handleDelete = async (clipId) =>{
-    if(!window.confirm("Delete this clip?")) return;
+  const handleDelete = async (clipId) => {
+    if (!window.confirm("Delete this clip?")) return;
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`http://localhost:3001/api/clips/${clipId}`, {
-        headers : {Authorization : `Bearer ${token}`}}
+        headers: { Authorization: `Bearer ${token}` }
+      }
       )
-      setClips(prev=>prev.filter((clip)=>clip._id!==clipId))
+      setClips(prev => prev.filter((clip) => clip._id !== clipId))
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Failed to delete clip");
@@ -40,22 +41,26 @@ const Feed = ({ clips, setClips }) => {
         {clips.map((clip) => (
           <div
             key={clip._id}
-             className="p-4 border rounded-lg shadow-sm bg-white relative"
+            className="p-4 border rounded-lg shadow-sm bg-white relative"
           >
+
             <audio controls src={clip.url} className="w-full"></audio>
+            {clip.caption && (
+              <p className="mt-2 text-gray-700 italic">"{clip.caption}"</p>
+            )}
             {
               clip.isOwner && (
                 <div className="absolute top-2 right-2 flex gap-2 items-center">
-                <span className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
-                  Your Clip
-                </span>
-                <button
-                  className="px-2 py-1 text-xs bg-red-500 text-white rounded"
-                  onClick={() => handleDelete(clip._id)}
-                >
-                  🗑️ Delete
-                </button>
-              </div>
+                  <span className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
+                    Your Clip
+                  </span>
+                  <button
+                    className="px-2 py-1 text-xs bg-red-500 text-white rounded"
+                    onClick={() => handleDelete(clip._id)}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
               )
             }
             <div className="flex gap-2 mt-2">

@@ -2,7 +2,7 @@
 import React, { useState, useRef } from "react";
 import uploadClip from "../api/clipApi";
 
-const Recorder = ({ onSave, roomId }) => {
+const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload, onSave, roomId }) => {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -35,6 +35,7 @@ const Recorder = ({ onSave, roomId }) => {
     }
   };
 
+
   const stopRecording = () => {
     mediaRecorderRef.current.stop();
     setRecording(false);
@@ -45,12 +46,16 @@ const Recorder = ({ onSave, roomId }) => {
     if (!audioBlob) return alert("No recording yet!");
     try {
       const token = localStorage.getItem("token");
-      const newClip = await uploadClip(audioBlob, token, roomId); // <-- pass roomId
-
+      const newClip = await uploadClip(audioBlob, token, caption, roomId); // <-- pass roomId
       if (onSave) onSave(newClip); // send full clip object, not just _id
+      alert("Audio Uploaded");
+      const clipWithOwnerFlag = { ...newClip, isOwner: true };
+      setClips((prevClips) => [clipWithOwnerFlag, ...prevClips]);
       setAudioBlob(null);
+      setCaption("");
       setAudioURL(null);
       setSeconds(0);
+      setUpload(false);
     } catch (err) {
       console.error(err);
       alert("Failed to upload clip");
@@ -69,7 +74,6 @@ const Recorder = ({ onSave, roomId }) => {
       {recording && (
         <p className="text-sm text-gray-600">Recording: {seconds}</p>
       )}
-
       <div className="flex gap-2 mb-4">
         {!recording ? (
           <button
@@ -91,12 +95,14 @@ const Recorder = ({ onSave, roomId }) => {
       {audioURL && (
         <div className="flex flex-col gap-2">
           <audio controls src={audioURL}></audio>
-          <button
-            onClick={handleUpload}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-          >
-            Upload Recording
-          </button>
+          {showUpload && (
+            <button
+              onClick={handleUpload}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+            >
+              Upload
+            </button>
+          )}
           <button
             onClick={resetRecording}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg"
