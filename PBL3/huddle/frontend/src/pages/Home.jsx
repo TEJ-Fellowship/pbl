@@ -198,7 +198,7 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
             the power of voice.
           </p>
           <button className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl flex items-center space-x-2 mx-auto group">
-            <span>Sign Up</span>
+            <span onClick={onSignup}>Sign Up</span>
             <LogInIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
         </div>
