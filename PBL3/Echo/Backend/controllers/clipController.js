@@ -11,11 +11,13 @@ const uploadClip = async (req, res) => {
       req.file.filename
     }`; //http://localhost:5000/uploads/recording-1694567891234.webm
 
+    const newCaption = req.body.caption ? req.body.caption : '';
     const newClip = await Clip.create({
       userId: req.user.id,
       filename: req.file.filename,
       url: fileURL,
       size: req.file.size,
+      caption: newCaption,
       duration: 0,
       processingStatus: "pending",
     });

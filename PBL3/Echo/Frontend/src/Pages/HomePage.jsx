@@ -1,4 +1,4 @@
-import Recorder from "../Components/Recorder";
+import AddConfession from "../Components/Addconfession";
 import Feed from "../Components/Feed";
 import axios from "axios";
 import { useState, useEffect } from "react";
@@ -32,7 +32,7 @@ const HomePage = ({ setIsLoggedIn }) => {
     <div className="max-w-2xl mx-auto mt-8">
       <h1>Welcome to HomePage 🎉</h1>
 
-      <Recorder setClips={setClips} />
+      <AddConfession setClips={setClips} />
       <Feed setClips={setClips} clips={clips} />
       <button
         onClick={handleLogout}
