@@ -8,15 +8,15 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecordNote from "./pages/RecordNote";
 import MyNote from "./pages/MyNote";
+import { MoveLeft } from "lucide-react";
 
 function App() {
   const [page, setPage] = useState("home");
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const token = Cookies.get("token");
     if (token && !user) {
-      // Decode JWT to get username (no backend call for simplicity)
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         setUser({
@@ -82,10 +82,13 @@ function App() {
         <div>
           <div className="p-4 bg-white shadow-sm mb-4 flex items-center justify-between">
             <button
-              className="text-blue-500 hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-600"
               onClick={handleGoToHome}
             >
-              ← Back to Home
+              <div className="flex items-center gap-2 cursor-pointer">
+                <MoveLeft className="w-4 h-4" />
+                <span>Back to Home</span>
+              </div>
             </button>
             <button
               className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
@@ -94,7 +97,7 @@ function App() {
               Record New Note
             </button>
           </div>
-          <VoiceNotesList />
+          <MyNote />
         </div>
       )}
       <ToastContainer position="top-center" autoClose={2000} />

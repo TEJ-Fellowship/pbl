@@ -1,28 +1,17 @@
-import {
-  AudioLines,
-  AudioLinesIcon,
-  Disc,
-  Mic,
-  Pause,
-  Play,
-  Square,
-  X,
-} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
-// import { uploadVoiceNote } from "../api/voiceNotes";
-// import { debugAuth } from "../utils/authDebug";
+import { uploadVoiceNote } from "../api/voiceNotes";
+import { AudioLines, Disc, Mic, Pause, Play, Square, X } from "lucide-react";
 
 const RecordNote = ({ onClose, onSave }) => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [recordingStatus, setRecordingStatus] = useState("ready");
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [recordingStatus, setRecordingStatus] = useState("ready"); // "ready", "recording", "paused", "stopped"
-  const [noteTitle, setNoteTitle] = useState(""); // Added for title input
-  const [tags, setTags] = useState([]); // Added for tags management
-  const [tagInput, setTagInput] = useState(""); // Added for tag input field
+  const [noteTitle, setNoteTitle] = useState("");
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState("");
+  const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const timerRef = useRef(null);
@@ -39,8 +28,6 @@ const RecordNote = ({ onClose, onSave }) => {
 
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
-
-      // Reset recording time
       setRecordingTime(0);
 
       mediaRecorder.ondataavailable = (e) => {
@@ -51,17 +38,14 @@ const RecordNote = ({ onClose, onSave }) => {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(blob);
+        // const url = URL.createObjectURL(blob);
         setAudioBlob(blob);
-        setAudioUrl(url);
       };
 
-      // Set up data available event to occur every second
       mediaRecorder.start(1000);
       setIsRecording(true);
       setRecordingStatus("recording");
 
-      // Start timer with precise timing
       const startTime = Date.now();
       timerRef.current = setInterval(() => {
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -81,15 +65,10 @@ const RecordNote = ({ onClose, onSave }) => {
   const pauseRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       if (isPaused) {
-        // Resume recording
         mediaRecorderRef.current.resume();
         setRecordingStatus("recording");
-
-        // Store the current time to calculate elapsed time correctly
         const currentTime = recordingTime;
         const resumeTime = Date.now();
-
-        // Resume timer from where it was paused
         timerRef.current = setInterval(() => {
           const newTime =
             currentTime + Math.floor((Date.now() - resumeTime) / 1000);
@@ -100,11 +79,8 @@ const RecordNote = ({ onClose, onSave }) => {
           }
         }, 1000);
       } else {
-        // Pause recording
         mediaRecorderRef.current.pause();
         setRecordingStatus("paused");
-
-        // Stop timer
         clearInterval(timerRef.current);
       }
 
@@ -114,15 +90,12 @@ const RecordNote = ({ onClose, onSave }) => {
 
   // Stop recording function
   const stopRecording = () => {
+    clearInterval(timerRef.current);
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-
-      // Stop all tracks on the stream
       mediaRecorderRef.current.stream
         .getTracks()
         .forEach((track) => track.stop());
-
-      // Clear timer
       clearInterval(timerRef.current);
 
       setIsRecording(false);
@@ -151,17 +124,12 @@ const RecordNote = ({ onClose, onSave }) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  // Handle saving the recorded audio
   const handleSave = async () => {
     if (audioBlob) {
+      let savingStatus;
       try {
-        // Debug auth to check if we have a valid token
-        debugAuth();
+        savingStatus = toast.loading("Voice note saving...");
 
-        // Show loading toast
-        toast.info("Saving your voice note...");
-
-        // Upload to server using our API
         const result = await uploadVoiceNote(
           audioBlob,
           noteTitle || "Untitled Voice Note",
@@ -169,28 +137,29 @@ const RecordNote = ({ onClose, onSave }) => {
           recordingTime
         );
 
-        // Show success message
-        toast.success("Voice note saved successfully!");
+        toast.update(savingStatus, {
+          render: "Voice note saved successfully!",
+          type: "success",
+          isLoading: false,
+          autoClose: 2000,
+        });
 
-        // Call onSave if provided
         if (onSave) {
           onSave(result.voiceNote);
         }
 
-        // Close the dialog
         if (onClose) {
           onClose();
         }
       } catch (error) {
+        if (savingStatus) toast.dismiss(savingStatus);
         console.error("Error saving voice note:", error);
         toast.error(error.message || "Failed to save voice note");
       }
     }
   };
 
-  // Handle discarding the recorded audio
   const handleDiscard = () => {
-    // Stop the recording if it's in progress
     if (isRecording) {
       if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
@@ -201,9 +170,7 @@ const RecordNote = ({ onClose, onSave }) => {
       clearInterval(timerRef.current);
     }
 
-    // Reset all state
     setAudioBlob(null);
-    setAudioUrl(null);
     setRecordingTime(0);
     setIsRecording(false);
     setIsPaused(false);
@@ -212,12 +179,10 @@ const RecordNote = ({ onClose, onSave }) => {
     if (onClose) {
       onClose();
     } else {
-      // If no onClose handler, just reset the state
       toast.info("Recording discarded");
     }
   };
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (mediaRecorderRef.current && isRecording) {
@@ -229,12 +194,8 @@ const RecordNote = ({ onClose, onSave }) => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
     };
-  }, [isRecording, audioUrl]);
+  }, [isRecording]);
 
   // Format seconds to MM:SS
   const formatTime = (seconds) => {
@@ -287,7 +248,6 @@ const RecordNote = ({ onClose, onSave }) => {
         {/* Controls Area */}
         {(recordingStatus === "recording" || recordingStatus === "paused") && (
           <div className="mb-8">
-            {/* Audio Visualization - only show during recording */}
             <div className="h-16 flex items-center justify-center">
               <AudioLines
                 className={`h-16 w-32 text-red-500 ${
@@ -407,13 +367,6 @@ const RecordNote = ({ onClose, onSave }) => {
             Save Note
           </button>
         </div>
-
-        {/* Audio Player (hidden but functional) */}
-        {audioUrl && (
-          <div className="hidden">
-            <audio src={audioUrl} controls />
-          </div>
-        )}
       </div>
     </div>
   );

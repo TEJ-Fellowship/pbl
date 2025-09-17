@@ -191,7 +191,7 @@ const Home = ({
               Key Features
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Discover the unique features that make Shambaad stand out from
+              Discover the unique features that make Sambaad stand out from
               traditional social media platforms.
             </p>
           </div>
