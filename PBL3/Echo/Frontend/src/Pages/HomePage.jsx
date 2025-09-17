@@ -27,7 +27,7 @@ const HomePage = ({ setIsLoggedIn }) => {
   return (
     <div className="max-w-2xl mx-auto mt-8">
       <Navbar setIsLoggedIn={setIsLoggedIn} />
-      <Recorder setClips={setClips} />
+      <Recorder onSave={(clip) => setMessages((prev) => [...prev, clip])} />
       <Feed setClips={setClips} clips={clips} />
     </div>
   );

@@ -18,6 +18,7 @@ const uploadClip = async (req, res) => {
       size: req.file.size,
       duration: 0,
       processingStatus: "pending",
+      roomId: req.body.roomId || null,
     });
 
     return res.status(201).json(newClip);

@@ -1,6 +1,7 @@
 //features/rooms/RoomsPage.jsx
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   fetchRooms,
   createRoom,
@@ -16,6 +17,7 @@ const RoomsPage = ({ setIsLoggedIn }) => {
   const [query, setQuery] = useState("");
   const [newName, setNewName] = useState("");
   const [newPass, setNewPass] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (status === "idle") {
@@ -38,11 +40,11 @@ const RoomsPage = ({ setIsLoggedIn }) => {
   const handleJoin = async (roomId, roomName) => {
     const password = window.prompt(`Enter password to join "${roomName}"`);
     if (!password) return;
+
     try {
       await dispatch(joinRoom({ roomId, password })).unwrap();
-      // on success, refresh rooms to update membership flags & UI
-      dispatch(fetchRooms());
       alert("Joined room!");
+      navigate(`/rooms/${roomId}`);
     } catch (err) {
       alert("Join failed: " + (err.message || JSON.stringify(err)));
     }

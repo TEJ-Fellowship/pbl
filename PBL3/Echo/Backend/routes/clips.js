@@ -29,10 +29,8 @@ router.patch("/:id/reactions", authMiddleWare, async (req, res) => {
 router.get("/", authMiddleWare, async (req, res) => {
   try {
     const userId = req.user.id;
-    const clips = await Clip.find()
-      .sort({
-        createdAt: -1,
-      })
+    const clips = await Clip.find({ roomId: null })
+      .sort({ createdAt: -1 })
       .lean();
     const withOwnership = clips.map((c) => ({
       ...c,

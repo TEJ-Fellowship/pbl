@@ -2,10 +2,12 @@
 import axios from "axios";
 
 const API_URL = "http://localhost:3001/api/clips";
-const uploadClip = async (audioBlob, token) => {
+const uploadClip = async (audioBlob, token, roomId = null) => {
   // const token = localStorage.getItem("token");
   const formData = new FormData(); // a virtual form
   formData.append("audio", audioBlob, "recording.webm");
+  if (roomId) formData.append("roomId", roomId);
+
   try {
     const res = await axios.post(API_URL, formData, {
       headers: {
