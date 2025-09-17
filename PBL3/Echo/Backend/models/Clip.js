@@ -9,6 +9,11 @@ const clipSchema = new mongoose.Schema({
   filename: { type: String, required: true },
   url: { type: String, required: true },
   duration: { type: Number },
+  roomId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Room",
+    default: null,
+  },
   size: { type: Number },
   caption: { type: String, maxLength: 200 },
 

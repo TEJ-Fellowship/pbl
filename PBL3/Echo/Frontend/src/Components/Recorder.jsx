@@ -1,7 +1,8 @@
+// components/Recorder
 import React, { useState, useRef } from "react";
 import uploadClip from "../api/clipApi";
 
-const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload }) => {
+const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload, onSave, roomId }) => {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -14,26 +15,28 @@ const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload }) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
       const chunks = [];
+
       mediaRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) chunks.push(e.data);
       };
+
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunks, { type: "audio/webm" });
         setAudioBlob(blob);
         setAudioURL(URL.createObjectURL(blob));
       };
+
       mediaRecorderRef.current.start();
       setRecording(true);
       setSeconds(0);
-      timerRef.current = setInterval(() => {
-        setSeconds((prev) => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.log("Mic access denied :", error);
+      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    } catch (err) {
+      console.log("Mic access denied:", err);
     }
   };
 
-  const stopRecording = async () => {
+
+  const stopRecording = () => {
     mediaRecorderRef.current.stop();
     setRecording(false);
     clearInterval(timerRef.current);
@@ -43,7 +46,8 @@ const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload }) => {
     if (!audioBlob) return alert("No recording yet!");
     try {
       const token = localStorage.getItem("token");
-      const newClip = await uploadClip(audioBlob, token, caption);
+      const newClip = await uploadClip(audioBlob, token, caption, roomId); // <-- pass roomId
+      if (onSave) onSave(newClip); // send full clip object, not just _id
       alert("Audio Uploaded");
       const clipWithOwnerFlag = { ...newClip, isOwner: true };
       setClips((prevClips) => [clipWithOwnerFlag, ...prevClips]);
@@ -67,7 +71,9 @@ const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload }) => {
   return (
     <div>
       <h2>Record your confession</h2>
-      {recording && <p className="text-sm text-gray-600">Recording: {seconds}</p>}
+      {recording && (
+        <p className="text-sm text-gray-600">Recording: {seconds}</p>
+      )}
       <div className="flex gap-2 mb-4">
         {!recording ? (
           <button
@@ -85,6 +91,7 @@ const Recorder = ({ setClips, showUpload, caption, setCaption, setUpload }) => {
           </button>
         )}
       </div>
+
       {audioURL && (
         <div className="flex flex-col gap-2">
           <audio controls src={audioURL}></audio>

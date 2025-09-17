@@ -6,11 +6,11 @@ const { authMiddleWare, errorHandler } = require("./utils/middleware");
 const { secret_key } = require("./utils/config");
 const User = require("./models/User");
 const clipRoutes = require("./routes/clips");
+const roomRoutes = require("./routes/room");
 const app = express();
 app.use(express.json());
 app.use(cors());
 app.use("/uploads", express.static("uploads"));
-app.use("/api/clips", clipRoutes);
 
 // public routes
 app.post("/signup", async (req, res) => {
@@ -60,7 +60,7 @@ app.post("/signin", async (req, res) => {
 
 // Protected Routes
 app.use("/api/clips", clipRoutes);
-
+app.use("/api/rooms", roomRoutes);
 app.use(errorHandler);
 
 module.exports = app;
