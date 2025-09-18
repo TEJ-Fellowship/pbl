@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Mic,
 } from "lucide-react";
+import logo from "../assets/logo.svg"
 
 const Home = ({
   onLogin,
@@ -26,12 +27,10 @@ const Home = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-slate-900">
-                Shambaad
-              </span>
+                <img src={logo} className="w-[75px] h-[75px] text-white" />
+              {/* <span className="text-2xl font-bold text-slate-900">
+                Sambaad
+              </span> */}
               {username && (
                 <span className="ml-4 text-blue-600 font-semibold">
                   Welcome, {username}!
@@ -147,14 +146,14 @@ const Home = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
-              Shambaad: Where Voices
+              Sambaad: Where Voices
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 block">
                 Connect
               </span>
             </h1>
 
             <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-2xl mx-auto">
-              Experience a new way to socialize with Shambaad, the audio-first
+              Experience a new way to socialize with Sambaad, the audio-first
               social app designed for intimate conversations and genuine
               connections. Share your thoughts, stories, and moments through
               voice.
@@ -269,7 +268,7 @@ const Home = ({
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
-            Join the Shambaad Community Today
+            Join the Sambaad Community Today
           </h2>
           <p className="text-xl text-blue-100 mb-10 leading-relaxed">
             Download the app and start connecting with others through the power
@@ -290,7 +289,7 @@ const Home = ({
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">Shambaad</span>
+              <span className="text-xl font-bold text-white">Sambaad</span>
             </div>
 
             <div className="flex space-x-8 mb-4 md:mb-0">
@@ -322,7 +321,7 @@ const Home = ({
           </div>
 
           <div className="border-t border-slate-800 mt-8 pt-8 text-center">
-            <p>&copy; 2024 Shambaad. All rights reserved.</p>
+            <p>&copy; 2024 Sambaad. All rights reserved.</p>
           </div>
         </div>
       </footer>
