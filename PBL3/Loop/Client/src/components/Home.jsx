@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./RightSidebar";
 import CanvasBoard from "./CanvasBoard";
@@ -9,11 +9,19 @@ export default function HomePage() {
   const [tool, setTool] = useState("pen"); // default tool
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <LeftSidebar setTool={setTool} />
+    <div className="flex h-screen bg-gray-900 text-white">
+      {/* Left Sidebar */}
+      <LeftSidebar tool={tool} setTool={setTool} />
 
-      <CanvasBoard brushColor={brushColor} brushSize={brushSize} tool={tool} />
+      {/* Canvas Board */}
+      <CanvasBoard
+        brushColor={brushColor}
+        brushSize={brushSize}
+        tool={tool}
+        
+      />
 
+      {/* Right Sidebar */}
       <RightSidebar
         brushColor={brushColor}
         setBrushColor={setBrushColor}
