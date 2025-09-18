@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RecordNote from "./pages/RecordNote";
 import MyNote from "./pages/MyNote";
+import Chat from "./pages/Chat";
 import { MoveLeft } from "lucide-react";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
   const handleGoToHome = () => setPage("home");
   const handleGoToRecordNote = () => setPage("record");
   const handleGoToVoiceNotes = () => setPage("voice-notes");
+  const handleGoToChat = () => setPage("chat");
 
   // Handle login success: set user and go home
   const handleLoginSuccess = (userObj) => {
@@ -58,6 +60,7 @@ function App() {
           onLogout={user ? handleLogout : undefined}
           onRecord={user ? handleGoToRecordNote : undefined}
           onVoiceNotes={user ? handleGoToVoiceNotes : undefined}
+          onChat={user ? handleGoToChat : undefined}
         />
       )}
       {page === "login" && (
@@ -98,6 +101,22 @@ function App() {
             </button>
           </div>
           <MyNote />
+        </div>
+      )}
+      {page === "chat" && (
+        <div>
+          <div className="p-4 bg-white shadow-sm mb-4 flex items-center justify-between">
+            <button
+              className="text-blue-500 hover:text-blue-600"
+              onClick={handleGoToHome}
+            >
+              <div className="flex items-center gap-2 cursor-pointer">
+                <MoveLeft className="w-4 h-4" />
+                <span>Back to Home</span>
+              </div>
+            </button>
+          </div>
+          <Chat />
         </div>
       )}
       <ToastContainer position="top-center" autoClose={2000} />
