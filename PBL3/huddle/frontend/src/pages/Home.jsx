@@ -17,6 +17,7 @@ const Home = ({
   onLogout,
   onRecord,
   onVoiceNotes,
+  onChat,
 }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -29,7 +30,7 @@ const Home = ({
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <span className="text-2xl font-bold text-slate-900">
-                Sambaad
+                Shambaad
               </span>
               {username && (
                 <span className="ml-4 text-blue-600 font-semibold">
@@ -42,17 +43,17 @@ const Home = ({
               {username ? (
                 <nav className="hidden md:flex items-center space-x-8">
                   <a
-                    href="#"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
-                  >
-                    Product
-                  </a>
-                  <a
                     href="#feature"
                     className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
                   >
                     Features
                   </a>
+                  <button
+                    className="text-slate-700 hover:text-blue-600 transition-colors font-medium"
+                    onClick={onChat}
+                  >
+                    <span>Chat</span>
+                  </button>
                   <a
                     href="#pricing"
                     className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
@@ -103,6 +104,12 @@ const Home = ({
                     onClick={onVoiceNotes}
                   >
                     My Notes
+                  </button>
+                  <button
+                    className="px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                    onClick={onChat}
+                  >
+                    Chat
                   </button>
                   <button
                     className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
@@ -156,13 +163,16 @@ const Home = ({
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               {username ? (
                 <a href="#RecordNote">
-                <button onClick={onRecord} className="px-8 py-4 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group">
-                  <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span>Record Note</span>
-                </button>
-              </a>
+                  <button
+                    onClick={onRecord}
+                    className="px-8 py-4 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group"
+                  >
+                    <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <span>Record Note</span>
+                  </button>
+                </a>
               ) : (
-                  ""
+                ""
               )}
 
               <a href="#feature">
@@ -171,13 +181,23 @@ const Home = ({
                   <ChevronRight className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 </button>
               </a>
-              <button
-                className="px-8 py-4 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-colors border-2 border-blue-600 flex items-center hover:border-blue-700"
-                onClick={onLogin}
-              >
-                <span>Log In</span>
-                <LogInIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
+              {username ? (
+                <button
+                  className="px-8 py-4 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                  onClick={onChat}
+                >
+                  <span>Let's Chat</span>
+                  <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform inline-block ml-2" />
+                </button>
+              ) : (
+                <button
+                  className="px-8 py-4 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-colors border-2 border-blue-600 flex items-center hover:border-blue-700"
+                  onClick={onLogin}
+                >
+                  <span>Log In</span>
+                  <LogInIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </button>
+              )}
             </div>
           </div>
         </div>
