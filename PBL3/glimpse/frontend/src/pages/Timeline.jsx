@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import TIMELINE_DATA from '../components/TimelineData';
 import VideoModal from '../components/VideoModel';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 const Timeline = () => {
+  const [clips, setClips] = useState(TIMELINE_DATA)
     const navigate = useNavigate();
+  useEffect(()=> {
+    axios.get('http://localhost:3001/api/clips').then((response) => {
+      setClips(clips.concat(response.data))
+    })
+
+  }, [])
+  console.log(clips)
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const sortedData = [...TIMELINE_DATA].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const sortedData = [...clips].sort((a, b) => new Date(b.date) - new Date(a.date));
+  console.log(sortedData)
   const groupedData = sortedData.reduce((acc, glimpse) => {
     const date = new Date(glimpse.date);
     const monthYearKey = date.toLocaleString("default", {
@@ -32,7 +42,7 @@ const Timeline = () => {
             {groupedData[monthYearKey].map((glimpse) => (
               <div
                 key={glimpse.id}
-                onClick={() => setSelectedVideo(glimpse.videoPlaceholder)}
+                onClick={() => setSelectedVideo(glimpse.videoUrl)}
                 className={`relative overflow-hidden aspect-[3/4] rounded-xl shadow-lg group transition-all duration-300 transform-gpu cursor-pointer ${
                   glimpse.isToday
                     ? "border-4 border-[--glimpse-accent] ring-4 ring-white ring-opacity-50"
