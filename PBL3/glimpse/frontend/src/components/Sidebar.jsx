@@ -5,10 +5,12 @@ import {
   Settings,
   Video,
 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Sidebar Component
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = () => {
+  const [activeTab, setActiveTab] = useState('Dashboard');
   const navigate = useNavigate();
 
   const sidebarItems = [
@@ -23,6 +25,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     setActiveTab(item.name);
     if (item.name === "Timeline") {
       navigate("/timelines");
+    }
+    if (item.name === "Capture") {
+      navigate("/capture");
     }
   };
 

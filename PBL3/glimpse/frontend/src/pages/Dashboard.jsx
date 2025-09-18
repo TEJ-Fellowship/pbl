@@ -24,7 +24,7 @@ import {
 
 // Main Dashboard Component
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('Dashboard');
+  
 
   const statsCards = [
     { 
@@ -59,7 +59,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex ">
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar />
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
