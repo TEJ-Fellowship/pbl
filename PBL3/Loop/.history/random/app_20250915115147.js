@@ -1,0 +1,1 @@
+import {greet,randomJoke} from 'npm i= @anu_magar/friendly-utils'
