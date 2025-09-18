@@ -7,9 +7,17 @@ import {
   Menu,
   LogInIcon,
   ChevronRight,
+  Mic,
 } from "lucide-react";
 
-const Home = ({ onLogin, onSignup, username, onLogout }) => {
+const Home = ({
+  onLogin,
+  onSignup,
+  username,
+  onLogout,
+  onRecord,
+  onVoiceNotes,
+}) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
@@ -21,7 +29,7 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
                 <MessageCircle className="w-5 h-5 text-white" />
               </div>
               <span className="text-2xl font-bold text-slate-900">
-                Shambaad
+                Sambaad
               </span>
               {username && (
                 <span className="ml-4 text-blue-600 font-semibold">
@@ -30,41 +38,79 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
               )}
             </div>
 
-            <nav className="hidden md:flex items-center space-x-8">
-              <a
-                href="#"
-                className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Product
-              </a>
-              <a
-                href="#feature"
-                className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="#pricing"
-                className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Pricing
-              </a>
-              <a
-                href="#"
-                className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
-              >
-                Resources
-              </a>
-            </nav>
-
-            <div className="flex items-center space-x-4">
+            <div>
               {username ? (
-                <button
-                  className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                  onClick={onLogout}
-                >
-                  Logout
-                </button>
+                <nav className="hidden md:flex items-center space-x-8">
+                  <a
+                    href="#"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Product
+                  </a>
+                  <a
+                    href="#feature"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Features
+                  </a>
+                  <a
+                    href="#pricing"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Pricing
+                  </a>
+                  <button
+                    className="text-slate-700 hover:text-blue-600 transition-colors font-medium"
+                    onClick={onRecord}
+                  >
+                    <span>Record Note</span>
+                  </button>
+                </nav>
+              ) : (
+                <nav className="hidden md:flex items-center space-x-8">
+                  <a
+                    href="#"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Product
+                  </a>
+                  <a
+                    href="#feature"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Features
+                  </a>
+                  <a
+                    href="#pricing"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Pricing
+                  </a>
+                  <a
+                    href="#"
+                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                  >
+                    Resources
+                  </a>
+                </nav>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 ">
+              {username ? (
+                <>
+                  <button
+                    className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                    onClick={onVoiceNotes}
+                  >
+                    My Notes
+                  </button>
+                  <button
+                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    onClick={onLogout}
+                  >
+                    Logout
+                  </button>
+                </>
               ) : (
                 <>
                   <button
@@ -108,6 +154,17 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {username ? (
+                <a href="#RecordNote">
+                <button onClick={onRecord} className="px-8 py-4 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group">
+                  <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <span>Record Note</span>
+                </button>
+              </a>
+              ) : (
+                  ""
+              )}
+
               <a href="#feature">
                 <button className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group">
                   <span>Learn more</span>
@@ -134,7 +191,7 @@ const Home = ({ onLogin, onSignup, username, onLogout }) => {
               Key Features
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Discover the unique features that make Shambaad stand out from
+              Discover the unique features that make Sambaad stand out from
               traditional social media platforms.
             </p>
           </div>

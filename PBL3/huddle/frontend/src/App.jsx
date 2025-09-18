@@ -6,22 +6,23 @@ import "react-toastify/dist/ReactToastify.css";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import RecordNote from "./pages/RecordNote";
+import MyNote from "./pages/MyNote";
+import { MoveLeft } from "lucide-react";
 
 function App() {
   const [page, setPage] = useState("home");
-  const [user, setUser] = useState(null); // Store logged-in user
+  const [user, setUser] = useState(null);
 
-  // On mount, check for token and set user if present
   useEffect(() => {
     const token = Cookies.get("token");
     if (token && !user) {
-      // Decode JWT to get username (no backend call for simplicity)
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
         setUser({
-          username: payload.email?.split("@")[0] || payload.email || "User",
+          username: payload.email?.split("@")[0] || payload.username || "User",
         });
-      } catch (e) {
+      } catch {
         // Invalid token, ignore
       }
     }
@@ -31,6 +32,8 @@ function App() {
   const handleGoToLogin = () => setPage("login");
   const handleGoToSignup = () => setPage("signup");
   const handleGoToHome = () => setPage("home");
+  const handleGoToRecordNote = () => setPage("record");
+  const handleGoToVoiceNotes = () => setPage("voice-notes");
 
   // Handle login success: set user and go home
   const handleLoginSuccess = (userObj) => {
@@ -53,6 +56,8 @@ function App() {
           onSignup={handleGoToSignup}
           username={user?.username}
           onLogout={user ? handleLogout : undefined}
+          onRecord={user ? handleGoToRecordNote : undefined}
+          onVoiceNotes={user ? handleGoToVoiceNotes : undefined}
         />
       )}
       {page === "login" && (
@@ -64,6 +69,36 @@ function App() {
       )}
       {page === "signup" && (
         <Register onSwitchToLogin={handleGoToLogin} onClose={handleGoToHome} />
+      )}
+      {page === "record" && (
+        <RecordNote
+          onClose={handleGoToHome}
+          onSave={() => {
+            handleGoToVoiceNotes();
+          }}
+        />
+      )}
+      {page === "voice-notes" && (
+        <div>
+          <div className="p-4 bg-white shadow-sm mb-4 flex items-center justify-between">
+            <button
+              className="text-blue-500 hover:text-blue-600"
+              onClick={handleGoToHome}
+            >
+              <div className="flex items-center gap-2 cursor-pointer">
+                <MoveLeft className="w-4 h-4" />
+                <span>Back to Home</span>
+              </div>
+            </button>
+            <button
+              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+              onClick={handleGoToRecordNote}
+            >
+              Record New Note
+            </button>
+          </div>
+          <MyNote />
+        </div>
       )}
       <ToastContainer position="top-center" autoClose={2000} />
     </>
