@@ -28,7 +28,7 @@ function App() {
               <Layout setIsLoggedIn={setIsLoggedIn} isLoggedIn={isLoggedIn} />
             }
           >
-            <Route index element={isLoggedIn ? <Dashboard /> : <Homepage />} />
+            <Route index element={isLoggedIn ? <Homepage /> : <Homepage />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route
