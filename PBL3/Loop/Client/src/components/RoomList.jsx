@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../utils/axios"; // ✅ updated import
+import api from "../utils/axios";
 
 export default function RoomList() {
   const navigate = useNavigate();
@@ -16,7 +16,6 @@ export default function RoomList() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch rooms from backend
   useEffect(() => {
     const fetchRooms = async () => {
       try {
@@ -49,9 +48,12 @@ export default function RoomList() {
 
   const confirmJoin = async () => {
     if (!selectedRoom) return;
+    if (!selectedRoom.isActive) {
+      alert("This room is deactivated and cannot be joined.");
+      return;
+    }
     try {
       const res = await api.post("/rooms/join", { code: joinCode });
-      // Update participant count locally
       setRooms((prev) =>
         prev.map((r) => (r._id === res.data._id ? res.data : r))
       );
@@ -62,38 +64,49 @@ export default function RoomList() {
     }
   };
 
+  const toggleRoomStatus = async (roomId) => {
+    try {
+      const res = await api.patch(`/rooms/${roomId}/toggle`);
+      setRooms((prev) =>
+        prev.map((r) => (r._id === res.data._id ? res.data : r))
+      );
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to toggle room status");
+    }
+  };
+
   const filteredRooms = rooms.filter((r) =>
     r.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="h-full bg-[#0f1c14] text-white px-12 py-8 relative">
+    <div className="h-full bg-[#0f1c14] text-white px-4 sm:px-8 lg:px-12 py-6 sm:py-8 relative">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Available Rooms</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
+        <h2 className="text-xl sm:text-2xl font-bold">Available Rooms</h2>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search rooms"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-[#1a2b20] px-4 py-2 rounded-full focus:outline-none border border-gray-700"
+            className="w-full sm:w-auto bg-[#1a2b20] px-4 py-2 rounded-full focus:outline-none border border-gray-700"
           />
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg"
+            className="flex items-center bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg w-full sm:w-auto justify-center"
           >
             <Plus className="mr-2" /> Create Room
           </button>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Room List */}
       {filteredRooms.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-          <p className="mb-4">
+          <p className="mb-4 text-center">
             {rooms.length === 0
               ? "No rooms available. Create one to get started!"
               : `No rooms match "${searchQuery}".`}
@@ -106,29 +119,53 @@ export default function RoomList() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {filteredRooms.map((room) => (
             <div
               key={room._id}
-              className="bg-[#1a2b20] rounded-lg p-6 shadow-md flex flex-col justify-between"
+              className="bg-[#1a2b20] rounded-lg p-4 sm:p-6 shadow-md flex flex-col justify-between"
             >
               <div>
-                <h3 className="font-semibold">{room.name}</h3>
+                <h3 className="font-semibold text-lg sm:text-xl">{room.name}</h3>
                 <p className="text-sm text-gray-400">
-                  {room.users?.length || 0} participant
-                  {(room.users?.length || 0) !== 1 ? "s" : ""}
+                  {room.players?.length || 0} player
+                  {(room.players?.length || 0) !== 1 ? "s" : ""}
                 </p>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-gray-500 mt-1">
                   Code: <span className="font-mono">{room.code}</span>
+                </p>
+                <p className="text-sm mt-1">
+                  Status:{" "}
+                  <span
+                    className={room.isActive ? "text-green-400" : "text-red-400"}
+                  >
+                    {room.isActive ? "Active" : "Deactivated"}
+                  </span>
                 </p>
               </div>
 
-              <div className="mt-4 flex justify-between items-center">
+              <div className="mt-3 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
                 <button
                   onClick={() => handleJoinClick(room)}
-                  className="bg-green-700 hover:bg-green-600 py-2 px-4 rounded-lg"
+                  className={`py-2 px-4 rounded-lg text-center ${
+                    room.isActive
+                      ? "bg-green-700 hover:bg-green-600"
+                      : "bg-gray-600 cursor-not-allowed"
+                  }`}
+                  disabled={!room.isActive}
                 >
                   Join
+                </button>
+
+                <button
+                  onClick={() => toggleRoomStatus(room._id)}
+                  className={`py-2 px-4 rounded-lg text-center ${
+                    room.isActive
+                      ? "bg-red-600 hover:bg-red-500"
+                      : "bg-green-600 hover:bg-green-500"
+                  }`}
+                >
+                  {room.isActive ? "Deactivate" : "Activate"}
                 </button>
 
                 <button
@@ -136,7 +173,7 @@ export default function RoomList() {
                     navigator.clipboard?.writeText(room.code);
                     alert("Copied room code to clipboard");
                   }}
-                  className="text-xs text-gray-400 underline"
+                  className="text-xs text-gray-400 underline py-2 px-4 text-center"
                 >
                   Copy Code
                 </button>
@@ -148,9 +185,9 @@ export default function RoomList() {
 
       {/* Create Room Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-[#1a2b20] p-6 rounded-lg shadow-lg w-96 relative">
-            <h3 className="text-xl font-bold mb-4">Create New Room</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-[#1a2b20] p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            <h3 className="text-xl sm:text-2xl font-bold mb-4">Create New Room</h3>
 
             <input
               type="text"
@@ -160,16 +197,16 @@ export default function RoomList() {
               className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-3"
             />
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateRoom}
-                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded w-full sm:w-auto"
               >
                 Create
               </button>
@@ -180,9 +217,11 @@ export default function RoomList() {
 
       {/* Join Room Modal */}
       {showJoinModal && selectedRoom && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-[#1a2b20] p-6 rounded-lg shadow-lg w-96 relative">
-            <h3 className="text-xl font-bold mb-4">Join {selectedRoom.name}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-[#1a2b20] p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md relative">
+            <h3 className="text-xl sm:text-2xl font-bold mb-4">
+              Join {selectedRoom.name}
+            </h3>
             <p className="text-sm text-gray-400 mb-3">Enter the room code</p>
 
             <input
@@ -193,16 +232,16 @@ export default function RoomList() {
               className="w-full bg-[#0f1c14] px-3 py-2 rounded border border-gray-600 focus:outline-none mb-4"
             />
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2">
               <button
                 onClick={() => setShowJoinModal(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded"
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded w-full sm:w-auto"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmJoin}
-                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded w-full sm:w-auto"
               >
                 Join
               </button>
