@@ -63,6 +63,22 @@ router.post("/:id/join", authMiddleWare, async (req, res) => {
   }
 });
 
+// Delete room
+router.delete("/:id/", authMiddleWare, async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) return res.status(404).json({ error: "Room not found" }); //404 not found
+    if (room.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Not authorised" }); //404-Not authorised
+    }
+    await room.deleteOne();
+    res.json("Deleted successfully");
+  } catch (error) {
+    console.error("Error deleting room", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Add message to room
 router.post("/:id/messages", authMiddleWare, async (req, res) => {
   try {
