@@ -91,11 +91,17 @@ const HeroSection = () => {
       const data = await response.json();
       console.log("Uploaded video:", data.secure_url);
 
+          // Create a thumbnail URL (capture first frame of the video)
+      const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/so_0/${data.public_id}.jpg`;
+      console.log('thumbnail', thumbnailUrl)
+
       // Save to backend
       try {
         await axios.post("http://localhost:3001/api/clips", {
           videoUrl: data.secure_url,
           publicId: data.public_id,
+          thumbnailUrl
+
         });
 
         setUploadSuccess(true);

@@ -98,8 +98,8 @@ clipsRouter.get('/', async (req, res, next) => {
 
 clipsRouter.post("/", async (req, res) => {
   try {
-    const { videoUrl, publicId } = req.body;
-    const clip = new Clip({ videoUrl, publicId, createdAt: new Date() });
+    const { videoUrl, publicId, thumbnailUrl } = req.body;
+    const clip = new Clip({ videoUrl, publicId, date: new Date(), thumbnailUrl });
     await clip.save();
     res.status(201).json(clip);
   } catch (err) {

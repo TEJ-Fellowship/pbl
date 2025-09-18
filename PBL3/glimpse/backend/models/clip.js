@@ -15,8 +15,8 @@ const clipSchema = new mongoose.Schema({
       const today = new Date();
       return today.toISOString().split("T")[0]; // "YYYY-MM-DD"
     },
-  }
-
+  },
+  thumbnailUrl: {type: String, required: true}
 })
 clipSchema.set('toJSON', {
   transform: (document, returnedObject) => {

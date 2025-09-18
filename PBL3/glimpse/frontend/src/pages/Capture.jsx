@@ -258,6 +258,10 @@ const Capture = () => {
       );
       const data = await response.json();
       console.log("Uploaded video:", data.secure_url);
+
+ // Create a thumbnail URL (capture first frame of the video)
+    const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/so_0/${data.public_id}.jpg`;
+    console.log('thumbnail', thumbnailUrl)
       showStatus("Video uploaded successfully! ✅", "success");
       try {
         const backendResponse = await fetch("http://localhost:3001/api/clips", {
@@ -268,6 +272,7 @@ const Capture = () => {
           body: JSON.stringify({
             videoUrl: data.secure_url,
             publicId: data.public_id,
+            thumbnailUrl
           }),
         });
         if (backendResponse.ok) {
