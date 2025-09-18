@@ -7,25 +7,60 @@ const { uploadClip } = require("../controllers/clipController");
 const { authMiddleWare } = require("../utils/middleware");
 
 router.post("/", authMiddleWare, upload.single("audio"), uploadClip); //order matters
+// const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+
+const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+
 router.patch("/:id/reactions", authMiddleWare, async (req, res) => {
   try {
     const { type } = req.body;
     const clipId = req.params.id;
+
+    if (!reactionTypes.includes(type)) {
+      return res.status(400).json({ error: "Invalid reaction type" });
+    }
+
     const clip = await Clip.findById(clipId);
     if (!clip) return res.status(404).json({ error: "Clip not found" });
 
-    if (type in clip.reactions) {
-      clip.reactions[type] += 1;
+    // Make sure reactions array exists
+    clip.reactions = clip.reactions || [];
+
+    // Find existing reaction by this user
+    let existingReaction = clip.reactions.find(
+      (r) => r.userId && r.userId.toString() === req.user.id
+    );
+
+    if (existingReaction) {
+      if (existingReaction.type === type) {
+        // Toggle off reaction
+        clip.reactions = clip.reactions.filter(
+          (r) => r.userId && r.userId.toString() !== req.user.id
+        );
+      } else {
+        // Change reaction type
+        existingReaction.type = type;
+      }
     } else {
-      return res.status(400).json({ error: "Invalid reaction type" });
+      // Add new reaction
+      clip.reactions.push({ userId: req.user.id, type });
     }
+
     await clip.save();
-    res.json(clip);
+
+    // Aggregate counts for each reaction type
+    const aggregated = reactionTypes.reduce((acc, rType) => {
+      acc[rType] = clip.reactions.filter((r) => r.type === rType).length;
+      return acc;
+    }, {});
+
+    res.json({ ...clip.toObject(), reactions: aggregated });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to update reaction" });
   }
 });
+
 router.get("/", authMiddleWare, async (req, res) => {
   try {
     const userId = req.user.id;

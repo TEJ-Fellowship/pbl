@@ -1,45 +1,28 @@
 const mongoose = require("mongoose");
+const reactionSchema = require("./Reaction");
+
 const clipSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   filename: { type: String, required: true },
   url: { type: String, required: true },
   duration: { type: Number },
-  roomId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Room",
-    default: null,
-  },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: "Room", default: null },
   size: { type: Number },
-
-  // AI / processing fields (filled asynchronously by a worker)
   transcript: { type: String, default: "" },
   sentiment: {
     type: String,
     enum: ["positive", "neutral", "negative", "unknown"],
     default: "unknown",
   },
-  tags: [{ type: String }], // auto-categories / themes
-
-  reactions: {
-    heart: { type: Number, default: 0 },
-    laugh: { type: Number, default: 0 },
-    sad: { type: Number, default: 0 },
-  },
-
+  tags: [{ type: String }],
+  reactions: [reactionSchema], // 👈 using the modular schema
   processingStatus: {
     type: String,
     enum: ["pending", "processing", "done", "failed"],
     default: "pending",
   },
-
-  // moderation/reporting
   reportCount: { type: Number, default: 0 },
-  isHidden: { type: Boolean, default: false }, // soft-hide if flagged
-
+  isHidden: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 
