@@ -13,7 +13,7 @@ import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
 import Timeline from "./pages/Timeline.jsx";
 import VideoUpload from "./pages/VideoUpload.jsx";
-
+import Capture from "./pages/Capture.jsx";
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
   const { isDark} = useContext(ThemeContext);
@@ -57,10 +57,10 @@ function App() {
               }
             />
               <Route
-              path="videoupload"
+              path="capture"
               element={
                 <ProtectedRoute isLoggedIn={isLoggedIn}>
-                  <VideoUpload />
+                  <Capture />
                 </ProtectedRoute>
               }
             />
