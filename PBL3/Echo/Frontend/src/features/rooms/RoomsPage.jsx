@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios, { AxiosHeaders } from "axios";
 import {
   fetchRooms,
   createRoom,
@@ -47,6 +48,22 @@ const RoomsPage = ({ setIsLoggedIn }) => {
       navigate(`/rooms/${roomId}`);
     } catch (err) {
       alert("Join failed: " + (err.message || JSON.stringify(err)));
+    }
+  };
+
+  const handleDeleteRoom = async (roomId) => {
+    if (!window.confirm("Are you sure you want to delete the room?")) return;
+    const token = localStorage.getItem("token");
+    const res = await axios.delete(
+      `http://localhost:3001/api/rooms/${roomId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    alert("Room deleted successfully");
+    dispatch(fetchRooms());
+
+    try {
+    } catch (err) {
+      alert("Delete failed: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -103,9 +120,17 @@ const RoomsPage = ({ setIsLoggedIn }) => {
 
             <div className="flex gap-2 items-center">
               {room.isOwner && (
-                <span className="text-xs px-2 py-1 bg-blue-100 rounded">
-                  Your room
-                </span>
+                <>
+                  <span className="text-xs px-2 py-1 bg-blue-100 rounded">
+                    Your room
+                  </span>
+                  <button
+                    onClick={() => handleDeleteRoom(room._id)}
+                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </>
               )}
               <button
                 onClick={() => handleJoin(room._id, room.name)}

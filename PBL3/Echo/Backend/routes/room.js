@@ -63,6 +63,22 @@ router.post("/:id/join", authMiddleWare, async (req, res) => {
   }
 });
 
+// Delete room
+router.delete("/:id/", authMiddleWare, async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) return res.status(404).json({ error: "Room not found" }); //404 not found
+    if (room.userId.toString() !== req.user.id) {
+      return res.status(403).json({ error: "Not authorised" }); //404-Not authorised
+    }
+    await room.deleteOne();
+    res.json("Deleted successfully");
+  } catch (error) {
+    console.error("Error deleting room", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Add message to room
 router.post("/:id/messages", authMiddleWare, async (req, res) => {
   try {
@@ -95,6 +111,7 @@ router.get("/:id/messages", authMiddleWare, async (req, res) => {
     if (!room) return res.status(404).json({ error: "Room not found" });
 
     const messages = room.messages.map((m) => ({
+      _id: m._id,
       clipUrl: m.clipUrl,
       createdAt: m.createdAt,
       isOwner: m.userId.toString() === req.user.id, // only creator sees as owner
@@ -106,5 +123,34 @@ router.get("/:id/messages", authMiddleWare, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
+
+// Delete messages from room
+router.delete(
+  "/:roomId/messages/:messageId",
+  authMiddleWare,
+  async (req, res) => {
+    try {
+      const { roomId, messageId } = req.params;
+
+      const room = await Room.findById(roomId);
+      if (!room) return res.status(404).json({ error: "Room not found" });
+
+      const message = room.messages.id(messageId);
+      if (!message) return res.status(404).json({ error: "Message not found" });
+
+      if (message.userId.toString() !== req.user.id) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      message.deleteOne();
+      await room.save();
+
+      res.json({ message: "Message deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  }
+);
 
 module.exports = router;
