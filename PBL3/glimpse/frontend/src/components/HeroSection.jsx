@@ -1,26 +1,7 @@
-import {
-  Calendar,
-  RotateCcw,
-  MessageSquare,
-  PieChart,
-  BarChart3,
-  Settings,
-  Video,
-  Play,
-  User,
-  Bell,
-  ChevronRight,
-  Coffee,
-  Sunrise,
-  Moon,
-  Users,
-  Upload,
-  X,
-  Check,
-} from "lucide-react";
-import axios from "axios";
+import { RotateCcw, Video, Play, User, Upload, X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import clipService from "../services/clip";
 const HeroSection = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -29,8 +10,6 @@ const HeroSection = () => {
   const [status, setStatus] = useState({ message: "", type: "" });
   const fileInputRef = useRef(null);
 
-  const cloudName = "ddfvqm9wq";
-  const uploadPreset = "glimpse";
   const navigate = useNavigate();
   const showStatus = (message, type = "info", duration = 5000) => {
     setStatus({ message, type });
@@ -69,91 +48,29 @@ const HeroSection = () => {
 
     try {
       setIsUploading(true);
-      showStatus("Uploading video to Cloudinary... ⏳", "info");
+      showStatus("Uploading video... ⏳", "info");
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("upload_preset", uploadPreset);
-      formData.append("resource_type", "video");
+      // Use the service to upload
+      const result = await clipService.uploadFile(selectedFile);
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      console.log("Upload successful:", result);
+      setUploadSuccess(true);
+      showStatus("🎉 Video uploaded successfully!", "success", 8000);
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("Uploaded video:", data.secure_url);
-
-          // Create a thumbnail URL (capture first frame of the video)
-      const thumbnailUrl = `https://res.cloudinary.com/${cloudName}/video/upload/so_0/${data.public_id}.jpg`;
-      console.log('thumbnail', thumbnailUrl)
-
-      // Save to backend
-      try {
-        await axios.post("http://localhost:3001/api/clips", {
-          videoUrl: data.secure_url,
-          publicId: data.public_id,
-          thumbnailUrl
-
-        });
-
-        setUploadSuccess(true);
-        showStatus("🎉 Video uploaded successfully!", "success", 8000);
-
-        // Reset after successful upload
-        setTimeout(() => {
-          cancelSelection();
-        }, 3000);
-      } catch (err) {
-        console.error("Backend error:", err);
-        showStatus("⚠️ Video uploaded but failed to save to database", "error");
-      }
+      // Reset after successful upload
+      setTimeout(() => {
+        cancelSelection();
+      }, 3000);
     } catch (error) {
       console.error("Upload failed:", error);
-      showStatus(`❌ Upload failed: ${error.message}`, "error");
+      const errorMessage =
+        error.response?.data?.details ||
+        error.response?.data?.error ||
+        error.message;
+      showStatus(`❌ Upload failed: ${errorMessage}`, "error");
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    const videoElement = document.getElementById("preview");
-    videoElement.srcObject = stream;
-    videoElement.play();
-
-    const recorder = new MediaRecorder(stream);
-    let chunks = [];
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
-    recorder.onstop = async () => {
-      const blob = new Blob(chunks, { type: "video/mp4" });
-      const file = new File([blob], "recorded.mp4", { type: "video/mp4" });
-
-      // Set the recorded file for manual upload
-      setSelectedFile(file);
-      const videoUrl = URL.createObjectURL(blob);
-      setSelectedVideo(videoUrl);
-      showStatus("Recording complete! Choose to upload or cancel.", "success");
-    };
-
-    recorder.start();
-
-    // Stop recording after 5 seconds (demo)
-    setTimeout(() => recorder.stop(), 5000);
   };
 
   // Status Component
@@ -263,11 +180,11 @@ const HeroSection = () => {
         {!selectedVideo && (
           <div className="flex justify-center gap-3">
             <button
-              onClick={startRecording}
+              onClick={() => navigate("/capture")}
               className="bg-white text-[#7383b2] px-6 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center space-x-2"
             >
               <Play size={18} />
-              <span onClick={()=>navigate('/capture')}>Start Recording</span>
+              <span>Go to Capture</span>
             </button>
             <button
               onClick={openFileSelector}

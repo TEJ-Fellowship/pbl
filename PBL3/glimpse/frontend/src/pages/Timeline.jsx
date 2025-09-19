@@ -1,23 +1,46 @@
-import { useEffect, useState } from 'react';
-import TIMELINE_DATA from '../components/TimelineData';
-import VideoModal from '../components/VideoModel';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-const Timeline = () => {
-  const [clips, setClips] = useState(TIMELINE_DATA)
-    const navigate = useNavigate();
-  useEffect(()=> {
-    axios.get('http://localhost:3001/api/clips').then((response) => {
-      setClips(clips.concat(response.data))
-    })
+import { useEffect, useState } from "react";
+import VideoModal from "../components/VideoModel";
+import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import clipService from "../services/clip";
 
-  }, [])
-  console.log(clips)
+const Timeline = () => {
+  const [clips, setClips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchClips = async () => {
+      try {
+        setLoading(true);
+        const response = await clipService.getAll();
+        console.log("Fetched clips:", response);
+        setClips(response || []); // response.data is not needed since clipService already returns the data
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching clips:", err);
+        setError(err.message);
+        setClips([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClips();
+  }, []);
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const sortedData = [...clips].sort((a, b) => new Date(b.date) - new Date(a.date));
-  console.log(sortedData)
+  const [selectedClipId, setSelectedClipId] = useState(null);
+
+  // Filter out clips without date and add error handling
+  const validClips = clips.filter((clip) => clip && clip.date);
+
+  const sortedData = [...validClips].sort(
+    (a, b) => new Date(b.date) - new Date(a.date)
+  );
   const groupedData = sortedData.reduce((acc, glimpse) => {
+    if (!glimpse || !glimpse.date) return acc; // Additional safety check
+
     const date = new Date(glimpse.date);
     const monthYearKey = date.toLocaleString("default", {
       month: "long",
@@ -31,27 +54,87 @@ const Timeline = () => {
   }, {});
   const sortedMonthYearKeys = Object.keys(groupedData);
 
+  if (loading) {
+    return (
+      <div className="p-4 md:p-8 w-full mx-auto">
+        <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
+          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
+          Loading...
+        </h3>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 md:p-8 w-full mx-auto">
+        <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
+          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
+          Error: {error}
+        </h3>
+      </div>
+    );
+  }
+
+  if (clips.length === 0) {
+    return (
+      <div className="p-4 md:p-8 w-full mx-auto">
+        <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
+          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
+          No clips found
+        </h3>
+      </div>
+    );
+  }
+
+  const handleDelete = async (clipId) => {
+    try {
+      if (!window.confirm("Are you sure you want to delete this clip?")) {
+        return;
+      }
+
+      console.log("Deleting clip:", clipId);
+
+      await clipService.deleteClip(clipId);
+
+      setClips(clips.filter((clip) => clip.id !== clipId));
+
+      console.log("Clip deleted successfully");
+    } catch (error) {
+      console.error("Error deleting clip:", error);
+      alert("Failed to delete clip: " + error.message);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 w-full mx-auto">
       {sortedMonthYearKeys.map((monthYearKey) => (
         <div key={monthYearKey}>
           <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
-            <ArrowLeft onClick={()=>navigate('/')} className='cursor-pointer' /> {monthYearKey}
+            <ArrowLeft
+              onClick={() => navigate("/")}
+              className="cursor-pointer"
+            />{" "}
+            {monthYearKey}
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
             {groupedData[monthYearKey].map((glimpse) => (
               <div
                 key={glimpse.id}
-                onClick={() => setSelectedVideo(glimpse.videoUrl)}
+                onClick={() => {
+                  setSelectedVideo(glimpse.videoUrl);
+                  setSelectedClipId(glimpse.id);
+                }}
                 className={`relative overflow-hidden aspect-[3/4] rounded-xl shadow-lg group transition-all duration-300 transform-gpu cursor-pointer ${
                   glimpse.isToday
                     ? "border-4 border-[--glimpse-accent] ring-4 ring-white ring-opacity-50"
                     : ""
                 } hover:scale-105 hover:shadow-2xl`}
                 style={{
-                  // backgroundImage: `url(https://picsum.photos/400?random=${glimpse.id})`,
-                  
-                  backgroundImage: `url(${(glimpse.thumbnailUrl)})`,
+                  backgroundImage: `url(${
+                    glimpse.thumbnailUrl ||
+                    `https://picsum.photos/400?random=${glimpse.id}`
+                  })`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
@@ -73,7 +156,16 @@ const Timeline = () => {
       {selectedVideo && (
         <VideoModal
           videoUrl={selectedVideo}
-          onClose={() => setSelectedVideo(null)}
+          clipId={selectedClipId}
+          onClose={() => {
+            setSelectedVideo(null);
+            setSelectedClipId(null);
+          }}
+          handleDelete={(clipId) => {
+            handleDelete(clipId);
+            setSelectedVideo(null);
+            setSelectedClipId(null);
+          }}
         />
       )}
     </div>

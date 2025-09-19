@@ -1,4 +1,6 @@
-const VideoModal = ({ videoUrl, onClose }) => (
+import { Trash } from "lucide-react";
+
+const VideoModal = ({ videoUrl, onClose, handleDelete, clipId }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-75">
     {" "}
     <div className="relative w-full max-w-xl mx-auto rounded-xl shadow-2xl overflow-hidden">
@@ -25,6 +27,14 @@ const VideoModal = ({ videoUrl, onClose }) => (
           />{" "}
         </svg>{" "}
       </button>{" "}
+      {/* Delete button positioned below close button */}
+      <button
+        onClick={() => handleDelete(clipId)}
+        className="absolute top-16 right-4 text-red-400 hover:text-red-600 transition-colors z-50 focus:outline-none"
+        aria-label="Delete video"
+      >
+        <Trash className="h-8 w-8" />
+      </button>
       <video
         src={videoUrl}
         controls
@@ -36,4 +46,4 @@ const VideoModal = ({ videoUrl, onClose }) => (
     </div>{" "}
   </div>
 );
-export default VideoModal
+export default VideoModal;

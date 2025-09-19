@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import HeroSection from '../components/HeroSection';
@@ -6,19 +5,9 @@ import RecentActivity from '../components/RecentActivity';
 import StatsCard from '../components/StatsCard';
 import { 
   Calendar, 
-  RotateCcw, 
-  MessageSquare, 
   PieChart, 
   BarChart3, 
-  Settings,
   Video,
-  Play,
-  User,
-  Bell,
-  ChevronRight,
-  Coffee,
-  Sunrise,
-  Moon,
   Users
 } from 'lucide-react';
 
