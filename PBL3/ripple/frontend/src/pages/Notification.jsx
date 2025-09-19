@@ -85,7 +85,7 @@ const Notifications = () => {
                 {notification.description}
               </p>
             )}
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-400 text-sm">
               {notification.timestamp}
             </p>
           </div>
@@ -101,13 +101,13 @@ const Notifications = () => {
           <div className="flex gap-3 mt-4">
             <button
               onClick={() => handleAccept(notification.id)}
-              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-full font-medium transition-colors"
+              className="px-6 py-2 bg-green-600 hover:bg-green-800 text-white rounded-full font-medium transition-colors"
             >
               Accept
             </button>
             <button
               onClick={() => handleDecline(notification.id)}
-              className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-colors"
+              className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium transition-colors"
             >
               Decline
             </button>
@@ -131,7 +131,10 @@ const Notifications = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className='min-h-screen p-6'
+    style={{
+        backgroundImage: 'radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)'
+    }}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="p-8 pb-6">
@@ -141,7 +144,7 @@ const Notifications = () => {
         </div>
 
         {/* Notifications List */}
-        <div className="bg-gray-800 mx-8 rounded-lg overflow-hidden">
+        <div className="bg-gray-800 bg-opacity-20 border border-gray-700 mx-8 rounded-lg overflow-hidden">
           {notifications.map(notification => (
             <NotificationItem 
               key={notification.id} 
