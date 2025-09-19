@@ -2,6 +2,7 @@ import { Video, Play, Upload } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
+import clipService from "../services/clip";
 
 const Capture = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -243,42 +244,27 @@ const Capture = () => {
 
   const uploadToCloudinary = async (file) => {
     try {
-      showStatus("Uploading to Cloudinary...", "info");
-      const cloudName = "ddfvqm9wq";
-      const uploadPreset = "glimpse";
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-      const data = await response.json();
-      console.log("Uploaded video:", data.secure_url);
-      showStatus("Video uploaded successfully! ✅", "success");
-      try {
-        const backendResponse = await fetch("http://localhost:3001/api/clips", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            videoUrl: data.secure_url,
-            publicId: data.public_id,
-          }),
-        });
-        if (backendResponse.ok) {
-          showStatus("Video saved to backend! 💾", "success");
-        }
-      } catch (err) {
-        console.error("Backend error:", err);
-        showStatus("Upload successful, but backend save failed", "error");
+      showStatus("Uploading video...", "info");
+
+      // Upload using your backend service
+      const result = await clipService.uploadFile(file);
+
+      if (result.success) {
+        showStatus("Video uploaded successfully! ✅", "success");
+        console.log("Upload result:", result);
+
+        // Wait a moment to show success message, then reload page
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        showStatus(
+          `Upload failed: ${result.error || "Unknown error"}`,
+          "error"
+        );
       }
     } catch (error) {
-      console.error("Cloudinary upload failed:", error);
+      console.error("Upload failed:", error);
       showStatus(`Upload failed: ${error.message}`, "error");
     }
   };
@@ -316,14 +302,11 @@ const Capture = () => {
         <main className="flex-1 flex items-center justify-center p-8 overflow-auto">
           <div className="w-full max-w-4xl">
             {/* Hero Section */}
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-6">
-                <Video className="w-10 h-10 text-white" />
-              </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-2">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
                 Capture Today's Glimpse
               </h1>
-              <p className="text-lg text-gray-600 mb-8">
+              <p className="text-lg text-gray-600 mb-2">
                 Share your one-second moment today!
               </p>
             </div>

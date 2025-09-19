@@ -1,110 +1,117 @@
-// const jwt = require('jsonwebtoken')
-// const clipsclipsR= require('express').Router()
-// const User = require('../models/user')
-// const Clip = require("../models/clip")
-
-// const getTokenFrom = request => {
-//   const authorization = request.get('authorization')
-//   if (authorization && authorization.startsWith('Bearer ')) {
-//     return authorization.replace('Bearer ', '')
-//   }
-//   return null
-// }
-
-// clipsRouter.post('/', async (request, response) => {
-//   const {videoUrl,caption,thumbnailUrl,downloadUrl} = request.body
-
-//   const decodedToken = jwt.verify(getTokenFrom(request), process.env.SECRET)
-//   if (!decodedToken.id) {
-//     return response.status(401).json({ error: 'token invalid' })
-//   }
-//   const user = await User.findById(decodedToken.id)
-
-//   if (!user) {
-//     return response.status(400).json({ error: 'UserId missing or not valid' })
-//   }
-
-//   const clip = new Clip({
-//     videoUrl,caption,thumbnailUrl,downloadUrl,
-//     user: user.id
-//   })
-
-//   const savedClip = await clip.save()
-//   user.clips = user.clips.concat(savedClip.id)
-//   await user.save()
-
-//   response.status(201).json(savedClip)
-// })
-
-// module.exports = clipsRouter;
-
-
-// server/routes/glimpses.js
-// const express = require("express");
-// const clipsRouter = express.Router();
-// const Clip = require("../models/clip");
-// const auth = require("../middleware/authMiddleware");
-
-// // Save glimpse (user required)
-// clipsRouter.post("/", auth, async (req, res) => {
-//   try {
-//     const { videoUrl, publicId } = req.body;
-
-//     if (!videoUrl || !publicId) {
-//       return res.status(400).json({ error: "Missing required fields" });
-//     }
-
-//     const clip = new clip({
-//       videoUrl,
-//       publicId,
-//       user: req.user._id, // 🔥 associate with logged-in user
-//     });
-
-//     await clip.save();
-
-//     res.status(201).json(clip);
-//   } catch (err) {
-//     console.error("Error saving glimpse:", err);
-//     res.status(500).json({ error: "Failed to save glimpse" });
-//   }
-// });
-
-// // Fetch user’s glimpses
-// clipsRouter.get("/my", auth, async (req, res) => {
-//   try {
-//     const clip = await Clip.find({ user: req.user._id }).sort({ createdAt: -1 });
-//     res.json(clip);
-//   } catch (err) {
-//     res.status(500).json({ error: "Failed to fetch clip" });
-//   }
-// });
-
-// module.exports = clipsRouter;
-
-// server/routes/glimpses.js
-const express = require("express");
-const clipsRouter = express.Router();
+const jwt = require("jsonwebtoken");
+const clipsRouter = require("express").Router();
+const User = require("../models/user");
 const Clip = require("../models/clip");
+const cloudinary = require("../utils/cloudinary");
+const fs = require("fs");
+const { uploadSingle } = require("../utils/uploadMiddleware");
+const auth = require("../utils/authMiddleware");
 
-// Save glimpse metadata
-clipsRouter.get('/', async (req, res, next) => {
-  try{
-    const clips = await Clip.find({})
-    res.json(clips)
-  } catch (error) {
-    next(error)
-  }
-})
-
-clipsRouter.post("/", async (req, res) => {
+clipsRouter.post("/", auth, uploadSingle("file"), async (request, response) => {
   try {
-    const { videoUrl, publicId } = req.body;
-    const clip = new Clip({ videoUrl, publicId, createdAt: new Date() });
+    const user = request.user;
+    if (!user)
+      return response.status(401).json({ error: "User not authenticated" });
+
+    if (!request.file)
+      return response.status(400).json({ error: "No file uploaded" });
+
+    const result = await cloudinary.uploader.upload(request.file.path, {
+      resource_type: "video",
+      folder: `user_videos/${user.id}`,
+      eager: [{ width: 300, height: 200, crop: "scale", format: "jpg" }],
+    });
+
+    fs.unlinkSync(request.file.path);
+
+    const hasThumbnail = result.eager && result.eager[0];
+
+    const clip = new Clip({
+      videoUrl: result.secure_url,
+      publicId: result.public_id,
+      thumbnailUrl: hasThumbnail ? result.eager[0].secure_url : null,
+      thumbnailPublicId: hasThumbnail ? result.eager[0].public_id : null,
+      user: user.id,
+      createdAt: new Date(),
+    });
+
     await clip.save();
-    res.status(201).json(clip);
+    response.status(201).json(clip);
   } catch (err) {
-    res.status(500).json({ error: "Failed to save glimpse" });
+    console.error("Full error details:", err);
+
+    if (request.file && request.file.path) {
+      try {
+        fs.unlinkSync(request.file.path);
+      } catch (unlinkErr) {
+        console.error("Failed to clean up file:", unlinkErr);
+      }
+    }
+
+    response.status(500).json({
+      error: "Failed to upload video",
+      details: err.message,
+    });
   }
 });
 
-module.exports = clipsRouter
+clipsRouter.get("/", auth, async (request, response) => {
+  try {
+    const user = request.user;
+    if (!user) {
+      return response.status(401).json({ error: "User not authenticated" });
+    }
+    const clips = await Clip.find({ user: user.id }).sort({ createdAt: -1 });
+    response.json(clips);
+  } catch (err) {
+    response.status(500).json({ error: "Failed to fetch clips" });
+  }
+});
+
+clipsRouter.delete("/:id", auth, async (request, response) => {
+  try {
+    const user = request.user;
+    if (!user)
+      return response.status(401).json({ error: "User not authenticated" });
+
+    const clip = await Clip.findById(request.params.id);
+
+    if (!clip) return response.status(404).json({ error: "Clip not found" });
+    if (clip.user.toString() !== user.id) {
+      return response
+        .status(403)
+        .json({ error: "You are not allowed to delete this clip" });
+    }
+    try {
+      if (clip.publicId) {
+        await cloudinary.uploader.destroy(clip.publicId, {
+          resource_type: "video",
+        });
+      }
+      if (clip.thumbnailPublicId) {
+        await cloudinary.uploader.destroy(clip.thumbnailPublicId, {
+          resource_type: "image",
+        });
+      }
+    } catch (cloudinaryError) {
+      console.error("⚠️ Cloudinary deletion failed:", cloudinaryError);
+    }
+
+    await Clip.findByIdAndDelete(request.params.id);
+
+    response.status(200).json({ message: "Clip deleted successfully" });
+  } catch (err) {
+    console.error("Delete error details:", {
+      message: err.message,
+      stack: err.stack,
+      clipId: request.params.id,
+      userId: request.user?.id,
+    });
+    response.status(500).json({
+      error: "Failed to delete clip",
+      details: err.message,
+    });
+  }
+});
+
+module.exports = clipsRouter;
