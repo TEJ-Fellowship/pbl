@@ -8,6 +8,7 @@ import Layout from "./Layout";
 import Explore from "./pages/Explore";
 import Notification from "./pages/Notification";
 import Activitylog from "./pages/Activitylog";
+import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute"; // import your new component
 
 function App() {
@@ -58,6 +59,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Ripple />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

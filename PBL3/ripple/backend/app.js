@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
 import contactRoutes from "./routes/contact.js";
 import rippleRoutes from "./routes/ripple.js";
+import usersRoutes from "./routes/users.js"
 
 dotenv.config();
 
@@ -21,5 +22,6 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api", contactRoutes);
 app.use("/api/ripple", rippleRoutes);
+app.use("/users", usersRoutes)
 
 export default app;

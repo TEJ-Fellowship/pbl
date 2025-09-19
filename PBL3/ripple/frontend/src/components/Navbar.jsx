@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-  const [activeItem, setActiveItem] = useState('Home');
+  const [activeItem, setActiveItem] = useState('' );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
@@ -27,7 +27,7 @@ const Navbar = () => {
 
   const handleViewProfile = () => {
     setIsDropdownOpen(false);
-    // Navigate to profile page or handle view profile
+    // Navigates to profile page
     navigate('/profile');
   };
 
@@ -53,7 +53,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className="w-full bg-gray-900 border-b border-gray-700 px-8 py-2">
+    <nav className="w-full bg-gray-900/100 border-b border-gray-700 px-8 py-2">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-3">
           <div className="w-48">
@@ -130,7 +130,7 @@ const Navbar = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>  
       </div>
     </nav>
   );
