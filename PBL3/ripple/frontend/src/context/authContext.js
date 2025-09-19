@@ -1,39 +1,39 @@
-import { createContext, useContext, useEffect, useState } from "react";
+// import { createContext, useContext, useEffect, useState } from "react";
 
-const API_URL = "http://localhost:5000/api/auth";
+// const API_URL = "http://localhost:5000/api/auth";
 
-const AuthContext = createContext();
+// const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+// export const AuthProvider = ({ children }) => {
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
-    try {
-      const res = await fetch(`${API_URL}/me`, {
-        method: "GET",
-        credentials: "include",
-      });
+//   const fetchUser = async () => {
+//     try {
+//       const res = await fetch(`${API_URL}/me`, {
+//         method: "GET",
+//         credentials: "include",
+//       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "failed to fetch user");
+//       const data = await res.json();
+//       if (!res.ok) throw new Error(data.error || "failed to fetch user");
 
-      setUser(data.user);
-    } catch (err) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+//       setUser(data.user);
+//     } catch (err) {
+//       setUser(null);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
+//   useEffect(() => {
+//     fetchUser();
+//   }, []);
 
-  const login = async (email, password) => {
-    const res = await fetch(`${API_URL}/login`{
-      method: 'POST',
-      
-    });
-  };
-};
+//   const login = async (email, password) => {
+//     const res = await fetch(`${API_URL}/login`{
+//       method: 'POST',
+
+//     });
+//   };
+// };

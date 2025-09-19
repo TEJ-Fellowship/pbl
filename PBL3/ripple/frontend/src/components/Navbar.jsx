@@ -68,8 +68,8 @@ const Navbar = () => {
   return (
     <nav className="w-full bg-gray-900/100 border-b border-gray-700 px-8 py-2">
       <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3">
-          <div className="w-48">
+        <div className="flex items-center justify-centergap-3">
+          <div className="w-48 relative top-[-10px]">
             <img src="/logo2.png" alt="logo" />
           </div>
         </div>
