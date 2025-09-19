@@ -71,3 +71,26 @@ export const getPollById = async (req, res) => {
     console.log(error);
   }
 };
+
+
+export const deletePoll = async(req,res) =>{
+  try {
+    const pollId = req.params.id;
+   const deletedPoll =  await Poll.findByIdAndDelete(pollId)
+
+   if(!deletedPoll){
+    return res.status(404).json({message:"poll not found"})
+   }
+
+   await User.findByIdAndUpdate(deletedPoll.user,{
+    $pull: {
+      polls: deletedPoll._id
+    }
+   })
+    res.status(202).json({message:"poll deleted"})
+
+  } catch (error) {
+    console.log(error)
+    
+  }
+}
