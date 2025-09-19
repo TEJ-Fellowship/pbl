@@ -1,115 +1,103 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Home from "./Home";
-import api from "../utils/axios";
+import { useParams } from "react-router-dom";
+import { io } from "socket.io-client";
+import CanvasBoard from "./CanvasBoard";
 
-export default function RoomPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [room, setRoom] = useState(null);
+export default function RoomPage({ user }) {
+  const { roomId } = useParams();
+  const [socket, setSocket] = useState(null);
+
+  const [players, setPlayers] = useState([]);
+  const [activeUser, setActiveUser] = useState(null); // current turn
+  const [remainingTime, setRemainingTime] = useState(30);
+  const [isCreator, setIsCreator] = useState(false);
+  const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const res = await api.get("/rooms");
-        const found = res.data.find((r) => r._id === id);
-        setRoom(found || null);
-      } catch (err) {
-        console.error("Failed to fetch room", err);
-        setRoom(null);
-      }
+    if (!roomId || !user) return;
+
+    const newSocket = io("http://localhost:5000", { withCredentials: true });
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("Socket connected:", newSocket.id);
+      newSocket.emit("joinRoom", {
+        roomId,
+        userId: user._id,
+        username: user.username || user.name,
+      });
+    });
+
+    // Room users update
+    newSocket.on("roomUsers", (roomUsers) => {
+      setPlayers(roomUsers);
+      const currentTurn = roomUsers.find(
+        (u) => u.socketId === roomUsers[0]?.socketId
+      );
+      if (currentTurn) setActiveUser({ id: currentTurn.userId, name: currentTurn.username });
+    });
+
+    // Timer update
+    newSocket.on("timerUpdate", (time) => {
+      setRemainingTime(time);
+    });
+
+    // Turn update
+    newSocket.on("turnUpdate", ({ userId, username }) => {
+      setActiveUser({ id: userId, name: username });
+      setRemainingTime(30);
+    });
+
+    return () => {
+      newSocket.emit("leaveRoom", { roomId, userId: user._id });
+      newSocket.disconnect();
     };
-    fetchRoom();
-  }, [id]);
+  }, [roomId, user]);
 
-  const leaveRoom = async () => {
-    try {
-      await api.patch(`/rooms/${id}/deactivate`);
-    } catch (err) {
-      console.error("Failed to leave room", err);
-    }
-    navigate("/my-room");
+  // Only creator can toggle room (optional)
+  const handleToggleRoom = () => {
+    if (!isCreator) return;
+    // emit some event to backend if needed
   };
-
-  const copyToClipboard = async (text) => {
-    if (!text) return false;
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "absolute";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      return true;
-    } catch (e) {
-      console.error("Fallback copy failed", e);
-      return false;
-    }
-  };
-
-  const handleInvite = async () => {
-    if (!room?.code) {
-      alert("No room code available to copy!");
-      return;
-    }
-    const ok = await copyToClipboard(room.code);
-    if (ok) alert(`Room code "${room.code}" copied! 📋`);
-    else alert("Couldn't copy automatically. Please copy manually: " + room.code);
-  };
-
-  if (!room) {
-    return (
-      <div className="h-full flex flex-col justify-center items-center text-white bg-[#0f1c14]">
-        <p className="mb-4">Room not found 😢</p>
-        <button
-          onClick={() => navigate("/my-room")}
-          className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded"
-        >
-          Back to Rooms
-        </button>
-      </div>
-    );
-  }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="bg-[#1a2b20] p-4 text-white flex justify-between items-center">
-        <div>
-          <h2 className="text-lg font-semibold">{room.name}</h2>
-          <p className="text-sm text-gray-400">
-            {room.users?.length || 0} participant
-            {(room.users?.length || 0) !== 1 ? "s" : ""}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Room Code: <span className="font-mono">{room.code}</span>
-          </p>
-        </div>
+    <div className="flex flex-col items-center p-4 bg-gray-900 min-h-screen text-white">
+      <h1 className="text-2xl font-bold mb-2">Room: {roomId}</h1>
 
-        <div className="flex items-center space-x-2">
+      {isCreator && (
+        <div className="mb-2">
+          <p className="text-gray-400">Room Code: {roomId}</p>
           <button
-            onClick={handleInvite}
-            className="bg-green-700 hover:bg-green-600 px-4 py-2 rounded-lg"
+            onClick={handleToggleRoom}
+            className="bg-green-500 px-4 py-2 rounded mb-4"
           >
-            Invite
-          </button>
-          <button
-            onClick={leaveRoom}
-            className="bg-red-600 hover:bg-red-500 px-3 py-2 rounded"
-          >
-            Leave Room
+            {isActive ? "Deactivate Room" : "Activate Room"}
           </button>
         </div>
+      )}
+
+      {/* Timer + current drawer */}
+      <div className="mb-4">
+        <p className="font-semibold">
+          {activeUser?.id === user._id
+            ? "🎨 Your Turn to Draw!"
+            : `Waiting for ${activeUser?.name || "someone"} to draw...`}
+        </p>
+        <p className="text-red-500">⏱️ {remainingTime}s</p>
       </div>
 
-      <div className="flex-1">
-        <Home />
+      {/* Canvas */}
+      <div className="w-full flex-1 flex justify-center">
+        <CanvasBoard
+          brushColor="#000000"
+          brushSize={3}
+          tool="pen"
+          roomId={roomId}
+          user={user}
+          activeUser={activeUser}
+          setRemainingTime={setRemainingTime}
+          socket={socket}
+        />
       </div>
     </div>
   );

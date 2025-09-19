@@ -1,3 +1,4 @@
+// components/RoomList.jsx
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +8,7 @@ export default function RoomList() {
   const navigate = useNavigate();
 
   const [rooms, setRooms] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roomName, setRoomName] = useState("");
 
@@ -17,15 +19,19 @@ export default function RoomList() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const fetchRooms = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/rooms");
-        setRooms(res.data);
+        const [roomsRes, userRes] = await Promise.all([
+          api.get("/rooms"),
+          api.get("/userRoutes/me")
+        ]);
+        setRooms(roomsRes.data || []);
+        setCurrentUser(userRes.data || null);
       } catch (err) {
-        console.error("Failed to fetch rooms", err);
+        console.error("Failed to fetch rooms or user", err);
       }
     };
-    fetchRooms();
+    fetchData();
   }, []);
 
   const handleCreateRoom = async () => {
@@ -120,66 +126,76 @@ export default function RoomList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filteredRooms.map((room) => (
-            <div
-              key={room._id}
-              className="bg-[#1a2b20] rounded-lg p-4 sm:p-6 shadow-md flex flex-col justify-between"
-            >
-              <div>
-                <h3 className="font-semibold text-lg sm:text-xl">{room.name}</h3>
-                <p className="text-sm text-gray-400">
-                  {room.players?.length || 0} player
-                  {(room.players?.length || 0) !== 1 ? "s" : ""}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Code: <span className="font-mono">{room.code}</span>
-                </p>
-                <p className="text-sm mt-1">
-                  Status:{" "}
-                  <span
-                    className={room.isActive ? "text-green-400" : "text-red-400"}
+          {filteredRooms.map((room) => {
+            const isCreator = currentUser && room.creator && (room.creator._id || room.creator) === (currentUser._id || currentUser.id || currentUser._id);
+            return (
+              <div
+                key={room._id}
+                className="bg-[#1a2b20] rounded-lg p-4 sm:p-6 shadow-md flex flex-col justify-between"
+              >
+                <div>
+                  <h3 className="font-semibold text-lg sm:text-xl">{room.name}</h3>
+                  <p className="text-sm text-gray-400">
+                    {room.players?.length || 0} player
+                    {(room.players?.length || 0) !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Code: <span className="font-mono">{room.code}</span>
+                  </p>
+                  <p className="text-sm mt-1">
+                    Status:{" "}
+                    <span
+                      className={room.isActive ? "text-green-400" : "text-red-400"}
+                    >
+                      {room.isActive ? "Active" : "Deactivated"}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="mt-3 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+                  <button
+                    onClick={() => handleJoinClick(room)}
+                    className={`py-2 px-4 rounded-lg text-center ${
+                      room.isActive
+                        ? "bg-green-700 hover:bg-green-600"
+                        : "bg-gray-600 cursor-not-allowed"
+                    }`}
+                    disabled={!room.isActive}
                   >
-                    {room.isActive ? "Active" : "Deactivated"}
-                  </span>
-                </p>
+                    Join
+                  </button>
+
+                  {/* Only show toggle to creator */}
+                  {isCreator ? (
+                    <button
+                      onClick={() => toggleRoomStatus(room._id)}
+                      className={`py-2 px-4 rounded-lg text-center ${
+                        room.isActive
+                          ? "bg-red-600 hover:bg-red-500"
+                          : "bg-green-600 hover:bg-green-500"
+                      }`}
+                    >
+                      {room.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  ) : (
+                    <div className="py-2 px-4 rounded-lg text-center bg-gray-800 text-sm text-gray-400">
+                      Only creator can toggle
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(room.code);
+                      alert("Copied room code to clipboard");
+                    }}
+                    className="text-xs text-gray-400 underline py-2 px-4 text-center"
+                  >
+                    Copy Code
+                  </button>
+                </div>
               </div>
-
-              <div className="mt-3 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
-                <button
-                  onClick={() => handleJoinClick(room)}
-                  className={`py-2 px-4 rounded-lg text-center ${
-                    room.isActive
-                      ? "bg-green-700 hover:bg-green-600"
-                      : "bg-gray-600 cursor-not-allowed"
-                  }`}
-                  disabled={!room.isActive}
-                >
-                  Join
-                </button>
-
-                <button
-                  onClick={() => toggleRoomStatus(room._id)}
-                  className={`py-2 px-4 rounded-lg text-center ${
-                    room.isActive
-                      ? "bg-red-600 hover:bg-red-500"
-                      : "bg-green-600 hover:bg-green-500"
-                  }`}
-                >
-                  {room.isActive ? "Deactivate" : "Activate"}
-                </button>
-
-                <button
-                  onClick={() => {
-                    navigator.clipboard?.writeText(room.code);
-                    alert("Copied room code to clipboard");
-                  }}
-                  className="text-xs text-gray-400 underline py-2 px-4 text-center"
-                >
-                  Copy Code
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -5,7 +5,12 @@ export default function RightSidebar({
   setBrushColor,
   brushSize,
   setBrushSize,
+  remainingTime,   // new prop
+  activeUser,      // new prop: current turn user
+  user,            // logged-in user
 }) {
+  const isMyTurn = activeUser?.id === user?.id;
+
   return (
     <div className="w-72 bg-gray-800 p-4 flex flex-col space-y-6">
       {/* Style Section */}
@@ -58,12 +63,12 @@ export default function RightSidebar({
         {/* Current Turn */}
         <div className="mt-4 p-3 bg-gray-700 rounded-lg flex items-center space-x-3">
           <img
-            src="https://randomuser.me/api/portraits/men/32.jpg"
+            src={activeUser?.avatar || "https://randomuser.me/api/portraits/men/32.jpg"}
             alt="turn-user"
             className="w-10 h-10 rounded-full"
           />
           <div>
-            <p className="font-medium">Liam Carter</p>
+            <p className="font-medium">{activeUser?.name || "Unknown"}</p>
             <p className="text-sm text-gray-300">Current Turn</p>
           </div>
         </div>
@@ -74,11 +79,13 @@ export default function RightSidebar({
         <h2 className="text-lg font-semibold mb-2">Turn Timer</h2>
         <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
           <div
-            className="bg-green-400 h-2 rounded-full"
-            style={{ width: "70%" }} // static for now, can make dynamic
+            className="bg-green-400 h-2 rounded-full transition-all duration-500"
+            style={{ width: `${(remainingTime / 30) * 100}%` }}
           ></div>
         </div>
-        <p className="text-right text-sm text-gray-300 mt-1">15s left</p>
+        <p className="text-right text-sm text-gray-300 mt-1">
+          {remainingTime}s left
+        </p>
       </div>
 
       {/* Brush Controls */}
