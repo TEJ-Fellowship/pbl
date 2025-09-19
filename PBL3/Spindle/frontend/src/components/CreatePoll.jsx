@@ -5,7 +5,7 @@ import axios from "axios";
 function CreatePoll() {
   const [options, setOptions] = useState(["", ""]); // start with 2 options
 
-  const [timer, setTimer] = useState("");
+  const [timer, setTimer] = useState("no-timer");
 
   const [titleText, setTitleText] = useState("");
 
@@ -31,15 +31,14 @@ function CreatePoll() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const storedUser = JSON.parse(localStorage.getItem("user"))
+    const storedUser = JSON.parse(localStorage.getItem("user"));
 
     try {
       let obj = {
         question: titleText,
         options,
         timer,
-        userId: storedUser?._id || storedUser?.id
-      
+        userId: storedUser?._id || storedUser?.id,
       };
 
       const response = await axios.post(
@@ -51,9 +50,11 @@ function CreatePoll() {
       setTitleText("");
       setOptions(["", ""]);
       setTimer("");
+
       setAiSuggestion([])
+
       alert("Poll created!");
-      setLoading(false)
+      setLoading(false);
     } catch (error) {
       console.log(error);
     }
@@ -73,9 +74,10 @@ function CreatePoll() {
         question: titleText,
       });
       console.log("gemini response", res.data.text);
-
-
       setAiSuggestion(res.data.text);
+
+      setLoading(false)
+
     } catch (error) {
       console.log(error);
     }
@@ -142,7 +144,7 @@ function CreatePoll() {
                 >
                   <span className="text-gray-700 text-sm">{a}</span>
                   <button
-                    onClick={() => setOptions([...options, a])}
+                    onClick={() =>setOptions([...options, a])}
                     className="text-xs text-blue-600 hover:underline"
                   >
                     Add
