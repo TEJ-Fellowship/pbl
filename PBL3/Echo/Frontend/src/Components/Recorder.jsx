@@ -1,4 +1,4 @@
-// components/Recorder
+// Components/Recorder
 import React, { useState, useRef } from "react";
 import uploadClip from "../api/clipApi";
 

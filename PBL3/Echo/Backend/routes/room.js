@@ -91,13 +91,22 @@ router.post("/:id/messages", authMiddleWare, async (req, res) => {
 
     const message = {
       userId: req.user.id,
-      clipUrl: clip.url, // save the **real backend URL**
+      clipUrl: clip.url,
       createdAt: new Date(),
     };
 
     room.messages.push(message);
     await room.save();
-    res.status(201).json({ ...message, isOwner: true });
+    const savedMessage = room.messages[room.messages.length - 1];
+    // construct response to include _id and roomId
+    const responseMessage = {
+      _id: savedMessage._id,
+      clipUrl: savedMessage.clipUrl,
+      createdAt: savedMessage.createdAt,
+      roomId: room._id.toString(),
+      isOwner: true,
+    };
+    res.status(201).json(responseMessage);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to send voice message" });
