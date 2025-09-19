@@ -17,7 +17,7 @@ export default function (io) {
       if (ripple.visibility.includes("global")) {
         io.emit("rippleNotification", {
           fromUser: userId,
-          messsage: globalMessage,
+          message: globalMessage,
         });
       }
 
