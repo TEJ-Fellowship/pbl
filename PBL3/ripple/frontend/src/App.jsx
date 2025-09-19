@@ -9,7 +9,7 @@ import Explore from './pages/Explore';
 import Notification from './pages/Notification';
 import Activitylog from './pages/Activitylog';
 import Profile from './pages/Profile';
-import ProtectedRoute from './components/ProtectedRoute'; // import your new component
+import ProtectedRoute from './components/ProtectedRoute'; 
 
 function App() {
   return (

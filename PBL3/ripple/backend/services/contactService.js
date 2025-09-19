@@ -32,10 +32,7 @@ const listContacts = async (ownerId) => {
 };
 
 const removeContact = async (ownerId, contactId) => {
-  return Contact.findByIdAndDelete({
-    owner: ownerId,
-    contact: contactId,
-  });
+  return Contact.findByIdAndDelete(contactId);
 };
 
 export default { getFriends, addContact, listContacts, removeContact };
