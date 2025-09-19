@@ -5,11 +5,11 @@ import {
   Share2,
   Download,
   Menu,
-  LogInIcon,
+  LogIn,
   ChevronRight,
   Mic,
 } from "lucide-react";
-import logo from "../assets/logo.svg"
+import logo from "../assets/logo.svg";
 
 const Home = ({
   onLogin,
@@ -21,18 +21,16 @@ const Home = ({
   onChat,
 }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+      <header className="bg-white/90 backdrop-blur-md border-b border-teal-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-3">
-                <img src={logo} className="w-[75px] h-[75px] text-white" />
-              {/* <span className="text-2xl font-bold text-slate-900">
-                Sambaad
-              </span> */}
+              <img src={logo} className="w-[75px] h-[75px] text-white" />
+
               {username && (
-                <span className="ml-4 text-blue-600 font-semibold">
+                <span className="ml-4 text-teal-700 font-semibold">
                   Welcome, {username}!
                 </span>
               )}
@@ -43,24 +41,24 @@ const Home = ({
                 <nav className="hidden md:flex items-center space-x-8">
                   <a
                     href="#feature"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Features
                   </a>
                   <button
-                    className="text-slate-700 hover:text-blue-600 transition-colors font-medium"
+                    className="text-slate-700 hover:text-teal-600 transition-colors font-medium"
                     onClick={onChat}
                   >
                     <span>Chat</span>
                   </button>
                   <a
                     href="#pricing"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Pricing
                   </a>
                   <button
-                    className="text-slate-700 hover:text-blue-600 transition-colors font-medium"
+                    className="text-slate-700 hover:text-teal-600 transition-colors font-medium"
                     onClick={onRecord}
                   >
                     <span>Record Note</span>
@@ -70,25 +68,25 @@ const Home = ({
                 <nav className="hidden md:flex items-center space-x-8">
                   <a
                     href="#"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Product
                   </a>
                   <a
                     href="#feature"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Features
                   </a>
                   <a
                     href="#pricing"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Pricing
                   </a>
                   <a
                     href="#"
-                    className="text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="text-slate-700 hover:text-teal-600 font-medium transition-colors"
                   >
                     Resources
                   </a>
@@ -99,19 +97,19 @@ const Home = ({
               {username ? (
                 <>
                   <button
-                    className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                    className="px-6 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white font-medium rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     onClick={onVoiceNotes}
                   >
                     My Notes
                   </button>
                   <button
-                    className="px-6 py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                    className="px-6 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-medium rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     onClick={onChat}
                   >
                     Chat
                   </button>
                   <button
-                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    className="px-6 py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white font-medium rounded-lg hover:from-slate-600 hover:to-slate-700 transition-all duration-200 shadow-sm hover:shadow-md border border-slate-400"
                     onClick={onLogout}
                   >
                     Logout
@@ -120,13 +118,13 @@ const Home = ({
               ) : (
                 <>
                   <button
-                    className="hidden md:block px-4 py-2 text-slate-700 hover:text-blue-600 font-medium transition-colors"
+                    className="hidden md:block px-4 py-2 text-slate-700 hover:text-teal-600 font-medium transition-colors"
                     onClick={onLogin}
                   >
                     Log In
                   </button>
                   <button
-                    className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    className="px-6 py-2 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-medium rounded-lg hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     onClick={onSignup}
                   >
                     Sign Up
@@ -147,7 +145,7 @@ const Home = ({
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
               Sambaad: Where Voices
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 block">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 block">
                 Connect
               </span>
             </h1>
@@ -164,7 +162,7 @@ const Home = ({
                 <a href="#RecordNote">
                   <button
                     onClick={onRecord}
-                    className="px-8 py-4 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group"
+                    className="px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-medium rounded-xl hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group"
                   >
                     <Mic className="w-5 h-5 group-hover:scale-110 transition-transform" />
                     <span>Record Note</span>
@@ -175,14 +173,14 @@ const Home = ({
               )}
 
               <a href="#feature">
-                <button className="px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group">
+                <button className="px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 group">
                   <span>Learn more</span>
                   <ChevronRight className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 </button>
               </a>
               {username ? (
                 <button
-                  className="px-8 py-4 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+                  className="px-8 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-medium rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
                   onClick={onChat}
                 >
                   <span>Let's Chat</span>
@@ -190,11 +188,11 @@ const Home = ({
                 </button>
               ) : (
                 <button
-                  className="px-8 py-4 text-blue-600 font-semibold hover:bg-blue-50 rounded-xl transition-colors border-2 border-blue-600 flex items-center hover:border-blue-700"
+                  className="px-8 py-4 text-teal-600 font-semibold hover:bg-teal-50 rounded-xl transition-colors border-2 border-teal-600 flex items-center hover:border-teal-700"
                   onClick={onLogin}
                 >
                   <span>Log In</span>
-                  <LogInIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <LogIn className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 </button>
               )}
             </div>
@@ -203,7 +201,7 @@ const Home = ({
       </section>
 
       {/* Features Section */}
-      <section id="feature" className="py-20 bg-white">
+      <section id="feature" className="py-20 bg-white/70 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-900 mb-4">
@@ -217,8 +215,8 @@ const Home = ({
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <div className="group bg-slate-50 rounded-2xl p-8 hover:bg-blue-50 transition-all duration-300 hover:shadow-lg">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl p-8 hover:from-teal-100 hover:to-cyan-100 transition-all duration-300 hover:shadow-xl border border-teal-100">
+              <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
                 <MessageCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">
@@ -231,8 +229,8 @@ const Home = ({
             </div>
 
             {/* Feature 2 */}
-            <div className="group bg-slate-50 rounded-2xl p-8 hover:bg-blue-50 transition-all duration-300 hover:shadow-lg">
-              <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-8 hover:from-cyan-100 hover:to-blue-100 transition-all duration-300 hover:shadow-xl border border-cyan-100">
+              <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">
@@ -245,8 +243,8 @@ const Home = ({
             </div>
 
             {/* Feature 3 */}
-            <div className="group bg-slate-50 rounded-2xl p-8 hover:bg-blue-50 transition-all duration-300 hover:shadow-lg">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 hover:shadow-xl border border-blue-100">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-lg">
                 <Share2 className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-slate-900 mb-4">
@@ -264,17 +262,17 @@ const Home = ({
       {/* Call to Action */}
       <section
         id="pricing"
-        className="py-20 bg-gradient-to-r from-blue-600 to-indigo-700"
+        className="py-20 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700"
       >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Join the Sambaad Community Today
           </h2>
-          <p className="text-xl text-blue-100 mb-10 leading-relaxed">
+          <p className="text-xl text-teal-100 mb-10 leading-relaxed">
             Download the app and start connecting with others through the power
             of voice.
           </p>
-          <button className="px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl flex items-center space-x-2 mx-auto group">
+          <button className="px-8 py-4 bg-white text-teal-700 font-semibold rounded-xl hover:bg-teal-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 mx-auto group">
             <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span>Download the App</span>
           </button>
@@ -286,35 +284,35 @@ const Home = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                <img src={logo} className="w-[75px] h-[75px] text-white" />
               </div>
               <span className="text-xl font-bold text-white">Sambaad</span>
             </div>
 
             <div className="flex space-x-8 mb-4 md:mb-0">
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#" className="hover:text-teal-300 transition-colors">
                 About
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#" className="hover:text-teal-300 transition-colors">
                 Contact
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#" className="hover:text-teal-300 transition-colors">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#" className="hover:text-teal-300 transition-colors">
                 Terms of Service
               </a>
             </div>
 
             <div className="flex space-x-4">
-              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors cursor-pointer">
+              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-teal-700 transition-colors cursor-pointer">
                 <MessageCircle className="w-5 h-5" />
               </div>
-              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors cursor-pointer">
+              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-cyan-700 transition-colors cursor-pointer">
                 <Users className="w-5 h-5" />
               </div>
-              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-700 transition-colors cursor-pointer">
+              <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center hover:bg-blue-700 transition-colors cursor-pointer">
                 <Share2 className="w-5 h-5" />
               </div>
             </div>

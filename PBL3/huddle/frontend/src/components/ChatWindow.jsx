@@ -189,29 +189,29 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 to-teal-50">
       {/* Header */}
-      <div className="flex items-center p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center p-4 border-b border-teal-100 bg-gradient-to-r from-teal-500 to-cyan-600 shadow-lg">
         <button
           onClick={onBack}
-          className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className="mr-4 p-2 hover:bg-white/20 rounded-full transition-all duration-200 text-white"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+        <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold mr-3 shadow-md">
           {otherParticipant?.username?.charAt(0).toUpperCase()}
         </div>
         <div>
-          <h2 className="font-semibold text-gray-900">
+          <h2 className="font-semibold text-white">
             {otherParticipant?.username}
           </h2>
-          <p className="text-sm text-gray-500">{otherParticipant?.email}</p>
+          <p className="text-sm text-white/80">{otherParticipant?.email}</p>
         </div>
       </div>
 
@@ -219,7 +219,7 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">
+            <p className="text-teal-600/70">
               No messages yet. Start the conversation!
             </p>
           </div>
@@ -227,68 +227,21 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
           messages.map((message) => {
             const isOwn = message.sender._id === currentUserId;
             return (
-              // <div
-              //   key={message._id}
-              //   className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
-              // >
-              //   <div
-              //     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-              //       isOwn
-              //         ? "bg-blue-500 text-white"
-              //         : "bg-gray-200 text-gray-900"
-              //     }`}
-              //   >
-              //     {message.messageType === "text" ? (
-              //       <p>{message.content}</p>
-              //     ) : (
-              //       <div className="flex items-center">
-              //         <audio
-              //           src={message.voiceUrl}
-              //           controls
-              //           className="flex-shrink-0 w-40 md:w-60 lg:w-72"
-              //           style={{ minWidth: "160px" }}
-              //         >
-              //           Your browser does not support the audio element.
-              //         </audio>
-              //         <span className="ml-2 text-xs opacity-75 whitespace-nowrap">
-              //           {formatTime(message.duration)}
-              //         </span>
-              //       </div>
-              //     )}
-              //     <div className="flex items-center justify-between mt-1">
-              //       <p
-              //         className={`text-xs ${
-              //           isOwn ? "text-blue-100" : "text-gray-500"
-              //         }`}
-              //       >
-              //         {formatMessageTime(message.createdAt)}
-              //       </p>
-              //       {isOwn && (
-              //         <button
-              //           onClick={() => handleDeleteMessage(message._id)}
-              //           className="ml-2 opacity-75 hover:opacity-100"
-              //         >
-              //           <Trash2 className="w-3 h-3" />
-              //         </button>
-              //       )}
-              //     </div>
-              //   </div>
-              // </div>
               <div
                 key={message._id}
                 className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg shadow-md ${
                     isOwn
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-900"
+                      ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white"
+                      : "bg-white border border-teal-100 text-slate-700"
                   }`}
                 >
                   {/* Sender Name */}
                   <p
                     className={`text-xs font-semibold mb-1 ${
-                      isOwn ? "text-blue-100" : "text-gray-700"
+                      isOwn ? "text-white/80" : "text-teal-600"
                     }`}
                   >
                     {message.sender?.username}
@@ -315,7 +268,7 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
                   <div className="flex items-center justify-between mt-1">
                     <p
                       className={`text-xs ${
-                        isOwn ? "text-blue-100" : "text-gray-500"
+                        isOwn ? "text-white/70" : "text-slate-500"
                       }`}
                     >
                       {formatMessageTime(message.createdAt)}
@@ -323,7 +276,7 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
                     {isOwn && (
                       <button
                         onClick={() => handleDeleteMessage(message._id)}
-                        className="ml-2 opacity-75 hover:opacity-100"
+                        className="ml-2 opacity-75 hover:opacity-100 transition-opacity"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -339,25 +292,25 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
 
       {/* Voice Recording UI */}
       {(isRecording || audioBlob) && (
-        <div className="p-4 bg-gray-50 border-t border-gray-200">
+        <div className="p-4 bg-gradient-to-r from-teal-50 to-cyan-50 border-t border-teal-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {isRecording && (
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-600">Recording...</span>
-                  <span className="font-mono text-sm">
+                  <span className="text-sm text-teal-700">Recording...</span>
+                  <span className="font-mono text-sm text-teal-600">
                     {formatTime(recordingTime)}
                   </span>
                 </div>
               )}
               {audioBlob && !isRecording && (
                 <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  <span className="text-sm text-teal-700">
                     Voice message ready
                   </span>
-                  <span className="font-mono text-sm">
+                  <span className="font-mono text-sm text-teal-600">
                     {formatTime(recordingTime)}
                   </span>
                 </div>
@@ -367,7 +320,7 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
               {isRecording && (
                 <button
                   onClick={stopRecording}
-                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-md"
                 >
                   <Square className="w-4 h-4" />
                 </button>
@@ -379,14 +332,14 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
                       setAudioBlob(null);
                       setRecordingTime(0);
                     }}
-                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    className="px-3 py-1 text-sm text-teal-600 hover:text-teal-800 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSendVoiceMessage}
                     disabled={sending}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 shadow-md"
                   >
                     Send
                   </button>
@@ -399,7 +352,7 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
 
       {/* Message Input */}
       {!isRecording && !audioBlob && (
-        <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="p-4 border-t border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50">
           <form
             onSubmit={handleSendTextMessage}
             className="flex items-center space-x-2"
@@ -409,20 +362,20 @@ const ChatWindow = ({ chat, onBack, onUpdateChats }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-teal-200 rounded-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white shadow-sm"
               disabled={sending}
             />
             <button
               type="button"
               onClick={startRecording}
-              className="p-2 text-gray-500 hover:text-blue-500 transition-colors"
+              className="p-2 text-teal-600 hover:text-teal-700 hover:bg-teal-100 rounded-full transition-all duration-200"
             >
               <Mic className="w-5 h-5" />
             </button>
             <button
               type="submit"
               disabled={!newMessage.trim() || sending}
-              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-full hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
             >
               <Send className="w-5 h-5" />
             </button>

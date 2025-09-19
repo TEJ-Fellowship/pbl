@@ -1,16 +1,8 @@
 import React, { useState } from "react";
+import logo from "../assets/logo.svg";
 import { registerUser } from "../api/auth";
 import { toast } from "react-toastify";
-import {
-  MessageCircle,
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  User,
-  Phone,
-  X,
-} from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, X } from "lucide-react";
 
 const Register = ({ onSwitchToLogin, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -50,7 +42,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       <button
         className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 transition-colors z-10"
         onClick={onClose}
@@ -62,18 +54,18 @@ const Register = ({ onSwitchToLogin, onClose }) => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-              <MessageCircle className="w-7 h-7 text-white" />
+            <div className="w-12 h-12  rounded-xl flex items-center justify-center ">
+              <img src={logo} className="w-[75px] h-[75px] text-white" />
             </div>
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-2">
-            Join Shambaad
+            Join Sambaad
           </h2>
           <p className="text-slate-600">Create your account to get started</p>
         </div>
 
         {/* Signup Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-teal-100 p-8">
           <div className="space-y-6">
             {/* Email Field */}
             <div>
@@ -85,7 +77,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-400" />
+                  <Mail className="h-5 w-5 text-teal-400" />
                 </div>
                 <input
                   id="email"
@@ -94,7 +86,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                   placeholder="Enter your email"
                 />
               </div>
@@ -109,7 +101,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                 Username
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-teal-400" />
                 <input
                   id="username"
                   name="username"
@@ -117,7 +109,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                   required
                   value={formData.username}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                   placeholder="Username"
                 />
               </div>
@@ -133,7 +125,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-slate-400" />
+                  <Lock className="h-5 w-5 text-teal-400" />
                 </div>
                 <input
                   id="password"
@@ -142,7 +134,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="block w-full pl-10 pr-12 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-200"
                   placeholder="Create a password"
                 />
                 <button
@@ -151,9 +143,9 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                    <EyeOff className="h-5 w-5 text-teal-400 hover:text-teal-600 transition-colors" />
                   ) : (
-                    <Eye className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                    <Eye className="h-5 w-5 text-teal-400 hover:text-teal-600 transition-colors" />
                   )}
                 </button>
               </div>
@@ -168,7 +160,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                 required
                 checked={formData.agreeToTerms}
                 onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded mt-1"
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded mt-1"
               />
               <label
                 htmlFor="agreeToTerms"
@@ -177,14 +169,14 @@ const Register = ({ onSwitchToLogin, onClose }) => {
                 I agree to the{" "}
                 <a
                   href="#"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-teal-600 hover:text-teal-700 font-medium transition-colors"
                 >
                   Terms of Service
                 </a>{" "}
                 and{" "}
                 <a
                   href="#"
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-teal-600 hover:text-teal-700 font-medium transition-colors"
                 >
                   Privacy Policy
                 </a>
@@ -194,7 +186,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
             {/* Create Account Button */}
             <button
               onClick={handleSubmit}
-              className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all duration-200 transform hover:scale-[1.02]"
             >
               Create Account
             </button>
@@ -212,10 +204,10 @@ const Register = ({ onSwitchToLogin, onClose }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <button className="w-full inline-flex justify-center py-3 px-4 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+              <button className="w-full inline-flex justify-center py-3 px-4 border border-teal-200 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-teal-50 hover:border-teal-300 transition-all duration-200">
                 <span>Google</span>
               </button>
-              <button className="w-full inline-flex justify-center py-3 px-4 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+              <button className="w-full inline-flex justify-center py-3 px-4 border border-teal-200 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-teal-50 hover:border-teal-300 transition-all duration-200">
                 <span>Facebook</span>
               </button>
             </div>
@@ -227,7 +219,7 @@ const Register = ({ onSwitchToLogin, onClose }) => {
               Already have an account?{" "}
               <button
                 onClick={onSwitchToLogin}
-                className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                className="font-semibold text-teal-600 hover:text-teal-700 transition-colors"
               >
                 Sign in
               </button>
