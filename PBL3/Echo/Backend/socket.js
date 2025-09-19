@@ -36,6 +36,19 @@ function initSocket(server) {
       console.log(`Broadcasting new message to room ${roomId}`);
     });
 
+    // Feed events
+    socket.on("newFeedClip", (clip) => {
+      io.emit("feedClipAdded", clip);
+    });
+
+    socket.on("clipReacted", (updatedClip) => {
+      socket.broadcast.emit("feedClipUpdated", updatedClip);
+    });
+
+    socket.on("clipDeleted", (clipId) => {
+      io.emit("clipDeleted", clipId);
+    });
+
     // Disconnect
     socket.on("disconnect", () => {
       console.log("Client disconnected:", socket.id);
@@ -45,4 +58,9 @@ function initSocket(server) {
   return io;
 }
 
-module.exports = { initSocket };
+function getIo() {
+  if (!io) throw new Error("Socket.io not initialized!");
+  return io;
+}
+
+module.exports = { initSocket, getIo };

@@ -1,26 +1,73 @@
-//Components/Feed.jsx
-import React from "react";
+// frontend/Components/Feed.jsx
+import React, { useEffect } from "react";
 import axios from "axios";
+import { initSocket } from "../socket"; // must match your frontend/socket.js
+
 const Feed = ({ clips, setClips }) => {
+  useEffect(() => {
+    const socket = initSocket();
+
+    // debug: ensure socket connected
+    socket.on("connect", () => {
+      console.log("Socket connected (Feed):", socket.id);
+    });
+
+    // Server-driven: when server broadcasts an updated clip after DB save
+    socket.on("feedClipUpdated", (updatedClip) => {
+      console.log("feedClipUpdated received in Feed:", updatedClip);
+      setClips((prev) =>
+        prev.map((c) => (c._id === updatedClip._id ? updatedClip : c))
+      );
+    });
+
+    // Server-driven: when a new clip is posted to feed
+    socket.on("feedClipAdded", (newClip) => {
+      console.log("feedClipAdded received in Feed:", newClip);
+      setClips((prev) => [newClip, ...prev]);
+    });
+
+    // Server-driven: when a clip is deleted
+    socket.on("clipDeleted", (clipId) => {
+      console.log("clipDeleted received in Feed:", clipId);
+      setClips((prev) => prev.filter((c) => c._id !== clipId));
+    });
+
+    // cleanup listeners to avoid duplicates
+    return () => {
+      socket.off("connect");
+      socket.off("feedClipUpdated");
+      socket.off("feedClipAdded");
+      socket.off("clipDeleted");
+    };
+  }, [setClips]);
+
   const handleReactions = async (clipId, type) => {
-    console.log("Clicked", clipId, type);
     try {
       const token = localStorage.getItem("token");
-      console.log("Token:", token);
       const res = await axios.patch(
         `http://localhost:3001/api/clips/${clipId}/reactions`,
         { type },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("Response:", res.data); // check if backend actually returns updated clip
+
+      const updatedClip = res.data;
+
+      // Update sender UI immediately
       setClips((prev) =>
-        prev.map((clip) => (clip._id === clipId ? res.data : clip))
+        prev.map((clip) => (clip._id === clipId ? updatedClip : clip))
       );
+
+      // IMPORTANT: DO NOT emit here if your server already emits inside the PATCH route.
+      // If your server is broadcasting (io.emit('feedClipUpdated', updatedClip)), no client emit required.
+      // If your server is NOT broadcasting, uncomment the next 2 lines:
+      // const socket = initSocket();
+      // socket.emit("clipReacted", updatedClip);
     } catch (error) {
       console.error("Reaction failed:", error);
       alert("Failed to send reaction");
     }
   };
+
   const handleDelete = async (clipId) => {
     if (!window.confirm("Delete this clip?")) return;
     try {
@@ -28,12 +75,19 @@ const Feed = ({ clips, setClips }) => {
       await axios.delete(`http://localhost:3001/api/clips/${clipId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      // update local UI for sender
       setClips((prev) => prev.filter((clip) => clip._id !== clipId));
+
+      // If server emits 'clipDeleted' inside the delete route, no client emit needed.
+      // Otherwise you can emit like:
+      // const socket = initSocket(); socket.emit("clipDeleted", clipId);
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Failed to delete clip");
     }
   };
+
   return (
     <div className="mt-8">
       <h2 className="text-xl font-semibold mb-4">Latest Confessions</h2>
@@ -59,22 +113,22 @@ const Feed = ({ clips, setClips }) => {
             )}
             <div className="flex gap-2 mt-2">
               <button onClick={() => handleReactions(clip._id, "like")}>
-                👍 {clip.reactions.like}
+                👍 {clip.reactions?.like ?? 0}
               </button>
               <button onClick={() => handleReactions(clip._id, "love")}>
-                ❤️ {clip.reactions.love}
+                ❤️ {clip.reactions?.love ?? 0}
               </button>
               <button onClick={() => handleReactions(clip._id, "haha")}>
-                😂 {clip.reactions.haha}
+                😂 {clip.reactions?.haha ?? 0}
               </button>
               <button onClick={() => handleReactions(clip._id, "wow")}>
-                😮 {clip.reactions.wow}
+                😮 {clip.reactions?.wow ?? 0}
               </button>
               <button onClick={() => handleReactions(clip._id, "sad")}>
-                😢 {clip.reactions.sad}
+                😢 {clip.reactions?.sad ?? 0}
               </button>
               <button onClick={() => handleReactions(clip._id, "angry")}>
-                😡 {clip.reactions.angry}
+                😡 {clip.reactions?.angry ?? 0}
               </button>
             </div>
           </div>

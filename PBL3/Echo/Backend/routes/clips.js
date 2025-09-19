@@ -7,59 +7,50 @@ const { uploadClip } = require("../controllers/clipController");
 const { authMiddleWare } = require("../utils/middleware");
 
 router.post("/", authMiddleWare, upload.single("audio"), uploadClip); //order matters
-// const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
-
-const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+const { getIo } = require("../socket"); // expose io from socket.js
 
 router.patch("/:id/reactions", authMiddleWare, async (req, res) => {
   try {
-    const { type } = req.body;
-    const clipId = req.params.id;
-
-    if (!reactionTypes.includes(type)) {
-      return res.status(400).json({ error: "Invalid reaction type" });
-    }
-
-    const clip = await Clip.findById(clipId);
+    const clip = await Clip.findById(req.params.id);
     if (!clip) return res.status(404).json({ error: "Clip not found" });
 
-    // Make sure reactions array exists
-    clip.reactions = clip.reactions || [];
+    const { type } = req.body;
+    const userId = req.user.id;
 
-    // Find existing reaction by this user
-    let existingReaction = clip.reactions.find(
-      (r) => r.userId && r.userId.toString() === req.user.id
+    // remove old reaction by same user
+    clip.reactions = clip.reactions.filter(
+      (r) => r.userId.toString() !== userId
     );
-
-    if (existingReaction) {
-      if (existingReaction.type === type) {
-        // Toggle off reaction
-        clip.reactions = clip.reactions.filter(
-          (r) => r.userId && r.userId.toString() !== req.user.id
-        );
-      } else {
-        // Change reaction type
-        existingReaction.type = type;
-      }
-    } else {
-      // Add new reaction
-      clip.reactions.push({ userId: req.user.id, type });
-    }
+    // push new
+    clip.reactions.push({ userId, type });
 
     await clip.save();
 
-    // Aggregate counts for each reaction type
-    const aggregated = reactionTypes.reduce((acc, rType) => {
-      acc[rType] = clip.reactions.filter((r) => r.type === rType).length;
+    // aggregate counts
+    const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+    const aggregated = reactionTypes.reduce((acc, r) => {
+      acc[r] = clip.reactions.filter((x) => x.type === r).length;
       return acc;
     }, {});
 
-    res.json({ ...clip.toObject(), reactions: aggregated });
-  } catch (error) {
-    console.error(error);
+    const updatedClip = {
+      ...clip.toObject(),
+      reactions: aggregated,
+      isOwner: clip.userId.toString() === userId,
+    };
+
+    // 👉 broadcast to everyone else
+    const io = getIo();
+    io.emit("feedClipUpdated", updatedClip);
+
+    res.json(updatedClip);
+  } catch (err) {
+    console.error("Reaction failed:", err);
     res.status(500).json({ error: "Failed to update reaction" });
   }
 });
+
+const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
 
 router.get("/", authMiddleWare, async (req, res) => {
   try {
@@ -67,13 +58,24 @@ router.get("/", authMiddleWare, async (req, res) => {
     const clips = await Clip.find({ roomId: null })
       .sort({ createdAt: -1 })
       .lean();
-    const withOwnership = clips.map((c) => ({
-      ...c,
-      isOwner: c.userId.toString() === userId,
-    }));
-    res.json(withOwnership);
+
+    const withOwnershipAndAggregated = clips.map((c) => {
+      const reactionsArray = c.reactions || [];
+      // build aggregated counts object
+      const aggregated = reactionTypes.reduce((acc, r) => {
+        acc[r] = reactionsArray.filter((x) => x.type === r).length;
+        return acc;
+      }, {});
+      return {
+        ...c,
+        isOwner: c.userId.toString() === userId,
+        reactions: aggregated,
+      };
+    });
+
+    res.json(withOwnershipAndAggregated);
   } catch (err) {
-    console.error(err);
+    console.error("Failed to fetch clips:", err);
     res.status(500).json({ error: "Failed to fetch clips" });
   }
 });
