@@ -88,6 +88,10 @@ class AuthController {
       res.status(500).json({ message: "Internal server error" });
     }
   }
+
+  static async me(req, res) {
+    res.json({ user: req.user });
+  }
 }
 
 export default AuthController;
