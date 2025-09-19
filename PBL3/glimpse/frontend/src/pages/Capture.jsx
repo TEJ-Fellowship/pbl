@@ -262,6 +262,7 @@ const Capture = () => {
           `Upload failed: ${result.error || "Unknown error"}`,
           "error"
         );
+
       }
     } catch (error) {
       console.error("Upload failed:", error);

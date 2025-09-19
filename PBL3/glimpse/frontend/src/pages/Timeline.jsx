@@ -142,6 +142,7 @@ const Timeline = () => {
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-end items-center p-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
                   <p className="font-bold text-sm md:text-base">
                     {glimpse.date}
+                    {console.log('thubnailurlx', glimpse.thumbnailUrl)}
                   </p>
                   <p className="text-xs md:text-sm mt-1 italic leading-tight">
                     {glimpse.description}
