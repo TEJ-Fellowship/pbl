@@ -54,8 +54,6 @@ const RoomChatPage = () => {
     };
   }, [id]);
 
-  // handleSend expects clipId (string) — Recorder will call onSave(newClip._id) for room uploads
-  // frontend/features/rooms/RoomChatPage.jsx
   const handleSend = async (clipOrId) => {
     try {
       // accept either a clip object or a string id

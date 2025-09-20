@@ -8,7 +8,6 @@ import axios from "axios";
 const HomePage = ({ setIsLoggedIn }) => {
   const [clips, setClips] = useState([]);
 
-  // decode token payload to get current userId (no external deps)
   let currentUserId = null;
   const token = localStorage.getItem("token");
   if (token) {

@@ -1,7 +1,7 @@
 //src/Pages/LoginPage.jsx
 import { useState, useEffect } from "react";
 import axios from "axios";
-
+import { useNavigate } from "react-router-dom";
 function SignIn({
   username,
   setUsername,
@@ -10,6 +10,7 @@ function SignIn({
   setIsSignUp,
   setIsLoggedIn,
 }) {
+  const navigate = useNavigate();
   function handleSubmit(e) {
     e.preventDefault();
 
@@ -23,6 +24,7 @@ function SignIn({
         if (token) {
           localStorage.setItem("token", token);
           setIsLoggedIn(true);
+          navigate("/home");
         }
 
         setUsername("");

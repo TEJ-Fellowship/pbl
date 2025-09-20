@@ -102,8 +102,6 @@ const roomsSlice = createSlice({
         state.error = action.payload || action.error.message;
       })
       .addCase(joinRoom.fulfilled, (state, action) => {
-        // server currently returns only success message
-        // so we find the room in state and mark isOwner = true
         const roomId = action.meta.arg.roomId; // extract roomId from dispatched payload
         const joinedRoom = state.list.find((r) => r._id === roomId);
         if (joinedRoom) {
