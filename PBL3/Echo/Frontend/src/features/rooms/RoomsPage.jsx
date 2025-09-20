@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiHome, FiLock, FiUserPlus, FiUsers } from "react-icons/fi";
 import {
   fetchRooms,
   createRoom,
@@ -81,10 +81,7 @@ const RoomCard = ({ room, onJoin, onDelete, currentUserId }) => {
             </h3>
             <div className="flex items-center gap-4 text-sm text-gray-400">
               <span className="flex items-center gap-1">
-                👥 {memberCount} members
-              </span>
-              <span className="flex items-center gap-1">
-                📅 {new Date(room.createdAt).toLocaleDateString()}
+                <FiUsers size={14} /> {memberCount} members
               </span>
             </div>
           </div>
@@ -126,7 +123,7 @@ const RoomCard = ({ room, onJoin, onDelete, currentUserId }) => {
               </div>
             ) : (
               <span className="flex items-center justify-center gap-2">
-                🚪 Join Room
+                <FiUserPlus size={18} /> Join Room
               </span>
             )}
           </button>
@@ -210,7 +207,7 @@ const CreateRoomModal = ({
       <div className="relative w-full max-w-md bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl p-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🏠</span>
+            <FiHome size={28} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
             Create New Room
@@ -532,7 +529,6 @@ const RoomsPage = ({ setIsLoggedIn }) => {
               onClick={() => setShowCreateModal(true)}
               className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-indigo-500/25 flex items-center gap-3"
             >
-              <span className="text-xl">➕</span>
               Create Room
             </button>
           </div>
