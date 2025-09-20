@@ -1,3 +1,4 @@
+//models/Clip
 const mongoose = require("mongoose");
 const reactionSchema = require("./Reaction");
 

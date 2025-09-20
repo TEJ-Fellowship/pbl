@@ -1,9 +1,11 @@
+//features/rooms/RoomChatPage.jsx
 import React from "react";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Recorder from "../../Components/Recorder";
 import axios from "axios";
+import { initSocket, joinRoom, leaveRoom } from "../../socket";
 const RoomChatPage = () => {
   const [messages, setMessages] = useState([]);
   const { id } = useParams();
@@ -22,9 +24,28 @@ const RoomChatPage = () => {
   };
 
   useEffect(() => {
+    const socket = initSocket();
+    // ensure socket is connected then join room
+    if (!socket.connected) {
+      // if not connected yet, wait for connect then join (safer)
+      socket.once("connect", () => joinRoom(id));
+    } else {
+      joinRoom(id);
+    }
+
     fetchMessages();
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
+
+    // listen for new message broadcasts
+    socket.on("newMessage", (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
+    // cleanup on unmount
+    return () => {
+      leaveRoom(id);
+      socket.off("newMessage");
+      socket.off("connect");
+    };
   }, [id]);
 
   const handleSend = async (clipId) => {
@@ -37,7 +58,8 @@ const RoomChatPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      fetchMessages();
+      const socket = initSocket();
+      socket.emit("message", { ...res.data, roomId: id });
       setMessages((prev) => [...prev, res.data]);
     } catch (error) {
       console.log("Failed to send message");
