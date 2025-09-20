@@ -45,9 +45,9 @@ const Recorder = ({ onSave, roomId }) => {
     if (!audioBlob) return alert("No recording yet!");
     try {
       const token = localStorage.getItem("token");
-      const newClip = await uploadClip(audioBlob, token, roomId); // <-- pass roomId
+      await uploadClip(audioBlob, token, roomId); // don't call onSave locally
 
-      if (onSave) onSave(newClip); // send full clip object, not just _id
+      // Reset recorder UI
       setAudioBlob(null);
       setAudioURL(null);
       setSeconds(0);

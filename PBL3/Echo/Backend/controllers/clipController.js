@@ -1,7 +1,11 @@
-//controllers/clipController
+// backend/controllers/clipController.js
 const Clip = require("../models/Clip");
 const fs = require("fs");
 const path = require("path");
+const { getIo } = require("../socket"); // <-- add this
+
+const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+
 const uploadClip = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No files uploaded" });
@@ -9,8 +13,9 @@ const uploadClip = async (req, res) => {
 
     const fileURL = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
-    }`; //http://localhost:5000/uploads/recording-1694567891234.webm
+    }`;
 
+    // create clip in DB
     const newClip = await Clip.create({
       userId: req.user.id,
       filename: req.file.filename,
@@ -21,7 +26,31 @@ const uploadClip = async (req, res) => {
       roomId: req.body.roomId || null,
     });
 
-    return res.status(201).json(newClip);
+    // Build aggregated reactions object (initially zeros)
+    const aggregated = reactionTypes.reduce((acc, r) => {
+      acc[r] = 0;
+      return acc;
+    }, {});
+
+    // Build response object that matches the shape your GET /api/clips returns
+    const responseClip = {
+      ...newClip.toObject(),
+      reactions: aggregated,
+      isOwner: true, // sender should see their own clip immediately
+    };
+
+    // Broadcast to everyone (feed) only for global clips (roomId === null)
+    try {
+      if (!responseClip.roomId) {
+        const io = getIo();
+        io.emit("feedClipAdded", responseClip);
+      }
+    } catch (emitErr) {
+      // safe fallback if socket not initialized yet
+      console.warn("Socket not ready to emit feedClipAdded", emitErr.message);
+    }
+
+    return res.status(201).json(responseClip);
   } catch (err) {
     console.log("Upload error", err);
     if (req.file) {
@@ -35,4 +64,5 @@ const uploadClip = async (req, res) => {
       .json({ message: "Server error while uploading clip" });
   }
 };
+
 module.exports = { uploadClip };

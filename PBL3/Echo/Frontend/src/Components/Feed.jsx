@@ -20,12 +20,19 @@ const Feed = ({ clips, setClips }) => {
       );
     });
 
-    // Server-driven: when a new clip is posted to feed
     socket.on("feedClipAdded", (newClip) => {
-      console.log("feedClipAdded received in Feed:", newClip);
-      setClips((prev) => [newClip, ...prev]);
-    });
+      setClips((prev) => {
+        // Skip if already exists
+        if (prev.some((c) => c._id === newClip._id)) return prev;
 
+        // Compute isOwner dynamically
+        const currentUserId = localStorage.getItem("userId");
+        return [
+          { ...newClip, isOwner: newClip.userId === currentUserId },
+          ...prev,
+        ];
+      });
+    });
     // Server-driven: when a clip is deleted
     socket.on("clipDeleted", (clipId) => {
       console.log("clipDeleted received in Feed:", clipId);
