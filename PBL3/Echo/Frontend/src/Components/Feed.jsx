@@ -1,7 +1,226 @@
-// frontend/Components/Feed.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { initSocket } from "../socket";
+import { FiTrash2 } from "react-icons/fi";
+// Custom Audio Player Component
+const AudioPlayer = ({ src, clipId }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTimeUpdate = () => {
+    setCurrentTime(audioRef.current.currentTime);
+  };
+
+  const handleLoadedMetadata = () => {
+    setDuration(audioRef.current.duration);
+    setIsLoading(false);
+  };
+
+  const handleSeek = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const width = rect.width;
+    const newTime = (clickX / width) * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const progress = duration ? (currentTime / duration) * 100 : 0;
+
+  // Generate animated bars for waveform
+  const waveformBars = Array.from({ length: 20 }, (_, i) => (
+    <div
+      key={i}
+      className={`w-1 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-full transition-all duration-150 ${
+        isPlaying ? "animate-pulse" : ""
+      }`}
+      style={{
+        height: `${Math.random() * 20 + 8}px`,
+        animationDelay: `${i * 50}ms`,
+        opacity: isPlaying && currentTime > 0 ? 0.8 : 0.3,
+      }}
+    />
+  ));
+
+  return (
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+
+      <div className="flex items-center gap-4">
+        {/* Play/Pause Button */}
+        <button
+          onClick={togglePlay}
+          disabled={isLoading}
+          className="relative w-12 h-12 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group"
+        >
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : isPlaying ? (
+            <div className="flex gap-1">
+              <div className="w-1 h-4 bg-white rounded-full"></div>
+              <div className="w-1 h-4 bg-white rounded-full"></div>
+            </div>
+          ) : (
+            <div className="w-0 h-0 border-l-[8px] border-l-white border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent ml-1"></div>
+          )}
+
+          {/* Ripple effect */}
+          <div
+            className={`absolute inset-0 rounded-full bg-white/20 scale-0 group-active:scale-110 transition-transform duration-200`}
+          ></div>
+        </button>
+
+        <div className="flex-1">
+          {/* Waveform visualization */}
+          <div className="flex items-end justify-center gap-1 h-8 mb-2">
+            {waveformBars}
+          </div>
+
+          {/* Progress bar */}
+          <div
+            className="w-full h-2 bg-slate-700 rounded-full cursor-pointer overflow-hidden"
+            onClick={handleSeek}
+          >
+            <div
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-100 relative"
+              style={{ width: `${progress}%` }}
+            >
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg"></div>
+            </div>
+          </div>
+
+          {/* Time display */}
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Animated Reaction Component
+const ReactionButton = ({ type, count, onReact, isActive }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [particles, setParticles] = useState([]);
+
+  const emojis = {
+    like: "👍",
+    love: "❤️",
+    haha: "😂",
+    wow: "😮",
+    sad: "😢",
+    angry: "😡",
+  };
+
+  const handleClick = () => {
+    setIsAnimating(true);
+
+    // Create particle effect
+    const newParticles = Array.from({ length: 3 }, (_, i) => ({
+      id: Date.now() + i,
+      x: Math.random() * 20 - 10,
+      y: Math.random() * 10 + 10,
+    }));
+
+    setParticles(newParticles);
+    onReact();
+
+    // Clean up animation
+    setTimeout(() => {
+      setIsAnimating(false);
+      setParticles([]);
+    }, 1000);
+  };
+
+  return (
+    <div className="relative">
+      {/* Floating particles */}
+      {particles.map((particle) => (
+        <div
+          key={particle.id}
+          className="absolute pointer-events-none text-lg animate-bounce"
+          style={{
+            left: `${particle.x}px`,
+            bottom: `${particle.y}px`,
+            animation: "float-up 1s ease-out forwards",
+          }}
+        >
+          {emojis[type]}
+        </div>
+      ))}
+
+      <button
+        onClick={handleClick}
+        className={`
+          relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium
+          ${
+            isActive
+              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
+              : "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white"
+          }
+          ${isAnimating ? "scale-110" : "hover:scale-105"}
+          backdrop-blur-sm border border-white/10 hover:border-white/20
+        `}
+      >
+        <span className={`text-base ${isAnimating ? "animate-bounce" : ""}`}>
+          {emojis[type]}
+        </span>
+        <span
+          className={`transition-all duration-300 ${
+            isAnimating ? "scale-125 font-bold" : ""
+          }`}
+        >
+          {count || 0}
+        </span>
+
+        {/* Glow effect */}
+        {isActive && (
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 opacity-20 blur-md"></div>
+        )}
+      </button>
+
+      <style jsx>{`
+        @keyframes float-up {
+          0% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-40px) scale(0.5);
+            opacity: 0;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 let currentUserId = null;
 const token = localStorage.getItem("token");
@@ -22,7 +241,6 @@ const Feed = ({ clips, setClips }) => {
       console.log("Socket connected (Feed):", socket.id)
     );
 
-    // When server broadcasts an updated clip (sanitized), compute owner locally
     socket.on("feedClipUpdated", (updatedClip) => {
       const ownerId = updatedClip.userId ? String(updatedClip.userId) : null;
       const clipWithOwner = {
@@ -34,7 +252,6 @@ const Feed = ({ clips, setClips }) => {
       );
     });
 
-    // When server announces a new clip, dedupe and compute isOwner locally
     socket.on("feedClipAdded", (newClip) => {
       setClips((prev) => {
         if (prev.some((c) => c._id === newClip._id)) return prev;
@@ -58,8 +275,6 @@ const Feed = ({ clips, setClips }) => {
     };
   }, [setClips]);
 
-  // handleReactions and handleDelete unchanged except ensure when you update local UI
-  // you compute isOwner for the returned clip as well (in case server response lacks it)
   const handleReactions = async (clipId, type) => {
     try {
       const tokenLocal = localStorage.getItem("token");
@@ -77,7 +292,6 @@ const Feed = ({ clips, setClips }) => {
             : clip
         )
       );
-      // No client emit needed if server emits feedClipUpdated
     } catch (error) {
       console.error("Reaction failed:", error);
       alert("Failed to send reaction");
@@ -92,7 +306,6 @@ const Feed = ({ clips, setClips }) => {
         headers: { Authorization: `Bearer ${tokenLocal}` },
       });
       setClips((prev) => prev.filter((clip) => clip._id !== clipId));
-      // server should emit clipDeleted; if not, can emit client-side
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Failed to delete clip");
@@ -101,50 +314,75 @@ const Feed = ({ clips, setClips }) => {
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">Latest Confessions</h2>
-      <div className="flex flex-col gap-4">
-        {clips.map((clip) => (
+      <h2 className="text-2xl font-bold mb-6 text-white bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+        Latest Confessions
+      </h2>
+      <div className="flex flex-col gap-6">
+        {clips.map((clip, index) => (
           <div
             key={clip._id}
-            className="p-4 border rounded-lg shadow-sm bg-white relative"
+            className="group p-6 border border-white/10 rounded-2xl shadow-xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm relative hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10"
+            style={{
+              animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
+            }}
           >
-            <audio controls src={clip.url} className="w-full" />
-            {clip.isOwner && (
-              <div className="absolute top-2 right-2 flex gap-2 items-center">
-                <span className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
-                  Your Clip
-                </span>
+            {/* Owner badge and delete button */}
+            <div className="absolute top-4 right-4 flex flex-col items-center gap-3 z-10">
+              {/* Owner or Anonymous Badge */}
+              <span
+                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${
+                  clip.isOwner
+                    ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
+                    : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
+                }`}
+              >
+                {clip.isOwner ? "👑" : "👤"}
+              </span>
+
+              {/* Trash button only if owner */}
+              {clip.isOwner && (
                 <button
-                  className="px-2 py-1 text-xs bg-red-500 text-white rounded"
+                  className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-red-500/20"
                   onClick={() => handleDelete(clip._id)}
                 >
-                  🗑️ Delete
+                  <FiTrash2 size={18} />
                 </button>
-              </div>
-            )}
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => handleReactions(clip._id, "like")}>
-                👍 {clip.reactions?.like ?? 0}
-              </button>
-              <button onClick={() => handleReactions(clip._id, "love")}>
-                ❤️ {clip.reactions?.love ?? 0}
-              </button>
-              <button onClick={() => handleReactions(clip._id, "haha")}>
-                😂 {clip.reactions?.haha ?? 0}
-              </button>
-              <button onClick={() => handleReactions(clip._id, "wow")}>
-                😮 {clip.reactions?.wow ?? 0}
-              </button>
-              <button onClick={() => handleReactions(clip._id, "sad")}>
-                😢 {clip.reactions?.sad ?? 0}
-              </button>
-              <button onClick={() => handleReactions(clip._id, "angry")}>
-                😡 {clip.reactions?.angry ?? 0}
-              </button>
+              )}
+            </div>
+
+            {/* Audio Player */}
+            <div className="mb-6">
+              <AudioPlayer src={clip.url} clipId={clip._id} />
+            </div>
+
+            {/* Reactions */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              {["like", "love", "haha", "wow", "sad", "angry"].map((r) => (
+                <ReactionButton
+                  key={r}
+                  type={r}
+                  count={clip.reactions?.[r] ?? 0}
+                  onReact={() => handleReactions(clip._id, r)}
+                  isActive={false} // You can add logic to track user's reactions
+                />
+              ))}
             </div>
           </div>
         ))}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          0% {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

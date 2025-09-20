@@ -28,7 +28,6 @@ const HomePage = ({ setIsLoggedIn }) => {
           headers: { Authorization: `Bearer ${tokenLocal}` },
         });
 
-        // server returns aggregated reactions and userId — compute isOwner locally
         const normalized = res.data.map((c) => {
           const ownerId = c.userId ? String(c.userId) : null;
           return { ...c, isOwner: ownerId === String(currentUserId) };
@@ -43,9 +42,7 @@ const HomePage = ({ setIsLoggedIn }) => {
     fetchClips();
   }, []);
 
-  // Recorder onSave for feed receives a full clip object
   const handleRecorderSave = (clip) => {
-    // compute owner locally and dedupe by _id
     const ownerId = clip.userId ? String(clip.userId) : null;
     const clipWithOwner = {
       ...clip,
@@ -59,10 +56,13 @@ const HomePage = ({ setIsLoggedIn }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-8">
+    <div className="min-h-screen bg-slate-950 text-white">
       <Navbar setIsLoggedIn={setIsLoggedIn} />
-      <Recorder onSave={handleRecorderSave} /> {/* NO roomId prop here */}
-      <Feed clips={clips} setClips={setClips} />
+      <main className="max-w-3xl mx-auto p-6 flex flex-col gap-8">
+        <Recorder onSave={handleRecorderSave} />
+
+        <Feed clips={clips} setClips={setClips} />
+      </main>
     </div>
   );
 };

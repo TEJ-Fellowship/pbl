@@ -1,7 +1,8 @@
-//src/Pages/LoginPage.jsx
-import { useState, useEffect } from "react";
+// src/Pages/LoginPage.jsx
+import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+
 function SignIn({
   username,
   setUsername,
@@ -11,22 +12,20 @@ function SignIn({
   setIsLoggedIn,
 }) {
   const navigate = useNavigate();
+
   function handleSubmit(e) {
     e.preventDefault();
-
     const userObj = { username, password };
 
     axios
       .post("http://localhost:3001/signin", userObj)
       .then((response) => {
         const token = response.data.token;
-
         if (token) {
           localStorage.setItem("token", token);
           setIsLoggedIn(true);
           navigate("/home");
         }
-
         setUsername("");
         setPassword("");
       })
@@ -35,45 +34,53 @@ function SignIn({
 
   return (
     <form
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80"
       onSubmit={handleSubmit}
+      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80
+                 sm:w-96 flex flex-col gap-3"
     >
-      <h1 className="text-2xl font-extrabold">Welcome Back</h1>
-      <p className="mb-5">Please Enter your Account details</p>
+      <h1 className="text-2xl font-extrabold text-blue-600">Welcome Back</h1>
+      <p className="text-gray-600">Enter your account details</p>
 
-      <p className="mb-2">Email</p>
+      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+        Email
+      </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="text"
         placeholder="username@email.com"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
-      <p className="mt-5 mb-2">Password</p>
+      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+        Password
+      </label>
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
-      <p className="flex justify-end mt-1 text-sm underline text-green-700 cursor-pointer">
-        Forgot Password
+      <p className="text-sm text-blue-500 underline cursor-pointer text-right mt-1">
+        Forgot Password?
       </p>
 
       <button
         type="submit"
-        className="mt-5 mb-5 p-2 w-full bg-green-600 rounded-lg text-white font-semibold"
+        className="mt-5 p-2 w-full bg-blue-600 hover:bg-blue-700 text-white
+                   font-semibold rounded-lg transition-colors"
       >
-        Sign in
+        Sign In
       </button>
 
-      <p className="text-sm text-center">
-        Don't have an Account?{" "}
+      <p className="text-sm text-center text-gray-600 mt-2">
+        Don't have an account?{" "}
         <span
-          className="text-green-700 font-semibold hover:text-green-800 cursor-pointer"
+          className="text-blue-500 font-semibold hover:text-blue-600 cursor-pointer"
           onClick={() => {
             setIsSignUp(true);
             setUsername("");
@@ -92,78 +99,79 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
 
   function handleSubmit(e) {
     e.preventDefault();
+    if (password !== repassword) return alert("Passwords do not match!");
 
-    if (password === repassword) {
-      axios
-        .post("http://localhost:3001/signup", { username, password })
-        .then((response) => {
-          alert(
-            `The account is created with username: ${response.data.username}`
-          );
-          setIsSignUp(false);
-        })
-        .catch((err) => console.log("Error:", err));
-    } else {
-      alert("Please confirm your password. Try again...");
-    }
+    axios
+      .post("http://localhost:3001/signup", { username, password })
+      .then((response) => {
+        alert(`Account created: ${response.data.username}`);
+        setIsSignUp(false);
+      })
+      .catch((err) => console.log("Error:", err));
 
-    setPassword("");
     setUsername("");
+    setPassword("");
     setRepassword("");
   }
 
   return (
     <form
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80"
       onSubmit={handleSubmit}
+      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80
+                 sm:w-96 flex flex-col gap-3"
     >
-      <h1 className="text-2xl font-extrabold">Create an account</h1>
-      <p className="mb-5">Please Enter your Account details</p>
+      <h1 className="text-2xl font-extrabold text-blue-600">Create Account</h1>
+      <p className="text-gray-600">Enter your account details</p>
 
-      <p className="mb-2">Email</p>
+      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+        Email
+      </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="text"
         placeholder="username@email.com"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
-      <p className="mt-5 mb-2">Password</p>
+      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+        Password
+      </label>
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
-      <p className="mt-5 mb-2">Re-enter password</p>
+      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+        Re-enter Password
+      </label>
       <input
         value={repassword}
         onChange={(e) => setRepassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
       />
 
       <button
         type="submit"
-        className="mt-5 mb-5 p-2 w-full bg-green-600 rounded-lg text-white font-semibold"
+        className="mt-5 p-2 w-full bg-blue-600 hover:bg-blue-700 text-white
+                   font-semibold rounded-lg transition-colors"
       >
         Sign Up
       </button>
 
-      <p className="text-sm text-center">
-        Already have an Account?{" "}
+      <p className="text-sm text-center text-gray-600 mt-2">
+        Already have an account?{" "}
         <span
-          className="text-green-700 font-semibold hover:text-green-800 cursor-pointer"
-          onClick={() => {
-            setIsSignUp(false);
-            setUsername("");
-            setPassword("");
-            setRepassword("");
-          }}
+          className="text-blue-500 font-semibold hover:text-blue-600 cursor-pointer"
+          onClick={() => setIsSignUp(false)}
         >
           Sign In
         </span>
@@ -172,41 +180,13 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
   );
 }
 
-// function Dashboard({ handleLogout }) {
-//   return (
-//     <div className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-96 text-center">
-//       <h1 className="text-2xl font-bold mb-4">✅ You are logged in!</h1>
-//       <button
-//         onClick={handleLogout}
-//         className="mt-5 p-2 w-full bg-red-600 rounded-lg text-white font-semibold"
-//       >
-//         Logout
-//       </button>
-//     </div>
-//   );
-// }
-
 function LoginForm({ setIsLoggedIn }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // ✅ check if token exists on mount
-  // useEffect(() => {
-  //   const token = localStorage.getItem("token"); // fixed typo
-  //   if (token) {
-  //     setIsLoggedIn(true);
-  //   }
-  // }, []);
-
-  // function handleLogout() {
-  //   localStorage.removeItem("token");
-  //   setIsLoggedIn(false);
-  // }
 
   return (
-    <div className="h-screen flex justify-center items-center">
+    <div className="h-screen flex justify-center items-center bg-gray-50">
       {isSignUp ? (
         <SignUp
           username={username}
