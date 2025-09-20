@@ -327,8 +327,8 @@ const Feed = ({ clips, setClips }) => {
             }}
           >
             {/* Owner badge and delete button */}
-            <div className="absolute top-4 right-4 flex flex-col items-center gap-3 z-10">
-              {/* Owner or Anonymous Badge */}
+            {/* Owner / Anonymous badge at top-right */}
+            <div className="absolute top-4 right-4 z-10">
               <span
                 className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${
                   clip.isOwner
@@ -338,16 +338,6 @@ const Feed = ({ clips, setClips }) => {
               >
                 {clip.isOwner ? "👑" : "👤"}
               </span>
-
-              {/* Trash button only if owner */}
-              {clip.isOwner && (
-                <button
-                  className="p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-full transition-all duration-300 hover:scale-110 backdrop-blur-sm border border-red-500/20"
-                  onClick={() => handleDelete(clip._id)}
-                >
-                  <FiTrash2 size={18} />
-                </button>
-              )}
             </div>
 
             {/* Audio Player */}
@@ -355,17 +345,30 @@ const Feed = ({ clips, setClips }) => {
               <AudioPlayer src={clip.url} clipId={clip._id} />
             </div>
 
-            {/* Reactions */}
-            <div className="flex flex-wrap gap-3 justify-center">
-              {["like", "love", "haha", "wow", "sad", "angry"].map((r) => (
-                <ReactionButton
-                  key={r}
-                  type={r}
-                  count={clip.reactions?.[r] ?? 0}
-                  onReact={() => handleReactions(clip._id, r)}
-                  isActive={false} // You can add logic to track user's reactions
-                />
-              ))}
+            {/* Reactions + Trash */}
+            <div className="flex justify-between items-center mt-4">
+              {/* Reactions */}
+              <div className="flex flex-wrap gap-3">
+                {["like", "love", "haha", "wow", "sad", "angry"].map((r) => (
+                  <ReactionButton
+                    key={r}
+                    type={r}
+                    count={clip.reactions?.[r] ?? 0}
+                    onReact={() => handleReactions(clip._id, r)}
+                    isActive={false}
+                  />
+                ))}
+              </div>
+
+              {/* Trash button only if owner (hidden until hover) */}
+              {clip.isOwner && (
+                <button
+                  onClick={() => handleDelete(clip._id)}
+                  className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-600/20 transition-all duration-300 hover:scale-110"
+                >
+                  <FiTrash2 size={18} />
+                </button>
+              )}
             </div>
           </div>
         ))}

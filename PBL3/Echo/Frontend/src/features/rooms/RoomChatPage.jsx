@@ -220,10 +220,7 @@ const RoomChatPage = () => {
           </div>
         </div>
 
-        {/* Recorder Section - smaller */}
-        <div className="bg-gradient-to-br from-slate-900/50 to-slate-800/50 backdrop-blur-sm rounded-2xl border border-white/10 shadow-xl p-2">
-          <Recorder onSave={handleSend} roomId={id} />
-        </div>
+        <Recorder onSave={handleSend} roomId={id} />
       </div>
 
       <style jsx>{`

@@ -167,7 +167,11 @@ const Recorder = ({ onSave, roomId }) => {
   const recordProgress = seconds > 0 ? (seconds / 300) * 100 : 0; // Max 5 mins
 
   return (
-    <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm text-white p-8 rounded-3xl shadow-2xl max-w-lg mx-auto border border-white/10">
+    <div
+      className="w-full bg-gradient-to-br from-slate-900/50 to-slate-800/50 
+                  backdrop-blur-sm rounded-2xl border border-white/10 
+                  shadow-xl p-4 flex flex-col items-center gap-4"
+    >
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="flex items-center justify-center text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">
