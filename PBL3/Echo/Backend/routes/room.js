@@ -72,6 +72,7 @@ router.delete("/:id/", authMiddleWare, async (req, res) => {
       return res.status(403).json({ error: "Not authorised" }); //404-Not authorised
     }
     await room.deleteOne();
+
     res.json("Deleted successfully");
   } catch (error) {
     console.error("Error deleting room", error);
@@ -96,7 +97,14 @@ router.post("/:id/messages", authMiddleWare, async (req, res) => {
     };
 
     room.messages.push(message);
+    console.log(
+      "POST /api/rooms/:id/messages body:",
+      req.body,
+      "user:",
+      req.user.id
+    );
     await room.save();
+    console.log("Found clip:", clip?._id, "room:", room?._id);
     const savedMessage = room.messages[room.messages.length - 1];
     // construct response to include _id and roomId
     const responseMessage = {
@@ -153,6 +161,9 @@ router.delete(
 
       message.deleteOne();
       await room.save();
+      const { getIo } = require("../socket");
+      const io = getIo();
+      io.to(roomId).emit("roomMessageDeleted", messageId);
 
       res.json({ message: "Message deleted successfully" });
     } catch (error) {

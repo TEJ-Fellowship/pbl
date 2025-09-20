@@ -1,21 +1,22 @@
-//features/rooms/RoomChatPage.jsx
-import React from "react";
-import { useState } from "react";
-import { useEffect } from "react";
+// frontend/features/rooms/RoomChatPage.jsx
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Recorder from "../../Components/Recorder";
 import axios from "axios";
 import { initSocket, joinRoom, leaveRoom } from "../../socket";
+
 const RoomChatPage = () => {
   const [messages, setMessages] = useState([]);
-  const { id } = useParams();
+  const { id } = useParams(); // this is the roomId
 
   const fetchMessages = async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
         `http://localhost:3001/api/rooms/${id}/messages`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       setMessages(res.data);
     } catch (error) {
@@ -25,9 +26,9 @@ const RoomChatPage = () => {
 
   useEffect(() => {
     const socket = initSocket();
-    // ensure socket is connected then join room
+
+    // ensure socket connected then join room
     if (!socket.connected) {
-      // if not connected yet, wait for connect then join (safer)
       socket.once("connect", () => joinRoom(id));
     } else {
       joinRoom(id);
@@ -37,7 +38,12 @@ const RoomChatPage = () => {
 
     // listen for new message broadcasts
     socket.on("newMessage", (msg) => {
+      console.log("socket newMessage received:", msg);
       setMessages((prev) => [...prev, msg]);
+    });
+
+    socket.on("roomMessageDeleted", (messageId) => {
+      setMessages((prev) => prev.filter((m) => m._id !== messageId));
     });
 
     // cleanup on unmount
@@ -48,21 +54,42 @@ const RoomChatPage = () => {
     };
   }, [id]);
 
-  const handleSend = async (clipId) => {
+  // handleSend expects clipId (string) — Recorder will call onSave(newClip._id) for room uploads
+  // frontend/features/rooms/RoomChatPage.jsx
+  const handleSend = async (clipOrId) => {
     try {
+      // accept either a clip object or a string id
+      const clipId = typeof clipOrId === "string" ? clipOrId : clipOrId?._id;
+
+      if (!clipId) {
+        console.error("handleSend: no clipId provided", clipOrId);
+        return alert("Failed to send: invalid clip");
+      }
+
+      console.log("handleSend: sending clipId=", clipId, "roomId=", id);
+
       const token = localStorage.getItem("token");
       const res = await axios.post(
         `http://localhost:3001/api/rooms/${id}/messages`,
         { clipId, roomId: id },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // emit to socket so room peers see it in real time
       const socket = initSocket();
       socket.emit("message", { ...res.data, roomId: id });
+
+      // append the returned message locally
       setMessages((prev) => [...prev, res.data]);
     } catch (error) {
-      console.log("Failed to send message");
+      console.error(
+        "Failed to send message:",
+        error.response?.data || error.message
+      );
+      alert(
+        "Failed to send message: " +
+          (error.response?.data?.error || error.message)
+      );
     }
   };
 
@@ -70,9 +97,11 @@ const RoomChatPage = () => {
     if (!window.confirm("Are you sure you want to delete this clip?")) return;
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.delete(
+      await axios.delete(
         `http://localhost:3001/api/rooms/${id}/messages/${messageId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       fetchMessages();
     } catch (error) {
@@ -89,7 +118,7 @@ const RoomChatPage = () => {
 
       <div className="messages mb-6 flex flex-col gap-3">
         {messages.map((m, idx) => (
-          <div key={idx} className="p-3 border rounded">
+          <div key={m._id ?? idx} className="p-3 border rounded">
             <div className="flex flex-col">
               <span className="font-semibold">
                 {m.isOwner ? "You" : "Anonymous"}

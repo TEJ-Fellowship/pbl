@@ -1,4 +1,4 @@
-// Components/Recorder
+// frontend/Components/Recorder.jsx
 import React, { useState, useRef } from "react";
 import uploadClip from "../api/clipApi";
 
@@ -10,6 +10,7 @@ const Recorder = ({ onSave, roomId }) => {
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef(null);
 
+  // Start recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -32,35 +33,64 @@ const Recorder = ({ onSave, roomId }) => {
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
     } catch (err) {
       console.log("Mic access denied:", err);
+      alert("Please allow microphone access.");
     }
   };
 
+  // Stop recording
   const stopRecording = () => {
-    mediaRecorderRef.current.stop();
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      mediaRecorderRef.current.stop();
+    }
     setRecording(false);
     clearInterval(timerRef.current);
   };
 
+  // Upload recording -> always pass full clip object to onSave
   const handleUpload = async () => {
     if (!audioBlob) return alert("No recording yet!");
     try {
       const token = localStorage.getItem("token");
-      await uploadClip(audioBlob, token, roomId); // don't call onSave locally
+      // uploadClip returns the saved clip object from backend
+      const newClip = await uploadClip(audioBlob, token, roomId);
 
-      // Reset recorder UI
+      console.log("Recorder: upload response", newClip);
+
+      if (onSave) {
+        // always pass full object — parent decides what to do
+        onSave(newClip);
+      }
+
+      // reset local UI
       setAudioBlob(null);
       setAudioURL(null);
       setSeconds(0);
     } catch (err) {
-      console.error(err);
+      console.error("Recorder upload failed:", err);
       alert("Failed to upload clip");
     }
   };
 
+  // Reset local recording UI (kept above return so it's defined when JSX renders)
   const resetRecording = () => {
     setAudioBlob(null);
     setAudioURL(null);
     setSeconds(0);
+    // If media recorder still active, stop it safely
+    try {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+      clearInterval(timerRef.current);
+    } catch (e) {
+      // ignore
+    }
   };
 
   return (
@@ -91,18 +121,20 @@ const Recorder = ({ onSave, roomId }) => {
       {audioURL && (
         <div className="flex flex-col gap-2">
           <audio controls src={audioURL}></audio>
-          <button
-            onClick={handleUpload}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-          >
-            Upload Recording
-          </button>
-          <button
-            onClick={resetRecording}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg"
-          >
-            Re-record
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleUpload}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+            >
+              Upload Recording
+            </button>
+            <button
+              onClick={resetRecording}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg"
+            >
+              Re-record
+            </button>
+          </div>
         </div>
       )}
     </div>

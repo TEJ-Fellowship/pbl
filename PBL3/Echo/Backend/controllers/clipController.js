@@ -1,8 +1,8 @@
-// backend/controllers/clipController.js
+// backend/controllers/clipController.js (replace uploadClip)
 const Clip = require("../models/Clip");
 const fs = require("fs");
 const path = require("path");
-const { getIo } = require("../socket"); // <-- add this
+const { getIo } = require("../socket");
 
 const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
 
@@ -15,7 +15,6 @@ const uploadClip = async (req, res) => {
       req.file.filename
     }`;
 
-    // create clip in DB
     const newClip = await Clip.create({
       userId: req.user.id,
       filename: req.file.filename,
@@ -26,27 +25,32 @@ const uploadClip = async (req, res) => {
       roomId: req.body.roomId || null,
     });
 
-    // Build aggregated reactions object (initially zeros)
+    // aggregated reactions (all zeros)
     const aggregated = reactionTypes.reduce((acc, r) => {
       acc[r] = 0;
       return acc;
     }, {});
 
-    // Build response object that matches the shape your GET /api/clips returns
+    // Response for uploader: include isOwner true
     const responseClip = {
       ...newClip.toObject(),
       reactions: aggregated,
-      isOwner: true, // sender should see their own clip immediately
+      isOwner: true,
     };
 
-    // Broadcast to everyone (feed) only for global clips (roomId === null)
+    // Emit sanitized clip to other clients (do NOT include isOwner)
     try {
-      if (!responseClip.roomId) {
+      if (!newClip.roomId) {
         const io = getIo();
-        io.emit("feedClipAdded", responseClip);
+        const sanitized = {
+          ...newClip.toObject(),
+          reactions: aggregated,
+          // no isOwner field here
+        };
+        // broadcast to everyone (you can use broadcast from socket side if you track socket id)
+        io.emit("feedClipAdded", sanitized);
       }
     } catch (emitErr) {
-      // safe fallback if socket not initialized yet
       console.warn("Socket not ready to emit feedClipAdded", emitErr.message);
     }
 

@@ -1,45 +1,55 @@
 // frontend/Components/Feed.jsx
 import React, { useEffect } from "react";
 import axios from "axios";
-import { initSocket } from "../socket"; // must match your frontend/socket.js
+import { initSocket } from "../socket";
+
+let currentUserId = null;
+const token = localStorage.getItem("token");
+if (token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    currentUserId = payload.id || payload.userId || null;
+  } catch (err) {
+    console.error("Failed to decode token", err);
+  }
+}
 
 const Feed = ({ clips, setClips }) => {
   useEffect(() => {
     const socket = initSocket();
 
-    // debug: ensure socket connected
-    socket.on("connect", () => {
-      console.log("Socket connected (Feed):", socket.id);
-    });
+    socket.on("connect", () =>
+      console.log("Socket connected (Feed):", socket.id)
+    );
 
-    // Server-driven: when server broadcasts an updated clip after DB save
+    // When server broadcasts an updated clip (sanitized), compute owner locally
     socket.on("feedClipUpdated", (updatedClip) => {
-      console.log("feedClipUpdated received in Feed:", updatedClip);
+      const ownerId = updatedClip.userId ? String(updatedClip.userId) : null;
+      const clipWithOwner = {
+        ...updatedClip,
+        isOwner: ownerId === String(currentUserId),
+      };
       setClips((prev) =>
-        prev.map((c) => (c._id === updatedClip._id ? updatedClip : c))
+        prev.map((c) => (c._id === clipWithOwner._id ? clipWithOwner : c))
       );
     });
 
+    // When server announces a new clip, dedupe and compute isOwner locally
     socket.on("feedClipAdded", (newClip) => {
       setClips((prev) => {
-        // Skip if already exists
         if (prev.some((c) => c._id === newClip._id)) return prev;
-
-        // Compute isOwner dynamically
-        const currentUserId = localStorage.getItem("userId");
+        const ownerId = newClip.userId ? String(newClip.userId) : null;
         return [
-          { ...newClip, isOwner: newClip.userId === currentUserId },
+          { ...newClip, isOwner: ownerId === String(currentUserId) },
           ...prev,
         ];
       });
     });
-    // Server-driven: when a clip is deleted
+
     socket.on("clipDeleted", (clipId) => {
-      console.log("clipDeleted received in Feed:", clipId);
       setClips((prev) => prev.filter((c) => c._id !== clipId));
     });
 
-    // cleanup listeners to avoid duplicates
     return () => {
       socket.off("connect");
       socket.off("feedClipUpdated");
@@ -48,27 +58,26 @@ const Feed = ({ clips, setClips }) => {
     };
   }, [setClips]);
 
+  // handleReactions and handleDelete unchanged except ensure when you update local UI
+  // you compute isOwner for the returned clip as well (in case server response lacks it)
   const handleReactions = async (clipId, type) => {
     try {
-      const token = localStorage.getItem("token");
+      const tokenLocal = localStorage.getItem("token");
       const res = await axios.patch(
         `http://localhost:3001/api/clips/${clipId}/reactions`,
         { type },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${tokenLocal}` } }
       );
-
       const updatedClip = res.data;
-
-      // Update sender UI immediately
+      const ownerId = updatedClip.userId ? String(updatedClip.userId) : null;
       setClips((prev) =>
-        prev.map((clip) => (clip._id === clipId ? updatedClip : clip))
+        prev.map((clip) =>
+          clip._id === clipId
+            ? { ...updatedClip, isOwner: ownerId === String(currentUserId) }
+            : clip
+        )
       );
-
-      // IMPORTANT: DO NOT emit here if your server already emits inside the PATCH route.
-      // If your server is broadcasting (io.emit('feedClipUpdated', updatedClip)), no client emit required.
-      // If your server is NOT broadcasting, uncomment the next 2 lines:
-      // const socket = initSocket();
-      // socket.emit("clipReacted", updatedClip);
+      // No client emit needed if server emits feedClipUpdated
     } catch (error) {
       console.error("Reaction failed:", error);
       alert("Failed to send reaction");
@@ -78,17 +87,12 @@ const Feed = ({ clips, setClips }) => {
   const handleDelete = async (clipId) => {
     if (!window.confirm("Delete this clip?")) return;
     try {
-      const token = localStorage.getItem("token");
+      const tokenLocal = localStorage.getItem("token");
       await axios.delete(`http://localhost:3001/api/clips/${clipId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${tokenLocal}` },
       });
-
-      // update local UI for sender
       setClips((prev) => prev.filter((clip) => clip._id !== clipId));
-
-      // If server emits 'clipDeleted' inside the delete route, no client emit needed.
-      // Otherwise you can emit like:
-      // const socket = initSocket(); socket.emit("clipDeleted", clipId);
+      // server should emit clipDeleted; if not, can emit client-side
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Failed to delete clip");
@@ -104,7 +108,7 @@ const Feed = ({ clips, setClips }) => {
             key={clip._id}
             className="p-4 border rounded-lg shadow-sm bg-white relative"
           >
-            <audio controls src={clip.url} className="w-full"></audio>
+            <audio controls src={clip.url} className="w-full" />
             {clip.isOwner && (
               <div className="absolute top-2 right-2 flex gap-2 items-center">
                 <span className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
