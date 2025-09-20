@@ -1,5 +1,5 @@
 //features/rooms/RoomsPage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios, { AxiosHeaders } from "axios";
@@ -12,9 +12,11 @@ import {
   selectRoomsStatus,
 } from "./roomsSlice";
 import Navbar from "../../Components/Navbar.jsx";
+import { initSocket } from "../../socket.js";
 const RoomsPage = ({ setIsLoggedIn }) => {
   const dispatch = useDispatch();
   const rooms = useSelector(selectRooms);
+  const roomsRef = useRef(rooms);
   const status = useSelector(selectRoomsStatus);
   const [query, setQuery] = useState("");
   const [newName, setNewName] = useState("");
@@ -22,10 +24,54 @@ const RoomsPage = ({ setIsLoggedIn }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    roomsRef.current = rooms;
+  }, [rooms]);
+  // decode token to get current user id
+  let currentUserId = null;
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      currentUserId = payload.id || payload.userId || null;
+    } catch (err) {
+      console.warn("Failed to decode token in RoomsPage", err);
+    }
+  }
+  useEffect(() => {
     if (status === "idle") {
       dispatch(fetchRooms());
     }
   }, [dispatch, status]);
+
+  useEffect(() => {
+    const socket = initSocket();
+
+    socket.on("connect", () => {
+      console.log("RoomsPage socket connected:", socket.id);
+    });
+
+    socket.on("roomCreated", (room) => {
+      // Defensive: room.userId must be present (string) from server
+      const isOwner =
+        !!room.userId && String(room.userId) === String(currentUserId);
+
+      dispatch({
+        type: "rooms/createRoom/fulfilled",
+        payload: { ...room, isOwner },
+      });
+    });
+
+    socket.on("roomDeleted", (roomId) => {
+      console.log("socket roomDeleted:", roomId);
+      dispatch(fetchRooms());
+    });
+
+    return () => {
+      socket.off("connect");
+      socket.off("roomCreated");
+      socket.off("roomDeleted");
+    };
+  }, [dispatch, currentUserId]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -59,7 +105,6 @@ const RoomsPage = ({ setIsLoggedIn }) => {
       `http://localhost:3001/api/rooms/${roomId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    alert("Room deleted successfully");
     dispatch(fetchRooms());
 
     try {

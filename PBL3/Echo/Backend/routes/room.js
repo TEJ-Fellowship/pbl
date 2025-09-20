@@ -4,7 +4,7 @@ const router = express.Router();
 const Room = require("../models/room");
 const Clip = require("../models/Clip");
 const bcrypt = require("bcrypt");
-
+const { getIo } = require("../socket");
 // Get all rooms
 router.get("/", authMiddleWare, async (req, res) => {
   try {
@@ -38,8 +38,27 @@ router.post("/", authMiddleWare, async (req, res) => {
     });
 
     await newRoom.save();
-    res.status(201).json({ ...newRoom.toObject(), isOwner: true });
+    // backend/routes/room.js (inside POST "/" after newRoom.save())
+
+    const creatorResponse = { ...newRoom.toObject(), isOwner: true };
+
+    // Ensure userId is a string for frontend
+    const sanitized = {
+      ...newRoom.toObject(),
+      userId: newRoom.userId ? String(newRoom.userId) : null,
+    };
+
+    // Broadcast to everyone
+    try {
+      const io = getIo();
+      io.emit("roomCreated", sanitized);
+    } catch (emitErr) {
+      console.warn("Socket not ready to emit roomCreated", emitErr.message);
+    }
+
+    res.status(201).json(creatorResponse);
   } catch (error) {
+    console.error("Failed to create room", error);
     res.status(500).json({ error: "Failed to create room" });
   }
 });
@@ -72,6 +91,13 @@ router.delete("/:id/", authMiddleWare, async (req, res) => {
       return res.status(403).json({ error: "Not authorised" }); //404-Not authorised
     }
     await room.deleteOne();
+    // broadcast deletion
+    try {
+      const io = getIo();
+      io.emit("roomDeleted", req.params.id);
+    } catch (emitErr) {
+      console.warn("Socket not ready to emit roomDeleted", emitErr.message);
+    }
 
     res.json("Deleted successfully");
   } catch (error) {
