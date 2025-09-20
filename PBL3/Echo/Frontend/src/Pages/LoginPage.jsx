@@ -35,25 +35,33 @@ function SignIn({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80
-                 sm:w-96 flex flex-col gap-3"
+      className="w-80 sm:w-96 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl p-8 flex flex-col gap-4 text-white"
     >
-      <h1 className="text-2xl font-extrabold text-blue-600">Welcome Back</h1>
-      <p className="text-gray-600">Enter your account details</p>
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center font-bold">
+            E
+          </div>
+          <div className="text-lg font-semibold">Echo</div>
+        </div>
+      </div>
 
-      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+      <h1 className="text-2xl font-extrabold text-white">Welcome Back</h1>
+      <p className="text-gray-400">Enter your account details</p>
+
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
         Email
       </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         type="text"
-        placeholder="username@email.com"
-        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+        placeholder="you@domain.com"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
         Password
       </label>
       <input
@@ -61,26 +69,31 @@ function SignIn({
         onChange={(e) => setPassword(e.target.value)}
         type="password"
         placeholder="*******"
-        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <p className="text-sm text-blue-500 underline cursor-pointer text-right mt-1">
-        Forgot Password?
-      </p>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="text-sm text-indigo-300 hover:text-indigo-400 underline"
+        >
+          Forgot Password?
+        </button>
+      </div>
 
       <button
         type="submit"
-        className="mt-5 p-2 w-full bg-blue-600 hover:bg-blue-700 text-white
-                   font-semibold rounded-lg transition-colors"
+        className="mt-2 p-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white
+                   font-semibold rounded-lg transition-colors shadow"
       >
         Sign In
       </button>
 
-      <p className="text-sm text-center text-gray-600 mt-2">
+      <p className="text-sm text-center text-gray-400 mt-1">
         Don't have an account?{" "}
         <span
-          className="text-blue-500 font-semibold hover:text-blue-600 cursor-pointer"
+          className="text-indigo-300 font-semibold hover:text-indigo-400 cursor-pointer"
           onClick={() => {
             setIsSignUp(true);
             setUsername("");
@@ -117,25 +130,33 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80
-                 sm:w-96 flex flex-col gap-3"
+      className="w-80 sm:w-96 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl p-8 flex flex-col gap-4 text-white"
     >
-      <h1 className="text-2xl font-extrabold text-blue-600">Create Account</h1>
-      <p className="text-gray-600">Enter your account details</p>
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center font-bold">
+            E
+          </div>
+          <div className="text-lg font-semibold">Echo</div>
+        </div>
+      </div>
 
-      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+      <h1 className="text-2xl font-extrabold text-white">Create Account</h1>
+      <p className="text-gray-400">Enter your account details</p>
+
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
         Email
       </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         type="text"
-        placeholder="username@email.com"
-        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+        placeholder="you@domain.com"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
         Password
       </label>
       <input
@@ -143,11 +164,11 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
         onChange={(e) => setPassword(e.target.value)}
         type="password"
         placeholder="*******"
-        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <label className="mt-4 mb-1 text-sm font-semibold text-gray-700">
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
         Re-enter Password
       </label>
       <input
@@ -155,22 +176,22 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
         onChange={(e) => setRepassword(e.target.value)}
         type="password"
         placeholder="*******"
-        className="px-3 py-2 w-full border-2 border-gray-300 rounded-lg
-                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
       <button
         type="submit"
-        className="mt-5 p-2 w-full bg-blue-600 hover:bg-blue-700 text-white
-                   font-semibold rounded-lg transition-colors"
+        className="mt-2 p-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white
+                   font-semibold rounded-lg transition-colors shadow"
       >
         Sign Up
       </button>
 
-      <p className="text-sm text-center text-gray-600 mt-2">
+      <p className="text-sm text-center text-gray-400 mt-1">
         Already have an account?{" "}
         <span
-          className="text-blue-500 font-semibold hover:text-blue-600 cursor-pointer"
+          className="text-indigo-300 font-semibold hover:text-indigo-400 cursor-pointer"
           onClick={() => setIsSignUp(false)}
         >
           Sign In
@@ -186,7 +207,7 @@ function LoginForm({ setIsLoggedIn }) {
   const [isSignUp, setIsSignUp] = useState(false);
 
   return (
-    <div className="h-screen flex justify-center items-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900 p-6">
       {isSignUp ? (
         <SignUp
           username={username}
