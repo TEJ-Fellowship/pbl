@@ -38,7 +38,7 @@ function initSocket(server) {
 
     // Feed events
     socket.on("newFeedClip", (clip) => {
-      io.emit("feedClipAdded", clip);
+      socket.broadcast.emit("feedClipAdded", clip);
     });
 
     socket.on("clipReacted", (updatedClip) => {

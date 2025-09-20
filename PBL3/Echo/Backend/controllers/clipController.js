@@ -1,7 +1,11 @@
-//controllers/clipController
+// backend/controllers/clipController.js (replace uploadClip)
 const Clip = require("../models/Clip");
 const fs = require("fs");
 const path = require("path");
+const { getIo } = require("../socket");
+
+const reactionTypes = ["like", "love", "haha", "wow", "sad", "angry"];
+
 const uploadClip = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No files uploaded" });
@@ -9,7 +13,7 @@ const uploadClip = async (req, res) => {
 
     const fileURL = `${req.protocol}://${req.get("host")}/uploads/${
       req.file.filename
-    }`; //http://localhost:5000/uploads/recording-1694567891234.webm
+    }`;
 
     const newClip = await Clip.create({
       userId: req.user.id,
@@ -21,7 +25,36 @@ const uploadClip = async (req, res) => {
       roomId: req.body.roomId || null,
     });
 
-    return res.status(201).json(newClip);
+    // aggregated reactions (all zeros)
+    const aggregated = reactionTypes.reduce((acc, r) => {
+      acc[r] = 0;
+      return acc;
+    }, {});
+
+    // Response for uploader: include isOwner true
+    const responseClip = {
+      ...newClip.toObject(),
+      reactions: aggregated,
+      isOwner: true,
+    };
+
+    // Emit sanitized clip to other clients (do NOT include isOwner)
+    try {
+      if (!newClip.roomId) {
+        const io = getIo();
+        const sanitized = {
+          ...newClip.toObject(),
+          reactions: aggregated,
+          // no isOwner field here
+        };
+        // broadcast to everyone (you can use broadcast from socket side if you track socket id)
+        io.emit("feedClipAdded", sanitized);
+      }
+    } catch (emitErr) {
+      console.warn("Socket not ready to emit feedClipAdded", emitErr.message);
+    }
+
+    return res.status(201).json(responseClip);
   } catch (err) {
     console.log("Upload error", err);
     if (req.file) {
@@ -35,4 +68,5 @@ const uploadClip = async (req, res) => {
       .json({ message: "Server error while uploading clip" });
   }
 };
+
 module.exports = { uploadClip };
