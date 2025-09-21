@@ -27,14 +27,10 @@ const Navbar = ({ setIsLoggedIn }) => {
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => navigate("/home")}
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform duration-300">
-            <span className="group-hover:scale-110 transition-transform duration-300">
-              E
-            </span>
+          <div className="w-10 h-10 rounded-full  flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform duration-300 w-14 h-14">
+            <img src="/logo.svg" alt="logo" />
           </div>
-          <div className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight">
-            Echo
-          </div>
+          <div className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent tracking-tight"></div>
         </div>
 
         {/* Desktop Navigation Links */}

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import Recorder from "../../Components/Recorder";
 import axios from "axios";
 import { initSocket, joinRoom, leaveRoom } from "../../socket";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiMic } from "react-icons/fi";
 
 const RoomChatPage = () => {
   const [messages, setMessages] = useState([]);
@@ -109,7 +109,7 @@ const RoomChatPage = () => {
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            Room Confessions 🎙️
+            Room Confessions
           </h2>
         </div>
 
@@ -120,7 +120,7 @@ const RoomChatPage = () => {
               {messages.length === 0 ? (
                 <div className="text-center py-20">
                   <div className="w-32 h-32 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-8 backdrop-blur-sm border border-white/10">
-                    <span className="text-6xl">🎤</span>
+                    <FiMic size={50} color="white" />
                   </div>
                   <h3 className="text-2xl font-bold text-white mb-4">
                     No confessions yet

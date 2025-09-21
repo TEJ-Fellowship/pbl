@@ -173,7 +173,7 @@ const Recorder = ({ onSave, roomId }) => {
                   shadow-xl p-4 flex flex-col items-center gap-4"
     >
       {/* Header */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-8 mt-10">
         <h2 className="flex items-center justify-center text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-2">
           <FiMic className="mr-3 text-4xl text-indigo-400" />
           Confess Live

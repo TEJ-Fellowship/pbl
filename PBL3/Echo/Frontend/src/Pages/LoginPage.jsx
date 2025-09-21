@@ -39,8 +39,8 @@ function SignIn({
     >
       <div className="text-center mb-2">
         <div className="inline-flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center font-bold">
-            E
+          <div className="w-10 h-10 rounded-full  flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform duration-300 w-14 h-14">
+            <img src="/logo.svg" alt="logo" />
           </div>
           <div className="text-lg font-semibold">Echo</div>
         </div>

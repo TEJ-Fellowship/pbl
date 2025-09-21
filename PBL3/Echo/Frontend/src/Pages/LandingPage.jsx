@@ -13,8 +13,8 @@ export default function LandingPage() {
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold">
-            E
+          <div className="w-10 h-10 rounded-full  flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform duration-300 w-14 h-14">
+            <img src="/logo.svg" alt="logo" />
           </div>
           <div className="text-lg font-semibold tracking-wide">Echo</div>
         </div>
@@ -27,44 +27,17 @@ export default function LandingPage() {
         </h1>
 
         <p className="mt-4 text-lg text-gray-300 max-w-xl">
-          Record voice clips, join rooms, and react in real-time — a safe place
+          Record voice clips, join rooms, and react in real-time. A safe place
           to speak up and be heard. Minimal. Fast. Echo-y.
         </p>
 
         <div className="mt-6 flex gap-4">
           <button
             onClick={() => navigate("/login")}
-            className="px-6 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg"
+            className="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg"
           >
             Get Started
           </button>
-        </div>
-
-        {/* Echo graphic (glow + subtle waveform) */}
-        <div className="relative mt-12 w-full max-w-lg h-44">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-56 h-56 bg-gradient-to-br from-indigo-600/30 to-purple-600/30 rounded-full blur-3xl animate-pulse" />
-          </div>
-
-          <svg
-            className="absolute inset-0 w-full h-full opacity-70"
-            viewBox="0 0 600 160"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M0 80 C100 10, 200 150, 300 80 C400 10, 500 150, 600 80"
-              stroke="url(#g1)"
-              strokeWidth="6"
-              fill="transparent"
-              strokeLinecap="round"
-            />
-            <defs>
-              <linearGradient id="g1" x1="0" x2="1">
-                <stop offset="0%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#06b6d4" />
-              </linearGradient>
-            </defs>
-          </svg>
         </div>
       </main>
 

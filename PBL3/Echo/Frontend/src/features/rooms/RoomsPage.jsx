@@ -468,7 +468,6 @@ const RoomsPage = ({ setIsLoggedIn }) => {
       await dispatch(
         joinRoom({ roomId: passwordModal.roomId, password })
       ).unwrap();
-      alert("Joined room!");
       navigate(`/rooms/${passwordModal.roomId}`);
     } catch (err) {
       alert("Join failed: " + (err.message || JSON.stringify(err)));
