@@ -1,3 +1,4 @@
+// models/Loop.js
 import mongoose from "mongoose";
 
 const loopSchema = new mongoose.Schema({
@@ -13,25 +14,48 @@ const loopSchema = new mongoose.Schema({
   },
   strokes: [
     {
-      x: Number,
-      y: Number,
-      color: String,
-      size: Number,
-      tool: { type: String, enum: ["brush", "eraser"], default: "brush" }
+      tool: {
+        type: String,
+        enum: ["pen", "eraser"],
+        required: true
+      },
+      color: {
+        type: String,
+        required: true
+      },
+      size: {
+        type: Number,
+        required: true
+      },
+      points: [{
+        x: { type: Number, required: true },
+        y: { type: Number, required: true }
+      }],
+      creator: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
     }
   ],
-  background: {
-    type: String,
-    default: ""
-  },
   finalImage: {
     type: String,
-    default: ""
+    required: true // Base64 encoded image data
   },
   caption: {
     type: String,
     default: ""
   },
-},{timestamps: true});
+  metadata: {
+    canvasWidth: Number,
+    canvasHeight: Number,
+    totalStrokes: Number
+  }
+}, { 
+  timestamps: true 
+});
+
+// Index for efficient queries
+loopSchema.index({ room: 1, createdAt: -1 });
+loopSchema.index({ creator: 1, createdAt: -1 });
 
 export default mongoose.model("Loop", loopSchema);
