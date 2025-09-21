@@ -1,5 +1,4 @@
-// import React from "react";
-
+import React from "react";
 function Footer() {
     return (
       <footer className="bg-[#FFFBF8]">
@@ -17,27 +16,8 @@ function Footer() {
               <a href="#" className="hover:underline">
                 QuickPick™
               </a>
-              . All Rights Reserved.
+              . All Rights Reserved - "Project by Ashok & Binita"
             </span>
-  
-            {/* Links */}
-            <ul className="flex flex-wrap items-center mb-6 text-sm font-medium text-gray-500 sm:mb-0 dark:text-gray-400">
-              <li>
-                <a href="#" className="hover:underline me-4 md:me-6">
-                  Terms
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:underline me-4 md:me-6">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:underline">
-                  Contact
-                </a>
-              </li>
-            </ul>
           </div>
         </div>
       </footer>

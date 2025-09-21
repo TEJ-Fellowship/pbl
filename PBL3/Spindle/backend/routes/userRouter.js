@@ -106,16 +106,22 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
+router.get("/", async (req, res) => {
+  try {
+    const users = await User.find({}).populate("polls", {
+      question: 1,
+      options: 1,
+    })
+
+    res.json(users)
+  } catch (err) {
+    console.error("Error fetching users:", err.message)
+    res.status(500).json({ error: "Server error while fetching users" })
+  }
+})
+
 export default router
 
 
 
 
-router.get('/',async(req,res)=>{
-  const users = await User.find({}).populate("polls",{
-    question:1,
-    options:1
-  })
-
-  res.json(users)
-})

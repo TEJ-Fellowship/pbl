@@ -4,7 +4,7 @@ import cors from "cors"
 import dotenv from "dotenv"
 import userRouter from "./routes/userRouter.js"
 import pollRouter from "./routes/pollRouter.js"
-import allpollRoutes from "./routes/allpollrouter.js";
+import allpollRoutes from "./routes/allpollRouter.js";
 import geminiRouter from "./routes/geminiRouter.js"
 import getUser from "./routes/getUserRouter.js"
 dotenv.config() 

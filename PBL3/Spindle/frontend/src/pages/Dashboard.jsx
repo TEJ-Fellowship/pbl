@@ -1,18 +1,39 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FiSettings } from "react-icons/fi";
 import { FiArrowRight } from "react-icons/fi";
 import { AiOutlinePlus, AiFillPlusCircle } from "react-icons/ai";
-
-import Home from "../components/Home";
 import MyPolls from "../components/MyPolls";
 import CreatePoll from "../components/CreatePoll";
 import PollResult from "../components/PollResult";
 import AllPolls from "../components/AllPolls";
+import axios from "axios";
 
-function Dashboard({ user, logout }) {
+function Dashboard() {
   const [showSettings, setShowSettings] = useState(false);
+  const [user, setUser] = useState(null); 
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await axios.get("http://localhost:5000/api/users/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUser(res.data); 
+        console.log("Logged in user", res.data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   // Helper: check active route
   const isActive = (path) =>
@@ -20,6 +41,7 @@ function Dashboard({ user, logout }) {
       ? "bg-rose-600 text-white"
       : "hover:bg-rose-600 hover:text-white";
 
+  // Logout function
   function logout() {
     localStorage.removeItem("token");
     window.location.href = "/login";
@@ -81,13 +103,14 @@ function Dashboard({ user, logout }) {
             <FiSettings size={16} />
           </button>
 
-          {showSettings && (
+          {showSettings && user && (
             <div className="absolute bottom-16 left-6 z-50 bg-white border border-gray-200 shadow-xl rounded-xl p-4 w-60 text-sm">
+              <p><span className="text-gray-600 opacity-90">Login User:</span></p>
               <p className="text-gray-800">
-                <span className="text-gray-600">Email: {user?.email}</span>
+                <span className="text-gray-600 opacity-70">Email: {user.email}</span>
               </p>
               <p className="text-gray-800 mt-1">
-                <span className="text-gray-600">
+                <span className="text-gray-600 opacity-50">
                   Username: {user?.username}
                 </span>
               </p>
@@ -106,8 +129,6 @@ function Dashboard({ user, logout }) {
       {/* Main content */}
       <div className="flex-1 ml-64 p-6 bg-gray-100 overflow-y-auto min-h-screen">
         <Routes>
-          <Route path="/" element={<Navigate to="home" />} />
-          <Route path="home" element={<Home />} />
           <Route path="mypolls" element={<MyPolls />} />
           <Route path="createpolls" element={<CreatePoll />} />
           <Route path="allpolls" element={<AllPolls />} />
