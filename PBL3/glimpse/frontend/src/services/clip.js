@@ -56,6 +56,36 @@ const uploadFile = async (file) => {
   return response.data;
 };
 
+const generateMontage = async (month, year, musicId = null) => {
+  console.log("generateMontage called with:", { month, year, musicId });
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Please login first");
+  }
+
+  console.log("Token found, making API request...");
+
+  const requestBody = { month, year };
+  if (musicId) {
+    requestBody.musicId = musicId;
+  }
+
+  const response = await axios.post(
+    "http://localhost:3001/api/montage/generate",
+    requestBody,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  console.log("API response:", response);
+  return response.data;
+};
+
 const startRecording = (videoElementId = "preview", duration = 5000) => {
   return new Promise((resolve, reject) => {
     navigator.mediaDevices
@@ -109,4 +139,34 @@ const startRecording = (videoElementId = "preview", duration = 5000) => {
   });
 };
 
-export default { getAll, deleteClip, uploadFile, startRecording };
+const addMusicToMontage = async (montageId, musicId) => {
+  console.log("addMusicToMontage called with:", { montageId, musicId });
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Please login first");
+  }
+
+  const response = await axios.post(
+    `http://localhost:3001/api/montage/add-music/${montageId}`,
+    { musicId },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  console.log("Add music API response:", response);
+  return response.data;
+};
+
+export default {
+  getAll,
+  deleteClip,
+  uploadFile,
+  startRecording,
+  generateMontage,
+  addMusicToMontage,
+};

@@ -4,11 +4,21 @@ const mongoose = require("mongoose");
 const config = require("./utils/config");
 const logger = require("./utils/logger");
 const middleware = require("./utils/middleware");
-// const notesRouter = require('./controllers/note')
+
+// Import routers with debugging
 const usersRoutes = require("./controllers/users");
 const clipsRouter = require("./controllers/clips");
-// const montagesRoutes = require('./controllers/montages')
+const montageRouter = require("./controllers/montage");
+const musicRouter = require("./controllers/music");
 const loginRouter = require("./controllers/login");
+
+// DEBUG: Check which router is undefined
+console.log("🔍 Router Debug:");
+console.log("usersRoutes:", typeof usersRoutes, usersRoutes ? "✅" : "❌");
+console.log("clipsRouter:", typeof clipsRouter, clipsRouter ? "✅" : "❌");
+console.log("montageRouter:", typeof montageRouter, montageRouter ? "✅" : "❌");
+console.log("musicRouter:", typeof musicRouter, musicRouter ? "✅" : "❌");
+console.log("loginRouter:", typeof loginRouter, loginRouter ? "✅" : "❌");
 
 const app = express();
 app.use(cors());
@@ -23,15 +33,16 @@ mongoose
     logger.error("error connection to MongoDB:", error.message);
   });
 
-// app.use(express.static('dist'))
 app.use(express.json());
 app.use(middleware.requestLogger);
 app.use(middleware.tokenExtractor);
 
+// Use routers (the error happens here)
 app.use("/api/users", usersRoutes);
 app.use("/api/login", loginRouter);
 app.use("/api/clips", clipsRouter);
-// app.use('/api/montages', montagesRoutes)
+app.use("/api/montage", montageRouter);
+app.use("/api/music", musicRouter);
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
