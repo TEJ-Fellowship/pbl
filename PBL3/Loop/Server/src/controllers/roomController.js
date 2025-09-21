@@ -37,6 +37,17 @@ export const getRooms = async (req, res) => {
   }
 };
 
+// -------------------- Get Room By ID --------------------
+export const getRoomById = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id).populate("players", "username email");
+    if (!room) return res.status(404).json({ message: "Room not found" });
+    res.json(room);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // -------------------- Join Room by Code --------------------
 export const joinRoomByCode = async (req, res) => {
   const { code } = req.body;
@@ -68,6 +79,23 @@ export const toggleRoomStatus = async (req, res) => {
     await room.save();
 
     res.json(room);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// -------------------- Leave Room --------------------
+export const leaveRoom = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) return res.status(404).json({ message: "Room not found" });
+
+    room.players = room.players.filter(
+      (p) => p.toString() !== req.user._id.toString()
+    );
+    await room.save();
+
+    res.json({ message: "Left room", room });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
