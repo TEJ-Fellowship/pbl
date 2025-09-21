@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import socketService from "./utils/socket";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -19,13 +20,25 @@ function App() {
     if (token && !user) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        setUser({
+        const userObj = {
+          id: payload._id || payload.id || payload.userId,
           username: payload.email?.split("@")[0] || payload.username || "User",
-        });
+        };
+        setUser(userObj);
+        
+        // Connect to socket with user ID
+        socketService.connect(userObj.id);
       } catch {
         // Invalid token, ignore
       }
     }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup socket connection on unmount
+      socketService.disconnect();
+    };
   }, []);
 
   // Handlers to switch pages
@@ -39,12 +52,15 @@ function App() {
   // Handle login success: set user and go home
   const handleLoginSuccess = (userObj) => {
     setUser(userObj);
+    // Connect to socket with user ID
+    socketService.connect(userObj.id);
     setPage("home");
   };
 
   // Logout handler
   const handleLogout = () => {
     Cookies.remove("token");
+    socketService.disconnect();
     setUser(null);
     setPage("home");
   };

@@ -225,9 +225,25 @@ const Chat = () => {
                 </div>
               ) : (
                 chats.map((chat) => {
+                  // Get current user ID from token
+                  const getCurrentUserId = () => {
+                    try {
+                      const token = Cookies.get("token");
+                      if (token) {
+                        const payload = JSON.parse(atob(token.split(".")[1]));
+                        return payload._id || payload.id || payload.userId;
+                      }
+                    } catch (error) {
+                      console.error("Error getting user ID:", error);
+                    }
+                    return null;
+                  };
+                  
+                  const currentUserId = getCurrentUserId();
                   const otherParticipant = chat.participants.find(
-                    (p) => p._id !== chat.currentUserId
+                    (p) => p._id !== currentUserId
                   );
+                  
                   return (
                     <div
                       key={chat._id}

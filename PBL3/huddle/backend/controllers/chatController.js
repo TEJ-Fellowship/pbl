@@ -90,6 +90,12 @@ export const sendTextMessage = async (req, res) => {
 
     await message.populate("sender", "username email profilePic");
 
+    // Emit real-time message to other participants
+    const io = req.app.get('io');
+    if (io) {
+      io.to(chatId).emit('message-received', message);
+    }
+
     res.status(201).json(message);
   } catch (error) {
     console.error("Error sending text message:", error);
@@ -139,6 +145,12 @@ export const sendVoiceMessage = async (req, res) => {
     await chat.save();
 
     await message.populate("sender", "username email profilePic");
+
+    // Emit real-time message to other participants
+    const io = req.app.get('io');
+    if (io) {
+      io.to(chatId).emit('message-received', message);
+    }
 
     res.status(201).json(message);
   } catch (error) {
