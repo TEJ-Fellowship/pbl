@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { socket } from "../utils/socket.js"; // import your socket instance
-
+import "../App.css";
 const Main = ({ userId }) => {
   const [ripples, setRipples] = useState([]);
   const [facts, setFacts] = useState("");
@@ -64,7 +64,7 @@ const Main = ({ userId }) => {
         ></button>
 
         <div className="fixed bottom-4 text-primary text-4xl font-bold tracking-tight mt-12 text-center">
-          <h1>{facts}</h1>
+          <h1 className="facts">{facts}</h1>
         </div>
       </div>
     </div>
