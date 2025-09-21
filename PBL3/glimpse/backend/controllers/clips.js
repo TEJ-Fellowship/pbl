@@ -20,6 +20,10 @@ clipsRouter.post("/", auth, uploadSingle("file"), async (request, response) => {
       resource_type: "video",
       folder: `user_videos/${user.id}`,
       eager: [{ width: 300, height: 200, crop: "scale", format: "jpg" }],
+      transformation: [
+        { start_offset: 0, end_offset: 1},
+        { aspect_ratio: "4:5", crop: "fill"}
+      ]
     });
 
     fs.unlinkSync(request.file.path);
