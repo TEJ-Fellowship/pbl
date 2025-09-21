@@ -126,6 +126,7 @@ import contactService from "../services/contactService.js";
 import JWTUtils from "../utils/jwt.js";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js"; // Add this import
+import { analyzeSentiment } from "../utils/Gemini.js";
 
 const onlineUsers = new Map(); // userId -> { socketId, username, location, isVisible }
 
@@ -253,6 +254,27 @@ export default function (io) {
         if (ripple.visibility.includes("friends")) {
           const friends = await contactService.listContacts(userId);
           console.log(friends);
+
+          (async () => {
+            try {
+              const sentiment = await analyzeSentiment(ripple.message);
+              await rippleService.updateRippleSentiment(ripple._id, sentiment);
+              console.log(
+                `Sentiment for ripple ${ripple.rippleId} updated: ${sentiment}`
+              );
+
+              // Optional: Notify clients of sentiment update
+              io.emit("rippleSentimentUpdate", {
+                rippleId: ripple.rippleId,
+                sentiment,
+              });
+            } catch (error) {
+              console.error(
+                "Error analyzing/updating sentiment:",
+                error.message
+              );
+            }
+          })();
 
           await Promise.all(
             friends.map(async (friend) => {

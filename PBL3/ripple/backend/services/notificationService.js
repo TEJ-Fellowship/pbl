@@ -1,14 +1,16 @@
 import Notification from "../models/Notification.js";
 
 const getNotifications = async (userId) => {
-  return await Notification.find({
+  const notifications = await Notification.find({
     $or: [
       { userId, type: "friend_ripple" },
       { userId: null, type: "global_ripple" },
     ],
   })
     .sort({ createdAt: -1 })
-    .limit(30);
+    .limit(30)
+    .lean();
+  return notifications;
 };
 
 const deleteAllNotifications = async () => {

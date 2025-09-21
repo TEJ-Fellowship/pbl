@@ -1,4 +1,5 @@
 import Ripple from "../models/Ripple.js";
+import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
 // , visibility = ["friends", "global"]
@@ -34,6 +35,7 @@ const createRipple = async (userId, visibility) => {
     userId,
     message,
     visibility,
+    sentiment: "pending",
   });
 
   await ripple.save();
@@ -47,7 +49,10 @@ const getFriendsRipple = async (friends) => {
     .sort({ createdAt: -1 })
     .limit(50);
 
-  return ripples;
+  return ripples.map((r) => ({
+    ...r,
+    sentiment: r.sentiment || "pending", // default if sentiment not yet analyzed
+  }));
 };
 const getGlobalRipples = async () => {
   const ripples = await Ripple.find({
@@ -56,4 +61,33 @@ const getGlobalRipples = async () => {
   return ripples;
 };
 
-export default { getFriendsRipple, getGlobalRipples, createRipple };
+const updateRippleSentiment = async (rippleId, sentiment) => {
+  try {
+    // // Validate sentiment value
+    // const allowed = ["positive", "neutral", "negative"];
+    // if (!allowed.includes(sentiment)) {
+    //   throw new Error("Invalid sentiment value");
+    // }
+
+    const ripple = await Ripple.findByIdAndUpdate(
+      rippleId,
+      { sentiment },
+      { new: true } // return the updated document
+    );
+
+    if (!ripple) throw new Error("Ripple not found");
+
+    console.log(`Sentiment updated for Ripple ${rippleId}: ${sentiment}`);
+    return ripple;
+  } catch (error) {
+    console.error("Error updating ripple sentiment:", error.message);
+    throw error;
+  }
+};
+
+export default {
+  getFriendsRipple,
+  getGlobalRipples,
+  createRipple,
+  updateRippleSentiment,
+};

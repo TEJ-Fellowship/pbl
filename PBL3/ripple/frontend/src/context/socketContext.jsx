@@ -15,6 +15,7 @@ export const SocketProvider = ({ children }) => {
         credentials: "include",
       });
 
+      console.log(res);
       const data = await res.json();
       console.log(data);
       setNotifications(data);
@@ -28,7 +29,14 @@ export const SocketProvider = ({ children }) => {
 
     if (!userData) return;
 
+    socket.on("rippleSentimentUpdate", ({ rippleId, sentiment }) => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, sentiment })));
+    });
+
     socket.on("rippleNotification", (data) => {
+      if (data.fromUserId !== userData.user.userId) {
+        toast.success(`${data.fromUsername} sends a ripple`);
+      }
       console.log("global", data);
       setNotifications((prev) => [
         {

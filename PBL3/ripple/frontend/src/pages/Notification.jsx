@@ -394,6 +394,11 @@ const Notifications = () => {
                 </p>
               )}
               <p className="text-gray-500 text-sm">{uiData.timestamp}</p>
+              <div>
+                <p className="px-3 py-3 mt-2 rounded-full text-center text-medium font-medium bg-gray-700/20 text-gray-400">
+                  {notification.sentiment || "Analyzing..."}
+                </p>
+              </div>
             </div>
 
             {/* Arrow for system notifications */}

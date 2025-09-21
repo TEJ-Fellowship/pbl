@@ -3,10 +3,19 @@ import notificationService from "../services/notificationService.js";
 const getNotifications = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const notifications = await notificationService.getNotifications(userId);
-    res.json(notifications);
+
+    let notifications = await notificationService.getNotifications(userId);
+
+    if (!Array.isArray(notifications)) notifications = [];
+
+    res.json(
+      notifications.map((n) => ({
+        ...n,
+        sentiment: n.type === "friend_ripple" ? n.sentiment || "pending" : null,
+      }))
+    );
   } catch (err) {
-    console.log("Error fetching notification: ", err.message);
+    console.log("Error fetching notification: ", err);
     res.status(500).json({ message: "server error" });
   }
 };
