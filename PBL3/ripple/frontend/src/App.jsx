@@ -7,7 +7,7 @@ import Ripple from "./pages/Ripple";
 import Layout from "./Layout";
 import Explore from "./pages/Explore";
 import Notification from "./pages/Notification";
-import Activitylog from "./pages/Activitylog";
+import Aboutus from "./pages/Aboutus";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute"; // import your new component
 

@@ -31,8 +31,12 @@ const getFriends = async (ownerId) => {
   return Contact.find({ owner: ownerId }).populate("contact", "username email");
 };
 
-const removeContact = async (ownerId, contactId) => {
-  return Contact.findByIdAndDelete(contactId);
+const removeContact = async (ownerId, contactUserId) => {
+  return Contact.findOneAndDelete({
+    owner: ownerId,
+    contact: contactUserId,
+  });
 };
+
 
 export default { getFriends, addContact, listContacts, removeContact };

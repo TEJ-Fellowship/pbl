@@ -18,12 +18,13 @@ const Explore = () => {
         credentials: "include",
         body: JSON.stringify({ contactId }),
       });
-      console.log(contactId)
+      // console.log(contactId)
       const data = await res.json();
-      console.log("this is a data",data);
+      // console.log("this is a data",data);
       
       if (res.ok) {
         setConnections((prev) => new Set([...prev, contactId]));
+        setConnectedUsers((prev) => [...prev, data]);
       } else {
         console.error("failed to add contact", data.error);
       }
@@ -32,9 +33,9 @@ const Explore = () => {
     }
   };
 
-const handleRemoveConnection = async (contactRelationId, userId) => {
+const handleRemoveConnection = async (userId) => {
   try {
-    const res = await fetch(`http://localhost:5000/api/contact/remove/${contactRelationId}`, {
+    const res = await fetch(`http://localhost:5000/api/contact/remove/${userId}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -42,17 +43,13 @@ const handleRemoveConnection = async (contactRelationId, userId) => {
     const data = await res.json();
 
     if (res.ok) {
-      // Remove the user's ID from connection Set
-      setConnections((prev) => {
+      setConnections(prev => {
         const newSet = new Set(prev);
         newSet.delete(userId);
         return newSet;
       });
 
-      // Remove user from connectedUsers
-      setConnectedUsers((prev) =>
-        prev.filter((person) => person._id !== userId)
-      );
+      setConnectedUsers(prev => prev.filter(person => person._id !== userId));
     } else {
       console.error("Failed to remove contact:", data.error);
     }
@@ -62,6 +59,7 @@ const handleRemoveConnection = async (contactRelationId, userId) => {
 };
 
 
+
 useEffect(() => {
   const fetchContacts = async () => {
     try {
@@ -69,14 +67,22 @@ useEffect(() => {
         credentials: "include",
       });
       const data = await res.json();
+      console.log(data)
 
       if (res.ok) {
-        const contactIds = data.map((item) => item.contact._id);
+        const uniqueData = [];
+        const seen = new Set();
+        for (const user of data) {
+          if (!seen.has(user._id)) {
+            seen.add(user._id);
+            uniqueData.push(user);
+          }
+        }
+
+        const contactIds = uniqueData.map((item) => item._id);
         setConnections(new Set(contactIds));
-        setConnectedUsers(data.map((item) => ({
-          ...item.contact,
-          contactRelationId: item._id,
-        })))
+
+        setConnectedUsers(uniqueData);
       }
     } catch (error) {
       console.error("Error fetching contacts:", error);
@@ -84,7 +90,7 @@ useEffect(() => {
   };
 
   fetchContacts();
-}, [connectedUsers]);
+}, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -166,7 +172,7 @@ useEffect(() => {
                   person={p}
                   isConnected={true}
                   handleAddConnection={handleAddConnection}
-                  handleRemoveConnection={() => handleRemoveConnection(p.contactRelationId, p._id)}
+                  handleRemoveConnection={() => handleRemoveConnection(p._id)}
                 />
               ))}
             </div>
