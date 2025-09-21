@@ -5,10 +5,26 @@ import { v4 as uuidv4 } from "uuid";
 
 const createRipple = async (userId, visibility) => {
   const messages = [
-    "Hello this is sad",
-    "Hello, this is bad",
-    "Hello, this is awesome!",
-    "Namaste",
+    "Hey , just wanted to let you know you crossed my mind today. Hope you're having a good week!",
+    "Thinking of you, Sending you some good vibes and a big hug!",
+    "Hi, It's been a while, but I was just thinking of our old adventures and it made me smile. Miss you!",
+    "Hey just a random thought: you're one of the best people I know. Hope you're doing well!",
+    "Checking in on you,I know things have been tough, and I want you to know I'm here for you.",
+    "Hey. thinking about all the fun we've had and can't wait to make more memories soon!",
+    "Just a quick note to say hi, Hope your day is as awesome as you are!",
+    "Hey, I know we haven't talked in a bit, but you popped into my head and I wanted to reach out. Hope you're doing okay.",
+    "Thinking of you, Hope you're having a cozy and relaxing day.",
+    "Hi! You've been on my mind. Just wanted to send a little love your way.",
+    "Just saw something that reminded me of you, Hope you're doing great!",
+    "Hey, I'm grateful for our friendship. Thinking of you today.",
+    "Just wanted to say that you're an amazing person, Hope your day is wonderful!",
+    "Thinking of you, and sending strength your way. I'm rooting for you!",
+    "Hey, I was just thinking of you and wanted to send a quick message to brighten your day!",
+    "Hi, Hope you're taking care of yourself. Thinking of you and sending good vibes.",
+    "Just a reminder that you're a wonderful friend, Thinking of you!",
+    "Hey, thinking of you today and missing our chats. Let's catch up soon!",
+    "Hey, just wanted to say you've been on my mind. Hope everything is going well!",
+    "Thinking of you, and all the good times we've shared. So glad you're in my life!",
   ];
 
   const message = messages[Math.floor(Math.random() * messages.length)];
