@@ -14,7 +14,7 @@ import { ThemeContext } from "./ThemeContext.jsx";
 import Timeline from "./pages/Timeline.jsx";
 import VideoUpload from "./pages/VideoUpload.jsx";
 import Capture from "./pages/Capture.jsx";
-import Navbar from './components/Navbar.jsx'
+import Montage from "./pages/Montage.jsx";
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
   const { isDark} = useContext(ThemeContext);
@@ -28,7 +28,40 @@ function App() {
             <Route path="/" element= {<Homepage />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
-
+            <Route
+              path="timelines"
+              element={
+                <ProtectedRoute>
+                   <Timeline />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="create"
+              element={
+                <ProtectedRoute>
+                 <Aboutus />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="About" element={<Aboutus />} />
+            <Route
+              path="montage"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <Montage />
+                </ProtectedRoute>
+              }
+            />
+              <Route
+              path="capture"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <Capture />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
           
         </Routes>
       </BrowserRouter>
