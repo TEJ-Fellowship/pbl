@@ -1,11 +1,16 @@
-import React, { useState } from "react";
-import { Pencil, Eraser, Circle as CircleIcon, Square as SquareIcon, Triangle, Star, MousePointer } from "lucide-react";
-import { LuHexagon } from 'react-icons/lu';
+// ============= FIXED LeftSidebar.jsx =============
+import React from "react";
+import { Pencil, Eraser, Circle, Square, MousePointer } from "lucide-react";
+
 const tools = [
   { name: "pen", icon: <Pencil /> },
   { name: "eraser", icon: <Eraser /> },
-  { name: "shape", icon: <CircleIcon /> },
-  { name: "square", icon: <SquareIcon /> },
+  { name: "circle", icon: <Circle /> },
+  { name: "square", icon: <Square /> },
+  { name: "rectangle", icon: <div>▭</div> },
+  { name: "triangle", icon: <div>△</div> },
+  { name: "hexagon", icon: <div>⬡</div> },
+  { name: "star", icon: <div>★</div> },
   { name: "select", icon: <MousePointer /> },
 ];
 
@@ -38,6 +43,7 @@ export default function LeftSidebar({ tool, setTool, selectedShape, setSelectedS
           className={`p-2 rounded-lg hover:bg-gray-700 ${
             tool === t.name ? "bg-yellow-400 text-black" : "text-white"
           }`}
+          title={t.name}
         >
           {t.icon}
         </button>

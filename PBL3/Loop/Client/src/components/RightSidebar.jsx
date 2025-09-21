@@ -5,168 +5,141 @@ export default function RightSidebar({
   setBrushColor,
   brushSize,
   setBrushSize,
-  backgroundColor,
-  setBackgroundColor,
+  remainingTime,
+  activeUser,
+  user,
+  canvasBackgroundColor,
+  setCanvasBackgroundColor
 }) {
-  const backgroundOptions = ["#ffffff", "#bbf7d0", "#fbcfe8", "#fef08a", "#bfdbfe"]; 
-  const totalTime = 30; // seconds per turn
-  const [timeLeft, setTimeLeft] = useState(totalTime);
-  const [isRunning, setIsRunning] = useState(false);
-  const audioRef = useRef(null);
+  const isMyTurn = activeUser?.id === (user?.id || user?._id);
 
-  useEffect(() => {
-    let timer;
-    if (isRunning && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsRunning(false);
-      if (audioRef.current) {
-        audioRef.current.play(); // play sound when timer ends
-      }
-      alert("⏰ Time is up!");
-    }
+  const backgroundColors = [
+    { color: "#ffffff", name: "White" },
+    { color: "#f0f0f0", name: "Light Gray" },
+    { color: "#ffe9e3", name: "Peach" },
+    { color: "#e3f2fd", name: "Light Blue" },
+    { color: "#f3e5f5", name: "Light Purple" },
+    { color: "#e8f5e8", name: "Light Green" }
+  ];
 
-    return () => clearInterval(timer);
-  }, [isRunning, timeLeft]);
-
-  const progress = (timeLeft / totalTime) * 100;
-
-  const handleStart = () => {
-    setTimeLeft(totalTime);
-    setIsRunning(true);
-  };
+  const penColors = [
+    "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#ffff00",
+    "#ff00ff", "#00ffff", "#808080", "#800000", "#008000", "#000080"
+  ];
 
   return (
-    <div className="w-72 bg-gray-800 p-4 flex flex-col space-y-6">
-      {/* Style Section */}
+    <div className="w-80 bg-gray-800 p-3 flex flex-col space-y-4 h-full overflow-y-auto">
+      {/* Turn Status */}
+      {activeUser && (
+        <div className="bg-gray-700 p-2 rounded-lg">
+          <h3 className="text-sm font-semibold text-green-400 mb-1">Current Turn</h3>
+          <p className="text-white text-sm">
+            {isMyTurn ? "Your turn!" : `${activeUser?.name || "Waiting..."}'s turn`}
+          </p>
+          
+          {/* Turn Timer */}
+          <div className="mt-2">
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  remainingTime > 10 ? 'bg-green-400' : 'bg-red-400'
+                }`}
+                style={{ width: `${(remainingTime / 30) * 100}%` }}
+              ></div>
+            </div>
+            <p className="text-right text-xs text-gray-300 mt-1">
+              {remainingTime}s left
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Canvas Background */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Stylize</h2>
-        <div className="flex space-x-2">
-          {["Default", "Pixel", "Anime"].map((style) => (
-            <button
-              key={style}
-              className="px-3 py-1 bg-gray-700 rounded-lg hover:bg-gray-600"
-            >
-              {style}
-            </button>
+        <h3 className="text-md font-semibold mb-2">Canvas Background</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {backgroundColors.map((bg, index) => (
+            <div
+              key={index}
+              className={`h-12 rounded-lg cursor-pointer hover:opacity-80 border-2 ${
+                canvasBackgroundColor === bg.color ? 'border-white' : 'border-gray-600'
+              }`}
+              style={{ backgroundColor: bg.color }}
+              onClick={() => setCanvasBackgroundColor(bg.color)}
+              title={bg.name}
+            ></div>
           ))}
         </div>
       </div>
 
-      {/* Background Section */}
+      {/* Pen Colors */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Background</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {backgroundOptions.map((color) => (
-            <div
-        key={color}
-        className={`h-16 rounded-lg cursor-pointer border border-gray-600 ${
-          backgroundColor === color ? "ring-4 ring-blue-400" : ""
-        }`}
-        style={{ backgroundColor: color }}
-        onClick={() => setBackgroundColor(color)}
-      ></div>
-    ))}
-  </div>
+        <h3 className="text-md font-semibold mb-2">Pen Colors</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {penColors.map((color, index) => (
+            <button
+              key={index}
+              className={`w-6 h-6 rounded-full border-2 ${
+                brushColor === color ? "border-white" : "border-gray-600"
+              }`}
+              style={{ backgroundColor: color }}
+              onClick={() => setBrushColor(color)}
+            />
+          ))}
+        </div>
+      </div>
 
-      {/* Custom background color picker */}
-  <label className="flex items-center space-x-2">
-    <span >Custom:</span>
-    <input
-      type="color"
-      value={backgroundColor}
-      onChange={(e) => setBackgroundColor(e.target.value)}
-      className="mt-5 w-10 h-10 rounded cursor-pointer border border-gray-600"
-    />
-  </label>
+      {/* Custom Color */}
+      <div>
+        <h3 className="text-md font-semibold mb-2">Custom Color</h3>
+        <input
+          type="color"
+          value={brushColor}
+          onChange={(e) => setBrushColor(e.target.value)}
+          className="w-full h-8 rounded border-0"
+        />
+      </div>
 
+      {/* Brush Size */}
+      <div>
+        <h3 className="text-md font-semibold mb-2">Brush Size: {brushSize}px</h3>
+        <input
+          type="range"
+          min="1"
+          max="20"
+          value={brushSize}
+          onChange={(e) => setBrushSize(parseInt(e.target.value))}
+          className="w-full"
+        />
+        <div className="flex items-center justify-center mt-2">
+          <div
+            className="rounded-full"
+            style={{
+              width: `${brushSize}px`,
+              height: `${brushSize}px`,
+              backgroundColor: brushColor,
+              minWidth: '2px',
+              minHeight: '2px'
+            }}
+          ></div>
+        </div>
       </div>
 
       {/* Participants */}
       <div>
-        <h2 className="text-lg font-semibold mb-2">Participants</h2>
-        <div className="flex -space-x-3">
+        <h3 className="text-md font-semibold mb-2">Participants</h3>
+        <div className="flex -space-x-2">
           <img
             src="https://randomuser.me/api/portraits/men/32.jpg"
             alt="user"
-            className="w-10 h-10 rounded-full border-2 border-gray-900"
+            className="w-8 h-8 rounded-full border-2 border-gray-900"
           />
           <img
             src="https://randomuser.me/api/portraits/women/44.jpg"
             alt="user"
-            className="w-10 h-10 rounded-full border-2 border-gray-900"
-          />
-          <img
-            src="https://randomuser.me/api/portraits/men/76.jpg"
-            alt="user"
-            className="w-10 h-10 rounded-full border-2 border-gray-900"
+            className="w-8 h-8 rounded-full border-2 border-gray-900"
           />
         </div>
-
-        {/* Current Turn */}
-        <div className="mt-4 p-3 bg-gray-700 rounded-lg flex items-center space-x-3">
-          <img
-            src="https://randomuser.me/api/portraits/men/32.jpg"
-            alt="turn-user"
-            className="w-10 h-10 rounded-full"
-          />
-          <div>
-            <p className="font-medium">Liam Carter</p>
-            <p className="text-sm text-gray-300">Current Turn</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Turn Timer */}
-      <div>
-        <h2 className="text-lg font-semibold mb-2 flex justify-between items-center">
-          Turn Timer
-          <button
-            onClick={handleStart}
-            className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-400 rounded-lg"
-          >
-            {isRunning ? "Restart" : "Start"}
-          </button>
-        </h2>
-        <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-green-400 h-2 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
-        <p className="text-right text-sm text-gray-300 mt-1">
-          {isRunning ? `${timeLeft}s left` : "Not running"}
-        </p>
-        {/* Hidden audio element */}
-        <audio ref={audioRef} src="/alert-sound.mp3" preload="auto"></audio>
-      </div>
-
-      {/* Brush Controls */}
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Brush Settings</h2>
-        <label className="block mb-2">
-          Color:
-          <input
-            type="color"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
-            className="ml-2"
-          />
-        </label>
-
-        <label className="block">
-          Size:
-          <input
-            type="range"
-            min="1"
-            max="20"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="ml-2"
-          />
-        </label>
       </div>
     </div>
   );
