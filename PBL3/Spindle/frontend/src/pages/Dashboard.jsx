@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FiSettings } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
+import { AiOutlinePlus, AiFillPlusCircle } from "react-icons/ai";
+
 import Home from "../components/Home";
 import MyPolls from "../components/MyPolls";
 import CreatePoll from "../components/CreatePoll";
@@ -37,8 +40,8 @@ function Dashboard() {
   // Helper: check active route
   const isActive = (path) =>
     location.pathname === path
-      ? "bg-red-600 text-white"
-      : "hover:bg-red-600 hover:text-white";
+      ? "bg-rose-600 text-white"
+      : "hover:bg-rose-600 hover:text-white";
 
   // Logout function
   function logout() {
@@ -50,44 +53,45 @@ function Dashboard() {
     <div className="flex">
       {/* Sidebar */}
       <aside className="w-64 h-screen bg-white shadow-lg p-6 space-y-6 flex flex-col fixed left-0 top-0">
-        <h1 className="text-2xl font-bold text-red-600">Spindle</h1>
+        <h1 className="text-2xl font-bold text-red-600">QuickPick</h1>
 
         {/* Navigation */}
         <nav className="space-y-2 flex-1">
           <Link
-            to="/dashboard/home"
-            className={`block w-full text-left px-4 py-2 rounded-lg ${isActive(
-              "/dashboard/home"
-            )}`}
-          >
-            🏠 Home
-          </Link>
-
-          <Link
             to="/dashboard/mypolls"
-            className={`block w-full text-left px-4 py-2 rounded-lg ${isActive(
+            className={`group relative flex items-center justify-between w-full text-left px-4 py-3 rounded transition duration-200 transform font-bold ${isActive(
               "/dashboard/mypolls"
             )}`}
           >
-            📊 My Polls
+            <div className="flex items-center gap-2">
+              🏠 <span>My Polls</span>
+            </div>
+            <FiArrowRight className="inline-block w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Link>
 
           <Link
             to="/dashboard/createpolls"
-            className={`block w-full text-left px-4 py-2 rounded-lg ${isActive(
+            className={`group relative flex items-center justify-between w-full text-left px-4 py-3 rounded transition duration-200 transform font-bold ${isActive(
               "/dashboard/createpolls"
             )}`}
           >
-            ➕ Create Polls
+            <div className="flex items-center gap-2">
+              <AiFillPlusCircle className="w-6 h-6" />
+              <span>Create Polls</span>
+            </div>
+            <FiArrowRight className="inline-block w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Link>
 
           <Link
             to="/dashboard/allpolls"
-            className={`block w-full text-left px-4 py-2 rounded-lg ${isActive(
+            className={`group relative flex items-center justify-between w-full text-left px-4 py-3 rounded transition duration-200 transform font-bold ${isActive(
               "/dashboard/allpolls"
             )}`}
           >
-            🗳️ All Polls
+            <div className="flex items-center gap-2">
+              🗳️ <span>All Polls</span>
+            </div>
+            <FiArrowRight className="inline-block w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Link>
         </nav>
 
@@ -107,7 +111,9 @@ function Dashboard() {
                 <span className="text-gray-600 opacity-70">Email: {user.email}</span>
               </p>
               <p className="text-gray-800 mt-1">
-                <span className="text-gray-600 opacity-50">Username: {user.username}</span>
+                <span className="text-gray-600">
+                  Username: {user?.username}
+                </span>
               </p>
 
               <button

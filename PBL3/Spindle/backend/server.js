@@ -6,6 +6,7 @@ import userRouter from "./routes/userRouter.js"
 import pollRouter from "./routes/pollRouter.js"
 import allpollRoutes from "./routes/allpollRouter.js";
 import geminiRouter from "./routes/geminiRouter.js"
+import getUser from "./routes/getUserRouter.js"
 dotenv.config() 
 const app = express()
 
@@ -18,6 +19,8 @@ app.use("/api/users", userRouter)
 app.use("/api/createPoll",pollRouter)
 app.use("/api/allpolls", allpollRoutes);
 app.use('/api/gemini',geminiRouter)
+app.use('/',getUser)
+
 
 // connect to DB
 mongoose

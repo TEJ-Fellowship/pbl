@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Eye, EyeOff } from "lucide-react";
+import logo from "../assets/logo.png"
 
 function Login() {
   const [email, setEmail] = useState("")
@@ -31,7 +32,7 @@ function Login() {
         alert(`${data.error || "Login failed"}`)
       }
     } catch (error) {
-      alert("Server error, try again later")
+      alert("Server error, try again later",error)
     }
   }
 
@@ -39,6 +40,9 @@ function Login() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
       <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+
+       <img src={logo} alt="logo"   className="w-12 sm:w-16 md:w-20 h-auto mx-auto mb-6"
+       />
         <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
           Welcome Back!
         </h2>

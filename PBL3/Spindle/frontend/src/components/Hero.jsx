@@ -5,7 +5,7 @@ function Hero() {
 
       {/* Heading (centered) */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Why Spindle?</h1>
+        <h1 className="text-4xl font-bold mb-4">Why QuickPick?</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           Best way to make group decisions.
         </p>

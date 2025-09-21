@@ -51,7 +51,7 @@ function CreatePoll() {
       setOptions(["", ""]);
       setTimer("");
 
-      setAiSuggestion([])
+      setAiSuggestion([]);
 
       alert("Poll created!");
       setLoading(false);
@@ -76,17 +76,29 @@ function CreatePoll() {
       console.log("gemini response", res.data.text);
       setAiSuggestion(res.data.text);
 
-      setLoading(false)
-
+      setLoading(false);
     } catch (error) {
       console.log(error);
     }
   };
 
+  const addSuggestionToOptions = (suggestion) => {
+    const newOptions = [...options];
+    const emptyIndex = newOptions.findIndex((opt) => opt.trim() === "");
+    if (emptyIndex !== -1) {
+      // put the suggestion into the first empty option field
+      newOptions[emptyIndex] = suggestion;
+    } else {
+      // if no empty option left, append to the end
+      newOptions.push(suggestion);
+    }
+    setOptions(newOptions);
+  };
+
   return (
     <section className="bg-white">
       <div className="py-8 lg:py-16 px-4 mx-auto max-w-screen-md">
-        <h2 className="mb-4 text-4xl tracking-tight font-extrabold text-center text-black-900">
+        <h2 className="mb-4 text-4xl tracking-tight font-extrabold text-center text-gray-900">
           Create a New Poll
         </h2>
 
@@ -143,8 +155,10 @@ function CreatePoll() {
                   className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm border"
                 >
                   <span className="text-gray-700 text-sm">{a}</span>
+
                   <button
-                    onClick={() =>setOptions([...options, a])}
+                    type="button"
+                    onClick={() => addSuggestionToOptions(a)}
                     className="text-xs text-blue-600 hover:underline"
                   >
                     Add
