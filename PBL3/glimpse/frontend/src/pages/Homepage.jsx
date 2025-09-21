@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
-// import clipServices from '../services/clip'
 import axios from "axios";
+
+// Abstracting API calls to a service file for better code organization
+const clipApi = {
+  saveClip: async (videoData) => {
+    try {
+      const response = await axios.post("http://localhost:3001/api/clips", videoData);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to save clip to the backend:", error);
+      throw new Error("Failed to save glimpse. Please try again.");
+    }
+  },
+};
+
 const BACKGROUND_IMAGES = [
   "https://picsum.photos/1080/1920?random=1",
   "https://picsum.photos/1080/1920?random=2",
@@ -34,8 +47,8 @@ const HomePage = () => {
   const openCloudinaryWidget = () => {
     const myWidget = window.cloudinary.openUploadWidget(
       {
-        cloudName: cloudName,
-        uploadPreset: uploadPreset,
+        cloudName,
+        uploadPreset,
         sources: ["local", "camera"],
         resourceType: "video",
         clientAllowedFormats: ["mp4", "webm", "mov"],
@@ -43,30 +56,24 @@ const HomePage = () => {
         folder: "glimpses",
         cropping: false,
         multiple: false,
-        transformation: [
-          { start_offset: "0", end_offset: "1" }, // 🔥 trim to 1 second
-        ],
+        transformation: [{ start_offset: "0", end_offset: "1" }],
       },
       async (error, result) => {
         if (!error && result && result.event === "success") {
           console.log("Video uploaded: ", result.info);
-
-          const videoUrl = result.info.secure_url;
-          const publicId = result.info.public_id;
+          const { secure_url: videoUrl, public_id: publicId } = result.info;
 
           try {
-            await axios.post("http://localhost:3001/api/clips", {
-              videoUrl,
-              publicId,
-            });
+            await clipApi.saveClip({ videoUrl, publicId });
+            alert("✅ Glimpse uploaded successfully!");
           } catch (err) {
-            console.error("Backend error:", err);
-            alert("❌ Failed to save glimpse. Check backend logs.");
+            alert(err.message);
           }
         } else if (result.event === "abort") {
           console.log("Upload aborted.");
         } else if (error) {
           console.error("Upload error:", error);
+          alert("❌ Upload failed. Please try again.");
         }
       }
     );
@@ -75,34 +82,37 @@ const HomePage = () => {
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-90px)] flex flex-col items-center justify-center overflow-hidden">
-      {/* Backgrounds */}
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+      {/* Backgrounds - made to cover full screen on all devices */}
       {BACKGROUND_IMAGES.map((img, index) => (
         <div
           key={index}
           className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
           style={{
             backgroundImage: `url(${img})`,
-            opacity: index === currentIndex ? 0.5 : 0,
+            opacity: index === currentIndex ? 0.7 : 0,
           }}
         />
       ))}
 
-      <div className="absolute inset-0 bg-white opacity-40" />
+      {/* Dark overlay for better text readability */}
+      <div className="absolute inset-0 bg-black opacity-60" />
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-4">
-        <h2 className="text-4xl md:text-6xl font-extrabold text-black mb-4 leading-tight drop-shadow-lg">
-          Capture a single second, <br /> relive a lifetime of memories.
+      {/* Content - responsive padding and text scaling */}
+      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8">
+        <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
+          Capture a single second, <br className="hidden md:inline" /> relive a lifetime of memories.
         </h2>
-        <p className="text-lg md:text-xl text-black mb-8 max-w-2xl mx-auto leading-relaxed drop-shadow">
-          Glimpse is built on one simple idea: the micro video is the default
-          unit of memory.
+        <p className="text-lg md:text-xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Glimpse is built on one simple idea: the micro video is the default unit of memory.
         </p>
         <button
           onClick={openCloudinaryWidget}
-          className="px-8 py-4 bg-black text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-transform transform hover:scale-105 active:scale-95 duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 focus:ring-offset-gray-50"
+          className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-full shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 active:scale-95 duration-200 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
         >
+          <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+          </svg>
           Upload Today's Glimpse
         </button>
       </div>
