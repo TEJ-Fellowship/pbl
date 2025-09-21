@@ -367,7 +367,7 @@ const Recorder = ({ onSave, roomId }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes animation-delay-300 {
           0%,
           70% {

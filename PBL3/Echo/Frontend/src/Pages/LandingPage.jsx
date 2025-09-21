@@ -42,7 +42,7 @@ export default function LandingPage() {
       </main>
 
       {/* Features */}
-      <section className="py-12 bg-slate-900 text-center">
+      <section className="mt-5 py-12 bg-slate-900 text-center">
         <h2 className="text-2xl font-bold mb-8">Why Echo?</h2>
         <div className="grid gap-6 md:grid-cols-3 px-6 max-w-5xl mx-auto">
           <div className="p-6 rounded-xl bg-slate-800">

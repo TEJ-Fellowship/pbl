@@ -12,6 +12,9 @@ import {
 } from "./roomsSlice";
 import Navbar from "../../Components/Navbar.jsx";
 import { initSocket } from "../../socket.js";
+import { useAlert } from "../../Components/useAlert";
+import { useConfirm } from "../../Components/useConfirm.jsx";
+
 
 // Enhanced Room Card Component
 const RoomCard = ({ room, onJoin, onDelete, currentUserId }) => {
@@ -47,14 +50,12 @@ const RoomCard = ({ room, onJoin, onDelete, currentUserId }) => {
       {/* Activity Indicator */}
       <div className="absolute top-4 left-4 flex items-center gap-2">
         <div
-          className={`w-3 h-3 rounded-full ${
-            isActive ? "bg-green-500 animate-pulse" : "bg-gray-500"
-          }`}
+          className={`w-3 h-3 rounded-full ${isActive ? "bg-green-500 animate-pulse" : "bg-gray-500"
+            }`}
         />
         <span
-          className={`text-xs font-medium ${
-            isActive ? "text-green-400" : "text-gray-400"
-          }`}
+          className={`text-xs font-medium ${isActive ? "text-green-400" : "text-gray-400"
+            }`}
         >
           {isActive ? "Active" : "Quiet"}
         </span>
@@ -248,30 +249,28 @@ const CreateRoomModal = ({
               <div className="mt-2">
                 <div className="h-1 bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-300 ${
-                      passwordStrength < 50
+                    className={`h-full transition-all duration-300 ${passwordStrength < 50
                         ? "bg-red-500"
                         : passwordStrength < 75
-                        ? "bg-yellow-500"
-                        : "bg-green-500"
-                    }`}
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
+                      }`}
                     style={{ width: `${passwordStrength}%` }}
                   />
                 </div>
                 <p
-                  className={`text-xs mt-1 ${
-                    passwordStrength < 50
+                  className={`text-xs mt-1 ${passwordStrength < 50
                       ? "text-red-400"
                       : passwordStrength < 75
-                      ? "text-yellow-400"
-                      : "text-green-400"
-                  }`}
+                        ? "text-yellow-400"
+                        : "text-green-400"
+                    }`}
                 >
                   {passwordStrength < 50
                     ? "Weak"
                     : passwordStrength < 75
-                    ? "Good"
-                    : "Strong"}{" "}
+                      ? "Good"
+                      : "Strong"}{" "}
                   password
                 </p>
               </div>
@@ -402,6 +401,12 @@ const RoomsPage = ({ setIsLoggedIn }) => {
   });
   const navigate = useNavigate();
 
+  const { showAlert, AlertComponent } = useAlert();
+  const { confirm, ConfirmComponent } = useConfirm();
+
+  useEffect(() => {
+    showAlert("Welcome back to the rooms page!", "info");
+  }, []);
   useEffect(() => {
     roomsRef.current = rooms;
   }, [rooms]);
@@ -449,13 +454,14 @@ const RoomsPage = ({ setIsLoggedIn }) => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newName || !newPass) return alert("Name and password required");
+    if (!newName || !newPass) return showAlert("Please fill in both Room Name and Password", "warning");
     try {
       await dispatch(createRoom({ name: newName, password: newPass })).unwrap();
+      showAlert("Room created successfully!", "success");
       setNewName("");
       setNewPass("");
     } catch (err) {
-      alert("Create failed: " + (err.message || JSON.stringify(err)));
+      showAlert("Create failed: " + (err.message || JSON.stringify(err)), "error");
     }
   };
 
@@ -468,22 +474,26 @@ const RoomsPage = ({ setIsLoggedIn }) => {
       await dispatch(
         joinRoom({ roomId: passwordModal.roomId, password })
       ).unwrap();
+      showAlert("Joined room successfully!", "success");
       navigate(`/rooms/${passwordModal.roomId}`);
     } catch (err) {
-      alert("Join failed: " + (err.message || JSON.stringify(err)));
+      showAlert("Join failed: " + (err.message || JSON.stringify(err)), "error");
     }
   };
 
   const handleDeleteRoom = async (roomId) => {
-    if (!window.confirm("Are you sure you want to delete the room?")) return;
+    const confirmed = await confirm("Are you sure you want to delete the room?");
+    if (!confirmed) return;
+
     const token = localStorage.getItem("token");
     try {
       await axios.delete(`http://localhost:3001/api/rooms/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      showAlert("Room deleted successfully!", "success");
       dispatch(fetchRooms());
     } catch (err) {
-      alert("Delete failed: " + (err.response?.data?.error || err.message));
+      showAlert("Delete failed: " + (err.response?.data?.error || err.message), "error");
     }
   };
 
@@ -630,6 +640,8 @@ const RoomsPage = ({ setIsLoggedIn }) => {
           animation: fadeInUp 0.6s ease-out forwards;
         }
       `}</style>
+      {AlertComponent}
+      {ConfirmComponent}
     </div>
   );
 };

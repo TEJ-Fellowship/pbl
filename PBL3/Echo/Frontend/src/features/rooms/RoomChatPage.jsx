@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Recorder from "../../Components/Recorder";
 import axios from "axios";
 import { initSocket, joinRoom, leaveRoom } from "../../socket";
-import { FiTrash2, FiMic } from "react-icons/fi";
+import { FiTrash2, FiMic, FiArrowLeft } from "react-icons/fi";
+import { useAlert } from "../../Components/useAlert";
+import { useConfirm } from "../../Components/useConfirm";
 
 const RoomChatPage = () => {
   const [messages, setMessages] = useState([]);
   const { id } = useParams(); // this is the roomId
+  const navigate = useNavigate();
+  const { showAlert, AlertComponent } = useAlert();
+  const { confirm, ConfirmComponent } = useConfirm();
 
   const fetchMessages = async () => {
     try {
@@ -56,7 +61,7 @@ const RoomChatPage = () => {
       const clipId = typeof clipOrId === "string" ? clipOrId : clipOrId?._id;
       if (!clipId) {
         console.error("handleSend: no clipId provided", clipOrId);
-        return alert("Failed to send: invalid clip");
+        return showAlert("Failed to send: invalid clip");
       }
 
       console.log("handleSend: sending clipId=", clipId, "roomId=", id);
@@ -77,7 +82,7 @@ const RoomChatPage = () => {
         "Failed to send message:",
         error.response?.data || error.message
       );
-      alert(
+      showAlert(
         "Failed to send message: " +
           (error.response?.data?.error || error.message)
       );
@@ -96,18 +101,36 @@ const RoomChatPage = () => {
       );
       fetchMessages();
     } catch (error) {
-      alert(
+      showAlert(
         "Failed to delete message: " +
           (error.response?.data?.error || error.message)
       );
     }
   };
 
+  const handleBack = async () => {
+    if (
+      await confirm(
+        "Are you sure you want to leave the room? Unsaved recordings will be lost."
+      )
+    ) {
+      navigate(-1); // Go back to previous page
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900">
       <div className="max-w-4xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-6">
+        {/* Header with Back Button */}
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
+          >
+            <FiArrowLeft size={18} />
+            Back
+          </button>
+
           <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
             Room Confessions
           </h2>
@@ -235,6 +258,8 @@ const RoomChatPage = () => {
           }
         }
       `}</style>
+      {AlertComponent};
+      {ConfirmComponent};
     </div>
   );
 };
