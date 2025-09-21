@@ -27,7 +27,7 @@ function Login() {
         localStorage.setItem("token", data.token)
         window.alert("Login successful!")
         localStorage.setItem("user", JSON.stringify(data.user))
-        navigate("/dashboard")
+        navigate("/dashboard/createpolls")
       } else {
         alert(`${data.error || "Login failed"}`)
       }

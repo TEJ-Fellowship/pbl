@@ -3,8 +3,6 @@ import { Link, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { FiSettings } from "react-icons/fi";
 import { FiArrowRight } from "react-icons/fi";
 import { AiOutlinePlus, AiFillPlusCircle } from "react-icons/ai";
-
-import Home from "../components/Home";
 import MyPolls from "../components/MyPolls";
 import CreatePoll from "../components/CreatePoll";
 import PollResult from "../components/PollResult";
@@ -130,8 +128,6 @@ function Dashboard() {
       {/* Main content */}
       <div className="flex-1 ml-64 p-6 bg-gray-100 overflow-y-auto min-h-screen">
         <Routes>
-          <Route path="/" element={<Navigate to="home" />} />
-          <Route path="home" element={<Home />} />
           <Route path="mypolls" element={<MyPolls />} />
           <Route path="createpolls" element={<CreatePoll />} />
           <Route path="allpolls" element={<AllPolls />} />

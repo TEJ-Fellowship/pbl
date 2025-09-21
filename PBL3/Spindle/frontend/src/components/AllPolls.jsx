@@ -49,6 +49,19 @@ function AllPolls() {
     setDisplayedPolls(polls);
   };
 
+  // Skeleton card
+  const SkeletonCard = () => (
+    <div className="animate-pulse bg-white rounded-lg p-4 shadow-md">
+      <div className="h-6 bg-gray-300 rounded w-1/2 mb-3"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-full"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      </div>
+      <div className="mt-3 h-8 bg-gray-300 rounded w-24"></div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen p-6 bg-gray-100">
       {/* Header + Filter */}
@@ -80,13 +93,18 @@ function AllPolls() {
       {/* Filter notification */}
       {filterUsername && displayedPolls.length > 0 && (
         <p className="text-sm text-gray-700 mb-2">
-          Poll created by "<span className="font-semibold">{filterUsername}</span>"
+          Polls created by{" "}
+          <span className="font-semibold">"{filterUsername}"</span>
         </p>
       )}
 
-      {/* Loading */}
+      {/* Loading / Filtering / Polls */}
       {loading ? (
-        <p className="text-gray-500">Loading polls...</p>
+        <div className="space-y-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       ) : filtering ? (
         <p className="text-gray-500">Filtering...</p>
       ) : (
