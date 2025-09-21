@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { socket } from "../utils/socket";
 import { useAuth } from "../context/authContext.jsx";
 import { toast } from "react-toastify";
@@ -8,7 +8,24 @@ export const SocketProvider = ({ children }) => {
   const userData = useAuth();
   const [notifications, setNotifications] = useState([]);
 
+  const fetchNotification = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/notifications", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+      console.log(data);
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error on fetching data", error.message);
+    }
+  };
+
   useEffect(() => {
+    fetchNotification();
+
     if (!userData) return;
 
     socket.on("rippleNotification", (data) => {

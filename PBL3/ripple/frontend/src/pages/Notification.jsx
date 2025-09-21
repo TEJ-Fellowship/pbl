@@ -265,30 +265,12 @@ import { ChevronRight } from "lucide-react";
 import { useFriends } from "../../helper/isFriend";
 import { useAuth } from "../context/authContext.jsx";
 import { toast } from "react-toastify";
+import { useSocket } from "../context/socketContext.jsx";
 
 const Notifications = () => {
   const userData = useAuth();
   const { isFriend } = useFriends(userData?.user?.userId);
-  const [notifications, setNotifications] = useState([]);
-
-  const fetchNotification = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/notifications", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      console.log(data);
-      setNotifications(data);
-    } catch (error) {
-      console.error("Error on fetching data", error.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotification();
-  });
+  const { notifications } = useSocket();
 
   // Filter notifications based on business logic
   const filteredNotifications = notifications.filter((notification) => {
