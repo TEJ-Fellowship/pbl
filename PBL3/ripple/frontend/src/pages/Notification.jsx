@@ -1,176 +1,69 @@
-import { useState, useEffect } from "react";
-import { socket } from "../utils/socket";
-import { ChevronRight } from "lucide-react";
-import { useFriends } from "../../helper/isFriend";
-import { useAuth } from "../context/authContext.jsx";
+// import { useState, useEffect } from "react";
+// import { socket } from "../utils/socket";
+// import { ChevronRight } from "lucide-react";
+// import { useFriends } from "../../helper/isFriend";
+// import { useAuth } from "../context/authContext.jsx";
 
-const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
-  const userData = useAuth();
+// const Notifications = () => {
+//   const userData = useAuth();
+//   const { isFriend } = useFriends(userData.user.userId);
+//   const [notifications, setNotifications] = useState([]);
 
-  // wait until user is loaded
-  // if (!user) return <p>Loading...</p>;
-  const { isFriend } = useFriends(userData.user.userId);
+//   // wait until user is loaded
 
-  useEffect(() => {
-    socket.on("rippleNotification", (data) => {
-      setNotifications((prev) => [
-        {
-          id: data.id,
-          message: data.message,
-          fromUser: data.fromUser,
-          type: "global",
-        },
-        ...prev,
-      ]);
-    });
+//   const fetchNotification = async () => {
+//     try {
+//       const res = await fetch("http://localhost:5000/api/notifications", {
+//         method: "GET",
+//         credentials: "include",
+//       });
 
-    socket.on("sendRippleFriends", (data) => {
-      setNotifications((prev) => [
-        {
-          id: data.id,
-          message: data.message,
-          fromUser: data.fromUser,
-          type: "friends",
-        },
-        ...prev,
-      ]);
-    });
-
-    return () => {
-      socket.off("rippleNotification");
-      socket.off("sendRippleFriends");
-    };
-  }, [notifications]);
-
-  return (
-    <div
-      className="min-h-screen p-6"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)",
-      }}
-    >
-      {/* Render notifications list */}
-      {/* {notifications.message} */}
-      {notifications.map((notification, idx) => {
-        if (notification.type === "global" && isFriend(notification.id)) {
-          return null;
-        }
-        if (notification.type === "friends" && !isFriend(notification.id)) {
-          return null;
-        }
-
-        return (
-          <p key={idx} style={{ color: "white" }}>
-            {notification.fromUser}: {notification.message}: {notification.id}
-          </p>
-        );
-      })}
-    </div>
-  );
-};
-//   const handleAccept = (notificationId) => {
-//     setNotifications((prev) =>
-//       prev.map((notification) =>
-//         notification.id === notificationId
-//           ? { ...notification, isAccepted: true }
-//           : notification
-//       )
-//     );
+//       const data = await res.json();
+//       console.log(data);
+//       setNotifications(data);
+//     } catch (error) {
+//       console.error("Error on fetching data", error.message);
+//     }
 //   };
 
-//   const handleDecline = (notificationId) => {
-//     setNotifications((prev) =>
-//       prev.map((notification) =>
-//         notification.id === notificationId
-//           ? { ...notification, isAccepted: false }
-//           : notification
-//       )
-//     );
-//   };
+//   useEffect(() => {
+//     if (!userData) return <p>Loading...</p>;
+//     fetchNotification();
+//     socket.on("rippleNotification", (data) => {
+//       console.log("global", data);
+//       setNotifications((prev) => [
+//         {
+//           userId: data.userId,
+//           message: data.message,
+//           fromUserId: data.fromUserId,
+//           fromUsername: data.fromUsername,
+//           type: "global_ripple",
+//           rippleId: data.rippleId,
+//         },
+//         ...prev,
+//       ]);
+//     });
 
-//   const NotificationItem = ({ notification }) => (
-//     <div className="flex items-start gap-4 p-6 border-b border-gray-700 last:border-b-0">
-//       {/* Avatar */}
-//       <div className="flex-shrink-0">
-//         {notification.isSystemNotification ? (
-//           <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
-//             <svg
-//               className="w-6 h-6 text-white"
-//               fill="currentColor"
-//               viewBox="0 0 20 20"
-//             >
-//               <path
-//                 fillRule="evenodd"
-//                 d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-//                 clipRule="evenodd"
-//               />
-//             </svg>
-//           </div>
-//         ) : (
-//           <img
-//             src={notification.user.avatar}
-//             alt={notification.user.name}
-//             className="w-12 h-12 rounded-full object-cover"
-//           />
-//         )}
-//       </div>
+//     socket.on("sendRippleFriends", (data) => {
+//       console.log("friend", data);
 
-//       {/* Content */}
-//       <div className="flex-1 min-w-0">
-//         <div className="flex items-start justify-between">
-//           <div className="flex-1">
-//             <p className="text-white text-base mb-1">{notification.message}</p>
-//             {notification.description && (
-//               <p className="text-gray-400 text-sm mb-2">
-//                 {notification.description}
-//               </p>
-//             )}
-//             <p className="text-gray-400 text-sm">{notification.timestamp}</p>
-//           </div>
-
-//           {/* Arrow for system notifications */}
-//           {notification.isSystemNotification && (
-//             <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
-//           )}
-//         </div>
-
-//         {/* Action buttons for follow requests */}
-//         {notification.hasActions && notification.isAccepted === null && (
-//           <div className="flex gap-3 mt-4">
-//             <button
-//               onClick={() => handleAccept(notification.id)}
-//               className="px-6 py-2 bg-green-600 hover:bg-green-800 text-white rounded-full font-medium transition-colors"
-//             >
-//               Accept
-//             </button>
-//             <button
-//               onClick={() => handleDecline(notification.id)}
-//               className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium transition-colors"
-//             >
-//               Decline
-//             </button>
-//           </div>
-//         )}
-
-//         {/* Show status after action */}
-//         {notification.hasActions && notification.isAccepted !== null && (
-//           <div className="mt-4">
-//             <span
-//               className={`px-4 py-2 rounded-full text-sm font-medium ${
-//                 notification.isAccepted
-//                   ? "bg-green-500/20 text-green-400"
-//                   : "bg-gray-700 text-gray-400"
-//               }`}
-//             >
-//               {notification.isAccepted ? "Accepted" : "Declined"}
-//             </span>
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
+//       setNotifications((prev) => [
+//         {
+//           userId: data.userId,
+//           message: data.message,
+//           fromUserId: data.fromUserId,
+//           rippleId: data.rippleId,
+//           fromUsername: data.fromUsername,
+//           type: "friend_ripple",
+//         },
+//         ...prev,
+//       ]);
+//     });
+//     return () => {
+//       socket.off("rippleNotification");
+//       socket.off("sendRippleFriends");
+//     };
+//   }, []);
 
 //   return (
 //     <div
@@ -180,51 +73,506 @@ const Notifications = () => {
 //           "radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)",
 //       }}
 //     >
-//       <div className="max-w-4xl mx-auto">
-//         {/* Header */}
-//         <div className="p-8 pb-6">
-//           <h1 className="text-3xl font-bold text-white text-center">
-//             Notifications
-//           </h1>
-//         </div>
+//       {/* Render notifications list */}
+//       {/* {notifications.message} */}
+//       {notifications.map((notification, idx) => {
+//         if (notification.fromUserId === userData.user.userId) {
+//           return null;
+//         }
+//         if (
+//           notification.type === "global_ripple" &&
+//           isFriend(notification.fromUserId)
+//         ) {
+//           return null;
+//         }
+//         if (
+//           notification.type === "friend_ripple" &&
+//           !isFriend(notification.fromUserId)
+//         ) {
+//           return null;
+//         }
 
-//         {/* Notifications List */}
-//         <div className="bg-gray-800 bg-opacity-20 border border-gray-700 mx-8 rounded-lg overflow-hidden">
-//           {notifications.map((notification) => (
-//             <NotificationItem
-//               key={notification.id}
-//               notification={notification}
-//             />
-//           ))}
-//         </div>
-
-//         {/* Empty state if no notifications */}
-//         {notifications.length === 0 && (
-//           <div className="text-center py-16">
-//             <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-//               <svg
-//                 className="w-8 h-8 text-gray-400"
-//                 fill="none"
-//                 stroke="currentColor"
-//                 viewBox="0 0 24 24"
-//               >
-//                 <path
-//                   strokeLinecap="round"
-//                   strokeLinejoin="round"
-//                   strokeWidth={2}
-//                   d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 11-15 0v5h5l-5-5-5 5h5z"
-//                 />
-//               </svg>
-//             </div>
-//             <p className="text-gray-400 text-lg">No notifications yet</p>
-//             <p className="text-gray-500 text-sm mt-2">
-//               When you get notifications, they'll show up here
-//             </p>
-//           </div>
-//         )}
-//       </div>
+//         return (
+//           <p key={idx} style={{ color: "white" }}>
+//             {notification.fromUsername}: {notification.message}
+//           </p>
+//         );
+//       })}
 //     </div>
 //   );
 // };
+// //   const handleAccept = (notificationId) => {
+// //     setNotifications((prev) =>
+// //       prev.map((notification) =>
+// //         notification.id === notificationId
+// //           ? { ...notification, isAccepted: true }
+// //           : notification
+// //       )
+// //     );
+// //   };
+
+// //   const handleDecline = (notificationId) => {
+// //     setNotifications((prev) =>
+// //       prev.map((notification) =>
+// //         notification.id === notificationId
+// //           ? { ...notification, isAccepted: false }
+// //           : notification
+// //       )
+// //     );
+// //   };
+
+// //   const NotificationItem = ({ notification }) => (
+// //     <div className="flex items-start gap-4 p-6 border-b border-gray-700 last:border-b-0">
+// //       {/* Avatar */}
+// //       <div className="flex-shrink-0">
+// //         {notification.isSystemNotification ? (
+// //           <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+// //             <svg
+// //               className="w-6 h-6 text-white"
+// //               fill="currentColor"
+// //               viewBox="0 0 20 20"
+// //             >
+// //               <path
+// //                 fillRule="evenodd"
+// //                 d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+// //                 clipRule="evenodd"
+// //               />
+// //             </svg>
+// //           </div>
+// //         ) : (
+// //           <img
+// //             src={notification.user.avatar}
+// //             alt={notification.user.name}
+// //             className="w-12 h-12 rounded-full object-cover"
+// //           />
+// //         )}
+// //       </div>
+
+// //       {/* Content */}
+// //       <div className="flex-1 min-w-0">
+// //         <div className="flex items-start justify-between">
+// //           <div className="flex-1">
+// //             <p className="text-white text-base mb-1">{notification.message}</p>
+// //             {notification.description && (
+// //               <p className="text-gray-400 text-sm mb-2">
+// //                 {notification.description}
+// //               </p>
+// //             )}
+// //             <p className="text-gray-400 text-sm">{notification.timestamp}</p>
+// //           </div>
+
+// //           {/* Arrow for system notifications */}
+// //           {notification.isSystemNotification && (
+// //             <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
+// //           )}
+// //         </div>
+
+// //         {/* Action buttons for follow requests */}
+// //         {notification.hasActions && notification.isAccepted === null && (
+// //           <div className="flex gap-3 mt-4">
+// //             <button
+// //               onClick={() => handleAccept(notification.id)}
+// //               className="px-6 py-2 bg-green-600 hover:bg-green-800 text-white rounded-full font-medium transition-colors"
+// //             >
+// //               Accept
+// //             </button>
+// //             <button
+// //               onClick={() => handleDecline(notification.id)}
+// //               className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium transition-colors"
+// //             >
+// //               Decline
+// //             </button>
+// //           </div>
+// //         )}
+
+// //         {/* Show status after action */}
+// //         {notification.hasActions && notification.isAccepted !== null && (
+// //           <div className="mt-4">
+// //             <span
+// //               className={`px-4 py-2 rounded-full text-sm font-medium ${
+// //                 notification.isAccepted
+// //                   ? "bg-green-500/20 text-green-400"
+// //                   : "bg-gray-700 text-gray-400"
+// //               }`}
+// //             >
+// //               {notification.isAccepted ? "Accepted" : "Declined"}
+// //             </span>
+// //           </div>
+// //         )}
+// //       </div>
+// //     </div>
+// //   );
+
+// //   return (
+// //     <div
+// //       className="min-h-screen p-6"
+// //       style={{
+// //         backgroundImage:
+// //           "radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)",
+// //       }}
+// //     >
+// //       <div className="max-w-4xl mx-auto">
+// //         {/* Header */}
+// //         <div className="p-8 pb-6">
+// //           <h1 className="text-3xl font-bold text-white text-center">
+// //             Notifications
+// //           </h1>
+// //         </div>
+
+// //         {/* Notifications List */}
+// //         <div className="bg-gray-800 bg-opacity-20 border border-gray-700 mx-8 rounded-lg overflow-hidden">
+// //           {notifications.map((notification) => (
+// //             <NotificationItem
+// //               key={notification.id}
+// //               notification={notification}
+// //             />
+// //           ))}
+// //         </div>
+
+// //         {/* Empty state if no notifications */}
+// //         {notifications.length === 0 && (
+// //           <div className="text-center py-16">
+// //             <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+// //               <svg
+// //                 className="w-8 h-8 text-gray-400"
+// //                 fill="none"
+// //                 stroke="currentColor"
+// //                 viewBox="0 0 24 24"
+// //               >
+// //                 <path
+// //                   strokeLinecap="round"
+// //                   strokeLinejoin="round"
+// //                   strokeWidth={2}
+// //                   d="M15 17h5l-5 5-5-5h5v-5a7.5 7.5 0 11-15 0v5h5l-5-5-5 5h5z"
+// //                 />
+// //               </svg>
+// //             </div>
+// //             <p className="text-gray-400 text-lg">No notifications yet</p>
+// //             <p className="text-gray-500 text-sm mt-2">
+// //               When you get notifications, they'll show up here
+// //             </p>
+// //           </div>
+// //         )}
+// //       </div>
+// //     </div>
+// //   );
+// // };
+
+// export default Notifications;
+import { useState, useEffect } from "react";
+import { socket } from "../utils/socket";
+import { ChevronRight } from "lucide-react";
+import { useFriends } from "../../helper/isFriend";
+import { useAuth } from "../context/authContext.jsx";
+
+const Notifications = () => {
+  const userData = useAuth();
+  const { isFriend } = useFriends(userData?.user?.userId);
+  const [notifications, setNotifications] = useState([]);
+
+  const fetchNotification = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/notifications", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+      console.log(data);
+      setNotifications(data);
+    } catch (error) {
+      console.error("Error on fetching data", error.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!userData) return;
+
+    fetchNotification();
+
+    socket.on("rippleNotification", (data) => {
+      console.log("global", data);
+      setNotifications((prev) => [
+        {
+          userId: data.userId,
+          message: data.message,
+          fromUserId: data.fromUserId,
+          fromUsername: data.fromUsername,
+          type: "global_ripple",
+          rippleId: data.rippleId,
+        },
+        ...prev,
+      ]);
+    });
+
+    socket.on("sendRippleFriends", (data) => {
+      console.log("friend", data);
+      setNotifications((prev) => [
+        {
+          userId: data.userId,
+          message: data.message,
+          fromUserId: data.fromUserId,
+          rippleId: data.rippleId,
+          fromUsername: data.fromUsername,
+          type: "friend_ripple",
+        },
+        ...prev,
+      ]);
+    });
+
+    return () => {
+      socket.off("rippleNotification");
+      socket.off("sendRippleFriends");
+    };
+  }, [userData]);
+
+  // Filter notifications based on business logic
+  const filteredNotifications = notifications.filter((notification) => {
+    // Don't show notifications from the current user
+    if (notification.fromUserId === userData?.user?.userId) {
+      return false;
+    }
+
+    // Don't show global ripples from friends (they should get friend ripples instead)
+    if (
+      notification.type === "global_ripple" &&
+      isFriend(notification.fromUserId)
+    ) {
+      return false;
+    }
+
+    // Don't show friend ripples from non-friends
+    if (
+      notification.type === "friend_ripple" &&
+      !isFriend(notification.fromUserId)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const handleAccept = (notificationId) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, isAccepted: true }
+          : notification
+      )
+    );
+  };
+
+  const handleDecline = (notificationId) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, isAccepted: false }
+          : notification
+      )
+    );
+  };
+
+  const NotificationItem = ({ notification }) => {
+    // Helper function to generate UI data from your database structure
+    const getUIData = (notification) => {
+      return {
+        id:
+          notification.id ||
+          `${notification.fromUserId}-${notification.rippleId}`,
+        displayName: notification.fromUsername || notification.user?.name,
+        avatar:
+          notification.user?.avatar ||
+          `https://ui-avatars.com/api/?name=${notification.fromUsername}&background=043317&color=ffffff`,
+        timestamp:
+          notification.timestamp || notification.createdAt || "Just now",
+        isSystemNotification: notification.isSystemNotification || false,
+        hasActions: notification.hasActions || false,
+        isAccepted: notification.isAccepted || null,
+        description: notification.description || null,
+      };
+    };
+
+    const uiData = getUIData(notification);
+
+    return (
+      <div className="flex items-start gap-4 p-6 border-b border-gray-700 last:border-b-0 hover:bg-gray-800/30 transition-colors">
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          {uiData.isSystemNotification ? (
+            <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-white"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          ) : (
+            <img
+              src={uiData.avatar}
+              alt={uiData.displayName}
+              className="w-12 h-12 rounded-full object-cover border-2 border-green-500/30"
+            />
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-white font-medium">{uiData.displayName}</p>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    notification.type === "friend_ripple"
+                      ? "bg-blue-500/20 text-blue-400"
+                      : "bg-green-500/20 text-green-400"
+                  }`}
+                >
+                  {notification.type === "friend_ripple"
+                    ? "Friend Ripple"
+                    : "Global Ripple"}
+                </span>
+              </div>
+              <p className="text-gray-300 text-base mb-2">
+                {notification.message}
+              </p>
+              {uiData.description && (
+                <p className="text-gray-400 text-sm mb-2">
+                  {uiData.description}
+                </p>
+              )}
+              <p className="text-gray-500 text-sm">{uiData.timestamp}</p>
+            </div>
+
+            {/* Arrow for system notifications */}
+            {uiData.isSystemNotification && (
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-4" />
+            )}
+          </div>
+
+          {/* Action buttons for follow requests */}
+          {uiData.hasActions && uiData.isAccepted === null && (
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => handleAccept(uiData.id)}
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full font-medium transition-colors"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => handleDecline(uiData.id)}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium transition-colors"
+              >
+                Decline
+              </button>
+            </div>
+          )}
+
+          {/* Show status after action */}
+          {uiData.hasActions && uiData.isAccepted !== null && (
+            <div className="mt-4">
+              <span
+                className={`px-4 py-2 rounded-full text-sm font-medium ${
+                  uiData.isAccepted
+                    ? "bg-green-500/20 text-green-400"
+                    : "bg-gray-700 text-gray-400"
+                }`}
+              >
+                {uiData.isAccepted ? "Accepted" : "Declined"}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Wait until user is loaded
+  if (!userData) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)",
+        }}
+      >
+        <p className="text-white text-lg">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="min-h-screen p-6"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, #043317, #072b15, #092412, #081c0f, #05150a, #071004, #070a01, #030300, #030200, #030100, #020000, #000000)",
+      }}
+    >
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="p-8 pb-6">
+          <h1 className="text-3xl font-bold text-white text-center">
+            Notifications
+          </h1>
+          {filteredNotifications.length > 0 && (
+            <p className="text-gray-400 text-center mt-2">
+              {filteredNotifications.length} notification
+              {filteredNotifications.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        {/* Notifications List */}
+        {filteredNotifications.length > 0 ? (
+          <div className="bg-gray-800 bg-opacity-20 border border-gray-700 mx-8 rounded-lg overflow-hidden backdrop-blur-sm">
+            {filteredNotifications.map((notification) => (
+              <NotificationItem
+                key={
+                  notification.id ||
+                  `${notification.fromUserId}-${notification.rippleId}`
+                }
+                notification={notification}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Empty state if no notifications */
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-700/50 rounded-full mx-auto mb-4 flex items-center justify-center backdrop-blur-sm border border-gray-600">
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 17h5l-5 5-5-5h5v-12a7 7 0 1 0-14 0v12h5l-5 5-5-5h5z"
+                />
+              </svg>
+            </div>
+            <p className="text-gray-400 text-lg font-medium">
+              No notifications yet
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              When you receive ripples from friends or the global feed, they'll
+              appear here
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default Notifications;

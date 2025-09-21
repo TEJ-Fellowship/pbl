@@ -1,22 +1,19 @@
 import mongoose from "mongoose";
 
 const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Types.ObjectId, ref: "User", required: true },
+  userId: { type: mongoose.Types.ObjectId, ref: "User", default: null },
   fromUserId: { type: mongoose.Types.ObjectId, ref: "User" },
+  fromUsername: { type: String },
   rippleId: { type: String },
   type: {
     type: String,
-    enum: [
-      "friend_ripple",
-      "global_ripple",
-      "friend_request",
-      " friend_accept",
-    ],
+    enum: ["friend_ripple", "global_ripple"],
     required: true,
   },
-  message: { type: String, required: true },
-  read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now() },
+  message: { type: String },
+  createdAt: { type: Date },
 });
 
-export default mongoose.Schema("Notification", notificationSchema);
+notificationSchema.index({ userId: 1, type: 1, createdAt: -1 });
+
+export default mongoose.model("Notification", notificationSchema);

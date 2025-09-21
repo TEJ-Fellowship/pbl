@@ -17,7 +17,7 @@ export const useFriends = (currentUserId) => {
       }
     }
     fetchFriends();
-  }, []);
+  }, [currentUserId]);
 
   const isFriend = (userId) => friendsList.includes(userId);
 
