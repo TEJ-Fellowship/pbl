@@ -18,7 +18,7 @@ const Navbar = () => {
           {!user ? (
             <>
               <Link to="/" className="nav-link">Home</Link>
-              <Link to="/montage" className="nav-link">Montage</Link>
+              <Link to="/" className="nav-link">About Us</Link>
               <Link to="/login" className="nav-link">Login</Link>
               <Link to="/signup" className="nav-link">Signup</Link>
               <button aria-label="Toggle theme" className="nav-link">
@@ -55,7 +55,7 @@ const Navbar = () => {
         <div className="md:hidden absolute top-full left-0 w-full bg-black bg-opacity-95 backdrop-filter backdrop-blur-lg border-b border-gray-700 py-4 px-4 text-white">
           <div className="flex flex-col items-center gap-4">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">Home</Link>
-            <Link to="/montage" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">Montage</Link>
+            <Link to="/about-us" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">About Us</Link>
             <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">Login</Link>
             <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">Signup</Link>
             <button aria-label="Toggle theme" onClick={() => setIsMobileMenuOpen(false)} className="nav-link">

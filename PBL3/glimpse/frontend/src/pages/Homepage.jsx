@@ -1,20 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-// Abstracting API calls to a service file for better code organization
-const clipApi = {
-  
-  saveClip: async (videoData) => {
-    try {
-      const response = await axios.post("http://localhost:3001/api/clips", videoData);
-      return response.data;
-    } catch (error) {
-      console.error("Failed to save clip to the backend:", error);
-      throw new Error("Failed to save glimpse. Please try again.");
-    }
-  },
-};
+
 
 const BACKGROUND_IMAGES = [
   "https://picsum.photos/1080/1920?random=1",
@@ -26,7 +13,7 @@ const BACKGROUND_IMAGES = [
 
 const HomePage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   // Preload images
   useEffect(() => {
     BACKGROUND_IMAGES.forEach((src) => {
@@ -43,45 +30,9 @@ const HomePage = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const cloudName = "ddfvqm9wq";
-  const uploadPreset = "glimpse";
 
-  const openCloudinaryWidget = () => {
-    const myWidget = window.cloudinary.openUploadWidget(
-      {
-        cloudName,
-        uploadPreset,
-        sources: ["local", "camera"],
-        resourceType: "video",
-        clientAllowedFormats: ["mp4", "webm", "mov"],
-        maxFileSize: 20000000,
-        folder: "glimpses",
-        cropping: false,
-        multiple: false,
-        transformation: [{ start_offset: "0", end_offset: "1" }],
-      },
-      async (error, result) => {
-        if (!error && result && result.event === "success") {
-          console.log("Video uploaded: ", result.info);
-          const { secure_url: videoUrl, public_id: publicId } = result.info;
-
-          try {
-            await clipApi.saveClip({ videoUrl, publicId });
-            alert("✅ Glimpse uploaded successfully!");
-          } catch (err) {
-            alert("Glimpse Upload failed. Please login first.");
-            navigate('/login')
-          }
-        } else if (result.event === "abort") {
-          console.log("Upload aborted.");
-        } else if (error) {
-          console.error("Upload error:", error);
-          alert("❌ Upload failed. Please login first.");
-        }
-      }
-    );
-
-    myWidget.open();
+  const handleUpload = () => {
+    navigate('/login')
   };
 
   return (
@@ -110,7 +61,7 @@ const HomePage = () => {
           Glimpse is built on one simple idea: the micro video is the default unit of memory.
         </p>
         <button
-          onClick={openCloudinaryWidget}
+          onClick={handleUpload}
           className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-full shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 active:scale-95 duration-200 focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
         >
           <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

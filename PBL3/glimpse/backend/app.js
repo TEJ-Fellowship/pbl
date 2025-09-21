@@ -11,6 +11,7 @@ const clipsRouter = require("./controllers/clips");
 const montageRouter = require("./controllers/montage");
 const musicRouter = require("./controllers/music");
 const loginRouter = require("./controllers/login");
+const geminiRouter = require('./controllers/gemini')
 
 // DEBUG: Check which router is undefined
 console.log("🔍 Router Debug:");
@@ -42,6 +43,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/login", loginRouter);
 app.use("/api/clips", clipsRouter);
 app.use("/api/montage", montageRouter);
+app.use("/api/gemini", geminiRouter)
 app.use("/api/music", musicRouter);
 
 app.use(middleware.unknownEndpoint);

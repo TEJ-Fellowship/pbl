@@ -14,6 +14,7 @@ import {
 import clipService from "../services/clip";
 import musicService from "../services/music";
 import externalMusicService from "../services/externalMusic";
+import VideoSummarizer from "../components/VideoSummarizer";
 
 function Montage() {
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -464,6 +465,8 @@ function Montage() {
                       </button>
                     )}
                   </div>
+ 
+                  <VideoSummarizer videoUrl={currentMontage.montageUrl || currentMontage.videoUrl} />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-96 text-center">
