@@ -1,20 +1,25 @@
-// ============= FIXED CanvasBoard.jsx =============
+// Fixed CanvasBoard.jsx - Using centralized socket
 import React, { useRef, useEffect, useState } from "react";
 import axios from "../utils/axios";
-import { io } from "socket.io-client";
+import { useSocket } from "../context/SocketContext";
 
-export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user, setRemainingTime, canvasBackgroundColor = "#ffffff" }) {
+export default function CanvasBoard({ 
+  brushColor, 
+  brushSize, 
+  tool, 
+  roomId, 
+  user, 
+  canvasBackgroundColor = "#ffffff" 
+}) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
-  const socketRef = useRef(null);
+  const { socket, activeUser, emitDrawingEvent } = useSocket();
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [strokes, setStrokes] = useState([]);
   const [currentStroke, setCurrentStroke] = useState(null);
-  const [undoQueue, setUndoQueue] = useState([]);
-  const [activeUserId, setActiveUserId] = useState(null);
 
-  // Canvas resize
+  // Canvas resize function
   const resizeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -23,7 +28,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     const rightSidebar = document.getElementById("right-sidebar");
 
     const leftWidth = leftSidebar ? leftSidebar.offsetWidth : 64;
-    const rightWidth = rightSidebar ? rightSidebar.offsetWidth : 320; // Adjusted for smaller right sidebar
+    const rightWidth = rightSidebar ? rightSidebar.offsetWidth : 320;
 
     canvas.width = window.innerWidth - leftWidth - rightWidth - 40;
     canvas.height = window.innerHeight - 140;
@@ -37,7 +42,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     }
   };
 
-  // Init canvas & socket
+  // Initialize canvas
   useEffect(() => {
     resizeCanvas();
     const ctx = canvasRef.current.getContext("2d");
@@ -47,10 +52,12 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     ctx.lineWidth = brushSize;
     ctxRef.current = ctx;
 
+    // Fetch existing strokes
     const fetchStrokes = async () => {
       try {
         if (!roomId) return;
         const res = await axios.get(`/drawings/${roomId}`);
+        console.log("Fetched strokes:", res.data);
         setStrokes(res.data || []);
       } catch (err) {
         console.error("Failed to load strokes:", err);
@@ -59,80 +66,58 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
 
     if (roomId) fetchStrokes();
 
-    socketRef.current = io("http://localhost:3001", { 
-      withCredentials: true,
-      transports: ['websocket', 'polling']
-    });
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, [roomId]);
 
-    socketRef.current.on("connect", () => {
-      console.log("Canvas socket connected", socketRef.current.id);
-      if (roomId && user) {
-        socketRef.current.emit("joinRoom", {
-          roomId,
-          userId: user.id || user._id,
-          username: user.name || user.username || user.email?.split('@')[0]
-        });
-      }
-    });
+  // Socket event listeners
+  useEffect(() => {
+    if (!socket) return;
 
-    // Socket events
-    socketRef.current.on("stroke:created", (payload) => {
+    const handleStrokeCreated = (payload) => {
+      console.log("Received new stroke:", payload);
       if (!payload) return;
       setStrokes(prev => {
         if (payload._id && prev.some(s => s._id === payload._id)) return prev;
         return [...prev, payload];
       });
-    });
-
-    socketRef.current.on("stroke:deleted", ({ strokeId }) => {
-      setStrokes(prev => prev.filter(s => s._id !== strokeId));
-    });
-
-    // Turn-based events
-    socketRef.current.on("turn:started", ({ userId, duration }) => {
-      setActiveUserId(userId);
-      setRemainingTime(duration);
-    });
-
-    socketRef.current.on("turn:update", ({ remaining }) => {
-      setRemainingTime(remaining);
-    });
-
-    socketRef.current.on("turn:ended", ({ nextUserId }) => {
-      setActiveUserId(nextUserId);
-    });
-
-    socketRef.current.on("roomUsers", (users) => {
-      if (users && users.length > 0) {
-        // If no active user is set, set the first user as active
-        if (!activeUserId) {
-          setActiveUserId(users[0].userId);
-        }
-      }
-    });
-
-    window.addEventListener("resize", resizeCanvas);
-    return () => {
-      window.removeEventListener("resize", resizeCanvas);
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
     };
-  }, [roomId, user]);
+
+    const handleStrokeDeleted = ({ strokeId }) => {
+      console.log("Stroke deleted:", strokeId);
+      setStrokes(prev => prev.filter(s => s._id !== strokeId));
+    };
+
+    socket.on("stroke:created", handleStrokeCreated);
+    socket.on("stroke:deleted", handleStrokeDeleted);
+
+    return () => {
+      socket.off("stroke:created", handleStrokeCreated);
+      socket.off("stroke:deleted", handleStrokeDeleted);
+    };
+  }, [socket]);
 
   // Update canvas background when prop changes
   useEffect(() => {
-    redrawCanvas(strokes);
-  }, [canvasBackgroundColor]);
+    if (ctxRef.current) {
+      redrawCanvas(strokes);
+    }
+  }, [canvasBackgroundColor, strokes]);
 
+  // Update drawing context properties
   useEffect(() => {
     if (!ctxRef.current) return;
     ctxRef.current.strokeStyle = tool === "pen" ? brushColor : canvasBackgroundColor;
     ctxRef.current.lineWidth = brushSize;
   }, [brushColor, brushSize, tool, canvasBackgroundColor]);
 
-  // Shape drawing functions - FIXED
-  const drawShape = (ctx, shapeType, startX, startY, endX, endY) => {
+  // Fixed shape drawing function
+  const drawShape = (ctx, shapeType, startX, startY, endX, endY, strokeColor, strokeSize) => {
+    ctx.save();
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeSize;
     ctx.beginPath();
     
     switch (shapeType) {
@@ -182,13 +167,18 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
         break;
     }
     ctx.stroke();
+    ctx.restore();
   };
 
-  // Drawing functions
-  const startDrawing = ({ nativeEvent }) => {
-    // Allow drawing if no turn system is active OR if it's user's turn
+  // Check if user can draw
+  const canDraw = () => {
     const currentUserId = user?.id || user?._id;
-    if (activeUserId && currentUserId !== activeUserId) return;
+    return !activeUser || activeUser.id === currentUserId;
+  };
+
+  // Drawing event handlers
+  const startDrawing = ({ nativeEvent }) => {
+    if (!canDraw()) return;
 
     const { offsetX, offsetY } = nativeEvent;
     
@@ -222,7 +212,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
   };
 
   const draw = ({ nativeEvent }) => {
-    if (!isDrawing || !currentStroke) return;
+    if (!isDrawing || !currentStroke || !canDraw()) return;
     const { offsetX, offsetY } = nativeEvent;
 
     if (tool === "pen" || tool === "eraser") {
@@ -234,7 +224,6 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
         points: [...prev.points, { x: offsetX, y: offsetY }]
       }));
     } else if (["circle", "square", "rectangle", "triangle", "hexagon", "star"].includes(tool)) {
-      // Update current stroke end position
       setCurrentStroke(prev => ({
         ...prev,
         endX: offsetX,
@@ -242,18 +231,13 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
         points: [prev.points[0], { x: offsetX, y: offsetY }]
       }));
 
-      // Redraw canvas with shape preview
       redrawCanvas(strokes);
-      
-      const ctx = ctxRef.current;
-      ctx.strokeStyle = brushColor;
-      ctx.lineWidth = brushSize;
-      drawShape(ctx, tool, currentStroke.startX, currentStroke.startY, offsetX, offsetY);
+      drawShape(ctxRef.current, tool, currentStroke.startX, currentStroke.startY, offsetX, offsetY, brushColor, brushSize);
     }
   };
 
   const stopDrawing = async ({ nativeEvent }) => {
-    if (!isDrawing || !currentStroke) return;
+    if (!isDrawing || !currentStroke || !canDraw()) return;
 
     setIsDrawing(false);
 
@@ -266,12 +250,15 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     } else if (["circle", "square", "rectangle", "triangle", "hexagon", "star"].includes(tool)) {
       const { offsetX, offsetY } = nativeEvent;
       
-      // Create final shape stroke
       const shapeStroke = {
         roomId,
         tool,
         color: brushColor,
         size: brushSize,
+        startX: currentStroke.startX,
+        startY: currentStroke.startY,
+        endX: offsetX,
+        endY: offsetY,
         points: [
           { x: currentStroke.startX, y: currentStroke.startY },
           { x: offsetX, y: offsetY }
@@ -284,7 +271,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     setCurrentStroke(null);
   };
 
-  // Helper function to save stroke
+  // Save stroke to database and emit to other users
   const saveStroke = async (stroke) => {
     const tempId = `temp_${Date.now()}_${Math.random()}`;
     const tempStroke = { ...stroke, _id: tempId, isTemp: true };
@@ -295,9 +282,9 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
       const saved = res.data;
 
       setStrokes(prev => prev.map(s => (s._id === tempId ? saved : s)));
-      if (socketRef.current) {
-        socketRef.current.emit("stroke:new", saved);
-      }
+      
+      // Emit to other users via centralized socket
+      emitDrawingEvent("stroke:new", saved);
     } catch (err) {
       console.error("Failed to save stroke:", err);
       setStrokes(prev => prev.filter(s => s._id !== tempId));
@@ -305,7 +292,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     }
   };
 
-  // Redraw canvas - FIXED to handle shapes properly
+  // Redraw entire canvas
   const redrawCanvas = (allStrokes) => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -317,38 +304,39 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
 
     allStrokes.forEach((stroke) => {
       if (stroke.points && stroke.points.length > 0) {
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = stroke.size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
         if (stroke.tool === "pen" || stroke.tool === "eraser") {
           if (stroke.points.length > 1) {
+            ctx.save();
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = stroke.size;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            
             ctx.beginPath();
             stroke.points.forEach((point, index) => {
               if (index === 0) ctx.moveTo(point.x, point.y);
               else ctx.lineTo(point.x, point.y);
             });
             ctx.stroke();
-            ctx.closePath();
+            ctx.restore();
           }
         } else if (["circle", "square", "rectangle", "triangle", "hexagon", "star"].includes(stroke.tool)) {
-          if (stroke.points.length >= 2) {
-            drawShape(ctx, stroke.tool, stroke.points[0].x, stroke.points[0].y, stroke.points[1].x, stroke.points[1].y);
+          if (stroke.points.length >= 2 || (stroke.startX !== undefined && stroke.endX !== undefined)) {
+            const startX = stroke.startX || stroke.points[0].x;
+            const startY = stroke.startY || stroke.points[0].y;
+            const endX = stroke.endX || stroke.points[1].x;
+            const endY = stroke.endY || stroke.points[1].y;
+            
+            drawShape(ctx, stroke.tool, startX, startY, endX, endY, stroke.color, stroke.size);
           }
         }
       }
     });
   };
 
-  useEffect(() => {
-    if (ctxRef.current) redrawCanvas(strokes);
-  }, [strokes]);
-
-  // Undo functionality
+  // Undo last stroke
   const handleUndo = async () => {
-    const currentUserId = user?.id || user?._id;
-    if (strokes.length === 0 || (activeUserId && currentUserId !== activeUserId)) return;
+    if (strokes.length === 0 || !canDraw()) return;
 
     const lastStroke = strokes[strokes.length - 1];
     setStrokes(prev => prev.slice(0, -1));
@@ -357,9 +345,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
       if (lastStroke.isTemp) return;
       
       await axios.delete(`/drawings/${lastStroke._id}`);
-      if (socketRef.current) {
-        socketRef.current.emit("stroke:delete", { roomId, strokeId: lastStroke._id });
-      }
+      emitDrawingEvent("stroke:delete", { roomId, strokeId: lastStroke._id });
     } catch (err) {
       console.error("Undo failed:", err);
       setStrokes(prev => [...prev, lastStroke]);
@@ -367,7 +353,7 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     }
   };
 
-  // Save to gallery
+  // Save canvas to gallery
   const saveCanvas = async () => {
     const canvas = canvasRef.current;
 
@@ -392,15 +378,14 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
     }
   };
 
-  const currentUserId = user?.id || user?._id;
-  const canDraw = !activeUserId || currentUserId === activeUserId;
+  const userCanDraw = canDraw();
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center bg-gray-900 p-4">
       <canvas
         ref={canvasRef}
         className={`rounded-lg shadow-lg ${
-          canDraw ? "cursor-crosshair" : "opacity-50 cursor-not-allowed"
+          userCanDraw ? "cursor-crosshair" : "opacity-50 cursor-not-allowed"
         }`}
         style={{ backgroundColor: canvasBackgroundColor }}
         onMouseDown={startDrawing}
@@ -412,9 +397,9 @@ export default function CanvasBoard({ brushColor, brushSize, tool, roomId, user,
       <div className="flex gap-2 mt-4">
         <button
           onClick={handleUndo}
-          disabled={strokes.length === 0 || !canDraw}
+          disabled={strokes.length === 0 || !userCanDraw}
           className={`px-4 py-2 rounded text-white ${
-            strokes.length === 0 || !canDraw
+            strokes.length === 0 || !userCanDraw
               ? "bg-gray-500 cursor-not-allowed"
               : "bg-red-500 hover:bg-red-400"
           }`}

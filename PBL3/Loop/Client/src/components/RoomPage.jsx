@@ -1,10 +1,10 @@
-// ============= FIXED RoomPage.jsx =============
+// Fixed RoomPage.jsx - Using centralized socket context
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { io } from "socket.io-client";
 import CanvasBoard from "./CanvasBoard";
 import LeftSidebar from "./LeftSidebar";
 import RightSidebar from "./RightSidebar";
+import { useSocket } from "../context/SocketContext";
 import axios from "../utils/axios";
 
 export default function RoomPage() {
@@ -12,22 +12,27 @@ export default function RoomPage() {
   const navigate = useNavigate();
   
   // State management
-  const [socket, setSocket] = useState(null);
   const [user, setUser] = useState(null);
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Room state
-  const [players, setPlayers] = useState([]);
-  const [activeUser, setActiveUser] = useState(null);
-  const [remainingTime, setRemainingTime] = useState(30);
 
   // Drawing state
   const [brushColor, setBrushColor] = useState("#000000");
   const [brushSize, setBrushSize] = useState(3);
   const [tool, setTool] = useState("pen");
   const [canvasBackgroundColor, setCanvasBackgroundColor] = useState("#ffffff");
+
+  // Get socket context
+  const { 
+    isConnected, 
+    roomUsers, 
+    activeUser, 
+    remainingTime, 
+    setRemainingTime,
+    joinRoom,
+    leaveRoom 
+  } = useSocket();
 
   // Fetch initial data
   useEffect(() => {
@@ -40,17 +45,8 @@ export default function RoomPage() {
         const userRes = await axios.get("/userRoutes/me");
         const userData = userRes.data;
         
-        // Ensure user has proper ID structure
-        const normalizedUser = {
-          ...userData,
-          id: userData._id || userData.id, // Ensure both id and _id are available
-          _id: userData._id || userData.id,
-          username: userData.username || userData.name || userData.email?.split('@')[0],
-          name: userData.name || userData.username
-        };
-        
-        console.log("User data fetched:", normalizedUser);
-        setUser(normalizedUser);
+        console.log("User data fetched:", userData);
+        setUser(userData);
 
         // Fetch room data if roomId exists
         if (roomId && roomId !== 'defaultRoom') {
@@ -90,91 +86,27 @@ export default function RoomPage() {
     fetchInitialData();
   }, [roomId]);
 
-  // Socket connection and event handling
+  // Join room when user and room are loaded and socket is connected
   useEffect(() => {
-    if (!user || !room || error) return;
+    if (!user || !room || error || !isConnected) return;
 
-    console.log("Initializing socket connection...");
-    console.log("User for socket:", { id: user.id, _id: user._id, username: user.username });
-
-    const newSocket = io("http://localhost:3001", { 
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      forceNew: true // Force new connection
-    });
-
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      console.log("RoomPage socket connected:", newSocket.id);
-      
-      // Join room with proper user data
-      const joinData = {
-        roomId: room._id,
-        userId: user._id, // Use _id for consistency
-        username: user.username,
-        avatar: user.avatar || null
-      };
-      
-      console.log("Joining room with data:", joinData);
-      newSocket.emit("joinRoom", joinData);
-    });
-
-    // Socket event listeners
-    newSocket.on("roomUsers", (users) => {
-      console.log("Room users updated:", users);
-      setPlayers(users || []);
-    });
-
-    newSocket.on("turn:started", ({ userId, username, duration }) => {
-      console.log("Turn started:", { userId, username, duration });
-      setActiveUser({ id: userId, name: username });
-      setRemainingTime(duration);
-    });
-
-    newSocket.on("turn:update", ({ remaining }) => {
-      setRemainingTime(remaining);
-    });
-
-    newSocket.on("turn:ended", ({ nextUserId, nextUsername }) => {
-      console.log("Turn ended, next user:", { nextUserId, nextUsername });
-      setActiveUser({ id: nextUserId, name: nextUsername });
-    });
-
-    newSocket.on("welcomeMessage", (data) => {
-      console.log("Welcome message:", data);
-    });
-
-    newSocket.on("error", (error) => {
-      console.error("Socket error:", error);
-      setError(error.message || "Socket connection error");
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setError("Failed to connect to server");
-    });
-
-    newSocket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      if (reason === "io server disconnect") {
-        // Server disconnected, try to reconnect
-        newSocket.connect();
-      }
-    });
+    console.log("Joining room via socket context...");
+    const joinData = {
+      roomId: room._id,
+      userId: user._id, // Use _id consistently
+      username: user.username || user.name,
+      avatar: user.avatar || null
+    };
+    
+    console.log("RoomPage: Joining room with data:", joinData);
+    joinRoom(joinData);
 
     // Cleanup function
     return () => {
-      console.log("Cleaning up socket connection...");
-      if (newSocket && newSocket.connected) {
-        newSocket.emit("leaveRoom", { 
-          roomId: room._id, 
-          userId: user._id 
-        });
-        newSocket.disconnect();
-      }
+      console.log("RoomPage: Leaving room...");
+      leaveRoom(room._id, user._id);
     };
-  }, [user, room, error]);
+  }, [user, room, error, isConnected, joinRoom, leaveRoom]);
 
   // Loading state
   if (loading) {
@@ -219,18 +151,23 @@ export default function RoomPage() {
     ((typeof room.creator === 'object' && room.creator._id === user._id) || 
      (room.creator === user._id));
 
-  const currentUserId = user._id; // Use _id consistently
+  const currentUserId = user._id;
   const isMyTurn = activeUser?.id === currentUserId;
 
-  console.log("Render state:", {
-    currentUserId,
-    activeUserId: activeUser?.id,
-    isMyTurn,
-    playersCount: players.length
-  });
+  const handleLeaveRoom = () => {
+    leaveRoom(room._id, user._id);
+    navigate("/my-room");
+  };
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
+      {/* Connection Status */}
+      {!isConnected && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded z-50">
+          Reconnecting to server...
+        </div>
+      )}
+
       {/* Room Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-gray-800 p-3 flex justify-between items-center shadow-lg">
         <div>
@@ -242,7 +179,7 @@ export default function RoomPage() {
               </span>
             )}
             <span className="text-gray-300">
-              Players: {players.length}
+              Players: {roomUsers.length}
             </span>
             <span className="text-gray-300">
               Status: <span className={room.isActive ? "text-green-400" : "text-red-400"}>
@@ -263,7 +200,7 @@ export default function RoomPage() {
 
         <div className="flex gap-2">
           <button
-            onClick={() => navigate("/my-room")}
+            onClick={handleLeaveRoom}
             className="bg-red-500 hover:bg-red-400 px-4 py-2 rounded transition-colors"
           >
             Leave Room
@@ -284,10 +221,8 @@ export default function RoomPage() {
           brushSize={brushSize}
           tool={tool}
           roomId={room._id}
-          user={user} // Pass the normalized user object
+          user={user}
           setRemainingTime={setRemainingTime}
-          activeUser={activeUser}
-          socket={socket}
           canvasBackgroundColor={canvasBackgroundColor}
         />
 
@@ -300,8 +235,8 @@ export default function RoomPage() {
             setBrushSize={setBrushSize}
             remainingTime={remainingTime}
             activeUser={activeUser}
-            user={user} // Pass the normalized user object
-            roomUsers={players}
+            user={user}
+            roomUsers={roomUsers}
             canvasBackgroundColor={canvasBackgroundColor}
             setCanvasBackgroundColor={setCanvasBackgroundColor}
           />
@@ -314,8 +249,8 @@ export default function RoomPage() {
           <div>User ID: {currentUserId}</div>
           <div>Active User ID: {activeUser?.id}</div>
           <div>Is My Turn: {isMyTurn.toString()}</div>
-          <div>Players: {players.length}</div>
-          <div>Socket Connected: {socket?.connected?.toString()}</div>
+          <div>Players: {roomUsers.length}</div>
+          <div>Socket Connected: {isConnected.toString()}</div>
         </div>
       )}
     </div>

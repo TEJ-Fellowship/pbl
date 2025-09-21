@@ -1,4 +1,4 @@
-// ============= COMPLETE Backend index.js =============
+// Fixed backend index.js with improved error handling and consistency
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -25,6 +25,7 @@ const io = new IOServer(server, {
   transports: ['websocket', 'polling']
 });
 
+// Middleware
 app.use(cors({ 
   origin: ["http://localhost:5173", "http://localhost:3000"], 
   credentials: true 
@@ -42,7 +43,8 @@ app.use("/api/drawings", drawingRoutes);
 app.get("/", (req, res) => res.json({ 
   ok: true, 
   message: "Doodle Together Backend API",
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toISOString(),
+  version: "1.0.0"
 }));
 
 // ------------------- Socket.IO Room Management -------------------
@@ -58,148 +60,198 @@ const rooms = {};
 io.on("connection", (socket) => {
   console.log(`🔌 Socket connected: ${socket.id}`);
 
-  // Join Room Event
+  // Join Room Event - FIXED: Better error handling
   socket.on("joinRoom", ({ roomId, userId, username, avatar }) => {
     console.log(`👤 Join request - Room: ${roomId}, User: ${username} (${userId})`);
     
+    // Input validation
     if (!roomId || !userId) {
       console.log("❌ Missing roomId or userId");
       socket.emit("error", { message: "Missing roomId or userId" });
       return;
     }
+
+    if (!username) {
+      username = `User${userId.slice(-4)}`;
+      console.log(`⚠️ No username provided, using default: ${username}`);
+    }
     
-    // Join the socket room
-    socket.join(roomId);
-    
-    // Initialize room if it doesn't exist
-    if (!rooms[roomId]) {
-      rooms[roomId] = { 
-        users: [], 
-        currentIndex: 0, 
-        timer: 30,
-        interval: null,
-        isTimerActive: false
+    try {
+      // Join the socket room
+      socket.join(roomId);
+      
+      // Initialize room if it doesn't exist
+      if (!rooms[roomId]) {
+        rooms[roomId] = { 
+          users: [], 
+          currentIndex: 0, 
+          timer: 30,
+          interval: null,
+          isTimerActive: false
+        };
+        console.log(`🏠 Created new room: ${roomId}`);
+      }
+
+      // Remove any existing entry for this user (handle reconnections)
+      rooms[roomId].users = rooms[roomId].users.filter(u => u.userId !== userId);
+      
+      // Add user to room
+      const newUser = { 
+        socketId: socket.id, 
+        userId, 
+        username, 
+        avatar: avatar || null,
+        joinedAt: new Date()
       };
-      console.log(`🏠 Created new room: ${roomId}`);
-    }
+      
+      rooms[roomId].users.push(newUser);
+      
+      console.log(`✅ User ${username} joined room ${roomId}. Total users: ${rooms[roomId].users.length}`);
 
-    // Remove any existing entry for this user (handle reconnections)
-    rooms[roomId].users = rooms[roomId].users.filter(u => u.userId !== userId);
-    
-    // Add user to room
-    const newUser = { 
-      socketId: socket.id, 
-      userId, 
-      username: username || `User${userId.slice(-4)}`, 
-      avatar: avatar || null,
-      joinedAt: new Date()
-    };
-    
-    rooms[roomId].users.push(newUser);
-    
-    console.log(`✅ User ${username} joined room ${roomId}. Total users: ${rooms[roomId].users.length}`);
+      // Broadcast updated user list to all users in room
+      const userList = rooms[roomId].users.map(u => ({
+        userId: u.userId,
+        username: u.username,
+        avatar: u.avatar,
+        isOnline: true
+      }));
+      
+      io.to(roomId).emit("roomUsers", userList);
 
-    // Broadcast updated user list to all users in room
-    const userList = rooms[roomId].users.map(u => ({
-      userId: u.userId,
-      username: u.username,
-      avatar: u.avatar,
-      isOnline: true
-    }));
-    
-    io.to(roomId).emit("roomUsers", userList);
-
-    // Handle turn management
-    if (rooms[roomId].users.length === 1) {
-      // First user - they get the turn immediately, no timer
-      rooms[roomId].currentIndex = 0;
-      rooms[roomId].isTimerActive = false;
-      
-      io.to(roomId).emit("turn:started", {
-        userId: newUser.userId,
-        username: newUser.username,
-        duration: 30
-      });
-      
-      console.log(`🎨 ${username} is the first user, gets unlimited drawing time`);
-      
-    } else if (rooms[roomId].users.length >= 2 && !rooms[roomId].isTimerActive) {
-      // Second user joined - start the timer system
-      console.log(`⏰ Starting timer system for room ${roomId}`);
-      startTurn(roomId);
-      
-    } else {
-      // User joining ongoing session - send current turn info
-      const currentUser = rooms[roomId].users[rooms[roomId].currentIndex % rooms[roomId].users.length];
-      if (currentUser) {
-        socket.emit("turn:started", {
-          userId: currentUser.userId,
-          username: currentUser.username,
-          duration: rooms[roomId].timer
+      // Handle turn management
+      if (rooms[roomId].users.length === 1) {
+        // First user - they get the turn immediately, no timer
+        rooms[roomId].currentIndex = 0;
+        rooms[roomId].isTimerActive = false;
+        
+        io.to(roomId).emit("turn:started", {
+          userId: newUser.userId,
+          username: newUser.username,
+          duration: 30
         });
+        
+        console.log(`🎨 ${username} is the first user, gets unlimited drawing time`);
+        
+      } else if (rooms[roomId].users.length >= 2 && !rooms[roomId].isTimerActive) {
+        // Second user joined - start the timer system
+        console.log(`⏰ Starting timer system for room ${roomId}`);
+        startTurn(roomId);
+        
+      } else {
+        // User joining ongoing session - send current turn info
+        const currentUser = rooms[roomId].users[rooms[roomId].currentIndex % rooms[roomId].users.length];
+        if (currentUser) {
+          socket.emit("turn:started", {
+            userId: currentUser.userId,
+            username: currentUser.username,
+            duration: rooms[roomId].timer
+          });
+        }
       }
-    }
 
-    // Send welcome message to the user
-    socket.emit("welcomeMessage", {
-      message: `Welcome to room ${roomId}!`,
-      roomInfo: {
-        totalUsers: rooms[roomId].users.length,
-        isTimerActive: rooms[roomId].isTimerActive
-      }
-    });
+      // Send welcome message to the user
+      socket.emit("welcomeMessage", {
+        message: `Welcome to room ${roomId}!`,
+        roomInfo: {
+          totalUsers: rooms[roomId].users.length,
+          isTimerActive: rooms[roomId].isTimerActive
+        }
+      });
+
+    } catch (error) {
+      console.error(`❌ Error joining room ${roomId}:`, error);
+      socket.emit("error", { message: "Failed to join room" });
+    }
   });
 
   // Leave Room Event
   socket.on("leaveRoom", ({ roomId, userId }) => {
-    handleUserLeave(roomId, userId, socket);
+    try {
+      handleUserLeave(roomId, userId, socket);
+    } catch (error) {
+      console.error(`❌ Error leaving room ${roomId}:`, error);
+    }
   });
 
-  // Drawing Events
+  // Drawing Events - FIXED: Better validation
   socket.on("stroke:new", (payload) => {
-    if (!payload?.roomId) {
-      console.log("❌ Invalid stroke payload");
-      return;
+    try {
+      if (!payload?.roomId) {
+        console.log("❌ Invalid stroke payload - missing roomId");
+        socket.emit("error", { message: "Invalid stroke data" });
+        return;
+      }
+      
+      // Validate required stroke properties
+      const requiredProps = ['tool', 'color', 'size'];
+      const missingProps = requiredProps.filter(prop => !payload[prop]);
+      
+      if (missingProps.length > 0) {
+        console.log(`❌ Invalid stroke payload - missing: ${missingProps.join(', ')}`);
+        socket.emit("error", { message: `Missing stroke properties: ${missingProps.join(', ')}` });
+        return;
+      }
+      
+      console.log(`🖌️ Broadcasting new stroke to room ${payload.roomId}`);
+      socket.to(payload.roomId).emit("stroke:created", payload);
+    } catch (error) {
+      console.error("❌ Error handling new stroke:", error);
+      socket.emit("error", { message: "Failed to process stroke" });
     }
-    
-    console.log(`🖌️ Broadcasting new stroke to room ${payload.roomId}`);
-    socket.to(payload.roomId).emit("stroke:created", payload);
   });
 
   socket.on("stroke:delete", ({ roomId, strokeId }) => {
-    if (!roomId || !strokeId) return;
-    
-    console.log(`🗑️ Broadcasting stroke deletion to room ${roomId}`);
-    socket.to(roomId).emit("stroke:deleted", { strokeId });
+    try {
+      if (!roomId || !strokeId) {
+        console.log("❌ Invalid delete payload - missing roomId or strokeId");
+        socket.emit("error", { message: "Invalid delete data" });
+        return;
+      }
+      
+      console.log(`🗑️ Broadcasting stroke deletion to room ${roomId}`);
+      socket.to(roomId).emit("stroke:deleted", { strokeId });
+    } catch (error) {
+      console.error("❌ Error handling stroke deletion:", error);
+      socket.emit("error", { message: "Failed to delete stroke" });
+    }
   });
 
-  // Cursor tracking (optional feature)
+  // Cursor tracking
   socket.on("cursor:update", (payload) => {
-    if (!payload?.roomId) return;
-    
-    // Broadcast cursor position to other users in the room
-    socket.to(payload.roomId).emit("cursor:updated", {
-      userId: payload.userId,
-      username: payload.username,
-      x: payload.x,
-      y: payload.y,
-      color: payload.color
-    });
+    try {
+      if (!payload?.roomId || typeof payload.x !== 'number' || typeof payload.y !== 'number') {
+        return; // Silently ignore invalid cursor data
+      }
+      
+      socket.to(payload.roomId).emit("cursor:updated", {
+        userId: payload.userId,
+        username: payload.username,
+        x: payload.x,
+        y: payload.y,
+        color: payload.color || "#000000"
+      });
+    } catch (error) {
+      console.error("❌ Error handling cursor update:", error);
+    }
   });
 
   // Handle disconnection
   socket.on("disconnect", (reason) => {
     console.log(`🔌 Socket disconnected: ${socket.id} - Reason: ${reason}`);
     
-    // Find and remove user from all rooms
-    for (const roomId in rooms) {
-      const userIndex = rooms[roomId].users.findIndex(u => u.socketId === socket.id);
-      if (userIndex !== -1) {
-        const user = rooms[roomId].users[userIndex];
-        console.log(`👋 Removing ${user.username} from room ${roomId} due to disconnect`);
-        handleUserLeave(roomId, user.userId, null, true);
-        break; // User can only be in one room at a time
+    try {
+      // Find and remove user from all rooms
+      for (const roomId in rooms) {
+        const userIndex = rooms[roomId].users.findIndex(u => u.socketId === socket.id);
+        if (userIndex !== -1) {
+          const user = rooms[roomId].users[userIndex];
+          console.log(`👋 Removing ${user.username} from room ${roomId} due to disconnect`);
+          handleUserLeave(roomId, user.userId, null, true);
+          break; // User can only be in one room at a time
+        }
       }
+    } catch (error) {
+      console.error("❌ Error handling disconnect:", error);
     }
   });
 
@@ -329,7 +381,6 @@ function startTurn(roomId) {
         clearInterval(room.interval);
         
         // Move to next user
-        const oldIndex = room.currentIndex;
         room.currentIndex = (room.currentIndex + 1) % room.users.length;
         
         const nextUser = room.users[room.currentIndex];

@@ -1,4 +1,4 @@
-// models/Drawing.js
+// Fixed models/Drawing.js with shape support
 import mongoose from "mongoose";
 
 const drawingSchema = new mongoose.Schema({
@@ -9,7 +9,7 @@ const drawingSchema = new mongoose.Schema({
   },
   tool: {
     type: String,
-    enum: ["pen", "eraser"],
+    enum: ["pen", "eraser", "circle", "square", "rectangle", "triangle", "hexagon", "star"],
     required: true
   },
   color: {
@@ -24,6 +24,11 @@ const drawingSchema = new mongoose.Schema({
     x: { type: Number, required: true },
     y: { type: Number, required: true }
   }],
+  // Shape-specific properties
+  startX: { type: Number },
+  startY: { type: Number },
+  endX: { type: Number },
+  endY: { type: Number },
   creator: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
