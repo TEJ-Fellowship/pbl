@@ -613,4 +613,35 @@ async function addMusicToMontage(existingVideoUrl, musicTrack, userId, month) {
   });
 }
 
+
+// const { requireAuth } = require('../middleware/auth');
+
+// DELETE /api/montage/:id
+montageRouter.delete('/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Optional: Verify the montage belongs to the authenticated user
+    const montage = await Montage.findById(id);
+    if (!montage) {
+      return res.status(404).json({ success: false, message: 'Montage not found' });
+    }
+    if (montage.user.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Unauthorized access' });
+    }
+
+    // Delete the montage from the database
+    await Montage.findByIdAndDelete(id);
+
+    // Send a success response
+    res.status(200).json({ success: true, message: 'Montage deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting montage:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+
+
 module.exports = montageRouter;

@@ -113,7 +113,37 @@ function Montage() {
       setIsGenerating(false);
     }
   };
+  
+  const handleDeleteMontage = async (montageId) => {
+    if (window.confirm("Are you sure you want to delete this montage?")) {
+      try {
+        const response = await fetch(`http://localhost:3001/api/montage/${montageId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
 
+        if (response.ok) {
+          // Filter out the deleted montage from the history
+          setMontageHistory(
+            montageHistory.filter((montage) => montage.id !== montageId)
+          );
+          // If the current montage is the one being deleted, clear it
+          if (currentMontage && currentMontage.id === montageId) {
+            setCurrentMontage(null);
+          }
+          alert("Montage deleted successfully!");
+        } else {
+          const errorData = await response.json();
+          setError(errorData.message || "Failed to delete montage");
+        }
+      } catch (error) {
+        console.error("Error deleting montage:", error);
+        setError("Failed to delete montage due to a network error.");
+      }
+    }
+  };
   const handleMusicSelect = (music) => {
     setSelectedMusic(music);
     setShowMusicSelector(false);
@@ -306,41 +336,49 @@ function Montage() {
                 <h3 className="text-lg font-semibold mb-4">Your Montages</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {montageHistory.map((montage) => (
-                    <button
-                      key={montage.id}
-                      onClick={() => {
-                        setCurrentMontage(montage);
-                        if (montage.musicUrlId) {
-                          setSelectedMusic(montage.musicUrlId);
-                        } else {
-                          setSelectedMusic(null);
-                        }
-                      }}
-                      className="w-full text-left p-3 bg-white/5 hover:bg-white/10 rounded-lg transition"
-                    >
-                      <div className="text-sm font-medium">
-                        {new Date(0, montage.month - 1).toLocaleDateString(
-                          "en-US",
-                          { month: "long" }
-                        )}{" "}
-                        {montage.year}
-                        {montage.musicUrlId && (
-                          <span className="ml-2 text-purple-300">🎵</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {montage.clipsCount ||
-                          montage.shortClipsIds?.length ||
-                          0}{" "}
-                        clips
-                        {montage.musicUrlId && (
-                          <span className="ml-2 text-green-400">
-                            • Music: {montage.musicUrlId.title || "Applied"}
-                          </span>
-                        )}
-                      </div>
-                    </button>
+                    <div key={montage.id} className="relative">
+                      <button
+                        onClick={() => {
+                          setCurrentMontage(montage);
+                          if (montage.musicUrlId) {
+                            setSelectedMusic(montage.musicUrlId);
+                          } else {
+                            setSelectedMusic(null);
+                          }
+                        }}
+                        className="w-full text-left p-3 pr-10 bg-white/5 hover:bg-white/10 rounded-lg transition"
+                      >
+                        <div className="text-sm font-medium">
+                          {new Date(0, montage.month - 1).toLocaleDateString("en-US", {
+                            month: "long",
+                          })}{" "}
+                          {montage.year}
+                          {montage.musicUrlId && (
+                            <span className="ml-2 text-purple-300">🎵</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {montage.clipsCount || montage.shortClipsIds?.length || 0} clips
+                          {montage.musicUrlId && (
+                            <span className="ml-2 text-green-400">
+                              • Music: {montage.musicUrlId.title || "Applied"}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevents parent button click
+                          handleDeleteMontage(montage.id);
+                        }}
+                        className="absolute top-2 right-2 p-1 text-red-400 hover:text-red-600 transition"
+                        aria-label="Delete montage"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
+                  
                 </div>
               </div>
             )}
