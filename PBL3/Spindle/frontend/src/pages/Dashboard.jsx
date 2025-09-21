@@ -105,11 +105,12 @@ function Dashboard() {
 
           {showSettings && user && (
             <div className="absolute bottom-16 left-6 z-50 bg-white border border-gray-200 shadow-xl rounded-xl p-4 w-60 text-sm">
+              <p><span className="text-gray-600 opacity-90">Login User:</span></p>
               <p className="text-gray-800">
                 <span className="text-gray-600 opacity-70">Email: {user.email}</span>
               </p>
               <p className="text-gray-800 mt-1">
-                <span className="text-gray-600">
+                <span className="text-gray-600 opacity-50">
                   Username: {user?.username}
                 </span>
               </p>
