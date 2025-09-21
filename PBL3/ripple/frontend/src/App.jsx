@@ -14,6 +14,8 @@ import ProtectedRoute from "./components/ProtectedRoute"; // import your new com
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { SocketProvider } from "./context/socketContext";
+import LocationDisplay from "./pages/LocationDisplay";
+import MapPage from "./pages/Map";
 
 function App() {
   return (
@@ -84,6 +86,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/map"
+              element={
+                <ProtectedRoute>
+                  <MapPage />
                 </ProtectedRoute>
               }
             />
