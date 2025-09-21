@@ -1,163 +1,204 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { Eye, EyeOff } from 'lucide-react'
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
-import { ThemeContext } from "../ThemeContext";
-const Signup = () => {
-  const { isDark } = useContext(ThemeContext);
-  const navigate = useNavigate();
-  const [username, setUserName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isShown, setIsShown] = useState(false);
-  const [isConfirmShown, setIsConfirmShown] = useState(false);
+
+const SignUpPage = () => {
+  const [username, setUserName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [isSuccess, setIsSuccess] = useState(false)
   const [passwordMatch, setPasswordMatch] = useState(true);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setPasswordMatch(password === confirmPassword);
   }, [password, confirmPassword]);
 
-  const handleSignup = () => {
-    if (passwordMatch) {
-      const signupDetails = { username, email, password };
-      axios
-        .post("http://localhost:3001/api/users", signupDetails)
-        .then(() => {
-          alert("User registered successfully! Check your mail to verify before login");
+  const handleSignUp = async (e) => {
+    e.preventDefault()
+    if(passwordMatch){
+      setError(null)
+      setIsLoading(true)
+      setIsSuccess(false)
+      try {
+        console.log("Attempting to sign up with:", { username, email });
+        const signupDetails = { username, email, password };
+        await axios.post("http://localhost:3001/api/users", signupDetails)
+        console.log("Sign up successful!");
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsSuccess(false);
+          // In a real app, you would handle successful sign-up here, e.g., redirect
+          // window.location.href = "/dashboard";
           navigate("/login");
-        })
-        .catch((error) => {
-          alert(error);
-          navigate("/signup");
-        });
+        }, 3000);
+      } catch (err) {
+        const errorMessage = err.response?.data?.message || "Sign up failed. Please try again.";
+        setError(errorMessage);
+        navigate("/signup]]")
+      } finally {
+        setIsLoading(false);
+      }
     }
+
+
+
+
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
-    <div className=" min-h-[calc(100vh-90px)] flex items-center justify-center bg-[#f4f5f7]">
-      <div className="w-full max-w-md rounded-[40px] shadow-lg bg-white relative overflow-hidden">
-        {/* Gradient Top Border */}
-        <div className="h-1 bg-gradient-to-r from-[#7383b2] via-[#809dc6] to-[#98c9e9]" />
+    <div className="flex items-center justify-center min-h-screen bg-[#f8f9fa] p-4 sm:p-6 lg:p-8">
+      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md mx-auto transform transition-transform duration-300 hover:scale-[1.01]">
+        <h2 className="text-3xl font-bold text-center text-[#1f2937] mb-2">
+          Create an Account
+        </h2>
+        <p className="text-center text-[#6b7280] mb-8">
+          Join us to start sharing your glimpses.
+        </p>
 
-        {/* Inner Card */}
-        <div className="p-5">
-          {/* Logo + Title */}
-          <div className="flex flex-col items-center mb-5">
-            <div className="w-12 h-12 mb-2 rounded-full bg-gradient-to-br from-[#7383b2] to-[#98c9e9] flex items-center justify-center">
-              <span className="text-white text-base font-bold">G</span>
-            </div>
-            <h1 className="text-xl font-semibold text-[#62649a] mb-1">
-              Create Account
-            </h1>
-            <p className="text-[#7383b2] text-xs font-medium">
-              Join Glimpse today
-            </p>
-          </div>
-
-          {/* Name Field */}
-          <div className="mb-3">
-            <label className="block text-[#62649a] text-sm font-semibold mb-1">
+        <form onSubmit={handleSignUp} className="space-y-6">
+          {/* Full Name Input */}
+          <div>
+            <label 
+              htmlFor="fullName" 
+              className="block text-sm font-medium text-[#1f2937]"
+            >
               Full Name
             </label>
             <input
               type="text"
-              placeholder="Your Name"
+              required
               value={username}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
+              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] sm:text-sm transition-colors duration-200"
             />
           </div>
 
-          {/* Email Field */}
-          <div className="mb-3">
-            <label className="block text-[#62649a] text-sm font-semibold mb-1">
-              Email
+          {/* Email Input */}
+          <div>
+            <label 
+              htmlFor="email" 
+              className="block text-sm font-medium text-[#1f2937]"
+            >
+              Email address
             </label>
             <input
               type="email"
-              placeholder="your@email.com"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
+              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] sm:text-sm transition-colors duration-200"
             />
           </div>
 
-          {/* Password Field */}
-          <div className="mb-3">
-            <label className="block text-[#62649a] text-sm font-semibold mb-1">
+          {/* Password Input with Toggle */}
+          <div className="relative">
+            <label 
+              htmlFor="password" 
+              className="block text-sm font-medium text-[#1f2937]"
+            >
               Password
             </label>
-            <div className="relative">
-              <input
-                type={isShown ? "text" : "password"}
-                placeholder="Create password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 pr-10 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 focus:ring-[#7383b2] transition-all duration-200 font-medium"
-              />
-              <button
-                type="button"
-                onClick={() => setIsShown(!isShown)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
-              >
-                {isShown ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] pr-10 sm:text-sm transition-colors duration-200"
+            />
+            <div 
+              className="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5 cursor-pointer text-[#6b7280] hover:text-[#5b13ec]"
+              onClick={togglePasswordVisibility}
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </div>
           </div>
 
-          {/* Confirm Password Field */}
-          <div className="mb-4">
-            <label className="block text-[#62649a] text-sm font-semibold mb-1">
+          {/* Confirm Password Input with Toggle */}
+          <div className="relative">
+            <label 
+              htmlFor="confirmPassword" 
+              className="block text-sm font-medium text-[#1f2937]"
+            >
               Confirm Password
             </label>
-            <div className="relative">
-              <input
-                type={isConfirmShown ? "text" : "password"}
-                placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className={`w-full px-4 py-2.5 pr-10 rounded-xl bg-[#f4f5f7] placeholder:text-sm placeholder-[#7383b2] text-[#62649a] border-0 focus:outline-none focus:ring-2 transition-all duration-200 font-medium ${
-                  !passwordMatch && confirmPassword
-                    ? "focus:ring-red-400 ring-2 ring-red-400"
-                    : "focus:ring-[#7383b2]"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setIsConfirmShown(!isConfirmShown)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7383b2] hover:text-[#62649a] transition-colors duration-200"
-              >
-                {isConfirmShown ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] pr-10 sm:text-sm transition-colors duration-200"
+            />
+            <div 
+              className="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5 cursor-pointer text-[#6b7280] hover:text-[#5b13ec]"
+              onClick={toggleConfirmPasswordVisibility}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </div>
             {!passwordMatch && confirmPassword && (
               <p className="text-red-500 text-xs mt-1 font-medium">
                 Passwords don't match
               </p>
-            )}
+              )}
           </div>
+          
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+              {error}
+            </div>
+          )}
+
+          {/* Success Message */}
+          {isSuccess && (
+            <div className="p-4 text-sm text-green-700 bg-green-100 rounded-lg transition-opacity duration-500 ease-in-out">
+              Sign Up successful!
+            </div>
+          )}
 
           {/* Sign Up Button */}
-          <button
-            className="w-full py-2.5 mb-4 rounded-xl text-white font-medium transition-all duration-200 
-              bg-[#7383b2] hover:bg-[#62649a] transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleSignup}
-            disabled={
-              !passwordMatch || !username || !email || !password || !confirmPassword
-            }
-          >
-            Create Account
-          </button>
-
-          {/* Login Link */}
-          <p className="text-center text-sm text-[#809dc6]">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-[#7383b2] hover:text-[#62649a] font-medium transition-colors duration-200"
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#5b13ec] hover:bg-[#4a10c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5b13ec] transition-colors duration-200'
+              }`}
             >
-              Sign in
+              {isLoading ? "Signing up..." : "Sign Up"}
+            </button>
+          </div>
+        </form>
+
+        {/* Link to login page */}
+        <div className="mt-6 text-center text-sm text-[#6b7280]">
+          <p className="mt-4">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-[#5b13ec] hover:underline">
+              Log in
             </Link>
           </p>
         </div>
@@ -166,4 +207,4 @@ const Signup = () => {
   );
 };
 
-export default Signup;
+export default SignUpPage;

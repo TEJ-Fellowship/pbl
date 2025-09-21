@@ -7,7 +7,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import Signup from "./pages/Signup.jsx";
 import Homepage from "./pages/Homepage.jsx";
 import Aboutus from "./pages/Aboutus.jsx";
-import Layout from "./Layout.jsx";
+// import Layout from "./Layout.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
@@ -22,14 +22,10 @@ function App() {
   return (
     <>
       <BrowserRouter>
+          <Navbar />
+
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Layout setIsLoggedIn={setIsLoggedIn} isLoggedIn={isLoggedIn} />
-            }
-          >
-            <Route index element={isLoggedIn ? <Dashboard /> : <Homepage />} />
+            <Route path="/" element= {<Homepage />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route
