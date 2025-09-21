@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
 import VideoModal from "../components/VideoModel";
 import { ArrowLeft, Film } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import clipService from "../services/clip";
 
 const Timeline = () => {
   const [clips, setClips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [generatingMontage, setGeneratingMontage] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchClips = async () => {
@@ -54,23 +51,10 @@ const Timeline = () => {
     return acc;
   }, {});
   const sortedMonthYearKeys = Object.keys(groupedData);
-
-  if (loading) {
-    return (
-      <div className="p-4 md:p-8 w-full mx-auto">
-        <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
-          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
-          Loading...
-        </h3>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="p-4 md:p-8 w-full mx-auto">
         <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
-          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
           Error: {error}
         </h3>
       </div>
@@ -81,7 +65,6 @@ const Timeline = () => {
     return (
       <div className="p-4 md:p-8 w-full mx-auto">
         <h3 className="py-2 text-xl font-semibold text-gray-600 flex gap-3">
-          <ArrowLeft onClick={() => navigate("/")} className="cursor-pointer" />
           No clips found
         </h3>
       </div>
@@ -107,63 +90,16 @@ const Timeline = () => {
     }
   };
 
-  const handleGenerateMontage = async (monthYearKey) => {
-    console.log("Generate Montage button clicked for:", monthYearKey);
-    try {
-      setGeneratingMontage(monthYearKey);
-
-      // Parse month and year from the key (e.g., "January 2024")
-      const [monthName, year] = monthYearKey.split(" ");
-      const month = new Date(Date.parse(monthName + " 1, 2024")).getMonth() + 1; // Get month number (1-12)
-
-      console.log(
-        `Generating montage for ${monthName} ${year} (month: ${month})`
-      );
-      console.log("About to call clipService.generateMontage...");
-
-      const result = await clipService.generateMontage(month, parseInt(year));
-
-      console.log("Montage generation result:", result);
-
-      if (result.success) {
-        alert(`Montage generated successfully! URL: ${result.montageUrl}`);
-        // Optionally, you could open the montage in a new tab or modal
-        window.open(result.montageUrl, "_blank");
-      } else {
-        alert("Failed to generate montage: " + result.message);
-      }
-    } catch (error) {
-      console.error("Error generating montage:", error);
-      alert("Failed to generate montage: " + error.message);
-    } finally {
-      setGeneratingMontage(null);
-    }
-  };
-
   return (
     <div className="p-4 md:p-8 w-full mx-auto">
       {sortedMonthYearKeys.map((monthYearKey) => (
         <div key={monthYearKey}>
           <div className="flex justify-between items-center py-2">
             <h3 className="text-xl font-semibold text-gray-600 flex gap-3">
-              <ArrowLeft
-                onClick={() => navigate("/")}
-                className="cursor-pointer"
-              />
               {monthYearKey}
             </h3>
-            <button
-              onClick={() => handleGenerateMontage(monthYearKey)}
-              disabled={generatingMontage === monthYearKey}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              <Film size={16} />
-              {generatingMontage === monthYearKey
-                ? "Generating..."
-                : "Generate Montage"}
-            </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-4">
+          <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-5 gap-2 md:gap-6 mt-4">
             {groupedData[monthYearKey].map((glimpse) => (
               <div
                 key={glimpse.id}
@@ -171,26 +107,26 @@ const Timeline = () => {
                   setSelectedVideo(glimpse.videoUrl);
                   setSelectedClipId(glimpse.id);
                 }}
-                className={`relative overflow-hidden aspect-[3/4] rounded-xl shadow-lg group transition-all duration-300 transform-gpu cursor-pointer ${
+                className={`relative overflow-hidden aspect-[3/4] rounded-lg shadow-md group transition-all duration-300 transform-gpu cursor-pointer ${
                   glimpse.isToday
-                    ? "border-4 border-[--glimpse-accent] ring-4 ring-white ring-opacity-50"
+                    ? "border-2 border-violet-500 ring-2 ring-violet-200 ring-opacity-50"
                     : ""
-                } hover:scale-105 hover:shadow-2xl`}
+                } hover:scale-105 hover:shadow-xl`}
                 style={{
                   backgroundImage: `url(${
                     glimpse.thumbnailUrl ||
-                    `https://picsum.photos/400?random=${glimpse.id}`
+                    `https://picsum.photos/200?random=${glimpse.id}`
                   })`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                 }}
               >
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-end items-center p-2 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
-                  <p className="font-bold text-sm md:text-base">
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-end items-center p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center">
+                  <p className="font-bold text-xs">
                     {glimpse.date}
                     {console.log("thubnailurlx", glimpse.thumbnailUrl)}
                   </p>
-                  <p className="text-xs md:text-sm mt-1 italic leading-tight">
+                  <p className="text-xs mt-0.5 italic leading-tight">
                     {glimpse.description}
                   </p>
                 </div>

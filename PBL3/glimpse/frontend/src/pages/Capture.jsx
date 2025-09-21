@@ -91,7 +91,7 @@ const Capture = () => {
         await videoRef.current.play();
       }
       setStream(newStream);
-      showStatus("Camera access successful! 📹", "success");
+      showStatus("Camera access successful!", "success");
     } catch (error) {
       console.error("Camera test failed:", error);
       showStatus(`Camera access failed: ${error.message}`, "error");
@@ -194,7 +194,7 @@ const Capture = () => {
       };
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      showStatus("Recording started! 🔴", "success");
+      showStatus("Recording started!", "success");
     } catch (error) {
       console.error("Recording failed:", error);
       showStatus(`Camera/Recording failed: ${error.message}`, "error");
@@ -250,7 +250,7 @@ const Capture = () => {
       const result = await clipService.uploadFile(file);
 
       if (result.success) {
-        showStatus("Video uploaded successfully! ✅", "success");
+        showStatus("Video uploaded successfully!", "success");
         console.log("Upload result:", result);
 
         // Wait a moment to show success message, then reload page
@@ -262,7 +262,6 @@ const Capture = () => {
           `Upload failed: ${result.error || "Unknown error"}`,
           "error"
         );
-
       }
     } catch (error) {
       console.error("Upload failed:", error);
@@ -274,9 +273,9 @@ const Capture = () => {
     if (!status.message) return null;
     const baseClasses = "mt-4 p-3 rounded-lg text-center font-medium";
     const typeClasses = {
-      success: "bg-green-50 text-green-700 border border-green-200",
-      error: "bg-red-50 text-red-700 border border-red-200",
-      info: "bg-blue-50 text-blue-700 border border-blue-200",
+      success: "bg-green-900/30 text-green-300 border border-green-500/50",
+      error: "bg-red-900/30 text-red-300 border border-red-500/50",
+      info: "bg-blue-900/30 text-blue-300 border border-blue-500/50",
     };
     return (
       <div
@@ -290,34 +289,33 @@ const Capture = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="min-h-screen flex bg-black">
       {/* Sidebar - Full height */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden mt-16">
         {/* Header */}
-        <Header />
 
         {/* Recording Content */}
         <main className="flex-1 flex items-center justify-center p-8 overflow-auto">
           <div className="w-full max-w-4xl">
             {/* Hero Section */}
             <div className="text-center mb-2">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-4xl font-bold text-white mb-2">
                 Capture Today's Glimpse
               </h1>
-              <p className="text-lg text-gray-600 mb-2">
+              <p className="text-lg text-gray-300 mb-2">
                 Share your one-second moment today!
               </p>
             </div>
 
             {/* Video Preview Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="bg-slate-800 rounded-2xl shadow-lg p-6 mb-8 border border-slate-700">
               <div className="relative mb-6">
                 <video
                   ref={videoRef}
-                  className="w-full h-80 bg-gray-900 rounded-xl object-cover"
+                  className="w-full h-80 bg-slate-900 rounded-xl object-cover"
                   muted={viewMode === "live"}
                   playsInline
                   controls={
@@ -337,12 +335,12 @@ const Capture = () => {
                   </div>
                 )}
                 {viewMode === "recorded" && (
-                  <div className="absolute top-4 right-4 bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                  <div className="absolute top-4 right-4 bg-violet-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     Recorded Video
                   </div>
                 )}
                 {!stream && !recordedVideo && !isRecording && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900 rounded-xl">
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900 rounded-xl">
                     <div className="text-center text-gray-400">
                       <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
                       <p className="text-lg">
@@ -363,21 +361,21 @@ const Capture = () => {
                     onClick={() => setViewMode("live")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition duration-300 ${
                       viewMode === "live"
-                        ? "bg-blue-500 text-white shadow-md"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        ? "bg-violet-500 text-white shadow-md"
+                        : "bg-slate-700 text-gray-300 hover:bg-slate-600"
                     }`}
                   >
-                    📹 Live Camera
+                    Live Camera
                   </button>
                   <button
                     onClick={() => setViewMode("recorded")}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition duration-300 ${
                       viewMode === "recorded"
-                        ? "bg-purple-500 text-white shadow-md"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        ? "bg-violet-500 text-white shadow-md"
+                        : "bg-slate-700 text-gray-300 hover:bg-slate-600"
                     }`}
                   >
-                    🎬 Recorded Video
+                    Recorded Video
                   </button>
                 </div>
               )}
@@ -387,7 +385,7 @@ const Capture = () => {
                 {!isRecording ? (
                   <button
                     onClick={startRecording}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
+                    className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
                   >
                     <Play className="w-5 h-5" />
                     Start Recording
@@ -397,7 +395,7 @@ const Capture = () => {
                     onClick={stopRecording}
                     className="bg-red-500 hover:bg-red-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
                   >
-                    ⏹️ Stop Recording
+                    Stop Recording
                   </button>
                 )}
 
@@ -405,7 +403,7 @@ const Capture = () => {
                   <>
                     <button
                       onClick={() => uploadToCloudinary(recordedFile)}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
+                      className="bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
                     >
                       <Upload className="w-5 h-5" />
                       Upload Video
@@ -413,9 +411,9 @@ const Capture = () => {
                     <a
                       href={recordedVideo}
                       download="glimpse-recording.webm"
-                      className="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
+                      className="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-4 px-8 rounded-xl transition duration-300 flex items-center gap-3 shadow-lg"
                     >
-                      📥 Download
+                      Download
                     </a>
                   </>
                 )}
@@ -427,16 +425,16 @@ const Capture = () => {
 
             {/* Debug Info (only show when there's an error) */}
             {debugInfo && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mt-6">
-                <h3 className="font-semibold text-red-800 mb-3">
+              <div className="bg-red-900/30 border border-red-500/50 rounded-2xl p-6 mt-6">
+                <h3 className="font-semibold text-red-300 mb-3">
                   Troubleshooting Information:
                 </h3>
                 {debugInfo.solutions && (
                   <div className="mb-4">
-                    <p className="text-red-700 font-medium mb-2">
+                    <p className="text-red-300 font-medium mb-2">
                       Possible solutions:
                     </p>
-                    <ul className="list-disc list-inside text-red-600 space-y-1">
+                    <ul className="list-disc list-inside text-red-400 space-y-1">
                       {debugInfo.solutions.map((solution, index) => (
                         <li key={index} className="text-sm">
                           {solution}
@@ -446,10 +444,10 @@ const Capture = () => {
                   </div>
                 )}
                 <details className="mt-4">
-                  <summary className="text-red-700 font-medium cursor-pointer">
+                  <summary className="text-red-300 font-medium cursor-pointer">
                     Technical Details
                   </summary>
-                  <pre className="text-xs text-red-600 mt-2 overflow-x-auto bg-red-100 p-3 rounded-lg">
+                  <pre className="text-xs text-red-400 mt-2 overflow-x-auto bg-red-900/20 p-3 rounded-lg">
                     {JSON.stringify(debugInfo, null, 2)}
                   </pre>
                 </details>
@@ -458,11 +456,11 @@ const Capture = () => {
 
             {/* Debug Info (only show when there's an error) */}
             {debugInfo && (
-              <div className="bg-white rounded-2xl shadow-lg p-6 mt-8">
-                <h3 className="font-semibold text-gray-700 mb-3">
+              <div className="bg-slate-800 rounded-2xl shadow-lg p-6 mt-8 border border-slate-700">
+                <h3 className="font-semibold text-gray-300 mb-3">
                   Debug Information:
                 </h3>
-                <pre className="text-sm text-gray-600 overflow-x-auto bg-gray-50 p-4 rounded-lg">
+                <pre className="text-sm text-gray-400 overflow-x-auto bg-slate-900 p-4 rounded-lg">
                   {JSON.stringify(debugInfo, null, 2)}
                 </pre>
               </div>
