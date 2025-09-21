@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 // Abstracting API calls to a service file for better code organization
 const clipApi = {
+  
   saveClip: async (videoData) => {
     try {
       const response = await axios.post("http://localhost:3001/api/clips", videoData);
@@ -24,7 +26,7 @@ const BACKGROUND_IMAGES = [
 
 const HomePage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-
+  const navigate=useNavigate();
   // Preload images
   useEffect(() => {
     BACKGROUND_IMAGES.forEach((src) => {
@@ -67,13 +69,14 @@ const HomePage = () => {
             await clipApi.saveClip({ videoUrl, publicId });
             alert("✅ Glimpse uploaded successfully!");
           } catch (err) {
-            alert(err.message);
+            alert("Glimpse Upload failed. Please login first.");
+            navigate('/login')
           }
         } else if (result.event === "abort") {
           console.log("Upload aborted.");
         } else if (error) {
           console.error("Upload error:", error);
-          alert("❌ Upload failed. Please try again.");
+          alert("❌ Upload failed. Please login first.");
         }
       }
     );

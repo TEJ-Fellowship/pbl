@@ -59,7 +59,7 @@ const Signup = () => {
           {/* Name Field */}
           <div className="mb-3">
             <label className="block text-gray-200 text-sm font-semibold mb-1">
-              Full Name
+              Username
             </label>
             <input
               type="text"

@@ -200,20 +200,17 @@ function Montage() {
       );
 
       if (result.success) {
-        // Update current montage with the new version that has music
         setCurrentMontage({
           ...currentMontage,
           videoUrl: result.montageUrl,
           musicUrlId: selectedMusic.id,
-          appliedMusic: selectedMusic, // Store the applied music info
+          appliedMusic: selectedMusic, 
         });
 
         setError(null);
 
-        // Show success message
         alert(`🎵 Music "${selectedMusic.title}" applied successfully!`);
 
-        // Reload montage history to include the new version
         await loadMontageHistory();
       } else {
         setError(result.message || "Failed to apply music");
@@ -228,8 +225,7 @@ function Montage() {
 
   return (
     <div className="bg-gradient-to-br from-[#0f0b1a] via-[#1a0f2e] to-[#0f0b1a] min-h-screen text-white">
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
+      <div className="container mx-auto px-6 py-8 mt-16">
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
             Monthly Montages
@@ -241,9 +237,7 @@ function Montage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
-          {/* Left Panel - Controls */}
           <div className="lg:w-1/3 space-y-6">
-            {/* Month Selection */}
             <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-purple-400" />
@@ -280,7 +274,6 @@ function Montage() {
               )}
             </div>
 
-            {/* Export Options */}
             {currentMontage && (
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h3 className="text-lg font-semibold mb-4">Export & Share</h3>
@@ -307,7 +300,6 @@ function Montage() {
               </div>
             )}
 
-            {/* Montage History */}
             {montageHistory.length > 0 && (
               <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
                 <h3 className="text-lg font-semibold mb-4">Your Montages</h3>
@@ -317,7 +309,6 @@ function Montage() {
                       key={montage.id}
                       onClick={() => {
                         setCurrentMontage(montage);
-                        // If this montage has music, set it as selected
                         if (montage.musicUrlId) {
                           setSelectedMusic(montage.musicUrlId);
                         } else {

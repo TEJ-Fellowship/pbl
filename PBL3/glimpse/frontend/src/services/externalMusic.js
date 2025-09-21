@@ -1,12 +1,9 @@
-// External Music API Integration Service
 import axios from "axios";
 
-// Available Music APIs
 const MUSIC_APIS = {
-  // Free Music Archive API
   FMA: {
     baseUrl: "https://freemusicarchive.org/api/get",
-    key: null, // No API key required for basic usage
+    key: null, 
   },
 
   // Jamendo API (Creative Commons music)
@@ -15,13 +12,11 @@ const MUSIC_APIS = {
     clientId: "3e29761c", // Your actual Jamendo Client ID
   },
 
-  // AudioLibrary (YouTube's royalty-free music)
   AUDIOLIBRARY: {
     baseUrl: "https://audiolibrary.youtube.com/api",
     key: "YOUR_YOUTUBE_API_KEY",
   },
 
-  // Nepali Music Database (you can add local/custom API)
   NEPALI_MUSIC: {
     baseUrl: "https://your-nepali-music-api.com", // Replace with actual Nepali music API
     key: "YOUR_API_KEY",
@@ -118,8 +113,7 @@ class ExternalMusicService {
         return this.cache.get(cacheKey);
       }
 
-      // For now, return some demo Nepali tracks
-      // Replace this with actual API call when you have a Nepali music source
+
       const nepaliDemoTracks = [
         {
           id: "nepali_1",

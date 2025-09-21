@@ -6,8 +6,6 @@ import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Signup from "./pages/Signup.jsx";
 import Homepage from "./pages/Homepage.jsx";
-import Aboutus from "./pages/Aboutus.jsx";
-// import Layout from "./Layout.jsx";
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import { AuthContext } from "./AuthContext.jsx";
 import { ThemeContext } from "./ThemeContext.jsx";
@@ -16,9 +14,10 @@ import VideoUpload from "./pages/VideoUpload.jsx";
 import Capture from "./pages/Capture.jsx";
 import Montage from "./pages/Montage.jsx";
 import Navbar from './components/Navbar.jsx'
+import Upload from "./pages/Upload.jsx";
+import StaticMontage from "./pages/StaticMontage.jsx";
 function App() {
-  const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
-  const { isDark} = useContext(ThemeContext);
+  const { isLoggedIn } = useContext(AuthContext);
 
   return (
     <>
@@ -26,26 +25,23 @@ function App() {
           <Navbar />
 
         <Routes>
-            <Route path="/" element= {<Homepage />} />
+            <Route path="/" element= {isLoggedIn?<Dashboard />:<Homepage />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
             <Route
               path="timelines"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
                    <Timeline />
                 </ProtectedRoute>
               }
             />
             <Route
-              path="create"
+              path="Montages"
               element={
-                <ProtectedRoute>
-                 <Aboutus />
-                </ProtectedRoute>
+                 <StaticMontage />
               }
             />
-            <Route path="About" element={<Aboutus />} />
             <Route
               path="montage"
               element={
@@ -59,6 +55,14 @@ function App() {
               element={
                 <ProtectedRoute isLoggedIn={isLoggedIn}>
                   <Capture />
+                </ProtectedRoute>
+              }
+            />          
+              <Route
+              path="upload"
+              element={
+                <ProtectedRoute isLoggedIn={isLoggedIn}>
+                  <Upload />
                 </ProtectedRoute>
               }
             />          
