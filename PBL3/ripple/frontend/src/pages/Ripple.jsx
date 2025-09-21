@@ -1,8 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { socket } from "../utils/socket.js"; // import your socket instance
 
 const Main = ({ userId }) => {
   const [ripples, setRipples] = useState([]);
+  const [facts, setFacts] = useState("");
+
+  const fetchFact = async () => {
+    try {
+      const response = await fetch("https://api.api-ninjas.com/v1/facts", {
+        method: "GET",
+        headers: {
+          "X-Api-Key": "nz+OIkYtpbK4t3ydhjxP5A==eA9u4XmIMnnqew2D",
+        },
+      });
+      const data = await response.json();
+      console.log(data[0]);
+      setFacts(data[0].fact);
+    } catch (error) {
+      console.error("Error fetching fact:", error);
+    }
+  };
 
   const handleClick = () => {
     const id = Date.now(); // unique ripple id
@@ -17,6 +34,10 @@ const Main = ({ userId }) => {
       visibility: ["friends", "global"], // or just ["friends"] / ["global"]
     });
   };
+
+  useEffect(() => {
+    fetchFact();
+  }, []);
 
   return (
     <div
@@ -43,7 +64,7 @@ const Main = ({ userId }) => {
         ></button>
 
         <div className="fixed bottom-4 text-primary text-4xl font-bold tracking-tight mt-12 text-center">
-          <h1>Tap . Ripple . Connect</h1>
+          <h1>{facts}</h1>
         </div>
       </div>
     </div>

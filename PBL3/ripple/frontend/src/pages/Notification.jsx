@@ -264,6 +264,7 @@ import { socket } from "../utils/socket";
 import { ChevronRight } from "lucide-react";
 import { useFriends } from "../../helper/isFriend";
 import { useAuth } from "../context/authContext.jsx";
+import { toast } from "react-toastify";
 
 const Notifications = () => {
   const userData = useAuth();
@@ -286,45 +287,8 @@ const Notifications = () => {
   };
 
   useEffect(() => {
-    if (!userData) return;
-
     fetchNotification();
-
-    socket.on("rippleNotification", (data) => {
-      console.log("global", data);
-      setNotifications((prev) => [
-        {
-          userId: data.userId,
-          message: data.message,
-          fromUserId: data.fromUserId,
-          fromUsername: data.fromUsername,
-          type: "global_ripple",
-          rippleId: data.rippleId,
-        },
-        ...prev,
-      ]);
-    });
-
-    socket.on("sendRippleFriends", (data) => {
-      console.log("friend", data);
-      setNotifications((prev) => [
-        {
-          userId: data.userId,
-          message: data.message,
-          fromUserId: data.fromUserId,
-          rippleId: data.rippleId,
-          fromUsername: data.fromUsername,
-          type: "friend_ripple",
-        },
-        ...prev,
-      ]);
-    });
-
-    return () => {
-      socket.off("rippleNotification");
-      socket.off("sendRippleFriends");
-    };
-  }, [userData]);
+  });
 
   // Filter notifications based on business logic
   const filteredNotifications = notifications.filter((notification) => {
@@ -352,25 +316,25 @@ const Notifications = () => {
     return true;
   });
 
-  const handleAccept = (notificationId) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === notificationId
-          ? { ...notification, isAccepted: true }
-          : notification
-      )
-    );
-  };
+  // const handleAccept = (notificationId) => {
+  //   setNotifications((prev) =>
+  //     prev.map((notification) =>
+  //       notification.id === notificationId
+  //         ? { ...notification, isAccepted: true }
+  //         : notification
+  //     )
+  //   );
+  // };
 
-  const handleDecline = (notificationId) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === notificationId
-          ? { ...notification, isAccepted: false }
-          : notification
-      )
-    );
-  };
+  // const handleDecline = (notificationId) => {
+  //   setNotifications((prev) =>
+  //     prev.map((notification) =>
+  //       notification.id === notificationId
+  //         ? { ...notification, isAccepted: false }
+  //         : notification
+  //     )
+  //   );
+  // };
 
   const NotificationItem = ({ notification }) => {
     // Helper function to generate UI data from your database structure
@@ -457,7 +421,7 @@ const Notifications = () => {
           </div>
 
           {/* Action buttons for follow requests */}
-          {uiData.hasActions && uiData.isAccepted === null && (
+          {/* {uiData.hasActions && uiData.isAccepted === null && (
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => handleAccept(uiData.id)}
@@ -472,10 +436,10 @@ const Notifications = () => {
                 Decline
               </button>
             </div>
-          )}
+          )} */}
 
           {/* Show status after action */}
-          {uiData.hasActions && uiData.isAccepted !== null && (
+          {/* {uiData.hasActions && uiData.isAccepted !== null && (
             <div className="mt-4">
               <span
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
@@ -487,7 +451,7 @@ const Notifications = () => {
                 {uiData.isAccepted ? "Accepted" : "Declined"}
               </span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     );
