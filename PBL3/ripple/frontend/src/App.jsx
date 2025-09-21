@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 import LogIn from "./pages/LogIn";
@@ -11,12 +12,14 @@ import Activitylog from "./pages/Activitylog";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute"; // import your new component
 
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
           {/* Public routes */}
+
           <Route path="/" element={<Homepage />} />
           <Route path="/login" element={<LogIn />} />
           <Route path="/signup" element={<SignUp />} />
@@ -24,6 +27,7 @@ function App() {
           {/* Protected routes */}
           <Route
             path="/dashboard"
+
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -31,7 +35,9 @@ function App() {
             }
           />
           <Route
+
             path="/explore"
+
             element={
               <ProtectedRoute>
                 <Explore />
@@ -39,7 +45,9 @@ function App() {
             }
           />
           <Route
+
             path="/notification"
+
             element={
               <ProtectedRoute>
                 <Notification />
@@ -47,7 +55,9 @@ function App() {
             }
           />
           <Route
+
             path="/activitylog"
+
             element={
               <ProtectedRoute>
                 <Activitylog />
@@ -56,6 +66,7 @@ function App() {
           />
           <Route
             path="/ripple"
+
             element={
               <ProtectedRoute>
                 <Ripple />

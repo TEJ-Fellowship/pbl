@@ -1,22 +1,90 @@
-// Explore.jsx
 import React, { useEffect, useState } from "react";
 import SearchBar from "../components/Searchbar";
 import PersonCard from "../components/PersonCard";
 
 const Explore = () => {
   const [connections, setConnections] = useState(new Set());
+  const [connectedUsers, setConnectedUsers] = useState([])
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResult, setSearchResult] = useState([]);
 
+  const handleAddConnection = async (contactId) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/contacts/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ contactId }),
+      });
+      console.log(contactId)
+      const data = await res.json();
+      console.log("this is a data",data);
+      
+      if (res.ok) {
+        setConnections((prev) => new Set([...prev, contactId]));
+      } else {
+        console.error("failed to add contact", data.error);
+      }
+    } catch (error) {
+      console.error("error adding contact", error);
+    }
+  };
 
-  const handleAddConnection = (id) =>
-    setConnections((prev) => new Set([...prev, id]));
-  const handleRemoveConnection = (id) =>
-    setConnections((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
+const handleRemoveConnection = async (contactRelationId, userId) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/contact/remove/${contactRelationId}`, {
+      method: "DELETE",
+      credentials: "include",
     });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // Remove the user's ID from connection Set
+      setConnections((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+
+      // Remove user from connectedUsers
+      setConnectedUsers((prev) =>
+        prev.filter((person) => person._id !== userId)
+      );
+    } else {
+      console.error("Failed to remove contact:", data.error);
+    }
+  } catch (err) {
+    console.error("Error removing contact:", err);
+  }
+};
+
+
+useEffect(() => {
+  const fetchContacts = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/contact/list", {
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        const contactIds = data.map((item) => item.contact._id);
+        setConnections(new Set(contactIds));
+        setConnectedUsers(data.map((item) => ({
+          ...item.contact,
+          contactRelationId: item._id,
+        })))
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    }
+  };
+
+  fetchContacts();
+}, [connectedUsers]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -25,20 +93,25 @@ const Explore = () => {
       }
 
       try {
-        const res = await fetch(`/users/search?q=${searchTerm}`, {
-          method: 'GET',
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
+        const res = await fetch(
+          `http://localhost:5000/users/search?q=${searchTerm}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
 
         const data = await res.json();
+        // console.log(data)
         setSearchResult(data);
       } catch (error) {
         console.error("error fetching users:", error);
         setSearchResult([]);
       }
+      
     };
     fetchUsers();
   }, [searchTerm]);
@@ -46,13 +119,9 @@ const Explore = () => {
   const discoverPeople = searchResult.filter(
     (person) =>
       !connections.has(person._id) &&
-      person.name.toLowerCase().includes(searchTerm.toLowerCase())
+      person.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const connectedPeople = searchResult.filter(
-    (person) =>
-      connections.has(person._id) &&
-      person.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const connectedPeople = connectedUsers
 
   return (
     <div
@@ -74,12 +143,12 @@ const Explore = () => {
         {discoverPeople.length > 0 && (
           <div className="grid grid-cols-3 gap-4 mb-12">
             {discoverPeople.map((p) => (
+              // console.log(p),
               <PersonCard
-                key={p.id}
+                key={p._id}
                 person={p}
                 isConnected={false}
                 handleAddConnection={handleAddConnection}
-                handleRemoveConnection={handleRemoveConnection}
               />
             ))}
           </div>
@@ -93,11 +162,11 @@ const Explore = () => {
             <div className="grid grid-cols-3 gap-4">
               {connectedPeople.map((p) => (
                 <PersonCard
-                  key={p.id}
+                  key={p._id}
                   person={p}
                   isConnected={true}
                   handleAddConnection={handleAddConnection}
-                  handleRemoveConnection={handleRemoveConnection}
+                  handleRemoveConnection={() => handleRemoveConnection(p.contactRelationId, p._id)}
                 />
               ))}
             </div>
