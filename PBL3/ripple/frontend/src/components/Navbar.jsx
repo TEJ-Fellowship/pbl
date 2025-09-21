@@ -1,22 +1,27 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
-  const [activeItem, setActiveItem] = useState('' );
+  const [activeItem, setActiveItem] = useState("");
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
-  const navItems = ['Home', 'Explore', 'Notifications', 'Activity Log'];
+
+  const navItems = ["Home", "Explore", "Notifications", "Activity Log"];
   const navRoutes = {
-    Home: '/dashboard',
-    Explore: '/explore',
-    Notifications: '/notification',
-    'Activity Log': '/activitylog',
+    Home: "/dashboard",
+    Explore: "/explore",
+    Notifications: "/notification",
+    "Activity Log": "/activitylog",
   };
 
+  const url = "http://localhost:5000";
+
   const handleNavClick = (item) => {
-    setActiveItem(item);  
+    setActiveItem(item);
+
     const route = navRoutes[item];
     if (route) navigate(route);
   };
@@ -28,14 +33,27 @@ const Navbar = () => {
   const handleViewProfile = () => {
     setIsDropdownOpen(false);
     // Navigates to profile page
-    navigate('/profile');
+
+    navigate("/profile");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
     // Handle logout logic here (clear tokens, etc.)
     // Then navigate to login page
-    navigate('/');
+    try {
+      const response = await fetch(`${url}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      console.log(data.message);
+    } catch (error) {
+      console.error("logout failed", error.message);
+    }
+
+    navigate("/");
+
   };
 
   // Close dropdown when clicking outside
@@ -46,17 +64,21 @@ const Navbar = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+
     };
   }, []);
 
   return (
     <nav className="w-full bg-gray-900/100 border-b border-gray-700 px-8 py-2">
       <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-3">
-          <div className="w-48">
+
+        <div className="flex items-center justify-centergap-3">
+          <div className="w-48 relative top-[-10px]">
+
             <img src="/logo2.png" alt="logo" />
           </div>
         </div>
@@ -64,12 +86,14 @@ const Navbar = () => {
         <div className="flex items-center space-x-8">
           {navItems.map((item) => (
             <button
-              key={item}  
-              onClick={() => handleNavClick(item)}  
+
+              key={item}
+              onClick={() => handleNavClick(item)}
               className={`relative px-4 py-2 font-medium transition-colors group ${
                 activeItem === item
-                  ? 'text-white'
-                  : 'text-gray-400 hover:text-white'  
+                  ? "text-white"
+                  : "text-gray-400 hover:text-white"
+
               }`}
             >
               {item}
@@ -90,7 +114,9 @@ const Navbar = () => {
 
           {/* Profile Avatar with Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <button 
+
+            <button
+
               onClick={handleProfileClick}
               className="w-8 h-8 rounded-full overflow-hidden hover:ring-2 hover:ring-green-400 transition-all"
             >
@@ -109,6 +135,7 @@ const Navbar = () => {
                     onClick={handleViewProfile}
                     className="w-full px-4 py-2 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors flex items-center gap-2"
                   >
+
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -117,12 +144,15 @@ const Navbar = () => {
                   
                   <hr className="my-1 border-gray-700" />
                   
+
                   <button
                     onClick={handleLogout}
                     className="w-full px-4 py-2 text-left text-red-400 hover:text-red-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
                   >
+
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+
                     </svg>
                     Logout
                   </button>
@@ -130,10 +160,14 @@ const Navbar = () => {
               </div>
             )}
           </div>
-        </div>  
+
+        </div>
+
       </div>
     </nav>
   );
 };
 
+
 export default Navbar;
+

@@ -1,15 +1,17 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Homepage from './pages/Homepage';
-import LogIn from './pages/LogIn';
-import SignUp from './pages/SignUp';
-import Dashboard from './pages/Dashboard';
-import Ripple from './pages/Ripple';
-import Layout from './Layout';
-import Explore from './pages/Explore';
-import Notification from './pages/Notification';
-import Activitylog from './pages/Activitylog';
-import Profile from './pages/Profile';
-import ProtectedRoute from './components/ProtectedRoute'; 
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Homepage from "./pages/Homepage";
+import LogIn from "./pages/LogIn";
+import SignUp from "./pages/SignUp";
+import Dashboard from "./pages/Dashboard";
+import Ripple from "./pages/Ripple";
+import Layout from "./Layout";
+import Explore from "./pages/Explore";
+import Notification from "./pages/Notification";
+import Activitylog from "./pages/Activitylog";
+import Profile from "./pages/Profile";
+import ProtectedRoute from "./components/ProtectedRoute"; // import your new component
+
 
 function App() {
   return (
@@ -17,13 +19,15 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           {/* Public routes */}
-          <Route path='/' element={<Homepage />} />
-          <Route path='/login' element={<LogIn />} />
-          <Route path='/signup' element={<SignUp />} />
+
+          <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={<LogIn />} />
+          <Route path="/signup" element={<SignUp />} />
 
           {/* Protected routes */}
           <Route
-            path='/dashboard'
+            path="/dashboard"
+
             element={
               <ProtectedRoute>
                 <Dashboard />
@@ -31,7 +35,9 @@ function App() {
             }
           />
           <Route
-            path='/explore'
+
+            path="/explore"
+
             element={
               <ProtectedRoute>
                 <Explore />
@@ -39,7 +45,9 @@ function App() {
             }
           />
           <Route
-            path='/notification'
+
+            path="/notification"
+
             element={
               <ProtectedRoute>
                 <Notification />
@@ -47,7 +55,9 @@ function App() {
             }
           />
           <Route
-            path='/activitylog'
+
+            path="/activitylog"
+
             element={
               <ProtectedRoute>
                 <Activitylog />
@@ -55,7 +65,8 @@ function App() {
             }
           />
           <Route
-            path='/ripple'
+            path="/ripple"
+
             element={
               <ProtectedRoute>
                 <Ripple />
@@ -63,7 +74,7 @@ function App() {
             }
           />
           <Route
-            path='/profile'
+            path="/profile"
             element={
               <ProtectedRoute>
                 <Profile />
