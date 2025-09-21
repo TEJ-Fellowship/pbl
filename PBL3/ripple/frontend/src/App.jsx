@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Homepage from "./pages/Homepage";
 import LogIn from "./pages/LogIn";
@@ -55,12 +54,11 @@ function App() {
             }
           />
           <Route
-
-            path="/activitylog"
+            path='/aboutus'
 
             element={
               <ProtectedRoute>
-                <Activitylog />
+                <Aboutus />
               </ProtectedRoute>
             }
           />
