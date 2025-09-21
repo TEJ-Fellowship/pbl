@@ -41,7 +41,15 @@ router.patch("/:id/reactions", authMiddleWare, async (req, res) => {
 
     // 👉 broadcast to everyone else
     const io = getIo();
-    io.emit("feedClipUpdated", updatedClip);
+    // create a sanitized version (no isOwner), include userId as string to be safe
+    const sanitized = {
+      ...updatedClip,
+      userId: updatedClip.userId
+        ? String(updatedClip.userId)
+        : updatedClip.userId,
+    };
+    // emit sanitized
+    io.emit("feedClipUpdated", sanitized);
 
     res.json(updatedClip);
   } catch (err) {
@@ -90,6 +98,15 @@ router.delete("/:id", authMiddleWare, async (req, res) => {
         .json({ error: "Not authorized to delete this clip" });
     }
     await clip.deleteOne();
+
+    // broadcast deletion to all connected clients so they can remove it live
+    try {
+      const { getIo } = require("../socket");
+      const io = getIo();
+      io.emit("clipDeleted", clip._id); // emit the id only (sanitized)
+    } catch (emitErr) {
+      console.warn("Socket not ready to emit clipDeleted:", emitErr.message);
+    }
     res.json({ message: "Clip deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to delete clip" });

@@ -1,6 +1,7 @@
-//src/Pages/LoginPage.jsx
-import { useState, useEffect } from "react";
+// src/Pages/LoginPage.jsx
+import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function SignIn({
   username,
@@ -10,21 +11,21 @@ function SignIn({
   setIsSignUp,
   setIsLoggedIn,
 }) {
+  const navigate = useNavigate();
+
   function handleSubmit(e) {
     e.preventDefault();
-
     const userObj = { username, password };
 
     axios
       .post("http://localhost:3001/signin", userObj)
       .then((response) => {
         const token = response.data.token;
-
         if (token) {
           localStorage.setItem("token", token);
           setIsLoggedIn(true);
+          navigate("/home");
         }
-
         setUsername("");
         setPassword("");
       })
@@ -33,45 +34,66 @@ function SignIn({
 
   return (
     <form
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80"
       onSubmit={handleSubmit}
+      className="w-80 sm:w-96 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl p-8 flex flex-col gap-4 text-white"
     >
-      <h1 className="text-2xl font-extrabold">Welcome Back</h1>
-      <p className="mb-5">Please Enter your Account details</p>
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full  flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition-transform duration-300 w-14 h-14">
+            <img src="/logo.svg" alt="logo" />
+          </div>
+          <div className="text-lg font-semibold">Echo</div>
+        </div>
+      </div>
 
-      <p className="mb-2">Email</p>
+      <h1 className="text-2xl font-extrabold text-white">Welcome Back</h1>
+      <p className="text-gray-400">Enter your account details</p>
+
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
+        Email
+      </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="text"
-        placeholder="username@email.com"
+        placeholder="you@domain.com"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <p className="mt-5 mb-2">Password</p>
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
+        Password
+      </label>
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <p className="flex justify-end mt-1 text-sm underline text-green-700 cursor-pointer">
-        Forgot Password
-      </p>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="text-sm text-indigo-300 hover:text-indigo-400 underline"
+        >
+          Forgot Password?
+        </button>
+      </div>
 
       <button
         type="submit"
-        className="mt-5 mb-5 p-2 w-full bg-green-600 rounded-lg text-white font-semibold"
+        className="mt-2 p-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white
+                   font-semibold rounded-lg transition-colors shadow"
       >
-        Sign in
+        Sign In
       </button>
 
-      <p className="text-sm text-center">
-        Don't have an Account?{" "}
+      <p className="text-sm text-center text-gray-400 mt-1">
+        Don't have an account?{" "}
         <span
-          className="text-green-700 font-semibold hover:text-green-800 cursor-pointer"
+          className="text-indigo-300 font-semibold hover:text-indigo-400 cursor-pointer"
           onClick={() => {
             setIsSignUp(true);
             setUsername("");
@@ -90,78 +112,87 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
 
   function handleSubmit(e) {
     e.preventDefault();
+    if (password !== repassword) return alert("Passwords do not match!");
 
-    if (password === repassword) {
-      axios
-        .post("http://localhost:3001/signup", { username, password })
-        .then((response) => {
-          alert(
-            `The account is created with username: ${response.data.username}`
-          );
-          setIsSignUp(false);
-        })
-        .catch((err) => console.log("Error:", err));
-    } else {
-      alert("Please confirm your password. Try again...");
-    }
+    axios
+      .post("http://localhost:3001/signup", { username, password })
+      .then((response) => {
+        alert(`Account created: ${response.data.username}`);
+        setIsSignUp(false);
+      })
+      .catch((err) => console.log("Error:", err));
 
-    setPassword("");
     setUsername("");
+    setPassword("");
     setRepassword("");
   }
 
   return (
     <form
-      className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-80"
       onSubmit={handleSubmit}
+      className="w-80 sm:w-96 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-3xl border border-white/10 shadow-2xl p-8 flex flex-col gap-4 text-white"
     >
-      <h1 className="text-2xl font-extrabold">Create an account</h1>
-      <p className="mb-5">Please Enter your Account details</p>
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center font-bold">
+            E
+          </div>
+          <div className="text-lg font-semibold">Echo</div>
+        </div>
+      </div>
 
-      <p className="mb-2">Email</p>
+      <h1 className="text-2xl font-extrabold text-white">Create Account</h1>
+      <p className="text-gray-400">Enter your account details</p>
+
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
+        Email
+      </label>
       <input
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="text"
-        placeholder="username@email.com"
+        placeholder="you@domain.com"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <p className="mt-5 mb-2">Password</p>
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
+        Password
+      </label>
       <input
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
-      <p className="mt-5 mb-2">Re-enter password</p>
+      <label className="mt-2 mb-1 text-sm font-semibold text-gray-300">
+        Re-enter Password
+      </label>
       <input
         value={repassword}
         onChange={(e) => setRepassword(e.target.value)}
-        className="px-3 py-2 border-2 w-full border-green-600 focus:outline-none rounded-lg"
         type="password"
         placeholder="*******"
+        className="px-3 py-2 w-full bg-slate-800/50 border border-white/10 rounded-lg text-white placeholder-gray-400
+                   focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition"
       />
 
       <button
         type="submit"
-        className="mt-5 mb-5 p-2 w-full bg-green-600 rounded-lg text-white font-semibold"
+        className="mt-2 p-2 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white
+                   font-semibold rounded-lg transition-colors shadow"
       >
         Sign Up
       </button>
 
-      <p className="text-sm text-center">
-        Already have an Account?{" "}
+      <p className="text-sm text-center text-gray-400 mt-1">
+        Already have an account?{" "}
         <span
-          className="text-green-700 font-semibold hover:text-green-800 cursor-pointer"
-          onClick={() => {
-            setIsSignUp(false);
-            setUsername("");
-            setPassword("");
-            setRepassword("");
-          }}
+          className="text-indigo-300 font-semibold hover:text-indigo-400 cursor-pointer"
+          onClick={() => setIsSignUp(false)}
         >
           Sign In
         </span>
@@ -170,41 +201,13 @@ function SignUp({ username, setUsername, password, setPassword, setIsSignUp }) {
   );
 }
 
-// function Dashboard({ handleLogout }) {
-//   return (
-//     <div className="bg-white p-9 rounded-2xl shadow-lg shadow-slate-400 w-96 text-center">
-//       <h1 className="text-2xl font-bold mb-4">✅ You are logged in!</h1>
-//       <button
-//         onClick={handleLogout}
-//         className="mt-5 p-2 w-full bg-red-600 rounded-lg text-white font-semibold"
-//       >
-//         Logout
-//       </button>
-//     </div>
-//   );
-// }
-
 function LoginForm({ setIsLoggedIn }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // ✅ check if token exists on mount
-  // useEffect(() => {
-  //   const token = localStorage.getItem("token"); // fixed typo
-  //   if (token) {
-  //     setIsLoggedIn(true);
-  //   }
-  // }, []);
-
-  // function handleLogout() {
-  //   localStorage.removeItem("token");
-  //   setIsLoggedIn(false);
-  // }
 
   return (
-    <div className="h-screen flex justify-center items-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-slate-900 p-6">
       {isSignUp ? (
         <SignUp
           username={username}

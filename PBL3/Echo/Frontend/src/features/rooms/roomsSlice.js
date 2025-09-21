@@ -75,17 +75,33 @@ const roomsSlice = createSlice({
       })
       .addCase(createRoom.fulfilled, (state, action) => {
         state.creating = false;
-        // ensure owner sees delete immediately: mark isOwner true locally
-        const created = { ...action.payload, isOwner: true };
-        state.list.unshift(created); // put new room at top
+
+        // find existing room if any
+        const idx = state.list.findIndex((r) => r._id === action.payload._id);
+
+        if (idx === -1) {
+          // not present -> add
+          const created = {
+            ...action.payload,
+            isOwner: !!action.payload.isOwner,
+          };
+          state.list.unshift(created);
+        } else {
+          // already present (maybe created locally before socket arrives)
+          // preserve existing isOwner if it's true
+          const existing = state.list[idx];
+          const merged = {
+            ...action.payload,
+            isOwner: existing.isOwner || !!action.payload.isOwner,
+          };
+          state.list[idx] = merged;
+        }
       })
       .addCase(createRoom.rejected, (state, action) => {
         state.creating = false;
         state.error = action.payload || action.error.message;
       })
       .addCase(joinRoom.fulfilled, (state, action) => {
-        // server currently returns only success message
-        // so we find the room in state and mark isOwner = true
         const roomId = action.meta.arg.roomId; // extract roomId from dispatched payload
         const joinedRoom = state.list.find((r) => r._id === roomId);
         if (joinedRoom) {
