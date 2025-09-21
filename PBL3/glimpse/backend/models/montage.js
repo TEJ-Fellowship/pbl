@@ -10,6 +10,7 @@ const montageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Music",
   },
+    thumbnailUrl: String,
   shortClipsIds: [
     {
       type: mongoose.Schema.Types.ObjectId,
