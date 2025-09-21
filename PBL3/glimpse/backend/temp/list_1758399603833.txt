@@ -1,8 +1,0 @@
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_0_1758399577142.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_1_1758399582991.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_2_1758399597581.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_3_1758399597969.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_4_1758399599037.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_5_1758399599917.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_6_1758399601131.mp4'
-file 'E:/TEJ/pbl/PBL3/glimpse/backend/temp/clip_7_1758399602639.mp4'

@@ -10,7 +10,7 @@ const https = require("https");
 const auth = require("../utils/authMiddleware");
 
 // Set FFmpeg path explicitly
-ffmpeg.setFfmpegPath("C:\\ffmpeg\\bin\\ffmpeg.exe");
+ffmpeg.setFfmpegPath("/usr/local/bin/ffmpeg");
 
 // Generate montage route
 montageRouter.post("/generate", auth, async (request, response) => {
