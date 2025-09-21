@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import logo from "../assets/logo.png"
 
 function SignUp() {
     const [fullname, setFullname] = useState("")
@@ -38,6 +39,13 @@ function SignUp() {
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
             <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+
+
+                      <img src={logo} alt="logo"   className="w-12 sm:w-16 md:w-20 h-auto mx-auto mb-6"
+ />
+            
+
+
                 <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">
                     Create Your Account
                 </h2>

@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from "react-router-dom"
-import img from '../assets/23.png'
+import img from '../assets/h.png'
+import lo from '../assets/logo.png'
 import Hero from '../components/Hero';
 import Footer from '../components/Footer';
 
@@ -14,7 +15,10 @@ function App() {
         {/* Header */}
         <header className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
           <div className="flex items-center">
-            <span className="font-bold text-2xl sm:text-3xl text-gray-900">Spindle</span>
+
+          <img src={lo} alt="logo" className="w-12 sm:w-16 md:w-20 h-auto" />
+
+            <span className="font-bold text-2xl sm:text-3xl text-red-600">Quick<span className="text-gray-900">Pick</span></span>
           </div>
 
           {/* <nav className="flex flex-col sm:flex-row items-center sm:space-x-6 space-y-2 sm:space-y-0">
@@ -43,7 +47,7 @@ function App() {
                 Make group decisions, fast.
               </h1>
               <p className="mt-4 sm:mt-6 text-base sm:text-lg text-gray-600 max-w-md sm:max-w-lg mx-auto lg:mx-0">
-                Spindle is the fastest way to make group decisions. Create a poll, invite your group, and see the results in real-time.
+                QuickPick is the fastest way to make group decisions. Create a poll,see the results in real-time.
               </p>
               <div className="mt-6 sm:mt-8">
                 <button  onClick={()=>navigate("/signUp") }className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg shadow-md transition-transform transform hover:scale-105">
