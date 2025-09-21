@@ -1,149 +1,111 @@
-import { useState, useContext } from "react";
-import { Eye, EyeOff } from 'lucide-react';
-import { AuthContext } from "../AuthContext"
+import React, { useContext, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { AuthContext } from "../AuthContext";
+import { ThemeContext } from "../ThemeContext";
 
-const LoginPage = () => {
+const Login = () => {
+  const { isDark } = useContext(ThemeContext);
+  const { setToken, setUser, setIsLoggedIn } = useContext(AuthContext);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const { setToken, setUser, setIsLoggedIn } = useContext(AuthContext)
+  const [isShown, setIsShown] = useState(false);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
-    setIsSuccess(false);
-
-    if (!email || !password) {
-      setError("Please enter your email and password.");
-      setIsLoading(false);
-      return;
-    }
     try {
       const res = await axios.post("http://localhost:3001/api/login", {
         email,
         password,
       });
-      console.log("Login successful!");
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsSuccess(false);
-        const { token, name } = res.data;
-        localStorage.setItem("token", token);
-        setToken(token);
-        setUser({ username: name });
-        setIsLoggedIn(true);
-        navigate("/");
-      }, 3000);
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials and try again.";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
+      const { token, name } = res.data;
+      localStorage.setItem("token", token);
+      setToken(token);
+      setUser({ username: name });
+      setIsLoggedIn(true);
+      navigate("/");
+    } catch (error) {
+      alert(error.response?.data?.error || "Invalid credentials");
     }
-  }
-
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#f8f9fa] p-4 sm:p-6 lg:p-8">
-      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm sm:max-w-md mx-auto transform transition-transform duration-300 hover:scale-[1.01]">
-        <h2 className="text-3xl font-bold text-center text-[#1f2937] mb-2">
-          Log in to your account
-        </h2>
-        <p className="text-center text-[#6b7280] mb-8">
-          Welcome back! Please enter your details.
-        </p>
+    <div className="min-h-[calc(100vh)] flex items-center justify-center bg-slate-900">
+      <div className="w-full max-w-md rounded-[40px] shadow-xl bg-slate-800 relative overflow-hidden">
+        {/* Gradient Top Border */}
+        <div className="h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-blue-500" />
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          {/* Email Input */}
-          <div>
-            <label 
-              // htmlFor="email" 
-              className="block text-sm font-medium text-[#1f2937]"
-            >
-              Email address
+        {/* Inner Card */}
+        <div className="p-8">
+          {/* Logo + Title */}
+          <div className="flex flex-col items-center mb-8 ">
+            <div className="w-16 h-16 mb-3 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+              <span className="text-white text-xl font-bold">G</span>
+            </div>
+            <h1 className="text-3xl font-light text-white mb-1">Glimpse</h1>
+            <p className="text-gray-300 text-sm font-light">
+              One-second video journals
+            </p>
+          </div>
+
+          {/* Email Field */}
+          <div className="mb-5">
+            <label className="block text-gray-200 text-sm font-medium mb-2">
+              Email
             </label>
             <input
               type="email"
-              required
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] sm:text-sm transition-colors duration-200"
+              className="w-full px-4 py-3 rounded-2xl bg-slate-700 placeholder-gray-400 text-white border-0 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all duration-200"
             />
           </div>
 
-          {/* Password Input with Toggle */}
-          <div className="relative">
-            <label 
-              htmlFor="password" 
-              className="block text-sm font-medium text-[#1f2937]"
-            >
+          {/* Password Field */}
+          <div className="mb-5">
+            <label className="block text-gray-200 text-sm font-semibold mb-2">
               Password
             </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-4 py-2 bg-white text-[#1f2937] border border-[#e5e7eb] rounded-md shadow-sm focus:ring-[#5b13ec] focus:border-[#5b13ec] pr-10 sm:text-sm transition-colors duration-200"
-            />
-            <div 
-              className="absolute inset-y-0 right-0 top-6 pr-3 flex items-center text-sm leading-5 cursor-pointer text-[#6b7280] hover:text-[#5b13ec]"
-              onClick={togglePasswordVisibility}
-            >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
+            <div className="relative">
+              <input
+                type={isShown ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 pr-12 rounded-2xl bg-slate-700 placeholder-gray-400 text-white border-0 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all duration-200 font-medium"
+              />
+              <button
+                type="button"
+                onClick={() => setIsShown(!isShown)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200"
+              >
+                {isShown ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
-          
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
-              {error}
-            </div>
-          )}
-
-          {/* Success Message */}
-          {isSuccess && (
-            <div className="p-4 text-sm text-green-700 bg-green-100 rounded-lg transition-opacity duration-500 ease-in-out">
-              Login successful!
-            </div>
-          )}
 
           {/* Login Button */}
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#5b13ec] hover:bg-[#4a10c7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5b13ec] transition-colors duration-200'
-              }`}
-            >
-              {isLoading ? "Logging in..." : "Log in"}
-            </button>
-          </div>
-        </form>
+          <button
+            className="w-full py-3 mb-6 rounded-2xl text-white font-medium transition-all duration-200 
+              bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 transform hover:scale-[1.02] active:scale-[0.98]"
+            onClick={handleLogin}
+          >
+            Login
+          </button>
 
-        {/* Link to sign up page */}
-        <div className="mt-6 text-center text-sm text-[#6b7280]">
-          <p className="mt-4">
-            Don't have an account?{" "}
-            <Link to="/signup" className="font-medium text-[#5b13ec] hover:underline">
-              Sign up
+          {/* Sign Up Link */}
+          <p className="text-center text-sm text-gray-400">
+            New to Glimpse?{" "}
+            <Link
+              to="/signup"
+              className="text-violet-400 hover:text-violet-300 font-medium transition-colors duration-200"
+            >
+              Create account
             </Link>
           </p>
         </div>
@@ -152,4 +114,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Login;

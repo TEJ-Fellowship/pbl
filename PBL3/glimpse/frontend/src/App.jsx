@@ -15,6 +15,7 @@ import Timeline from "./pages/Timeline.jsx";
 import VideoUpload from "./pages/VideoUpload.jsx";
 import Capture from "./pages/Capture.jsx";
 import Montage from "./pages/Montage.jsx";
+import Navbar from './components/Navbar.jsx'
 function App() {
   const { isLoggedIn, setIsLoggedIn } = useContext(AuthContext);
   const { isDark} = useContext(ThemeContext);
@@ -60,9 +61,7 @@ function App() {
                   <Capture />
                 </ProtectedRoute>
               }
-            />
-          </Route>
-          
+            />          
         </Routes>
       </BrowserRouter>
     </>
