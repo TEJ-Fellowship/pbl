@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { initSocket } from "../socket";
 import { FiTrash2 } from "react-icons/fi";
+import { useAlert } from "./useAlert";
+import { useConfirm } from "./useConfirm";
 
 // Custom Audio Player Component
 const AudioPlayer = ({ src, clipId }) => {
@@ -12,7 +14,7 @@ const AudioPlayer = ({ src, clipId }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const formatTime = (time) => {
-    if (isNaN(time)) return "0:00";
+    if (!time || isNaN(time) || !isFinite(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -32,7 +34,12 @@ const AudioPlayer = ({ src, clipId }) => {
   };
 
   const handleLoadedMetadata = () => {
-    setDuration(audioRef.current.duration);
+    const dur = audioRef.current.duration;
+    if (!isNaN(dur) && isFinite(dur)) {
+      setDuration(dur);
+    } else {
+      setDuration(0); // fallback
+    }
     setIsLoading(false);
   };
 
@@ -51,9 +58,8 @@ const AudioPlayer = ({ src, clipId }) => {
   const waveformBars = Array.from({ length: 20 }, (_, i) => (
     <div
       key={i}
-      className={`w-1 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-full transition-all duration-150 ${
-        isPlaying ? "animate-pulse" : ""
-      }`}
+      className={`w-1 bg-gradient-to-t from-indigo-500 to-purple-500 rounded-full transition-all duration-150 ${isPlaying ? "animate-pulse" : ""
+        }`}
       style={{
         height: `${Math.random() * 20 + 8}px`,
         animationDelay: `${i * 50}ms`,
@@ -181,10 +187,9 @@ const ReactionButton = ({ type, count, onReact, isActive }) => {
         onClick={handleClick}
         className={`
           relative flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 text-sm font-medium
-          ${
-            isActive
-              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
-              : "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white"
+          ${isActive
+            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25"
+            : "bg-slate-700/50 hover:bg-slate-600/50 text-gray-300 hover:text-white"
           }
           ${isAnimating ? "scale-110" : "hover:scale-105"}
           backdrop-blur-sm border border-white/10 hover:border-white/20
@@ -194,9 +199,8 @@ const ReactionButton = ({ type, count, onReact, isActive }) => {
           {emojis[type]}
         </span>
         <span
-          className={`transition-all duration-300 ${
-            isAnimating ? "scale-125 font-bold" : ""
-          }`}
+          className={`transition-all duration-300 ${isAnimating ? "scale-125 font-bold" : ""
+            }`}
         >
           {count || 0}
         </span>
@@ -235,6 +239,9 @@ if (token) {
 }
 
 const Feed = ({ clips, setClips }) => {
+  const { showAlert, AlertComponent } = useAlert();
+  const { confirm, ConfirmComponent } = useConfirm();
+
   useEffect(() => {
     const socket = initSocket();
 
@@ -295,23 +302,28 @@ const Feed = ({ clips, setClips }) => {
       );
     } catch (error) {
       console.error("Reaction failed:", error);
-      alert("Failed to send reaction");
+      showAlert("Failed to send reaction", "error");
     }
+
   };
 
   const handleDelete = async (clipId) => {
-    if (!window.confirm("Delete this clip?")) return;
+    const confirmed = await confirm("Are you sure you want to delete this clip?");
+    if (!confirmed) return;
+
     try {
       const tokenLocal = localStorage.getItem("token");
       await axios.delete(`http://localhost:3001/api/clips/${clipId}`, {
         headers: { Authorization: `Bearer ${tokenLocal}` },
       });
       setClips((prev) => prev.filter((clip) => clip._id !== clipId));
+      showAlert("Clip deleted successfully!", "success");
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Failed to delete clip");
+      showAlert("Failed to delete clip", "error");
     }
   };
+
 
   return (
     <div className="mt-8">
@@ -331,11 +343,10 @@ const Feed = ({ clips, setClips }) => {
             {/* Owner / Anonymous badge at top-right */}
             <div className="absolute top-4 right-4 z-10">
               <span
-                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${
-                  clip.isOwner
-                    ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
-                    : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
-                }`}
+                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${clip.isOwner
+                  ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
+                  : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
+                  }`}
               >
                 {clip.isOwner ? "👑" : "👤"}
               </span>
@@ -387,6 +398,8 @@ const Feed = ({ clips, setClips }) => {
           }
         }
       `}</style>
+      {AlertComponent};
+      {ConfirmComponent};
     </div>
   );
 };
