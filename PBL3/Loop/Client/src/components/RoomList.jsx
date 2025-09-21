@@ -1,4 +1,4 @@
-// components/RoomList.jsx
+// ============= FIXED RoomList.jsx =============
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +27,8 @@ export default function RoomList() {
         ]);
         setRooms(roomsRes.data || []);
         setCurrentUser(userRes.data || null);
+        console.log("Current user:", userRes.data);
+        console.log("Rooms:", roomsRes.data);
       } catch (err) {
         console.error("Failed to fetch rooms or user", err);
       }
@@ -127,7 +129,25 @@ export default function RoomList() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {filteredRooms.map((room) => {
-            const isCreator = currentUser && room.creator && (room.creator._id || room.creator) === (currentUser._id || currentUser.id || currentUser._id);
+            // Fixed creator comparison - check all possible ID formats
+            const isCreator = currentUser && room.creator && (
+              // Direct string comparison
+              room.creator === currentUser._id ||
+              room.creator === currentUser.id ||
+              // Object comparison
+              (typeof room.creator === 'object' && room.creator._id === currentUser._id) ||
+              (typeof room.creator === 'object' && room.creator._id === currentUser.id) ||
+              // String versions
+              String(room.creator) === String(currentUser._id) ||
+              String(room.creator) === String(currentUser.id)
+            );
+
+            console.log(`Room ${room.name}:`, {
+              roomCreator: room.creator,
+              currentUserId: currentUser?._id,
+              isCreator
+            });
+
             return (
               <div
                 key={room._id}
@@ -139,9 +159,14 @@ export default function RoomList() {
                     {room.players?.length || 0} player
                     {(room.players?.length || 0) !== 1 ? "s" : ""}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Code: <span className="font-mono">{room.code}</span>
-                  </p>
+                  
+                  {/* Show room code ONLY to creator */}
+                  {isCreator && (
+                    <p className="text-xs text-green-400 mt-1 font-mono">
+                      Room Code: {room.code}
+                    </p>
+                  )}
+                  
                   <p className="text-sm mt-1">
                     Status:{" "}
                     <span
@@ -150,9 +175,13 @@ export default function RoomList() {
                       {room.isActive ? "Active" : "Deactivated"}
                     </span>
                   </p>
+                  
+                  {isCreator && (
+                    <p className="text-xs text-blue-400 mt-1">👑 Your Room</p>
+                  )}
                 </div>
 
-                <div className="mt-3 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+                <div className="mt-3 flex flex-col gap-2">
                   <button
                     onClick={() => handleJoinClick(room)}
                     className={`py-2 px-4 rounded-lg text-center ${
@@ -165,33 +194,31 @@ export default function RoomList() {
                     Join
                   </button>
 
-                  {/* Only show toggle to creator */}
-                  {isCreator ? (
-                    <button
-                      onClick={() => toggleRoomStatus(room._id)}
-                      className={`py-2 px-4 rounded-lg text-center ${
-                        room.isActive
-                          ? "bg-red-600 hover:bg-red-500"
-                          : "bg-green-600 hover:bg-green-500"
-                      }`}
-                    >
-                      {room.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                  ) : (
-                    <div className="py-2 px-4 rounded-lg text-center bg-gray-800 text-sm text-gray-400">
-                      Only creator can toggle
+                  {/* Show controls ONLY to creator */}
+                  {isCreator && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => toggleRoomStatus(room._id)}
+                        className={`flex-1 py-2 px-4 rounded-lg text-center text-sm ${
+                          room.isActive
+                            ? "bg-red-600 hover:bg-red-500"
+                            : "bg-green-600 hover:bg-green-500"
+                        }`}
+                      >
+                        {room.isActive ? "Deactivate" : "Activate"}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(room.code);
+                          alert("Room code copied to clipboard!");
+                        }}
+                        className="flex-1 py-2 px-4 rounded-lg text-center text-sm bg-blue-600 hover:bg-blue-500"
+                      >
+                        Copy Code
+                      </button>
                     </div>
                   )}
-
-                  <button
-                    onClick={() => {
-                      navigator.clipboard?.writeText(room.code);
-                      alert("Copied room code to clipboard");
-                    }}
-                    className="text-xs text-gray-400 underline py-2 px-4 text-center"
-                  >
-                    Copy Code
-                  </button>
                 </div>
               </div>
             );

@@ -1,83 +1,156 @@
+// ============= FIXED roomController.js =============
 import Room from "../models/Room.js";
 import crypto from "crypto";
 
 // Helper: generate random 6-char alphanumeric code
-const generateRoomCode = () => crypto.randomBytes(3).toString("hex");
+const generateRoomCode = () => {
+  return crypto.randomBytes(3).toString("hex").toUpperCase();
+};
 
-// -------------------- Create Room --------------------
+// Create Room
 export const createRoom = async (req, res) => {
-  const { name } = req.body;
+  const { name, description } = req.body;
+  
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: "Room name is required" });
+  }
+
   try {
-    if (await Room.findOne({ name })) {
-      return res.status(400).json({ message: "Room name already exists" });
+    // Check if room name already exists for this user
+    const existingRoom = await Room.findOne({ 
+      name: name.trim(), 
+      creator: req.user._id 
+    });
+    
+    if (existingRoom) {
+      return res.status(400).json({ message: "You already have a room with this name" });
     }
 
-    const code = generateRoomCode();
+    let code;
+    let attempts = 0;
+    // Generate unique code
+    do {
+      code = generateRoomCode();
+      attempts++;
+    } while (await Room.findOne({ code }) && attempts < 10);
+
+    if (attempts >= 10) {
+      return res.status(500).json({ message: "Failed to generate unique room code" });
+    }
 
     const room = await Room.create({
-      name,
+      name: name.trim(),
       code,
-      creator: req.user._id,          // store creator
+      creator: req.user._id,
       players: [req.user._id],
       isActive: true,
+      description: description?.trim() || ""
     });
 
-    res.status(201).json(await room.populate("creator", "username email"));
+    const populatedRoom = await Room.findById(room._id)
+      .populate("creator", "username email")
+      .populate("players", "username email");
+
+    res.status(201).json(populatedRoom);
   } catch (error) {
+    console.error("Create room error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// -------------------- Get All Rooms --------------------
+// Get All Rooms
 export const getRooms = async (req, res) => {
   try {
-    // Populate players and creator
     const rooms = await Room.find()
       .populate("players", "username email")
-      .populate("creator", "username email");
+      .populate("creator", "username email")
+      .sort({ createdAt: -1 });
+    
     res.json(rooms);
   } catch (error) {
+    console.error("Get rooms error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// -------------------- Join Room by Code --------------------
+// Join Room by Code
 export const joinRoomByCode = async (req, res) => {
   const { code } = req.body;
+  
+  if (!code || !code.trim()) {
+    return res.status(400).json({ message: "Room code is required" });
+  }
+
   try {
-    const room = await Room.findOne({ code }).populate("creator", "username email");
+    const room = await Room.findOne({ code: code.trim().toUpperCase() })
+      .populate("creator", "username email")
+      .populate("players", "username email");
 
-    if (!room) return res.status(404).json({ message: "Room not found" });
-    if (!room.isActive) return res.status(403).json({ message: "Room is not active" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+    
+    if (!room.isActive) {
+      return res.status(403).json({ message: "Room is not active" });
+    }
 
-    if (!room.players.some(p => p.toString() === req.user._id.toString())) {
+    // Check if room is full
+    if (room.players.length >= room.maxPlayers) {
+      return res.status(403).json({ message: "Room is full" });
+    }
+
+    // Add user to room if not already in it
+    const userId = req.user._id.toString();
+    const isAlreadyInRoom = room.players.some(p => 
+      (p._id || p).toString() === userId
+    );
+
+    if (!isAlreadyInRoom) {
       room.players.push(req.user._id);
       await room.save();
     }
 
-    res.json(room);
+    // Return updated room
+    const updatedRoom = await Room.findById(room._id)
+      .populate("creator", "username email")
+      .populate("players", "username email");
+
+    res.json(updatedRoom);
   } catch (error) {
+    console.error("Join room error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// -------------------- Toggle Room Status --------------------
+// Toggle Room Status
 export const toggleRoomStatus = async (req, res) => {
   const { roomId } = req.params;
+  
+  if (!roomId) {
+    return res.status(400).json({ message: "Room ID is required" });
+  }
+
   try {
     const room = await Room.findById(roomId);
-    if (!room) return res.status(404).json({ message: "Room not found" });
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
 
     // Only creator can toggle
-    if (room.creator && room.creator.toString() !== req.user._id.toString()) {
+    if (room.creator.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Only the room creator can change status" });
     }
 
-    room.isActive = !room.isActive; // toggle status
+    room.isActive = !room.isActive;
     await room.save();
 
-    res.json(await room.populate("creator", "username email"));
+    const updatedRoom = await Room.findById(room._id)
+      .populate("creator", "username email")
+      .populate("players", "username email");
+
+    res.json(updatedRoom);
   } catch (error) {
+    console.error("Toggle room status error:", error);
     res.status(500).json({ message: error.message });
   }
 };
