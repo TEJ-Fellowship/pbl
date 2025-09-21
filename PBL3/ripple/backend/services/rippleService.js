@@ -1,7 +1,9 @@
 import Ripple from "../models/Ripple.js";
 import { v4 as uuidv4 } from "uuid";
 
-const createRipple = async (userId, visibility = ["friends", "global"]) => {
+// , visibility = ["friends", "global"]
+
+const createRipple = async (userId, visibility) => {
   const messages = [
     "Hello this is sad",
     "Hello, this is bad",
@@ -15,7 +17,7 @@ const createRipple = async (userId, visibility = ["friends", "global"]) => {
     rippleId: uuidv4(),
     userId,
     message,
-    visibility: ["friends", "global"],
+    visibility,
   });
 
   await ripple.save();

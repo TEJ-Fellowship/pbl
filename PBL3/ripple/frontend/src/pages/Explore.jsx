@@ -113,7 +113,6 @@ useEffect(() => {
       }
       
     };
-    
     fetchUsers();
   }, [searchTerm]);
 

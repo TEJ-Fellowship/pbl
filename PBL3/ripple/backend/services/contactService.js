@@ -1,14 +1,14 @@
 import Contact from "../models/Contact.js";
 import User from "../models/User.js";
 
-const getFriends = async (userId) => {
+const listContacts = async (userId) => {
   const contacts = await Contact.find({
     $or: [{ owner: userId }, { contact: userId }],
   }).populate("owner contact", "username _id");
 
   const friends = contacts.map((c) => {
     if (c.owner._id.toString() === userId.toString()) {
-      return c.contact; // friend is the contact
+      return c.contact;
     } else {
       return c.owner; // friend is the owner
     }
@@ -27,7 +27,7 @@ const addContact = async (ownerId, contactId) => {
   return contact;
 };
 
-const listContacts = async (ownerId) => {
+const getFriends = async (ownerId) => {
   return Contact.find({ owner: ownerId }).populate("contact", "username email");
 };
 
