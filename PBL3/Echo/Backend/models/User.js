@@ -4,9 +4,7 @@ const config = require("../utils/config");
 
 // connecting the mongodb database
 mongoose
-  .connect(
-    `mongodb+srv://echowebapp_db_user:${config.passwordofDB}@cluster0.ylwwstr.mongodb.net/Echowebapp?retryWrites=true&w=majority&appName=Cluster0`
-  )
+  .connect(config.mongodbUrl)
   .then(() => console.log("MongoDB successfully connnected!"))
   .catch((err) => console.log("Error:", err));
 
