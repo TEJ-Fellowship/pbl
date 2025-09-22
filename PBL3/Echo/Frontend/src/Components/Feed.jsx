@@ -308,6 +308,8 @@ const Feed = ({ clips, setClips }) => {
       showAlert("Failed to send reaction", "error");
     }
   };
+  const handleDelete = async (clipId) => {
+    if (!window.confirm("Delete this clip?")) return;
 
   const handleDelete = async (clipId) => {
     const confirmed = await confirm(
@@ -318,10 +320,9 @@ const Feed = ({ clips, setClips }) => {
     try {
       const tokenLocal = localStorage.getItem("token");
       await axios.delete(`http://localhost:3001/api/clips/${clipId}`, {
-        headers: { Authorization: `Bearer ${tokenLocal}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setClips((prev) => prev.filter((clip) => clip._id !== clipId));
-      showAlert("Clip deleted successfully!", "success");
     } catch (error) {
       console.error("Delete failed:", error);
       showAlert("Failed to delete clip", "error");
@@ -337,54 +338,44 @@ const Feed = ({ clips, setClips }) => {
         {clips.map((clip, index) => (
           <div
             key={clip._id}
-            className="group p-6 border border-white/10 rounded-2xl shadow-xl bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm relative hover:scale-[1.02] transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10"
-            style={{
-              animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
-            }}
+            className="p-4 border rounded-lg shadow-sm bg-white relative"
           >
-            {/* Owner badge and delete button */}
-            {/* Owner / Anonymous badge at top-right */}
-            <div className="absolute top-4 right-4 z-10">
-              <span
-                className={`px-3 py-1 text-lg rounded-full backdrop-blur-sm ${
-                  clip.isOwner
-                    ? "bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-300 border border-yellow-500/20"
-                    : "bg-gradient-to-r from-slate-600/30 to-slate-700/30 text-gray-300 border border-gray-500/20"
-                }`}
-              >
-                {clip.isOwner ? "👑" : "👤"}
-              </span>
-            </div>
-
-            {/* Audio Player */}
-            <div className="mb-6">
-              <AudioPlayer src={clip.url} clipId={clip._id} />
-            </div>
-
-            {/* Reactions + Trash */}
-            <div className="flex justify-between items-center mt-4">
-              {/* Reactions */}
-              <div className="flex flex-wrap gap-3">
-                {["like", "love", "haha", "wow", "sad", "angry"].map((r) => (
-                  <ReactionButton
-                    key={r}
-                    type={r}
-                    count={clip.reactions?.[r] ?? 0}
-                    onReact={() => handleReactions(clip._id, r)}
-                    isActive={false}
-                  />
-                ))}
-              </div>
-
-              {/* Trash button only if owner (hidden until hover) */}
-              {clip.isOwner && (
+            <audio controls src={clip.url} className="w-full"></audio>
+            {clip.isOwner && (
+              <div className="absolute top-2 right-2 flex gap-2 items-center">
+                <span className="px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
+                  Your Clip
+                </span>
                 <button
+                  className="px-2 py-1 text-xs bg-red-500 text-white rounded"
                   onClick={() => handleDelete(clip._id)}
-                  className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-600/20 transition-all duration-300 hover:scale-110"
                 >
-                  <FiTrash2 size={18} />
+                  🗑️ Delete
                 </button>
-              )}
+              </div>
+            )}
+            <div className="flex gap-2 mt-2">
+              <button
+                className="px-3 py-1 bg-pink-500 text-white rounded-r-lg"
+                onClick={() => handleReactions(clip._id, "heart")}
+              >
+                ❤️ {clip.reactions.heart}
+              </button>
+              <button
+                className="px-3 py-1 bg-yellow-500 text-white rounded-r-lg"
+                onClick={() => handleReactions(clip._id, "laugh")}
+              >
+                😂 {clip.reactions.laugh}
+              </button>
+              <button
+                className="px-3 py-1 bg-blue-500 text-white rhappyounded-r-lg"
+                onClick={() => handleReactions(clip._id, "sad")}
+              >
+                😢 {clip.reactions.sad}
+              </button>
+              <button className="px-3 py-1 bg-gray-500 text-white rounded-r-lg">
+                🚩
+              </button>
             </div>
           </div>
         ))}

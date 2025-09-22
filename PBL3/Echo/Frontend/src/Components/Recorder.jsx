@@ -2,7 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { FiMic, FiStopCircle, FiUpload, FiRefreshCw } from "react-icons/fi";
 import uploadClip from "../api/clipApi";
 
-const Recorder = ({ onSave, roomId }) => {
+const Recorder = ({
+  setClips,
+  showUpload,
+  caption,
+  setCaption,
+  setUpload,
+  onSave,
+  roomId,
+}) => {
   const [recording, setRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
