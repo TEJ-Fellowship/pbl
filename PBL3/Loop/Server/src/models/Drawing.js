@@ -1,10 +1,9 @@
-// Fixed models/Drawing.js with shape support
+// Fixed models/Drawing.js with string roomId support
 import mongoose from "mongoose";
 
 const drawingSchema = new mongoose.Schema({
   roomId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Room",
+    type: String, // Changed from ObjectId to string so room names like "defaultRoom" work
     required: true
   },
   tool: {
@@ -20,10 +19,12 @@ const drawingSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  points: [{
-    x: { type: Number, required: true },
-    y: { type: Number, required: true }
-  }],
+  points: [
+    {
+      x: { type: Number, required: true },
+      y: { type: Number, required: true }
+    }
+  ],
   // Shape-specific properties
   startX: { type: Number },
   startY: { type: Number },

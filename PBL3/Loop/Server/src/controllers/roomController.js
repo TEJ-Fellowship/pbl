@@ -166,3 +166,26 @@ export const toggleRoomStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Leave Room
+export const leaveRoom = async (req, res) => {
+  const { roomId } = req.params;
+
+  if (!roomId) return res.status(400).json({ message: "Room ID is required" });
+
+  try {
+    const room = await Room.findById(roomId);
+    if (!room) return res.status(404).json({ message: "Room not found" });
+
+    // Remove user from players array
+    const userId = req.user._id.toString();
+    room.players = room.players.filter(p => (p._id || p).toString() !== userId);
+
+    await room.save();
+
+    res.json({ message: "You have left the room", room });
+  } catch (error) {
+    console.error("Leave room error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
