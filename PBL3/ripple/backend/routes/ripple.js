@@ -8,5 +8,6 @@ router.use(authenticateToken);
 router.get("/friends", rippleController.getFriendsRipple);
 router.get("/global", rippleController.getGlobalRipples);
 router.post("/create", rippleController.createRipple);
+router.post("/respond", rippleController.respondToRipple); //new path added
 
 export default router;

@@ -11,6 +11,7 @@ const getFriendsRipple = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 const getGlobalRipples = async (req, res) => {
   try {
     const ripples = await rippleService.getGlobalRipples();
@@ -19,6 +20,7 @@ const getGlobalRipples = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 const createRipple = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -31,4 +33,18 @@ const createRipple = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-export default { getFriendsRipple, getGlobalRipples, createRipple };
+
+// New endpoint for ripple back
+const respondToRipple = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { rippleId, type } = req.body; // type: "friends" or "global"
+    
+    const result = await rippleService.respondToRipple(rippleId, userId, type);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export default { getFriendsRipple, getGlobalRipples, createRipple, respondToRipple };

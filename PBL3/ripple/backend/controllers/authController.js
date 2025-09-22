@@ -1,5 +1,6 @@
 import AuthService from "../services/authService.js";
 import { COOKIE_OPTIONS, REFRESH_COOKIE_OPTIONS } from "../utils/cookies.js";
+import User from "../models/User.js"; // User model
 
 class AuthController {
   static async signup(req, res) {
@@ -91,6 +92,34 @@ class AuthController {
 
   static async me(req, res) {
     res.json({ user: req.user });
+  }
+
+  // New endpoint for user profile stats
+  static async getProfileStats(req, res) {
+    try {
+      // Fetch full user data with stats
+      const user = await User.findById(req.user._id).select('-passwordHash');
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Return user with all stats
+      res.json({ 
+        user: {
+          _id: user._id,
+          username: user.username,
+          email: user.email,
+          streak: user.streak,
+          rippleStats: user.rippleStats,
+          badges: user.badges,
+          createdAt: user.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Profile stats error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 }
 

@@ -4,8 +4,8 @@ import React from 'react';
 const PersonCard = ({ person, isConnected, handleAddConnection, handleRemoveConnection }) => (
   <div className="bg-gray-800 bg-opacity-10 border border-gray-700 rounded-lg p-8 flex flex-col">
     <div className="flex items-center mb-4">
-      <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white font-semibold mr-3">
-        {person.initials}
+      <div className="w-12 h-12 rounded-full bg-green-500/50 flex items-center justify-center text-white font-semibold mr-3">
+        {person.username[0].toUpperCase()}
       </div>
       <div className="flex-1">
         <div className="flex items-center">
