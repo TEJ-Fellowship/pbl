@@ -19,7 +19,7 @@ const uploadVoiceNote = async (audioBlob, title, tags, duration) => {
   formData.append("tags", JSON.stringify(tags));
   formData.append("duration", duration.toString());
 
-  const token = getToken();
+  // const token = getToken();
 
   const res = await fetch(`${API_BASE}/api/voice-notes`, {
     method: "POST",
@@ -102,5 +102,20 @@ const deleteVoiceNote = async (noteId) => {
   }
   return res.json();
 };
+const transcribeVoiceNote = async (noteId) => {
+  const res = await fetch(`${API_BASE}/api/voice-notes/${noteId}/transcribe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders(),
+    },
+  });
 
-export {uploadVoiceNote, getUserVoiceNotes, getVoiceNoteById, updateVoiceNote, deleteVoiceNote}
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || "Failed to transcribe voice note");
+  }
+  return res.json();
+};
+
+export {uploadVoiceNote, getUserVoiceNotes, getVoiceNoteById, updateVoiceNote, deleteVoiceNote, transcribeVoiceNote}

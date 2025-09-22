@@ -2,13 +2,15 @@ import { useState, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { getUserVoiceNotes, deleteVoiceNote } from "../api/voiceNotes";
 import { Tag, Mic, CalendarDays, Timer, Trash2 } from "lucide-react";
+import NoteDetail from "../components/NoteDetail";
 
 const MyNote = () => {
   const [voiceNotes, setVoiceNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTag, setFilterTag] = useState("");
-  
+  const [selectedNote, setSelectedNote] = useState(null);
+
   const allTags = useMemo(
     () => [...new Set(voiceNotes.flatMap((note) => note.tags))],
     [voiceNotes]
@@ -36,7 +38,6 @@ const MyNote = () => {
       setVoiceNotes(notes);
     } catch (error) {
       console.error("Failed to fetch voice notes:", error);
-      toast.error("Could not fetch voice notes");
     } finally {
       setLoading(false);
     }
@@ -137,7 +138,8 @@ const MyNote = () => {
           {filteredNotes.map((note) => (
             <div
               key={note._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+              onClick={() => setSelectedNote(note)}
             >
               <div className="p-6">
                 <div className="flex justify-between">
@@ -145,7 +147,11 @@ const MyNote = () => {
                     {note.title}
                   </h3>
                   <button
-                    onClick={() => handleDelete(note._id)}
+                    // onClick={() => handleDelete(note._id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(note._id);
+                    }}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />
@@ -182,7 +188,12 @@ const MyNote = () => {
 
                 {/* Simple Audio Player */}
                 <div className="my-0">
-                  <audio src={note.fileUrl} controls style={{ width: "100%" }}>
+                  <audio
+                    src={note.fileUrl}
+                    controls
+                    style={{ width: "100%" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     Your browser does not support the audio element.
                   </audio>
                 </div>
@@ -190,6 +201,16 @@ const MyNote = () => {
             </div>
           ))}
         </div>
+      )}
+      {selectedNote && (
+        <NoteDetail
+          note={selectedNote}
+          onClose={() => setSelectedNote(null)}
+          onDelete={(noteId) => {
+            handleDelete(noteId);
+            setSelectedNote(null);
+          }}
+        />
       )}
     </div>
   );

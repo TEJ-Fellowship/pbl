@@ -12,13 +12,20 @@ const voiceNoteSchema = new mongoose.Schema({
   fileUrl: { type: String, required: true },
   blobName: { type: String, required: true },
   fileType: { type: String },
-  fileSize: { type: Number }, 
+  fileSize: { type: Number },
   duration: { type: Number },
 
   visibility: {
     type: String,
     enum: ["private", "public"],
     default: "private",
+  },
+
+  transcript: { type: String, default: "" },
+  transcriptionStatus: {
+    type: String,
+    enum: ["pending", "processing", "completed", "failed"],
+    default: "pending",
   },
 
   createdAt: { type: Date, default: Date.now },

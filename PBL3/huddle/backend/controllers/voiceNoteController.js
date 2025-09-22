@@ -1,5 +1,6 @@
 import { VoiceNote } from "../models/VoiceNote.js";
 import { uploadToAzure, deleteFromAzure } from "../utils/azureStorage.js";
+import { transcribeAudio } from "../utils/assemblyAI.js";
 
 const parseTags = (tags) => {
   try {
@@ -151,10 +152,85 @@ const deleteVoiceNote = async (req, res) => {
   }
 };
 
+const transcribeVoiceNote = async (req, res) => {
+  try {
+    const noteId = req.params.id;
+    const userId = req.user.id;
+
+    const voiceNote = await VoiceNote.findById(noteId);
+    validateAccess(voiceNote, userId);
+    if (!voiceNote) {
+      return res.status(404).json({ message: "Voice note not found" });
+    }
+
+    // Already processed or not
+    if (voiceNote.transcriptionStatus === "completed" && voiceNote.transcript) {
+      return res.status(200).json({
+        message: "Voice note already transcribed",
+        transcript: voiceNote.transcript,
+        status: voiceNote.transcriptionStatus,
+      });
+    }
+
+    // Processing 
+    if (voiceNote.transcriptionStatus === "processing") {
+      return res.status(202).json({
+        message: "Transcription is already in progress",
+        status: voiceNote.transcriptionStatus,
+      });
+    }
+
+    // check api Key
+    if (!process.env.ASSEMBLYAI_API_KEY) {
+      console.error("AssemblyAI API key is not configured");
+      return res.status(500).json({
+        message: "AssemblyAI API key is not configured",
+        error: "Missing apikey env variable",
+      });
+    }
+
+    // Update status to processing
+    voiceNote.transcriptionStatus = "processing";
+    voiceNote.updatedAt = Date.now();
+    await voiceNote.save();
+
+    try {
+      const transcriptionResult = await transcribeAudio(voiceNote.fileUrl);
+
+      // Update voice note with transcript
+      voiceNote.transcript = transcriptionResult.text;
+      voiceNote.transcriptionStatus = "completed";
+      voiceNote.updatedAt = Date.now();
+      await voiceNote.save();
+
+      res.status(200).json({
+        message: "Voice note transcribed successfully",
+        transcript: transcriptionResult.text,
+        status: "completed",
+      });
+    } catch (transcriptionError) {
+      voiceNote.transcriptionStatus = "failed";
+      voiceNote.updatedAt = Date.now();
+      await voiceNote.save();
+      res.status(500).json({
+        message: "Failed to transcribe voice note",
+        error: transcriptionError.message,
+        status: "failed",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to transcribe voice note",
+      error: error.message,
+    });
+  }
+};
+
 export {
   createVoiceNote,
   getUserVoiceNotes,
   getVoiceNoteById,
   updateVoiceNote,
   deleteVoiceNote,
+  transcribeVoiceNote,
 };
