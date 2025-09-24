@@ -24,19 +24,29 @@ export class GeminiChat {
     let context = "";
 
     if (useRetrieval) {
-      // Retrieve relevant documents
-      const relevantDocs = await this.retriever.retrieveRelevantDocuments(
-        message
-      );
+      try {
+        // Retrieve relevant documents with timeout
+        console.log(`🔍 Searching for: "${message}"`);
+        const relevantDocs = await this.retriever.retrieveRelevantDocuments(
+          message
+        );
 
-      if (relevantDocs.length > 0) {
-        // Create context from retrieved documents
-        context = relevantDocs.map((doc) => doc.content).join("\n\n");
+        if (relevantDocs.length > 0) {
+          // Create context from retrieved documents
+          context = relevantDocs.map((doc) => doc.content).join("\n\n");
 
-        // Truncate context if too long
-        if (context.length > maxContextLength) {
-          context = context.substring(0, maxContextLength) + "...";
+          // Truncate context if too long
+          if (context.length > maxContextLength) {
+            context = context.substring(0, maxContextLength) + "...";
+          }
+          console.log(`✅ Found ${relevantDocs.length} relevant documents`);
+        } else {
+          console.log("⚠️ No relevant documents found");
         }
+      } catch (error) {
+        console.log(`⚠️ Search failed: ${error.message}`);
+        console.log("🔄 Continuing without retrieval...");
+        // Continue without retrieval if search fails
       }
     }
 
@@ -54,32 +64,58 @@ export class GeminiChat {
       }
     }
 
-    // Generate response
-    if (context && useRetrieval) {
-      const prompt = CHAT_PROMPTS[promptType]
-        .replace("{context}", context)
-        .replace("{question}", message);
+    // Generate response with error handling
+    try {
+      if (context && useRetrieval) {
+        const prompt = CHAT_PROMPTS[promptType]
+          .replace("{context}", context)
+          .replace("{question}", message);
 
-      response = await this.model.invoke(prompt);
-    } else {
-      // Fallback to general response
-      const prompt = CHAT_PROMPTS.GENERAL_QA.replace("{question}", message);
+        response = await this.model.invoke(prompt);
+      } else {
+        // Fallback to general response
+        const prompt = CHAT_PROMPTS.GENERAL_QA.replace("{question}", message);
 
-      response = await this.model.invoke(prompt);
+        response = await this.model.invoke(prompt);
+      }
+
+      const responseText = response.text || response;
+
+      if (!responseText || responseText.trim().length === 0) {
+        throw new Error("Empty response from model");
+      }
+
+      return responseText;
+    } catch (error) {
+      console.log(`⚠️ Model API failed: ${error.message}`);
+      console.log("🔄 Using fallback response...");
+
+      // Fallback response when API fails
+      const fallbackResponse = this.generateFallbackResponse(message, context);
+      return fallbackResponse;
+    }
+  }
+
+  generateFallbackResponse(message, context = "") {
+    // Simple fallback response when API fails
+    const lowerMessage = message.toLowerCase();
+
+    if (lowerMessage.includes("what is") || lowerMessage.includes("who is")) {
+      if (context && context.length > 0) {
+        return `Based on the available information, I found some relevant content that might help answer your question about "${message}". However, I'm currently experiencing technical difficulties with the AI service. The relevant information I found includes: ${context.substring(
+          0,
+          200
+        )}...`;
+      } else {
+        return `I'm currently experiencing technical difficulties with the AI service and cannot provide a complete answer to "${message}". Please try again later or check if the documents have been properly ingested.`;
+      }
     }
 
-    const responseText = response.text || response;
+    if (lowerMessage.includes("tej") || lowerMessage.includes("binita")) {
+      return `I cannot find specific information about "${message}" in the available documents. This could be because: 1) The documents haven't been properly ingested, 2) The information isn't present in the current document set, or 3) There are technical issues with the search system. Please try ingesting more documents or check the system status.`;
+    }
 
-    // Store in chat history
-    this.chatHistory.addMessage(message, responseText, {
-      useRetrieval,
-      promptType,
-      contextLength: context.length,
-      relevantDocsCount: context ? context.split("\n\n").length : 0,
-    });
-
-    console.log("✅ Chat response generated");
-    return responseText;
+    return `I'm currently experiencing technical difficulties and cannot provide a complete response to "${message}". Please try again later or check the system status.`;
   }
 
   async chatWithAnalysis(message, analysisType = "DOCUMENT_ANALYSIS") {

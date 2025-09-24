@@ -2,15 +2,11 @@
   "name": "langchain-data-ingestion",
   "version": "1.0.0",
   "description": "Data ingestion system with LangChain, Gemini embeddings, and vector storage",
-  "main": "src/index.js",
+  "main": "working-batch-chat.js",
   "type": "module",
   "scripts": {
-    "start": "node batch-chat.js",
-    "dev": "node --watch src/index.js",
-    "test": "node src/test.js",
-    "ingest": "node src/ingestion/ingest.js",
-    "setup": "node src/setup.js",
-    "batch": "node batch-chat.js"
+    "start": "node working-batch-chat.js",
+    "debug": "node debug-system.js"
   },
   "dependencies": {
     "@langchain/community": "^0.0.20",

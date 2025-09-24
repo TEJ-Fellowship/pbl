@@ -1,4 +1,4 @@
-import { VectorStoreManager } from "../storage/vectorStore.js";
+import { WorkingVectorStoreManager } from "../storage/workingVectorStore.js";
 
 export class DocumentRetriever {
   constructor(vectorStoreManager) {

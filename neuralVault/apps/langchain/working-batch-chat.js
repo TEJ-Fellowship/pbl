@@ -1,4 +1,4 @@
-import { BatchIngestion } from "./src/ingestion/batchIngestion.js";
+import { WorkingBatchIngestion } from "./src/ingestion/workingBatchIngestion.js";
 import { GeminiChat } from "./src/chat/geminiChat.js";
 import { config } from "./src/config/index.js";
 import { logger } from "./src/utils/logger.js";
@@ -6,14 +6,21 @@ import chalk from "chalk";
 import path from "path";
 import fs from "fs";
 
-class BatchChatApp {
+class WorkingBatchChatApp {
   constructor() {
-    this.batchIngestion = new BatchIngestion();
+    this.batchIngestion = new WorkingBatchIngestion({
+      searchTimeout: 10000, // 10 seconds
+      maxRetries: 2,
+      retryDelay: 1000,
+      batchSize: 2,
+      enableParallelProcessing: false,
+      cacheDir: "./cache",
+    });
     this.chat = null;
   }
 
   async initialize() {
-    logger.info("🚀 Initializing Batch Chat App...");
+    logger.info("🚀 Initializing Working Batch Chat App...");
 
     // Validate configuration first
     if (!config.validate()) {
@@ -38,6 +45,27 @@ class BatchChatApp {
         // Initialize chat with the vector store
         this.chat = new GeminiChat(this.batchIngestion.vectorStore);
         logger.success("✅ Chat initialized with ingested documents");
+
+        // Show vector store statistics
+        if (result.stats) {
+          console.log(chalk.cyan("📊 Vector Store Statistics:"));
+          console.log(
+            chalk.white(`   Initialized: ${result.stats.isInitialized}`)
+          );
+          console.log(
+            chalk.white(`   Document Count: ${result.stats.documentCount}`)
+          );
+          console.log(
+            chalk.white(`   Search Timeout: ${result.stats.searchTimeout}ms`)
+          );
+          console.log(
+            chalk.white(`   Max Retries: ${result.stats.maxRetries}`)
+          );
+          console.log(
+            chalk.white(`   Retry Delay: ${result.stats.retryDelay}ms`)
+          );
+        }
+
         return result;
       } else {
         logger.error("❌ Directory ingestion failed");
@@ -57,6 +85,27 @@ class BatchChatApp {
         // Initialize chat with the vector store
         this.chat = new GeminiChat(this.batchIngestion.vectorStore);
         logger.success("✅ Chat initialized with ingested documents");
+
+        // Show vector store statistics
+        if (result.stats) {
+          console.log(chalk.cyan("📊 Vector Store Statistics:"));
+          console.log(
+            chalk.white(`   Initialized: ${result.stats.isInitialized}`)
+          );
+          console.log(
+            chalk.white(`   Document Count: ${result.stats.documentCount}`)
+          );
+          console.log(
+            chalk.white(`   Search Timeout: ${result.stats.searchTimeout}ms`)
+          );
+          console.log(
+            chalk.white(`   Max Retries: ${result.stats.maxRetries}`)
+          );
+          console.log(
+            chalk.white(`   Retry Delay: ${result.stats.retryDelay}ms`)
+          );
+        }
+
         return result;
       } else {
         logger.error("❌ File ingestion failed");
@@ -69,7 +118,7 @@ class BatchChatApp {
   }
 
   async startInteractiveChat() {
-    logger.info("💬 Starting interactive session...");
+    logger.info("💬 Starting working interactive session...");
 
     const readline = await import("readline");
     const rl = readline.createInterface({
@@ -131,6 +180,35 @@ class BatchChatApp {
             });
           }
 
+          if (ingestionStats.vectorStoreStats) {
+            console.log(chalk.cyan("\n📊 Vector Store Statistics:"));
+            console.log(
+              chalk.white(
+                `Initialized: ${ingestionStats.vectorStoreStats.isInitialized}`
+              )
+            );
+            console.log(
+              chalk.white(
+                `Document Count: ${ingestionStats.vectorStoreStats.documentCount}`
+              )
+            );
+            console.log(
+              chalk.white(
+                `Search Timeout: ${ingestionStats.vectorStoreStats.searchTimeout}ms`
+              )
+            );
+            console.log(
+              chalk.white(
+                `Max Retries: ${ingestionStats.vectorStoreStats.maxRetries}`
+              )
+            );
+            console.log(
+              chalk.white(
+                `Retry Delay: ${ingestionStats.vectorStoreStats.retryDelay}ms`
+              )
+            );
+          }
+
           if (this.chat) {
             const stats = this.chat.getChatStats();
             console.log(chalk.cyan("\n📊 Chat Statistics:"));
@@ -164,6 +242,24 @@ class BatchChatApp {
           return;
         }
 
+        if (input.toLowerCase() === "test-search") {
+          await this.testSearchFunctionality();
+          askQuestion();
+          return;
+        }
+
+        if (input.toLowerCase() === "debug") {
+          await this.debugSystem();
+          askQuestion();
+          return;
+        }
+
+        if (input.toLowerCase() === "show-docs") {
+          await this.showDocuments();
+          askQuestion();
+          return;
+        }
+
         // Handle regular chat messages
         if (!this.chat) {
           console.log(
@@ -176,8 +272,16 @@ class BatchChatApp {
         }
 
         try {
+          console.log(chalk.blue("🤔 Thinking..."));
+          const startTime = Date.now();
+
           const response = await this.chat.chat(input);
-          console.log(chalk.blue("AI: "), response, "\n");
+
+          const endTime = Date.now();
+          const responseTime = endTime - startTime;
+
+          console.log(chalk.blue("AI: "), response);
+          console.log(chalk.gray(`(Response time: ${responseTime}ms)\n`));
         } catch (error) {
           logger.error("Chat error:", error);
           console.log(
@@ -190,6 +294,93 @@ class BatchChatApp {
     };
 
     askQuestion();
+  }
+
+  async testSearchFunctionality() {
+    console.log(chalk.cyan("\n🔍 Testing Search Functionality..."));
+
+    const testQueries = [
+      "What is LangChain?",
+      "machine learning",
+      "supervised learning",
+    ];
+
+    for (const query of testQueries) {
+      console.log(chalk.yellow(`\nTesting: "${query}"`));
+
+      try {
+        const startTime = Date.now();
+        const results = await this.batchIngestion.search(query, 2);
+        const endTime = Date.now();
+
+        console.log(chalk.white(`   Time: ${endTime - startTime}ms`));
+        console.log(chalk.white(`   Results: ${results.length}`));
+
+        if (results.length > 0) {
+          console.log(chalk.green("   ✅ Search successful!"));
+          results.forEach((result, index) => {
+            console.log(
+              chalk.gray(
+                `   ${index + 1}. ${result.pageContent.substring(0, 100)}...`
+              )
+            );
+          });
+        } else {
+          console.log(chalk.yellow("   ⚠️ No results found"));
+        }
+      } catch (error) {
+        console.log(chalk.red(`   ❌ Search failed: ${error.message}`));
+      }
+    }
+  }
+
+  async showDocuments() {
+    console.log(chalk.cyan("\n📄 Available Documents:"));
+
+    const allDocs = this.batchIngestion.vectorStore.getAllDocuments();
+    console.log(chalk.white(`Total Documents: ${allDocs.length}`));
+
+    allDocs.forEach((doc, index) => {
+      console.log(chalk.yellow(`\n${index + 1}. Document:`));
+      console.log(
+        chalk.white(`   Content: ${doc.pageContent.substring(0, 200)}...`)
+      );
+      if (doc.metadata) {
+        console.log(chalk.gray(`   Metadata: ${JSON.stringify(doc.metadata)}`));
+      }
+    });
+  }
+
+  async debugSystem() {
+    console.log(chalk.cyan("\n🔧 System Debug Information..."));
+
+    const stats = this.batchIngestion.getStats();
+    console.log(chalk.white(`Processed Files: ${stats.processedFiles}`));
+    console.log(chalk.white(`Failed Files: ${stats.failedFiles}`));
+    console.log(chalk.white(`Total Chunks: ${stats.totalChunks}`));
+
+    if (stats.vectorStoreStats) {
+      console.log(
+        chalk.white(
+          `Vector Store Initialized: ${stats.vectorStoreStats.isInitialized}`
+        )
+      );
+      console.log(
+        chalk.white(`Document Count: ${stats.vectorStoreStats.documentCount}`)
+      );
+      console.log(
+        chalk.white(`Search Timeout: ${stats.vectorStoreStats.searchTimeout}ms`)
+      );
+      console.log(
+        chalk.white(`Max Retries: ${stats.vectorStoreStats.maxRetries}`)
+      );
+    }
+
+    if (this.chat) {
+      console.log(chalk.green("✅ Chat is initialized"));
+    } else {
+      console.log(chalk.yellow("⚠️ Chat is not initialized"));
+    }
   }
 
   async handleIngestCommand(rl) {
@@ -257,11 +448,11 @@ class BatchChatApp {
 }
 
 // Main execution
-const app = new BatchChatApp();
+const app = new WorkingBatchChatApp();
 
 const main = async () => {
   try {
-    console.log(chalk.blue("🚀 Starting Batch Chat App..."));
+    console.log(chalk.blue("🚀 Starting Working Batch Chat App..."));
     const initialized = await app.initialize();
 
     if (initialized) {
@@ -269,6 +460,9 @@ const main = async () => {
       console.log(chalk.white("- 'ingest' to ingest documents"));
       console.log(chalk.white("- 'stats' to see statistics"));
       console.log(chalk.white("- 'history' to see chat history"));
+      console.log(chalk.white("- 'test-search' to test search functionality"));
+      console.log(chalk.white("- 'show-docs' to show all documents"));
+      console.log(chalk.white("- 'debug' to see debug information"));
       console.log(chalk.white("- 'quit' to exit"));
       console.log(
         chalk.yellow(
@@ -299,10 +493,10 @@ const main = async () => {
 const isMainModule =
   import.meta.url === `file://${process.argv[1]}` ||
   import.meta.url.endsWith(process.argv[1]) ||
-  import.meta.url.includes("batch-chat.js");
+  import.meta.url.includes("working-batch-chat.js");
 
 if (isMainModule) {
   main();
 }
 
-export default BatchChatApp;
+export default WorkingBatchChatApp;
