@@ -1,0 +1,296 @@
+
+
+TEJ Fellowship - Teaching Fellow Guide & Student Profiles
+1. Role Context
+Position: Teaching Fellow (Associate Instructor) at T.E.J. Center
+Mission: Act as expert advisor and mentor supporting full-stack coding bootcamp students (TEJ
+Fellows) both technically and personally.
+2. Teaching Fellow Responsibilities
+- Support full-time coding bootcamp students (TEJ Fellows) both technically and personally
+- Assist with daily lessons, labs, and technical workshops
+- Facilitate group learning and code reviews with detailed, actionable feedback
+- Guide students through debugging and writing clean, production-quality code
+- Participate in retrospectives and curriculum improvement efforts
+3. Core Values to Uphold
+- Equity: Support inclusive, accessible, barrier-free learning for all students
+- Excellence: Maintain high standards in mentorship, code quality, and pedagogy
+- Empathy: Foster patient, student-centered guidance and emotional support
+- Integrity: Model honesty, professionalism, and accountability
+4. Overall Cohort Identity
+Slogan: "Rising from every district, climbing together."
+Total Fellows: 13 students
+Identity Reflects:
+- Diversity of backgrounds (technical, geographic, academic)
+- Grit and perseverance as they climb the full-stack learning journey
+- Shared growth through a supportive and inclusive learning environment
+5. Assigned Learning Group: Hungry Coders
+Hungry Coders
+Slogan: "Fuelled by curiosity. Coded by hunger."
+Alternative Taglines:
+- "Always learning. Always building."
+- "Eat. Sleep. Code. Repeat."
+Group Size: 6 students from the 13 cohort
+6. Student Profiles - Hungry Coders
+6.1 Hari Shankar Limbu (Ashok Limbu)
+Personal Information:
+Age: 23 | Gender: Male | Community: Janjati
+From: Chainpur, Sankhuwasabha
+
+Contact: limashok3.70@gmail.com | 9816374005
+Current Residence: Deurali, Dharan-5, Sunsari
+Education:
+Degree: Bachelor's in Electronics Engineering
+College: IOE, Purwanchal Campus
+Graduation: May 1, 2025
+Background:
+Parents' Education: Mother (8th class or below), Father (No formal schooling)
+Schooling: Private school (Partial scholarship)
+Financial Situation: Overcame significant challenges including mother's double arm surgery
+Career Goals:
+Primary Goal: Run his own digital agency
+Expected Salary: NPR 35,000 to 70,000
+Dream Companies (National): F1Soft International, Leapfrog Technology, Fuse Machines Nepal
+Dream Companies (International): Microsoft, Google, Meta, Adobe Inc
+Technical Skills:
+HTML: Beginner (basic layout, images, links)
+CSS: Beginner (basic styling)
+JavaScript: Beginner (simple logic: even-odd, uppercase, calculator)
+Programming Fundamentals: Good understanding
+Projects:
+- Simple calculator performing math operations
+- Digital clock showing live 12-hour format
+- NEA Bill Calculator (electricity bill scenarios)
+- Personal website: harishankarlimbu.com.np
+- GitHub: https://github.com/ashoklimbu10
+Interests & Personality:
+Hobbies: Fishing, football, cricket, chess, video editing, content creation
+Fun Fact: Pro Max Masu lover
+Strengths: Excellent time management, consistency, hardworking, loyal
+Areas to Improve: English spelling, tendency to work alone, irregular sleep schedule
+Unique Background:
+- Earned income through social media and video editing
+- Experience with online marketing and affiliate marketing
+
+- Strong entrepreneurial mindset
+6.2 Binita Hamal
+Personal Information:
+Age: 22 | Gender: Female | Community: Janjati, Person with Disability
+From: Tansen-5, Palpa
+Contact: binita.hamal7@gmail.com | 9865306114
+Current Residence: Family-owned house
+Education:
+Degree: Bachelor's in Computer Engineering
+College: Pashchimanchal Campus, IOE
+Graduation: April 5, 2025
+Background:
+Parents' Education: Mother (8th class or below), Father (10th class or below)
+Schooling: Private school (Partial scholarship)
+Career Goals:
+Primary Goal: Full-stack developer, build assistive technology for differently abled persons
+Expected Salary: NPR 40,000–60,000/month
+Interest Areas: Frontend development & Machine Learning
+Dream Companies (National): JankariTech, Leapfrog Technology, Yomari
+Dream Companies (International): Microsoft, Apple, IBM, Google, PayPal
+Technical Skills:
+HTML: Intermediate
+CSS: Intermediate
+JavaScript: Intermediate
+Python: Intermediate
+ReactJS: Intermediate
+Git/GitHub: Beginner
+Figma: Intermediate
+Also familiar with: Node.js, Express.js, Django, SQL, NoSQL, Next.js, Vue.js, Angular
+Projects:
+- Password Generator: https://github.com/binita-hamal/PasswordGenerator
+- KalaKunja: https://github.com/AnuAleMagar/KalaKunja
+- MaizeMedic: https://github.com/anupCod/MaizeMedic
+- Various frontend projects (Calculator, BMI Calculator)
+
+Interests & Personality:
+Hobbies: Trekking, reading books, football, exploring tech
+Special Connection: Deep love for animals; emotionally connected to them more than humans
+Strengths: Hardworking, persistent, team-oriented, passionate about learning
+Areas to Improve: Self-confidence, technical problem-solving, communication skills
+Unique Background:
+- Overcame repeated internship rejections by focusing on skill improvement
+- Passionate about building inclusive technology
+- Strong interest in accessibility and assistive technology
+6.3 Anjana Budhathoki
+Personal Information:
+Age: 22 | Gender: Female | Community: Janjati
+From: Galkot-1, Baglung
+Contact: shreeshanjana768@gmail.com | 9860437174
+Current Residence: Deep-16, Pokhara (Rental house)
+Education:
+Degree: Bachelor's in Mechanical Engineering
+University: Tribhuvan University
+College: Pashchimanchal Campus
+Background:
+Parents' Education: Father (10th class or below), Mother (12th class)
+Schooling: Private school (parents paid full tuition)
+Career Goals:
+Primary Goal: Skilled programmer, passionate about building personal projects
+Expected Salary: NPR 40,000 per month
+Dream Companies (National): Leapfrog Technology, F1Soft International, Info Developers
+Dream Companies (International): Microsoft, Google, Intel, Adobe
+Technical Skills:
+HTML: Intermediate
+CSS: Intermediate
+QBASIC: Intermediate
+C Programming: Beginner
+Projects:
+- Uniquely styled and colorful webpage using HTML and CSS
+
+- QBASIC school project for student percentage calculation with remarks
+Interests & Personality:
+Hobbies: Reading novels and web comics, drawing, painting, writing journals, traveling, knitting,
+swimming
+Strengths: Dedication, discipline, honesty, curiosity
+Areas to Improve: Time management, knowledge acquisition, skills improvement
+Unique Background:
+- Overcame family and financial difficulties during school
+- Strong creative interests combined with technical aspirations
+- Interest in peaceful, green environments
+6.4 Swikar Ramdam
+Personal Information:
+Age: 22 | Gender: Male | Community: Dalit
+From: Dharan, Nepal
+Contact: swikarramdam@gmail.com | 9708076536
+Current Residence: Dharan (Slum area near river)
+Education:
+Degree: Bachelor's in Electronics, Communication, and Information Engineering
+College: Purwanchal Campus, IOE, Dharan
+Graduation: July 6, 2025
+Background:
+Parents' Education: No formal schooling (10th class or below)
+Schooling: Public school
+Health Challenge: Chronic bone infection (osteomyelitis) from class 6 to 12
+Work Experience:
+School: Deurali Children Academy, Dharan-5
+Position: Senior Science Teacher
+Duration: May 15, 2023 – April 2, 2025
+Subjects: Science (Classes 9 & 10), English (Classes 6 to 8)
+Achievements: Introduced digital teaching methods, developed lesson plans
+Career Goals:
+Primary Goal: Full-stack developer working remotely for multinational company
+Expected Salary: NPR 30,000 – 60,000/month
+Dream Companies (National): F1Soft, Fusemachines, Leapfrog, Cotiviti, Deerwalk
+
+Dream Companies (International): Microsoft, Google, Apple, Meta, Amazon
+Technical Skills:
+HTML: Intermediate
+CSS: Intermediate
+JavaScript: Beginner
+Python: Beginner
+React.js: Beginner
+Git: Beginner
+UI/UX Design: Intermediate
+WordPress: Beginner
+Portfolio:
+GitHub: https://github.com/SwikarRamdam
+Website: https://swikarramdam.com.np
+Interests & Personality:
+Personality: Introvert-ambivert-extrovert depending on setting
+Hobbies: AI prompts, creative tech, futsal, peaceful environments
+Fitness: Regular jogging and workout routines
+Strengths: Resilient, responsible, empathetic, disciplined
+Areas to Improve: Public speaking, decision-making confidence, patience
+Unique Background:
+- Former full-time teacher who left to pursue software development
+- Overcame chronic illness and financial struggles
+- Strong background in education and UI/UX design
+6.5 Lokesh Chaudhary
+Personal Information:
+Age: 22 | Gender: Male | Community: Tharu
+From: Saptari
+Contact: lokeshchaudharyfrozenheartz@gmail.com
+Current Residence: Pokhara (rented house)
+Education:
+Degree: Bachelor's in Geomatics Engineering (Final Year Completed)
+College: IOE, Pashchimanchal Campus
+Expected Graduation: January 1, 2026
+Background:
+
+Parents' Education: Father (Illiterate), Mother (Bachelor's or below)
+Schooling: Private school (Partial scholarship)
+Financial Situation: Family income Rs 5,001–10,000/month
+Career Goals:
+Primary Goal: Geospatial data scientist solving real-world problems
+Expected Salary: NPR 50,000–60,000/month (freshers), NPR 80,000–100,000/month (1 year exp)
+Dream Companies (National): F1Soft, Blacktech, Insoft, Websoft, XDezo
+Dream Companies (International): Microsoft, Google, Amazon, Meta, Apple
+Technical Skills:
+HTML: Intermediate
+CSS: Intermediate
+JavaScript: Beginner
+Python: Intermediate
+C/C++: Intermediate
+WebGIS: Beginner
+CAD: Beginner
+Tools: Bootstrap, Node.js, Leaflet, Express.js
+Interests & Personality:
+Hobbies: Playing PC games, watching anime, swimming, trekking
+Fun Fact: Turns curiosity into side projects
+Interests: GIS, remote sensing, AI tools, spatial analytics
+Strengths: Problem-solving mindset, team player, competitive nature
+Areas to Improve: Laziness, stage fear, communication skills (introversion)
+Unique Background:
+- Strong technical foundation in geomatics and spatial analysis
+- IT enthusiast wanting to explore software development
+- Interest in combining GIS background with full-stack development
+7. TEJ Fellowship Policies
+All Fellows have agreed to follow these policies:
+Academic & Professional Standards
+- Time Commitment: Full-time commitment to TEJ Fellowship from start to finish
+- Attendance: Maintain at least 95% attendance; be punctual and prepared
+- Participation: Actively participate in all workshops, assignments, activities, and assessments
+- Academic Integrity: Submit only your own work; avoid cheating or plagiarism
+
+Career Development
+- Course Timeline: TEJ Fellowship may modify course completion timelines as needed
+- Job Applications: Focus fully on learning until Senior Phase; avoid job applications before then
+Community & Conduct
+- Respectful Environment: Contribute to safe, respectful, and inclusive learning space
+- Professional Conduct: Behave respectfully at TEJ Fellowship and community events
+- Campus Care: Respect campus property; clean up after yourself
+- Legal Compliance: Do not engage in illegal activities using TEJ Fellowship resources
+Support & Responsibility
+- Personal Responsibility: Understand personal liability for violations
+- Seeking Support: Ask for help when needed—technical or personal
+- Health Maintenance: Strive to maintain good physical and mental health
+8. Teaching Philosophy & Approach
+Mentorship Guidelines
+- Empathetic & Encouraging: Maintain supportive, professional tone
+- Personalized: Use student names and relevant background details
+- Actionable: Provide specific, step-by-step suggestions
+- Holistic: Support both technical growth and soft skills development
+Core Teaching Principles
+- Grounded in Real-World Experience: Bootcamp-style teaching methodology
+- Full-Stack JavaScript Focus: Aligned with clean code principles and Agile practices
+- Equity-Centered: Ensure inclusive, accessible learning for all students
+- Growth-Oriented: Foster continuous improvement and resilience
+Areas of Focus
+- Technical Skills: Coding, debugging, code reviews
+- Soft Skills: Communication, empathy, student motivation
+- Project-Based Learning: Hands-on, practical application
+- Career Preparation: Industry-relevant skills and professional development
+9. Key Strategies for Hungry Coders Success
+Individual Development Plans
+- Hari Shankar (Ashok): Focus on digital agency preparation, entrepreneurship skills
+- Binita: Build confidence in technical discussions, accessibility-focused projects
+- Anjana: Strengthen time management, combine creative interests with coding
+- Swikar: Leverage teaching background, develop remote work skills
+
+- Lokesh: Integrate GIS expertise with software development, overcome introversion
+Group Dynamics
+- Diverse Backgrounds: Leverage varied engineering disciplines
+- Peer Learning: Facilitate knowledge sharing and collaboration
+- Inclusive Environment: Address different confidence levels and communication styles
+- Project Collaboration: Create opportunities for cross-skill learning
+Assessment & Feedback
+- Regular Check-ins: Personal touchpoints with each student
+- Code Reviews: Detailed, actionable feedback on technical work
+- Retrospectives: Weekly group reflection and improvement planning
+- Progress Tracking: Monitor both technical and soft skill development
+This document serves as a comprehensive guide for supporting the Hungry Coders learning group
+within the broader cohort at TEJ Fellowship.

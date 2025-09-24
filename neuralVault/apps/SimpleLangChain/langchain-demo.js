@@ -77,11 +77,11 @@ class SimpleLangChainDemo {
     console.log("=".repeat(50));
 
     // Check if we have a data directory with PDFs
-    const dataDir = "./data";
+    const dataDir = "./test/data";
     if (!fs.existsSync(dataDir)) {
       console.log("📁 Creating sample data directory...");
       fs.mkdirSync(dataDir, { recursive: true });
-      console.log("⚠️  Please add some PDF files to the ./data directory");
+      console.log("⚠️  Please add some PDF files to the ./test/data directory");
       console.log("   You can download sample PDFs or add your own documents");
       return [];
     }
@@ -89,7 +89,7 @@ class SimpleLangChainDemo {
     const documents = await PDFLoader.loadFromDirectory(dataDir);
 
     if (documents.length === 0) {
-      console.log("⚠️  No PDF files found in ./data directory");
+      console.log("⚠️  No PDF files found in ./test/data directory");
       console.log("   Please add some PDF files to continue the demo");
       return [];
     }
