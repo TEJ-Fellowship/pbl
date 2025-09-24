@@ -1,4 +1,4 @@
-# Simple LangChain Demo
+# LangChain Demo
 
 A simplified demonstration of essential LangChain concepts using PDF files, Gemini embeddings, and vector stores.
 
@@ -31,11 +31,10 @@ GEMINI_API_KEY=your_api_key_here
 
 ### 3. Add PDF Files
 
-Create a `data` folder and add some PDF files:
+Add PDF files to the `test/data` directory:
 
 ```bash
-mkdir data
-# Add your PDF files to the data folder
+# Add your PDF files to the test/data folder
 ```
 
 ### 4. Run the Demo
@@ -48,13 +47,16 @@ npm start
 
 ```
 SimpleLangChain/
+├── main.js                  # Main application
 ├── pdf-loader.js            # PDF document loading
 ├── text-splitter.js         # Text chunking
 ├── vector-store.js          # Embeddings and vector storage
 ├── chat.js                  # RAG chat interface
-├── langchain-demo.js        # Main application
+├── setup.js                 # Setup helper
+├── test/data/               # PDF files directory
 ├── package.json
-└── README.md
+├── README.md
+└── WORKFLOW.md             # Detailed workflow documentation
 ```
 
 ## 🔧 Key Components
@@ -83,17 +85,13 @@ SimpleLangChain/
 - Combines document search with AI responses
 - Demonstrates the complete RAG pipeline
 
-## 🎮 Interactive Commands
+## 🎮 Interactive Chat
 
-When running the demo, you can use these commands:
+When running the demo, you can:
 
 - **Ask questions** - Get answers based on your documents
-- `demo` - Show step-by-step RAG demonstration
-- `compare` - Compare RAG vs simple chat responses
-- `search <query>` - Perform semantic search
-- `stats` - Show system statistics
-- `help` - Show available commands
-- `quit` - Exit the application
+- **Type 'quit'** - Exit the application
+- **Ask about any topic** - The system will find relevant information from your PDFs
 
 ## 🧠 Understanding the Concepts
 
@@ -135,12 +133,12 @@ Query → Search → Context → LLM → Answer
 
 ## 🔍 How It Works
 
-1. **Load PDFs** - The system reads PDF files and extracts text
-2. **Chunk Text** - Large documents are split into smaller, manageable pieces
+1. **Load PDFs** - The system reads PDF files from `test/data/` and extracts text
+2. **Chunk Text** - Large documents are split into smaller, manageable pieces (1000 chars each)
 3. **Create Embeddings** - Each chunk is converted to a numerical vector using Gemini
-4. **Store Vectors** - Embeddings are stored in a vector database
-5. **Search** - When you ask a question, the system finds similar chunks
-6. **Generate Answer** - The relevant chunks are sent to Gemini to generate an answer
+4. **Store Vectors** - Embeddings are stored in memory for fast searching
+5. **Search** - When you ask a question, the system finds similar chunks using semantic similarity
+6. **Generate Answer** - The relevant chunks are sent to Gemini to generate an intelligent answer
 
 ## 🎯 Learning Objectives
 
@@ -156,10 +154,10 @@ After running this demo, you'll understand:
 
 You can modify the demo by:
 
-- Changing chunk size in `SimpleTextSplitter`
-- Adjusting the number of search results
-- Modifying the prompt template in `SimpleChat`
-- Adding different document types
+- Changing chunk size in `TextSplitter` (default: 1000 chars)
+- Adjusting the number of search results (default: 3)
+- Modifying the prompt template in `Chat`
+- Adding different document types to `test/data/`
 
 ## 📚 Next Steps
 
@@ -170,6 +168,12 @@ This demo provides a foundation for understanding LangChain. You can extend it b
 - Using different vector stores (Pinecone, Weaviate, etc.)
 - Adding conversation memory
 - Implementing more sophisticated retrieval strategies
+
+## 📖 Documentation
+
+- **README.md** - This file (overview and quick start)
+- **WORKFLOW.md** - Detailed technical documentation
+- **Code files** - Well-commented source code
 
 ## 🤝 Contributing
 
