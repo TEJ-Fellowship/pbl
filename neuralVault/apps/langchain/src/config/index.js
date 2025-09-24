@@ -25,14 +25,15 @@ class Config {
     const langchainConfig = {
       chunkSize: parseInt(process.env.CHUNK_SIZE || "500"),
       chunkOverlap: parseInt(process.env.CHUNK_OVERLAP || "50"),
-      embeddingModel: process.env.EMBEDDING_MODEL || "models/embedding-001",
+      embeddingModel:
+        process.env.EMBEDDING_MODEL || "models/text-embedding-004",
     };
 
     const appConfig = {
       debug: process.env.DEBUG === "true",
       logLevel: process.env.LOG_LEVEL || "info",
       defaultDocumentPath:
-        process.env.DEFAULT_DOCUMENT_PATH || "./docs/sample_langchain_doc.pdf",
+        process.env.DEFAULT_DOCUMENT_PATH || "./data/sample_langchain_doc.pdf",
     };
 
     return {
