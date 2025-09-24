@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node main.js",
-    "demo": "node main.js",
-    "setup": "node setup.js"
+    "demo": "node main.js"
   },
   "dependencies": {
     "@langchain/community": "^0.0.20",
@@ -28,6 +27,6 @@
     "demo",
     "tutorial"
   ],
-  "author": "SimpleLangChain Demo",
+  "author": "Sankar Bir Tamang",
   "license": "MIT"
 }
