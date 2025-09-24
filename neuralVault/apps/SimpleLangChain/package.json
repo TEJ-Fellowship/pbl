@@ -2,11 +2,11 @@
   "name": "simple-langchain-demo",
   "version": "1.0.0",
   "description": "A simplified LangChain demonstration focusing on PDF processing, Gemini embeddings, and RAG",
-  "main": "langchain-demo.js",
+  "main": "main.js",
   "type": "module",
   "scripts": {
-    "start": "node langchain-demo.js",
-    "demo": "node langchain-demo.js",
+    "start": "node main.js",
+    "demo": "node main.js",
     "setup": "node setup.js"
   },
   "dependencies": {
