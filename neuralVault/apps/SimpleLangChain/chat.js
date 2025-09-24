@@ -23,25 +23,25 @@ export class Chat {
   }
 
   async ask(question, maxResults = 3) {
-    //Retrieve relevant chunks from vector store
+    //1.RETRIEVAL: Retrieve relevant chunks from vector store
     const relevantDocs = await this.vectorStore.search(question, maxResults);
 
     if (relevantDocs.length === 0) {
       return "No relevant information found.";
     }
 
-    //Format retrieved chunks as context
+    //2.AUGMENTATION: Format retrieved chunks as context
     const context = relevantDocs
       .map((doc, index) => `[${index + 1}] ${doc.pageContent}`)
       .join("\n\n");
 
-    //Combine context with user question to create a prompt
+    //3.AUGMENTATION: Combine context with user question to create a prompt
     const prompt = await this.promptTemplate.format({
       context: context,
       question: question,
     });
 
-    //Send prompt to Gemini and return response
+    //4.GENERATION: Send prompt to Gemini and return response
     const response = await this.llm.invoke(prompt);
     return response.content;
   }

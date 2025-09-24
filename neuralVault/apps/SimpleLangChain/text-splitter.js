@@ -8,6 +8,7 @@ export class TextSplitter {
     });
   }
 
+  //Split documents into chunks
   async splitDocuments(documents) {
     const allChunks = [];
     for (const document of documents) {
