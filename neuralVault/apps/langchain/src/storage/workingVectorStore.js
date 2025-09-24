@@ -7,9 +7,9 @@ export class WorkingVectorStoreManager {
   constructor(options = {}) {
     this.vectorStore = null;
     this.embeddings = createEmbeddings();
-    this.searchTimeout = options.searchTimeout || 5000; // Reduced to 5 seconds
-    this.maxRetries = options.maxRetries || 1; // Reduced retries
-    this.retryDelay = options.retryDelay || 500; // Reduced delay
+    this.searchTimeout = options.searchTimeout || 10000; // Increased to 10 seconds
+    this.maxRetries = options.maxRetries || 2; // Increased retries
+    this.retryDelay = options.retryDelay || 1000; // Increased delay
     this.documents = []; // Store documents locally for fallback
     this.cacheDir = options.cacheDir || "./cache";
 
@@ -35,12 +35,19 @@ export class WorkingVectorStoreManager {
         console.log(
           "✅ Embeddings API is working, initializing vector store..."
         );
-        this.vectorStore = await MemoryVectorStore.fromDocuments(
-          documents,
-          this.embeddings
-        );
-        console.log("✅ Working vector store initialized");
-        return this.vectorStore;
+        try {
+          this.vectorStore = await MemoryVectorStore.fromDocuments(
+            documents,
+            this.embeddings
+          );
+          console.log("✅ Working vector store initialized successfully!");
+          return this.vectorStore;
+        } catch (vectorError) {
+          console.log("⚠️ Vector store creation failed:", vectorError.message);
+          console.log("🔄 Falling back to text-based search mode");
+          this.vectorStore = null;
+          return null;
+        }
       } else {
         console.log("⚠️ Embeddings API not working, using fallback-only mode");
         this.vectorStore = null; // Force fallback search
@@ -56,12 +63,15 @@ export class WorkingVectorStoreManager {
 
   async testEmbeddingsAPI() {
     try {
+      console.log("🔍 Testing embeddings API with 15-second timeout...");
       const testPromise = this.embeddings.embedQuery("test");
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("EMBEDDINGS_TIMEOUT")), 5000)
+      const timeoutPromise = new Promise(
+        (_, reject) =>
+          setTimeout(() => reject(new Error("EMBEDDINGS_TIMEOUT")), 15000) // Increased to 15 seconds
       );
 
-      await Promise.race([testPromise, timeoutPromise]);
+      const result = await Promise.race([testPromise, timeoutPromise]);
+      console.log("✅ Embeddings API test successful!");
       return true;
     } catch (error) {
       console.log("⚠️ Embeddings API test failed:", error.message);

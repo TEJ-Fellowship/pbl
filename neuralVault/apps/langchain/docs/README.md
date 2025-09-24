@@ -28,7 +28,8 @@ neuralVault/apps/langchain/
 │   ├── storage/          # Vector store operations
 │   ├── chat/            # AI chat interface
 │   └── utils/           # Logging and file utilities
-├── docs/                # Documentation and sample files
+├── docs/                # Documentation files
+├── data/                # Sample files and test data
 ├── batch-chat.js        # Main interactive application
 ├── test-batch.js        # Batch processing tests
 └── package.json         # Dependencies and scripts
@@ -106,7 +107,7 @@ You: ingest
 2. Ingest specific files
 3. Cancel
 Choose option (1-3): 1
-Enter directory path: ./docs
+Enter directory path: ./data
 ```
 
 ### Supported File Types

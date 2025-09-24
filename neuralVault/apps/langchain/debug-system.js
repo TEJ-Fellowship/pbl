@@ -20,7 +20,7 @@ const debugSystem = async () => {
     // Test 1: Document ingestion
     console.log(chalk.yellow("\n1️⃣ Testing document ingestion..."));
     const ingestion = new WorkingBatchIngestion();
-    const testFiles = ["./docs/sample.txt"];
+    const testFiles = ["./data/sample.txt"];
 
     const result = await ingestion.ingestFiles(testFiles);
 
