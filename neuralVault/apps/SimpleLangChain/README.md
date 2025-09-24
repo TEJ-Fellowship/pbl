@@ -165,7 +165,7 @@ This demo provides a foundation for understanding LangChain. You can extend it b
 
 - Adding more document types (Word, Excel, etc.)
 - Implementing different embedding models
-- Using different vector stores (Pinecone, Weaviate, etc.)
+- Using different vector stores (Chroma DB , Pinecone, Weaviate, etc.)
 - Adding conversation memory
 - Implementing more sophisticated retrieval strategies
 
