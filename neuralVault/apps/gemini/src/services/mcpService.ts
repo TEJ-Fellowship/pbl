@@ -236,7 +236,7 @@ export class MCPService {
         args.push('--bcc', bcc);
       }
       
-      const result = await this.executePythonCommand('send', args);
+      const result = await this.executePythonCommand('send-email', args);
 
       if (result.success) {
         return {

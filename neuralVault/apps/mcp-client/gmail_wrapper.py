@@ -68,15 +68,39 @@ def main():
                 print(json.dumps({"success": True, "email": email}, ensure_ascii=False))
                 
         elif command == "send-email":
-            if len(sys.argv) < 5:
+            # Parse arguments in --to, --subject, --body format
+            to_email = None
+            subject = None
+            body = None
+            cc = None
+            bcc = None
+            
+            i = 2
+            while i < len(sys.argv):
+                arg = sys.argv[i]
+                if arg == "--to" and i + 1 < len(sys.argv):
+                    to_email = sys.argv[i + 1]
+                    i += 2
+                elif arg == "--subject" and i + 1 < len(sys.argv):
+                    subject = sys.argv[i + 1]
+                    i += 2
+                elif arg == "--body" and i + 1 < len(sys.argv):
+                    body = sys.argv[i + 1]
+                    i += 2
+                elif arg == "--cc" and i + 1 < len(sys.argv):
+                    cc = sys.argv[i + 1]
+                    i += 2
+                elif arg == "--bcc" and i + 1 < len(sys.argv):
+                    bcc = sys.argv[i + 1]
+                    i += 2
+                else:
+                    i += 1
+            
+            if not to_email or not subject or not body:
                 print(json.dumps({"success": False, "error": "To, subject, and body required"}))
                 return
             
-            to_email = sys.argv[2]
-            subject = sys.argv[3]
-            body = sys.argv[4]
-            
-            success = client.send_email(to_email, subject, body)
+            success = client.send_email(to_email, subject, body, cc, bcc)
             print(json.dumps({"success": success, "message": "Email sent" if success else "Failed to send email"}))
             
         elif command == "get-labels":

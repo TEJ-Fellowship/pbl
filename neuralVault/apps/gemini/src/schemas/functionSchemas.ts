@@ -63,29 +63,29 @@ export const GMAIL_FUNCTION_SCHEMAS: FunctionSchema[] = [
   },
   {
     name: "send_email",
-    description: "Send a new email",
+    description: "Send a new email to one or more recipients. Use this when the user wants to compose and send an email.",
     parameters: {
       type: "object",
       properties: {
         to: {
           type: "string",
-          description: "Recipient email address"
+          description: "Primary recipient email address (required). Can be a single email or comma-separated list for multiple recipients."
         },
         subject: {
           type: "string",
-          description: "Email subject line"
+          description: "Email subject line (required). Should be clear and descriptive."
         },
         body: {
           type: "string",
-          description: "Email body content"
+          description: "Email body content (required). Can be plain text or HTML formatted content."
         },
         cc: {
           type: "string",
-          description: "CC recipient email address (optional)"
+          description: "CC recipient email address (optional). Can be a single email or comma-separated list for multiple CC recipients."
         },
         bcc: {
           type: "string",
-          description: "BCC recipient email address (optional)"
+          description: "BCC recipient email address (optional). Can be a single email or comma-separated list for multiple BCC recipients."
         }
       },
       required: ["to", "subject", "body"]
@@ -262,6 +262,14 @@ When users ask about emails, use the appropriate function to help them.
 For search queries, use Gmail's search syntax (e.g., "is:unread", "from:google.com").
 For email IDs, use the full ID returned from list_emails or search_emails.
 For email actions, you can work with multiple emails by collecting their IDs first.
+
+For sending emails:
+- When users want to send an email, use the send_email function
+- Extract the recipient(s), subject, and body from their request
+- If they mention CC or BCC recipients, include those as well
+- For multiple recipients in the 'to' field, separate them with commas
+- Always confirm the email details before sending
+- Be helpful in composing professional emails if the user's request is brief
 
 Always be helpful and provide clear responses about what you're doing.
 `;
