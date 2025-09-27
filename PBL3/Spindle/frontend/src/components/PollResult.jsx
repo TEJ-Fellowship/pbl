@@ -44,7 +44,7 @@ function PollResult() {
       try {
         const res = await axios.get("https://api.giphy.com/v1/gifs/search", {
           params: {
-            api_key: GIF_API_KEY,
+            api_key:GIF_API_KEY,
             q: searchTerm,
             limit: 8,
           },
