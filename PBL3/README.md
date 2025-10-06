@@ -12,6 +12,9 @@ Echo is an anonymous audio-first network. Users can:
 
 **YC bet:** Voice as the new anonymous medium.
 
+**Demo** : [Demo Video](https://drive.google.com/file/d/1alDyhvHHh857UX97KBT1uhfcYVAmq-EA/view?usp=drive_link)
+**Presentation**: [Slide](https://drive.google.com/file/d/1j79r8ICw0ejTlWCKhzH4-xtZIfH77nKw/view?usp=drive_link)
+
 ## 2. Ashok Limbu & Binita Hamal
 
 ### 🎲 Spindle — _Group Decisions, Settled Fast_
