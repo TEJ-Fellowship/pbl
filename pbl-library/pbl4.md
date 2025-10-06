@@ -4,7 +4,7 @@ _Building real AI support agents with actual company knowledge bases - JavaScrip
 
 ---
 
-## 🎮 Discord Community Support Agent – Server Management & Bot Help
+## Project 1: 🎮 Discord Community Support Agent – Server Management & Bot Help
 
 **Overview**
 
