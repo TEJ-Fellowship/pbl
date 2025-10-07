@@ -295,7 +295,7 @@ Remember: You're helping developers build payment solutions, so be practical and
 async function startChat() {
   console.log("💳 Stripe Customer Support Agent - Chat Interface");
   console.log("=".repeat(60));
-  console.log(`🤖 AI Provider: ${config.AI_PROVIDER.toUpperCase()}`);
+  console.log("🤖 AI Provider: GEMINI");
   console.log("💡 Type 'exit' to quit, 'sample' for more questions");
   console.log("=".repeat(60));
   console.log("\n🚀 Sample Questions to Get Started:");

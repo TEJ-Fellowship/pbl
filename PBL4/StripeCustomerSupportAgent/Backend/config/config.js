@@ -5,10 +5,8 @@ dotenv.config();
 
 // Simple config that just exports process.env variables
 const config = {
-  // AI Provider
-  AI_PROVIDER: process.env.AI_PROVIDER || "gemini",
+  // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 
   // Database
   MONGODB_URL: process.env.MONGODB_URL,
