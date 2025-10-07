@@ -32,10 +32,7 @@ async function initPinecone() {
       throw new Error("PINECONE_API_KEY environment variable is required");
     }
 
-    const pinecone = new Pinecone({
-      apiKey: config.PINECONE_API_KEY,
-    });
-
+    const pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
     console.log("✅ Pinecone client initialized");
     return pinecone;
   } catch (error) {
@@ -47,10 +44,8 @@ async function initPinecone() {
 // Load vector store (fallback to local JSON)
 async function loadVectorStore() {
   try {
-    // Try Pinecone first
     const pinecone = await initPinecone();
     const index = pinecone.Index(config.PINECONE_INDEX_NAME);
-
     console.log(
       `✅ Connected to Pinecone index: ${config.PINECONE_INDEX_NAME}`
     );
@@ -68,7 +63,6 @@ async function loadVectorStore() {
       );
       const data = await fs.readFile(vectorStorePath, "utf-8");
       const vectorStore = JSON.parse(data);
-
       console.log(
         `✅ Loaded local vector store with ${vectorStore.chunks.length} chunks`
       );
@@ -159,7 +153,6 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
     let topChunks = [];
 
     if (vectorStore.type === "pinecone") {
-      // Search in Pinecone
       console.log("🔍 Searching in Pinecone...");
       const searchResponse = await vectorStore.index.query({
         vector: queryEmbedding,
@@ -179,15 +172,7 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
         },
         similarity: match.score,
       }));
-
-      console.log(
-        `📊 Top similarity scores: ${topChunks
-          .slice(0, 3)
-          .map((t) => t.similarity.toFixed(3))
-          .join(", ")}`
-      );
     } else {
-      // Search in local vector store
       console.log("🔍 Searching in local vector store...");
       const similarities = vectorStore.data.chunks.map((chunk) => {
         if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
@@ -207,14 +192,14 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
           metadata: item.chunk.metadata,
           similarity: item.similarity,
         }));
-
-      console.log(
-        `📊 Top similarity scores: ${topChunks
-          .slice(0, 3)
-          .map((t) => t.similarity.toFixed(3))
-          .join(", ")}`
-      );
     }
+
+    console.log(
+      `📊 Top similarity scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
 
     console.log(
       `📚 Found ${topChunks.length} relevant chunks using semantic search`

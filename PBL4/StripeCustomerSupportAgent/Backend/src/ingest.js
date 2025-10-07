@@ -30,10 +30,7 @@ async function initPinecone() {
       throw new Error("PINECONE_API_KEY environment variable is required");
     }
 
-    const pinecone = new Pinecone({
-      apiKey: config.PINECONE_API_KEY,
-    });
-
+    const pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
     console.log("✅ Pinecone client initialized");
     return pinecone;
   } catch (error) {
@@ -120,21 +117,13 @@ async function storeChunks(chunks, embeddings, pinecone) {
   console.log("💾 Storing chunks in Pinecone...");
 
   try {
-    // Get or create index
-    const indexName = config.PINECONE_INDEX_NAME;
-    const index = pinecone.Index(indexName);
-
-    console.log(`📊 Using Pinecone index: ${indexName}`);
+    const index = pinecone.Index(config.PINECONE_INDEX_NAME);
+    console.log(`📊 Using Pinecone index: ${config.PINECONE_INDEX_NAME}`);
 
     // Prepare vectors for upsert
     const vectors = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-
-      // Generate embedding for the chunk
+    for (const chunk of chunks) {
       const embedding = await embeddings.embedQuery(chunk.pageContent);
-
       vectors.push({
         id: chunk.metadata.chunk_id,
         values: embedding,
@@ -162,9 +151,9 @@ async function storeChunks(chunks, embeddings, pinecone) {
       );
     }
 
-    console.log("✅ Chunks stored successfully in Pinecone");
-    console.log(`📊 Total chunks stored: ${vectors.length}`);
-
+    console.log(
+      `✅ Chunks stored successfully in Pinecone (${vectors.length} total)`
+    );
     return { index, vectors };
   } catch (error) {
     console.error("❌ Failed to store chunks in Pinecone:", error.message);
