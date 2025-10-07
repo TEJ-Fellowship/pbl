@@ -1,21 +1,22 @@
+//  backend/src/embedChunks.js
 const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
 
-const { model } = require("../geminiLLM");
+const { getEmbedding } = require("./geminiLLM");
 
 async function embedChunks() {
-  const chunks = JSON.parse(fs.readFileSync("./data/chunks.json", "utf-8"));
+  const chunks = JSON.parse(fs.readFileSync("./src/data/chunks.json", "utf-8"));
   const embeddings = [];
 
   for (const chunk of chunks) {
     try {
-      const response = await model.embed({ input: chunk.content });
+      const vector = await getEmbedding(chunk.content);
       embeddings.push({
         id: chunk.id,
         url: chunk.url,
         content: chunk.content,
-        vector: response.embedding, // Gemini returns numerical vector here
+        vector,
       });
 
       console.log(`✅ Embedded: ${chunk.id}`);
@@ -25,7 +26,7 @@ async function embedChunks() {
   }
 
   fs.writeFileSync(
-    "./data/embeddings.json",
+    "./src/data/embeddings.json",
     JSON.stringify(embeddings, null, 2)
   );
   console.log(`🔥 All embeddings generated! Total: ${embeddings.length}`);

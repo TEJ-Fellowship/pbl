@@ -1,3 +1,4 @@
+//  backend/src/chunkDoc.js
 import fs from "fs";
 
 // Function to split the text into chunks (each 1000–1500 characters)
@@ -25,11 +26,13 @@ function chunkText(text) {
 
 // MAIN FUNCTION
 function chunkDocs() {
-  const rawDocs = JSON.parse(fs.readFileSync("./data/rawDocs.json", "utf-8"));
+  const rawDocs = JSON.parse(
+    fs.readFileSync("./data/twilio_docs/scraped.json", "utf-8")
+  );
   const allChunks = [];
 
   rawDocs.forEach((doc) => {
-    const chunks = chunkText(doc.text);
+    const chunks = chunkText(doc.content);
     chunks.forEach((chunk, index) => {
       allChunks.push({
         id: `${doc.url}-chunk-${index}`,
