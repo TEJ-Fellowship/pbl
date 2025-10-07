@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import path from "path";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import config from "../config/config.js";
@@ -13,28 +12,15 @@ const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const COLLECTION_NAME = "stripe_docs";
 const VECTOR_STORE_PATH = "./data/vector_store";
 
-// Initialize AI provider
-const AI_PROVIDER = config.AI_PROVIDER;
-
-// Initialize embeddings based on provider
+// Initialize Gemini embeddings
 function initEmbeddings() {
-  if (AI_PROVIDER === "gemini") {
-    if (!config.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
-    }
-    return new GoogleGenerativeAIEmbeddings({
-      apiKey: config.GEMINI_API_KEY,
-      modelName: "text-embedding-004",
-    });
-  } else {
-    if (!config.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY environment variable is required");
-    }
-    return new OpenAIEmbeddings({
-      openAIApiKey: config.OPENAI_API_KEY,
-      modelName: "text-embedding-3-small",
-    });
+  if (!config.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
   }
+  return new GoogleGenerativeAIEmbeddings({
+    apiKey: config.GEMINI_API_KEY,
+    modelName: "text-embedding-004",
+  });
 }
 
 // Initialize Pinecone client
@@ -195,16 +181,12 @@ async function storeChunksLocally(chunks, embeddings) {
     metadata: {
       created_at: new Date().toISOString(),
       total_chunks: chunks.length,
-      ai_provider: AI_PROVIDER,
-      embedding_model:
-        AI_PROVIDER === "gemini"
-          ? "text-embedding-004"
-          : "text-embedding-3-small",
+      ai_provider: "gemini",
+      embedding_model: "text-embedding-004",
     },
   };
 
   // Process chunks in batches
-
   const batchSize = parseInt(config.BATCH_SIZE) || 5;
 
   for (let i = 0; i < chunks.length; i += batchSize) {
@@ -254,15 +236,11 @@ async function storeChunksLocally(chunks, embeddings) {
 
 // Main ingestion function
 async function main() {
-  console.log(
-    `🚀 Starting Stripe documentation ingestion with ${config.AI_PROVIDER.toUpperCase()}...`
-  );
+  console.log("🚀 Starting Stripe documentation ingestion with Gemini...");
 
   try {
     // Initialize embeddings
-    console.log(
-      `🤖 Initializing ${config.AI_PROVIDER.toUpperCase()} embeddings...`
-    );
+    console.log("🤖 Initializing Gemini embeddings...");
     const embeddings = initEmbeddings();
 
     // Load documents
