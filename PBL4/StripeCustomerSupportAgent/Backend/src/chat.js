@@ -3,50 +3,83 @@ import fs from "fs/promises";
 import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import dotenv from "dotenv";
-
-// Load environment variables
-dotenv.config();
-
-// Configuration
-const VECTOR_STORE_PATH = "./data/vector_store.json";
-const MAX_CHUNKS = 10;
+import { Pinecone } from "@pinecone-database/pinecone";
+import config from "../config/config.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!config.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
-  return new GoogleGenerativeAI(apiKey);
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY);
 }
 
 // Initialize Gemini embeddings
 function initGeminiEmbeddings() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!config.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
   return new GoogleGenerativeAIEmbeddings({
-    apiKey,
+    apiKey: config.GEMINI_API_KEY,
     modelName: "text-embedding-004",
   });
 }
 
-// Load vector store
+// Initialize Pinecone client
+async function initPinecone() {
+  try {
+    if (!config.PINECONE_API_KEY) {
+      throw new Error("PINECONE_API_KEY environment variable is required");
+    }
+
+    const pinecone = new Pinecone({
+      apiKey: config.PINECONE_API_KEY,
+    });
+
+    console.log("✅ Pinecone client initialized");
+    return pinecone;
+  } catch (error) {
+    console.error("❌ Pinecone initialization failed:", error.message);
+    throw error;
+  }
+}
+
+// Load vector store (fallback to local JSON)
 async function loadVectorStore() {
   try {
-    const vectorStorePath = path.join(process.cwd(), VECTOR_STORE_PATH);
-    const data = await fs.readFile(vectorStorePath, "utf-8");
-    const vectorStore = JSON.parse(data);
+    // Try Pinecone first
+    const pinecone = await initPinecone();
+    const index = pinecone.Index(config.PINECONE_INDEX_NAME);
 
     console.log(
-      `✅ Loaded vector store with ${vectorStore.chunks.length} chunks`
+      `✅ Connected to Pinecone index: ${config.PINECONE_INDEX_NAME}`
     );
-    return vectorStore;
+    return { type: "pinecone", index };
   } catch (error) {
-    console.error("❌ Failed to load vector store:", error.message);
-    throw error;
+    console.log("⚠️ Pinecone unavailable, using local vector store...");
+    console.log(`   Reason: ${error.message}`);
+
+    // Fallback to local JSON
+    try {
+      const vectorStorePath = path.join(
+        process.cwd(),
+        "data",
+        "vector_store.json"
+      );
+      const data = await fs.readFile(vectorStorePath, "utf-8");
+      const vectorStore = JSON.parse(data);
+
+      console.log(
+        `✅ Loaded local vector store with ${vectorStore.chunks.length} chunks`
+      );
+      return { type: "local", data: vectorStore };
+    } catch (localError) {
+      console.error(
+        "❌ Failed to load local vector store:",
+        localError.message
+      );
+      throw localError;
+    }
   }
 }
 
@@ -63,7 +96,20 @@ function searchChunks(query, vectorStore) {
   const queryLower = query.toLowerCase();
   const keywords = queryLower.split(/\s+/);
 
-  const scoredChunks = vectorStore.chunks.map((chunk) => {
+  // Handle both Pinecone and local vector stores
+  const chunks =
+    vectorStore.type === "pinecone"
+      ? [] // Pinecone doesn't support keyword search, return empty
+      : vectorStore.data.chunks;
+
+  if (chunks.length === 0) {
+    console.log(
+      "⚠️ Keyword search not available for Pinecone, returning empty results"
+    );
+    return [];
+  }
+
+  const scoredChunks = chunks.map((chunk) => {
     const contentLower = chunk.content.toLowerCase();
     let score = 0;
 
@@ -79,7 +125,7 @@ function searchChunks(query, vectorStore) {
   return scoredChunks
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_CHUNKS)
+    .slice(0, parseInt(config.MAX_CHUNKS) || 10)
     .map((item) => ({
       content: item.chunk.content,
       metadata: item.chunk.metadata,
@@ -110,34 +156,65 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
       `📊 Query embedding generated with ${queryEmbedding.length} dimensions`
     );
 
-    // Calculate similarities with existing chunks
-    const similarities = vectorStore.chunks.map((chunk) => {
-      if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
-        return { chunk, similarity: 0 };
-      }
-      return {
-        chunk,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      };
-    });
+    let topChunks = [];
 
-    // Sort by similarity and get top chunks
-    const topChunks = similarities
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, MAX_CHUNKS)
-      .map((item) => ({
-        content: item.chunk.content,
-        metadata: item.chunk.metadata,
-        similarity: item.similarity,
+    if (vectorStore.type === "pinecone") {
+      // Search in Pinecone
+      console.log("🔍 Searching in Pinecone...");
+      const searchResponse = await vectorStore.index.query({
+        vector: queryEmbedding,
+        topK: parseInt(config.MAX_CHUNKS) || 10,
+        includeMetadata: true,
+      });
+
+      topChunks = searchResponse.matches.map((match) => ({
+        content: match.metadata.content,
+        metadata: {
+          source: match.metadata.source,
+          title: match.metadata.title,
+          category: match.metadata.category,
+          docType: match.metadata.docType,
+          chunk_index: match.metadata.chunk_index,
+          total_chunks: match.metadata.total_chunks,
+        },
+        similarity: match.score,
       }));
 
-    // Debug: Show similarity scores
-    console.log(
-      `📊 Top similarity scores: ${topChunks
-        .slice(0, 3)
-        .map((t) => t.similarity.toFixed(3))
-        .join(", ")}`
-    );
+      console.log(
+        `📊 Top similarity scores: ${topChunks
+          .slice(0, 3)
+          .map((t) => t.similarity.toFixed(3))
+          .join(", ")}`
+      );
+    } else {
+      // Search in local vector store
+      console.log("🔍 Searching in local vector store...");
+      const similarities = vectorStore.data.chunks.map((chunk) => {
+        if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
+          return { chunk, similarity: 0 };
+        }
+        return {
+          chunk,
+          similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+        };
+      });
+
+      topChunks = similarities
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, parseInt(config.MAX_CHUNKS) || 10)
+        .map((item) => ({
+          content: item.chunk.content,
+          metadata: item.chunk.metadata,
+          similarity: item.similarity,
+        }));
+
+      console.log(
+        `📊 Top similarity scores: ${topChunks
+          .slice(0, 3)
+          .map((t) => t.similarity.toFixed(3))
+          .join(", ")}`
+      );
+    }
 
     console.log(
       `📚 Found ${topChunks.length} relevant chunks using semantic search`
@@ -218,7 +295,7 @@ Remember: You're helping developers build payment solutions, so be practical and
 async function startChat() {
   console.log("💳 Stripe Customer Support Agent - Chat Interface");
   console.log("=".repeat(60));
-  console.log("🤖 AI Provider: GEMINI");
+  console.log(`🤖 AI Provider: ${config.AI_PROVIDER.toUpperCase()}`);
   console.log("💡 Type 'exit' to quit, 'sample' for more questions");
   console.log("=".repeat(60));
   console.log("\n🚀 Sample Questions to Get Started:");
