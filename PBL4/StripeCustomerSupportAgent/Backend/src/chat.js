@@ -165,6 +165,7 @@ async function generateResponse(query, chunks, geminiClient) {
     const sources = chunks.map((chunk, index) => ({
       content: chunk.content,
       metadata: chunk.metadata,
+      similarity: chunk.similarity,
       score: chunk.score || 0,
       index: index + 1,
     }));
