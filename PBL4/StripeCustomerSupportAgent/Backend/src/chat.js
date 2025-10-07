@@ -115,19 +115,31 @@ async function generateResponse(query, chunks, geminiClient) {
     }));
 
     // Generate response using Gemini
-    const prompt = `You are a helpful Stripe API support assistant. Answer questions using only the provided documentation context.
+    const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
 
-Context:
+CONTEXT (Stripe Documentation):
 ${context}
 
-Question: ${query}
+USER QUESTION: ${query}
 
-Instructions:
-- Answer based only on the provided context
-- If you can't find relevant information, say so
-- Be specific and provide code examples when relevant
-- Cite sources using [Source X] format
-- Keep responses concise but comprehensive`;
+RESPONSE GUIDELINES:
+1. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+3. **Include Code**: Always include practical code examples in the appropriate programming language
+4. **Step-by-Step**: Break down complex processes into clear, actionable steps
+5. **Error Handling**: Mention common errors and how to handle them
+6. **Best Practices**: Include security considerations and best practices
+7. **Source Citations**: Reference specific sources using [Source X] format
+8. **If Uncertain**: Clearly state when information isn't available in the context
+
+FORMAT YOUR RESPONSE:
+- Start with a direct answer to the question
+- Provide detailed explanation with code examples
+- Include relevant API endpoints and parameters
+- Mention any prerequisites or setup requirements
+- End with source citations
+
+Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -148,12 +160,16 @@ Instructions:
 
 // Main chat function
 async function startChat() {
-  console.log(
-    "💳 Stripe Customer Support Agent - Chat Interface (Full Gemini)"
-  );
+  console.log("💳 Stripe Customer Support Agent - Chat Interface");
   console.log("=".repeat(60));
-  console.log("🤖 AI Provider: GEMINI (Full)");
-  console.log("💡 Type 'exit' to quit, 'help' for commands");
+  console.log("🤖 AI Provider: GEMINI");
+  console.log("💡 Type 'exit' to quit, 'sample' for more questions");
+  console.log("=".repeat(60));
+  console.log("\n🚀 Sample Questions to Get Started:");
+  console.log("  • How do I create a payment intent with Stripe?");
+  console.log("  • What are webhook signatures and how do I verify them?");
+  console.log("  • How to handle Stripe API errors and exceptions?");
+  console.log("  • How do I set up subscription billing with Stripe?");
   console.log("=".repeat(60));
 
   try {
@@ -175,15 +191,26 @@ async function startChat() {
           return;
         }
 
-        if (query.toLowerCase() === "help") {
-          console.log("\n📋 Available commands:");
-          console.log("  • Ask any Stripe-related question");
-          console.log("  • 'exit' - Quit the chat");
-          console.log("  • 'help' - Show this help");
-          console.log("\n💡 Example questions:");
-          console.log("  • How do I create a payment intent?");
-          console.log("  • What are webhook signatures?");
-          console.log("  • How to handle Stripe errors?");
+        if (query.toLowerCase() === "sample") {
+          console.log("\n💡 Example Questions by Category:");
+          console.log("\n🔧 API Integration:");
+          console.log("  • How do I create a payment intent with Stripe?");
+          console.log("  • How to handle Stripe API errors and exceptions?");
+          console.log("  • What's the difference between test and live mode?");
+          console.log("\n🔐 Security & Webhooks:");
+          console.log(
+            "  • What are webhook signatures and how do I verify them?"
+          );
+          console.log("  • How do I implement 3D Secure authentication?");
+          console.log("  • How to secure my Stripe integration?");
+          console.log("\n💳 Payments & Billing:");
+          console.log("  • How do I set up subscription billing with Stripe?");
+          console.log("  • How to handle refunds and disputes?");
+          console.log("  • What are Stripe Connect and marketplace payments?");
+          console.log("\n🛠️ Advanced Features:");
+          console.log("  • How to implement multi-party payments?");
+          console.log("  • How to handle international payments?");
+          console.log("  • How to set up Stripe Radar for fraud detection?");
           askQuestion();
           return;
         }
@@ -245,7 +272,7 @@ async function startChat() {
 }
 
 // Handle CLI execution
-if (process.argv[1] && process.argv[1].endsWith("chat-gemini-full.js")) {
+if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
   startChat().catch(console.error);
 }
 
