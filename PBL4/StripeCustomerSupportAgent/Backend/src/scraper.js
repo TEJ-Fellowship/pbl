@@ -44,7 +44,7 @@ async function scrapeDoc(url, category) {
     // Extract main content
     const content = $("main").text() || $("article").text() || $("body").text();
     const title = $("h1").first().text() || $("title").text();
-
+    console.log("content before cleaning", content);
     // Clean up the content
     const cleanContent = content
       .replace(/\s+/g, " ") // Replace multiple whitespace with single space
