@@ -1,0 +1,2975 @@
+[
+  {
+    "description": "Table 1",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Alternative Payment Method (APM)",
+        "Rate": "APM Transaction Rates Apply"
+      },
+      {
+        "Payment Type": "PayPal Checkout",
+        "Rate": "3.49% + fixed fee"
+      },
+      {
+        "Payment Type": "PayPal Guest Checkout",
+        "Rate": "3.49% + fixed fee"
+      },
+      {
+        "Payment Type": "QR code Transactions",
+        "Rate": "2.29% + fixed fee"
+      },
+      {
+        "Payment Type": "QR code Transactions through third party integrator",
+        "Rate": "2.29% + 0.09 USD"
+      },
+      {
+        "Payment Type": "Pay with Venmo",
+        "Rate": "3.49% + fixed fee"
+      },
+      {
+        "Payment Type": "Send/Receive Money for Goods and Services",
+        "Rate": "2.99%"
+      },
+      {
+        "Payment Type": "Standard Credit and Debit Card Payments",
+        "Rate": "2.99% + fixed fee"
+      },
+      {
+        "Payment Type": "PayPal Pay Later options",
+        "Rate": "4.99% + fixed fee"
+      },
+      {
+        "Payment Type": "All Other Commercial Transactions",
+        "Rate": "3.49% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 2",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "All Commercial Transactions",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 3",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 4",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 5",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.12 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "0.50 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.11 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "1.90 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "0.56 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.07 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "0.70 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "29.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "0.30 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "9.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "0.40 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "1.79 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 6",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "3.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.13 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "0.77 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "4.40 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "0.34 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "6.90 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.12 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "0.76 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.08 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "2.90 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.07 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.09 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 7",
+    "headers": [
+      "Activity",
+      "Description",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Activity": "Campaign Fee – Store Cash transactions",
+        "Description": "All applicable PayPal transaction fees are calculated from the cart total, after any Store Cash offers being applied by the PayPal user. For more information about Campaign Fee calculations, please see the PayPal Store Cash Agreement.",
+        "Fee": "8.00%"
+      }
+    ]
+  },
+  {
+    "description": "Table 8",
+    "headers": [
+      "Purchase or sale amount",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Purchase or sale amount": "1.00 - 74.99 USD",
+        "Fee": "2.20%"
+      },
+      {
+        "Purchase or sale amount": "75.00 - 200.00 USD",
+        "Fee": "2.00%"
+      },
+      {
+        "Purchase or sale amount": "200.01 - 1000.00 USD",
+        "Fee": "1.80%"
+      },
+      {
+        "Purchase or sale amount": "1000.01 USD +",
+        "Fee": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 9",
+    "headers": [
+      "Transfer Type",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Transfer Type": "Receiving a Crypto Asset transfer",
+        "Fee": "No Fee"
+      },
+      {
+        "Transfer Type": "Transferring Crypto Asset to an address outside of PayPal or Venmo",
+        "Fee": "You will be charged a cryptocurrency network fee, payable in the Crypto Asset you transfer, which varies. For details on the network fee, see the PayPal Cryptocurrency Terms and Conditions. We will display such network fee right before you transfer any crypto"
+      }
+    ]
+  },
+  {
+    "description": "Table 10",
+    "headers": [
+      "Payment Type through an Invoicing Transaction",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type through an Invoicing Transaction": "PayPal Checkout, Pay with Venmo, or PayPal Guest Checkout",
+        "Rate": "3.49% + fixed fee"
+      },
+      {
+        "Payment Type through an Invoicing Transaction": "Standard Credit and Debit Card Payments, Apple Pay, or other third-party wallets",
+        "Rate": "2.99% + fixed fee"
+      },
+      {
+        "Payment Type through an Invoicing Transaction": "PayPal Pay Later options",
+        "Rate": "4.99% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 11",
+    "headers": [
+      "Payment Type through an Invoicing Transaction",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type through an Invoicing Transaction": "All Payment Types through Invoicing Transactions",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 12",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 13",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 14",
+    "headers": [
+      "Service Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Service Type": "Invoicing Subscription",
+        "Rate": "14.99 USD per month"
+      }
+    ]
+  },
+  {
+    "description": "Table 15",
+    "headers": [
+      "Funding Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Funding Type": "PayPal Wallet – Bank Account",
+        "Rate": "Waived – No Fee"
+      },
+      {
+        "Funding Type": "PayPal Wallet – Balance",
+        "Rate": "Waived – No Fee"
+      },
+      {
+        "Funding Type": "PYUSD (subject to availability)",
+        "Rate": "Waived – No Fee"
+      },
+      {
+        "Funding Type": "Debit and Credit",
+        "Rate": "2.9%"
+      }
+    ]
+  },
+  {
+    "description": "Table 16",
+    "headers": [
+      "Disbursement Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Disbursement Type": "ACH – US Domestic",
+        "Rate": "0.49 USD per transaction"
+      },
+      {
+        "Disbursement Type": "ACH – International",
+        "Rate": "Fixed Fee"
+      },
+      {
+        "Disbursement Type": "PayPal Wallet USD",
+        "Rate": "No Fee"
+      },
+      {
+        "Disbursement Type": "PayPal Wallet Other Currencies",
+        "Rate": "No Fee"
+      },
+      {
+        "Disbursement Type": "Venmo (subject to availability)",
+        "Rate": "No Fee"
+      },
+      {
+        "Disbursement Type": "PYUSD (subject to availability)",
+        "Rate": "1%"
+      },
+      {
+        "Disbursement Type": "Mailed Checks",
+        "Rate": "2.00 USD per check"
+      },
+      {
+        "Disbursement Type": "Virtual Card (subject to availability)",
+        "Rate": "No Fee"
+      },
+      {
+        "Disbursement Type": "Instant Transfer (subject to availability)",
+        "Rate": "1% (Minimum Fee of 2.00 USD, Maximum Fee of 50.00 USD)"
+      },
+      {
+        "Disbursement Type": "Pay faster by Check",
+        "Rate": "20.00 USD"
+      },
+      {
+        "Disbursement Type": "Pay faster by ACH",
+        "Rate": "1% (Minimum Fee of 2.00 USD, Maximum Fee of 50.00 USD)"
+      },
+      {
+        "Disbursement Type": "Wire Transfer",
+        "Rate": "Fixed Fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 17",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "1.50 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "25.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "1.50 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "120.00 CZK"
+      },
+      {
+        "Currency": "Chinese yuan",
+        "Fee": "36.00 CNY"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "35.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.90 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "7.60 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "1,900.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "20.00 ILS"
+      },
+      {
+        "Currency": "Indian rupee",
+        "Fee": "420.00 INR"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "745.00 JPY"
+      }
+    ]
+  },
+  {
+    "description": "Table 18",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Korean won",
+        "Fee": "7,200.00 KRW"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "20.00 MXN"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "8.60 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "55.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "290.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "20.00 PLN"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "6.95 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "55.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "4.45 CHF"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.75 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.95 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 19",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "US dollar",
+        "Fee": "20.00 USD"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "19.00 EUR"
+      },
+      {
+        "Currency": "Australian dollar",
+        "Fee": "30.00 AUD"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "3,000.00 JPY"
+      },
+      {
+        "Currency": "Korean won",
+        "Fee": "29,000.00 KRW"
+      }
+    ]
+  },
+  {
+    "description": "Table 20",
+    "headers": [
+      "Service Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Service Type": "Bill Pay Two-Way Accounting Syncing",
+        "Rate": "9.99 USD per month"
+      }
+    ]
+  },
+  {
+    "description": "Table 21",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donate Button",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "PayPal Checkout for Donations",
+        "Rate": "2.89% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 22",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "All Donations",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 23",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 24",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 25",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donations",
+        "Rate": "No fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 26",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donations",
+        "Rate": "No fee (when no currency conversion is needed)"
+      }
+    ]
+  },
+  {
+    "description": "Table 27",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Charity Transactions",
+        "Rate": "1.99% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 28",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Charity Transactions",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 29",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 30",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 31",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Alternative Payment Method (APM)",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "Alternative Payment Method (APM) through Pay Links and Buttons, Payment Links and Buttons, Payment Links, Buy Buttons, Shopping Cart Buttons",
+        "Rate": "2.99% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 32",
+    "headers": [
+      "Payment Type",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Alternative Payment Method (APM)",
+        "Fee": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 33",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.39 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "1.70 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.39 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "5.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "1.70 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.19 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "2.29 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "89.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "0.90 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "29.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "1.20 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "5.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 34",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "8.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.49 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "2.30 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "15.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.09 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "23.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.49 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "2.40 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.29 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "9.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.19 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.29 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 35",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 36",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 37",
+    "headers": [],
+    "rows": [
+      {
+        "Column 1": "Rate until July 31, 2026",
+        "Column 2": "0.99% of transaction amount"
+      },
+      {
+        "Column 1": "Rate on or after Aug. 1, 2026",
+        "Column 2": "1.5% of transaction amount"
+      }
+    ]
+  },
+  {
+    "description": "Table 38",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Advanced Credit and Debit Card Payments",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "ACH Services",
+        "Rate": "0.80% (capped at $5.00 per transaction)"
+      },
+      {
+        "Payment Type": "Payments Advanced",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "Payments Pro",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "Virtual Terminal",
+        "Rate": "3.39% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 39",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Payments Pro",
+        "Rate": "1.99% + fixed fee"
+      },
+      {
+        "Payment Type": "Virtual Terminal",
+        "Rate": "2.69% + fixed fee"
+      },
+      {
+        "Payment Type": "Advanced Credit and Debit Card Payments",
+        "Rate": "2.19% + fixed fee"
+      },
+      {
+        "Payment Type": "Advanced Credit and Debit Card Payments (Interchange Plus Plus)",
+        "Rate": "Interchange Plus Plus Rates Apply"
+      }
+    ]
+  },
+  {
+    "description": "Table 40",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 41",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 42",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.39 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "1.70 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.39 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "5.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "1.70 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.19 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "2.29 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "89.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "0.90 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "29.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "1.20 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "5.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 43",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "8.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.49 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "2.30 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "15.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.09 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "23.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.49 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "2.40 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.29 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "9.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.19 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.29 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 44",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Advanced Credit and Debit Card Payments (Interchange Plus Plus)",
+        "Rate": "Interchange Pass-through Costs + 0.49% + fixed fee (collectively “Interchange Plus Plus”)"
+      }
+    ]
+  },
+  {
+    "description": "Table 45",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.49 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.29 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.49 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "7.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.29 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.29 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "2.99 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "119.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.29 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "39.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "1.59 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "7.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 46",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "11.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.59 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.09 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "20.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.49 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "31.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.59 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "3.29 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.39 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "12.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.29 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.39 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 47",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Advanced Credit and Debit Card Payments (Interchange Plus Plus)",
+        "Rate": "No additional percentage-based fee for international transactions for this Payment Type"
+      },
+      {
+        "Payment Type": "All Other PayPal Card Payment Services Transactions",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 48",
+    "headers": [
+      "Activity",
+      "Description",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Activity": "Account Monitoring Service",
+        "Description": "Optional Service",
+        "Fee": "29.95 USD set up fee19.95 USD per month"
+      },
+      {
+        "Activity": "ACH Services Return Fee or Unauthorized Fee",
+        "Description": "This fee is charged when a return is requested or when the transaction is unauthorized and then rejected/reversed.",
+        "Fee": "5.00 USD Return Fee for each transaction returned by the banking network5.00 USD Unauthorized Fee for each transaction disputed by your customer as unauthorized"
+      },
+      {
+        "Activity": "Fraud Protection Advanced",
+        "Description": "Optional Service",
+        "Fee": "0.07 USD per transaction"
+      },
+      {
+        "Activity": "Additional Risk Factors",
+        "Description": "If PayPal determines that your Account receives, or is likely to receive a disproportionately higher number of customer complaints, reversals, chargebacks, claims, or other indicators of a serious level of risk, PayPal may increase the percentage components of your Transaction Fees after giving you 30 days prior notice of the increase.",
+        "Fee": "Up to 5.00% per transaction"
+      },
+      {
+        "Activity": "Buyer Authentication Service",
+        "Description": "Optional Service",
+        "Fee": "10.00 USD per month0.10 USD per transaction"
+      },
+      {
+        "Activity": "Card Verification Transactions",
+        "Description": "For each account verification request",
+        "Fee": "0.30 USD"
+      },
+      {
+        "Activity": "Chargeback Protection Tools",
+        "Description": "Chargeback Protection Tool\nAdvanced Credit and Debit Card Payments",
+        "Fee": "0.40% per transaction"
+      },
+      {
+        "Activity": "Effortless Chargeback Protection Tool\nAdvanced Credit and Debit Card Payments",
+        "Description": "0.60% per transaction"
+      },
+      {
+        "Activity": "Failure to implement Express Checkout",
+        "Description": "If you do not implement Express Checkout as required, the percentage components of your Transaction Fees may increase after giving you 30 days prior notice.",
+        "Fee": "1.00% per transaction"
+      },
+      {
+        "Activity": "Monthly Fees",
+        "Description": "Advanced Credit and Debit Card Payments and ACH Services",
+        "Fee": "No fee"
+      },
+      {
+        "Activity": "Payments Advanced",
+        "Description": "5.00 USD"
+      },
+      {
+        "Activity": "Payments Pro",
+        "Description": "30.00 USD"
+      },
+      {
+        "Activity": "Payments Pro Payflow",
+        "Description": "30.00 USD"
+      },
+      {
+        "Activity": "Recurring Billing",
+        "Description": "Optional Service",
+        "Fee": "10.00 USD per month"
+      },
+      {
+        "Activity": "Recurring Payment Tool",
+        "Description": "Optional Service",
+        "Fee": "30.00 USD per month"
+      },
+      {
+        "Activity": "Uncaptured Authorization Transactions",
+        "Description": "For each successful but uncaptured authorization transaction.",
+        "Fee": "0.30 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 49",
+    "headers": [
+      "Payment type",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Payment type": "Payflow Pro Transaction",
+        "Fee": "0.10 USD"
+      },
+      {
+        "Payment type": "Payflow Link Transaction",
+        "Fee": "0.10 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 50",
+    "headers": [
+      "Activity",
+      "Description",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Activity": "Monthly Fees",
+        "Description": "Payflow Pro",
+        "Fee": "25.00 USD"
+      },
+      {
+        "Activity": "Payflow Link",
+        "Description": "No fee"
+      },
+      {
+        "Activity": "PayPal Recurring Billing Service (Monthly)",
+        "Description": "Payflow Pro",
+        "Fee": "10.00 USD"
+      },
+      {
+        "Activity": "Payflow Link",
+        "Description": "10.00 USD"
+      },
+      {
+        "Activity": "PayPal Fraud Protection Services (Monthly)",
+        "Description": "Basic Package",
+        "Fee": "No fee"
+      },
+      {
+        "Activity": "Advanced Package",
+        "Description": "10.00 USD"
+      },
+      {
+        "Activity": "Buyer Authentication +",
+        "Description": "10.00 USD"
+      },
+      {
+        "Activity": "PayPal Fraud Protection Services (Monthly Excess Transaction Fee)",
+        "Description": "Basic Package",
+        "Fee": "No fee"
+      },
+      {
+        "Activity": "Advanced Package",
+        "Description": "0.05 USD"
+      },
+      {
+        "Activity": "Buyer Authentication +",
+        "Description": "0.10 USD"
+      },
+      {
+        "Activity": "Recurring Billing Service",
+        "Description": "No fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 51",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Card Present Transactions",
+        "Rate": "2.29% + 0.09 USD"
+      },
+      {
+        "Payment Type": "Manual Card Entry Transactions",
+        "Rate": "3.49% + 0.09 USD"
+      },
+      {
+        "Payment Type": "QR code Transactions",
+        "Rate": "2.29% + 0.09 USD"
+      },
+      {
+        "Payment Type": "Payment links: PayPal Checkout, Pay with Venmo, PayPal Pay Later offers, or PayPal Guest Checkout",
+        "Rate": "3.49% + 0.49 USD"
+      },
+      {
+        "Payment Type": "Payment links: Standard Credit and Debit Card Payments, Apple Pay, or other third-party wallets",
+        "Rate": "2.99% + 0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 52",
+    "headers": [
+      "Transaction",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Transaction": "US",
+        "Rate": "2% of total transaction amount (not to exceed the maximum fee cap below)"
+      },
+      {
+        "Transaction": "US\nWhen using the Payouts API",
+        "Rate": "Flat Rate (see fee table below)"
+      },
+      {
+        "Transaction": "International PayPal Payouts",
+        "Rate": "2% of total transaction amount (not to exceed the maximum fee cap below)"
+      }
+    ]
+  },
+  {
+    "description": "Table 53",
+    "headers": [
+      "Currency",
+      "US Maximum Fee Cap",
+      "US – When using the Payouts API Fee",
+      "International Maximum Fee Cap"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "US Maximum Fee Cap": "1.25 AUD",
+        "US – When using the Payouts API Fee": "0.32 AUD",
+        "International Maximum Fee Cap": "24.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "US Maximum Fee Cap": "2.00 BRL",
+        "US – When using the Payouts API Fee": "0.50 BRL",
+        "International Maximum Fee Cap": "40.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "US Maximum Fee Cap": "1.25 CAD",
+        "US – When using the Payouts API Fee": "0.32 CAD",
+        "International Maximum Fee Cap": "24.00 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "US Maximum Fee Cap": "24.00 CZK",
+        "US – When using the Payouts API Fee": "6.00 CZK",
+        "International Maximum Fee Cap": "400.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "US Maximum Fee Cap": "6.00 DKK",
+        "US – When using the Payouts API Fee": "1.50 DKK",
+        "International Maximum Fee Cap": "120.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "US Maximum Fee Cap": "0.85 EUR",
+        "US – When using the Payouts API Fee": "0.22 EUR",
+        "International Maximum Fee Cap": "16.00 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "US Maximum Fee Cap": "7.00 HKD",
+        "US – When using the Payouts API Fee": "1.75 HKD",
+        "International Maximum Fee Cap": "160.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "US Maximum Fee Cap": "210.00 HUF",
+        "US – When using the Payouts API Fee": "53.00 HUF",
+        "International Maximum Fee Cap": "6000.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "US Maximum Fee Cap": "4.00 ILS",
+        "US – When using the Payouts API Fee": "1.00 ILS",
+        "International Maximum Fee Cap": "80.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "US Maximum Fee Cap": "120.00 JPY",
+        "US – When using the Payouts API Fee": "30.00 JPY",
+        "International Maximum Fee Cap": "2000.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "US Maximum Fee Cap": "4.00 MYR",
+        "US – When using the Payouts API Fee": "Not Applicable",
+        "International Maximum Fee Cap": "80.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "US Maximum Fee Cap": "11.00 MXN",
+        "US – When using the Payouts API Fee": "2.75 MXN",
+        "International Maximum Fee Cap": "300.00 MXN"
+      },
+      {
+        "Currency": "New Taiwan dollar",
+        "US Maximum Fee Cap": "33.00 TWD",
+        "US – When using the Payouts API Fee": "8.00 TWD",
+        "International Maximum Fee Cap": "800.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "US Maximum Fee Cap": "1.50 NZD",
+        "US – When using the Payouts API Fee": "0.38 NZD",
+        "International Maximum Fee Cap": "30.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "US Maximum Fee Cap": "6.75 NOK",
+        "US – When using the Payouts API Fee": "1.70 NOK",
+        "International Maximum Fee Cap": "120.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "US Maximum Fee Cap": "50.00 PHP",
+        "US – When using the Payouts API Fee": "12.50 PHP",
+        "International Maximum Fee Cap": "1000.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "US Maximum Fee Cap": "3.00 PLN",
+        "US – When using the Payouts API Fee": "0.75 PLN",
+        "International Maximum Fee Cap": "60.00 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "US Maximum Fee Cap": "30.00 RUB",
+        "US – When using the Payouts API Fee": "60.00 RUB",
+        "International Maximum Fee Cap": "600.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "US Maximum Fee Cap": "1.60 SGD",
+        "US – When using the Payouts API Fee": "0.40 SGD",
+        "International Maximum Fee Cap": "32.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "US Maximum Fee Cap": "9.00 SEK",
+        "US – When using the Payouts API Fee": "2.25 SEK",
+        "International Maximum Fee Cap": "160.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "US Maximum Fee Cap": "1.30 CHF",
+        "US – When using the Payouts API Fee": "0.33 CHF",
+        "International Maximum Fee Cap": "20.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "US Maximum Fee Cap": "36.00 THB",
+        "US – When using the Payouts API Fee": "9.00 THB",
+        "International Maximum Fee Cap": "800.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "US Maximum Fee Cap": "0.65 GBP",
+        "US – When using the Payouts API Fee": "0.17 GBP",
+        "International Maximum Fee Cap": "14.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "US Maximum Fee Cap": "1.00 USD",
+        "US – When using the Payouts API Fee": "0.25 USD",
+        "International Maximum Fee Cap": "20.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 54",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "US",
+        "Rate": "4.99% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 55",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Micropayments",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 56",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.12 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "0.50 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.11 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "1.90 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "0.56 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.07 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "0.70 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "29.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "0.30 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "9.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "0.40 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "1.79 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 57",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "3.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.13 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "0.77 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "4.40 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "0.34 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "6.90 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.12 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "0.76 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.08 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "2.90 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.07 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.09 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 58",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "22.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "35.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "20.00 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "400.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "120.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "16.00 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "155.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "4,325.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "75.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "1,875.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "65.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "250.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 59",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "625.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "28.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "125.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "900.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "65.00 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "640.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "28.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "150.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "22.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "650.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "14.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "20.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 60",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "25.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "65.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "20.00 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "350.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "100.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "14.00 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "115.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "4,585.00 HUF"
+      },
+      {
+        "Currency": "Indian Rupee",
+        "Fee": "1080.00 INR"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "55.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "1,630.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "65.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "300.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 61",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "455.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "25.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "140.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "760.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "60.00 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "1125.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "20.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "145.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "15.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "465.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "12.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "15.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 62",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "50.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "130.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "40.00 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "700.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "200.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "28.00 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "230.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "9,170.00 HUF"
+      },
+      {
+        "Currency": "Indian Rupee",
+        "Fee": "2160.00 INR"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "110.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "3,260.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "130.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "600.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 63",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "910.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "50.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "280.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "1520.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "120.00 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "2250.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "40.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "290.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "30.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "930.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "24.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "30.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 64",
+    "headers": [
+      "Type of Transaction",
+      "Currency Conversion Spread"
+    ],
+    "rows": [
+      {
+        "Type of Transaction": "Paying for goods or services in a currency other than the currency the goods or services are listed in.Sending money to a friend or family member such that they receive a different currency from the currency in which you pay.Sending money using PayPal Payouts such that your recipients receive a different currency from the currency in which you pay.",
+        "Currency Conversion Spread": "4.00%, or such other amount as may be disclosed to you during the transaction."
+      },
+      {
+        "Type of Transaction": "All other transactions",
+        "Currency Conversion Spread": "3.00%, or such other amount as may be disclosed to you during the transaction."
+      }
+    ]
+  },
+  {
+    "description": "Table 65",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Per each payment transaction",
+        "Rate": "Commercial Transaction Rates"
+      }
+    ]
+  },
+  {
+    "description": "Table 66",
+    "headers": [
+      "Currency",
+      "Maximum fee cap"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Maximum fee cap": "300.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Maximum fee cap": "500.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Maximum fee cap": "300.00 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Maximum fee cap": "5000.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Maximum fee cap": "1500.00 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Maximum fee cap": "200.00 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Maximum fee cap": "2500.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Maximum fee cap": "54,000.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Maximum fee cap": "1100.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Maximum fee cap": "24,000.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Maximum fee cap": "1000.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Maximum fee cap": "3500.00 MXN"
+      },
+      {
+        "Currency": "New Taiwan dollar",
+        "Maximum fee cap": "9000.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Maximum fee cap": "400.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Maximum fee cap": "1600.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Maximum fee cap": "13,000.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Maximum fee cap": "800.00 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Maximum fee cap": "12,000.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Maximum fee cap": "400.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Maximum fee cap": "1800.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Maximum fee cap": "300.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Maximum fee cap": "9000.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Maximum fee cap": "200.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Maximum fee cap": "300.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 67",
+    "headers": [
+      "Withdrawal/Transfer to",
+      "Withdrawal/Transfer Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Withdrawal/Transfer to": "Bank account",
+        "Withdrawal/Transfer Type": "Standard\nWith eligible linked bank account",
+        "Rate": "No Fee (when no currency conversion is involved)"
+      },
+      {
+        "Withdrawal/Transfer to": "Instant\nWithdrawal limits apply",
+        "Withdrawal/Transfer Type": "1.50% of amount transferred\nMinimum fee applies based on the card withdrawal currency, in the table below"
+      },
+      {
+        "Withdrawal/Transfer to": "Cards",
+        "Withdrawal/Transfer Type": "Standard\nWith eligible linked debit cardWithdrawal limits apply",
+        "Rate": "No Fee (when no currency conversion is involved)"
+      },
+      {
+        "Withdrawal/Transfer to": "Instant\nWith eligible linked debit cardWithdrawal limits apply",
+        "Withdrawal/Transfer Type": "1.50% of amount transferred\nMinimum fee applies based on the card withdrawal currency, in the table below"
+      }
+    ]
+  },
+  {
+    "description": "Table 68",
+    "headers": [
+      "Frequency",
+      "Maximum (up to)"
+    ],
+    "rows": [
+      {
+        "Frequency": "Per transaction",
+        "Maximum (up to)": "25,000.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 69",
+    "headers": [
+      "Frequency",
+      "Maximum (up to)"
+    ],
+    "rows": [
+      {
+        "Frequency": "Per transaction",
+        "Maximum (up to)": "50,000.00 USD"
+      },
+      {
+        "Frequency": "Per day",
+        "Maximum (up to)": "100,000.00 USD"
+      },
+      {
+        "Frequency": "Per week",
+        "Maximum (up to)": "250,000.00 USD"
+      },
+      {
+        "Frequency": "Per month",
+        "Maximum (up to)": "500,000.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 70",
+    "headers": [
+      "Currency",
+      "Minimum Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "US dollar",
+        "Minimum Fee": "0.50 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 71",
+    "headers": [
+      "Activity",
+      "Description",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Activity": "Bank Return on Withdrawal/Transfer out of PayPal",
+        "Description": "This fee is charged when a withdrawal/transfer out of PayPal is attempted by a user and it fails because incorrect bank account information or delivery information is provided.",
+        "Fee": "No Fee"
+      },
+      {
+        "Activity": "Commercial Transaction and Invoicing Transaction Refunds",
+        "Description": "Full Refunds",
+        "Fee": "If you refund a Commercial Transaction or an Invoicing Transaction payment, there are no fees to make the refund, but the fees you originally paid to receive the payment are not returned to you."
+      },
+      {
+        "Activity": "Partial Refunds",
+        "Description": "If you refund a Commercial Transaction or an Invoicing Transaction payment, there are no fees to make the refund, but the fees you originally paid to receive the payment are not returned to you."
+      },
+      {
+        "Activity": "Credit Card and Debit Card Confirmation(s)",
+        "Description": "Some users, in order to increase their sending limit or as PayPal may determine, may be charged a Credit Card and Debit Card Link and Confirmation fee. This amount will be refunded when you successfully complete the credit card or debit card verification process.",
+        "Fee": "See Credit Card and Debit Card Link and Confirmation Table below."
+      },
+      {
+        "Activity": "PayPal Business Debit MasterCard",
+        "Description": "Use of the PayPal Business Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms.",
+        "Fee": "Please see our PayPal Business Debit MasterCard Cardholder Agreement and Privacy Notice"
+      },
+      {
+        "Activity": "PayPal Debit MasterCard",
+        "Description": "Use of the PayPal Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms.",
+        "Fee": "Please see our PayPal Debit MasterCard Cardholder Agreement"
+      }
+    ]
+  },
+  {
+    "description": "Table 72",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "2.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "4.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "2.45 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "50.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "12.50 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "1.50 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "15.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "400.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "8.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "200.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "Not Applicable"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "20.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 73",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "70.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "3.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "15.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "100.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "6.50 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "60.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "3.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "15.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "3.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "70.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "1.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "1.95 USD"
+      }
+    ]
+  }
+]
