@@ -1,59 +1,40 @@
 import fs from "fs/promises";
 import path from "path";
-import { Document } from "langchain/document";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { Document } from "@langchain/core/documents";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { ChromaClient } from "chromadb";
-import dotenv from "dotenv";
-
-// Load environment variables
-dotenv.config();
+import { Pinecone } from "@pinecone-database/pinecone";
+import config from "../config/config.js";
 
 // Configuration
-const CHUNK_SIZE = 800;
-const CHUNK_OVERLAP = 100;
+const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 800;
+const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const COLLECTION_NAME = "stripe_docs";
 const VECTOR_STORE_PATH = "./data/vector_store";
 
-// Initialize AI provider
-const AI_PROVIDER = process.env.AI_PROVIDER || "gemini";
-
-// Initialize embeddings based on provider
+// Initialize Gemini embeddings
 function initEmbeddings() {
-  if (AI_PROVIDER === "gemini") {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
-    }
-    return new GoogleGenerativeAIEmbeddings({
-      apiKey,
-      modelName: "text-embedding-004",
-    });
-  } else {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is required");
-    }
-    return new OpenAIEmbeddings({
-      openAIApiKey: apiKey,
-      modelName: "text-embedding-3-small",
-    });
+  if (!config.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
   }
+  return new GoogleGenerativeAIEmbeddings({
+    apiKey: config.GEMINI_API_KEY,
+    modelName: "text-embedding-004",
+  });
 }
 
-// Initialize ChromaDB client
-async function initChromaDB() {
+// Initialize Pinecone client
+async function initPinecone() {
   try {
-    const client = new ChromaClient({
-      path: process.env.CHROMA_PERSIST_DIRECTORY || "./chroma_db",
-    });
+    if (!config.PINECONE_API_KEY) {
+      throw new Error("PINECONE_API_KEY environment variable is required");
+    }
 
-    console.log("✅ ChromaDB client initialized");
-    return client;
+    const pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
+    console.log("✅ Pinecone client initialized");
+    return pinecone;
   } catch (error) {
-    console.error("❌ ChromaDB initialization failed:", error.message);
+    console.error("❌ Pinecone initialization failed:", error.message);
     throw error;
   }
 }
@@ -131,29 +112,51 @@ async function processDocuments(documents) {
   return allChunks;
 }
 
-// Store chunks in ChromaDB using LangChain
-async function storeChunks(chunks, embeddings, client) {
-  console.log("💾 Storing chunks in ChromaDB...");
+// Store chunks in Pinecone
+async function storeChunks(chunks, embeddings, pinecone) {
+  console.log("💾 Storing chunks in Pinecone...");
 
   try {
-    // Create ChromaDB vector store using LangChain
-    const vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
-      collectionName: COLLECTION_NAME,
-      client: client,
-    });
+    const index = pinecone.Index(config.PINECONE_INDEX_NAME);
+    console.log(`📊 Using Pinecone index: ${config.PINECONE_INDEX_NAME}`);
 
-    console.log("✅ Chunks stored successfully in ChromaDB");
+    // Prepare vectors for upsert
+    const vectors = [];
+    for (const chunk of chunks) {
+      const embedding = await embeddings.embedQuery(chunk.pageContent);
+      vectors.push({
+        id: chunk.metadata.chunk_id,
+        values: embedding,
+        metadata: {
+          content: chunk.pageContent,
+          source: chunk.metadata.source,
+          title: chunk.metadata.title,
+          category: chunk.metadata.category,
+          docType: chunk.metadata.docType,
+          chunk_index: chunk.metadata.chunk_index,
+          total_chunks: chunk.metadata.total_chunks,
+        },
+      });
+    }
 
-    // Get collection stats
-    const collection = await client.getCollection({
-      name: COLLECTION_NAME,
-    });
-    const count = await collection.count();
+    // Upsert vectors in batches
+    const batchSize = 100;
+    for (let i = 0; i < vectors.length; i += batchSize) {
+      const batch = vectors.slice(i, i + batchSize);
+      await index.upsert(batch);
+      console.log(
+        `📦 Upserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
+          vectors.length / batchSize
+        )}`
+      );
+    }
 
-    console.log(`📊 Total chunks in database: ${count}`);
-    return vectorStore;
+    console.log(
+      `✅ Chunks stored successfully in Pinecone (${vectors.length} total)`
+    );
+    return { index, vectors };
   } catch (error) {
-    console.error("❌ Failed to store chunks:", error.message);
+    console.error("❌ Failed to store chunks in Pinecone:", error.message);
     throw error;
   }
 }
@@ -167,16 +170,13 @@ async function storeChunksLocally(chunks, embeddings) {
     metadata: {
       created_at: new Date().toISOString(),
       total_chunks: chunks.length,
-      ai_provider: AI_PROVIDER,
-      embedding_model:
-        AI_PROVIDER === "gemini"
-          ? "text-embedding-004"
-          : "text-embedding-3-small",
+      ai_provider: "gemini",
+      embedding_model: "text-embedding-004",
     },
   };
 
   // Process chunks in batches
-  const batchSize = 5;
+  const batchSize = parseInt(config.BATCH_SIZE) || 5;
 
   for (let i = 0; i < chunks.length; i += batchSize) {
     const batch = chunks.slice(i, i + batchSize);
@@ -201,7 +201,9 @@ async function storeChunksLocally(chunks, embeddings) {
         console.log(`  ✅ Processed chunk: ${chunk.metadata.chunk_id}`);
 
         // Rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await new Promise((resolve) =>
+          setTimeout(resolve, parseInt(config.EMBEDDING_DELAY) || 200)
+        );
       } catch (error) {
         console.error(
           `  ❌ Failed to process chunk ${chunk.metadata.chunk_id}:`,
@@ -223,11 +225,11 @@ async function storeChunksLocally(chunks, embeddings) {
 
 // Main ingestion function
 async function main() {
-  console.log("🚀 Starting Stripe documentation ingestion with LangChain...");
+  console.log("🚀 Starting Stripe documentation ingestion with Gemini...");
 
   try {
     // Initialize embeddings
-    console.log(`🤖 Initializing ${AI_PROVIDER.toUpperCase()} embeddings...`);
+    console.log("🤖 Initializing Gemini embeddings...");
     const embeddings = initEmbeddings();
 
     // Load documents
@@ -236,15 +238,15 @@ async function main() {
     // Process documents into chunks
     const chunks = await processDocuments(documents);
 
-    // Try ChromaDB first, fallback to local storage
+    // Try Pinecone first, fallback to local storage
     try {
-      console.log("🗄️ Attempting to use ChromaDB...");
-      const client = await initChromaDB();
-      await storeChunks(chunks, embeddings, client);
-      console.log("✅ ChromaDB storage completed successfully!");
-    } catch (chromaError) {
-      console.log("⚠️ ChromaDB unavailable, using local storage...");
-      console.log(`   Reason: ${chromaError.message}`);
+      console.log("🗄️ Attempting to use Pinecone...");
+      const pinecone = await initPinecone();
+      await storeChunks(chunks, embeddings, pinecone);
+      console.log("✅ Pinecone storage completed successfully!");
+    } catch (pineconeError) {
+      console.log("⚠️ Pinecone unavailable, using local storage...");
+      console.log(`   Reason: ${pineconeError.message}`);
       await storeChunksLocally(chunks, embeddings);
     }
 

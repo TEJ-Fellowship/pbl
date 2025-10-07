@@ -16,6 +16,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import config from "../config/config.js";
 
 /**
  * Configuration object containing all Stripe documentation sources
@@ -52,8 +53,8 @@ async function scrapeDoc(url, category) {
   console.log(`🔍 Scraping ${category}: ${url}`);
 
   try {
-    // Implement rate limiting to be respectful to the server
-    await delay(1000);
+    // Rate limiting
+    await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
     // Make HTTP request with proper headers to mimic a real browser
     const response = await axios.get(url, {
