@@ -96,13 +96,19 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
 
     // Generate query embedding using LangChain Gemini embeddings
     const queryEmbedding = await embeddings.embedQuery(query);
-    
+
     // Debug: Check if embedding was generated
-    if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+    if (
+      !queryEmbedding ||
+      !Array.isArray(queryEmbedding) ||
+      queryEmbedding.length === 0
+    ) {
       throw new Error("Failed to generate query embedding");
     }
-    
-    console.log(`📊 Query embedding generated with ${queryEmbedding.length} dimensions`);
+
+    console.log(
+      `📊 Query embedding generated with ${queryEmbedding.length} dimensions`
+    );
 
     // Calculate similarities with existing chunks
     const similarities = vectorStore.chunks.map((chunk) => {
@@ -126,7 +132,12 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
       }));
 
     // Debug: Show similarity scores
-    console.log(`📊 Top similarity scores: ${topChunks.slice(0, 3).map(t => t.similarity.toFixed(3)).join(', ')}`);
+    console.log(
+      `📊 Top similarity scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
 
     console.log(
       `📚 Found ${topChunks.length} relevant chunks using semantic search`
