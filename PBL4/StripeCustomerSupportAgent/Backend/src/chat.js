@@ -2,6 +2,7 @@ import readline from "readline";
 import fs from "fs/promises";
 import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -18,6 +19,18 @@ function initGeminiClient() {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
   return new GoogleGenerativeAI(apiKey);
+}
+
+// Initialize Gemini embeddings
+function initGeminiEmbeddings() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
+  }
+  return new GoogleGenerativeAIEmbeddings({
+    apiKey,
+    modelName: "text-embedding-004",
+  });
 }
 
 // Load vector store
@@ -75,19 +88,50 @@ function searchChunks(query, vectorStore) {
 }
 
 // Retrieve relevant chunks using embeddings
-async function retrieveChunksWithEmbeddings(query, vectorStore, geminiClient) {
+async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
   try {
-    console.log("🔍 Searching for relevant information using embeddings...");
+    console.log(
+      "🔍 Searching for relevant information using Gemini embeddings..."
+    );
 
-    // Generate query embedding using Gemini
-    const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+    // Generate query embedding using LangChain Gemini embeddings
+    const queryEmbedding = await embeddings.embedQuery(query);
+    
+    // Debug: Check if embedding was generated
+    if (!queryEmbedding || !Array.isArray(queryEmbedding) || queryEmbedding.length === 0) {
+      throw new Error("Failed to generate query embedding");
+    }
+    
+    console.log(`📊 Query embedding generated with ${queryEmbedding.length} dimensions`);
+
+    // Calculate similarities with existing chunks
+    const similarities = vectorStore.chunks.map((chunk) => {
+      if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
+        return { chunk, similarity: 0 };
+      }
+      return {
+        chunk,
+        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+      };
     });
-    const embeddingPrompt = `Generate embeddings for this query: "${query}". Return only a JSON array of numbers representing the embedding vector.`;
 
-    // For now, fall back to keyword search since Gemini doesn't have direct embedding API
-    console.log("⚠️  Using keyword-based search (embeddings not available)");
-    return searchChunks(query, vectorStore);
+    // Sort by similarity and get top chunks
+    const topChunks = similarities
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, MAX_CHUNKS)
+      .map((item) => ({
+        content: item.chunk.content,
+        metadata: item.chunk.metadata,
+        similarity: item.similarity,
+      }));
+
+    // Debug: Show similarity scores
+    console.log(`📊 Top similarity scores: ${topChunks.slice(0, 3).map(t => t.similarity.toFixed(3)).join(', ')}`);
+
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using semantic search`
+    );
+    return topChunks;
   } catch (error) {
     console.error(
       "❌ Embedding retrieval failed, using keyword search:",
@@ -175,6 +219,7 @@ async function startChat() {
   try {
     // Initialize components
     const geminiClient = initGeminiClient();
+    const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
 
     // Create readline interface
@@ -226,7 +271,7 @@ async function startChat() {
           const chunks = await retrieveChunksWithEmbeddings(
             query,
             vectorStore,
-            geminiClient
+            embeddings
           );
 
           if (chunks.length === 0) {
@@ -272,7 +317,13 @@ async function startChat() {
 
               console.log(`${source.index}. ${title} (${category})`);
               console.log(`   URL: ${url}`);
-              console.log(`   Relevance: ${source.score} keywords matched`);
+              const relevanceScore = source.similarity || source.score || 0;
+              const relevanceType = source.similarity
+                ? "similarity"
+                : "keywords matched";
+              console.log(
+                `   Relevance: ${relevanceScore.toFixed(3)} ${relevanceType}`
+              );
             });
           }
         } catch (error) {
@@ -295,4 +346,9 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
   startChat().catch(console.error);
 }
 
-export { generateResponse, loadVectorStore, initGeminiClient };
+export {
+  generateResponse,
+  loadVectorStore,
+  initGeminiClient,
+  initGeminiEmbeddings,
+};
