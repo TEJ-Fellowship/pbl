@@ -1,0 +1,141 @@
+[
+  {
+    "description": "Table 1",
+    "headers": [
+      "United States (US)"
+    ],
+    "rows": []
+  },
+  {
+    "description": "Table 2",
+    "headers": [
+      "Payment type",
+      "Description",
+      "Rate per transaction"
+    ],
+    "rows": [
+      {
+        "Payment type": "Cards and third-party digital wallet transactions",
+        "Description": "For standard merchants1",
+        "Rate per transaction": "2.89% + 0.29 USD"
+      },
+      {
+        "Payment type": "Pass-through American Express transaction2",
+        "Description": "0.15 USD"
+      },
+      {
+        "Payment type": "Presented in any non-USD currency",
+        "Description": "Additional 1%"
+      },
+      {
+        "Payment type": "Customer card issued outside of the United States",
+        "Description": "Additional 1%"
+      },
+      {
+        "Payment type": "Chargeback",
+        "Description": "15.00 USD"
+      },
+      {
+        "Payment type": "PayPal transactions",
+        "Description": "Subject to the terms applicable to your PayPal account",
+        "Rate per transaction": "PayPal Merchant Fees"
+      },
+      {
+        "Payment type": "Venmo transactions",
+        "Description": "Venmo is available in the US only",
+        "Rate per transaction": "3.49% + 0.49 USD"
+      },
+      {
+        "Payment type": "ACH direct debit transactions",
+        "Description": "Maximum per transaction fee is capped at 5.00 USD",
+        "Rate per transaction": "0.75%"
+      },
+      {
+        "Payment type": "Returned by banking network",
+        "Description": "5.00 USD"
+      },
+      {
+        "Payment type": "Disputed by your customer as unauthorized",
+        "Description": "5.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 3",
+    "headers": [
+      "Payment type",
+      "Description",
+      "Rate per transaction"
+    ],
+    "rows": [
+      {
+        "Payment type": "Cards and third-party digital wallet transactions",
+        "Description": "For verified charitable 501(c)(3) organizations",
+        "Rate per transaction": "2.19% + 0.29 USD"
+      },
+      {
+        "Payment type": "Pass-through American Express transaction1",
+        "Description": "0.15 USD"
+      },
+      {
+        "Payment type": "Presented in any non-USD currency",
+        "Description": "Additional 1%"
+      },
+      {
+        "Payment type": "Customer card issued outside of the United States",
+        "Description": "Additional 1%"
+      },
+      {
+        "Payment type": "Chargeback",
+        "Description": "15.00 USD"
+      },
+      {
+        "Payment type": "PayPal transactions",
+        "Description": "Subject to the terms applicable to your PayPal account",
+        "Rate per transaction": "PayPal Merchant Fees"
+      },
+      {
+        "Payment type": "Venmo transactions",
+        "Description": "Venmo is available in the US only",
+        "Rate per transaction": "3.49% + 0.49 USD"
+      },
+      {
+        "Payment type": "ACH direct debit transactions",
+        "Description": "Maximum per transaction fee is capped at 5.00 USD",
+        "Rate per transaction": "0.75%"
+      },
+      {
+        "Payment type": "Returned by banking network",
+        "Description": "5.00 USD"
+      },
+      {
+        "Payment type": "Disputed by your customer as unauthorized",
+        "Description": "5.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 4",
+    "headers": [
+      "Service",
+      "Description",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Service": "Chargeback Protection Tools1",
+        "Description": "Chargeback Protection",
+        "Fee": "Starting at 0.4% per transaction"
+      },
+      {
+        "Service": "Effortless Chargeback Protection",
+        "Description": "Starting at 0.6% per transaction"
+      },
+      {
+        "Service": "Fraud Maintenance Tools2",
+        "Description": "Fraud Protection Lite",
+        "Fee": "0.05 USD per inquiry"
+      }
+    ]
+  }
+]

@@ -1,0 +1,140 @@
+{
+  "page": "https://www.paypal.com/us/webapps/mpp/security/seller-protection",
+  "sections": [
+    {
+      "title": "",
+      "type": "text",
+      "content": "Sign Up\nPersonalPayPal for YouShopping & RewardsShopping & RewardsBuy Now, Pay LaterRewardsPayPal credit and cardsPayPal Debit CardPaying with PayPalSend & ReceiveSend and Receive OverviewSend moneyRequest moneyPool moneyDonateStart sellingManage Your MoneyManage Your Money OverviewAdd cards and banksSecurity and safetySet up Direct DepositAdd cashPay billsSavings and goalsCryptocurrencyGet the AppHow PayPal WorksMoney HubBusinessPayPal OpenThe platform for all businessBusiness TypesEnterprisesSmall BusinessesSolopreneursPartnersPlatformsDevelopersAccept PaymentsAccept Payments OverviewOnline CheckoutInstallment PaymentsGuest CheckoutAccept VenmoPOS SystemInvoicingPayment LinksEnterprise PaymentsTap to PayRisk & OperationsMake PaymentsRisk ManagementFraud ProtectionReporting ToolsShippingFinancial ServicesFinancial Services OverviewWorking Capital LoanBusiness LoanBusiness Debit CardGet StartedFeesPayment Methods3rd Party IntegrationsBusiness Resource CenterEventsAdvertiserDeveloper"
+    },
+    {
+      "title": "Shopping & Rewards",
+      "type": "text",
+      "content": "Shopping & RewardsBuy Now, Pay LaterRewardsPayPal credit and cardsPayPal Debit CardPaying with PayPal"
+    },
+    {
+      "title": "Send & Receive",
+      "type": "text",
+      "content": "Send and Receive OverviewSend moneyRequest moneyPool moneyDonateStart selling"
+    },
+    {
+      "title": "Manage Your Money",
+      "type": "text",
+      "content": "Manage Your Money OverviewAdd cards and banksSecurity and safetySet up Direct DepositAdd cashPay billsSavings and goalsCryptocurrency\nGet the AppHow PayPal WorksMoney Hub"
+    },
+    {
+      "title": "PayPal Open",
+      "type": "text",
+      "content": "The platform for all business"
+    },
+    {
+      "title": "Business Types",
+      "type": "text",
+      "content": "EnterprisesSmall BusinessesSolopreneursPartnersPlatformsDevelopers"
+    },
+    {
+      "title": "Accept Payments",
+      "type": "text",
+      "content": "Accept Payments OverviewOnline CheckoutInstallment PaymentsGuest CheckoutAccept VenmoPOS SystemInvoicingPayment LinksEnterprise PaymentsTap to Pay"
+    },
+    {
+      "title": "Risk & Operations",
+      "type": "text",
+      "content": "Make PaymentsRisk ManagementFraud ProtectionReporting ToolsShipping"
+    },
+    {
+      "title": "Financial Services",
+      "type": "text",
+      "content": "Financial Services OverviewWorking Capital LoanBusiness LoanBusiness Debit Card\nGet StartedFees\nPayment Methods3rd Party IntegrationsBusiness Resource CenterEvents\nHelp\nWe know selling online securely is a challenge for merchants. Our Seller Protection will protect your eligible online sales, minimize claims and chargebacks and help prevent merchant fraud. Go ahead, set up shop. We've got your back.Set up PayPal merchant account"
+    },
+    {
+      "title": "You're covered",
+      "type": "text",
+      "content": "When transactions need only a login and password, you don’t expose bank details or card numbers. It’s an added layer of protection for your financial information."
+    },
+    {
+      "title": "24/7 Monitoring",
+      "type": "text",
+      "content": "We monitor transactions 24/7. So rest easy — even when you let your guard down, we won’t."
+    },
+    {
+      "title": "Secure Technology",
+      "type": "text",
+      "content": "Our encryption helps keep your online transactions heavily guarded from start to finish."
+    },
+    {
+      "title": "Merchant fraud prevention",
+      "type": "text",
+      "content": "Contact us if you or your employees notice anything suspicious so we may help you prevent merchant fraudulent transactions. We'll never ask for sensitive information in an email."
+    },
+    {
+      "title": "Dispute resolution",
+      "type": "text",
+      "content": "If there’s a problem with a transaction, we’ll put a hold on the funds until the issue is resolved. We investigate and stay involved every step of the way."
+    },
+    {
+      "title": "Global transactions",
+      "type": "text",
+      "content": "Buy or sell around the globe. We process and convert 25 currencies from more than 200 markets to make sending, spending, and selling simple and secure."
+    },
+    {
+      "title": "Seller Protection",
+      "type": "text",
+      "content": "We understand how important security and peace of mind are in online business, so we created a Seller Protection program to help guard you from losing money to claims and chargebacks. Seller Protection covers two particular types of buyer complaints:"
+    },
+    {
+      "title": "“Unauthorized Transaction”",
+      "type": "text",
+      "content": "There’s a transaction, but the accountholder claims that he or she didn’t authorize payment."
+    },
+    {
+      "title": "“Item Not Received”",
+      "type": "text",
+      "content": "A buyer pays for an item, but claims through PayPal's Purchase Protection program that they didn’t receive it.\nThese complaints can affect your merchant PayPal balance. But with Seller Protection, if the transaction meets our requirements, we’ll help keep your balance intact. There’s no additional charge for this service; we want your transactions to be protected. With Seller Protection, you can carry on with your business knowing that we have your back."
+    },
+    {
+      "title": "Protected transactions",
+      "type": "text",
+      "content": "We cover physical goods that are sold and shipped with proof of delivery from within the United States to buyers around the globe.  We also cover intangible items (digital items and services) subject to the Intangible Goods Additional Requirements below within the United States to buyers around the globe. To help ensure you’re protected, provide compelling evidence to show the item was delivered or the purchase order was fulfilled."
+    },
+    {
+      "title": "What are the requirements for Seller Protection?",
+      "type": "text",
+      "content": "Your permanent address (listed in your PayPal account) must be in the United States.The item must be a physical, tangible good that can be shipped, except for items subject to the Intangible Goods Additional Requirements below. Ship to the address on the Transaction Details page.If we request documentation or other relevant information, we ask that you respond promptly (typically within ten business days).\nYou must provide proof of delivery for the item\nThe payment must be marked “eligible” on the Transaction Details page.You must provide Proof of Delivery or Proof of Shipment as described in User Agreement.\nMet integration requirementsPaid Standard Transaction Fees on the sale.Delivered the item and provide Proof of shipment or delivery for Intangible Goods.Provide signature confirmation when the full amount of the payment (including shipping and taxes) exceeds the amount listed in the signature confirmation threshold table (based on the currency of the payment)."
+    },
+    {
+      "title": "What isn’t covered by Seller Protection?",
+      "type": "text",
+      "content": "Claims, chargebacks, or reversals filed because the item is significantly different from how it was described (e.g. you described an item as “new,” but sent a used one).Item Not Received claims filed by your buyer directly with their card issuerIt involves an item that PayPal determines, in its sole discretion, is a counterfeit item.It involves an item that you deliver in person, including in connection with a payment made in your physical store, unless the buyer paid for the transaction in person by using a PayPal goods and services QR code.It involves sales that are not processed either through a buyer’s PayPal account or a PayPal guest checkout transaction.  It involves items equivalent to cash including gift cards.It involves a donation.It relates to the purchase of a financial product or investment of any kind.It involves a payment sent using PayPal’s friends and family functionality.It involves a payment made using PayPal Payouts and Mass Pay.The item is a vehicle, including, but not limited to a motor vehicle, motorcycle, recreational vehicle, aircraft or boat.Payments made in respect of gold (whether in physical form or in exchange-traded form)."
+    },
+    {
+      "title": "What is Proof of Delivery?",
+      "type": "text",
+      "content": "Date of delivery and ‘delivered’ statusAn address for the recipient that matches the shipping address on the Transaction Details pageAn address for the recipient showing at least the city/state, city/country, or zip/postal code (or international equivalent). Signature confirmation when the full amount of the payment (including shipping and taxes) exceeds the amount (based on the currency of the payment) listed in the signature confirmation threshold table Signature confirmation is online documentation, viewable at the shipping company’s website, indicating that the item was signed for.\nElectronically sent to the recipient, including the recipient’s address (email, IP, etc.), where applicable; orReceived or accessed by the recipient."
+    },
+    {
+      "title": "What is Proof of Shipment?",
+      "type": "text",
+      "content": "Date of shipmentAn address for the recipient that matches the shipping address on the Transaction Details pageAn address for the recipient showing at least the city/state, city/country, or zip/postal code (or international equivalent)."
+    },
+    {
+      "title": "How do I provide Proof of Delivery or Proof of Shipment?",
+      "type": "text",
+      "content": "Go to the Resolutions Center, where we’ll provide an estimated timeline and guide you through the process."
+    },
+    {
+      "title": "What can you do ahead of time to be covered by Seller Protection?",
+      "type": "text",
+      "content": "If it's eligible, great. You don’t need to do anything to register beforehand for coverage.The date the item was shipped.The recipient’s address, showing at least the city and state, or city and country, or zip/postal code (or international equivalent). The address information on your shipping receipt must match the address on the Transaction Details page.If your transaction isn’t eligible or is only partially eligible, please note that you bear responsibility for any problems or losses. So exercise caution, and review your orders carefully for any indication of fraud."
+    },
+    {
+      "title": "Tips for secure sales with PayPal",
+      "type": "text",
+      "content": "For payments over $750 USD (including shipping and tax), be sure to get signature confirmation of delivery in addition to proof of shipment (see above).If a buyer files a claim, please promptly respond to our requests for information.Ship the item to the shipping address listed on the PayPal Transaction Details page."
+    },
+    {
+      "title": "What can Seller Protection do for you if a customer files a claim?",
+      "type": "text",
+      "content": "First, log in to your account to see if the transaction was eligible or partially eligible. Even if we can’t cover you for the transaction, responding in the Resolutions Center makes it easier for us to help you through the claim.\nTake charge at checkout.\nSign up: 1-855-456-1320Support: www.paypal.com/help\nAvoiding chargebacks\n                \nAvoiding mobile payment fraud\n                \nAvoiding fraudulent orders\n                \nAvoiding frozen PayPal accounts\n                \nCommon email scams\nDispute resolution process\n                \nEmail, encryption, and other protections\n                \nPassword and PIN security\n                \nProblem with a purchase?\n                \nProblem with a sale?\nReporting security issues\n                \nReport a suspicious email or website\n                \nReport identity theft\n                \nStop fraudulent emails and websites\n                \nSystem security tips\nHelpContactFeesSecurity CenterPrivacy CenterShopAppsEnterprisePartners\nSee all countries/regions\nAboutNewsroomJobsInvestor RelationsGovernment Relations\n© 1999–2025AccessibilityPrivacy StatementCookiesLegalLicenses\nPayPal is located at 2211 N 1st St. San Jose, CA 95131"
+    }
+  ]
+}
