@@ -249,10 +249,29 @@ async function startChat() {
           if (result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
             result.sources.forEach((source) => {
-              console.log(
-                `${source.index}. ${source.metadata.doc_title} (${source.metadata.category})`
-              );
-              console.log(`   URL: ${source.metadata.source_url}`);
+              // Generate a better title from content if metadata title is empty
+              let title = source.metadata.title || source.metadata.doc_title;
+              if (!title || title.trim() === "") {
+                // Extract first meaningful line from content as title
+                const contentLines = source.content
+                  .split("\n")
+                  .filter((line) => line.trim() !== "");
+                const firstLine = contentLines[0] || "";
+                title =
+                  firstLine.length > 60
+                    ? firstLine.substring(0, 60) + "..."
+                    : firstLine;
+                if (!title) title = "Stripe Documentation";
+              }
+
+              const category = source.metadata.category || "documentation";
+              const url =
+                source.metadata.source ||
+                source.metadata.source_url ||
+                "https://stripe.com/docs";
+
+              console.log(`${source.index}. ${title} (${category})`);
+              console.log(`   URL: ${url}`);
               console.log(`   Relevance: ${source.score} keywords matched`);
             });
           }
