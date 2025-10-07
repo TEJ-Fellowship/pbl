@@ -2,6 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import config from "../config/config.js";
 
 // Stripe documentation sources
 const SOURCES = {
@@ -24,7 +25,7 @@ async function scrapeDoc(url, category) {
 
   try {
     // Rate limiting
-    await delay(1000);
+    await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
     const response = await axios.get(url, {
       headers: {
