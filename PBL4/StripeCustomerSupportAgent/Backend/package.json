@@ -11,9 +11,7 @@
     "scrape": "node src/scraper.js",
     "ingest": "node src/ingest.js",
     "chat": "node src/chat.js",
-    "chat-simple": "node src/chat-simple.js",
-    "chat-openai": "node src/chat-openai.js",
-    "dev": "npm run scrape && npm run ingest && npm run chat-simple",
+    "dev": "npm run scrape && npm run ingest && npm run chat",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
