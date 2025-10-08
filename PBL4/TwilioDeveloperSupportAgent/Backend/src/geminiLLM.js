@@ -23,7 +23,7 @@ async function getEmbedding(text) {
 
 /**
  * generateAnswer(prompt)
- * - returns string answer
+ * - returns string answerd
  */
 async function generateAnswer(prompt, opts = {}) {
   try {

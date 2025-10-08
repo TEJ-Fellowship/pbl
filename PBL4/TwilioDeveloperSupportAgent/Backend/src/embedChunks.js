@@ -6,7 +6,7 @@ dotenv.config();
 const { getEmbedding } = require("./geminiLLM");
 
 async function embedChunks() {
-  const chunks = JSON.parse(fs.readFileSync("./src/data/chunks.json", "utf-8"));
+  const chunks = JSON.parse(fs.readFileSync("./data/chunks.json", "utf-8"));
   const embeddings = [];
 
   for (const chunk of chunks) {
@@ -29,7 +29,7 @@ async function embedChunks() {
   }
 
   fs.writeFileSync(
-    "./src/data/embeddings.json",
+    "./data/embeddings.json",
     JSON.stringify(embeddings, null, 2)
   );
 

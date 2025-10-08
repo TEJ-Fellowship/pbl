@@ -10,7 +10,7 @@
       "In Twilio's ecosystem, each product corresponds to an API. For example, Twilio Messaging corresponds to the Messaging API. Although each API has its own unique features, they all share a common set of principles and practices. This consistency allows you to work with different Twilio APIs in a similar way. You can use the APIs directly over HTTPS or through Twilio SDKs available for several programming languages.",
       "In this section, you'll learn how to work with the Twilio APIs:"
     ],
-    "scrapedAt": "2025-10-07T06:22:22.115Z"
+    "scrapedAt": "2025-10-08T05:37:58.329Z"
   },
   {
     "url": "https://www.twilio.com/docs/sms/quickstart",
@@ -215,7 +215,7 @@
       "With the Ruby development server and ngrok running, send an SMS to your Twilio phone number:",
       "An HTTP request shows in your ngrok console, and you get the response back as an SMS on the Twilio Virtual Phone."
     ],
-    "scrapedAt": "2025-10-07T06:22:24.680Z"
+    "scrapedAt": "2025-10-08T05:37:59.759Z"
   },
   {
     "url": "https://www.twilio.com/docs/api/errors",
@@ -240,7 +240,7 @@
       "Back to top",
       "Back to top"
     ],
-    "scrapedAt": "2025-10-07T06:22:26.307Z"
+    "scrapedAt": "2025-10-08T05:38:01.330Z"
   },
   {
     "url": "https://www.twilio.com/docs/usage/webhooks",
@@ -259,6 +259,6 @@
       "Get an in-depth discussion of webhooks, learn how to validate that inbound webhooks are from Twilio, and read answers to questions from the Twilio developer community.",
       "Ready to start implementing webhooks with your own application? Want to see what capabilities webhooks have? Follow along with these tutorials to learn how to track the delivery status for messages, reply to text messages, or use Azure Functions to create serverless webhooks."
     ],
-    "scrapedAt": "2025-10-07T06:22:27.415Z"
+    "scrapedAt": "2025-10-08T05:38:02.756Z"
   }
 ]

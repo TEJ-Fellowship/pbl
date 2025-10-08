@@ -39,7 +39,7 @@ function extractErrorCodes(text) {
 // 🎯 MAIN FUNCTION
 function chunkDocs() {
   const rawDocs = JSON.parse(
-    fs.readFileSync("./src/data/twilio_docs/scraped.json", "utf-8")
+    fs.readFileSync("./data/twilio_docs/scraped.json", "utf-8")
   );
   const allChunks = [];
 
@@ -58,7 +58,7 @@ function chunkDocs() {
   });
 
   fs.writeFileSync(
-    "./src/data/chunks.json",
+    "./data/chunks.json",
     JSON.stringify(allChunks, null, 2)
   );
   console.log(`✅ Chunking complete! Total chunks: ${allChunks.length}`);

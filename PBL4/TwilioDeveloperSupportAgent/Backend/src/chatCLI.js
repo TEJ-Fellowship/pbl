@@ -1,9 +1,11 @@
 // backend/src/chatCLI.js
 const readlineSync = require("readline-sync");
+
 const { chatWithDocs } = require("./chatAgent.js");
 
 async function startChat() {
   console.log("🤖 Twilio Developer Support Agent Ready!");
+
   console.log("Type your question (or 'exit' to quit).");
 
   while (true) {
