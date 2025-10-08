@@ -7,7 +7,7 @@ import config from "../config/config.js";
 // Stripe documentation sources
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
-//   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
+  sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
   errors: "https://www.twilio.com/docs/api/errors",
   webhooks: "https://www.twilio.com/docs/usage/webhooks",
 };

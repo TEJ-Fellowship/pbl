@@ -233,7 +233,7 @@ async function generateResponse(query, chunks, geminiClient) {
     }));
 
     // Generate response using Gemini
-    const prompt = `You are an expert Twilio API support assistant with deep knowledge of Twilio's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
+    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
 
 CONTEXT (Twilio Documentation):
 ${context}
@@ -257,7 +257,7 @@ FORMAT YOUR RESPONSE:
 - Mention any prerequisites or setup requirements
 - End with source citations
 
-Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
+`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -399,7 +399,7 @@ async function startChat() {
                 `   Relevance: ${relevanceScore.toFixed(3)} ${relevanceType}`
               );
             });
-          }
+        }
         } catch (error) {
           console.error("❌ Error processing question:", error.message);
         }

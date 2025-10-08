@@ -15,7 +15,7 @@ const config = {
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
-  PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME || "stripe-docs",
+  PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME || "twilio",
 
   // Server
 //   PORT: process.env.PORT,
