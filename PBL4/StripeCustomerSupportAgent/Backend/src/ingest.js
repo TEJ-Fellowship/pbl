@@ -117,13 +117,17 @@ async function storeChunks(chunks, embeddings, pinecone) {
   console.log("💾 Storing chunks in Pinecone...");
 
   try {
+    // Get the pinecone index
     const index = pinecone.Index(config.PINECONE_INDEX_NAME);
     console.log(`📊 Using Pinecone index: ${config.PINECONE_INDEX_NAME}`);
 
     // Prepare vectors for upsert
     const vectors = [];
     for (const chunk of chunks) {
+      // Generate embedding for each chunk
       const embedding = await embeddings.embedQuery(chunk.pageContent);
+
+      // Add the chunk to the vectors
       vectors.push({
         id: chunk.metadata.chunk_id,
         values: embedding,
@@ -139,11 +143,11 @@ async function storeChunks(chunks, embeddings, pinecone) {
       });
     }
 
-    // Upsert vectors in batches
+    // Upsert vectors in batches of 100 to avoid timeouts
     const batchSize = 100;
     for (let i = 0; i < vectors.length; i += batchSize) {
       const batch = vectors.slice(i, i + batchSize);
-      await index.upsert(batch);
+      await index.upsert(batch); // Upload to Pinecone
       console.log(
         `📦 Upserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
           vectors.length / batchSize

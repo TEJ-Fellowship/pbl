@@ -79,7 +79,7 @@ async function scrapeDoc(url, category) {
     const content = $("main").text() || $("article").text() || $("body").text();
     const title = $("h1").first().text() || $("title").text();
 
-    console.log("content before cleaning", content);
+    // console.log("content before cleaning", content);
 
     // Clean up the content to make it more readable and secure
     const cleanContent = content
