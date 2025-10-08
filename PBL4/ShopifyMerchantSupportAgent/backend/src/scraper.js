@@ -1,163 +1,192 @@
-// // scraper.js
-// import { chromium } from 'playwright';
-// import fs from 'fs-extra';
-// import path from 'path';
+import axios from "axios";
+import * as cheerio from "cheerio";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath, pathToFileURL } from "url";
+import puppeteer from "puppeteer";
+import { cleanHtmlText, sanitizeFilename } from "./utils/cleaner.js";
 
-// const SOURCES = [
-//    { category: "helpCenter", url: "https://help.shopify.com/"},
-//    {category: "manual", url:"https://help.shopify.com/manual"},
-//   ];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// const OUTPUT_DIR = './data/shopify_docs/';
+// Focus on key Shopify sections for Tier 1 (combine core + additional sources)
+const SOURCES = {
+  // Existing core paths
+  getting_started:
+    "https://help.shopify.com/en/manual/intro-to-shopify/getting-started",
+  products: "https://help.shopify.com/en/manual/products",
+  orders: "https://help.shopify.com/en/manual/orders",
+  // Additional sources from provided sample
+  helpCenter: "https://help.shopify.com/en",
+  manual_getting_started: "https://help.shopify.com/en/manual/getting-started",
+  manual_products: "https://help.shopify.com/en/manual/products",
+  manual_orders: "https://help.shopify.com/en/manual/orders",
+};
 
-// async function scrapePage(url, category) {
-//   const browser = await chromium.launch({ headless: false });
-//   const page = await browser.newPage();
+async function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-//   console.log(`🔗 Visiting ${url}...`);
-//   await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-//   // Remove unwanted elements using JS in the page
-//   await page.evaluate(() => {
-//     const selectors = ['nav', 'footer', '.stripe-header', '.stripe-footer', '.sidebar'];
-//     selectors.forEach(sel => {
-//       document.querySelectorAll(sel).forEach(el => el.remove());
-//     });
-//   });
-
-//   // Extract main content
-//   const content = await page.evaluate(() => {
-//     const main = document.querySelector('main');
-//     return main ? main.innerText : document.body.innerText;
-//   });
-
-//   const title = await page.evaluate(() => {
-//     const h1 = document.querySelector('h1');
-//     return h1 ? h1.innerText : document.title;
-//   });
-
-//   await browser.close();
-
-//   return {
-//     url,
-//     category,
-//     title: title.trim(),
-//     content: content.trim(),
-//     scrapedAt: new Date().toISOString(),
-//   };
-// }
-
-// async function main() {
-//   await fs.ensureDir(OUTPUT_DIR);
-
-//   const results = [];
-
-//   for (const { category, url } of SOURCES) {
-//     try {
-//       const pageData = await scrapePage(url, category);
-//       results.push(pageData);
-
-//       const fileName = `${category}_${url.replace(/https:\/\/help\.shopify\.com\/?/, '').replace(/\//g, '_') || 'index'}`;
-//       await fs.writeJson(path.join(OUTPUT_DIR, `${fileName}.json`), pageData, { spaces: 2 });
-
-//       console.log(`✅ Saved ${fileName}.json`);
-//     } catch (error) {
-//       console.error(`❌ Failed to scrape ${url}:`, error.message);
-//     }
-//   }
-
-//   console.log(`🎉 Scraped ${results.length} pages.`);
-// }
-
-// main();
-
-
-
-
-
-
-
-// scraper.js
-import { chromium } from 'playwright';
-import fs from 'fs-extra';
-import path from 'path';
-
-
-
-
-const SOURCES = [
-    { category: "helpCenter", url: "https://help.shopify.com/en" },
-    { category: "manual_getting_started", url: "https://help.shopify.com/en/manual/getting-started" },
-    { category: "manual_products", url: "https://help.shopify.com/en/manual/products" },
-    { category: "manual_orders", url: "https://help.shopify.com/en/manual/orders" },
+function determineMerchantLevel({ content, section }) {
+  const advancedKeywords = [
+    "api",
+    "graphql",
+    "liquid",
+    "webhook",
+    "metafield",
+    "script tag",
+    "theme development",
+    "javascript",
+    "css",
+    "html",
+    "custom code",
+    "integration",
+    "automation",
+    "bulk operations",
+    "csv import",
+    "developer",
+    "programming",
+    "customize theme",
   ];
+  const beginnerKeywords = [
+    "getting started",
+    "setup",
+    "basic",
+    "simple",
+    "first time",
+    "new to",
+    "introduction",
+    "overview",
+    "getting set up",
+    "checklist",
+    "tutorial",
+  ];
+  const lower = (content || "").toLowerCase();
+  const sec = (section || "").toLowerCase();
 
-const OUTPUT_DIR = './data/shopify_docs/';
-
-async function scrapePage(url, category) {
-  const browser = await chromium.launch({ headless: false });
-  const page = await browser.newPage();
-
-  console.log(`🔗 Visiting ${url}...`);
-  await page.goto(url, { waitUntil: 'networkidle' }); // wait for network calls
-
-  // Wait for Shopify to render content (helps for /manual)
-  try {
-    await page.waitForSelector('main', { timeout: 15000 });
-  } catch {
-    console.warn('⚠️ main content not found quickly, continuing...');
+  // Explicit section priority
+  if (
+    sec === "getting_started" ||
+    sec.includes("getting-started") ||
+    sec.includes("getting_started")
+  ) {
+    return "beginner";
   }
 
-  // Remove unwanted parts
-  await page.evaluate(() => {
-    const selectors = ['nav', 'footer', '.header', '.footer', '.sidebar'];
-    selectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => el.remove());
-    });
+  // Score content signals
+  const advHits = advancedKeywords.reduce(
+    (n, k) => n + (lower.includes(k) ? 1 : 0),
+    0
+  );
+  const begHits = beginnerKeywords.reduce(
+    (n, k) => n + (lower.includes(k) ? 1 : 0),
+    0
+  );
+
+  // Section-based defaults for core operational docs
+  const isOpsSection = sec.includes("products") || sec.includes("orders");
+
+  // If there are strong advanced signals, classify as advanced regardless of beginner mentions
+  if (advHits >= 2 || (advHits >= 1 && !begHits)) {
+    return "advanced";
+  }
+
+  // Beginner-only content
+  if (begHits >= 1 && advHits === 0) {
+    return "beginner";
+  }
+
+  // Default to intermediate for operational sections when signals are mixed/neutral
+  if (isOpsSection) {
+    return "intermediate";
+  }
+
+  // Fallback
+  return "beginner";
+}
+
+async function scrapeDoc(url, section, browser) {
+  // Render via Puppeteer to avoid 403 and JS-rendered content
+  const page = await browser.newPage();
+  // Block non-essential resources for performance
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    const type = req.resourceType();
+    if (
+      type === "image" ||
+      type === "media" ||
+      type === "font" ||
+      type === "stylesheet" ||
+      type === "websocket"
+    ) {
+      req.abort();
+    } else {
+      req.continue();
+    }
   });
-
-  // Extract visible content
-  const content = await page.evaluate(() => {
-    const main = document.querySelector('main');
-    return main ? main.innerText : document.body.innerText;
-  });
-
-  const title = await page.evaluate(() => {
-    const h1 = document.querySelector('h1');
-    return h1 ? h1.innerText : document.title;
-  });
-
-  await browser.close();
-
+  await page.setUserAgent(
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+  );
+  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page
+    .waitForSelector("main, article, body", { timeout: 15000 })
+    .catch(() => {});
+  const html = await page.content();
+  const $ = cheerio.load(html);
+  $("nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb").remove();
+  const mainContent =
+    $("main").text() || $("article").text() || $("body").text();
+  const title = $("h1").first().text() || $("title").text();
+  const cleaned = cleanHtmlText(mainContent);
+  await page.close();
+  const merchant_level = determineMerchantLevel({ content: cleaned, section });
   return {
     url,
-    category,
-    title: title.trim(),
-    content: content.trim(),
+    section,
+    title: (title || section).trim(),
+    content: cleaned,
+    merchant_level,
     scrapedAt: new Date().toISOString(),
   };
 }
 
 async function main() {
-  await fs.ensureDir(OUTPUT_DIR);
-
-  const results = [];
-
-  for (const { category, url } of SOURCES) {
+  const outDir = path.join(__dirname, "../data/shopify_docs");
+  await fs.mkdir(outDir, { recursive: true });
+  const docs = [];
+  const browser = await puppeteer.launch({ headless: "new" });
+  for (const [section, url] of Object.entries(SOURCES)) {
+    console.log(`Scraping ${section} -> ${url}`);
     try {
-      const pageData = await scrapePage(url, category);
-      results.push(pageData);
-
-      const fileName = `${category}_${url.replace(/https:\/\/help\.shopify\.com\/?/, '').replace(/\//g, '_') || 'index'}`;
-      await fs.writeJson(path.join(OUTPUT_DIR, `${fileName}.json`), pageData, { spaces: 2 });
-
-      console.log(`✅ Saved ${fileName}.json`);
-    } catch (error) {
-      console.error(`❌ Failed to scrape ${url}:`, error.message);
+      const doc = await scrapeDoc(url, section, browser);
+      docs.push(doc);
+      const fname = sanitizeFilename(section) + ".json";
+      await fs.writeFile(
+        path.join(outDir, fname),
+        JSON.stringify(doc, null, 2),
+        "utf-8"
+      );
+      console.log(`Saved ${fname} (${doc.content.length} chars)`);
+    } catch (err) {
+      console.error(
+        `Failed to scrape ${section}:`,
+        err?.response?.status || err.message
+      );
     }
   }
-
-  console.log(`🎉 Scraped ${results.length} pages.`);
+  await browser.close();
+  await fs.writeFile(
+    path.join(outDir, "scraped.index.json"),
+    JSON.stringify(docs, null, 2),
+    "utf-8"
+  );
+  console.log(`✅ Scraped ${docs.length} documents`);
 }
 
-main();
+if (import.meta.url === pathToFileURL(__filename).href) {
+  console.log("Starting scraper...");
+  main().catch((e) => {
+    console.error("Scraper failed:", e?.message || e);
+    process.exit(1);
+  });
+}

@@ -1,191 +1,126 @@
-import fs from "fs-extra";
-import path from "path";
-import { fileURLToPath } from "url";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { encodingForModel } from "js-tiktoken";
-
-// Get current directory for absolute paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const DATA_DIR = path.join(__dirname, "../../../data/shopify_docs");
-const OUTPUT_DIR = path.join(__dirname, "../../../data/chunks");
-
-// Load tokenizer (for accurate token counting)
-const tokenizer = encodingForModel("gpt-3.5-turbo");
-
-// Helper: count tokens in text
-function countTokens(text) {
-  try {
-    return tokenizer.encode(text).length;
-  } catch (error) {
-    console.warn(
-      `⚠️ Token counting failed for text, using character count/4: ${error.message}`
-    );
-    return Math.ceil(text.length / 4); // Rough estimation
-  }
+// Simple word/char-based chunker with overlap; also supports token-aware chunking via rough tokenization
+export function estimateTokens(t) {
+  if (!t) return 0;
+  const byChars = Math.ceil(t.length / 4);
+  const byWords = (t.match(/\S+/g) || []).length;
+  return Math.max(byWords, byChars);
 }
 
-// Helper: determine merchant level based on content
-function determineMerchantLevel(content, category) {
-  const advancedKeywords = [
-    "api",
-    "liquid",
-    "webhook",
-    "metafield",
-    "script tag",
-    "theme development",
-    "javascript",
-    "css",
-    "html",
-    "custom code",
-    "integration",
-    "automation",
-    "bulk operations",
-    "csv import",
-    "developer",
-    "programming",
-    "customize theme",
-  ];
+export function splitTextIntoChunks(options) {
+  const {
+    text,
+    // char-based defaults
+    chunkSizeChars = 3500,
+    chunkOverlapChars = 400,
+    // token-aware optional settings
+    chunkSizeTokens,
+    chunkOverlapTokens,
+    model,
+  } = options || {};
+  if (!text) return [];
 
-  const beginnerKeywords = [
-    "getting started",
-    "setup",
-    "basic",
-    "simple",
-    "first time",
-    "new to",
-    "introduction",
-    "overview",
-    "getting set up",
-    "checklist",
-    "tutorial",
-  ];
+  const useTokens = Number.isFinite(chunkSizeTokens) && chunkSizeTokens > 0;
 
-  const lowerContent = content.toLowerCase();
+  // Rough tokenizer: estimate tokens as ~4 chars per token
+  const countTokens = estimateTokens;
 
-  // Check for advanced content
-  const hasAdvanced = advancedKeywords.some((keyword) =>
-    lowerContent.includes(keyword)
-  );
-  const hasBeginner = beginnerKeywords.some((keyword) =>
-    lowerContent.includes(keyword)
-  );
+  const paragraphs = text.split(/\n{2,}/);
+  const merged = [];
+  let current = "";
 
-  // Category-based classification
-  if (category === "manual_getting_started") return "beginner";
-  if (category === "helpCenter") return "beginner";
+  const withinBudget = (candidate) => {
+    if (!useTokens) return candidate.length <= chunkSizeChars;
+    return countTokens(candidate) <= chunkSizeTokens;
+  };
 
-  // Content-based classification
-  if (hasAdvanced && !hasBeginner) return "advanced";
-  if (hasBeginner) return "beginner";
-
-  // Default based on category
-  if (category.includes("products") || category.includes("orders"))
-    return "intermediate";
-
-  return "beginner";
-}
-
-// Helper: extract section from content
-function extractSection(content, title) {
-  // Try to find section headers in content
-  const sectionMatches = content.match(/^([A-Z][^.\n]{10,50})$/gm);
-  if (sectionMatches && sectionMatches.length > 0) {
-    return sectionMatches[0].trim();
-  }
-
-  // Fallback to title
-  if (title && title !== "Untitled") {
-    return title;
-  }
-
-  return "General";
-}
-
-async function main() {
-  try {
-    await fs.ensureDir(OUTPUT_DIR);
-    const files = await fs.readdir(DATA_DIR);
-
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 700, // Updated to meet requirement of 700 tokens
-      chunkOverlap: 100,
-      separators: ["\n\n", "\n", ". ", " ", ""], // Better text splitting
-    });
-
-    console.log(`📁 Processing ${files.length} files from ${DATA_DIR}`);
-
-    for (const file of files) {
-      if (!file.endsWith(".json")) continue;
-
-      try {
-        const filePath = path.join(DATA_DIR, file);
-        const doc = await fs.readJson(filePath);
-
-        const fullText = doc.content || "";
-        const title = doc.title || "Untitled";
-
-        if (!fullText.trim()) {
-          console.warn(`⚠️ Empty content in ${file}, skipping...`);
-          continue;
+  const hardBreakParagraph = (p) => {
+    const out = [];
+    const words = p.split(/\s+/);
+    let buf = "";
+    for (const w of words) {
+      const next = buf ? buf + " " + w : w;
+      if (withinBudget(next)) {
+        buf = next;
+      } else {
+        if (buf) out.push(buf.trim());
+        buf = w;
+        if (!withinBudget(buf)) {
+          // fallback: force-slice by chars if even a word exceeds token/char budget
+          const limit = useTokens
+            ? Math.max(20, Math.floor(chunkSizeTokens * 4))
+            : chunkSizeChars;
+          for (let i = 0; i < buf.length; i += limit) {
+            out.push(buf.slice(i, i + limit));
+          }
+          buf = "";
         }
-
-        // Clean and preserve code blocks
-        const textWithCodeBlocks = fullText.replace(
-          /```[\s\S]*?```/g,
-          (block) => `\n${block}\n`
-        );
-
-        // Split into chunks
-        const chunks = await splitter.splitText(textWithCodeBlocks);
-
-        const chunkData = chunks.map((chunk, i) => {
-          const tokenCount = countTokens(chunk);
-          const merchantLevel = determineMerchantLevel(chunk, doc.category);
-          const section = extractSection(chunk, title);
-
-          return {
-            id: `${file.replace(".json", "")}_chunk_${i}`,
-            text: chunk.trim(),
-            tokens: tokenCount,
-            metadata: {
-              title,
-              section,
-              source: doc.url,
-              category: doc.category,
-              merchant_level: merchantLevel,
-              scraped_at: doc.scrapedAt,
-              chunk_index: i,
-              total_chunks: chunks.length,
-            },
-          };
-        });
-
-        // Save chunks with descriptive filename
-        const outputFileName = `chunks_${file.replace(".json", "")}.json`;
-        const outputPath = path.join(OUTPUT_DIR, outputFileName);
-
-        await fs.writeJson(outputPath, chunkData, { spaces: 2 });
-
-        const avgTokens = Math.round(
-          chunkData.reduce((sum, chunk) => sum + chunk.tokens, 0) /
-            chunkData.length
-        );
-        console.log(
-          `✅ Chunked ${file} → ${chunkData.length} chunks (avg ${avgTokens} tokens each)`
-        );
-      } catch (error) {
-        console.error(`❌ Failed to process ${file}:`, error.message);
       }
     }
+    if (buf) out.push(buf.trim());
+    return out;
+  };
 
-    console.log("🎉 All documents chunked successfully!");
-    console.log(`📂 Chunks saved to: ${OUTPUT_DIR}`);
-  } catch (error) {
-    console.error("❌ Fatal error:", error.message);
-    process.exit(1);
+  for (const p of paragraphs) {
+    const candidate = current ? current + "\n\n" + p : p;
+    if (withinBudget(candidate)) {
+      current = candidate;
+    } else {
+      if (current) merged.push(current);
+      if (!withinBudget(p)) {
+        merged.push(...hardBreakParagraph(p));
+        current = "";
+      } else {
+        current = p;
+      }
+    }
   }
+  if (current) merged.push(current);
+
+  // add overlap
+  if (merged.length <= 1) return merged;
+  const withOverlap = [];
+  for (let i = 0; i < merged.length; i++) {
+    const prev = i > 0 ? merged[i - 1] : "";
+    if (!useTokens) {
+      const overlap = prev.slice(Math.max(0, prev.length - chunkOverlapChars));
+      withOverlap.push((overlap ? overlap + "\n\n" : "") + merged[i]);
+    } else {
+      // Build token-overlap tail
+      const targetOverlap = Math.max(0, chunkOverlapTokens || 0);
+      if (targetOverlap <= 0) {
+        withOverlap.push(merged[i]);
+      } else {
+        // take as many characters from the end of prev as needed to reach the token overlap
+        let tail = "";
+        for (let k = prev.length; k >= 0; k -= 200) {
+          tail = prev.slice(Math.max(0, k - 200)) + tail;
+          if (countTokens(tail) >= targetOverlap || k === 0) break;
+        }
+        // trim tail to approximate desired overlap
+        while (countTokens(tail) > targetOverlap && tail.length > 0) {
+          tail = tail.slice(
+            Math.min(tail.length, Math.ceil(tail.length * 0.9))
+          );
+        }
+        const combined = (tail ? tail + "\n\n" : "") + merged[i];
+        withOverlap.push(combined);
+      }
+    }
+  }
+  return withOverlap;
 }
 
-main();
+export function splitRespectingCodeBlocks(text, opts = {}) {
+  // Keep fenced code blocks intact by splitting around them first
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  const chunks = [];
+  for (const part of parts) {
+    if (!part) continue;
+    if (/^```[\s\S]*?```$/.test(part)) {
+      chunks.push(part);
+    } else {
+      chunks.push(...splitTextIntoChunks({ text: part, ...opts }));
+    }
+  }
+  return chunks;
+}
