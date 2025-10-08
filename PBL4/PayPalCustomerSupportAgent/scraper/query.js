@@ -1,3 +1,4 @@
+//terminal CLI Q & A agent ,- without RAG
 import dotenv from "dotenv";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { pipeline } from "@xenova/transformers";

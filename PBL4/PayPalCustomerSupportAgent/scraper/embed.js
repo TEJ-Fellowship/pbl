@@ -1,4 +1,4 @@
-//terminal CLI Q & A agent ,- without RAG
+//embedding-and storing in pinecone , also added little bit of sentiment analysis
 import dotenv from "dotenv";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { pipeline } from "@xenova/transformers";
