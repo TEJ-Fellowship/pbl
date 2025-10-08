@@ -1,4 +1,4 @@
-// backend/src/geminiLLM.simple.js
+// backend/src/geminiLLM.js
 const dotenv = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 dotenv.config();
