@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "fs-extra": "^11.3.2",
+    "playwright": "^1.56.0"
+  }
+}
