@@ -1,28 +1,49 @@
-// //  backend/src/geminiLLM.js
+// backend/src/geminiLLM.simple.js
 const dotenv = require("dotenv");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 dotenv.config();
 
+// Initialize client - pass API key as string directly
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview-05-20",
-});
 
-// Use a separate embedding model for embeddings
-const embeddingModel = genAI.getGenerativeModel({
-  model: "text-embedding-004",
-});
-
+/**
+ * getEmbedding(text)
+ * - returns Array<number> or null on error
+ */
 async function getEmbedding(text) {
   try {
-    const result = await embeddingModel.embedContent(text);
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const result = await model.embedContent(text);
     return result.embedding.values;
-  } catch (error) {
-    console.error("Error generating embedding:", error);
+  } catch (err) {
+    console.error("getEmbedding error:", err?.message || err);
     return null;
   }
 }
 
-module.exports = { model, getEmbedding };
+/**
+ * generateAnswer(prompt)
+ * - returns string answer
+ */
+async function generateAnswer(prompt, opts = {}) {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp",
+    });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: opts.maxTokens || 512,
+        temperature: opts.temperature || 0.0,
+      },
+    });
+
+    return result.response.text();
+  } catch (err) {
+    console.error("generateAnswer error:", err?.message || err);
+    throw err;
+  }
+}
+
+module.exports = { getEmbedding, generateAnswer };
