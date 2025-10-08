@@ -9,21 +9,121 @@ import { cleanHtmlText, sanitizeFilename } from "./utils/cleaner.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Focus on key Shopify sections for Tier 1
+// Focus on key Shopify sections for Tier 1 (combine core + additional sources)
 const SOURCES = {
+  // Existing core paths
   getting_started:
     "https://help.shopify.com/en/manual/intro-to-shopify/getting-started",
   products: "https://help.shopify.com/en/manual/products",
   orders: "https://help.shopify.com/en/manual/orders",
+  // Additional sources from provided sample
+  helpCenter: "https://help.shopify.com/en",
+  manual_getting_started: "https://help.shopify.com/en/manual/getting-started",
+  manual_products: "https://help.shopify.com/en/manual/products",
+  manual_orders: "https://help.shopify.com/en/manual/orders",
 };
 
 async function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function determineMerchantLevel({ content, section }) {
+  const advancedKeywords = [
+    "api",
+    "graphql",
+    "liquid",
+    "webhook",
+    "metafield",
+    "script tag",
+    "theme development",
+    "javascript",
+    "css",
+    "html",
+    "custom code",
+    "integration",
+    "automation",
+    "bulk operations",
+    "csv import",
+    "developer",
+    "programming",
+    "customize theme",
+  ];
+  const beginnerKeywords = [
+    "getting started",
+    "setup",
+    "basic",
+    "simple",
+    "first time",
+    "new to",
+    "introduction",
+    "overview",
+    "getting set up",
+    "checklist",
+    "tutorial",
+  ];
+  const lower = (content || "").toLowerCase();
+  const sec = (section || "").toLowerCase();
+
+  // Explicit section priority
+  if (
+    sec === "getting_started" ||
+    sec.includes("getting-started") ||
+    sec.includes("getting_started")
+  ) {
+    return "beginner";
+  }
+
+  // Score content signals
+  const advHits = advancedKeywords.reduce(
+    (n, k) => n + (lower.includes(k) ? 1 : 0),
+    0
+  );
+  const begHits = beginnerKeywords.reduce(
+    (n, k) => n + (lower.includes(k) ? 1 : 0),
+    0
+  );
+
+  // Section-based defaults for core operational docs
+  const isOpsSection = sec.includes("products") || sec.includes("orders");
+
+  // If there are strong advanced signals, classify as advanced regardless of beginner mentions
+  if (advHits >= 2 || (advHits >= 1 && !begHits)) {
+    return "advanced";
+  }
+
+  // Beginner-only content
+  if (begHits >= 1 && advHits === 0) {
+    return "beginner";
+  }
+
+  // Default to intermediate for operational sections when signals are mixed/neutral
+  if (isOpsSection) {
+    return "intermediate";
+  }
+
+  // Fallback
+  return "beginner";
+}
+
 async function scrapeDoc(url, section, browser) {
   // Render via Puppeteer to avoid 403 and JS-rendered content
   const page = await browser.newPage();
+  // Block non-essential resources for performance
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    const type = req.resourceType();
+    if (
+      type === "image" ||
+      type === "media" ||
+      type === "font" ||
+      type === "stylesheet" ||
+      type === "websocket"
+    ) {
+      req.abort();
+    } else {
+      req.continue();
+    }
+  });
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
   );
@@ -39,12 +139,13 @@ async function scrapeDoc(url, section, browser) {
   const title = $("h1").first().text() || $("title").text();
   const cleaned = cleanHtmlText(mainContent);
   await page.close();
+  const merchant_level = determineMerchantLevel({ content: cleaned, section });
   return {
     url,
     section,
     title: (title || section).trim(),
     content: cleaned,
-    merchant_level: "beginner",
+    merchant_level,
     scrapedAt: new Date().toISOString(),
   };
 }

@@ -9,7 +9,7 @@
     "scrape": "node ./src/scraper.js",
     "ingest": "node ./src/ingest.js",
     "chat": "node ./src/chat.js",
-    "start": "npm run chat"
+    "start": "npm run scrape && npm run ingest && npm run chat"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

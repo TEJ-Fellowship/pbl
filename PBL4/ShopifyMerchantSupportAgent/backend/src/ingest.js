@@ -2,13 +2,14 @@ import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { splitRespectingCodeBlocks } from "./utils/chunker.js";
+import { splitRespectingCodeBlocks, estimateTokens } from "./utils/chunker.js";
 import { embedTexts } from "./utils/embeddings.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(__dirname, "../data/shopify_docs");
+const CHUNKS_DIR = path.join(__dirname, "../data/chunks");
 
 async function readDocs() {
   const dir = DATA_DIR;
@@ -46,6 +47,7 @@ async function main() {
       "OPENAI_API_KEY is required when EMBEDDINGS_PROVIDER=openai"
     );
   }
+  await fs.mkdir(CHUNKS_DIR, { recursive: true });
   const docs = await readDocs();
   if (docs.length === 0) {
     console.log("No docs found. Run `npm run scrape` first.");
@@ -56,27 +58,136 @@ async function main() {
   const allItems = [];
 
   let idCounter = 0;
+  function determineMerchantLevel({ content, section, docLevel }) {
+    const advancedKeywords = [
+      "api",
+      "graphql",
+      "liquid",
+      "webhook",
+      "metafield",
+      "script tag",
+      "theme development",
+      "javascript",
+      "css",
+      "html",
+      "custom code",
+      "integration",
+      "automation",
+      "bulk operations",
+      "csv import",
+      "developer",
+      "programming",
+      "customize theme",
+    ];
+    const beginnerKeywords = [
+      "getting started",
+      "setup",
+      "basic",
+      "simple",
+      "first time",
+      "new to",
+      "introduction",
+      "overview",
+      "getting set up",
+      "checklist",
+      "tutorial",
+    ];
+    const lower = (content || "").toLowerCase();
+    const sec = (section || "").toLowerCase();
+
+    if (
+      sec === "getting_started" ||
+      sec.includes("getting-started") ||
+      sec.includes("getting_started")
+    ) {
+      return "beginner";
+    }
+
+    const advHits = advancedKeywords.reduce(
+      (n, k) => n + (lower.includes(k) ? 1 : 0),
+      0
+    );
+    const begHits = beginnerKeywords.reduce(
+      (n, k) => n + (lower.includes(k) ? 1 : 0),
+      0
+    );
+
+    const isOpsSection = sec.includes("products") || sec.includes("orders");
+
+    if (advHits >= 2 || (advHits >= 1 && !begHits)) {
+      return "advanced";
+    }
+    if (begHits >= 1 && advHits === 0) {
+      return "beginner";
+    }
+    if (isOpsSection) {
+      return "intermediate";
+    }
+    return docLevel || "beginner";
+  }
+
   for (const doc of docs) {
     const chunks = splitRespectingCodeBlocks(doc.content, {
       chunkSizeTokens: 800,
       chunkOverlapTokens: 100,
       model: "gpt-4o-mini",
     });
-    const vectors = await embedChunks({ chunks });
-    const items = chunks.map((c, i) => ({
+    // Per-chunk token count and merchant level
+    const chunkInfos = chunks.map((c, i) => {
+      const tokens = estimateTokens(c);
+      const merchant_level = determineMerchantLevel({
+        content: c,
+        section: doc.section,
+        docLevel: doc.merchant_level,
+      });
+      return { text: c, tokens, merchant_level, index: i };
+    });
+    const vectors = await embedChunks({
+      chunks: chunkInfos.map((ci) => ci.text),
+    });
+    const items = chunkInfos.map((ci, i) => ({
       id: `doc-${Date.now()}-${idCounter++}`,
-      text: c,
+      text: ci.text,
       embedding: vectors[i],
       metadata: {
         section: doc.section,
-        merchant_level: doc.merchant_level,
+        merchant_level: ci.merchant_level,
         title: doc.title,
         source_url: doc.url,
-        chunk_index: i,
+        chunk_index: ci.index,
+        tokens: ci.tokens,
+        scraped_at: doc.scrapedAt,
       },
     }));
     allItems.push(...items);
     console.log(`Indexed ${items.length} chunks from ${doc.title}`);
+
+    // Also write chunks file for transparency/debugging
+    const baseName = (doc.section || doc.title || "doc")
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]+/g, "-")
+      .replace(/-+/g, "-");
+    const chunkFilePath = path.join(CHUNKS_DIR, `chunks_${baseName}.json`);
+    const chunkFileItems = items.map((it) => ({
+      id: it.id,
+      text: it.text,
+      tokens: it.metadata.tokens,
+      metadata: {
+        title: it.metadata.title,
+        section: it.metadata.section,
+        source: it.metadata.source_url,
+        category: it.metadata.section,
+        merchant_level: it.metadata.merchant_level,
+        scraped_at: it.metadata.scraped_at,
+        chunk_index: it.metadata.chunk_index,
+      },
+    }));
+    await fs.writeFile(
+      chunkFilePath,
+      JSON.stringify(chunkFileItems, null, 2),
+      "utf-8"
+    );
   }
   await fs.writeFile(
     indexPath,
