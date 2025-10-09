@@ -15,15 +15,15 @@ export class AdvancedChunker {
     };
 
     // Determine doc_type from URL
-    if (url.includes("/api/")) metadata.doc_type = "api";
-    else if (url.includes("/guides/")) metadata.doc_type = "guide";
-    else if (url.includes("/support/")) metadata.doc_type = "support";
+    if (url.includes("/api")) metadata.doc_type = "api";
+    else if (url.includes("/guides")) metadata.doc_type = "guide";
+    else if (url.includes("/topics")) metadata.doc_type = "support";
     else metadata.doc_type = "api";
 
     // Determine category from URL
-    if (url.includes("/billing/")) metadata.category = "billing";
-    else if (url.includes("/webhooks/")) metadata.category = "webhooks";
-    else if (url.includes("/payments/")) metadata.category = "payments";
+    if (url.includes("/billing")) metadata.category = "billing";
+    else if (url.includes("/webhooks")) metadata.category = "webhooks";
+    else if (url.includes("/payments")) metadata.category = "payments";
     else metadata.category = "general";
 
     // Detect if content has code
