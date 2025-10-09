@@ -160,19 +160,24 @@ class HybridSearch {
   }
 
   /**
-   * On-demand BM25 search for Pinecone (uses semantic results + BM25 scoring)
+   * On-demand BM25 search for Pinecone (uses provided semantic results + BM25 scoring)
    */
-  async searchBM25OnDemand(query, topK = 10) {
+  async searchBM25OnDemand(query, topK = 10, semanticResults = null) {
     try {
-      // First get semantic results to work with
-      const semanticResults = await this.searchSemantic(query, topK * 2);
+      // Use provided semantic results or fetch them if not provided
+      let resultsToProcess = semanticResults;
 
-      if (semanticResults.length === 0) {
+      if (!resultsToProcess || resultsToProcess.length === 0) {
+        console.log("🔍 Fetching semantic results for BM25 processing...");
+        resultsToProcess = await this.searchSemantic(query, topK * 2);
+      }
+
+      if (resultsToProcess.length === 0) {
         return [];
       }
 
       // Apply BM25-style scoring to semantic results
-      const bm25Results = semanticResults.map((result, index) => {
+      const bm25Results = resultsToProcess.map((result, index) => {
         const content = result.content.toLowerCase();
         const queryTerms = query.toLowerCase().split(/\s+/);
 
@@ -404,11 +409,20 @@ class HybridSearch {
     console.log(`⚖️ Weights: Semantic=${semanticWeight}, BM25=${bm25Weight}`);
 
     try {
-      // Perform both searches in parallel
-      const [bm25Results, semanticResults] = await Promise.all([
-        this.searchBM25(query, topK * 2), // Get more results for better fusion
-        this.searchSemantic(query, topK * 2),
-      ]);
+      // First get semantic results
+      const semanticResults = await this.searchSemantic(query, topK * 2);
+
+      // Then get BM25 results (pass semantic results to avoid duplicate semantic search)
+      let bm25Results;
+      if (this.useOnDemandBM25) {
+        bm25Results = await this.searchBM25OnDemand(
+          query,
+          topK * 2,
+          semanticResults
+        );
+      } else {
+        bm25Results = await this.searchBM25(query, topK * 2);
+      }
 
       // Fuse results
       const fusedResults = this.fuseResults(

@@ -13,7 +13,7 @@
     "chat": "node src/chat.js",
     "test:hybrid": "node src/tests/testHybridSearch.js",
     "demo:hybrid": "node src/tests/demoHybridSearch.js",
-    "test:chat": "node src/testChatIntegration.js",
+    "test:chat": "node src/tests/testChatIntegration.js",
     "dev": "npm run scrape && npm run ingest && npm run chat",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
