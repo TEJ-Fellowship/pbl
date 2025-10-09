@@ -7,8 +7,13 @@ import crypto from "crypto";
 /**
  * CONFIG
  */
-const INPUT_PATH = path.resolve("./src/data/twilio_docs/scraped.json"); // <-- CORRECTED input path
-const OUTPUT_PATH = path.resolve("./src/data/chunks_v2.json");
+const INPUT_PATH = path.join(
+  process.cwd(),
+  "data",
+  "twilio_docs",
+  "scraped.json"
+);
+const OUTPUT_PATH = path.join(process.cwd(), "src", "data", "chunks_v2.json");
 const MAX_TEXT_CHARS = 1500; // target size per text chunk
 
 /* ------------------ Helpers ------------------ */
@@ -368,7 +373,7 @@ function run() {
   if (!fs.existsSync(INPUT_PATH)) {
     console.error(`❌ Input file not found: ${INPUT_PATH}`);
     console.error(
-      "Make sure your scraper saved scraped.json to ./src/data/twilio_docs/scraped.json"
+      "Make sure your scraper saved scraped.json to ./data/twilio_docs/scraped.json (run 'npm run scrape' from Backend)"
     );
     process.exit(1);
   }
@@ -389,6 +394,10 @@ function run() {
     }
   });
 
+  const outDir = path.dirname(OUTPUT_PATH);
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+  }
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allChunks, null, 2), "utf-8");
   console.log(
     `✅ chunkDoc_v2 complete — wrote ${allChunks.length} chunks to ${OUTPUT_PATH}`

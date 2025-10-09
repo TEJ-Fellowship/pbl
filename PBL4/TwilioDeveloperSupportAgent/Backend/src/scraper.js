@@ -38,7 +38,39 @@ async function scrapeDoc(url, category) {
       "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style"
     ).remove();
 
-    // Extract main content
+    // Extract code blocks BEFORE removing <pre>/<code>
+    const codeBlocks = [];
+    $("pre code").each((_, el) => {
+      const t = $(el).text().replace(/\r/g, "").trim();
+      if (t) codeBlocks.push(t);
+    });
+    // Also capture standalone <pre> and inline <code>
+    $("pre").each((_, el) => {
+      // skip ones already captured with pre code (avoid duplicates)
+      if ($(el).find("code").length > 0) return;
+      const t = $(el).text().replace(/\r/g, "").trim();
+      if (t) codeBlocks.push(t);
+    });
+    $("code").each((_, el) => {
+      // avoid capturing from inside <pre>
+      if ($(el).closest("pre").length > 0) return;
+      const t = $(el).text().replace(/\r/g, "").trim();
+      if (t) codeBlocks.push(t);
+    });
+
+    // Deduplicate code blocks
+    const seenCode = new Set();
+    const uniqueCodeBlocks = codeBlocks.filter((c) => {
+      const k = c.replace(/\s+/g, " ").trim();
+      if (!k || seenCode.has(k)) return false;
+      seenCode.add(k);
+      return true;
+    });
+
+    // Remove code elements from text content to avoid duplication
+    $("pre, code").remove();
+
+    // Extract main content (text only, without code)
     const content = $("main").text() || $("article").text() || $("body").text();
     const title = $("h1").first().text() || $("title").text();
     console.log("content before cleaning", content);
@@ -63,6 +95,7 @@ async function scrapeDoc(url, category) {
       wordCount,
       scrapedAt: new Date().toISOString(),
       docType: "api",
+      codeBlocks: uniqueCodeBlocks,
       metadata: {
         source: "twilio.com",
         contentType: response.headers["content-type"] || "text/html",
