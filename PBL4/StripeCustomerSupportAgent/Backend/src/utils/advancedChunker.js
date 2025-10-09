@@ -13,19 +13,19 @@ export class AdvancedChunker {
       last_updated: new Date().toISOString(),
       code_language: "none", // Default value instead of null
     };
-
     // Determine doc_type from URL
-    if (url.includes("/api")) metadata.doc_type = "api";
-    else if (url.includes("/guides")) metadata.doc_type = "guide";
-    else if (url.includes("/topics")) metadata.doc_type = "support";
+    if (url.includes("api")) metadata.doc_type = "api";
+    else if (url.includes("guides")) metadata.doc_type = "guide";
+    else if (url.includes("topics")) metadata.doc_type = "support";
     else metadata.doc_type = "api";
-
     // Determine category from URL
-    if (url.includes("/billing")) metadata.category = "billing";
-    else if (url.includes("/webhooks")) metadata.category = "webhooks";
-    else if (url.includes("/payments")) metadata.category = "payments";
+    if (url.includes("billing")) metadata.category = "billing";
+    else if (url.includes("webhooks")) metadata.category = "webhooks";
+    else if (url.includes("payments")) metadata.category = "payments";
+    else if (url.includes("get-started")) metadata.category = "integration";
+    else if (url.includes("disputes")) metadata.category = "disputes";
+    else if (url.includes("connect")) metadata.category = "connect";
     else metadata.category = "general";
-
     // Detect if content has code
     const codeBlocks = this.codeDetector.extractCodeBlocks(content);
     if (codeBlocks.length > 0) {
@@ -40,7 +40,7 @@ export class AdvancedChunker {
   async createEnhancedChunks(doc, textSplitter) {
     const chunks = [];
     const codeBlocks = this.codeDetector.extractCodeBlocks(doc.pageContent);
-
+    console.log("\n🔍 Code blocks:", codeBlocks);
     // Split main content (without code blocks)
     const cleanContent = this.codeDetector.removeCodeBlocks(doc.pageContent);
     const cleanDoc = new Document({
@@ -48,7 +48,6 @@ export class AdvancedChunker {
       metadata: doc.metadata,
     });
     const mainChunks = await textSplitter.splitDocuments([cleanDoc]);
-
     // Add enhanced metadata to main chunks
     mainChunks.forEach((chunk, index) => {
       const enhancedMetadata = {
