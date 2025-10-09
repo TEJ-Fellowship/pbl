@@ -1,9 +1,10 @@
-//  backend/src/scraper.js
 import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import config from "../config/config.js";
 
+// Stripe documentation sources
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
@@ -11,72 +12,137 @@ const SOURCES = {
   webhooks: "https://www.twilio.com/docs/usage/webhooks",
 };
 
+// Rate limiting: 1 request per second
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function scrapeDoc(url, category) {
-  // Delay between requests to avoid hitting rate limits
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.log(`🔍 Scraping ${category}: ${url}`);
 
-  const response = await axios.get(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (TwilioDocScraper/1.0)",
-    },
-  });
+  try {
+    // Rate limiting
+    await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
-  const $ = cheerio.load(response.data);
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      },
+      timeout: 30000,
+    });
 
-  // Remove non-content sections
-  $("nav, footer, .sidebar, header, .site-footer, .site-header").remove();
+    const $ = cheerio.load(response.data);
 
-  // Extract main content (Twilio uses <main> or .docs-content)
-  const mainContent =
-    $("main").text() || $(".docs-content").text() || $("article").text();
+    // Remove navigation, footer, ads, and other non-content elements
+    $(
+      "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style"
+    ).remove();
 
-  const title = $("h1").first().text();
+    // Extract main content
+    const content = $("main").text() || $("article").text() || $("body").text();
+    const title = $("h1").first().text() || $("title").text();
+    console.log("content before cleaning", content);
+    // Clean up the content
+    const cleanContent = content
+      .replace(/\s+/g, " ") // Replace multiple whitespace with single space
+      .replace(/sk_test_[A-Za-z0-9]+/g, "sk_test_[REDACTED]") // Remove API keys
+      .replace(/sk_live_[A-Za-z0-9]+/g, "sk_live_[REDACTED]") // Remove live API keys
+      .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]") // Remove webhook secrets
+      .replace(/pk_test_[A-Za-z0-9]+/g, "pk_test_[REDACTED]") // Remove publishable keys
+      .replace(/pk_live_[A-Za-z0-9]+/g, "pk_live_[REDACTED]") // Remove live publishable keys
+      .trim();
 
-  // Extract code snippets (helpful for quickstart)
-  const codeBlocks = $("pre code")
-    .map((_, el) => $(el).text().trim())
-    .get()
-    .filter(Boolean);
+    const wordCount = cleanContent.split(/\s+/).length;
 
-  // Extract paragraphs for better readability
-  const paragraphs = $("p")
-    .map((_, el) => $(el).text().trim())
-    .get()
-    .filter(Boolean);
-
-  return {
-    url,
-    category,
-    title: title.trim(),
-    content: mainContent.trim(),
-    codeBlocks,
-    paragraphs,
-    scrapedAt: new Date().toISOString(),
-  };
+    return {
+      id: `${category}_${Date.now()}`,
+      url,
+      category,
+      title: title.trim(),
+      content: cleanContent,
+      wordCount,
+      scrapedAt: new Date().toISOString(),
+      docType: "api",
+      metadata: {
+        source: "twilio.com",
+        contentType: response.headers["content-type"] || "text/html",
+      },
+    };
+  } catch (error) {
+    console.error(`❌ Error scraping ${category}:`, error.message);
+    return null;
+  }
 }
 
 async function main() {
-  const docs = [];
+  console.log("🚀 Starting Twilio documentation scraper...");
 
-  for (const [category, url] of Object.entries(SOURCES)) {
-    console.log(`📄 Scraping ${category}...`);
-    const doc = await scrapeDoc(url, category);
-    docs.push(doc);
+  const args = process.argv.slice(2);
+  const sourcesArg = args
+    .find((arg) => arg.startsWith("--sources="))
+    ?.split("=")[1];
+  const limitArg = args
+    .find((arg) => arg.startsWith("--limit="))
+    ?.split("=")[1];
+
+  let sourcesToScrape = Object.keys(SOURCES);
+  let limit = limitArg ? parseInt(limitArg) : null;
+
+  if (sourcesArg) {
+    if (sourcesArg === "all") {
+      sourcesToScrape = Object.keys(SOURCES);
+    } else {
+      sourcesToScrape = sourcesArg.split(",").map((s) => s.trim());
+    }
   }
 
-  const dir = path.resolve("./data/twilio_docs");
-  await fs.mkdir(dir, { recursive: true });
+  console.log(`📋 Sources to scrape: ${sourcesToScrape.join(", ")}`);
+  if (limit) console.log(`🔢 Limit: ${limit} documents per source`);
 
-  await fs.writeFile(
-    path.join(dir, "scraped.json"),
-    JSON.stringify(docs, null, 2),
-    "utf-8"
-  );
+  const docs = [];
+  let totalWords = 0;
 
-  console.log(`✅ Scraped ${docs.length} Twilio documents`);
-  console.log(`📁 Saved to: ${path.join(dir, "scraped.json")}`);
+  for (const category of sourcesToScrape) {
+    if (!SOURCES[category]) {
+      console.log(`⚠️ Unknown source: ${category}`);
+      continue;
+    }
+
+    const doc = await scrapeDoc(SOURCES[category], category);
+    if (doc) {
+      docs.push(doc);
+      totalWords += doc.wordCount;
+      console.log(`✅ Scraped ${category}: ${doc.wordCount} words`);
+    }
+
+    if (limit && docs.length >= limit) {
+      console.log(`🛑 Reached limit of ${limit} documents`);
+      break;
+    }
+  }
+
+  // Create output directory
+  const outputDir = path.join(process.cwd(), "data", "twilio_docs");
+  await fs.mkdir(outputDir, { recursive: true });
+
+  // Save scraped data
+  const outputFile = path.join(outputDir, "scraped.json");
+  await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
+
+  console.log(`\n🎉 Scraping completed!`);
+  console.log(`📊 Total documents: ${docs.length}`);
+  console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
+  console.log(`💾 Saved to: ${outputFile}`);
+
+  // Display summary
+  console.log(`\n📋 Scraped sources:`);
+  docs.forEach((doc) => {
+    console.log(`  • ${doc.category}: ${doc.wordCount} words`);
+  });
 }
 
-main().catch((err) => {
-  console.error("❌ Scraping failed:", err.message);
-});
+// Handle CLI execution
+if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
+  main().catch(console.error);
+}
+
+export { scrapeDoc, SOURCES };
