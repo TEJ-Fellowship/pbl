@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const path = require("path");
 const MiniSearch = require("minisearch");
-const { logConversation } = require("../utils/db");
+const { logConversation } = require("../db.js");
 dotenv.config();
 
 const PINECONE_INDEX = process.env.PINECONE_INDEX;
