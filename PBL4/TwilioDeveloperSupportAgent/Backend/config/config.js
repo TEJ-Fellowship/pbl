@@ -1,3 +1,4 @@
+// backend/config/config.js
 import dotenv from "dotenv";
 
 // Load environment variables
@@ -9,24 +10,24 @@ const config = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
   // Database
-//   MONGODB_URL: process.env.MONGODB_URL,
-//   MONGODB_DB: process.env.MONGODB_DB,
-//   MONGODB_URI: process.env.MONGODB_URI,
+  //   MONGODB_URL: process.env.MONGODB_URL,
+  //   MONGODB_DB: process.env.MONGODB_DB,
+  //   MONGODB_URI: process.env.MONGODB_URI,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME || "twilio",
 
   // Server
-//   PORT: process.env.PORT,
-//   HOST: process.env.HOST,
+  //   PORT: process.env.PORT,
+  //   HOST: process.env.HOST,
 
   // Security
-//   JWT_SECRET: process.env.JWT_SECRET,
+  //   JWT_SECRET: process.env.JWT_SECRET,
 
   // Frontend
-//   FRONTEND_URL: process.env.FRONTEND_URL,
-//   FRONTEND_URL_DEV: process.env.FRONTEND_URL_DEV,
+  //   FRONTEND_URL: process.env.FRONTEND_URL,
+  //   FRONTEND_URL_DEV: process.env.FRONTEND_URL_DEV,
 
   // Processing
   CHUNK_SIZE: process.env.CHUNK_SIZE,

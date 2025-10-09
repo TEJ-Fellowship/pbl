@@ -1,10 +1,11 @@
+// backend/src/scraper.js
 import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
 
-// Stripe documentation sources
+// twilio documentation sources
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",

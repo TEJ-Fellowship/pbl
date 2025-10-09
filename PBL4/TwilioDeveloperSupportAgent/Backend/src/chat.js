@@ -1,3 +1,4 @@
+// backend/src/chat.js
 import readline from "readline";
 import fs from "fs/promises";
 import path from "path";
@@ -399,7 +400,7 @@ async function startChat() {
                 `   Relevance: ${relevanceScore.toFixed(3)} ${relevanceType}`
               );
             });
-        }
+          }
         } catch (error) {
           console.error("❌ Error processing question:", error.message);
         }

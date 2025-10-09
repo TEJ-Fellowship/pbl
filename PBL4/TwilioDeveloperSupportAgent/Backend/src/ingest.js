@@ -1,3 +1,4 @@
+// backend/src/chat.js
 import fs from "fs/promises";
 import path from "path";
 import { Document } from "@langchain/core/documents";
