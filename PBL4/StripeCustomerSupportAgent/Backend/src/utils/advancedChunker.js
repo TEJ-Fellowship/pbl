@@ -11,7 +11,7 @@ export class AdvancedChunker {
     const metadata = {
       source_url: url,
       last_updated: new Date().toISOString(),
-      code_language: null,
+      code_language: "none", // Default value instead of null
     };
 
     // Determine doc_type from URL
