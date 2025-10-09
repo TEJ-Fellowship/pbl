@@ -2,6 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import config from "../config/config.js";
 
 const SOURCES = {
   gettingstarted: "https://mailchimp.com/help/getting-started-with-mailchimp/",
@@ -10,45 +11,99 @@ const SOURCES = {
   listmanage: "https://mailchimp.com/help/getting-started-audience/",
 };
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function scrapeDoc(url, category) {
-  await new Promise((resolve) => setTimeout(resolve, 1000)); // Rate limit
+  console.log(`🔍 Scraping ${category}: ${url}`);
 
-  const response = await axios.get(url);
-  const $ = cheerio.load(response.data);
+  try {
+    await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
-  $("nav, footer, .sidebar, .header, aside").remove();
-  const mainContent =
-    $(".content--main").first() || $("main").text() || $("article").text();
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+      },
+      timeout: 30000,
+    });
 
-  const title = mainContent.find("h1").first().text().trim();
+    const $ = cheerio.load(response.data);
 
-  let sections = [];
-  mainContent.find("h2, h3").each((_, heading) => {
-    const headingText = $(heading).text().trim();
-    let content = "";
-    let next = $(heading).next();
-    while (next.length && !next.is("h2, h3")) {
-      content += next.text().trim();
-      next = next.next();
+    $("nav, footer, .sidebar, .header, aside").remove();
+
+    // Extract main content
+    let mainContent = $(".content--main").first();
+
+    if (!mainContent.length) {
+      console.log("No .content--main found, trying alternative selectors");
+      mainContent = $("main").first();
     }
-    if (headingText && content.trim()) {
-      sections.push({
-        heading: headingText,
-        content: content.trim(),
-      });
-    }
-  });
 
-  return {
-    url,
-    category,
-    title,
-    sections,
-    scrapedAt: new Date().toISOString(),
-  };
+    if (!mainContent.length) {
+      console.log("No main found, trying article");
+      mainContent = $("article").first();
+    }
+
+    if (!mainContent.length) {
+      console.log("No suitable content container found");
+      return null;
+    }
+
+    const title = mainContent.find("h1").first().text().trim();
+
+    console.log("content before cleaning", mainContent.html());
+
+    let sections = [];
+
+    // First, extract sections without headings (like the introduction)
+    mainContent.find("section").each((_, section) => {
+      const $section = $(section);
+      const hasHeading = $section.find("h2, h3").length > 0;
+
+      if (!hasHeading) {
+        const content = $section.text().trim();
+        if (content && content.length > 50) {
+          sections.push({
+            heading: title,
+            content: content.replace(/\s+/g, " "),
+          });
+        }
+      }
+    });
+
+    // Now extracting all h2/h3 sections
+    mainContent.find("h2, h3").each((_, heading) => {
+      const headingText = $(heading).text().trim();
+      let content = "";
+      let next = $(heading).next();
+      while (next.length && !next.is("h2, h3")) {
+        content += " " + next.text().trim();
+        next = next.next();
+      }
+      if (headingText && content.trim()) {
+        sections.push({
+          heading: headingText,
+          content: content.trim().replace(/\s+/g, " "),
+        });
+      }
+    });
+
+    return {
+      id: `${category}_${Date.now()}`,
+      url,
+      category,
+      title,
+      sections,
+      scrapedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error(`Error scraping ${category}:`, error.message);
+  }
 }
 
 async function main() {
+  console.log("Scraping the data...\n");
+
   const docs = [];
 
   for (const [category, url] of Object.entries(SOURCES)) {
