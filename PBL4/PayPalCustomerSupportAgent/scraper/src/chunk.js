@@ -2,11 +2,14 @@
  // and saves the formatted output to /output/chunks.json
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 // Configuration
-const inputDir = "./data";
-const outputDir = "./data";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const inputDir = path.resolve(__dirname, "./data");
+const outputDir = path.resolve(__dirname, "./chunkData");
 const outputFile = "chunks.json";
 
 // Chunking parameters

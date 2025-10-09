@@ -30,6 +30,29 @@ const MessageBubble = ({ msg }) => {
               <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
               {msg.sentiment}
             </span>
+            {typeof msg.confidence === "number" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-gray-700 border border-gray-200">
+                <span className="h-2 w-2 rounded-full bg-blue-500"></span>
+                {msg.confidence}%
+              </span>
+            )}
+          </div>
+        )}
+        {!isUser && msg.citations?.length > 0 && (
+          <div className="mt-2 text-[11px] text-gray-600">
+            <div className="font-medium mb-1">Sources:</div>
+            <ul className="list-disc pl-4 space-y-0.5">
+              {msg.citations.map((c, idx) => (
+                <li key={idx}>
+                  <span className="font-mono">{c.label}</span> — {c.source} ({c.channel}{c.isPolicy ? ", policy" : ""})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {!isUser && msg.disclaimer && (
+          <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            This is general guidance. For account‑specific issues or legal advice, please contact PayPal support.
           </div>
         )}
       </div>

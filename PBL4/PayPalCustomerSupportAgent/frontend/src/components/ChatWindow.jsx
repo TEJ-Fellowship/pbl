@@ -6,6 +6,7 @@ import InputBar from "./InputBar";
 const ChatWindow = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(() => Math.random().toString(36).slice(2));
 
   const sendMessage = async (text) => {
     if (!text.trim()) return;
@@ -16,6 +17,7 @@ const ChatWindow = () => {
     try {
       const res = await axios.post("http://localhost:5000/api/query", {
         question: text,
+        sessionId,
       });
       setMessages((prev) => [
         ...prev,
@@ -23,6 +25,9 @@ const ChatWindow = () => {
           text: res.data.answer,
           sender: "bot",
           sentiment: res.data.sentiment?.sentiment,
+          citations: res.data.citations,
+          confidence: res.data.confidence,
+          disclaimer: res.data.disclaimer,
         },
       ]);
     } catch (err) {
