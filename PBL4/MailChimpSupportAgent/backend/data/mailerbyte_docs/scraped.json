@@ -1,0 +1,154 @@
+[
+  {
+    "url": "https://mailchimp.com/help/getting-started-with-mailchimp/",
+    "category": "gettingstarted",
+    "title": "Getting Started with Mailchimp",
+    "sections": [
+      {
+        "heading": "Things to know",
+        "content": "Mailchimp is a web-based application that works in most browsers. You don't need to download or install any software on your computer. To make sure Mailchimp works properly in your browser, enable cookies, pop-ups, and JavaScript.\nWhen you create a Mailchimp account, you agree to comply with our Terms of Use.\nNeed help? Search Check out our searchable guides and tutorials if you want to learn how something works, or if you run into any trouble.\nAs part of Mailchimp’s onboarding services, new users with a paid Marketing plan are eligible for advanced assistance via a 1:1 consultation with an onboarding specialist. To learn more about the onboarding service included with your pricing plan, check out About Personalized Onboarding with Mailchimp."
+      },
+      {
+        "heading": "Set up your account",
+        "content": "When you sign up for a Mailchimp account, you'll enter your name and email address, and we'll send you an activation email. When you receive the activation email, click the link to activate your account.The next time you log in to our website, we'll walk you through the rest of the setup steps.Create an Account"
+      },
+      {
+        "heading": "Set up your audience",
+        "content": "Mailchimp is designed to work best with just 1 audience. We have audience management tools to help you organize and separate contacts. If you create another audience, keep in mind that data isn't shared, and contacts in multiple audiences count toward your contact total for each audience.Getting Started with Your Audience\nImport Contacts to Mailchimp\nGetting Started with Segments"
+      },
+      {
+        "heading": "Customize your signup form",
+        "content": "We'll automatically generate a signup form for your audience, which you can post on your website or Facebook page, so you can start collecting contacts right away. Plus, we give you lots of options to customize the design of your signup form, so it fits your brand.About Signup Form Options\nHow the Form Builder Works"
+      },
+      {
+        "heading": "Create a regular email",
+        "content": "Next, you'll craft your first email. Designing an email in Mailchimp can be fun, but it can take some practice since there are many ways to customize your emails. Get to know the controls and plan your emails ahead of time. You'll get the hang of it in no time.Create a Regular Email\nCreate an Email Template\nDesign an Email in Mailchimp"
+      },
+      {
+        "heading": "View your email reports",
+        "content": "A key part of successful marketing is tracking how your audience reacts to your emails. This helps you give more of what your contacts want and less of what they don't want.After you send an email, check your dashboard to see how many contacts opened, clicked, or unsubscribed. Integrate your Google Analytics account with Mailchimp for more in-depth reporting.Getting Started with Reports\nAbout Email Reports"
+      },
+      {
+        "heading": "Next steps",
+        "content": "After you've become familiar with the basics, look into how our different features can take your marketing to the next level."
+      },
+      {
+        "heading": "Marketing automation flows",
+        "content": "An automation flow helps you build dynamic, automated marketing paths for your contacts. Create a flow with multiple triggers, branches, and unique actions so each of your contacts has a personalized experience with your marketing.About Marketing Automation Flows"
+      },
+      {
+        "heading": "SMS",
+        "content": "Mailchimp’s SMS Marketing is a powerful service that helps you create and manage a text messaging program. Grow your SMS audience, purchase SMS credits, send marketing text messages, and reach your subscribed SMS contacts with a new marketing channel.About SMS Marketing with Mailchimp"
+      },
+      {
+        "heading": "Ads",
+        "content": "You can buy ads through Mailchimp, with no additional fees from us. Take advantage of Google's huge audience to reach your best customers, similar people, and people who like your products but don't subscribe to your email.Create Google Remarketing Ads"
+      },
+      {
+        "heading": "Landing Pages",
+        "content": "Create beautiful landing pages to grow your audience or promote products, then share those pages around the web to drive traffic to them. Landing pages are great for achieving specific, short-term marketing goals.About Landing Pages"
+      },
+      {
+        "heading": "Mobile apps",
+        "content": "Mailchimp for iOS or Android are free mobile apps that help you manage your account on the go. Track audience and email activity, view various reports, and add new contacts to your audience directly from your mobile device.About Mailchimp for iOS\nAbout Mailchimp for Android"
+      },
+      {
+        "heading": "Developer tools",
+        "content": "Marketing API\nAn API is a way for different applications to talk to one another. Advanced users who are familiar with custom coding can use Mailchimp’s Marketing API to pass data from their application to Mailchimp for advanced customization and utility.Mailchimp Developer"
+      }
+    ],
+    "scrapedAt": "2025-10-09T05:33:18.502Z"
+  },
+  {
+    "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
+    "category": "campaigncreation",
+    "title": "Getting Started with Campaigns",
+    "sections": [
+      {
+        "heading": "Things to know",
+        "content": "Here are some things to know.Some features are included only with paid plans. Others, like email sends and landing pages, are available for all plans. To find out what features are included in each plan, check out our pricing page. \nIf you don't have any subscribed contacts yet, create and share a signup form to build your audience. \nConnect an online store to sync products and customer data, and to tailor your campaigns to the right people. To learn more, read Sell More Stuff with Mailchimp.\nIf you need help creating and designing a certain type of campaign, use our guides and tutorials."
+      },
+      {
+        "heading": "Definitions",
+        "content": "Campaign\n Any distributed content, that's created and measured in Mailchimp, including regular emails, text messages, automations, landing pages, and ads.Audience\n A place for you to collect and manage your contacts in Mailchimp.Contact\n Someone whose email or mobile number is stored in your account. A contact's email marketing status determines what kind of content you can share with them. Statuses include subscribed, unsubscribed, non-subscribed, cleaned, and archived."
+      },
+      {
+        "heading": "Choose a campaign type",
+        "content": "We've got campaigns for all of your business goals. You'll find options to send an email to all of the subscribed contacts in your audience, target repeat customers, and more.Here are the different types of campaigns you can create in Mailchimp."
+      },
+      {
+        "heading": "Email campaigns",
+        "content": "There are 4 types of email campaigns in Mailchimp.Regular\n This is the most common type of email. Design and customize your content, and choose whether to send immediately or schedule your email for later.\n\nPlain-text \n The simplest form of mass email you can send. These emails contain only text and have no formatting options.\n\nA/B or Multivariate testing \n Send more than one version of the same email and see which one comes out on top. Test subject lines, From names, content, and send times. Test up to eight different versions with a multivariate test, included with a Standard plan or higher. \nAutomated\n Automated emails are triggered by a specific date, event, or a subscribed contact's activity. Use Automation Flow emails to add tags, send targeted emails, and accomplish other important tasks for you. Create an automation flow custom from scratch, or use one of our many flow template emails.Best Practices for Mailchimp Emails\nCreate a Plain-Text Email\nCreate an A/B Test\nAbout Marketing Automation Flows"
+      },
+      {
+        "heading": "SMS Marketing campaigns",
+        "content": "Mailchimp’s SMS Marketing is a powerful service that helps you create and manage a text messaging program. Grow your SMS audience, purchase SMS credits, send marketing text messages, and reach your subscribed SMS contacts with a new marketing channel.About SMS Marketing with Mailchimp"
+      },
+      {
+        "heading": "Ad campaigns",
+        "content": "Use Mailchimp to buy and run ads on Google’s Ad Display Network. Target your Mailchimp subscribed contacts, people similar to your Mailchimp contacts, people whose interests align with your brand, or people who visited your landing page or website.Getting Started with Google Remarketing Ads"
+      },
+      {
+        "heading": "Social posts",
+        "content": "Create a social post to reach your social media followers with Mailchimp. To combine your marketing efforts, you can auto-post to Instagram, Facebook, and X (formerly Twitter) when you send an email.Create a Social Post\nPublish a Social Post When You Send an Email \nConnect or Disconnect X (formerly Twitter)"
+      },
+      {
+        "heading": "Landing Pages",
+        "content": "Create standalone webpages to collect email addresses or promote a product or service. Design a landing page in Mailchimp, then share the URL on the web or in another Mailchimp campaign.About Landing Pages"
+      },
+      {
+        "heading": "Create a campaign",
+        "content": "The way you build your campaign depends on which type of campaign you choose. Each campaign has specific steps you'll follow to target your audience, add tracking options, design your content, and make other changes.Create a Regular Email \nSend a Regular Email\nCreate a Landing Page\nCreate a Marketing Automation Flow\nCreate a Social Post"
+      },
+      {
+        "heading": "About campaign templates",
+        "content": "Templates are the HTML files that serve as the starting point for any email campaign. The template you use determines the layout of your images and text.We have many predesigned templates for you to choose from, so if you aren't an HTML whiz, you'll still be able to create and send great-looking email campaigns. Drag-and-drop templates make the process even easier.If you are an experienced coder, you can also edit our templates, code your own, or create an editable template with our Template Language.Types of Email Templates\nCreate an Email Template\nGetting Started With Mailchimp's Email Template Language"
+      },
+      {
+        "heading": "View campaign reports",
+        "content": "After you send or publish a campaign, you can monitor its performance in your campaign report. These reports include important metrics such as email opens and clicks, order revenue for connected stores, and social post shares.About Email Reports\nAbout Audience Analytics\nAbout SMS Reports\nLanding Page Reports \nAbout Social Post Reports"
+      }
+    ],
+    "scrapedAt": "2025-10-09T05:33:20.892Z"
+  },
+  {
+    "url": "https://mailchimp.com/help/getting-started-audience/",
+    "category": "listmanage",
+    "title": "Getting Started with Your Audience",
+    "sections": [
+      {
+        "heading": "Things to consider",
+        "content": "How you build and manage your audience affects the ways you can use Mailchimp. With the right data, you can group contacts based on a variety of factors, then send content to just those groups. Take a moment to think about your marketing goals, who your contacts are, and what information they want to receive from you.For example:Do you have seasonal customers, sales shoppers, or customers who are only interested in certain types of products, services, or events?\nDo you want to send different content to donors, sponsors, members, or other patrons?\nDoes it matter if your contacts are local, domestic, or international?\nDo you sell products or services online, and ask customers to sign up for email marketing in the checkout process?\nAre there other factors that affect your audience?"
+      },
+      {
+        "heading": "Types of contacts",
+        "content": "Use your Mailchimp audience to collect and manage subscribed, unsubscribed, and non-subscribed contacts in one place.Here are the definitions for each.Subscribed contact\n Someone who's opted in to receive your marketing emails or text messages.\nUnsubscribed contact\n Someone who ‌opted in to receive your marketing emails or text messages, but later opted out.\nNon-subscribed contact\n Someone who's interacted with your online store, but hasn't opted in to receive your marketing emails or text messages."
+      },
+      {
+        "heading": "Create an audience",
+        "content": "When you create a Mailchimp account, we’ll create an audience for you with the details you provide. We’ll also help you follow anti-spam practices for your emails and text messages. We recommend you maintain 1 primary audience in Mailchimp, and use tags, groups, or segments to organize and target your contacts.You can add subscribed contacts one at a time, upload contacts from a file, copy and paste from a spreadsheet, or sync from other apps. We won't allow you to send emails or text messages to purchased, rented, or third-party lists, so be sure to check our audience requirements before you begin.Here are some links to help you add contacts.Add a Single Subscriber to an Audience\nImport Contacts to Mailchimp\nSync with other apps like WooCommerce, Magento, or BigCommerce"
+      },
+      {
+        "heading": "Build signup forms",
+        "content": "Each Mailchimp audience comes with a signup form that you can share across your online channels. Use the signup form options in your Mailchimp account to gather contact information from members of your audience.Customers with manager permissions and higher can create interest groups for your signup form and audience. Interest groups can be assigned by you or selected by your contacts, and can be visible or hidden on your forms.Your audience will grow and change as people sign up, unsubscribe, and update their profiles. We recommend keeping an update your preferences link in your emails to encourage contacts to update their own information and interests."
+      },
+      {
+        "heading": "Segment your audience",
+        "content": "Use segments to group contacts with shared data. To create a segment, use conditions to filter contacts in your audience. You can create segments with almost any condition, like signup form data, tags, group preferences, email interactions, and location, to name a few.If you sync an e-commerce platform to your Mailchimp account, you'll also be able to use purchase activity to add segments.For Free and Essential plans, the segmenting tool supports up to 5 conditions, and you can save any segment for future use. Mailchimp accounts on a Standard plan or higher have a segmenting tool that supports unlimited conditions and nested logic.To learn more, check out how to Create and Send to a Segment."
+      },
+      {
+        "heading": "Learn about your audience",
+        "content": "When you track the makeup and behavior of your audience, it helps you better understand what your contacts want and don't want. You’ll find valuable insights on both your Audience’s marketing dashboard and Stats pages."
+      },
+      {
+        "heading": "Audience dashboard",
+        "content": "Your audience dashboard contains clickable data to help you learn more about your contacts and how to engage with them. You'll see recent growth trends, top tags, top locations, and how often contacts open and click your emails. To learn more, check out our About the Audience Dashboard article."
+      },
+      {
+        "heading": "Stats",
+        "content": "The Stats overview gives you details about your email marketing engagement. View open and click rates, see the change in subscribed contacts, or compare the performance of your last 30 emails."
+      }
+    ],
+    "scrapedAt": "2025-10-09T05:33:23.272Z"
+  }
+]
