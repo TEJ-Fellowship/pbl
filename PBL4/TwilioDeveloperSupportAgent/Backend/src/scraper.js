@@ -11,6 +11,10 @@ const SOURCES = {
   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
   errors: "https://www.twilio.com/docs/api/errors",
   webhooks: "https://www.twilio.com/docs/usage/webhooks",
+  voice_quickstart: "https://www.twilio.com/docs/voice/quickstart",
+  whatsapp_api: "https://www.twilio.com/docs/whatsapp",
+  video_api: " https://www.twilio.com/docs/video",
+  node_SDK: "https://www.twilio.com/docs/libraries/node",
 };
 
 // Rate limiting: 1 request per second
