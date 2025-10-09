@@ -40,7 +40,8 @@ export class AdvancedChunker {
   async createEnhancedChunks(doc, textSplitter) {
     const chunks = [];
     const codeBlocks = this.codeDetector.extractCodeBlocks(doc.pageContent);
-    console.log("\n🔍 Code blocks:", codeBlocks);
+    // console.log("\n🔍 Code blocks:", codeBlocks);
+
     // Split main content (without code blocks)
     const cleanContent = this.codeDetector.removeCodeBlocks(doc.pageContent);
     const cleanDoc = new Document({

@@ -4,6 +4,7 @@ import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import HybridSearch from "./hybridSearch.js";
 import config from "../config/config.js";
 
 // Initialize Gemini client
@@ -127,7 +128,52 @@ function searchChunks(query, vectorStore) {
     }));
 }
 
-// Retrieve relevant chunks using embeddings
+// Retrieve relevant chunks using hybrid search (BM25 + Semantic)
+async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
+  try {
+    console.log("🔍 Searching for relevant information using hybrid search...");
+
+    // Initialize hybrid search system
+    const hybridSearch = new HybridSearch(vectorStore, embeddings);
+
+    // Perform hybrid search
+    const results = await hybridSearch.hybridSearch(
+      query,
+      parseInt(config.MAX_CHUNKS) || 10
+    );
+
+    // Convert results to expected format
+    const topChunks = results.map((result) => ({
+      content: result.content,
+      metadata: result.metadata,
+      similarity: result.finalScore,
+      score: result.finalScore,
+      searchType: result.searchType || "hybrid",
+      bm25Score: result.bm25Score,
+      semanticScore: result.semanticScore,
+    }));
+
+    console.log(
+      `📊 Top hybrid scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
+
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using hybrid search`
+    );
+    return topChunks;
+  } catch (error) {
+    console.error(
+      "❌ Hybrid search failed, falling back to semantic search:",
+      error.message
+    );
+    return retrieveChunksWithEmbeddings(query, vectorStore, embeddings);
+  }
+}
+
+// Retrieve relevant chunks using embeddings (fallback)
 async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
   try {
     console.log(
@@ -341,8 +387,8 @@ async function startChat() {
         }
 
         try {
-          // Retrieve relevant chunks
-          const chunks = await retrieveChunksWithEmbeddings(
+          // Retrieve relevant chunks using hybrid search
+          const chunks = await retrieveChunksWithHybridSearch(
             query,
             vectorStore,
             embeddings
@@ -392,11 +438,26 @@ async function startChat() {
               console.log(`${source.index}. ${title} (${category})`);
               console.log(`   URL: ${url}`);
               const relevanceScore = source.similarity || source.score || 0;
-              const relevanceType = source.similarity
-                ? "similarity"
-                : "keywords matched";
+              let relevanceType = "similarity";
+              let relevanceDetails = "";
+
+              if (source.searchType === "hybrid") {
+                relevanceType = "hybrid";
+                const bm25Score = source.bm25Score || 0;
+                const semanticScore = source.semanticScore || 0;
+                relevanceDetails = ` (BM25: ${bm25Score.toFixed(
+                  3
+                )}, Semantic: ${semanticScore.toFixed(3)})`;
+              } else if (source.similarity) {
+                relevanceType = "semantic";
+              } else {
+                relevanceType = "keywords matched";
+              }
+
               console.log(
-                `   Relevance: ${relevanceScore.toFixed(3)} ${relevanceType}`
+                `   Relevance: ${relevanceScore.toFixed(
+                  3
+                )} ${relevanceType}${relevanceDetails}`
               );
             });
           }
@@ -425,4 +486,5 @@ export {
   loadVectorStore,
   initGeminiClient,
   initGeminiEmbeddings,
+  retrieveChunksWithHybridSearch,
 };
