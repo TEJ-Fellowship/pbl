@@ -1,0 +1,52 @@
+.particle-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60vw;
+  height: 60vw;
+  max-width: 800px;
+  max-height: 800px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background-color: #000;
+  overflow: visible;
+  animation: rotate 120s linear infinite;
+  box-shadow: 0 0 30px 8px rgba(183, 30, 160, 0.15),
+    0 0 55px 15px rgba(255, 255, 255, 0.05),
+    -15px 10px 45px 12px rgba(183, 30, 160, 0.1),
+    15px -10px 45px 12px rgba(255, 255, 255, 0.07);
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: white;
+  border-radius: 50%;
+  animation: twinkle 2s infinite ease-in-out;
+}
+
+@keyframes rotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
