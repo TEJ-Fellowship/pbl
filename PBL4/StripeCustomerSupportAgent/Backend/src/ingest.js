@@ -4,6 +4,7 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import { AdvancedChunker } from "./utils/advancedChunker.js";
 import config from "../config/config.js";
 
 // Configuration
@@ -82,11 +83,12 @@ function createTextSplitter() {
   });
 }
 
-// Process documents into chunks
+// Process documents into chunks with advanced chunking
 async function processDocuments(documents) {
-  console.log("📄 Processing documents for chunking...");
+  console.log("📄 Processing documents with advanced chunking...");
 
   const textSplitter = createTextSplitter();
+  const advancedChunker = new AdvancedChunker();
   const allChunks = [];
 
   for (const doc of documents) {
@@ -94,18 +96,19 @@ async function processDocuments(documents) {
       `🔍 Processing: ${doc.metadata.category} (${doc.metadata.wordCount} words)`
     );
 
-    // Split document into chunks
-    const chunks = await textSplitter.splitDocuments([doc]);
+    // Use advanced chunking with code separation
+    const chunks = await advancedChunker.createEnhancedChunks(
+      doc,
+      textSplitter
+    );
 
-    // Add chunk index to metadata
+    // Add chunk IDs
     chunks.forEach((chunk, index) => {
-      chunk.metadata.chunk_index = index;
-      chunk.metadata.total_chunks = chunks.length;
       chunk.metadata.chunk_id = `${doc.metadata.id}_chunk_${index}`;
     });
 
     allChunks.push(...chunks);
-    console.log(`  ✅ Created ${chunks.length} chunks`);
+    console.log(`  ✅ Created ${chunks.length} chunks (with code separation)`);
   }
 
   console.log(`📊 Total chunks created: ${allChunks.length}`);
@@ -130,9 +133,14 @@ async function storeChunks(chunks, embeddings, pinecone) {
         metadata: {
           content: chunk.pageContent,
           source: chunk.metadata.source,
+          source_url: chunk.metadata.source_url,
           title: chunk.metadata.title,
           category: chunk.metadata.category,
           docType: chunk.metadata.docType,
+          doc_type: chunk.metadata.doc_type,
+          last_updated: chunk.metadata.last_updated,
+          code_language: chunk.metadata.code_language,
+          chunk_type: chunk.metadata.chunk_type,
           chunk_index: chunk.metadata.chunk_index,
           total_chunks: chunk.metadata.total_chunks,
         },
