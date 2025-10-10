@@ -22,13 +22,15 @@ async function testPineconeIntegration() {
     // Test 3: Check index stats
     console.log("\n3️⃣ Checking index statistics...");
     const stats = await index.describeIndexStats();
+    const totalVectors = stats.totalRecordCount || stats.totalVectorCount;
     console.log("📊 Index Stats:", {
-      totalVectorCount: stats.totalVectorCount,
+      totalVectorCount: totalVectors,
       dimension: stats.dimension,
       indexFullness: stats.indexFullness,
+      namespaces: stats.namespaces,
     });
 
-    if (stats.totalVectorCount === 0) {
+    if (totalVectors === 0) {
       console.log("⚠️  No vectors found in index. Run 'npm run ingest' first.");
       return;
     }

@@ -21,6 +21,16 @@ const SOURCES = {
   manual_getting_started: "https://help.shopify.com/en/manual/getting-started",
   manual_products: "https://help.shopify.com/en/manual/products",
   manual_orders: "https://help.shopify.com/en/manual/orders",
+  // API Documentation - Overview and specific references
+  api: "https://shopify.dev/docs/api",
+  api_admin_graphql: "https://shopify.dev/docs/api/admin-graphql",
+  api_admin_rest: "https://shopify.dev/docs/api/admin-rest",
+  api_storefront: "https://shopify.dev/docs/api/storefront",
+  api_products:
+    "https://shopify.dev/docs/api/admin-graphql/latest/objects/product",
+  api_orders: "https://shopify.dev/docs/api/admin-graphql/latest/objects/order",
+  theme: "https://shopify.dev/docs/themes",
+  forum: "https://community.shopify.com/",
 };
 
 async function delay(ms) {
@@ -105,46 +115,187 @@ function determineMerchantLevel({ content, section }) {
   return "beginner";
 }
 
+// async function scrapeDoc(url, section, browser) {
+//   // Render via Puppeteer to avoid 403 and JS-rendered content
+//   const page = await browser.newPage();
+//   // Block non-essential resources for performance
+//   await page.setRequestInterception(true);
+//   page.on("request", (req) => {
+//     const type = req.resourceType();
+//     if (
+//       type === "image" ||
+//       type === "media" ||
+//       type === "font" ||
+//       type === "stylesheet" ||
+//       type === "websocket"
+//     ) {
+//       req.abort();
+//     } else {
+//       req.continue();
+//     }
+//   });
+//   await page.setUserAgent(
+//     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+//   );
+//   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+//   await page
+//     .waitForSelector("main, article, body", { timeout: 15000 })
+//     .catch(() => {});
+//   const html = await page.content();
+//   const $ = cheerio.load(html);
+//   $("nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb").remove();
+
+//   const mainContent =
+
+//     $("main").text() ||
+
+//     $(".ProseMirror, .Docs__Content").text() || // Dev docs
+//     $("#main-content").text() ||   //forums
+//     $("article").text() ||
+//     $("body").text();
+
+//   const title = $("h1").first().text() || $("title").text();
+//   const cleaned = cleanHtmlText(mainContent);
+//   await page.close();
+//   const merchant_level = determineMerchantLevel({ content: cleaned, section });
+//   return {
+//     url,
+//     section,
+//     title: (title || section).trim(),
+//     content: cleaned,
+//     merchant_level,
+//     scrapedAt: new Date().toISOString(),
+//   };
+// }
+
 async function scrapeDoc(url, section, browser) {
-  // Render via Puppeteer to avoid 403 and JS-rendered content
   const page = await browser.newPage();
-  // Block non-essential resources for performance
+
+  // 🚀 Block non-essential requests
   await page.setRequestInterception(true);
   page.on("request", (req) => {
     const type = req.resourceType();
-    if (
-      type === "image" ||
-      type === "media" ||
-      type === "font" ||
-      type === "stylesheet" ||
-      type === "websocket"
-    ) {
+    if (["image", "media", "font", "stylesheet", "websocket"].includes(type)) {
       req.abort();
-    } else {
-      req.continue();
-    }
+    } else req.continue();
   });
+
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
   );
+
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
   await page
     .waitForSelector("main, article, body", { timeout: 15000 })
     .catch(() => {});
   const html = await page.content();
   const $ = cheerio.load(html);
-  $("nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb").remove();
-  const mainContent =
-    $("main").text() || $("article").text() || $("body").text();
-  const title = $("h1").first().text() || $("title").text();
+
+  // 🧹 Remove noise
+  $(
+    "nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb, .search-bar"
+  ).remove();
+
+  let title = $("h1").first().text() || $("title").text();
+  let mainContent = "";
+  const contentBlocks = [];
+
+  // 🧠 1️⃣ API Docs: shopify.dev/docs/api (all API pages)
+  if (url.includes("shopify.dev/docs/api")) {
+    mainContent = $(".Docs__Content, main, article, body").text();
+
+    // Extract code blocks from various patterns
+    $("pre code").each((_, el) => {
+      const code = $(el).text().trim();
+      if (code) contentBlocks.push({ type: "code", content: code });
+    });
+
+    // Also check for inline code that might be substantial
+    $("code").each((_, el) => {
+      const code = $(el).text().trim();
+      if (
+        code &&
+        code.length > 20 &&
+        !contentBlocks.some((cb) => cb.content === code)
+      ) {
+        contentBlocks.push({ type: "inline", content: code });
+      }
+    });
+
+    // Extract GraphQL mutations and queries specifically
+    $(".graphql").each((_, el) => {
+      const graphql = $(el).text().trim();
+      if (graphql) contentBlocks.push({ type: "graphql", content: graphql });
+    });
+
+    // Extract curl examples
+    $("pre").each((_, el) => {
+      const preText = $(el).text().trim();
+      if (
+        preText.includes("curl") ||
+        preText.includes("POST") ||
+        preText.includes("GET")
+      ) {
+        contentBlocks.push({ type: "curl", content: preText });
+      }
+    });
+  }
+
+  // 🎨 2️⃣ Theme Docs: shopify.dev/docs/themes
+  else if (url.includes("shopify.dev/docs/themes")) {
+    mainContent = $(".Docs__Content, main, article, body").text();
+
+    // Extract code blocks from theme documentation
+    $("pre code").each((_, el) => {
+      const code = $(el).text().trim();
+      if (code) contentBlocks.push({ type: "code", content: code });
+    });
+
+    // Also check for inline code
+    $("code").each((_, el) => {
+      const code = $(el).text().trim();
+      if (
+        code &&
+        code.length > 20 &&
+        !contentBlocks.some((cb) => cb.content === code)
+      ) {
+        contentBlocks.push({ type: "inline", content: code });
+      }
+    });
+  }
+
+  // 💬 3️⃣ Community Forum
+  else if (url.includes("community.shopify.com")) {
+    title = $(".lia-message-subject").first().text() || title;
+    const question = $(".lia-message-body-content").first().text();
+    const accepted = $(
+      ".lia-message-body-content:contains('Accepted Solution')"
+    ).text();
+    const replies = $(".lia-message-body-content")
+      .slice(0, 3)
+      .map((_, el) => $(el).text())
+      .get()
+      .join("\n\n---\n\n");
+    mainContent = [question, accepted, replies].filter(Boolean).join("\n\n");
+  }
+
+  // 📘 4️⃣ Default (Help Center, Manual)
+  else {
+    mainContent = $("main").text() || $("article").text() || $("body").text();
+  }
+
+  // ✨ Clean up text
   const cleaned = cleanHtmlText(mainContent);
-  await page.close();
   const merchant_level = determineMerchantLevel({ content: cleaned, section });
+
+  await page.close();
+
   return {
     url,
     section,
     title: (title || section).trim(),
     content: cleaned,
+    code_blocks: contentBlocks.length ? contentBlocks : undefined,
     merchant_level,
     scrapedAt: new Date().toISOString(),
   };

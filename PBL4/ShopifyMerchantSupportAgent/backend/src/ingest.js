@@ -2,7 +2,11 @@ import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { splitRespectingCodeBlocks, estimateTokens } from "./utils/chunker.js";
+import {
+  splitRespectingCodeBlocks,
+  estimateTokens,
+  enhanceChunkWithCodeBlocks,
+} from "./utils/chunker.js";
 import { embedTexts } from "./utils/embeddings.js";
 import { createPineconeIndex, getPineconeIndex } from "../config/pinecone.js";
 
@@ -148,13 +152,36 @@ async function main() {
 
     // Per-chunk token count and merchant level
     const chunkInfos = chunks.map((c, i) => {
-      const tokens = estimateTokens(c);
+      // Include code_blocks if they exist and are relevant to this chunk
+      let relevantCodeBlocks = undefined;
+      if (doc.code_blocks && doc.code_blocks.length > 0) {
+        // For now, include all code blocks for API docs, but this could be made smarter
+        // by checking if the chunk content references specific code patterns
+        if (doc.section === "api" || doc.section === "theme") {
+          relevantCodeBlocks = doc.code_blocks;
+        }
+      }
+
+      // Enhance chunk with code blocks if available
+      const enhancedChunk = enhanceChunkWithCodeBlocks(c, relevantCodeBlocks, {
+        chunkSizeTokens: 800,
+        chunkOverlapTokens: 100,
+      });
+
+      const tokens = estimateTokens(enhancedChunk);
       const merchant_level = determineMerchantLevel({
-        content: c,
+        content: enhancedChunk,
         section: doc.section,
         docLevel: doc.merchant_level,
       });
-      return { text: c, tokens, merchant_level, index: i };
+
+      return {
+        text: enhancedChunk,
+        tokens,
+        merchant_level,
+        index: i,
+        code_blocks: relevantCodeBlocks,
+      };
     });
 
     console.log(`🔢 Generating embeddings for ${chunkInfos.length} chunks...`);
@@ -175,6 +202,7 @@ async function main() {
         chunk_index: ci.index,
         tokens: ci.tokens,
         scraped_at: doc.scrapedAt,
+        code_blocks: ci.code_blocks || undefined,
       },
     }));
 
@@ -204,6 +232,7 @@ async function main() {
       id: it.id,
       text: it.metadata.text,
       tokens: it.metadata.tokens,
+      code_blocks: it.metadata.code_blocks,
       metadata: {
         title: it.metadata.title,
         section: it.metadata.section,
@@ -223,9 +252,10 @@ async function main() {
   // Get index stats to confirm upload
   const stats = await index.describeIndexStats();
   console.log(`📊 Pinecone index stats:`, {
-    totalVectorCount: stats.totalVectorCount,
+    totalVectorCount: stats.totalRecordCount || stats.totalVectorCount,
     dimension: stats.dimension,
     indexFullness: stats.indexFullness,
+    namespaces: stats.namespaces,
   });
 
   console.log(
