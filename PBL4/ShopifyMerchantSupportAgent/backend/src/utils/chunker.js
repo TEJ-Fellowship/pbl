@@ -124,3 +124,45 @@ export function splitRespectingCodeBlocks(text, opts = {}) {
   }
   return chunks;
 }
+
+export function enhanceChunkWithCodeBlocks(chunk, codeBlocks, opts = {}) {
+  // If no code blocks, return chunk as-is
+  if (!codeBlocks || codeBlocks.length === 0) {
+    return chunk;
+  }
+
+  // Add code blocks as context at the end of the chunk
+  const codeContext = codeBlocks
+    .map(
+      (cb) =>
+        `\n\nCode Example:\n\`\`\`${cb.type || "javascript"}\n${
+          cb.content
+        }\n\`\`\``
+    )
+    .join("\n");
+
+  // Check if adding code blocks would exceed token limit
+  const enhancedText = chunk + codeContext;
+  const estimatedTokens = estimateTokens(enhancedText);
+  const maxTokens = opts.chunkSizeTokens || 800;
+
+  if (estimatedTokens <= maxTokens) {
+    return enhancedText;
+  } else {
+    // If too long, include only the first few code blocks
+    const limitedCodeBlocks = codeBlocks.slice(
+      0,
+      Math.min(2, codeBlocks.length)
+    );
+    const limitedContext = limitedCodeBlocks
+      .map(
+        (cb) =>
+          `\n\nCode Example:\n\`\`\`${cb.type || "javascript"}\n${
+            cb.content
+          }\n\`\`\``
+      )
+      .join("\n");
+
+    return chunk + limitedContext;
+  }
+}
