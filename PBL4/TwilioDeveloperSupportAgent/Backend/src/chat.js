@@ -514,13 +514,16 @@ FORMAT YOUR RESPONSE:
       }
     );
 
+    // Clean the response text by removing ANSI escape codes
+    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
+
     return {
-      answer: highlightedText,
+      answer: cleanText,
       sources: chunks,
       metadata: {
         language: detectedLanguage,
         api: apiDetection.primary?.api,
-        confidence: apiDetection.confidence,
+        confidence: apiDetection.primary?.confidence,
         reasoning: apiDetection.reasoning,
       },
     };
@@ -607,12 +610,27 @@ FORMAT YOUR RESPONSE:
       }
     );
 
-    return { answer: highlightedText, sources: chunks };
+    // Clean the response text by removing ANSI escape codes
+    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
+
+    return { answer: cleanText, sources: chunks };
   } catch (error) {
     console.error(chalk.red("❌ Response generation failed:"), error.message);
     throw error;
   }
 }
+
+// Export functions for API server
+export {
+  initGeminiClient,
+  initGeminiEmbeddings,
+  initPinecone,
+  loadVectorStore,
+  retrieveChunksWithEmbeddings,
+  generateMemoryAwareResponse,
+  detectQueryLanguage,
+  detectErrorCodes,
+};
 
 // Main chat function with memory
 async function startChat() {
@@ -858,15 +876,3 @@ async function startChat() {
 if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
   startChat().catch(console.error);
 }
-
-export {
-  generateResponse,
-  generateMemoryAwareResponse,
-  loadVectorStore,
-  loadSeparateChunks,
-  retrieveChunksWithEmbeddings,
-  detectErrorCodes,
-  detectQueryLanguage,
-  initGeminiClient,
-  initGeminiEmbeddings,
-};
