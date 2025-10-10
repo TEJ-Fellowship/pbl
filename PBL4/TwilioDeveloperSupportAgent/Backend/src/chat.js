@@ -362,7 +362,28 @@ async function startChat() {
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
-          console.log(result.answer);
+          const formattedAnswer = result.answer.replace(
+  /```(.*?)\n([\s\S]*?)```/g,
+  (match, lang, code) => {
+    const highlighted = highlight(code, {
+      language: lang || "javascript",
+      ignoreIllegals: true,
+      theme: {
+        keyword: chalk.cyanBright,
+        built_in: chalk.yellowBright,
+        string: chalk.green,
+        literal: chalk.magenta,
+        section: chalk.blue,
+        comment: chalk.gray,
+        number: chalk.redBright,
+        attr: chalk.yellow,
+      },
+    });
+    return chalk.bgBlackBright(`\n${highlighted}\n`);
+  }
+);
+
+console.log(formattedAnswer);
           console.log("-".repeat(40));
 
           // Show sources
