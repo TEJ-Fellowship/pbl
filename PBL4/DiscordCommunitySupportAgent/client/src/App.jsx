@@ -1,9 +1,21 @@
-import "./App.css";
+import Navbar from "./components/Navbar.jsx";
+import Hero from "./components/hero.jsx";
+import TrendingTopics from "./components/TrendingTopics.jsx";
+import KeyBenefits from "./components/KeyBenefits.jsx";
+import CTA from "./components/CTA.jsx";
+import Footer from "./components/Footer.jsx";
 
 function App() {
   return (
     <>
-      <h1 className="flex ml-4 text-3xl font-bold underline"> Hello world! </h1>
+    <div className="bg-gray-900 text-gray-100 min-h-screen font-sans">
+      <Navbar />
+      <Hero />
+      <TrendingTopics />
+      <KeyBenefits />
+      <CTA />
+      <Footer />
+    </div>    
     </>
   );
 }
