@@ -413,6 +413,7 @@ async function startChat() {
           // Show sources
           if (result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
+            // console.log("\n📚First Source:", result.sources[0]);
             result.sources.forEach((source) => {
               // Generate a better title from content if metadata title is empty
               let title = source.metadata.title || source.metadata.doc_title;

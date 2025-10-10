@@ -1,10 +1,13 @@
 import FlexSearch from "flexsearch";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import config from "../config/config.js";
+import fs from "fs/promises";
+import path from "path";
 
 /**
- * Hybrid Search System combining BM25 keyword search with Pinecone semantic search
- * Implements fusion ranking with dynamic weight adjustment for error codes
+ * Hybrid Search System combining BM25 keyword search with semantic search
+ * Implements proper BM25 with TF, IDF, document length normalization
+ * Runs BM25 on full corpus and combines with semantic scores using weighted fusion
  */
 class HybridSearch {
   constructor(vectorStore, embeddings) {
@@ -13,14 +16,27 @@ class HybridSearch {
     this.bm25Index = null;
     this.documents = [];
     this.isInitialized = false;
+    this.corpusStats = {
+      totalDocs: 0,
+      avgLength: 0,
+      docFreq: {}, // term -> number of docs containing it
+      termFreq: {}, // term -> total frequency across corpus
+    };
+    this.useOnDemandBM25 = false;
   }
 
   /**
-   * Initialize the BM25 index with documents from vector store
+   * Initialize the hybrid search system with full corpus BM25
    */
   async initialize() {
     try {
-      console.log("🔧 Initializing hybrid search system...");
+      console.log("🔧 Initializing TRUE hybrid search system...");
+
+      // Load all documents from data folder
+      await this.loadAllDocuments();
+
+      // Calculate corpus statistics for proper BM25
+      this.calculateCorpusStats();
 
       // Initialize FlexSearch for BM25 keyword search
       this.bm25Index = new FlexSearch.Document({
@@ -32,57 +48,106 @@ class HybridSearch {
         },
       });
 
-      // Load documents for BM25 indexing
-      await this.loadDocuments();
-
-      // Index documents for BM25 search
-      this.indexDocuments();
+      // Index all documents for BM25 search
+      this.indexAllDocuments();
 
       this.isInitialized = true;
       console.log(
-        `✅ Hybrid search initialized with ${this.documents.length} documents`
+        `✅ TRUE hybrid search initialized with ${this.documents.length} documents`
+      );
+      console.log(
+        `📊 Corpus stats: ${
+          this.corpusStats.totalDocs
+        } docs, avg length: ${this.corpusStats.avgLength.toFixed(0)}`
       );
     } catch (error) {
-      console.error("❌ Failed to initialize hybrid search:", error.message);
+      console.error(
+        "❌ Failed to initialize TRUE hybrid search:",
+        error.message
+      );
       throw error;
     }
   }
 
   /**
-   * Load documents from vector store for BM25 indexing
+   * Load all documents from the data folder
    */
-  async loadDocuments() {
-    if (this.vectorStore.type === "pinecone") {
-      // For Pinecone, we'll use a different approach:
-      // We'll build BM25 index on-demand during search rather than pre-indexing
-      console.log("🔧 Pinecone detected - using on-demand BM25 indexing");
-      this.documents = [];
-      this.useOnDemandBM25 = true;
-    } else {
-      // Load from local vector store
-      if (this.vectorStore.data && this.vectorStore.data.chunks) {
-        this.documents = this.vectorStore.data.chunks.map((chunk, index) => ({
-          id: index,
-          content: chunk.content,
+  async loadAllDocuments() {
+    try {
+      console.log("📚 Loading all documents from data folder...");
+
+      const dataPath = path.join(process.cwd(), "data", "vector_store.json");
+      const data = JSON.parse(await fs.readFile(dataPath, "utf8"));
+
+      if (data.chunks && Array.isArray(data.chunks)) {
+        this.documents = data.chunks.map((chunk, index) => ({
+          id: chunk.id || `doc_${index}`,
+          content: chunk.content || "",
           title: chunk.metadata?.title || chunk.metadata?.doc_title || "",
           category: chunk.metadata?.category || "documentation",
-          metadata: chunk.metadata,
+          metadata: chunk.metadata || {},
           source: chunk.metadata?.source || chunk.metadata?.source_url || "",
+          wordCount:
+            chunk.metadata?.wordCount || this.countWords(chunk.content || ""),
         }));
-        this.useOnDemandBM25 = false;
+
+        console.log(
+          `✅ Loaded ${this.documents.length} documents from data folder`
+        );
+      } else {
+        throw new Error("Invalid data structure in vector_store.json");
       }
+    } catch (error) {
+      console.error("❌ Failed to load documents:", error.message);
+      throw error;
     }
   }
 
   /**
-   * Index documents for BM25 search
+   * Calculate corpus statistics for proper BM25
    */
-  indexDocuments() {
-    if (this.useOnDemandBM25) {
-      console.log("🔧 Using on-demand BM25 indexing for Pinecone");
-      return;
-    }
+  calculateCorpusStats() {
+    console.log("📊 Calculating corpus statistics...");
 
+    this.corpusStats.totalDocs = this.documents.length;
+
+    // Calculate average document length
+    const totalLength = this.documents.reduce(
+      (sum, doc) => sum + doc.wordCount,
+      0
+    );
+    this.corpusStats.avgLength = totalLength / this.documents.length;
+
+    // Calculate document frequency for each term
+    this.corpusStats.docFreq = {};
+    this.corpusStats.termFreq = {};
+
+    this.documents.forEach((doc) => {
+      const terms = this.tokenize(doc.content);
+      const uniqueTerms = new Set(terms);
+
+      uniqueTerms.forEach((term) => {
+        this.corpusStats.docFreq[term] =
+          (this.corpusStats.docFreq[term] || 0) + 1;
+      });
+
+      terms.forEach((term) => {
+        this.corpusStats.termFreq[term] =
+          (this.corpusStats.termFreq[term] || 0) + 1;
+      });
+    });
+
+    console.log(
+      `📊 Corpus stats calculated: ${
+        Object.keys(this.corpusStats.docFreq).length
+      } unique terms`
+    );
+  }
+
+  /**
+   * Index all documents for BM25 search
+   */
+  indexAllDocuments() {
     if (!this.bm25Index || this.documents.length === 0) {
       console.log("⚠️ No documents to index for BM25 search");
       return;
@@ -97,6 +162,24 @@ class HybridSearch {
     });
 
     console.log("✅ BM25 index created successfully");
+  }
+
+  /**
+   * Tokenize text into terms
+   */
+  tokenize(text) {
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .split(/\s+/)
+      .filter((term) => term.length > 0);
+  }
+
+  /**
+   * Count words in text
+   */
+  countWords(text) {
+    return this.tokenize(text).length;
   }
 
   /**
@@ -120,96 +203,68 @@ class HybridSearch {
   }
 
   /**
-   * Perform BM25 keyword search
+   * Calculate proper BM25 score for a document
+   */
+  calculateBM25Score(doc, queryTerms) {
+    const k1 = 1.2; // BM25 parameter
+    const b = 0.75; // BM25 parameter
+
+    let score = 0;
+    const docTerms = this.tokenize(doc.content);
+    const docLength = doc.wordCount;
+
+    queryTerms.forEach((term) => {
+      const termFreq = docTerms.filter((t) => t === term).length;
+
+      if (termFreq > 0) {
+        // Calculate IDF
+        const docFreq = this.corpusStats.docFreq[term] || 0;
+        const idf = Math.log((this.corpusStats.totalDocs + 1) / (docFreq + 1));
+
+        // Calculate BM25 score
+        const numerator = termFreq * (k1 + 1);
+        const denominator =
+          termFreq +
+          k1 * (1 - b + b * (docLength / this.corpusStats.avgLength));
+
+        score += (numerator / denominator) * idf;
+      }
+    });
+
+    return score;
+  }
+
+  /**
+   * Perform BM25 search on full corpus
    */
   async searchBM25(query, topK = 10) {
     try {
       console.log(`🔍 BM25 search for: "${query}"`);
-
-      if (this.useOnDemandBM25) {
-        // For Pinecone, we'll use semantic search results and apply BM25 scoring
-        return await this.searchBM25OnDemand(query, topK);
-      }
 
       if (!this.bm25Index || this.documents.length === 0) {
         console.log("⚠️ BM25 search not available - no documents indexed");
         return [];
       }
 
-      const results = this.bm25Index.search(query, {
-        limit: topK,
-        suggest: true,
-      });
+      const queryTerms = this.tokenize(query);
 
-      // Convert results to standardized format
-      const bm25Results = results.map((result, index) => ({
-        id: result.id,
-        content: result.content,
-        metadata: result.metadata,
-        source: result.source,
-        score: 1 / (index + 1), // Reciprocal rank normalization
+      // Calculate BM25 scores for all documents
+      const scoredDocs = this.documents.map((doc) => ({
+        ...doc,
+        bm25Score: this.calculateBM25Score(doc, queryTerms),
         searchType: "bm25",
       }));
 
-      console.log(`📊 BM25 found ${bm25Results.length} results`);
-      return bm25Results;
-    } catch (error) {
-      console.error("❌ BM25 search failed:", error.message);
-      return [];
-    }
-  }
-
-  /**
-   * On-demand BM25 search for Pinecone (uses provided semantic results + BM25 scoring)
-   */
-  async searchBM25OnDemand(query, topK = 10, semanticResults = null) {
-    try {
-      // Use provided semantic results or fetch them if not provided
-      let resultsToProcess = semanticResults;
-
-      if (!resultsToProcess || resultsToProcess.length === 0) {
-        console.log("🔍 Fetching semantic results for BM25 processing...");
-        resultsToProcess = await this.searchSemantic(query, topK * 2);
-      }
-
-      if (resultsToProcess.length === 0) {
-        return [];
-      }
-
-      // Apply BM25-style scoring to semantic results
-      const bm25Results = resultsToProcess.map((result, index) => {
-        const content = result.content.toLowerCase();
-        const queryTerms = query.toLowerCase().split(/\s+/);
-
-        // Simple BM25-style scoring based on term frequency
-        let score = 0;
-        queryTerms.forEach((term) => {
-          const termCount = (content.match(new RegExp(term, "g")) || []).length;
-          if (termCount > 0) {
-            // Simple TF-IDF-like scoring
-            score += termCount / (1 + Math.log(content.length / 100));
-          }
-        });
-
-        return {
-          id: result.id,
-          content: result.content,
-          metadata: result.metadata,
-          source: result.source,
-          score: score > 0 ? score : 1 / (index + 1), // Fallback to reciprocal rank
-          searchType: "bm25",
-        };
-      });
-
       // Sort by BM25 score and return top results
-      const sortedResults = bm25Results
-        .sort((a, b) => b.score - a.score)
+      const results = scoredDocs
+        .filter((doc) => doc.bm25Score > 0)
+        .sort((a, b) => b.bm25Score - a.bm25Score)
         .slice(0, topK);
 
-      console.log(`📊 BM25 (on-demand) found ${sortedResults.length} results`);
-      return sortedResults;
+      console.log(`📊 BM25 found ${results.length} results`);
+      return results;
     } catch (error) {
-      console.error("❌ On-demand BM25 search failed:", error.message);
+      console.error("❌ BM25 search failed:", error.message);
       return [];
     }
   }
@@ -254,18 +309,18 @@ class HybridSearch {
             total_chunks: match.metadata.total_chunks,
           },
           source: match.metadata.source,
-          score: match.score,
+          semanticScore: match.score,
           searchType: "semantic",
         }));
       } else {
         // Local vector store search
-        const similarities = this.vectorStore.data.chunks.map((chunk) => {
-          if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
-            return { chunk, similarity: 0 };
+        const similarities = this.documents.map((doc) => {
+          if (!doc.embedding || !Array.isArray(doc.embedding)) {
+            return { doc, similarity: 0 };
           }
           return {
-            chunk,
-            similarity: this.cosineSimilarity(queryEmbedding, chunk.embedding),
+            doc,
+            similarity: this.cosineSimilarity(queryEmbedding, doc.embedding),
           };
         });
 
@@ -273,14 +328,11 @@ class HybridSearch {
           .sort((a, b) => b.similarity - a.similarity)
           .slice(0, topK)
           .map((item, index) => ({
-            id: index,
-            content: item.chunk.content,
-            metadata: item.chunk.metadata,
-            source:
-              item.chunk.metadata?.source ||
-              item.chunk.metadata?.source_url ||
-              "",
-            score: item.similarity,
+            id: item.doc.id,
+            content: item.doc.content,
+            metadata: item.doc.metadata,
+            source: item.doc.source,
+            semanticScore: item.similarity,
             searchType: "semantic",
           }));
       }
@@ -306,10 +358,10 @@ class HybridSearch {
   /**
    * Normalize scores to 0-1 range using min-max normalization
    */
-  normalizeScores(results) {
+  normalizeScores(results, scoreField = "score") {
     if (results.length === 0) return results;
 
-    const scores = results.map((r) => r.score);
+    const scores = results.map((r) => r[scoreField]);
     const minScore = Math.min(...scores);
     const maxScore = Math.max(...scores);
     const range = maxScore - minScore;
@@ -321,7 +373,7 @@ class HybridSearch {
 
     return results.map((r) => ({
       ...r,
-      normalizedScore: (r.score - minScore) / range,
+      normalizedScore: (r[scoreField] - minScore) / range,
     }));
   }
 
@@ -339,8 +391,11 @@ class HybridSearch {
     );
 
     // Normalize scores
-    const normalizedBM25 = this.normalizeScores(bm25Results);
-    const normalizedSemantic = this.normalizeScores(semanticResults);
+    const normalizedBM25 = this.normalizeScores(bm25Results, "bm25Score");
+    const normalizedSemantic = this.normalizeScores(
+      semanticResults,
+      "semanticScore"
+    );
 
     // Create a map to track combined results
     const combinedResults = new Map();
@@ -388,14 +443,14 @@ class HybridSearch {
   }
 
   /**
-   * Main hybrid search function
+   * Main hybrid search function with proper BM25 + semantic fusion
    */
   async hybridSearch(query, topK = 5) {
     if (!this.isInitialized) {
       await this.initialize();
     }
 
-    console.log(`\n🔍 Hybrid Search: "${query}"`);
+    console.log(`\n🔍 TRUE Hybrid Search: "${query}"`);
     console.log("=".repeat(50));
 
     // Detect if query contains error codes
@@ -409,20 +464,11 @@ class HybridSearch {
     console.log(`⚖️ Weights: Semantic=${semanticWeight}, BM25=${bm25Weight}`);
 
     try {
-      // First get semantic results
-      const semanticResults = await this.searchSemantic(query, topK * 2);
-
-      // Then get BM25 results (pass semantic results to avoid duplicate semantic search)
-      let bm25Results;
-      if (this.useOnDemandBM25) {
-        bm25Results = await this.searchBM25OnDemand(
-          query,
-          topK * 2,
-          semanticResults
-        );
-      } else {
-        bm25Results = await this.searchBM25(query, topK * 2);
-      }
+      // Perform both searches in parallel
+      const [bm25Results, semanticResults] = await Promise.all([
+        this.searchBM25(query, topK * 2), // Get more results for better fusion
+        this.searchSemantic(query, topK * 2),
+      ]);
 
       // Fuse results
       const fusedResults = this.fuseResults(
@@ -450,7 +496,7 @@ class HybridSearch {
 
       return topResults;
     } catch (error) {
-      console.error("❌ Hybrid search failed:", error.message);
+      console.error("❌ TRUE hybrid search failed:", error.message);
 
       // Fallback to semantic search only
       console.log("🔄 Falling back to semantic search only...");
