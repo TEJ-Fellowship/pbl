@@ -1,27 +1,24 @@
 var cors = require("cors");
 const express = require("express");
-const mongoose = require("mongoose");
 const config = require("./utils/config");
 const logger = require("./utils/logger");
 const middleware = require("./utils/middleware");
-
-
-
+const chatController = require("./controllers/chatController");
 const app = express();
-app.use(cors());
-logger.info("connecting to", config.MONGODB_URI);
-
-mongoose
-  .connect(config.MONGODB_URI)
-  .then(() => {
-    logger.info("connected to MongoDB");
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
   })
-  .catch((error) => {
-    logger.error("error connection to MongoDB:", error.message);
-  });
+);
 
 app.use(express.json());
 app.use(middleware.requestLogger);
+
+// API routes
+app.use("/api", chatController);
 
 
 app.use(middleware.unknownEndpoint);
