@@ -90,17 +90,21 @@ const __dirname = path.dirname(__filename);
 async function validateSetup() {
   const errors = [];
 
-  // Check for API key
+  // Check for API keys
   if (!process.env.GEMINI_API_KEY) {
     errors.push("❌ Missing GEMINI_API_KEY in .env file");
   }
 
-  // Check if index exists
-  const indexPath = path.join(__dirname, "../data/shopify_index.json");
+  if (!process.env.PINECONE_API_KEY) {
+    errors.push("❌ Missing PINECONE_API_KEY in .env file");
+  }
+
+  // Check if Pinecone index exists by trying to connect
   try {
-    await fs.access(indexPath);
-  } catch {
-    errors.push("❌ Index file not found. Run 'npm run ingest' first");
+    const { getPineconeIndex } = await import("../config/pinecone.js");
+    await getPineconeIndex();
+  } catch (error) {
+    errors.push(`❌ Pinecone connection failed: ${error.message}`);
   }
 
   // Check if docs were scraped
@@ -121,13 +125,19 @@ async function validateSetup() {
     console.error("\n⚠️  Setup Issues Detected:\n");
     errors.forEach((err) => console.error(err));
     console.error("\n📋 Setup Instructions:");
-    console.error("1. Create a .env file with: GEMINI_API_KEY=your_key_here");
+    console.error("1. Create a .env file with:");
+    console.error("   GEMINI_API_KEY=your_gemini_key_here");
+    console.error("   PINECONE_API_KEY=your_pinecone_key_here");
+    console.error("   PINECONE_INDEX_NAME=shopify-merchant-support");
     console.error(
-      "2. Get your API key from: https://aistudio.google.com/app/apikey"
+      "2. Get your Gemini API key from: https://aistudio.google.com/app/apikey"
     );
-    console.error("3. Run: npm run scrape");
-    console.error("4. Run: npm run ingest");
-    console.error("5. Run: npm run chat\n");
+    console.error(
+      "3. Get your Pinecone API key from: https://app.pinecone.io/"
+    );
+    console.error("4. Run: npm run scrape");
+    console.error("5. Run: npm run ingest");
+    console.error("6. Run: npm run chat\n");
     process.exit(1);
   }
 }
