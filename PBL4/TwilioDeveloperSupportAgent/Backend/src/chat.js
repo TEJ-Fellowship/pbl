@@ -8,6 +8,8 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import config from "../config/config.js";
 import chalk from "chalk";
 import { highlight } from "cli-highlight";
+import ConversationMemory from "./conversationMemory.js";
+import APIDetector from "./apiDetector.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -383,7 +385,155 @@ async function retrieveChunksWithEmbeddings(
   }
 }
 
-// Generate response using Gemini
+// Generate memory-aware response using Gemini
+async function generateMemoryAwareResponse(
+  query,
+  chunks,
+  geminiClient,
+  memory,
+  apiDetector
+) {
+  try {
+    console.log(chalk.green("🤖 Generating memory-aware response..."));
+
+    // Detect API and language from query
+    const context = memory.getConversationContext();
+    const apiDetection = apiDetector.detectAPI(query, context);
+    const detectedLanguage = detectQueryLanguage(query);
+
+    // Update memory with detected information
+    if (detectedLanguage) {
+      await memory.updateLanguagePreference(detectedLanguage);
+    }
+
+    if (apiDetection.primary) {
+      await memory.updateAPIPreference(apiDetection.primary.api);
+    }
+
+    // Update current context
+    await memory.updateCurrentContext({
+      topic: apiDetection.primary?.api || "general",
+      relatedAPIs: apiDetection.all?.slice(0, 3).map((d) => d.api) || [],
+      errorCodes: detectErrorCodes(query),
+      lastQuery: query,
+    });
+
+    // Prepare context from retrieved chunks
+    const contextChunks = chunks
+      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .join("\n\n");
+
+    // Generate context-aware prompt
+    const contextPrompt = memory.generateContextPrompt(query);
+
+    // Add API-specific context
+    let apiContext = "";
+    if (apiDetection.primary) {
+      apiContext = `\nDETECTED API: The user is working with ${apiDetection.primary.api.toUpperCase()} API. `;
+      if (apiDetection.primary.reasons.length > 0) {
+        apiContext += `Detection based on: ${apiDetection.primary.reasons.join(
+          ", "
+        )}. `;
+      }
+
+      // Add related API suggestions
+      const relatedAPIs = apiDetector.getRelatedAPIs(apiDetection.primary.api);
+      if (relatedAPIs.length > 0) {
+        apiContext += `Related APIs that might be relevant: ${relatedAPIs.join(
+          ", "
+        )}. `;
+      }
+    }
+
+    const sources = chunks.map((chunk, index) => ({
+      content: chunk.content,
+      metadata: chunk.metadata,
+      similarity: chunk.similarity,
+      score: chunk.score || 0,
+      index: index + 1,
+    }));
+
+    // Generate response using Gemini with memory context
+    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
+
+${contextPrompt}${apiContext}
+
+CONTEXT (Twilio Documentation):
+${contextChunks}
+
+USER QUESTION: ${query}
+
+RESPONSE GUIDELINES:
+1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
+2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+3. **Include Code**: Always include practical code examples in the appropriate programming language
+4. **Step-by-Step**: Break down complex processes into clear, actionable steps
+5. **Error Handling**: Mention common errors and how to handle them
+6. **Best Practices**: Include security considerations and best practices
+7. **Source Citations**: Reference specific sources using [Source X] format
+8. **If Uncertain**: Clearly state when information isn't available in the context
+9. **Memory Awareness**: Reference previous conversation context when relevant
+10. **API Focus**: Prioritize information relevant to the detected API
+
+FORMAT YOUR RESPONSE:
+- Start with a direct answer to the question
+- Provide detailed explanation with code examples
+- Include relevant API endpoints and parameters
+- Mention any prerequisites or setup requirements
+- Reference conversation context when helpful
+- End with source citations
+
+`;
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Highlight code blocks in the response
+    const highlightedText = text.replace(
+      /```(.*?)\n([\s\S]*?)```/g,
+      (match, lang, code) => {
+        const highlighted = highlight(code, {
+          language: lang || detectedLanguage || "javascript",
+          ignoreIllegals: true,
+          theme: {
+            keyword: chalk.cyanBright,
+            built_in: chalk.yellowBright,
+            string: chalk.green,
+            literal: chalk.magenta,
+            section: chalk.blue,
+            comment: chalk.gray,
+            number: chalk.redBright,
+            attr: chalk.yellow,
+          },
+        });
+        return chalk.bgBlackBright(`\n${highlighted}\n`);
+      }
+    );
+
+    return {
+      answer: highlightedText,
+      sources: chunks,
+      metadata: {
+        language: detectedLanguage,
+        api: apiDetection.primary?.api,
+        confidence: apiDetection.confidence,
+        reasoning: apiDetection.reasoning,
+      },
+    };
+  } catch (error) {
+    console.error(
+      chalk.red("❌ Memory-aware response generation failed:"),
+      error.message
+    );
+    throw error;
+  }
+}
+
+// Generate response using Gemini (fallback)
 async function generateResponse(query, chunks, geminiClient) {
   try {
     console.log(chalk.green("🤖 Generating response..."));
@@ -464,13 +614,18 @@ FORMAT YOUR RESPONSE:
   }
 }
 
-// Main chat function
+// Main chat function with memory
 async function startChat() {
-  console.log(chalk.bold.blue("💳 Twilio Developer Support Agent - Chat"));
+  console.log(
+    chalk.bold.blue("💳 Twilio Developer Support Agent - Chat with Memory")
+  );
   console.log(chalk.gray("=".repeat(60)));
   console.log(chalk.cyan("🤖 AI Provider:"), chalk.yellow("Gemini"));
+  console.log(chalk.cyan("🧠 Memory:"), chalk.yellow("Enabled"));
   console.log(
-    chalk.green("💡 Type 'exit' to quit, 'sample' for sample questions")
+    chalk.green(
+      "💡 Type 'exit' to quit, 'sample' for sample questions, 'memory' for memory stats"
+    )
   );
   console.log(chalk.gray("=".repeat(60)));
   console.log("\n🚀 Sample Questions to Get Started:");
@@ -490,6 +645,15 @@ async function startChat() {
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
     const separateChunks = await loadSeparateChunks();
+
+    // Initialize memory system
+    const memory = new ConversationMemory();
+    const apiDetector = new APIDetector();
+
+    const memoryInitialized = await memory.initialize();
+    if (!memoryInitialized) {
+      console.log("⚠️ Memory system not available, using basic chat mode");
+    }
 
     // Create readline interface
     const rl = readline.createInterface({
@@ -518,6 +682,25 @@ async function startChat() {
           return;
         }
 
+        if (query.toLowerCase() === "memory") {
+          const stats = memory.getMemoryStats();
+          console.log("\n🧠 Memory Statistics:");
+          console.log(`   Session ID: ${stats.sessionId}`);
+          console.log(`   Conversation Turns: ${stats.conversationTurns}`);
+          console.log(`   Session Duration: ${stats.sessionDuration} minutes`);
+          console.log(`   User Preferences:`, stats.userPreferences);
+          console.log(`   Current Context:`, stats.currentContext);
+          askQuestion();
+          return;
+        }
+
+        if (query.toLowerCase() === "clear") {
+          await memory.clearSessionHistory();
+          console.log("🗑️ Conversation history cleared");
+          askQuestion();
+          return;
+        }
+
         if (query.trim() === "") {
           console.log(chalk.red("❌ Please enter a valid question."));
           askQuestion();
@@ -525,6 +708,8 @@ async function startChat() {
         }
 
         try {
+          const startTime = Date.now();
+
           // Retrieve relevant chunks using hybrid search
           const chunks = await retrieveChunksWithEmbeddings(
             query,
@@ -541,16 +726,58 @@ async function startChat() {
             return;
           }
 
-          // Generate response
-          const result = await generateResponse(query, chunks, geminiClient);
+          // Generate memory-aware response
+          const result = await generateMemoryAwareResponse(
+            query,
+            chunks,
+            geminiClient,
+            memory,
+            apiDetector
+          );
+
+          const responseTime = Date.now() - startTime;
+
+          // Add conversation turn to memory
+          await memory.addConversationTurn(query, result.answer, {
+            language: result.metadata?.language,
+            api: result.metadata?.api,
+            errorCodes: detectErrorCodes(query),
+            chunkCount: chunks.length,
+            responseTime: responseTime,
+          });
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
+
+          // Show detection info if available
+          if (result.metadata?.api) {
+            console.log(
+              chalk.cyan(
+                `🔍 Detected API: ${result.metadata.api.toUpperCase()}`
+              )
+            );
+            if (result.metadata.confidence) {
+              console.log(
+                chalk.gray(
+                  `   Confidence: ${(result.metadata.confidence * 100).toFixed(
+                    1
+                  )}%`
+                )
+              );
+            }
+          }
+
+          if (result.metadata?.language) {
+            console.log(
+              chalk.cyan(`💻 Detected Language: ${result.metadata.language}`)
+            );
+          }
+
           const formattedAnswer = result.answer.replace(
             /```(.*?)\n([\s\S]*?)```/g,
             (match, lang, code) => {
               const highlighted = highlight(code, {
-                language: lang || "javascript",
+                language: lang || result.metadata?.language || "javascript",
                 ignoreIllegals: true,
                 theme: {
                   keyword: chalk.cyanBright,
@@ -634,6 +861,7 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
 
 export {
   generateResponse,
+  generateMemoryAwareResponse,
   loadVectorStore,
   loadSeparateChunks,
   retrieveChunksWithEmbeddings,

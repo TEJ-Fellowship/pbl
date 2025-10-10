@@ -1,0 +1,145 @@
+{
+  "sessions": {
+    "test-session": {
+      "id": "test-session",
+      "createdAt": "2025-10-10T08:21:09.447Z",
+      "lastActivity": "2025-10-10T08:21:09.455Z",
+      "conversationHistory": [
+        {
+          "timestamp": "2025-10-10T08:21:09.450Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js, you can use the Twilio Node.js library...",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 0
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:21:09.452Z",
+          "query": "What about error handling?",
+          "response": "For error handling in SMS, you should catch TwilioError exceptions...",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 0
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:21:09.453Z",
+          "query": "How do I check delivery status?",
+          "response": "You can check SMS delivery status using webhooks or the StatusCallback parameter...",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 0
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:21:09.454Z",
+          "query": "What's error 30001?",
+          "response": "Error 30001 is a 'Message body is required' error...",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [
+              "30001"
+            ],
+            "chunkCount": 0,
+            "responseTime": 0
+          }
+        }
+      ],
+      "userPreferences": {
+        "language": "javascript",
+        "api": "sms",
+        "context": []
+      },
+      "currentContext": {
+        "topic": null,
+        "relatedAPIs": [],
+        "errorCodes": [],
+        "lastQuery": null
+      }
+    },
+    "default": {
+      "id": "default",
+      "createdAt": "2025-10-10T08:21:25.570Z",
+      "lastActivity": "2025-10-10T08:28:18.068Z",
+      "conversationHistory": [
+        {
+          "timestamp": "2025-10-10T08:21:36.409Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js using Twilio, follow these steps:\n\n1.  **Install the Twilio Node.js library:**\n\n    \n    npm install twilio\n    \n\n\n2.  **Require the Twilio module** [Source 2]:\n\n    \n    const twilio = require(\"twilio\");\n    \n\n\n3.  **Initialize the Twilio client** [Source 2]:\n\n    *   You need your Account SID and Auth Token from your Twilio account. You can find these at twilio.com/console. It's best practice to set these as environment variables.\n\n    \n    const accountSid = process.env.TWILIO_ACCOUNT_SID;\n    const authToken = process.env.TWILIO_AUTH_TOKEN;\n    const client = twilio(accountSid, authToken);\n    \n\n\n4.  **Send an SMS** [Source 2]:\n\n    *   Use the `client.messages.create()` method to send an SMS.  This method requires parameters such as `body`, `from`, and `to`.\n    *   `from`:  This is your Twilio phone number.\n    *   `to`: This is the recipient's phone number.\n    *   `body`: This is the text of the SMS message.\n\n    \n    async function createMessage() {\n      try {\n        const message = await client.messages.create({\n          body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n          from: \"+15017122661\",\n          to: \"+14155551212\",\n        });\n\n        console.log(message.sid);\n      } catch (error) {\n        console.error(error);\n      }\n    }\n\n    createMessage();\n    \n\n\n**Complete Example:**\n\n\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Alternatively, use the ESM syntax below.\n// import twilio from 'twilio';\n\nconst twilio = require(\"twilio\");\n\n// Your Account SID and Auth Token from twilio.com/console\n// Set the environment variables TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\n\nconst client = twilio(accountSid, authToken);\n\nasync function createMessage() {\n  try {\n    const message = await client.messages.create({\n      body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n      from: \"+15017122661\",\n      to: \"+14155551212\",\n    });\n\n    console.log(message.sid);\n  } catch (error) {\n    console.error(error);\n  }\n}\n\ncreateMessage();\n\n\n\n**Prerequisites:**\n\n*   A Twilio account and phone number.\n*   Node.js and npm installed.\n*   Set `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` environment variables.\n\n**Error Handling:**\n\n*   Ensure your Twilio account credentials are correct.\n*   Verify that the 'to' phone number is in E.164 format.\n*   Check your Twilio account balance.\n*   Handle potential exceptions using `try...catch` blocks [Source 2].\n\n**Best Practices:**\n\n*   Use environment variables to store your Twilio Account SID and Auth Token [Source 2].\n*   Implement proper error handling to catch potential issues.\n*   Adhere to Twilio's messaging policies and best practices for SMS.\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 2,
+            "responseTime": 10837
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:24:53.315Z",
+          "query": "How do I send an SMS in Node.js?\"",
+          "response": "To send an SMS in Node.js, you can use the Twilio Node.js library. Here's a step-by-step guide:\n\n**1. Prerequisites:**\n\n*   Make sure you have Node.js and npm (Node Package Manager) installed.\n*   You'll need a Twilio account. If you don't have one, you can sign up for free at [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio).\n*   Obtain your Account SID and Auth Token from the Twilio Console ([twilio.com/console](http://twilio.com/console)).\n*   Set your Account SID and Auth Token as environment variables. This is crucial for security [Source 2].\n\n**2. Installation:**\n\nInstall the Twilio Node.js library using npm:\n\n\u001b[100m\u001b[49m\n\u001b[100mnpm install twilio\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\n**3. Code Example:**\n\nHere's the code to send an SMS using the Twilio Node.js library [Source 2]:\n\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[90m// Download the helper library from https://www.twilio.com/docs/node/install\u001b[39m\u001b[49m\n\u001b[100m\u001b[90m// Find your Account SID and Auth Token at twilio.com/console\u001b[39m\u001b[49m\n\u001b[100m\u001b[90m// and set the environment variables. See http://twil.io/secure\u001b[39m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m twilio = \u001b[93mrequire\u001b[39m(\u001b[32m\"twilio\"\u001b[39m); \u001b[90m// Or, for ESM: import twilio from \"twilio\";\u001b[39m\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m accountSid = process.env.TWILIO_ACCOUNT_SID;\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m authToken = process.env.TWILIO_AUTH_TOKEN;\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m client = twilio(accountSid, authToken);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96masync\u001b[39m \u001b[33m\u001b[96mfunction\u001b[39m\u001b[33m createMessage() \u001b[39m{\u001b[49m\n\u001b[100m  \u001b[96mconst\u001b[39m message = \u001b[96mawait\u001b[39m client.messages\u001b[49m\n\u001b[100m    .create({\u001b[49m\n\u001b[100m      \u001b[33mbody\u001b[39m: \u001b[32m\"This is the ship that made the Kessel Run in fourteen parsecs?\"\u001b[39m,\u001b[49m\n\u001b[100m      \u001b[33mfrom\u001b[39m: \u001b[32m\"+15017122661\"\u001b[39m, \u001b[90m// Replace with your Twilio phone number\u001b[39m\u001b[49m\n\u001b[100m      \u001b[33mto\u001b[39m: \u001b[32m\"+15558675310\"\u001b[39m,   \u001b[90m// Replace with the recipient's phone number\u001b[39m\u001b[49m\n\u001b[100m    })\u001b[49m\n\u001b[100m    .then(\u001b[33mmessage =>\u001b[39m \u001b[93mconsole\u001b[39m.log(message.sid))\u001b[49m\n\u001b[100m    .catch(\u001b[33merror =>\u001b[39m \u001b[93mconsole\u001b[39m.error(error));\u001b[49m\n\u001b[100m}\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100mcreateMessage();\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\n**4. Explanation:**\n\n*   **Import the Twilio module:**  `const twilio = require(\"twilio\");`  This line imports the Twilio library, making its functions available to your script.\n*   **Authenticate:**  Create a new Twilio client using your Account SID and Auth Token.  `const client = twilio(accountSid, authToken);`  These credentials authenticate your requests to the Twilio API.  It's best practice to store them as environment variables [Source 2].\n*   **Create a message:**  Use the  `client.messages.create()`  method to send an SMS. This method takes an object with the following parameters:\n    *   `body`: The text of the SMS message.\n    *   `from`: Your Twilio phone number (in E.164 format, e.g., +15017122661).\n    *   `to`: The recipient's phone number (also in E.164 format).\n*   **Error Handling:** The `.catch()` block is used to handle any errors that might occur during the API request, such as invalid credentials or phone numbers.  Always include error handling in your code.\n*   **Asynchronous Function:**  The `createMessage()` function is declared as `async` to allow the use of `await` when calling the `client.messages.create()` method.  This makes the code easier to read and ensures that the message is sent before the function returns.\n\n**5. Running the Code:**\n\n1.  Save the code in a file named, for example, `send-sms.js`.\n2.  Set the environment variables `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`.\n3.  Run the script from your terminal: `node send-sms.js`\n\n**Important Considerations:**\n\n*   **Phone Number Format:** Always use E.164 format for phone numbers (e.g., +15558675310).\n*   **Twilio Phone Number:**  Make sure you have a Twilio phone number. You can purchase one through the Twilio Console.\n*   **Error Handling:** Implement robust error handling to catch potential issues like invalid phone numbers, insufficient funds, or API errors.\n*   **Security:** Never hardcode your Account SID and Auth Token directly into your code. Use environment variables or a secure configuration management system.\n\nIf you encounter any issues, check the Twilio documentation and debug your code carefully.\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 2,
+            "responseTime": 12330
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:26:14.899Z",
+          "query": "What about error handling?",
+          "response": "Error handling is crucial when working with the Twilio SMS API to ensure your application gracefully manages unexpected situations. Here's a breakdown of how to implement error handling in your Node.js application when sending SMS messages using the Twilio API:\n\n**1. Using `try...catch` Blocks:**\n\nWrap your Twilio SMS sending code in a `try...catch` block to catch any exceptions that might occur during the process. This is a fundamental way to handle errors in JavaScript.\n\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m twilio = \u001b[93mrequire\u001b[39m(\u001b[32m'twilio'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[90m// Your Account SID and Auth Token from twilio.com/console\u001b[39m\u001b[49m\n\u001b[100m\u001b[90m// Set the environment variables for security\u001b[39m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m accountSid = process.env.TWILIO_ACCOUNT_SID;\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m authToken = process.env.TWILIO_AUTH_TOKEN;\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m client = twilio(accountSid, authToken);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96masync\u001b[39m \u001b[33m\u001b[96mfunction\u001b[39m\u001b[33m sendSMS(to, message) \u001b[39m{\u001b[49m\n\u001b[100m  \u001b[96mtry\u001b[39m {\u001b[49m\n\u001b[100m    \u001b[96mconst\u001b[39m message = \u001b[96mawait\u001b[39m client.messages\u001b[49m\n\u001b[100m      .create({\u001b[49m\n\u001b[100m        \u001b[33mbody\u001b[39m: message,\u001b[49m\n\u001b[100m        \u001b[33mfrom\u001b[39m: \u001b[32m'+1234567890'\u001b[39m, \u001b[90m// Replace with your Twilio phone number\u001b[39m\u001b[49m\n\u001b[100m        \u001b[33mto\u001b[39m: to\u001b[49m\n\u001b[100m      });\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m    \u001b[93mconsole\u001b[39m.log(\u001b[32m`Message SID: ${message.sid}`\u001b[39m);\u001b[49m\n\u001b[100m  } \u001b[96mcatch\u001b[39m (error) {\u001b[49m\n\u001b[100m    \u001b[93mconsole\u001b[39m.error(\u001b[32m`Error sending SMS: ${error}`\u001b[39m);\u001b[49m\n\u001b[100m    \u001b[90m// Handle the error appropriately, e.g., retry, log, or notify the user\u001b[39m\u001b[49m\n\u001b[100m  }\u001b[49m\n\u001b[100m}\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[90m// Example usage\u001b[39m\u001b[49m\n\u001b[100msendSMS(\u001b[32m'+11234567890'\u001b[39m, \u001b[32m'Hello from Twilio!'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\n**2. Handling Specific Twilio Errors:**\n\nThe `error` object in the `catch` block will contain information about the error that occurred.  You can use this information to handle specific Twilio errors differently. While the provided documentation snippets don't give a comprehensive list of error codes, here's how you might handle some common ones, based on general principles and the limited context:\n\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m twilio = \u001b[93mrequire\u001b[39m(\u001b[32m'twilio'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m accountSid = process.env.TWILIO_ACCOUNT_SID;\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m authToken = process.env.TWILIO_AUTH_TOKEN;\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m client = twilio(accountSid, authToken);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96masync\u001b[39m \u001b[33m\u001b[96mfunction\u001b[39m\u001b[33m sendSMS(to, message) \u001b[39m{\u001b[49m\n\u001b[100m  \u001b[96mtry\u001b[39m {\u001b[49m\n\u001b[100m    \u001b[96mconst\u001b[39m message = \u001b[96mawait\u001b[39m client.messages\u001b[49m\n\u001b[100m      .create({\u001b[49m\n\u001b[100m        \u001b[33mbody\u001b[39m: message,\u001b[49m\n\u001b[100m        \u001b[33mfrom\u001b[39m: \u001b[32m'+1234567890'\u001b[39m, \u001b[90m// Replace with your Twilio phone number\u001b[39m\u001b[49m\n\u001b[100m        \u001b[33mto\u001b[39m: to\u001b[49m\n\u001b[100m      });\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m    \u001b[93mconsole\u001b[39m.log(\u001b[32m`Message SID: ${message.sid}`\u001b[39m);\u001b[49m\n\u001b[100m  } \u001b[96mcatch\u001b[39m (error) {\u001b[49m\n\u001b[100m    \u001b[93mconsole\u001b[39m.error(\u001b[32m`Error sending SMS:`\u001b[39m, error);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m    \u001b[96mif\u001b[39m (error.code === \u001b[91m20404\u001b[39m) { \u001b[90m// Example: Not Found (resource doesn't exist) [Source 4]\u001b[39m\u001b[49m\n\u001b[100m      \u001b[93mconsole\u001b[39m.error(\u001b[32m\"The requested resource was not found (e.g., invalid phone number).\"\u001b[39m);\u001b[49m\n\u001b[100m      \u001b[90m// Handle the \"Not Found\" error, perhaps by prompting the user to check the phone number\u001b[39m\u001b[49m\n\u001b[100m    } \u001b[96melse\u001b[39m \u001b[96mif\u001b[39m (error.code === \u001b[91m10002\u001b[39m) { \u001b[90m// Example: Account is not active [Source 5]\u001b[39m\u001b[49m\n\u001b[100m      \u001b[93mconsole\u001b[39m.error(\u001b[32m\"Your Twilio account is not active.\"\u001b[39m);\u001b[49m\n\u001b[100m      \u001b[90m// Handle inactive account error, prompt user to activate account\u001b[39m\u001b[49m\n\u001b[100m    } \u001b[96melse\u001b[39m \u001b[96mif\u001b[39m (error.code === \u001b[91m11200\u001b[39m) { \u001b[90m// Example: Invalid URL format [Source 5]\u001b[39m\u001b[49m\n\u001b[100m      \u001b[93mconsole\u001b[39m.error(\u001b[32m\"Invalid URL provided.\"\u001b[39m);\u001b[49m\n\u001b[100m      \u001b[90m//Handle invalid URL error, prompt user to check the URL\u001b[39m\u001b[49m\n\u001b[100m    }\u001b[49m\n\u001b[100m     \u001b[96melse\u001b[39m {\u001b[49m\n\u001b[100m      \u001b[93mconsole\u001b[39m.error(\u001b[32m\"An unexpected error occurred:\"\u001b[39m, error);\u001b[49m\n\u001b[100m      \u001b[90m// Generic error handling: log the error, retry, or notify the user\u001b[39m\u001b[49m\n\u001b[100m    }\u001b[49m\n\u001b[100m  }\u001b[49m\n\u001b[100m}\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[90m// Example usage\u001b[39m\u001b[49m\n\u001b[100msendSMS(\u001b[32m'+11234567890'\u001b[39m, \u001b[32m'Hello from Twilio!'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\n**3. Common Error Scenarios and Handling:**\n\n*   **Invalid Phone Number:** Twilio might return an error if the `to` phone number is not in a valid format or is not a reachable number.\n*   **Insufficient Funds:** If your Twilio account doesn't have enough credit, the message will fail to send.\n*   **Account Suspended:** If your Twilio account is suspended, you won't be able to send messages. [Source 5] indicates `Account is not active` as error code 10002.\n*   **Toll-Free Number Restrictions:**  If you're using a toll-free number, there might be restrictions on the types of messages you can send or the countries you can send to.  [Source 2] mentions various toll-free verification rejection errors.\n*   **Media Size Limits:** If you're sending media messages, ensure that the media file size doesn't exceed the allowed limit. [Source 1] mentions error 11751 related to media size limits.\n*   **Webhook Errors:** If you've configured webhooks, ensure that your webhook URLs are valid and accessible and that your server is responding correctly. [Source 1] mentions webhook related errors.\n\n**4. Webhooks and Asynchronous Error Handling:**\n\nIf you are using webhooks to handle inbound SMS or delivery receipts, your application needs to be prepared to handle errors asynchronously.  This typically involves:\n\n*   **Validating the Request:** Ensure the request is coming from Twilio.\n*   **Idempotency:** Implement logic to prevent processing the same event multiple times.\n*   **Error Logging:** Log any errors that occur during webhook processing.\n*   **Retry Mechanisms:** Implement retry mechanisms for failed webhook events.\n\n**5. Best Practices:**\n\n*   **Secure your credentials:** Never hardcode your Account SID and Auth Token directly in your code. Use environment variables or a secure configuration management system.\n*   **Input Validation:**  Validate the `to` phone number before sending the SMS to prevent errors.\n*   **Logging:** Implement comprehensive logging to track errors and debug issues.\n*   **Monitoring:** Monitor your Twilio account for errors and usage patterns.\n\nBy implementing these error handling techniques, you can build more robust and reliable Twilio SMS applications.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 13881
+          }
+        },
+        {
+          "timestamp": "2025-10-10T08:28:18.068Z",
+          "query": "What questions did I ask you just before?",
+          "response": "You asked, \"What about error handling?\" just before. This question indicates you're interested in understanding how to manage errors that might occur when using the Twilio SMS API. Let's delve into how to handle errors effectively using JavaScript.\n\n**Error Handling in Twilio SMS API**\n\nWhen working with the Twilio SMS API, it's crucial to implement robust error handling to manage potential issues such as invalid phone numbers, insufficient funds, or network problems. Twilio provides different ways to handle errors, including try-catch blocks and checking the status of the message.\n\n**1. Using Try-Catch Blocks**\n\nYou can wrap your Twilio API calls in try-catch blocks to handle exceptions. This is a common practice in JavaScript for dealing with asynchronous operations.\n\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m twilio = \u001b[93mrequire\u001b[39m(\u001b[32m'twilio'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[90m// Your Account SID and Auth Token from twilio.com/console\u001b[39m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m accountSid = \u001b[32m'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'\u001b[39m;\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m authToken = \u001b[32m'your_auth_token'\u001b[39m;\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m client = \u001b[96mnew\u001b[39m twilio(accountSid, authToken);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mtry\u001b[39m {\u001b[49m\n\u001b[100m  client.messages\u001b[49m\n\u001b[100m    .create({\u001b[49m\n\u001b[100m      \u001b[33mbody\u001b[39m: \u001b[32m'Hello from Twilio!'\u001b[39m,\u001b[49m\n\u001b[100m      \u001b[33mto\u001b[39m: \u001b[32m'+1234567890'\u001b[39m, \u001b[90m// Replace with a valid phone number\u001b[39m\u001b[49m\n\u001b[100m      \u001b[33mfrom\u001b[39m: \u001b[32m'+11234567890'\u001b[39m, \u001b[90m// Replace with your Twilio phone number\u001b[39m\u001b[49m\n\u001b[100m    })\u001b[49m\n\u001b[100m    .then(\u001b[33mmessage =>\u001b[39m \u001b[93mconsole\u001b[39m.log(message.sid))\u001b[49m\n\u001b[100m    .catch(\u001b[33merr =>\u001b[39m {\u001b[49m\n\u001b[100m      \u001b[93mconsole\u001b[39m.error(\u001b[32m'Error sending message:'\u001b[39m, err.message);\u001b[49m\n\u001b[100m    });\u001b[49m\n\u001b[100m} \u001b[96mcatch\u001b[39m (error) {\u001b[49m\n\u001b[100m  \u001b[93mconsole\u001b[39m.error(\u001b[32m'An error occurred:'\u001b[39m, error.message);\u001b[49m\n\u001b[100m}\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\nIn this example:\n\n-   We wrap the `client.messages.create` method in a `try` block.\n-   If an error occurs during the message creation, the `catch` block will catch it, and you can log the error message or take other appropriate actions.\n\n**2. Checking Message Status via Webhooks**\n\nTwilio uses webhooks to provide real-time information about the status of your SMS messages. You can set up a webhook URL in your Twilio account to receive message status updates.\n\n*   **Set up a Webhook**: In your Twilio account, configure the Messaging Request URL for your Twilio phone number to point to your webhook endpoint.\n*   **Handle the Webhook**: Your server should listen for incoming requests to the webhook URL.  When a message status changes (e.g., sent, delivered, failed), Twilio will send a POST request to your webhook URL with details about the message, including its status and any error codes.\n\nHere’s an example of how you might handle the webhook in a Node.js application using Express:\n\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m express = \u001b[93mrequire\u001b[39m(\u001b[32m'express'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m bodyParser = \u001b[93mrequire\u001b[39m(\u001b[32m'body-parser'\u001b[39m);\u001b[49m\n\u001b[100m\u001b[96mconst\u001b[39m app = express();\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100mapp.use(bodyParser.urlencoded({ \u001b[33mextended\u001b[39m: \u001b[35mfalse\u001b[39m }));\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100mapp.post(\u001b[32m'/twilio-webhook'\u001b[39m, \u001b[33m(req, res) =>\u001b[39m {\u001b[49m\n\u001b[100m  \u001b[96mconst\u001b[39m messageSid = req.body.MessageSid;\u001b[49m\n\u001b[100m  \u001b[96mconst\u001b[39m messageStatus = req.body.MessageStatus;\u001b[49m\n\u001b[100m  \u001b[96mconst\u001b[39m errorCode = req.body.ErrorCode;\u001b[49m\n\u001b[100m  \u001b[96mconst\u001b[39m errorMessage = req.body.ErrorMessage;\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m  \u001b[93mconsole\u001b[39m.log(\u001b[32m`Message SID: ${messageSid}, Status: ${messageStatus}`\u001b[39m);\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m  \u001b[96mif\u001b[39m (errorCode) {\u001b[49m\n\u001b[100m    \u001b[93mconsole\u001b[39m.error(\u001b[32m`Error Code: ${errorCode}, Error Message: ${errorMessage}`\u001b[39m);\u001b[49m\n\u001b[100m    \u001b[90m// Handle the error - e.g., log it, retry, or notify the user\u001b[39m\u001b[49m\n\u001b[100m  }\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m  res.sendStatus(\u001b[91m200\u001b[39m); \u001b[90m// Acknowledge receipt of the webhook\u001b[39m\u001b[49m\n\u001b[100m});\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100mapp.listen(\u001b[91m3000\u001b[39m, \u001b[33m() =>\u001b[39m {\u001b[49m\n\u001b[100m  \u001b[93mconsole\u001b[39m.log(\u001b[32m'Server listening on port 3000'\u001b[39m);\u001b[49m\n\u001b[100m});\u001b[49m\n\u001b[100m\u001b[49m\n\u001b[100m\u001b[49m\n\nKey points:\n\n*   The `/twilio-webhook` route is where Twilio will send the message status updates.\n*   We use `body-parser` middleware to parse the incoming request body.\n*   The `req.body` contains the data sent by Twilio, including `MessageSid`, `MessageStatus`, `ErrorCode`, and `ErrorMessage`.\n*   If `ErrorCode` is present, it indicates an error, and you can handle it accordingly.\n*   Always send a `200 OK` status to acknowledge that you have received the webhook.\n\n**3. Common Errors and Their Meanings**\n\nHere are some common errors you might encounter and how to address them:\n\n*   **Error 21211 - Invalid Phone Number**: The phone number you are trying to send the message to is not a valid phone number. Ensure the phone number is correctly formatted (e.g., with the country code).\n*   **Error 21408 - Permission Denied**: Your Twilio account does not have permission to send SMS messages to the specified country.  Check your Twilio account settings to ensure you have the necessary permissions.\n*   **Error 21614 - Insufficient Funds**: Your Twilio account does not have sufficient funds to send the message.  Top up your Twilio account.\n\nBy implementing these error handling techniques, you can build a more reliable and user-friendly SMS application with Twilio.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 1,
+            "responseTime": 11073
+          }
+        }
+      ],
+      "userPreferences": {
+        "language": "javascript",
+        "api": "sms",
+        "context": []
+      },
+      "currentContext": {
+        "topic": "general",
+        "relatedAPIs": [],
+        "errorCodes": [],
+        "lastQuery": "What questions did I ask you just before?",
+        "lastUpdated": "2025-10-10T08:28:10.081Z"
+      }
+    }
+  },
+  "globalPreferences": {
+    "defaultLanguage": "javascript",
+    "preferredAPI": "sms",
+    "lastUsedLanguage": "javascript",
+    "lastUsedAPI": "sms"
+  }
+}
