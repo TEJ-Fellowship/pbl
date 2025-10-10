@@ -6,6 +6,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import config from "../config/config.js";
+import chalk from "chalk";
+import { highlight } from "cli-highlight";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -218,7 +220,7 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
 // Generate response using Gemini
 async function generateResponse(query, chunks, geminiClient) {
   try {
-    console.log("🤖 Generating response...");
+    console.log(chalk.green("🤖 Generating response..."));
 
     // Prepare context from retrieved chunks
     const context = chunks
@@ -267,28 +269,53 @@ FORMAT YOUR RESPONSE:
     const response = await result.response;
     const text = response.text();
 
-    return {
-      answer: text,
-      sources: sources,
-    };
+    // Highlight code blocks in the response
+    const highlightedText = text.replace(
+      /```(.*?)\n([\s\S]*?)```/g,
+      (match, lang, code) => {
+        const highlighted = highlight(code, {
+          language: lang || "javascript",
+          ignoreIllegals: true,
+          theme: {
+            keyword: chalk.cyanBright,
+            built_in: chalk.yellowBright,
+            string: chalk.green,
+            literal: chalk.magenta,
+            section: chalk.blue,
+            comment: chalk.gray,
+            number: chalk.redBright,
+            attr: chalk.yellow,
+          },
+        });
+        return chalk.bgBlackBright(`\n${highlighted}\n`);
+      }
+    );
+
+    return { answer: highlightedText, sources: chunks };
   } catch (error) {
-    console.error("❌ Response generation failed:", error.message);
+    console.error(chalk.red("❌ Response generation failed:"), error.message);
     throw error;
   }
 }
 
 // Main chat function
 async function startChat() {
-  console.log("💳 Twilio Customer Support Agent - Chat Interface");
-  console.log("=".repeat(60));
-  console.log("🤖 AI Provider: GEMINI");
-  console.log("💡 Type 'exit' to quit, 'sample' for more questions");
-  console.log("=".repeat(60));
+  console.log(chalk.bold.blue("💳 Twilio Developer Support Agent - Chat"));
+  console.log(chalk.gray("=".repeat(60)));
+  console.log(chalk.cyan("🤖 AI Provider:"), chalk.yellow("Gemini"));
+  console.log(
+    chalk.green("💡 Type 'exit' to quit, 'sample' for sample questions")
+  );
+  console.log(chalk.gray("=".repeat(60)));
   console.log("\n🚀 Sample Questions to Get Started:");
-  console.log("  • How do I create a payment intent with Twilio?");
-  console.log("  • What are webhook signatures and how do I verify them?");
-  console.log("  • How to handle Twilio API errors and exceptions?");
-  console.log("  • How do I set up subscription billing with Twilio?");
+  console.log("\nHow do I send an SMS in Node.js?");
+  console.log("What does error 30001 mean?");
+  console.log(
+    "What are A2P 10DLC campaign approval requirements for all brand types?"
+  );
+  console.log("How can I port US phone number to Twilio?");
+  console.log("How can I get the delivery status of an SMS message?");
+  console.log("How do I reset/change my Twilio password?");
   console.log("=".repeat(60));
 
   try {
@@ -304,9 +331,9 @@ async function startChat() {
     });
 
     const askQuestion = () => {
-      rl.question("\n❓ Your question: ", async (query) => {
+      rl.question(chalk.bold("\n❓ Your question: "), async (query) => {
         if (query.toLowerCase() === "exit") {
-          console.log("👋 Goodbye!");
+          console.log(chalk.green("👋 Goodbye!"));
           rl.close();
           return;
         }
@@ -314,29 +341,18 @@ async function startChat() {
         if (query.toLowerCase() === "sample") {
           console.log("\n💡 Example Questions by Category:");
           console.log("\n🔧 API Integration:");
-          console.log("  • How do I create a payment intent with Twilio?");
           console.log("  • How to handle Twilio API errors and exceptions?");
-          console.log("  • What's the difference between test and live mode?");
           console.log("\n🔐 Security & Webhooks:");
           console.log(
             "  • What are webhook signatures and how do I verify them?"
           );
-          console.log("  • How do I implement 3D Secure authentication?");
           console.log("  • How to secure my Twilio integration?");
-          console.log("\n💳 Payments & Billing:");
-          console.log("  • How do I set up subscription billing with Twilio?");
-          console.log("  • How to handle refunds and disputes?");
-          console.log("  • What are Twilio Connect and marketplace payments?");
-          console.log("\n🛠️ Advanced Features:");
-          console.log("  • How to implement multi-party payments?");
-          console.log("  • How to handle international payments?");
-          console.log("  • How to set up Twilio Radar for fraud detection?");
           askQuestion();
           return;
         }
 
         if (query.trim() === "") {
-          console.log("❌ Please enter a question.");
+          console.log(chalk.red("❌ Please enter a valid question."));
           askQuestion();
           return;
         }
@@ -362,8 +378,29 @@ async function startChat() {
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
-          console.log(result.answer);
-          console.log("-".repeat(40));
+          const formattedAnswer = result.answer.replace(
+            /```(.*?)\n([\s\S]*?)```/g,
+            (match, lang, code) => {
+              const highlighted = highlight(code, {
+                language: lang || "javascript",
+                ignoreIllegals: true,
+                theme: {
+                  keyword: chalk.cyanBright,
+                  built_in: chalk.yellowBright,
+                  string: chalk.green,
+                  literal: chalk.magenta,
+                  section: chalk.blue,
+                  comment: chalk.gray,
+                  number: chalk.redBright,
+                  attr: chalk.yellow,
+                },
+              });
+              return chalk.bgBlackBright(`\n${highlighted}\n`);
+            }
+          );
+
+          console.log(formattedAnswer);
+          console.log(chalk.blue.bold("=".repeat(40)));
 
           // Show sources
           if (result.sources && result.sources.length > 0) {
@@ -390,14 +427,20 @@ async function startChat() {
                 source.metadata.source_url ||
                 "https://twilio.com/docs";
 
-              console.log(`${source.index}. ${title} (${category})`);
-              console.log(`   URL: ${url}`);
+              console.log(
+                `${chalk.magenta(source.index)}. ${chalk.cyan(
+                  title
+                )} (${category})`
+              );
+              console.log(`   URL: ${chalk.underline.yellow(url)}`);
               const relevanceScore = source.similarity || source.score || 0;
               const relevanceType = source.similarity
                 ? "similarity"
                 : "keywords matched";
               console.log(
-                `   Relevance: ${relevanceScore.toFixed(3)} ${relevanceType}`
+                `   Relevance: ${chalk.green(
+                  relevanceScore.toFixed(3)
+                )} ${relevanceType}`
               );
             });
           }
