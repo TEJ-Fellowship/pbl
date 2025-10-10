@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,13 +12,18 @@
   "license": "ISC",
   "dependencies": {
     "@langchain/core": "^0.3.78",
+    "@langchain/google-genai": "^0.2.18",
     "@langchain/openai": "^0.6.14",
+    "@langchain/textsplitters": "^0.0.3",
     "@pinecone-database/pinecone": "^6.1.2",
     "axios": "^1.12.2",
     "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^4.19.2",
     "inquirer": "^12.9.6",
     "js-tiktoken": "^1.0.21",
+    "langchain": "^0.3.35",
     "node-html-parser": "^7.0.1",
     "openai": "^6.2.0"
   }
