@@ -9,13 +9,13 @@
   "scripts": {
     "start": "nodemon index.js",
     "scrape": "node src/scraper.js",
+    "chunk": "node src/chunkDoc_v2.js",
     "ingest": "node src/ingest.js",
-    "chunk:v2": "node src/chunkDoc_v2.js",
-    "ingest:v2": "node src/ingest_chunks_v2_langchain.js",
-    "build:v2": "npm run scrape && npm run chunk:v2 && npm run ingest:v2",
     "chat": "node src/chat.js",
-    "dev": "npm run scrape && npm run ingest && npm run chat",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test-pipeline": "node test_pipeline.js",
+    "build": "npm run scrape && npm run chunk && npm run ingest",
+    "dev": "npm run build && npm run chat",
+    "test": "npm run test-pipeline"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",

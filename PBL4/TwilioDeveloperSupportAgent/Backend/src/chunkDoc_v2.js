@@ -14,6 +14,18 @@ const INPUT_PATH = path.join(
   "scraped.json"
 );
 const OUTPUT_PATH = path.join(process.cwd(), "src", "data", "chunks_v2.json");
+const TEXT_CHUNKS_PATH = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "text_chunks.json"
+);
+const CODE_CHUNKS_PATH = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "code_chunks.json"
+);
 const MAX_TEXT_CHARS = 1500; // target size per text chunk
 
 /* ------------------ Helpers ------------------ */
@@ -280,14 +292,41 @@ function processDocItem(doc) {
     ...fenced.blocks,
     ...preExtract.blocks,
     ...twilioExtract.blocks,
-    ...(docCodeBlocks.map((c) => ({ code: c, lang: null })) || []),
+    // Filter scraped code blocks to only include substantial ones
+    ...(docCodeBlocks
+      .filter((c) => {
+        // Only include substantial code blocks
+        return (
+          c &&
+          c.length > 20 &&
+          // Multi-line code
+          (c.includes("\n") ||
+            // Contains code-like patterns
+            /(function|const|let|var|def |class |import |from |require|npm |pip |composer|curl|wget|echo |print|console\.log)/.test(
+              c
+            ) ||
+            // Contains brackets or parentheses (likely code)
+            /[{}();]/.test(c) ||
+            // Looks like a command or path
+            /^[a-z-]+\s+/.test(c) ||
+            // Contains API endpoints or URLs
+            /https?:\/\//.test(c) ||
+            // Contains SQL-like syntax
+            /(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER)/i.test(c) ||
+            // Contains shell commands
+            /^[#$>]\s/.test(c) ||
+            // Contains variable assignments
+            /=/.test(c))
+        );
+      })
+      .map((c) => ({ code: c, lang: null })) || []),
   ];
 
   // Deduplicate by normalized code text
   const seen = new Set();
   codeBlocks = codeBlocks.filter((b) => {
     const norm = (b.code || "").replace(/\s+/g, " ").trim();
-    if (!norm) return false;
+    if (!norm || norm.length < 10) return false;
     if (seen.has(norm)) return false;
     seen.add(norm);
     return true;
@@ -380,13 +419,21 @@ function run() {
 
   const raw = JSON.parse(fs.readFileSync(INPUT_PATH, "utf-8"));
   const allChunks = [];
+  const textChunks = [];
+  const codeChunks = [];
 
   raw.forEach((doc, idx) => {
     try {
-      const { textChunks, codeChunks } = processDocItem(doc);
-      // push text then code for each doc (keeps grouping predictable)
-      textChunks.forEach((c) => allChunks.push(c));
-      codeChunks.forEach((c) => allChunks.push(c));
+      const { textChunks: docTextChunks, codeChunks: docCodeChunks } =
+        processDocItem(doc);
+
+      // Add to separate arrays
+      textChunks.push(...docTextChunks);
+      codeChunks.push(...docCodeChunks);
+
+      // Also add to combined array for backward compatibility
+      allChunks.push(...docTextChunks);
+      allChunks.push(...docCodeChunks);
     } catch (err) {
       console.warn(
         `⚠️ Failed processing doc ${doc.url || idx}: ${err.message || err}`
@@ -398,14 +445,40 @@ function run() {
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
   }
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allChunks, null, 2), "utf-8");
-  console.log(
-    `✅ chunkDoc_v2 complete — wrote ${allChunks.length} chunks to ${OUTPUT_PATH}`
+
+  // Save separate files
+  fs.writeFileSync(
+    TEXT_CHUNKS_PATH,
+    JSON.stringify(textChunks, null, 2),
+    "utf-8"
   );
+  fs.writeFileSync(
+    CODE_CHUNKS_PATH,
+    JSON.stringify(codeChunks, null, 2),
+    "utf-8"
+  );
+
+  // Save combined file for backward compatibility
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allChunks, null, 2), "utf-8");
+
+  console.log(`✅ chunkDoc_v2 complete:`);
+  console.log(`   📄 Text chunks: ${textChunks.length} → ${TEXT_CHUNKS_PATH}`);
+  console.log(`   💻 Code chunks: ${codeChunks.length} → ${CODE_CHUNKS_PATH}`);
+  console.log(`   📊 Total chunks: ${allChunks.length} → ${OUTPUT_PATH}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   run();
 }
+
+/* ------------------ Exports for integration ------------------ */
+
+export {
+  processDocItem,
+  run as runChunking,
+  makeId,
+  guessLanguage,
+  extractErrorCodes,
+};
 
 /* ------------------ End of file ------------------ */

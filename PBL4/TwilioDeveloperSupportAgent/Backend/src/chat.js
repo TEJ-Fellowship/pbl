@@ -80,6 +80,50 @@ async function loadVectorStore() {
   }
 }
 
+// Load separate code and text chunks for hybrid search
+async function loadSeparateChunks() {
+  try {
+    const textChunksPath = path.join(
+      process.cwd(),
+      "src",
+      "data",
+      "text_chunks.json"
+    );
+    const codeChunksPath = path.join(
+      process.cwd(),
+      "src",
+      "data",
+      "code_chunks.json"
+    );
+
+    let textChunks = [];
+    let codeChunks = [];
+
+    try {
+      textChunks = JSON.parse(await fs.readFile(textChunksPath, "utf-8"));
+      console.log(
+        `📄 Loaded ${textChunks.length} text chunks for hybrid search`
+      );
+    } catch (error) {
+      console.log("⚠️ Text chunks not found, will use combined vector store");
+    }
+
+    try {
+      codeChunks = JSON.parse(await fs.readFile(codeChunksPath, "utf-8"));
+      console.log(
+        `💻 Loaded ${codeChunks.length} code chunks for hybrid search`
+      );
+    } catch (error) {
+      console.log("⚠️ Code chunks not found, will use combined vector store");
+    }
+
+    return { textChunks, codeChunks };
+  } catch (error) {
+    console.log("⚠️ Failed to load separate chunks, using vector store only");
+    return { textChunks: [], codeChunks: [] };
+  }
+}
+
 // Calculate cosine similarity
 function cosineSimilarity(a, b) {
   const dotProduct = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
@@ -130,12 +174,47 @@ function searchChunks(query, vectorStore) {
     }));
 }
 
-// Retrieve relevant chunks using embeddings
-async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
+// Detect error codes in query
+function detectErrorCodes(query) {
+  const errorCodeMatches = query.match(/\b(2\d{4}|\d{5})\b/g) || [];
+  return [...new Set(errorCodeMatches)];
+}
+
+// Detect programming language from query
+function detectQueryLanguage(query) {
+  const q = query.toLowerCase();
+  if (/\b(python|py|pip|flask|django)\b/.test(q)) return "python";
+  if (/\b(node|nodejs|npm|express|javascript|js)\b/.test(q))
+    return "javascript";
+  if (/\b(php|composer|laravel)\b/.test(q)) return "php";
+  if (/\b(java|maven|gradle)\b/.test(q)) return "java";
+  if (/\b(csharp|c#|dotnet|\.net)\b/.test(q)) return "csharp";
+  if (/\b(curl|bash|shell|cli)\b/.test(q)) return "bash";
+  return null;
+}
+
+// Hybrid search with error code and language detection
+async function retrieveChunksWithEmbeddings(
+  query,
+  vectorStore,
+  embeddings,
+  separateChunks = { textChunks: [], codeChunks: [] }
+) {
   try {
     console.log(
-      "🔍 Searching for relevant information using Gemini embeddings..."
+      "🔍 Starting hybrid search with error code and language detection..."
     );
+
+    // Detect error codes and programming language
+    const errorCodes = detectErrorCodes(query);
+    const queryLanguage = detectQueryLanguage(query);
+
+    if (errorCodes.length > 0) {
+      console.log(`🚨 Detected error codes: ${errorCodes.join(", ")}`);
+    }
+    if (queryLanguage) {
+      console.log(`💻 Detected programming language: ${queryLanguage}`);
+    }
 
     // Generate query embedding using LangChain Gemini embeddings
     const queryEmbedding = await embeddings.embedQuery(query);
@@ -154,7 +233,49 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
     );
 
     let topChunks = [];
+    let errorCodeChunks = [];
+    let languageSpecificChunks = [];
 
+    // First, check for exact error code matches in separate chunks
+    if (
+      errorCodes.length > 0 &&
+      (separateChunks.textChunks.length > 0 ||
+        separateChunks.codeChunks.length > 0)
+    ) {
+      console.log("🔍 Searching for exact error code matches...");
+
+      const allChunks = [
+        ...separateChunks.textChunks,
+        ...separateChunks.codeChunks,
+      ];
+      errorCodeChunks = allChunks
+        .filter((chunk) =>
+          errorCodes.some(
+            (code) => chunk.errorCodes && chunk.errorCodes.includes(code)
+          )
+        )
+        .map((chunk) => ({
+          content: chunk.content,
+          metadata: {
+            source: chunk.url,
+            title: chunk.title,
+            category: chunk.api,
+            docType: "api",
+            type: chunk.type,
+            language: chunk.language,
+            api: chunk.api,
+            error_codes: chunk.errorCodes,
+          },
+          similarity: 1.0, // Exact match
+          matchType: "error_code",
+        }));
+
+      console.log(
+        `🚨 Found ${errorCodeChunks.length} exact error code matches`
+      );
+    }
+
+    // Search in vector store for semantic matches
     if (vectorStore.type === "pinecone") {
       console.log("🔍 Searching in Pinecone...");
       const searchResponse = await vectorStore.index.query({
@@ -170,10 +291,15 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
           title: match.metadata.title,
           category: match.metadata.category,
           docType: match.metadata.docType,
+          type: match.metadata.type,
+          language: match.metadata.language,
+          api: match.metadata.api,
+          error_codes: match.metadata.error_codes || [],
           chunk_index: match.metadata.chunk_index,
           total_chunks: match.metadata.total_chunks,
         },
         similarity: match.score,
+        matchType: "semantic",
       }));
     } else {
       console.log("🔍 Searching in local vector store...");
@@ -194,20 +320,60 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
           content: item.chunk.content,
           metadata: item.chunk.metadata,
           similarity: item.similarity,
+          matchType: "semantic",
         }));
     }
 
-    console.log(
-      `📊 Top similarity scores: ${topChunks
-        .slice(0, 3)
-        .map((t) => t.similarity.toFixed(3))
-        .join(", ")}`
+    // Filter by language if detected
+    if (
+      queryLanguage &&
+      (separateChunks.textChunks.length > 0 ||
+        separateChunks.codeChunks.length > 0)
+    ) {
+      console.log(`💻 Filtering results by language: ${queryLanguage}`);
+      languageSpecificChunks = topChunks.filter(
+        (chunk) => chunk.metadata.language === queryLanguage
+      );
+      console.log(
+        `💻 Found ${languageSpecificChunks.length} language-specific matches`
+      );
+    }
+
+    // Combine and prioritize results
+    let finalChunks = [];
+
+    // 1. Add exact error code matches first (highest priority)
+    finalChunks.push(...errorCodeChunks);
+
+    // 2. Add language-specific matches (medium priority)
+    if (languageSpecificChunks.length > 0) {
+      finalChunks.push(...languageSpecificChunks.slice(0, 3));
+    }
+
+    // 3. Add remaining semantic matches (lower priority)
+    const remainingSlots =
+      (parseInt(config.MAX_CHUNKS) || 10) - finalChunks.length;
+    if (remainingSlots > 0) {
+      const remainingChunks = topChunks
+        .filter(
+          (chunk) => !finalChunks.some((fc) => fc.content === chunk.content)
+        )
+        .slice(0, remainingSlots);
+      finalChunks.push(...remainingChunks);
+    }
+
+    // Remove duplicates and sort by priority
+    const uniqueChunks = finalChunks.filter(
+      (chunk, index, self) =>
+        index === self.findIndex((c) => c.content === chunk.content)
     );
 
-    console.log(
-      `📚 Found ${topChunks.length} relevant chunks using semantic search`
-    );
-    return topChunks;
+    console.log(`📊 Final results: ${uniqueChunks.length} chunks`);
+    console.log(`   🚨 Error code matches: ${errorCodeChunks.length}`);
+    console.log(`   💻 Language matches: ${languageSpecificChunks.length}`);
+    console.log(`   🔍 Semantic matches: ${topChunks.length}`);
+
+    return uniqueChunks;
   } catch (error) {
     console.error(
       "❌ Embedding retrieval failed, using keyword search:",
@@ -323,6 +489,7 @@ async function startChat() {
     const geminiClient = initGeminiClient();
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
+    const separateChunks = await loadSeparateChunks();
 
     // Create readline interface
     const rl = readline.createInterface({
@@ -358,11 +525,12 @@ async function startChat() {
         }
 
         try {
-          // Retrieve relevant chunks
+          // Retrieve relevant chunks using hybrid search
           const chunks = await retrieveChunksWithEmbeddings(
             query,
             vectorStore,
-            embeddings
+            embeddings,
+            separateChunks
           );
 
           if (chunks.length === 0) {
@@ -467,6 +635,10 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
 export {
   generateResponse,
   loadVectorStore,
+  loadSeparateChunks,
+  retrieveChunksWithEmbeddings,
+  detectErrorCodes,
+  detectQueryLanguage,
   initGeminiClient,
   initGeminiEmbeddings,
 };

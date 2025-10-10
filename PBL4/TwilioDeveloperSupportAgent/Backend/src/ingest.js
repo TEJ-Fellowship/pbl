@@ -6,6 +6,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import config from "../config/config.js";
+import { runChunking } from "./chunkDoc_v2.js";
 
 // ----------------- Tier2 helpers -----------------
 
@@ -101,37 +102,57 @@ async function initPinecone() {
   }
 }
 
-// Load and process documents
-async function loadDocuments() {
-  console.log("📂 Loading scraped documents...");
+// Load pre-processed chunks from chunkDoc_v2
+async function loadPreprocessedChunks() {
+  console.log("📂 Loading pre-processed chunks from chunkDoc_v2...");
 
-  const scrapedDataPath = path.join(
+  const textChunksPath = path.join(
     process.cwd(),
+    "src",
     "data",
-    "twilio_docs",
-    "scraped.json"
+    "text_chunks.json"
+  );
+  const codeChunksPath = path.join(
+    process.cwd(),
+    "src",
+    "data",
+    "code_chunks.json"
   );
 
-  const scrapedData = JSON.parse(await fs.readFile(scrapedDataPath, "utf-8"));
-  console.log(`📊 Found ${scrapedData.length} documents to process`);
+  let textChunks = [];
+  let codeChunks = [];
 
-  // Convert to LangChain Documents
-  const documents = scrapedData.map((doc) => {
-    return new Document({
-      pageContent: doc.content,
-      metadata: {
-        source: doc.url,
-        title: doc.title,
-        category: doc.category,
-        docType: doc.docType,
-        wordCount: doc.wordCount,
-        scrapedAt: doc.scrapedAt,
-        id: doc.id,
-      },
-    });
-  });
+  try {
+    // Load text chunks
+    if (fs.existsSync(textChunksPath)) {
+      textChunks = JSON.parse(await fs.readFile(textChunksPath, "utf-8"));
+      console.log(`📄 Loaded ${textChunks.length} text chunks`);
+    } else {
+      console.log("⚠️ Text chunks not found, running chunkDoc_v2...");
+      await runChunking();
+      textChunks = JSON.parse(await fs.readFile(textChunksPath, "utf-8"));
+    }
 
-  return documents;
+    // Load code chunks
+    if (fs.existsSync(codeChunksPath)) {
+      codeChunks = JSON.parse(await fs.readFile(codeChunksPath, "utf-8"));
+      console.log(`💻 Loaded ${codeChunks.length} code chunks`);
+    } else {
+      console.log("⚠️ Code chunks not found, running chunkDoc_v2...");
+      await runChunking();
+      codeChunks = JSON.parse(await fs.readFile(codeChunksPath, "utf-8"));
+    }
+  } catch (error) {
+    console.log("⚠️ Failed to load chunks, running chunkDoc_v2...");
+    await runChunking();
+    textChunks = JSON.parse(await fs.readFile(textChunksPath, "utf-8"));
+    codeChunks = JSON.parse(await fs.readFile(codeChunksPath, "utf-8"));
+  }
+
+  console.log(
+    `📊 Total chunks loaded: ${textChunks.length + codeChunks.length}`
+  );
+  return { textChunks, codeChunks };
 }
 
 // Create text splitter
@@ -144,52 +165,68 @@ function createTextSplitter() {
   });
 }
 
-// Process documents into chunks
-async function processDocuments(documents) {
-  console.log("📄 Processing documents for chunking...");
+// Convert pre-processed chunks to LangChain Documents
+async function convertChunksToDocuments(textChunks, codeChunks) {
+  console.log("📄 Converting pre-processed chunks to LangChain Documents...");
 
-  const textSplitter = createTextSplitter();
   const allChunks = [];
 
-  for (const doc of documents) {
-    console.log(
-      `🔍 Processing: ${doc.metadata.category} (${doc.metadata.wordCount} words)`
-    );
+  // Process text chunks
+  textChunks.forEach((chunk, index) => {
+    const doc = new Document({
+      pageContent: chunk.content,
+      metadata: {
+        id: chunk.id,
+        source: chunk.url,
+        title: chunk.title,
+        category: chunk.api,
+        docType: "api",
+        chunk_index: index,
+        total_chunks: textChunks.length,
+        chunk_id: chunk.id,
 
-    // Split document into chunks
-    const chunks = await textSplitter.splitDocuments([doc]);
-
-    chunks.forEach((chunk, index) => {
-      // default existing metadata
-      chunk.metadata.chunk_index = index;
-      chunk.metadata.total_chunks = chunks.length;
-      chunk.metadata.chunk_id = `${doc.metadata.id}_chunk_${index}`;
-
-      // Tier2 enrichments
-      const content = chunk.pageContent || "";
-      const codeFlag = isCodeBlock(content);
-      const lang = detectLanguage(content);
-      const errorCodes = extractErrorCodes(content);
-
-      chunk.metadata.type = codeFlag ? "code" : "text";
-      chunk.metadata.language = lang;
-      chunk.metadata.api = inferApiFromDocMetadata(doc.metadata);
-      chunk.metadata.version = doc.metadata.version || null; // if available in scraped doc
-      chunk.metadata.error_codes = errorCodes; // array (maybe empty)
+        // Tier2 enrichments (already processed by chunkDoc_v2)
+        type: chunk.type || "text",
+        language: chunk.language || "text",
+        api: chunk.api || inferApiFromDocMetadata({ source: chunk.url }),
+        version: chunk.version || null,
+        error_codes: chunk.errorCodes || [],
+        scrapedAt: chunk.scrapedAt,
+      },
     });
+    allChunks.push(doc);
+  });
 
-    // Add chunk index to metadata
-    chunks.forEach((chunk, index) => {
-      chunk.metadata.chunk_index = index;
-      chunk.metadata.total_chunks = chunks.length;
-      chunk.metadata.chunk_id = `${doc.metadata.id}_chunk_${index}`;
+  // Process code chunks
+  codeChunks.forEach((chunk, index) => {
+    const doc = new Document({
+      pageContent: chunk.content,
+      metadata: {
+        id: chunk.id,
+        source: chunk.url,
+        title: chunk.title,
+        category: chunk.api,
+        docType: "api",
+        chunk_index: index,
+        total_chunks: codeChunks.length,
+        chunk_id: chunk.id,
+
+        // Tier2 enrichments (already processed by chunkDoc_v2)
+        type: chunk.type || "code",
+        language: chunk.language || detectLanguage(chunk.content),
+        api: chunk.api || inferApiFromDocMetadata({ source: chunk.url }),
+        version: chunk.version || null,
+        error_codes: chunk.errorCodes || [],
+        scrapedAt: chunk.scrapedAt,
+      },
     });
+    allChunks.push(doc);
+  });
 
-    allChunks.push(...chunks);
-    console.log(`  ✅ Created ${chunks.length} chunks`);
-  }
+  console.log(`📊 Converted ${allChunks.length} chunks to LangChain Documents`);
+  console.log(`   📄 Text chunks: ${textChunks.length}`);
+  console.log(`   💻 Code chunks: ${codeChunks.length}`);
 
-  console.log(`📊 Total chunks created: ${allChunks.length}`);
   return allChunks;
 }
 
@@ -319,18 +356,20 @@ async function storeChunksLocally(chunks, embeddings) {
 
 // Main ingestion function
 async function main() {
-  console.log("🚀 Starting Twilio documentation ingestion with Gemini...");
+  console.log(
+    "🚀 Starting Twilio documentation ingestion with Gemini and code-aware chunking..."
+  );
 
   try {
     // Initialize embeddings
     console.log("🤖 Initializing Gemini embeddings...");
     const embeddings = initEmbeddings();
 
-    // Load documents
-    const documents = await loadDocuments();
+    // Load pre-processed chunks from chunkDoc_v2
+    const { textChunks, codeChunks } = await loadPreprocessedChunks();
 
-    // Process documents into chunks
-    const chunks = await processDocuments(documents);
+    // Convert chunks to LangChain Documents
+    const chunks = await convertChunksToDocuments(textChunks, codeChunks);
 
     // Try Pinecone first, fallback to local storage
     try {
@@ -346,7 +385,9 @@ async function main() {
 
     console.log(`\n🎉 Ingestion completed successfully!`);
     console.log(`📊 Total chunks processed: ${chunks.length}`);
-    console.log(`🔍 Ready for RAG queries!`);
+    console.log(`   📄 Text chunks: ${textChunks.length}`);
+    console.log(`   💻 Code chunks: ${codeChunks.length}`);
+    console.log(`🔍 Ready for RAG queries with code-aware search!`);
   } catch (error) {
     console.error("❌ Ingestion failed:", error.message);
     process.exit(1);
@@ -358,4 +399,10 @@ if (process.argv[1] && process.argv[1].endsWith("ingest.js")) {
   main().catch(console.error);
 }
 
-export { processDocuments, initEmbeddings, loadDocuments };
+export {
+  convertChunksToDocuments,
+  loadPreprocessedChunks,
+  initEmbeddings,
+  storeChunks,
+  storeChunksLocally,
+};
