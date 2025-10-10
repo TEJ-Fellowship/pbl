@@ -9,10 +9,12 @@
     "scrape": "node ./src/scraper.js",
     "ingest": "node ./src/ingest.js",
     "chat": "node ./src/chat.js",
+    "test-pinecone": "node ./src/test-pinecone.js",
     "start": "npm run scrape && npm run ingest && npm run chat"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@pinecone-database/pinecone": "^3.0.0",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.5",

@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getPineconeIndex } from "../config/pinecone.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,9 +19,13 @@ function cosineSimilarity(a, b) {
 }
 
 export async function createRetriever() {
-  const indexPath = path.join(__dirname, "../data/shopify_index.json");
-  const raw = await fs.readFile(indexPath, "utf-8");
-  const { items } = JSON.parse(raw);
+  // Check for Pinecone configuration
+  if (!process.env.PINECONE_API_KEY) {
+    throw new Error("PINECONE_API_KEY is required in environment variables");
+  }
+
+  // Get Pinecone index
+  const index = await getPineconeIndex();
 
   async function query({ query, k = 4 }) {
     // naive: embed query via OpenAI each time to compare
@@ -31,14 +36,35 @@ export async function createRetriever() {
   }
 
   async function queryEmbeddingAware({ queryEmbedding, k = 4 }) {
-    const scored = items.map((it) => ({
-      it,
-      score: cosineSimilarity(queryEmbedding, it.embedding),
-    }));
-    scored.sort((a, b) => b.score - a.score);
-    return scored
-      .slice(0, k)
-      .map(({ it, score }) => ({ doc: it.text, metadata: it.metadata, score }));
+    try {
+      // Query Pinecone with the embedding
+      const queryResponse = await index.query({
+        vector: queryEmbedding,
+        topK: k,
+        includeMetadata: true,
+        includeValues: false, // We don't need the vector values back
+      });
+
+      // Transform Pinecone results to match the expected format
+      const results = queryResponse.matches.map((match) => ({
+        doc: match.metadata.text,
+        metadata: {
+          section: match.metadata.section,
+          merchant_level: match.metadata.merchant_level,
+          title: match.metadata.title,
+          source_url: match.metadata.source_url,
+          chunk_index: match.metadata.chunk_index,
+          tokens: match.metadata.tokens,
+          scraped_at: match.metadata.scraped_at,
+        },
+        score: match.score,
+      }));
+
+      return results;
+    } catch (error) {
+      console.error("Error querying Pinecone:", error);
+      throw new Error(`Failed to query Pinecone: ${error.message}`);
+    }
   }
 
   return { queryEmbeddingAware };

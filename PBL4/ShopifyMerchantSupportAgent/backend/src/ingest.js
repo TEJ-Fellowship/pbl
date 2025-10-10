@@ -4,6 +4,7 @@ import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { splitRespectingCodeBlocks, estimateTokens } from "./utils/chunker.js";
 import { embedTexts } from "./utils/embeddings.js";
+import { createPineconeIndex, getPineconeIndex } from "../config/pinecone.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,6 +48,12 @@ async function main() {
       "OPENAI_API_KEY is required when EMBEDDINGS_PROVIDER=openai"
     );
   }
+
+  // Check for Pinecone configuration
+  if (!process.env.PINECONE_API_KEY) {
+    throw new Error("PINECONE_API_KEY is required in environment variables");
+  }
+
   await fs.mkdir(CHUNKS_DIR, { recursive: true });
   const docs = await readDocs();
   if (docs.length === 0) {
@@ -54,7 +61,11 @@ async function main() {
     return;
   }
 
-  const indexPath = path.join(__dirname, "../data/shopify_index.json");
+  // Initialize Pinecone index
+  console.log("🔗 Connecting to Pinecone...");
+  const index = await createPineconeIndex();
+  console.log("✅ Connected to Pinecone successfully");
+
   const allItems = [];
 
   let idCounter = 0;
@@ -127,11 +138,14 @@ async function main() {
   }
 
   for (const doc of docs) {
+    console.log(`📄 Processing document: ${doc.title}`);
+
     const chunks = splitRespectingCodeBlocks(doc.content, {
       chunkSizeTokens: 800,
       chunkOverlapTokens: 100,
       model: "gpt-4o-mini",
     });
+
     // Per-chunk token count and merchant level
     const chunkInfos = chunks.map((c, i) => {
       const tokens = estimateTokens(c);
@@ -142,14 +156,18 @@ async function main() {
       });
       return { text: c, tokens, merchant_level, index: i };
     });
+
+    console.log(`🔢 Generating embeddings for ${chunkInfos.length} chunks...`);
     const vectors = await embedChunks({
       chunks: chunkInfos.map((ci) => ci.text),
     });
-    const items = chunkInfos.map((ci, i) => ({
+
+    // Prepare vectors for Pinecone
+    const vectorsToUpsert = chunkInfos.map((ci, i) => ({
       id: `doc-${Date.now()}-${idCounter++}`,
-      text: ci.text,
-      embedding: vectors[i],
+      values: vectors[i],
       metadata: {
+        text: ci.text,
         section: doc.section,
         merchant_level: ci.merchant_level,
         title: doc.title,
@@ -159,8 +177,21 @@ async function main() {
         scraped_at: doc.scrapedAt,
       },
     }));
-    allItems.push(...items);
-    console.log(`Indexed ${items.length} chunks from ${doc.title}`);
+
+    // Upsert vectors to Pinecone in batches
+    const batchSize = 100;
+    for (let i = 0; i < vectorsToUpsert.length; i += batchSize) {
+      const batch = vectorsToUpsert.slice(i, i + batchSize);
+      console.log(
+        `📤 Uploading batch ${Math.floor(i / batchSize) + 1} to Pinecone...`
+      );
+      await index.upsert(batch);
+    }
+
+    allItems.push(...vectorsToUpsert);
+    console.log(
+      `✅ Indexed ${vectorsToUpsert.length} chunks from ${doc.title}`
+    );
 
     // Also write chunks file for transparency/debugging
     const baseName = (doc.section || doc.title || "doc")
@@ -169,9 +200,9 @@ async function main() {
       .replace(/[^a-z0-9-_]+/g, "-")
       .replace(/-+/g, "-");
     const chunkFilePath = path.join(CHUNKS_DIR, `chunks_${baseName}.json`);
-    const chunkFileItems = items.map((it) => ({
+    const chunkFileItems = vectorsToUpsert.map((it) => ({
       id: it.id,
-      text: it.text,
+      text: it.metadata.text,
       tokens: it.metadata.tokens,
       metadata: {
         title: it.metadata.title,
@@ -189,13 +220,20 @@ async function main() {
       "utf-8"
     );
   }
-  await fs.writeFile(
-    indexPath,
-    JSON.stringify({ items: allItems }, null, 2),
-    "utf-8"
-  );
+  // Get index stats to confirm upload
+  const stats = await index.describeIndexStats();
+  console.log(`📊 Pinecone index stats:`, {
+    totalVectorCount: stats.totalVectorCount,
+    dimension: stats.dimension,
+    indexFullness: stats.indexFullness,
+  });
+
   console.log(
-    `✅ Ingestion complete. Saved ${allItems.length} chunks to ${indexPath}`
+    `✅ Ingestion complete. Successfully uploaded ${
+      allItems.length
+    } chunks to Pinecone index "${
+      process.env.PINECONE_INDEX_NAME || "shopify-merchant-support"
+    }"`
   );
 }
 

@@ -1,79 +1,3 @@
-// import "dotenv/config";
-// import inquirer from "inquirer";
-// import { GoogleGenerativeAI } from "@google/generative-ai";
-// import { createRetriever } from "./retriever.js";
-// import { embedSingle } from "./utils/embeddings.js";
-
-// async function main() {
-//   if (!process.env.GEMINI_API_KEY) {
-//     console.error("Missing GEMINI_API_KEY in environment.");
-//     process.exit(1);
-//   }
-
-//   const retriever = await createRetriever();
-//   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-//   const modelName = process.env.GEMINI_MODEL || "gemini-1.5-pro";
-//   const model = genAI.getGenerativeModel({ model: modelName });
-
-//   console.log(
-//     "Shopify Merchant Support (Tier 1) — single-turn RAG. Type 'exit' to quit.\n"
-//   );
-
-//   while (true) {
-//     const { question } = await inquirer.prompt([
-//       { name: "question", type: "input", message: "Ask a question:" },
-//     ]);
-//     if (!question || question.toLowerCase() === "exit") break;
-
-//     // Embed query
-//     const queryEmbedding = await embedSingle(question);
-//     const results = await retriever.queryEmbeddingAware({
-//       queryEmbedding,
-//       k: 4,
-//     });
-//     const context = results
-//       .map(
-//         (r, i) =>
-//           `[[${i + 1}]] Source: ${r.metadata?.title} (${
-//             r.metadata?.source_url
-//           })\n${r.doc}`
-//       )
-//       .join("\n\n---\n\n");
-
-//     // Hide retrieved context from console; only show the final answer
-
-//     const prompt = `You are a Shopify Merchant Support Assistant.\n\nInstructions:\n- Answer only using the Retrieved context.\n- If the answer is not present in the context, reply exactly: "Not found in documentation."\n\nRetrieved context:\n${context}\n\nUser question:\n${question}`;
-//     let result;
-//     try {
-//       result = await model.generateContent({
-//         contents: [
-//           {
-//             role: "user",
-//             parts: [{ text: prompt }],
-//           },
-//         ],
-//       });
-//     } catch (err) {
-//       console.error(
-//         `Gemini request failed for model "${modelName}". Set GEMINI_MODEL to a supported model (e.g., gemini-1.5-pro or gemini-1.5-flash) and ensure your GEMINI_API_KEY is from Google AI Studio (not a Vertex AI key).\n\nError:`,
-//         err?.message || err
-//       );
-//       process.exit(1);
-//     }
-//     const answer = result.response?.text() || "No response.";
-//     console.log("Answer:\n");
-//     console.log(answer);
-//     console.log("\n");
-//   }
-
-//   console.log("Goodbye!");
-// }
-
-// main().catch((e) => {
-//   console.error(e);
-//   process.exit(1);
-// });
-
 import "dotenv/config";
 import inquirer from "inquirer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -90,43 +14,53 @@ const __dirname = path.dirname(__filename);
 async function validateSetup() {
   const errors = [];
 
-  // Check for API key
+  // Check for API keys
   if (!process.env.GEMINI_API_KEY) {
     errors.push("❌ Missing GEMINI_API_KEY in .env file");
   }
 
-  // Check if index exists
-  const indexPath = path.join(__dirname, "../data/shopify_index.json");
-  try {
-    await fs.access(indexPath);
-  } catch {
-    errors.push("❌ Index file not found. Run 'npm run ingest' first");
+  if (!process.env.PINECONE_API_KEY) {
+    errors.push("❌ Missing PINECONE_API_KEY in .env file");
   }
 
-  // Check if docs were scraped
-  const docsPath = path.join(__dirname, "../data/shopify_docs");
+  // Check if Pinecone index exists and has data
   try {
-    const files = await fs.readdir(docsPath);
-    const jsonFiles = files.filter(
-      (f) => f.endsWith(".json") && f !== "scraped.index.json"
-    );
-    if (jsonFiles.length === 0) {
-      errors.push("❌ No scraped documents found. Run 'npm run scrape' first");
+    const { getPineconeIndex } = await import("../config/pinecone.js");
+    const index = await getPineconeIndex();
+
+    // Check if index has data
+    const stats = await index.describeIndexStats();
+    if (stats.totalVectorCount === 0) {
+      errors.push(
+        "❌ Pinecone index is empty. Run 'npm run ingest' to populate it with data."
+      );
+    } else {
+      console.log(`✅ Pinecone index has ${stats.totalVectorCount} vectors`);
     }
-  } catch {
-    errors.push("❌ Data directory not found. Run 'npm run scrape' first");
+  } catch (error) {
+    errors.push(`❌ Pinecone connection failed: ${error.message}`);
   }
+
+  // Note: We're using Pinecone vector database, so local scraped docs are not required
+  // The validation above already checked that Pinecone has data
 
   if (errors.length > 0) {
     console.error("\n⚠️  Setup Issues Detected:\n");
     errors.forEach((err) => console.error(err));
     console.error("\n📋 Setup Instructions:");
-    console.error("1. Create a .env file with: GEMINI_API_KEY=your_key_here");
+    console.error("1. Create a .env file with:");
+    console.error("   GEMINI_API_KEY=your_gemini_key_here");
+    console.error("   PINECONE_API_KEY=your_pinecone_key_here");
+    console.error("   PINECONE_INDEX_NAME=shopify-merchant-support");
     console.error(
-      "2. Get your API key from: https://aistudio.google.com/app/apikey"
+      "2. Get your Gemini API key from: https://aistudio.google.com/app/apikey"
     );
-    console.error("3. Run: npm run scrape");
-    console.error("4. Run: npm run ingest");
+    console.error(
+      "3. Get your Pinecone API key from: https://app.pinecone.io/"
+    );
+    console.error(
+      "4. Ensure your Pinecone index has data (run 'npm run ingest' if needed)"
+    );
     console.error("5. Run: npm run chat\n");
     process.exit(1);
   }
@@ -191,10 +125,12 @@ async function main() {
     if (!question || question.toLowerCase() === "exit") break;
 
     try {
-      console.log("\n🔎 Searching documentation...");
+      console.log("\n🔎 Searching Pinecone vector database...");
 
       // Embed query
       const queryEmbedding = await embedSingle(question);
+      console.log("📊 Query embedded, searching vectors...");
+
       const results = await retriever.queryEmbeddingAware({
         queryEmbedding,
         k: 4,
@@ -214,8 +150,15 @@ async function main() {
         )
         .join("\n\n---\n\n");
 
-      console.log(`✓ Found ${results.length} relevant sections\n`);
-      console.log("💭 Generating answer...\n");
+      console.log(`✓ Found ${results.length} relevant sections from Pinecone:`);
+      results.forEach((result, i) => {
+        console.log(
+          `   ${i + 1}. ${
+            result.metadata?.title || "Unknown"
+          } (Score: ${result.score.toFixed(4)})`
+        );
+      });
+      console.log("\n💭 Generating answer using retrieved context...\n");
 
       const prompt = `You are a helpful Shopify Merchant Support Assistant.
 
