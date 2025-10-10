@@ -6,6 +6,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import config from "../config/config.js";
+import { processDocItem } from "./chunkDoc_v2.js";
 
 // ----------------- Tier2 helpers -----------------
 
@@ -101,7 +102,7 @@ async function initPinecone() {
   }
 }
 
-// Load and process documents
+// Load and process documents using chunkDoc_v2 system
 async function loadDocuments() {
   console.log("📂 Loading scraped documents...");
 
@@ -115,81 +116,73 @@ async function loadDocuments() {
   const scrapedData = JSON.parse(await fs.readFile(scrapedDataPath, "utf-8"));
   console.log(`📊 Found ${scrapedData.length} documents to process`);
 
-  // Convert to LangChain Documents
-  const documents = scrapedData.map((doc) => {
-    return new Document({
-      pageContent: doc.content,
-      metadata: {
-        source: doc.url,
-        title: doc.title,
-        category: doc.category,
-        docType: doc.docType,
-        wordCount: doc.wordCount,
-        scrapedAt: doc.scrapedAt,
-        id: doc.id,
-      },
-    });
-  });
-
-  return documents;
-}
-
-// Create text splitter
-function createTextSplitter() {
-  return new RecursiveCharacterTextSplitter({
-    chunkSize: CHUNK_SIZE,
-    chunkOverlap: CHUNK_OVERLAP,
-    separators: ["\n\n", "\n", " ", ""],
-    keepSeparator: false,
-  });
-}
-
-// Process documents into chunks
-async function processDocuments(documents) {
-  console.log("📄 Processing documents for chunking...");
-
-  const textSplitter = createTextSplitter();
+  // Process documents using chunkDoc_v2 system
   const allChunks = [];
+  scrapedData.forEach((doc, idx) => {
+    try {
+      const { textChunks, codeChunks } = processDocItem(doc);
+      // Combine text and code chunks
+      [...textChunks, ...codeChunks].forEach((chunk) => {
+        allChunks.push(
+          new Document({
+            pageContent: chunk.content,
+            metadata: {
+              chunkId: chunk.id,
+              source: chunk.url,
+              title: chunk.title,
+              category: doc.category,
+              docType: doc.docType,
+              wordCount: doc.wordCount,
+              scrapedAt: chunk.scrapedAt,
+              id: doc.id,
+              // Tier 2 metadata from chunkDoc_v2
+              type: chunk.type, // "text" or "code"
+              language: chunk.language,
+              api: chunk.api,
+              version: chunk.version,
+              errorCodes: chunk.errorCodes,
+            },
+          })
+        );
+      });
+    } catch (err) {
+      console.warn(
+        `⚠️ Failed processing doc ${doc.url || idx}: ${err.message}`
+      );
+    }
+  });
 
-  for (const doc of documents) {
-    console.log(
-      `🔍 Processing: ${doc.metadata.category} (${doc.metadata.wordCount} words)`
-    );
+  console.log(`📊 Created ${allChunks.length} chunks using chunkDoc_v2 system`);
+  return allChunks;
+}
 
-    // Split document into chunks
-    const chunks = await textSplitter.splitDocuments([doc]);
+// Process documents into chunks (now using chunkDoc_v2 system)
+async function processDocuments(documents) {
+  console.log("📄 Processing documents for embedding...");
 
-    chunks.forEach((chunk, index) => {
-      // default existing metadata
-      chunk.metadata.chunk_index = index;
-      chunk.metadata.total_chunks = chunks.length;
-      chunk.metadata.chunk_id = `${doc.metadata.id}_chunk_${index}`;
+  // Documents are already chunked by chunkDoc_v2, just need to prepare for embedding
+  const allChunks = documents.map((chunk, index) => {
+    // Add additional metadata for embedding storage
+    chunk.metadata.chunk_index = index;
+    chunk.metadata.total_chunks = documents.length;
+    chunk.metadata.chunk_id =
+      chunk.metadata.chunkId || `${chunk.metadata.id}_chunk_${index}`;
 
-      // Tier2 enrichments
-      const content = chunk.pageContent || "";
-      const codeFlag = isCodeBlock(content);
-      const lang = detectLanguage(content);
-      const errorCodes = extractErrorCodes(content);
+    return chunk;
+  });
 
-      chunk.metadata.type = codeFlag ? "code" : "text";
-      chunk.metadata.language = lang;
-      chunk.metadata.api = inferApiFromDocMetadata(doc.metadata);
-      chunk.metadata.version = doc.metadata.version || null; // if available in scraped doc
-      chunk.metadata.error_codes = errorCodes; // array (maybe empty)
-    });
+  console.log(`📊 Total chunks ready for embedding: ${allChunks.length}`);
+  console.log(
+    `   📄 Text chunks: ${
+      allChunks.filter((c) => c.metadata.type === "text").length
+    }`
+  );
+  console.log(
+    `   💻 Code chunks: ${
+      allChunks.filter((c) => c.metadata.type === "code").length
+    }`
+  );
 
-    // Add chunk index to metadata
-    chunks.forEach((chunk, index) => {
-      chunk.metadata.chunk_index = index;
-      chunk.metadata.total_chunks = chunks.length;
-      chunk.metadata.chunk_id = `${doc.metadata.id}_chunk_${index}`;
-    });
-
-    allChunks.push(...chunks);
-    console.log(`  ✅ Created ${chunks.length} chunks`);
-  }
-
-  console.log(`📊 Total chunks created: ${allChunks.length}`);
   return allChunks;
 }
 
@@ -216,12 +209,12 @@ async function storeChunks(chunks, embeddings, pinecone) {
           docType: chunk.metadata.docType,
           chunk_index: chunk.metadata.chunk_index,
           total_chunks: chunk.metadata.total_chunks,
-          // Tier 2 metadata
-          type: chunk.metadata.type,
+          // Tier 2 metadata from chunkDoc_v2
+          type: chunk.metadata.type, // "text" or "code"
           language: chunk.metadata.language,
           api: chunk.metadata.api,
           version: chunk.metadata.version,
-          error_codes: chunk.metadata.error_codes || [],
+          error_codes: chunk.metadata.errorCodes || [],
           // optional
           created_at: new Date().toISOString(),
           total_chunks: chunks.length,
@@ -288,7 +281,12 @@ async function storeChunksLocally(chunks, embeddings) {
           content: chunk.pageContent,
           embedding: embedding,
           metadata: {
-            ...chunk.metadata, // preserves all enriched metadata
+            ...chunk.metadata, // preserves all enriched metadata from chunkDoc_v2
+            type: chunk.metadata.type, // "text" or "code"
+            language: chunk.metadata.language,
+            api: chunk.metadata.api,
+            version: chunk.metadata.version,
+            errorCodes: chunk.metadata.errorCodes || [],
           },
         });
 

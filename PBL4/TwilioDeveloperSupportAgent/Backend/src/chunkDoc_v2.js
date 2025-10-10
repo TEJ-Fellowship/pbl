@@ -14,7 +14,20 @@ const INPUT_PATH = path.join(
   "scraped.json"
 );
 const OUTPUT_PATH = path.join(process.cwd(), "src", "data", "chunks_v2.json");
+const OUTPUT_PATH_TEXT = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "chunks_v2_text.json"
+);
+const OUTPUT_PATH_CODE = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "chunks_v2_code.json"
+);
 const MAX_TEXT_CHARS = 1500; // target size per text chunk
+const MAX_CHUNK_SIZE_FOR_EMBEDDING = 30000; // max size for embedding API (bytes)
 
 /* ------------------ Helpers ------------------ */
 
@@ -305,6 +318,19 @@ function processDocItem(doc) {
       // placeholders will be skipped here because actual codeBlocks are separate
       return;
     }
+
+    // Ensure text chunks aren't too large for embedding API
+    let textContent = chunk;
+    const textSizeBytes = Buffer.byteLength(textContent, "utf8");
+    if (textSizeBytes > MAX_CHUNK_SIZE_FOR_EMBEDDING) {
+      // Truncate large text chunks
+      textContent =
+        textContent.substring(
+          0,
+          Math.floor(MAX_CHUNK_SIZE_FOR_EMBEDDING * 0.8)
+        ) + "\n\n... [truncated for embedding]";
+    }
+
     textChunks.push({
       id: makeId(doc.url || "doc", "text", textChunks.length || 0),
       url: doc.url || null,
@@ -314,7 +340,7 @@ function processDocItem(doc) {
       type: "text",
       language: "text",
       errorCodes: extractErrorCodes(chunk),
-      content: chunk,
+      content: textContent,
       scrapedAt: doc.scrapedAt || null,
     });
   });
@@ -325,6 +351,19 @@ function processDocItem(doc) {
     const surrounding = b.contextSlice || "";
     const lang = guessLanguage(fenceLang, surrounding, b.code);
     const id = makeId(doc.url || "doc", "code", i);
+
+    // Ensure code chunks aren't too large for embedding API
+    let codeContent = b.code.trim();
+    const codeSizeBytes = Buffer.byteLength(codeContent, "utf8");
+    if (codeSizeBytes > MAX_CHUNK_SIZE_FOR_EMBEDDING) {
+      // Truncate large code blocks
+      codeContent =
+        codeContent.substring(
+          0,
+          Math.floor(MAX_CHUNK_SIZE_FOR_EMBEDDING * 0.8)
+        ) + "\n\n... [truncated for embedding]";
+    }
+
     return {
       id,
       url: doc.url || null,
@@ -334,7 +373,7 @@ function processDocItem(doc) {
       type: "code",
       language: lang,
       errorCodes: extractErrorCodes(b.code),
-      content: b.code.trim(),
+      content: codeContent,
       scrapedAt: doc.scrapedAt || null,
     };
   });
@@ -380,13 +419,21 @@ function run() {
 
   const raw = JSON.parse(fs.readFileSync(INPUT_PATH, "utf-8"));
   const allChunks = [];
+  const textChunksOnly = [];
+  const codeChunksOnly = [];
 
   raw.forEach((doc, idx) => {
     try {
       const { textChunks, codeChunks } = processDocItem(doc);
       // push text then code for each doc (keeps grouping predictable)
-      textChunks.forEach((c) => allChunks.push(c));
-      codeChunks.forEach((c) => allChunks.push(c));
+      textChunks.forEach((c) => {
+        allChunks.push(c);
+        textChunksOnly.push(c);
+      });
+      codeChunks.forEach((c) => {
+        allChunks.push(c);
+        codeChunksOnly.push(c);
+      });
     } catch (err) {
       console.warn(
         `⚠️ Failed processing doc ${doc.url || idx}: ${err.message || err}`
@@ -398,14 +445,49 @@ function run() {
   if (!fs.existsSync(outDir)) {
     fs.mkdirSync(outDir, { recursive: true });
   }
+
+  // Save combined chunks (for backward compatibility)
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(allChunks, null, 2), "utf-8");
-  console.log(
-    `✅ chunkDoc_v2 complete — wrote ${allChunks.length} chunks to ${OUTPUT_PATH}`
+
+  // Save text chunks separately for hybrid search
+  fs.writeFileSync(
+    OUTPUT_PATH_TEXT,
+    JSON.stringify(textChunksOnly, null, 2),
+    "utf-8"
   );
+
+  // Save code chunks separately for hybrid search
+  fs.writeFileSync(
+    OUTPUT_PATH_CODE,
+    JSON.stringify(codeChunksOnly, null, 2),
+    "utf-8"
+  );
+
+  console.log(
+    `✅ chunkDoc_v2 complete — wrote ${allChunks.length} total chunks`
+  );
+  console.log(
+    `   📄 ${textChunksOnly.length} text chunks → ${OUTPUT_PATH_TEXT}`
+  );
+  console.log(
+    `   💻 ${codeChunksOnly.length} code chunks → ${OUTPUT_PATH_CODE}`
+  );
+  console.log(`   📦 Combined chunks → ${OUTPUT_PATH}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   run();
 }
+
+// Export functions for use by other modules
+export {
+  processDocItem,
+  run,
+  makeId,
+  guessLanguage,
+  extractErrorCodes,
+  inferApiFromUrl,
+  extractVersion,
+};
 
 /* ------------------ End of file ------------------ */

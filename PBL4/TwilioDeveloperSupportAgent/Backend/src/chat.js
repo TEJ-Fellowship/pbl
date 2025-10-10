@@ -44,9 +44,13 @@ async function initPinecone() {
 
 // Load vector store (fallback to local JSON)
 async function loadVectorStore() {
+  // Try Pinecone first, but with better error handling
   try {
     const pinecone = await initPinecone();
     const index = pinecone.Index(config.PINECONE_INDEX_NAME);
+
+    // Test the connection with a simple query
+    await index.describeIndexStats();
     console.log(
       `✅ Connected to Pinecone index: ${config.PINECONE_INDEX_NAME}`
     );
@@ -86,7 +90,7 @@ function cosineSimilarity(a, b) {
   return dotProduct / (magnitudeA * magnitudeB);
 }
 
-// Simple keyword-based search (fallback when embeddings fail)
+// Enhanced keyword-based search with code/text separation (fallback when embeddings fail)
 function searchChunks(query, vectorStore) {
   const queryLower = query.toLowerCase();
   const keywords = queryLower.split(/\s+/);
@@ -104,6 +108,12 @@ function searchChunks(query, vectorStore) {
     return [];
   }
 
+  // Detect if query is code-related
+  const isCodeQuery =
+    /\b(function|class|import|require|def |const |let |var |console\.log|npm |pip |curl |git |docker )\b/i.test(
+      query
+    );
+
   const scoredChunks = chunks.map((chunk) => {
     const contentLower = chunk.content.toLowerCase();
     let score = 0;
@@ -113,6 +123,15 @@ function searchChunks(query, vectorStore) {
         score += 1;
       }
     });
+
+    // Boost score for code chunks if query is code-related
+    if (isCodeQuery && chunk.metadata.type === "code") {
+      score += 2;
+    }
+    // Boost score for text chunks if query is not code-related
+    else if (!isCodeQuery && chunk.metadata.type === "text") {
+      score += 1;
+    }
 
     return { chunk, score };
   });
@@ -128,12 +147,19 @@ function searchChunks(query, vectorStore) {
     }));
 }
 
-// Retrieve relevant chunks using embeddings
+// Retrieve relevant chunks using embeddings with hybrid search
 async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
   try {
     console.log(
-      "🔍 Searching for relevant information using Gemini embeddings..."
+      "🔍 Searching for relevant information using Gemini embeddings with hybrid search..."
     );
+
+    // Detect query type for hybrid search
+    const isCodeQuery =
+      /\b(function|class|import|require|def |const |let |var |console\.log|npm |pip |curl |git |docker |error|exception)\b/i.test(
+        query
+      );
+    const hasErrorCode = /\b(2\d{4}|\d{5})\b/.test(query);
 
     // Generate query embedding using LangChain Gemini embeddings
     const queryEmbedding = await embeddings.embedQuery(query);
@@ -150,6 +176,11 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
     console.log(
       `📊 Query embedding generated with ${queryEmbedding.length} dimensions`
     );
+    console.log(
+      `🔍 Query type detected: ${
+        isCodeQuery ? "code-related" : "text-related"
+      }${hasErrorCode ? " (contains error code)" : ""}`
+    );
 
     let topChunks = [];
 
@@ -157,8 +188,13 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
       console.log("🔍 Searching in Pinecone...");
       const searchResponse = await vectorStore.index.query({
         vector: queryEmbedding,
-        topK: parseInt(config.MAX_CHUNKS) || 10,
+        topK: parseInt(config.MAX_CHUNKS) || 15, // Get more results for hybrid ranking
         includeMetadata: true,
+        filter: hasErrorCode
+          ? {
+              error_codes: { $in: query.match(/\b(2\d{4}|\d{5})\b/g) || [] },
+            }
+          : undefined,
       });
 
       topChunks = searchResponse.matches.map((match) => ({
@@ -170,6 +206,12 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
           docType: match.metadata.docType,
           chunk_index: match.metadata.chunk_index,
           total_chunks: match.metadata.total_chunks,
+          // Tier 2 metadata
+          type: match.metadata.type,
+          language: match.metadata.language,
+          api: match.metadata.api,
+          version: match.metadata.version,
+          errorCodes: match.metadata.error_codes || [],
         },
         similarity: match.score,
       }));
@@ -179,15 +221,39 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
         if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
           return { chunk, similarity: 0 };
         }
+        let similarity = cosineSimilarity(queryEmbedding, chunk.embedding);
+
+        // Hybrid search boost
+        if (isCodeQuery && chunk.metadata.type === "code") {
+          similarity += 0.1; // Boost code chunks for code queries
+        } else if (!isCodeQuery && chunk.metadata.type === "text") {
+          similarity += 0.05; // Boost text chunks for non-code queries
+        }
+
+        // Error code exact match boost
+        if (
+          hasErrorCode &&
+          chunk.metadata.errorCodes &&
+          chunk.metadata.errorCodes.length > 0
+        ) {
+          const queryErrorCodes = query.match(/\b(2\d{4}|\d{5})\b/g) || [];
+          const hasMatchingErrorCode = queryErrorCodes.some((code) =>
+            chunk.metadata.errorCodes.includes(code)
+          );
+          if (hasMatchingErrorCode) {
+            similarity += 0.2; // Strong boost for exact error code matches
+          }
+        }
+
         return {
           chunk,
-          similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+          similarity: Math.min(similarity, 1.0), // Cap at 1.0
         };
       });
 
       topChunks = similarities
         .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, parseInt(config.MAX_CHUNKS) || 10)
+        .slice(0, parseInt(config.MAX_CHUNKS) || 15)
         .map((item) => ({
           content: item.chunk.content,
           metadata: item.chunk.metadata,
@@ -195,17 +261,36 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
         }));
     }
 
+    // Balance results between code and text chunks
+    const textChunks = topChunks.filter((c) => c.metadata.type === "text");
+    const codeChunks = topChunks.filter((c) => c.metadata.type === "code");
+
+    let balancedChunks = [];
+    if (isCodeQuery) {
+      // For code queries, prioritize code chunks but include some text
+      balancedChunks = [
+        ...codeChunks.slice(0, Math.min(8, codeChunks.length)),
+        ...textChunks.slice(0, Math.min(4, textChunks.length)),
+      ];
+    } else {
+      // For text queries, prioritize text chunks but include some code
+      balancedChunks = [
+        ...textChunks.slice(0, Math.min(8, textChunks.length)),
+        ...codeChunks.slice(0, Math.min(4, codeChunks.length)),
+      ];
+    }
+
     console.log(
-      `📊 Top similarity scores: ${topChunks
+      `📊 Top similarity scores: ${balancedChunks
         .slice(0, 3)
         .map((t) => t.similarity.toFixed(3))
         .join(", ")}`
     );
 
     console.log(
-      `📚 Found ${topChunks.length} relevant chunks using semantic search`
+      `📚 Found ${balancedChunks.length} relevant chunks (${textChunks.length} text, ${codeChunks.length} code) using hybrid search`
     );
-    return topChunks;
+    return balancedChunks;
   } catch (error) {
     console.error(
       "❌ Embedding retrieval failed, using keyword search:",
@@ -233,8 +318,8 @@ async function generateResponse(query, chunks, geminiClient) {
       index: index + 1,
     }));
 
-    // Generate response using Gemini
-    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
+    // Generate response using Gemini with enhanced context awareness
+    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's API docs, SMS quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
 
 CONTEXT (Twilio Documentation):
 ${context}
@@ -246,17 +331,23 @@ RESPONSE GUIDELINES:
 2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
 3. **Include Code**: Always include practical code examples in the appropriate programming language
 4. **Step-by-Step**: Break down complex processes into clear, actionable steps
-5. **Error Handling**: Mention common errors and how to handle them
+5. **Error Handling**: Mention common errors and how to handle them, especially Twilio error codes
 6. **Best Practices**: Include security considerations and best practices
 7. **Source Citations**: Reference specific sources using [Source X] format
-8. **If Uncertain**: Clearly state when information isn't available in the context
+8. **Code Formatting**: Use proper syntax highlighting for code blocks
+9. **Language Detection**: Detect the user's preferred programming language from context
+10. **If Uncertain**: Clearly state when information isn't available in the context
 
 FORMAT YOUR RESPONSE:
 - Start with a direct answer to the question
 - Provide detailed explanation with code examples
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
+- Format code blocks with proper syntax highlighting
 - End with source citations
+
+HYBRID SEARCH CONTEXT:
+The retrieved chunks include both text explanations and code examples. Use both types of information to provide comprehensive answers. Code chunks contain specific implementation details, while text chunks provide conceptual explanations.
 
 `;
 
@@ -365,7 +456,7 @@ async function startChat() {
           console.log(result.answer);
           console.log("-".repeat(40));
 
-          // Show sources
+          // Show sources with enhanced metadata
           if (result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
             result.sources.forEach((source) => {
@@ -390,7 +481,26 @@ async function startChat() {
                 source.metadata.source_url ||
                 "https://twilio.com/docs";
 
-              console.log(`${source.index}. ${title} (${category})`);
+              // Enhanced source display with Tier 2 metadata
+              const chunkType =
+                source.metadata.type === "code" ? "💻 Code" : "📄 Text";
+              const language =
+                source.metadata.language && source.metadata.language !== "text"
+                  ? ` (${source.metadata.language})`
+                  : "";
+              const api = source.metadata.api
+                ? ` | API: ${source.metadata.api}`
+                : "";
+              const errorCodes =
+                source.metadata.errorCodes &&
+                source.metadata.errorCodes.length > 0
+                  ? ` | Errors: ${source.metadata.errorCodes.join(", ")}`
+                  : "";
+
+              console.log(
+                `${source.index}. ${chunkType}${language}${api}${errorCodes}`
+              );
+              console.log(`   ${title} (${category})`);
               console.log(`   URL: ${url}`);
               const relevanceScore = source.similarity || source.score || 0;
               const relevanceType = source.similarity
@@ -403,9 +513,13 @@ async function startChat() {
           }
         } catch (error) {
           console.error("❌ Error processing question:", error.message);
+          // Don't close readline on error, just continue
         }
 
-        askQuestion();
+        // Always ask next question unless readline was closed
+        if (!rl.closed) {
+          askQuestion();
+        }
       });
     };
 
@@ -426,4 +540,6 @@ export {
   loadVectorStore,
   initGeminiClient,
   initGeminiEmbeddings,
+  retrieveChunksWithEmbeddings,
+  searchChunks,
 };
