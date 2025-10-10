@@ -203,10 +203,20 @@ class ConversationMemory {
    */
   getConversationContext() {
     const session = this.getCurrentSession();
-    if (!session) return {};
+    if (!session) {
+      return {
+        userPreferences: {},
+        currentContext: {},
+        recentHistory: [],
+        topics: [],
+        commonErrorCodes: [],
+        languagePatterns: [],
+        sessionDuration: 0,
+      };
+    }
 
     // Get recent conversation history (last 5 turns)
-    const recentHistory = session.conversationHistory.slice(-5);
+    const recentHistory = session.conversationHistory?.slice(-5) || [];
 
     // Extract common topics and patterns
     const topics = this.extractTopics(recentHistory);
@@ -214,8 +224,8 @@ class ConversationMemory {
     const languagePatterns = this.extractLanguagePatterns(recentHistory);
 
     return {
-      userPreferences: session.userPreferences,
-      currentContext: session.currentContext,
+      userPreferences: session.userPreferences || {},
+      currentContext: session.currentContext || {},
       recentHistory: recentHistory,
       topics: topics,
       commonErrorCodes: commonErrorCodes,
@@ -311,30 +321,30 @@ class ConversationMemory {
     let contextPrompt = "";
 
     // Add user preferences
-    if (context.userPreferences.language) {
+    if (context.userPreferences?.language) {
       contextPrompt += `\nUSER PREFERENCE: The user prefers ${context.userPreferences.language} programming language. `;
     }
 
-    if (context.userPreferences.api) {
+    if (context.userPreferences?.api) {
       contextPrompt += `The user is primarily working with ${context.userPreferences.api.toUpperCase()} API. `;
     }
 
     // Add recent topics
-    if (context.topics.length > 0) {
+    if (context.topics?.length > 0) {
       contextPrompt += `\nRECENT TOPICS: The user has been asking about ${context.topics.join(
         ", "
       )}. `;
     }
 
     // Add common error codes
-    if (context.commonErrorCodes.length > 0) {
+    if (context.commonErrorCodes?.length > 0) {
       contextPrompt += `\nCOMMON ERROR CODES: The user has encountered these error codes: ${context.commonErrorCodes.join(
         ", "
       )}. `;
     }
 
     // Add conversation continuity
-    if (context.recentHistory.length > 0) {
+    if (context.recentHistory?.length > 0) {
       const lastQuery =
         context.recentHistory[context.recentHistory.length - 1].query;
       contextPrompt += `\nCONVERSATION CONTEXT: The user's previous question was about "${lastQuery}". `;
