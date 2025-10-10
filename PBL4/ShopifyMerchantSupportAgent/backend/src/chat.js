@@ -23,27 +23,26 @@ async function validateSetup() {
     errors.push("❌ Missing PINECONE_API_KEY in .env file");
   }
 
-  // Check if Pinecone index exists by trying to connect
+  // Check if Pinecone index exists and has data
   try {
     const { getPineconeIndex } = await import("../config/pinecone.js");
-    await getPineconeIndex();
+    const index = await getPineconeIndex();
+
+    // Check if index has data
+    const stats = await index.describeIndexStats();
+    if (stats.totalVectorCount === 0) {
+      errors.push(
+        "❌ Pinecone index is empty. Run 'npm run ingest' to populate it with data."
+      );
+    } else {
+      console.log(`✅ Pinecone index has ${stats.totalVectorCount} vectors`);
+    }
   } catch (error) {
     errors.push(`❌ Pinecone connection failed: ${error.message}`);
   }
 
-  // Check if docs were scraped
-  const docsPath = path.join(__dirname, "../data/shopify_docs");
-  try {
-    const files = await fs.readdir(docsPath);
-    const jsonFiles = files.filter(
-      (f) => f.endsWith(".json") && f !== "scraped.index.json"
-    );
-    if (jsonFiles.length === 0) {
-      errors.push("❌ No scraped documents found. Run 'npm run scrape' first");
-    }
-  } catch {
-    errors.push("❌ Data directory not found. Run 'npm run scrape' first");
-  }
+  // Note: We're using Pinecone vector database, so local scraped docs are not required
+  // The validation above already checked that Pinecone has data
 
   if (errors.length > 0) {
     console.error("\n⚠️  Setup Issues Detected:\n");
@@ -59,9 +58,10 @@ async function validateSetup() {
     console.error(
       "3. Get your Pinecone API key from: https://app.pinecone.io/"
     );
-    console.error("4. Run: npm run scrape");
-    console.error("5. Run: npm run ingest");
-    console.error("6. Run: npm run chat\n");
+    console.error(
+      "4. Ensure your Pinecone index has data (run 'npm run ingest' if needed)"
+    );
+    console.error("5. Run: npm run chat\n");
     process.exit(1);
   }
 }
@@ -125,10 +125,12 @@ async function main() {
     if (!question || question.toLowerCase() === "exit") break;
 
     try {
-      console.log("\n🔎 Searching documentation...");
+      console.log("\n🔎 Searching Pinecone vector database...");
 
       // Embed query
       const queryEmbedding = await embedSingle(question);
+      console.log("📊 Query embedded, searching vectors...");
+
       const results = await retriever.queryEmbeddingAware({
         queryEmbedding,
         k: 4,
@@ -148,8 +150,15 @@ async function main() {
         )
         .join("\n\n---\n\n");
 
-      console.log(`✓ Found ${results.length} relevant sections\n`);
-      console.log("💭 Generating answer...\n");
+      console.log(`✓ Found ${results.length} relevant sections from Pinecone:`);
+      results.forEach((result, i) => {
+        console.log(
+          `   ${i + 1}. ${
+            result.metadata?.title || "Unknown"
+          } (Score: ${result.score.toFixed(4)})`
+        );
+      });
+      console.log("\n💭 Generating answer using retrieved context...\n");
 
       const prompt = `You are a helpful Shopify Merchant Support Assistant.
 
