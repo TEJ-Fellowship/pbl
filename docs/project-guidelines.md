@@ -47,9 +47,10 @@ This document outlines the development process and standards for all projects in
      ```
    - Add Tailwind directives to your CSS file(index.css):
      ```css
-     @tailwind base;
-     @tailwind components;
-     @tailwind utilities;
+     /* Tailwind CSS directives */
+     @import "tailwindcss/base";
+     @import "tailwindcss/components";
+     @import "tailwindcss/utilities";
      ```
 
 **Fullstack Application**
@@ -226,18 +227,21 @@ chore: update dependencies to latest versions
 ```
 
 ### Subject Line Rules (Header)
+
 - Use the imperative mood: "Add", not "Added" or "Adds"
 - Capitalize only the first letter
 - No period (full-stop) at the end
 - Keep under 50 characters
 
 ### Body Rules (Optional but Recommended)
+
 - Insert a blank line between subject and body
 - Use if additional context is needed
 - Explain what was done and why, not how
 - Wrap at 72 characters
 
 ### Example
+
 ```
 feat(auth): Add JWT login for user authentication
 
@@ -261,7 +265,7 @@ token-based role management in future updates.
 - **Screenshots**: Include before/after screenshots for UI changes
 - **Testing Plan**: Describe how to manual test the changes
 - **Breaking Changes**: Clearly document any breaking changes
-- **Linked Issues: Mention related issues using Closes #issue_number to auto-close them on merge
+- \*\*Linked Issues: Mention related issues using Closes #issue_number to auto-close them on merge
 
 ### PR Template
 
