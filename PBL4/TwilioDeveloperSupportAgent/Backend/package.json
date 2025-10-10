@@ -12,10 +12,12 @@
     "chunk": "node src/chunkDoc_v2.js",
     "ingest": "node src/ingest.js",
     "chat": "node src/chat.js",
+    "chat:memory": "node src/chat.js",
     "test-pipeline": "node test_pipeline.js",
+    "test-memory": "node test_memory.js",
     "build": "npm run scrape && npm run chunk && npm run ingest",
     "dev": "npm run build && npm run chat",
-    "test": "npm run test-pipeline"
+    "test": "npm run test-pipeline && npm run test-memory"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
