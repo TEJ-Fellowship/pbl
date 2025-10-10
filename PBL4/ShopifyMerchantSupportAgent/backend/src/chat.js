@@ -1,7 +1,7 @@
 import "dotenv/config";
 import inquirer from "inquirer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createRetriever } from "./retriever.js";
+import { createHybridRetriever } from "./hybrid-retriever.js";
 import { embedSingle } from "./utils/embeddings.js";
 import fs from "fs/promises";
 import path from "path";
@@ -71,9 +71,16 @@ async function main() {
   await validateSetup();
 
   console.log("✅ Setup validated successfully!\n");
-  console.log("🤖 Loading Shopify Merchant Support Agent...\n");
+  console.log(
+    "🤖 Loading Shopify Merchant Support Agent with Hybrid Search...\n"
+  );
 
-  const retriever = await createRetriever();
+  const retriever = await createHybridRetriever({
+    semanticWeight: 0.7, // 70% semantic search
+    keywordWeight: 0.3, // 30% keyword search
+    maxResults: 10, // Get more results for fusion
+    finalK: 4, // Return top 4 results
+  });
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
   // Use correct model name - gemini-1.5-flash is more reliable
@@ -106,8 +113,8 @@ async function main() {
     }
   }
 
-  console.log("Shopify Merchant Support (Tier 1) — RAG Chat");
-  console.log("Type 'exit' to quit.\n");
+  console.log("Shopify Merchant Support (Tier 2) — Hybrid RAG Chat");
+  console.log("Type 'exit' to quit, 'stats' for search statistics.\n");
   console.log("─".repeat(60));
 
   while (true) {
@@ -124,14 +131,28 @@ async function main() {
 
     if (!question || question.toLowerCase() === "exit") break;
 
+    // Handle stats command
+    if (question.toLowerCase() === "stats") {
+      const stats = retriever.getStats();
+      console.log("\n📊 Hybrid Search Statistics:");
+      console.log(`   Total Documents: ${stats.totalDocuments}`);
+      console.log(`   Semantic Weight: ${stats.semanticWeight}`);
+      console.log(`   Keyword Weight: ${stats.keywordWeight}`);
+      console.log(`   Max Results: ${stats.maxResults}`);
+      console.log(`   Final K: ${stats.finalK}`);
+      console.log(`   Initialized: ${stats.isInitialized}`);
+      continue;
+    }
+
     try {
-      console.log("\n🔎 Searching Pinecone vector database...");
+      console.log("\n🔎 Performing hybrid search (semantic + keyword)...");
 
       // Embed query
       const queryEmbedding = await embedSingle(question);
       console.log("📊 Query embedded, searching vectors...");
 
-      const results = await retriever.queryEmbeddingAware({
+      const results = await retriever.search({
+        query: question,
         queryEmbedding,
         k: 4,
       });
@@ -150,12 +171,14 @@ async function main() {
         )
         .join("\n\n---\n\n");
 
-      console.log(`✓ Found ${results.length} relevant sections from Pinecone:`);
+      console.log(
+        `✓ Found ${results.length} relevant sections using hybrid search:`
+      );
       results.forEach((result, i) => {
         console.log(
           `   ${i + 1}. ${
             result.metadata?.title || "Unknown"
-          } (Score: ${result.score.toFixed(4)})`
+          } (Score: ${result.score.toFixed(4)}, Type: ${result.searchType})`
         );
       });
       console.log("\n💭 Generating answer using retrieved context...\n");
