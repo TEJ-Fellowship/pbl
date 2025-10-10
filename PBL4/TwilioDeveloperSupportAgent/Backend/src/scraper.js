@@ -44,22 +44,53 @@ async function scrapeDoc(url, category) {
 
     // Extract code blocks BEFORE removing <pre>/<code>
     const codeBlocks = [];
+
+    // 1. Extract complete code blocks from <pre> tags (highest priority)
     $("pre code").each((_, el) => {
       const t = $(el).text().replace(/\r/g, "").trim();
-      if (t) codeBlocks.push(t);
+      if (t && t.length > 10) {
+        // Only include substantial code blocks
+        codeBlocks.push(t);
+      }
     });
-    // Also capture standalone <pre> and inline <code>
+
+    // 2. Also capture standalone <pre> (without code wrapper)
     $("pre").each((_, el) => {
       // skip ones already captured with pre code (avoid duplicates)
       if ($(el).find("code").length > 0) return;
       const t = $(el).text().replace(/\r/g, "").trim();
-      if (t) codeBlocks.push(t);
+      if (t && t.length > 10) {
+        // Only include substantial code blocks
+        codeBlocks.push(t);
+      }
     });
+
+    // 3. Only capture inline <code> that look like substantial code snippets
     $("code").each((_, el) => {
       // avoid capturing from inside <pre>
       if ($(el).closest("pre").length > 0) return;
+
       const t = $(el).text().replace(/\r/g, "").trim();
-      if (t) codeBlocks.push(t);
+
+      // Only include if it looks like a substantial code snippet
+      if (
+        t &&
+        t.length > 20 &&
+        // Multi-line code
+        (t.includes("\n") ||
+          // Contains code-like patterns
+          /(function|const|let|var|def |class |import |from |require|npm |pip |composer|curl|wget)/.test(
+            t
+          ) ||
+          // Contains brackets or parentheses (likely code)
+          /[{}();]/.test(t) ||
+          // Looks like a command or path
+          /^[a-z-]+\s+/.test(t) ||
+          // Contains API endpoints or URLs
+          /https?:\/\//.test(t))
+      ) {
+        codeBlocks.push(t);
+      }
     });
 
     // Deduplicate code blocks
@@ -176,6 +207,11 @@ async function main() {
   docs.forEach((doc) => {
     console.log(`  • ${doc.category}: ${doc.wordCount} words`);
   });
+
+  console.log(`\n💡 Next steps:`);
+  console.log(`   Run 'npm run chunk' to process with code-aware chunking`);
+  console.log(`   Run 'npm run ingest' to create embeddings and vector store`);
+  console.log(`   Run 'npm run chat' to start the chat interface`);
 }
 
 // Handle CLI execution
