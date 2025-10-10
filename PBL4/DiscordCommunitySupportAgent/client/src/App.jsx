@@ -8,7 +8,7 @@ import Footer from "./components/Footer.jsx";
 function App() {
   return (
     <>
-    <div className="bg-gray-900 text-gray-100 min-h-screen font-sans">
+    <div className="bg-gray-950 text-gray-100 min-h-screen font-sans">
       <Navbar />
       <Hero />
       <TrendingTopics />
