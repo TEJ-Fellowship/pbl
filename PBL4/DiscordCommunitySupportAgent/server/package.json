@@ -11,14 +11,13 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@chroma-core/default-embed": "^0.1.8",
-    "axios": "^1.12.2",
-    "chalk": "^5.6.2",
+    "@google/generative-ai": "^0.24.1",
+    "@langchain/textsplitters": "^0.1.0",
     "cheerio": "^1.1.2",
     "chromadb": "^3.0.17",
     "dotenv": "^17.2.3",
+    "fs-extra": "^11.3.2",
     "langchain": "^0.3.35",
-    "openai": "^6.3.0",
-    "puppeteer": "^24.23.0"
+    "puppeteer": "^24.24.0"
   }
 }

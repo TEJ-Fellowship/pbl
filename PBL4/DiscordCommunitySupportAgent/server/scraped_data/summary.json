@@ -1,0 +1,53 @@
+{
+  "totalPages": 10,
+  "scrapedAt": "2025-10-11T04:19:33.370Z",
+  "pagesBytype": {
+    "support-center": 1,
+    "support": 3,
+    "support-section": 2,
+    "developer": 3,
+    "guidelines": 1
+  },
+  "pages": [
+    {
+      "name": "Discord Support Center",
+      "url": "https://support.discord.com/"
+    },
+    {
+      "name": "Server Setup Guide",
+      "url": "https://support.discord.com/hc/en-us/articles/360045138571"
+    },
+    {
+      "name": "Roles & Permissions",
+      "url": "https://support.discord.com/hc/en-us/articles/206029707"
+    },
+    {
+      "name": "Moderation Tools",
+      "url": "https://support.discord.com/hc/en-us/sections/360008589993-Moderation"
+    },
+    {
+      "name": "Bot Integration",
+      "url": "https://support.discord.com/hc/en-us/articles/228383668"
+    },
+    {
+      "name": "Discord Developer Docs",
+      "url": "https://discord.com/developers/docs/"
+    },
+    {
+      "name": "Webhooks Guide",
+      "url": "https://discord.com/developers/docs/resources/webhook"
+    },
+    {
+      "name": "Bot API Reference",
+      "url": "https://discord.com/developers/docs/topics/oauth2"
+    },
+    {
+      "name": "Community Guidelines",
+      "url": "https://discord.com/guidelines"
+    },
+    {
+      "name": "Safety & Privacy",
+      "url": "https://support.discord.com/hc/en-us/sections/360000045712"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "pageContent": "(function() { var searchForm = document.querySelector('.search-kb-fix'); var hiddenInput = document.createElement('input'); hiddenInput.setAttribute(\"type\", \"hidden\"); hiddenInput.setAttribute(\"name\", \"filter_by\"); hiddenInput.setAttribute(\"value\", \"knowledge_base\"); searchForm.appendChild(hiddenInput); })() Need help? We've got your back. From account settings to permissions, find help for everything Discord If you're new to Discord and looking for tips, check out our Beginner's Guide Announcements We've got our ear to the ground. Here's what you need to know",
+    "metadata": {
+      "title": "Help Center",
+      "url": "https://support.discord.com/",
+      "type": "support-center",
+      "scrapedAt": "2025-10-11T12:47:44.322Z",
+      "chunkIndex": 0,
+      "chunkLength": 566,
+      "totalChunks": 3
+    }
+  },
+  {
+    "pageContent": ". Here's what you need to know. Discord Basics Start off on the right foot! Not the left one! Account Settings Personalize your profile, security, notifications, and more. Server Settings Almost as exciting as interior decorating. Nitro, Shop & Server Boosting Please don't shop until you drop. Let us help. Quests & Promotions Welcome, weary traveler! Would you like to see our quests? Payments & Billing That feel when you look at your bank account. Safety, Privacy & Policy Keep things safe & sound for you and your buddies. Known Issues, Bugs & Troubleshooting All you can eat self-serve problem solving",
+    "metadata": {
+      "title": "Help Center",
+      "url": "https://support.discord.com/",
+      "type": "support-center",
+      "scrapedAt": "2025-10-11T12:47:44.322Z",
+      "chunkIndex": 1,
+      "chunkLength": 607,
+      "totalChunks": 3
+    }
+  },
+  {
+    "pageContent": ". Other ways to find help Developer Your home for support with developing bots, apps, & games using our API and SDK! Apps Center Read all about how you can use, discover, and add Apps as a Discord user! X Have a quick question? Hit us up on X!",
+    "metadata": {
+      "title": "Help Center",
+      "url": "https://support.discord.com/",
+      "type": "support-center",
+      "scrapedAt": "2025-10-11T12:47:44.322Z",
+      "chunkIndex": 2,
+      "chunkLength": 243,
+      "totalChunks": 3
+    }
+  }
+]
