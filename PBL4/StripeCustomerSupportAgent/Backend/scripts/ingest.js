@@ -4,14 +4,15 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
-import { AdvancedChunker } from "./utils/advancedChunker.js";
+import { AdvancedChunker } from "../utils/advancedChunker.js";
+import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import DocumentStorageService from "../services/documentStorageService.js";
 import config from "../config/config.js";
 
 // Configuration
 const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 800;
 const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const COLLECTION_NAME = "stripe_docs";
-const VECTOR_STORE_PATH = "./data/vector_store";
 
 // Initialize Gemini embeddings
 function initEmbeddings() {
@@ -40,9 +41,52 @@ async function initPinecone() {
   }
 }
 
-// Load and process documents
-async function loadDocuments() {
-  console.log("📂 Loading scraped documents...");
+// Legacy function - no longer needed with PostgreSQL storage
+// async function loadDocuments() { ... }
+
+/**
+ * Load documents from PostgreSQL (scalable approach)
+ */
+async function loadDocumentsFromDB(limit = 100, category = null) {
+  console.log("📂 Loading documents from PostgreSQL...");
+
+  const documentStorageService = new DocumentStorageService();
+
+  try {
+    const rawDocuments = await documentStorageService.getUnprocessedDocuments(
+      limit,
+      category
+    );
+    console.log(`📊 Found ${rawDocuments.length} unprocessed documents`);
+
+    // Convert to LangChain Documents
+    const documents = rawDocuments.map((doc) => {
+      return new Document({
+        pageContent: doc.content,
+        metadata: {
+          id: doc.id,
+          source: doc.url,
+          title: doc.title,
+          category: doc.category,
+          docType: doc.doc_type,
+          wordCount: doc.word_count,
+          scrapedAt: doc.scraped_at,
+          ...doc.metadata,
+        },
+      });
+    });
+
+    return documents;
+  } finally {
+    await documentStorageService.close();
+  }
+}
+
+/**
+ * Store scraped documents in PostgreSQL
+ */
+async function storeScrapedDocuments() {
+  console.log("📂 Storing scraped documents in PostgreSQL...");
 
   const scrapedDataPath = path.join(
     process.cwd(),
@@ -52,25 +96,16 @@ async function loadDocuments() {
   );
 
   const scrapedData = JSON.parse(await fs.readFile(scrapedDataPath, "utf-8"));
-  console.log(`📊 Found ${scrapedData.length} documents to process`);
+  console.log(`📊 Found ${scrapedData.length} documents to store`);
 
-  // Convert to LangChain Documents
-  const documents = scrapedData.map((doc) => {
-    return new Document({
-      pageContent: doc.content,
-      metadata: {
-        source: doc.url,
-        title: doc.title,
-        category: doc.category,
-        docType: doc.docType,
-        wordCount: doc.wordCount,
-        scrapedAt: doc.scrapedAt,
-        id: doc.id,
-      },
-    });
-  });
+  const documentStorageService = new DocumentStorageService();
 
-  return documents;
+  try {
+    await documentStorageService.storeDocuments(scrapedData);
+    console.log("✅ Documents stored in PostgreSQL successfully!");
+  } finally {
+    await documentStorageService.close();
+  }
 }
 
 // Create text splitter
@@ -169,68 +204,6 @@ async function storeChunks(chunks, embeddings, pinecone) {
   }
 }
 
-// Alternative: Store in local JSON file (fallback)
-async function storeChunksLocally(chunks, embeddings) {
-  console.log("💾 Storing chunks locally (fallback)...");
-
-  const vectorStore = {
-    chunks: [],
-    metadata: {
-      created_at: new Date().toISOString(),
-      total_chunks: chunks.length,
-      ai_provider: "gemini",
-      embedding_model: "text-embedding-004",
-    },
-  };
-
-  // Process chunks in batches
-  const batchSize = parseInt(config.BATCH_SIZE) || 5;
-
-  for (let i = 0; i < chunks.length; i += batchSize) {
-    const batch = chunks.slice(i, i + batchSize);
-    console.log(
-      `📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
-        chunks.length / batchSize
-      )}`
-    );
-
-    for (const chunk of batch) {
-      try {
-        // Generate embedding
-        const embedding = await embeddings.embedQuery(chunk.pageContent);
-
-        vectorStore.chunks.push({
-          id: chunk.metadata.chunk_id,
-          content: chunk.pageContent,
-          embedding: embedding,
-          metadata: chunk.metadata,
-        });
-
-        console.log(`  ✅ Processed chunk: ${chunk.metadata.chunk_id}`);
-
-        // Rate limiting
-        await new Promise((resolve) =>
-          setTimeout(resolve, parseInt(config.EMBEDDING_DELAY) || 200)
-        );
-      } catch (error) {
-        console.error(
-          `  ❌ Failed to process chunk ${chunk.metadata.chunk_id}:`,
-          error.message
-        );
-      }
-    }
-  }
-
-  // Save to file
-  const outputPath = path.join(process.cwd(), "data", "vector_store.json");
-  await fs.writeFile(outputPath, JSON.stringify(vectorStore, null, 2));
-
-  console.log(`🎉 Local vector store saved to: ${outputPath}`);
-  console.log(`📊 Total chunks stored: ${vectorStore.chunks.length}`);
-
-  return vectorStore;
-}
-
 // Main ingestion function
 async function main() {
   console.log("🚀 Starting Stripe documentation ingestion with Gemini...");
@@ -240,22 +213,36 @@ async function main() {
     console.log("🤖 Initializing Gemini embeddings...");
     const embeddings = initEmbeddings();
 
-    // Load documents
-    const documents = await loadDocuments();
+    // Load from PostgreSQL (scalable approach)
+    const documents = await loadDocumentsFromDB(100); // Process 100 documents at a time
 
     // Process documents into chunks
     const chunks = await processDocuments(documents);
 
-    // Try Pinecone first, fallback to local storage
+    // Store chunks in Pinecone for semantic search
     try {
-      console.log("🗄️ Attempting to use Pinecone...");
+      console.log("🗄️ Storing chunks in Pinecone for semantic search...");
       const pinecone = await initPinecone();
       await storeChunks(chunks, embeddings, pinecone);
       console.log("✅ Pinecone storage completed successfully!");
     } catch (pineconeError) {
-      console.log("⚠️ Pinecone unavailable, using local storage...");
-      console.log(`   Reason: ${pineconeError.message}`);
-      await storeChunksLocally(chunks, embeddings);
+      console.log("❌ Pinecone storage failed:", pineconeError.message);
+      console.log("   Please check your Pinecone configuration and try again.");
+      throw pineconeError;
+    }
+
+    // Store chunks in PostgreSQL for BM25 search
+    try {
+      console.log("🗄️ Storing chunks in PostgreSQL for BM25 search...");
+      const postgresBM25Service = new PostgreSQLBM25Service();
+      await postgresBM25Service.insertChunks(chunks);
+      console.log("✅ PostgreSQL storage completed successfully!");
+    } catch (postgresError) {
+      console.log("❌ PostgreSQL storage failed:", postgresError.message);
+      console.log(
+        "   Please check your PostgreSQL configuration and try again."
+      );
+      throw postgresError;
     }
 
     console.log(`\n🎉 Ingestion completed successfully!`);
@@ -272,4 +259,9 @@ if (process.argv[1] && process.argv[1].endsWith("ingest.js")) {
   main().catch(console.error);
 }
 
-export { processDocuments, initEmbeddings, loadDocuments };
+export {
+  processDocuments,
+  initEmbeddings,
+  loadDocumentsFromDB,
+  storeScrapedDocuments,
+};

@@ -13,6 +13,13 @@ const config = {
   MONGODB_DB: process.env.MONGODB_DB,
   MONGODB_URI: process.env.MONGODB_URI,
 
+  // PostgreSQL Configuration
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_NAME: process.env.DB_NAME,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME || "stripe-docs",
