@@ -1,6 +1,6 @@
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import PostgreSQLBM25Service from "./services/postgresBM25Service.js";
-import config from "../config/config.js";
+import config from "./config/config.js";
 import fs from "fs/promises";
 import path from "path";
 

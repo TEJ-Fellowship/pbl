@@ -2,7 +2,7 @@ import {
   retrieveChunksWithHybridSearch,
   loadVectorStore,
   initGeminiEmbeddings,
-} from "../chat.js";
+} from "../scripts/chat.js";
 
 /**
  * Test script to verify chat integration with hybrid search

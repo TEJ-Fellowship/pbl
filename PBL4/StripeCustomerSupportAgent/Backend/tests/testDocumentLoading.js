@@ -1,4 +1,4 @@
-import { loadDocumentsFromDB } from "../ingest.js";
+import { loadDocumentsFromDB } from "../scripts/ingest.js";
 
 async function testDocumentLoading() {
   console.log("🧪 Testing PostgreSQL document loading...");

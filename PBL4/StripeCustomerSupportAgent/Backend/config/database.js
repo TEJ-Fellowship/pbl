@@ -1,6 +1,6 @@
 import pkg from "pg";
 const { Pool } = pkg;
-import config from "../../config/config.js";
+import config from "./config.js";
 
 const pool = new Pool({
   user: config.DB_USER || "postgres",

@@ -4,7 +4,7 @@
  * Script to get latest scraped documents from PostgreSQL
  */
 
-import { getLatestScrapedDocuments } from "../scraper.js";
+import { getLatestScrapedDocuments } from "../scripts/scraper.js";
 
 async function main() {
   console.log("🔍 Getting latest scraped documents from PostgreSQL...");

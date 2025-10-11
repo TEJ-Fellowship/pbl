@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
-import DocumentStorageService from "./services/documentStorageService.js";
+import DocumentStorageService from "../services/documentStorageService.js";
 
 // Stripe documentation sources
 const SOURCES = {

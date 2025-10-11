@@ -4,9 +4,9 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
-import { AdvancedChunker } from "./utils/advancedChunker.js";
-import PostgreSQLBM25Service from "./services/postgresBM25Service.js";
-import DocumentStorageService from "./services/documentStorageService.js";
+import { AdvancedChunker } from "../utils/advancedChunker.js";
+import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import DocumentStorageService from "../services/documentStorageService.js";
 import config from "../config/config.js";
 
 // Configuration
