@@ -1,7 +1,8 @@
 import React from "react";
 import Header from "../components/Header";
-import ParticleAnimation from "../components/ParticleAnimation";
+import ParticleAnimation from "../components/animated/ParticleAnimation";
 import HeroSection from "../components/HeroSection";
+import AnimatedText from "../components/animated/AnimatedText";
 
 const LandingPage = () => {
   return (
@@ -22,7 +23,7 @@ const LandingPage = () => {
             className="vertical-text text-7xl font-thin tracking-tighter text-text-dark"
             style={{ height: "15rem" }}
           >
-            Stripe.AI
+            <AnimatedText text="Stripe.AI" />
           </div>
         </div>
 

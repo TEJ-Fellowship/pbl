@@ -1,4 +1,5 @@
 import React from "react";
+import AnimatedText from "./animated/AnimatedText";
 
 const HeroSection = () => {
   return (
@@ -7,9 +8,7 @@ const HeroSection = () => {
         Your AI Support Companion
       </div>
       <h1 className="text-5xl md:text-7xl lg:text-8xl font-thin text-text-dark leading-tight tracking-tight">
-        Next-Level
-        <br />
-        Support
+        <AnimatedText text={"Next-Level<br />Support"} />
       </h1>
     </div>
   );
