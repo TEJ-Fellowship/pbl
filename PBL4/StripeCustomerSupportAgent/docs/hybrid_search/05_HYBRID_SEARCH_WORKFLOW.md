@@ -130,32 +130,36 @@ class PostgreSQLBM25Service {
 
 ---
 
-### **Step 3: Document Loading**
+### **Step 3: Document Ingestion Process**
 
-#### **Function: `loadAllDocuments()`**
+#### **PostgreSQL Document Storage**
 
 ```javascript
-async loadAllDocuments() {
-  try {
-    const dataPath = path.join(process.cwd(), "data", "vector_store.json");
-    const data = await fs.readFile(dataPath, "utf8");
-    const vectorStore = JSON.parse(data);
-    this.documents = vectorStore.documents || [];
-    console.log(`📚 Loaded ${this.documents.length} documents from vector store`);
-  } catch (error) {
-    console.error("❌ Failed to load documents:", error.message);
-    throw error;
-  }
+// In ingest.js - Document ingestion process
+async function main() {
+  // 1. Load documents from data folder
+  const documents = await loadDocuments();
+
+  // 2. Process documents into chunks
+  const chunks = await processDocuments(documents);
+
+  // 3. Store in PostgreSQL for BM25 search
+  const postgresBM25Service = new PostgreSQLBM25Service();
+  await postgresBM25Service.insertChunks(chunks);
+
+  // 4. Store in Pinecone for semantic search
+  await storeChunks(chunks, embeddings, pinecone);
 }
 ```
 
-**Purpose**: Loads all documents from the local vector store JSON file.
+**Purpose**: Documents are ingested once during setup and stored in both PostgreSQL and Pinecone.
 
 **Key Features:**
 
-- **File Reading**: Reads from `data/vector_store.json`
-- **JSON Parsing**: Converts JSON to JavaScript objects
-- **Error Handling**: Graceful error handling for missing files
+- **PostgreSQL Storage**: Documents stored in `document_chunks` table for BM25 search
+- **Pinecone Storage**: Document embeddings stored for semantic search
+- **One-time Process**: Ingestion happens during setup, not during search
+- **Dual Storage**: Same documents available for both search types
 
 ---
 
