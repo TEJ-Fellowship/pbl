@@ -76,10 +76,11 @@ async function main() {
   );
 
   const retriever = await createHybridRetriever({
-    semanticWeight: 0.7, // 70% semantic search
-    keywordWeight: 0.3, // 30% keyword search
-    maxResults: 10, // Get more results for fusion
-    finalK: 4, // Return top 4 results
+    semanticWeight: 0.6, // Balanced weights for better diversity
+    keywordWeight: 0.4, // Increased keyword weight for better exact matching
+    maxResults: 15, // Get more results for better fusion
+    finalK: 6, // Return more results for comprehensive answers
+    diversityBoost: 0.1, // Boost for category diversity
   });
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -154,7 +155,7 @@ async function main() {
       const results = await retriever.search({
         query: question,
         queryEmbedding,
-        k: 4,
+        k: 6, // Increased to get more comprehensive results
       });
 
       if (results.length === 0) {
@@ -172,13 +173,22 @@ async function main() {
         .join("\n\n---\n\n");
 
       console.log(
-        `✓ Found ${results.length} relevant sections using hybrid search:`
+        `✓ Found ${results.length} relevant sections using enhanced hybrid search:`
       );
+
+      // Show category diversity
+      const categories = [
+        ...new Set(results.map((r) => r.metadata?.category || "unknown")),
+      ];
+      console.log(`📊 Categories represented: ${categories.join(", ")}`);
+
       results.forEach((result, i) => {
         console.log(
           `   ${i + 1}. ${
             result.metadata?.title || "Unknown"
-          } (Score: ${result.score.toFixed(4)}, Type: ${result.searchType})`
+          } (Score: ${result.score.toFixed(4)}, Type: ${
+            result.searchType
+          }, Category: ${result.metadata?.category || "unknown"})`
         );
       });
       console.log("\n💭 Generating answer using retrieved context...\n");

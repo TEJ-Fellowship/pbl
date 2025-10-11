@@ -13,10 +13,11 @@ const __dirname = path.dirname(__filename);
  */
 export class HybridRetriever {
   constructor(options = {}) {
-    this.semanticWeight = options.semanticWeight || 0.7; // Default 70% semantic, 30% keyword
-    this.keywordWeight = options.keywordWeight || 0.3;
-    this.maxResults = options.maxResults || 10; // Get more results for fusion
-    this.finalK = options.finalK || 4; // Final number of results to return
+    this.semanticWeight = options.semanticWeight || 0.6; // Balanced weights for better diversity
+    this.keywordWeight = options.keywordWeight || 0.4;
+    this.maxResults = options.maxResults || 15; // Get more results for better fusion
+    this.finalK = options.finalK || 6; // Return more results for comprehensive answers
+    this.diversityBoost = options.diversityBoost || 0.1; // Boost for category diversity
 
     // Initialize FlexSearch index for keyword search
     this.keywordIndex = new FlexSearch.Document({
@@ -160,8 +161,9 @@ export class HybridRetriever {
         this.keywordWeight
       );
 
-      // 4. Return top k results
-      const finalResults = fusedResults
+      // 4. Apply diversity boost and return top k results
+      const diversifiedResults = this.applyDiversityBoost(fusedResults);
+      const finalResults = diversifiedResults
         .slice(0, k)
         .filter((result) => result.document !== null) // Filter out null documents
         .map((result) => ({
@@ -184,12 +186,42 @@ export class HybridRetriever {
   }
 
   /**
-   * Fusion ranking algorithm combining semantic and keyword search results
+   * Apply diversity boost to ensure results from different categories
+   */
+  applyDiversityBoost(results) {
+    const categoryCount = new Map();
+    const diversifiedResults = [];
+    const remainingResults = [...results];
+
+    // First pass: select best result from each category
+    for (const result of results) {
+      const category = result.document?.metadata?.category || "unknown";
+      if (!categoryCount.has(category)) {
+        categoryCount.set(category, 0);
+        diversifiedResults.push({
+          ...result,
+          finalScore: result.finalScore + this.diversityBoost, // Boost for diversity
+        });
+        remainingResults.splice(remainingResults.indexOf(result), 1);
+      }
+    }
+
+    // Second pass: add remaining high-scoring results
+    const sortedRemaining = remainingResults.sort(
+      (a, b) => b.finalScore - a.finalScore
+    );
+    diversifiedResults.push(...sortedRemaining);
+
+    return diversifiedResults.sort((a, b) => b.finalScore - a.finalScore);
+  }
+
+  /**
+   * Enhanced fusion ranking algorithm combining semantic and keyword search results
    */
   fuseResults(semanticResults, keywordResults, semanticWeight, keywordWeight) {
     const scoreMap = new Map();
 
-    // Process semantic results with proper score normalization
+    // Process semantic results with enhanced score normalization
     semanticResults.forEach((result, index) => {
       const docId = result.id;
       const document = this.findDocumentById(docId);
@@ -197,9 +229,11 @@ export class HybridRetriever {
       // Skip if document not found
       if (!document) return;
 
-      // Use actual Pinecone score instead of reciprocal rank
+      // Enhanced score calculation with rank consideration
       const semanticScore = result.score || 0;
-      const weightedSemanticScore = semanticWeight * semanticScore;
+      const rankPenalty = 1 / (index + 1); // Penalty for lower rank
+      const normalizedSemanticScore = semanticScore * rankPenalty;
+      const weightedSemanticScore = semanticWeight * normalizedSemanticScore;
 
       if (!scoreMap.has(docId)) {
         scoreMap.set(docId, {
@@ -224,7 +258,7 @@ export class HybridRetriever {
       }
     });
 
-    // Process keyword results with proper score normalization
+    // Process keyword results with enhanced score normalization
     if (keywordResults && keywordResults.length > 0) {
       keywordResults.forEach((result, index) => {
         const docId = result.id;
@@ -233,9 +267,11 @@ export class HybridRetriever {
         // Skip if document not found
         if (!document) return;
 
-        // Use FlexSearch score if available, otherwise use reciprocal rank
+        // Enhanced keyword score calculation
         const keywordScore = result.score || 1 / (index + 1);
-        const weightedKeywordScore = keywordWeight * keywordScore;
+        const rankPenalty = 1 / (index + 1); // Penalty for lower rank
+        const normalizedKeywordScore = keywordScore * rankPenalty;
+        const weightedKeywordScore = keywordWeight * normalizedKeywordScore;
 
         if (!scoreMap.has(docId)) {
           scoreMap.set(docId, {
