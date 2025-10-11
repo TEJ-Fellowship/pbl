@@ -9,11 +9,14 @@
   "scripts": {
     "start": "nodemon index.js",
     "scrape": "node src/scraper.js",
+    "scrape:latest": "node src/getLatestScraped.js",
     "ingest": "node src/ingest.js",
     "chat": "node src/chat.js",
     "test:hybrid": "node src/tests/testHybridSearch.js",
     "test:chat": "node src/tests/testChatIntegration.js",
     "test:postgres": "node src/tests/testPostgreSQL.js",
+    "test:documents": "node src/tests/testDocumentLoading.js",
+    "migrate:postgres": "node src/migrate-to-postgres.js",
     "dev": "npm run scrape && npm run ingest && npm run chat",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
