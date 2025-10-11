@@ -312,5 +312,3 @@ The chat interface now uses:
 5. **Security**: Implement proper user permissions and SSL
 
 ---
-
-**Note**: This setup provides a robust, scalable solution for BM25 search while maintaining your existing Pinecone semantic search capabilities. The hybrid approach ensures optimal search results with multiple fallback strategies.
