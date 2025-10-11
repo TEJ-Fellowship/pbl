@@ -333,7 +333,7 @@ async function startChat() {
         }
 
         try {
-          // Retrieve relevant chunks using hybrid search
+          // Retrieve relevant chunks using hybrid search , RETRIEVAL
           const chunks = await retrieveChunksWithHybridSearch(
             query,
             vectorStore,
@@ -348,7 +348,7 @@ async function startChat() {
             return;
           }
 
-          // Generate response
+          // Generate augmented response , AUGMENTATION & GENERATION
           const result = await generateResponse(query, chunks, geminiClient);
 
           console.log("\n🤖 Assistant:");
