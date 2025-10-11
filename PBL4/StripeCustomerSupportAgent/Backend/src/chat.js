@@ -43,7 +43,7 @@ async function initPinecone() {
   }
 }
 
-// Load vector store (fallback to local JSON)
+// Load vector store from Pinecone
 async function loadVectorStore() {
   try {
     const pinecone = await initPinecone();
@@ -53,29 +53,9 @@ async function loadVectorStore() {
     );
     return { type: "pinecone", index };
   } catch (error) {
-    console.log("⚠️ Pinecone unavailable, using local vector store...");
-    console.log(`   Reason: ${error.message}`);
-
-    // Fallback to local JSON
-    try {
-      const vectorStorePath = path.join(
-        process.cwd(),
-        "data",
-        "vector_store.json"
-      );
-      const data = await fs.readFile(vectorStorePath, "utf-8");
-      const vectorStore = JSON.parse(data);
-      console.log(
-        `✅ Loaded local vector store with ${vectorStore.chunks.length} chunks`
-      );
-      return { type: "local", data: vectorStore };
-    } catch (localError) {
-      console.error(
-        "❌ Failed to load local vector store:",
-        localError.message
-      );
-      throw localError;
-    }
+    console.error("❌ Pinecone initialization failed:", error.message);
+    console.log("   Please check your Pinecone configuration and try again.");
+    throw error;
   }
 }
 
@@ -85,48 +65,6 @@ function cosineSimilarity(a, b) {
   const magnitudeA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
   const magnitudeB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
   return dotProduct / (magnitudeA * magnitudeB);
-}
-
-// Simple keyword-based search (fallback when embeddings fail)
-function searchChunks(query, vectorStore) {
-  const queryLower = query.toLowerCase();
-  const keywords = queryLower.split(/\s+/);
-
-  // Handle both Pinecone and local vector stores
-  const chunks =
-    vectorStore.type === "pinecone"
-      ? [] // Pinecone doesn't support keyword search, return empty
-      : vectorStore.data.chunks;
-
-  if (chunks.length === 0) {
-    console.log(
-      "⚠️ Keyword search not available for Pinecone, returning empty results"
-    );
-    return [];
-  }
-
-  const scoredChunks = chunks.map((chunk) => {
-    const contentLower = chunk.content.toLowerCase();
-    let score = 0;
-
-    keywords.forEach((keyword) => {
-      if (contentLower.includes(keyword)) {
-        score += 1;
-      }
-    });
-
-    return { chunk, score };
-  });
-
-  return scoredChunks
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, parseInt(config.MAX_CHUNKS) || 10)
-    .map((item) => ({
-      content: item.chunk.content,
-      metadata: item.chunk.metadata,
-      score: item.score,
-    }));
 }
 
 // Retrieve relevant chunks using hybrid search (PostgreSQL BM25 + Semantic)
@@ -262,11 +200,9 @@ async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
     );
     return topChunks;
   } catch (error) {
-    console.error(
-      "❌ Embedding retrieval failed, using keyword search:",
-      error.message
-    );
-    return searchChunks(query, vectorStore);
+    console.error("❌ Embedding retrieval failed:", error.message);
+    console.log("   Please check your Pinecone configuration and try again.");
+    throw error;
   }
 }
 
