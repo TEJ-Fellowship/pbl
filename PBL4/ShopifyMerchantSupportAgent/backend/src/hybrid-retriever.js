@@ -27,6 +27,10 @@ export class HybridRetriever {
         store: ["text", "metadata"],
       },
       cache: true,
+      // Add more aggressive tokenization for better keyword matching
+      charset: "latin:extra",
+      threshold: 0,
+      resolution: 3,
     });
 
     this.documents = []; // Store all documents for reference
@@ -117,10 +121,35 @@ export class HybridRetriever {
 
       // 2. Keyword search using FlexSearch
       console.log("🔍 Performing keyword search...");
-      const keywordResults = this.keywordIndex.search(query, {
+      const keywordSearchResults = this.keywordIndex.search(query, {
         limit: this.maxResults,
         suggest: true,
       });
+
+      // Process FlexSearch results format
+      const keywordResults = [];
+      if (keywordSearchResults && keywordSearchResults.length > 0) {
+        keywordSearchResults.forEach((fieldResult) => {
+          if (fieldResult.result && fieldResult.result.length > 0) {
+            fieldResult.result.forEach((docId) => {
+              const document = this.findDocumentById(docId);
+              if (document) {
+                keywordResults.push({
+                  id: docId,
+                  score: 1.0, // FlexSearch doesn't provide scores, use 1.0
+                  document: document,
+                });
+              }
+            });
+          }
+        });
+      }
+
+      // Debug keyword search results
+      console.log(`📊 Keyword search found ${keywordResults.length} results`);
+      if (keywordResults.length > 0) {
+        console.log(`🔍 Top keyword result: ${keywordResults[0].id}`);
+      }
 
       // 3. Fusion ranking
       console.log("🔄 Applying fusion ranking...");
@@ -160,7 +189,7 @@ export class HybridRetriever {
   fuseResults(semanticResults, keywordResults, semanticWeight, keywordWeight) {
     const scoreMap = new Map();
 
-    // Process semantic results
+    // Process semantic results with proper score normalization
     semanticResults.forEach((result, index) => {
       const docId = result.id;
       const document = this.findDocumentById(docId);
@@ -168,22 +197,25 @@ export class HybridRetriever {
       // Skip if document not found
       if (!document) return;
 
-      const normalizedScore = 1 / (index + 1); // Reciprocal rank normalization
-      const weightedScore = semanticWeight * normalizedScore;
+      // Use actual Pinecone score instead of reciprocal rank
+      const semanticScore = result.score || 0;
+      const weightedSemanticScore = semanticWeight * semanticScore;
 
       if (!scoreMap.has(docId)) {
         scoreMap.set(docId, {
           document: document,
-          semanticScore: weightedScore,
+          semanticScore: weightedSemanticScore,
           keywordScore: 0,
           semanticRank: index + 1,
           keywordRank: null,
           searchType: "semantic",
+          originalSemanticScore: semanticScore,
         });
       } else {
         const existing = scoreMap.get(docId);
-        existing.semanticScore = weightedScore;
+        existing.semanticScore = weightedSemanticScore;
         existing.semanticRank = index + 1;
+        existing.originalSemanticScore = semanticScore;
         if (existing.keywordRank === null) {
           existing.searchType = "semantic";
         } else {
@@ -192,37 +224,42 @@ export class HybridRetriever {
       }
     });
 
-    // Process keyword results
-    keywordResults.forEach((result, index) => {
-      const docId = result.id;
-      const document = this.findDocumentById(docId);
+    // Process keyword results with proper score normalization
+    if (keywordResults && keywordResults.length > 0) {
+      keywordResults.forEach((result, index) => {
+        const docId = result.id;
+        const document = this.findDocumentById(docId);
 
-      // Skip if document not found
-      if (!document) return;
+        // Skip if document not found
+        if (!document) return;
 
-      const normalizedScore = 1 / (index + 1); // Reciprocal rank normalization
-      const weightedScore = keywordWeight * normalizedScore;
+        // Use FlexSearch score if available, otherwise use reciprocal rank
+        const keywordScore = result.score || 1 / (index + 1);
+        const weightedKeywordScore = keywordWeight * keywordScore;
 
-      if (!scoreMap.has(docId)) {
-        scoreMap.set(docId, {
-          document: document,
-          semanticScore: 0,
-          keywordScore: weightedScore,
-          semanticRank: null,
-          keywordRank: index + 1,
-          searchType: "keyword",
-        });
-      } else {
-        const existing = scoreMap.get(docId);
-        existing.keywordScore = weightedScore;
-        existing.keywordRank = index + 1;
-        if (existing.semanticRank === null) {
-          existing.searchType = "keyword";
+        if (!scoreMap.has(docId)) {
+          scoreMap.set(docId, {
+            document: document,
+            semanticScore: 0,
+            keywordScore: weightedKeywordScore,
+            semanticRank: null,
+            keywordRank: index + 1,
+            searchType: "keyword",
+            originalKeywordScore: keywordScore,
+          });
         } else {
-          existing.searchType = "hybrid";
+          const existing = scoreMap.get(docId);
+          existing.keywordScore = weightedKeywordScore;
+          existing.keywordRank = index + 1;
+          existing.originalKeywordScore = keywordScore;
+          if (existing.semanticRank === null) {
+            existing.searchType = "keyword";
+          } else {
+            existing.searchType = "hybrid";
+          }
         }
-      }
-    });
+      });
+    }
 
     // Calculate final scores and sort
     const fusedResults = Array.from(scoreMap.values())
