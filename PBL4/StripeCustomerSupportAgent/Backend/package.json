@@ -11,6 +11,8 @@
     "scrape": "node src/scraper.js",
     "ingest": "node src/ingest.js",
     "chat": "node src/chat.js",
+    "test:hybrid": "node src/tests/testHybridSearch.js",
+    "test:chat": "node src/tests/testChatIntegration.js",
     "dev": "npm run scrape && npm run ingest && npm run chat",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -26,6 +28,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
+    "flexsearch": "^0.7.43",
+    "natural": "^6.10.0",
     "openai": "^4.28.0",
     "tiktoken": "^1.0.22"
   },
