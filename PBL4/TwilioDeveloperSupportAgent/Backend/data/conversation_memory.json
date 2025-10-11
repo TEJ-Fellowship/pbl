@@ -71,7 +71,7 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-10T08:21:25.570Z",
-      "lastActivity": "2025-10-10T08:28:18.068Z",
+      "lastActivity": "2025-10-11T00:26:21.503Z",
       "conversationHistory": [
         {
           "timestamp": "2025-10-10T08:21:36.409Z",
@@ -120,6 +120,44 @@
             "chunkCount": 1,
             "responseTime": 11073
           }
+        },
+        {
+          "timestamp": "2025-10-11T00:23:22.936Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js using Twilio, follow these steps:\n\n**1. Install the Twilio Node.js library:**\n\n```bash\nnpm install twilio\n```\n\n**2. Require the Twilio module:**\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Find your Account SID and Auth Token at twilio.com/console\n// and set the environment variables. See http://twil.io/secure\nconst twilio = require(\"twilio\");\n```\n\n**3. Initialize the Twilio client:**\n\nYou'll need your Account SID and Auth Token from your Twilio account.  It's best practice to store these as environment variables.\n\n```javascript\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst client = twilio(accountSid, authToken);\n```\n\n**4. Send the SMS:**\n\nUse the `client.messages.create()` method to send an SMS message.  This method requires the `to`, `from`, and `body` parameters.\n\n```javascript\nasync function createMessage() {\n  try {\n    const message = await client.messages.create({\n      body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n      from: \"+15017122661\", // Replace with your Twilio phone number\n      to: \"+14158675309\",   // Replace with the recipient's phone number\n    });\n\n    console.log(message.sid); // Unique message ID\n  } catch (error) {\n    console.error(error); // Handle any errors\n  }\n}\n\ncreateMessage();\n```\n\n**Complete Example:**\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Find your Account SID and Auth Token at twilio.com/console\n// and set the environment variables. See http://twil.io/secure\nconst twilio = require(\"twilio\");\n\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst client = twilio(accountSid, authToken);\n\nasync function createMessage() {\n  try {\n    const message = await client.messages.create({\n      body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n      from: \"+15017122661\", // Replace with your Twilio phone number\n      to: \"+14158675309\",   // Replace with the recipient's phone number\n    });\n\n    console.log(message.sid);\n  } catch (error) {\n    console.error(error);\n  }\n}\n\ncreateMessage();\n```\n\n**Prerequisites:**\n\n*   **Twilio Account:** You need a Twilio account. You can sign up for a free trial at [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio).\n*   **Twilio Phone Number:**  You need to purchase a Twilio phone number to send SMS messages.\n*   **Node.js and npm:**  Make sure you have Node.js and npm installed on your system.\n*   **Environment Variables:** Set the `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` environment variables with your Twilio Account SID and Auth Token. See [Source 2] and  http://twil.io/secure for more information on setting environment variables.\n\n**Error Handling:**\n\nThe code includes a `try...catch` block to handle potential errors during the SMS sending process.  Common errors include:\n\n*   **Invalid phone number format:**  Make sure the `to` and `from` phone numbers are in E.164 format (e.g., +14155551212).\n*   **Insufficient funds:**  If your Twilio account doesn't have enough credit, the message will fail to send.\n*   **Twilio account suspended:** If your Twilio account is suspended, you will not be able to send messages.\n\n**Best Practices:**\n\n*   **Use environment variables:**  Never hardcode your Account SID and Auth Token in your code.  Use environment variables to keep them secure.\n*   **Error handling:**  Always include error handling to gracefully handle any errors that may occur.\n*   **Rate limiting:**  Be mindful of Twilio's rate limits to avoid being throttled.\n*   **Opt-out handling:**  Provide a way for recipients to opt-out of receiving SMS messages from you.\n\n[Source 2]\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 2,
+            "responseTime": 12644
+          }
+        },
+        {
+          "timestamp": "2025-10-11T00:23:54.755Z",
+          "query": "What does error 30001 mean?",
+          "response": "Error 30001 in the Programmable SMS API indicates a \"Queue overflow\" [Source 2]. This means that Twilio's internal queue for processing messages has reached its capacity, and your message could not be added to the queue for delivery.\n\n**Possible Causes and Solutions:**\n\n*   **High Message Volume:** If you are sending a large volume of messages in a short period, you might exceed the queue's capacity.\n    *   **Solution:** Implement rate limiting in your application to reduce the number of messages sent per second/minute. Consider using Twilio's Messaging Services, which can help manage message sending and queuing more efficiently.\n*   **Temporary Twilio System Issue:** In rare cases, the queue overflow might be due to a temporary issue on Twilio's side.\n    *   **Solution:** Implement retry logic in your application to resend the message after a short delay.\n\n**Code Example (Node.js with Retry Logic):**\n\n```javascript\nconst twilio = require('twilio');\n\n// Your Account SID and Auth Token from twilio.com/console\nconst accountSid = 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';\nconst authToken = 'your_auth_token';\nconst client = twilio(accountSid, authToken);\n\nasync function sendMessage(to, body, retryCount = 3) {\n  try {\n    const message = await client.messages\n      .create({\n        body: body,\n        to: to,\n        from: '+1234567890', // Your Twilio phone number\n      });\n    console.log(`Message SID: ${message.sid}`);\n  } catch (error) {\n    if (error.code === 30001 && retryCount > 0) {\n      console.log(`Queue overflow error. Retrying in 5 seconds... (Retries left: ${retryCount})`);\n      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds\n      await sendMessage(to, body, retryCount - 1); // Retry\n    } else {\n      console.error(`Failed to send message: ${error.message} (Error code: ${error.code})`);\n    }\n  }\n}\n\n// Example usage\nsendMessage('+11234567890', 'Hello from Twilio!');\n```\n\n**Explanation:**\n\n1.  The code attempts to send an SMS message using the Twilio API.\n2.  If a `30001` error (Queue Overflow) is caught, the code waits for 5 seconds and then retries sending the message.\n3.  The `retryCount` parameter limits the number of retries to prevent infinite loops.\n4.  If the message fails after all retries or if a different error occurs, the error is logged to the console.\n\n**Best Practices:**\n\n*   **Implement Rate Limiting:** Control the rate at which you send messages to avoid overwhelming the Twilio queue.\n*   **Use Messaging Services:** Take advantage of Twilio's Messaging Services for advanced features like queuing, intelligent routing, and compliance management.\n*   **Monitor Error Logs:** Regularly check your application's error logs and the Twilio console for error messages.\n*   **Implement Retry Logic:** Include retry mechanisms with exponential backoff to handle temporary errors gracefully.\n*   **A2P Compliance**: Since you are using SMS, ensure that you are compliant with A2P 10DLC requirements if sending messages to US numbers [Source 6].\n\nBy implementing these strategies, you can minimize the occurrence of error 30001 and improve the reliability of your SMS messaging.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [
+              "30001"
+            ],
+            "chunkCount": 8,
+            "responseTime": 9152
+          }
+        },
+        {
+          "timestamp": "2025-10-11T00:26:21.503Z",
+          "query": "What are A2P 10DLC campaign approval requirements for all brand types?",
+          "response": "Unfortunately, the provided documentation snippets do not contain comprehensive details on A2P 10DLC campaign approval requirements for all brand types. Therefore, I cannot provide a complete answer to your question using only the given context.\n\nTo find detailed information about A2P 10DLC campaign approval requirements, you should consult the following resources:\n\n*   **Twilio's A2P 10DLC documentation:** This is the primary source of information on A2P 10DLC, including campaign requirements, registration processes, and best practices.\n*   **The Campaign Registry (TCR):** TCR is the central registry for A2P 10DLC campaigns. Their website provides detailed information about campaign requirements and registration.\n*   **Mobile carrier documentation:** Each mobile carrier (e.g., AT&T, Verizon, T-Mobile) may have specific requirements for A2P 10DLC campaigns. Consult their documentation for details.\n\nThese resources will provide the most accurate and up-to-date information on A2P 10DLC campaign approval requirements for all brand types.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 7420
+          }
         }
       ],
       "userPreferences": {
@@ -128,11 +166,13 @@
         "context": []
       },
       "currentContext": {
-        "topic": "general",
-        "relatedAPIs": [],
+        "topic": "sms",
+        "relatedAPIs": [
+          "sms"
+        ],
         "errorCodes": [],
-        "lastQuery": "What questions did I ask you just before?",
-        "lastUpdated": "2025-10-10T08:28:10.081Z"
+        "lastQuery": "What are A2P 10DLC campaign approval requirements for all brand types?",
+        "lastUpdated": "2025-10-11T00:26:18.823Z"
       }
     }
   },

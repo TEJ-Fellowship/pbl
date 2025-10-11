@@ -9,6 +9,7 @@ import config from "../config/config.js";
 import chalk from "chalk";
 import { highlight } from "cli-highlight";
 import ConversationMemory from "./conversationMemory.js";
+import HybridSearch from "./hybridSearch.js";
 import APIDetector from "./apiDetector.js";
 
 // Initialize Gemini client
@@ -193,6 +194,50 @@ function detectQueryLanguage(query) {
   if (/\b(csharp|c#|dotnet|\.net)\b/.test(q)) return "csharp";
   if (/\b(curl|bash|shell|cli)\b/.test(q)) return "bash";
   return null;
+}
+
+async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
+  try {
+    console.log("🔍 Searching for relevant information using hybrid search...");
+
+    // Initialize hybrid search system
+    const hybridSearch = new HybridSearch(vectorStore, embeddings);
+
+    // Perform hybrid search
+    const results = await hybridSearch.hybridSearch(
+      query,
+      parseInt(config.MAX_CHUNKS) || 10
+    );
+
+    // Convert results to expected format
+    const topChunks = results.map((result) => ({
+      content: result.content,
+      metadata: result.metadata,
+      similarity: result.finalScore,
+      score: result.finalScore,
+      searchType: result.searchType || "hybrid",
+      bm25Score: result.bm25Score,
+      semanticScore: result.semanticScore,
+    }));
+
+    console.log(
+      `📊 Top hybrid scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
+
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using hybrid search`
+    );
+    return topChunks;
+  } catch (error) {
+    console.error(
+      "❌ Hybrid search failed, falling back to semantic search:",
+      error.message
+    );
+    return retrieveChunksWithEmbeddings(query, vectorStore, embeddings);
+  }
 }
 
 // Hybrid search with error code and language detection
@@ -840,20 +885,29 @@ async function startChat() {
                 source.metadata.source_url ||
                 "https://twilio.com/docs";
 
-              console.log(
-                `${chalk.magenta(source.index)}. ${chalk.cyan(
-                  title
-                )} (${category})`
-              );
-              console.log(`   URL: ${chalk.underline.yellow(url)}`);
+              console.log(`${source.index}. ${title} (${category})`);
+              console.log(`   URL: ${url}`);
               const relevanceScore = source.similarity || source.score || 0;
-              const relevanceType = source.similarity
-                ? "similarity"
-                : "keywords matched";
+              let relevanceType = "similarity";
+              let relevanceDetails = "";
+
+              if (source.searchType === "hybrid") {
+                relevanceType = "hybrid";
+                const bm25Score = source.bm25Score || 0;
+                const semanticScore = source.semanticScore || 0;
+                relevanceDetails = ` (BM25: ${bm25Score.toFixed(
+                  3
+                )}, Semantic: ${semanticScore.toFixed(3)})`;
+              } else if (source.similarity) {
+                relevanceType = "semantic";
+              } else {
+                relevanceType = "keywords matched";
+              }
+
               console.log(
-                `   Relevance: ${chalk.green(
-                  relevanceScore.toFixed(3)
-                )} ${relevanceType}`
+                `   Relevance: ${relevanceScore.toFixed(
+                  3
+                )} ${relevanceType}${relevanceDetails}`
               );
             });
           }
@@ -876,3 +930,11 @@ async function startChat() {
 if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
   startChat().catch(console.error);
 }
+
+// export {
+//   generateResponse,
+//   loadVectorStore,
+//   initGeminiClient,
+//   initGeminiEmbeddings,
+//   retrieveChunksWithHybridSearch,
+// };
