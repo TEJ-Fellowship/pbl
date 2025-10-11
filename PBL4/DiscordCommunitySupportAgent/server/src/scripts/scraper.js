@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import ScraperService from "../services/scraperService.js";
-import Formatters from "../utils/formatters.js";
 
 class ScraperScript {
   constructor() {
@@ -10,24 +9,16 @@ class ScraperScript {
 
   async run() {
     try {
-      console.log(Formatters.formatHeader("Discord Support Scraper"));
-      console.log(
-        Formatters.formatInfo(
-          "This script will scrape Discord support documentation"
-        )
-      );
+      console.log("Discord Support Scraper");
+      console.log("This script will scrape Discord support documentation");
 
       // Start scraping
       const scrapedData = await this.scraperService.scrapeAllPages();
 
-      console.log(
-        Formatters.formatSuccess(
-          `Scraping completed! Scraped ${scrapedData.length} pages`
-        )
-      );
+      console.log(`Scraping completed! Scraped ${scrapedData.length} pages`);
 
       // Display summary
-      console.log(Formatters.formatHeader("Scraping Summary"));
+      console.log("Scraping Summary");
       scrapedData.forEach((doc, index) => {
         console.log(`${index + 1}. ${doc.title}`);
         console.log(`   URL: ${doc.url}`);
@@ -36,9 +27,7 @@ class ScraperScript {
         console.log("");
       });
     } catch (error) {
-      console.error(
-        Formatters.formatError(`Scraping failed: ${error.message}`)
-      );
+      console.error(`Scraping failed: ${error.message}`);
       process.exit(1);
     }
   }
