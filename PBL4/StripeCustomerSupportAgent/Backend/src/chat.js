@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import HybridSearch from "./hybridSearch.js";
+import PostgreSQLBM25Service from "./services/postgresBM25Service.js";
 import config from "../config/config.js";
 
 // Initialize Gemini client
@@ -128,13 +129,22 @@ function searchChunks(query, vectorStore) {
     }));
 }
 
-// Retrieve relevant chunks using hybrid search (BM25 + Semantic)
+// Retrieve relevant chunks using hybrid search (PostgreSQL BM25 + Semantic)
 async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
   try {
-    console.log("🔍 Searching for relevant information using hybrid search...");
+    console.log(
+      "🔍 Searching for relevant information using PostgreSQL hybrid search..."
+    );
 
-    // Initialize hybrid search system
-    const hybridSearch = new HybridSearch(vectorStore, embeddings);
+    // Initialize PostgreSQL BM25 service
+    const postgresBM25Service = new PostgreSQLBM25Service();
+
+    // Initialize hybrid search system with PostgreSQL
+    const hybridSearch = new HybridSearch(
+      vectorStore,
+      embeddings,
+      postgresBM25Service
+    );
 
     // Perform hybrid search
     const results = await hybridSearch.hybridSearch(

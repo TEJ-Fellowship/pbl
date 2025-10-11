@@ -5,6 +5,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import { AdvancedChunker } from "./utils/advancedChunker.js";
+import PostgreSQLBM25Service from "./services/postgresBM25Service.js";
 import config from "../config/config.js";
 
 // Configuration
@@ -256,6 +257,17 @@ async function main() {
       console.log("⚠️ Pinecone unavailable, using local storage...");
       console.log(`   Reason: ${pineconeError.message}`);
       await storeChunksLocally(chunks, embeddings);
+    }
+
+    // Store chunks in PostgreSQL for BM25 search
+    try {
+      console.log("🗄️ Storing chunks in PostgreSQL for BM25 search...");
+      const postgresBM25Service = new PostgreSQLBM25Service();
+      await postgresBM25Service.insertChunks(chunks);
+      console.log("✅ PostgreSQL storage completed successfully!");
+    } catch (postgresError) {
+      console.log("⚠️ PostgreSQL storage failed:", postgresError.message);
+      console.log("   Continuing with Pinecone/local storage only...");
     }
 
     console.log(`\n🎉 Ingestion completed successfully!`);

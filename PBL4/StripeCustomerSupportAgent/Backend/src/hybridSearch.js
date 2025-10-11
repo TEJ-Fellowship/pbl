@@ -1,185 +1,46 @@
-import FlexSearch from "flexsearch";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import PostgreSQLBM25Service from "./services/postgresBM25Service.js";
 import config from "../config/config.js";
 import fs from "fs/promises";
 import path from "path";
 
 /**
- * Hybrid Search System combining BM25 keyword search with semantic search
- * Implements proper BM25 with TF, IDF, document length normalization
- * Runs BM25 on full corpus and combines with semantic scores using weighted fusion
+ * Hybrid Search System combining PostgreSQL BM25 keyword search with semantic search
+ * Uses PostgreSQL full-text search for BM25 and Pinecone for semantic search
+ * Combines results using weighted fusion
  */
 class HybridSearch {
-  constructor(vectorStore, embeddings) {
+  constructor(vectorStore, embeddings, postgresBM25Service = null) {
     this.vectorStore = vectorStore;
     this.embeddings = embeddings;
-    this.bm25Index = null;
-    this.documents = [];
+    this.postgresBM25Service =
+      postgresBM25Service || new PostgreSQLBM25Service();
     this.isInitialized = false;
-    this.corpusStats = {
-      totalDocs: 0,
-      avgLength: 0,
-      docFreq: {}, // term -> number of docs containing it
-      termFreq: {}, // term -> total frequency across corpus
-    };
-    this.useOnDemandBM25 = false;
   }
 
   /**
-   * Initialize the hybrid search system with full corpus BM25
+   * Initialize the hybrid search system
    */
   async initialize() {
     try {
-      console.log("🔧 Initializing TRUE hybrid search system...");
+      console.log("🔧 Initializing PostgreSQL-based hybrid search system...");
 
-      // Load all documents from data folder
-      await this.loadAllDocuments();
-
-      // Calculate corpus statistics for proper BM25
-      this.calculateCorpusStats();
-
-      // Initialize FlexSearch for BM25 keyword search
-      this.bm25Index = new FlexSearch.Document({
-        tokenize: "forward",
-        document: {
-          id: "id",
-          index: ["content", "title", "category"],
-          store: ["content", "metadata", "source"],
-        },
-      });
-
-      // Index all documents for BM25 search
-      this.indexAllDocuments();
+      // Test PostgreSQL connection
+      const stats = await this.postgresBM25Service.getStats();
+      console.log(`✅ PostgreSQL connection established`);
+      console.log(
+        `📊 Database stats: ${stats.total_chunks} chunks, ${stats.categories} categories`
+      );
 
       this.isInitialized = true;
-      console.log(
-        `✅ TRUE hybrid search initialized with ${this.documents.length} documents`
-      );
-      console.log(
-        `📊 Corpus stats: ${
-          this.corpusStats.totalDocs
-        } docs, avg length: ${this.corpusStats.avgLength.toFixed(0)}`
-      );
+      console.log("✅ PostgreSQL-based hybrid search initialized");
     } catch (error) {
       console.error(
-        "❌ Failed to initialize TRUE hybrid search:",
+        "❌ Failed to initialize PostgreSQL hybrid search:",
         error.message
       );
       throw error;
     }
-  }
-
-  /**
-   * Load all documents from the data folder
-   */
-  async loadAllDocuments() {
-    try {
-      console.log("📚 Loading all documents from data folder...");
-
-      const dataPath = path.join(process.cwd(), "data", "vector_store.json");
-      const data = JSON.parse(await fs.readFile(dataPath, "utf8"));
-
-      if (data.chunks && Array.isArray(data.chunks)) {
-        this.documents = data.chunks.map((chunk, index) => ({
-          id: chunk.id || `doc_${index}`,
-          content: chunk.content || "",
-          title: chunk.metadata?.title || chunk.metadata?.doc_title || "",
-          category: chunk.metadata?.category || "documentation",
-          metadata: chunk.metadata || {},
-          source: chunk.metadata?.source || chunk.metadata?.source_url || "",
-          wordCount:
-            chunk.metadata?.wordCount || this.countWords(chunk.content || ""),
-        }));
-
-        console.log(
-          `✅ Loaded ${this.documents.length} documents from data folder`
-        );
-      } else {
-        throw new Error("Invalid data structure in vector_store.json");
-      }
-    } catch (error) {
-      console.error("❌ Failed to load documents:", error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * Calculate corpus statistics for proper BM25
-   */
-  calculateCorpusStats() {
-    console.log("📊 Calculating corpus statistics...");
-
-    this.corpusStats.totalDocs = this.documents.length;
-
-    // Calculate average document length
-    const totalLength = this.documents.reduce(
-      (sum, doc) => sum + doc.wordCount,
-      0
-    );
-    this.corpusStats.avgLength = totalLength / this.documents.length;
-
-    // Calculate document frequency for each term
-    this.corpusStats.docFreq = {};
-    this.corpusStats.termFreq = {};
-
-    this.documents.forEach((doc) => {
-      const terms = this.tokenize(doc.content);
-      const uniqueTerms = new Set(terms);
-
-      uniqueTerms.forEach((term) => {
-        this.corpusStats.docFreq[term] =
-          (this.corpusStats.docFreq[term] || 0) + 1;
-      });
-
-      terms.forEach((term) => {
-        this.corpusStats.termFreq[term] =
-          (this.corpusStats.termFreq[term] || 0) + 1;
-      });
-    });
-
-    console.log(
-      `📊 Corpus stats calculated: ${
-        Object.keys(this.corpusStats.docFreq).length
-      } unique terms`
-    );
-  }
-
-  /**
-   * Index all documents for BM25 search
-   */
-  indexAllDocuments() {
-    if (!this.bm25Index || this.documents.length === 0) {
-      console.log("⚠️ No documents to index for BM25 search");
-      return;
-    }
-
-    console.log(
-      `📚 Indexing ${this.documents.length} documents for BM25 search...`
-    );
-
-    this.documents.forEach((doc) => {
-      this.bm25Index.add(doc);
-    });
-
-    console.log("✅ BM25 index created successfully");
-  }
-
-  /**
-   * Tokenize text into terms
-   */
-  tokenize(text) {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, " ")
-      .split(/\s+/)
-      .filter((term) => term.length > 0);
-  }
-
-  /**
-   * Count words in text
-   */
-  countWords(text) {
-    return this.tokenize(text).length;
   }
 
   /**
@@ -203,68 +64,22 @@ class HybridSearch {
   }
 
   /**
-   * Calculate proper BM25 score for a document
+   * Perform BM25 search using PostgreSQL full-text search
    */
-  calculateBM25Score(doc, queryTerms) {
-    const k1 = 1.2; // BM25 parameter
-    const b = 0.75; // BM25 parameter
-
-    let score = 0;
-    const docTerms = this.tokenize(doc.content);
-    const docLength = doc.wordCount;
-
-    queryTerms.forEach((term) => {
-      const termFreq = docTerms.filter((t) => t === term).length;
-
-      if (termFreq > 0) {
-        // Calculate IDF
-        const docFreq = this.corpusStats.docFreq[term] || 0;
-        const idf = Math.log((this.corpusStats.totalDocs + 1) / (docFreq + 1));
-
-        // Calculate BM25 score
-        const numerator = termFreq * (k1 + 1);
-        const denominator =
-          termFreq +
-          k1 * (1 - b + b * (docLength / this.corpusStats.avgLength));
-
-        score += (numerator / denominator) * idf;
-      }
-    });
-
-    return score;
-  }
-
-  /**
-   * Perform BM25 search on full corpus
-   */
-  async searchBM25(query, topK = 10) {
+  async searchBM25(query, topK = 10, filters = {}) {
     try {
-      console.log(`🔍 BM25 search for: "${query}"`);
+      console.log(`🔍 PostgreSQL BM25 search for: "${query}"`);
 
-      if (!this.bm25Index || this.documents.length === 0) {
-        console.log("⚠️ BM25 search not available - no documents indexed");
-        return [];
-      }
+      const results = await this.postgresBM25Service.searchBM25(
+        query,
+        topK,
+        filters
+      );
 
-      const queryTerms = this.tokenize(query);
-
-      // Calculate BM25 scores for all documents
-      const scoredDocs = this.documents.map((doc) => ({
-        ...doc,
-        bm25Score: this.calculateBM25Score(doc, queryTerms),
-        searchType: "bm25",
-      }));
-
-      // Sort by BM25 score and return top results
-      const results = scoredDocs
-        .filter((doc) => doc.bm25Score > 0)
-        .sort((a, b) => b.bm25Score - a.bm25Score)
-        .slice(0, topK);
-
-      console.log(`📊 BM25 found ${results.length} results`);
+      console.log(`📊 PostgreSQL BM25 found ${results.length} results`);
       return results;
     } catch (error) {
-      console.error("❌ BM25 search failed:", error.message);
+      console.error("❌ PostgreSQL BM25 search failed:", error.message);
       return [];
     }
   }
@@ -443,14 +258,14 @@ class HybridSearch {
   }
 
   /**
-   * Main hybrid search function with proper BM25 + semantic fusion
+   * Main hybrid search function with PostgreSQL BM25 + semantic fusion
    */
   async hybridSearch(query, topK = 5) {
     if (!this.isInitialized) {
       await this.initialize();
     }
 
-    console.log(`\n🔍 TRUE Hybrid Search: "${query}"`);
+    console.log(`\n🔍 PostgreSQL Hybrid Search: "${query}"`);
     console.log("=".repeat(50));
 
     // Detect if query contains error codes
@@ -466,8 +281,8 @@ class HybridSearch {
     try {
       // Perform both searches in parallel
       const [bm25Results, semanticResults] = await Promise.all([
-        this.searchBM25(query, topK * 2), // Get more results for better fusion
-        this.searchSemantic(query, topK * 2),
+        this.searchBM25(query, topK * 2), // PostgreSQL BM25 search
+        this.searchSemantic(query, topK * 2), // Pinecone semantic search
       ]);
 
       // Fuse results
@@ -496,7 +311,7 @@ class HybridSearch {
 
       return topResults;
     } catch (error) {
-      console.error("❌ TRUE hybrid search failed:", error.message);
+      console.error("❌ PostgreSQL hybrid search failed:", error.message);
 
       // Fallback to semantic search only
       console.log("🔄 Falling back to semantic search only...");
