@@ -1,7 +1,7 @@
 import "dotenv/config";
 import inquirer from "inquirer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createHybridRetriever } from "./hybrid-retriever.js";
+import { createHybridRetriever } from "./services/hybrid-retriever.js";
 import { embedSingle } from "./utils/embeddings.js";
 import fs from "fs/promises";
 import path from "path";

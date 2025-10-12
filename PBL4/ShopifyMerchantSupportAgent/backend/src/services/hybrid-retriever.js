@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import FlexSearch from "flexsearch";
-import { getPineconeIndex } from "../config/pinecone.js";
+import { getPineconeIndex } from "../../config/pinecone.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,7 +48,7 @@ export class HybridRetriever {
 
     try {
       // Load all chunk files
-      const chunksDir = path.join(__dirname, "../data/chunks");
+      const chunksDir = path.join(__dirname, "../../data/chunks");
       const files = await fs.readdir(chunksDir);
       const chunkFiles = files.filter(
         (file) => file.startsWith("chunks_") && file.endsWith(".json")
@@ -108,17 +108,26 @@ export class HybridRetriever {
     }
 
     try {
-      // Get Pinecone index
-      const index = await getPineconeIndex();
+      let semanticResults = { matches: [] };
 
-      // 1. Semantic search using Pinecone
-      console.log("🔍 Performing semantic search...");
-      const semanticResults = await index.query({
-        vector: queryEmbedding,
-        topK: this.maxResults,
-        includeMetadata: true,
-        includeValues: false,
-      });
+      // 1. Semantic search using Pinecone (with fallback)
+      try {
+        console.log("🔍 Performing semantic search...");
+        const index = await getPineconeIndex();
+        semanticResults = await index.query({
+          vector: queryEmbedding,
+          topK: this.maxResults,
+          includeMetadata: true,
+          includeValues: false,
+        });
+        console.log(
+          `📊 Semantic search found ${semanticResults.matches.length} results`
+        );
+      } catch (error) {
+        console.error("❌ Semantic search failed:", error.message);
+        console.log("⚠️  Falling back to keyword-only search");
+        semanticResults = { matches: [] };
+      }
 
       // 2. Keyword search using FlexSearch
       console.log("🔍 Performing keyword search...");

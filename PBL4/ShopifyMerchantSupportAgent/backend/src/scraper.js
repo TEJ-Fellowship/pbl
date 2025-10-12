@@ -3,7 +3,6 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import puppeteer from "puppeteer";
 import { cleanHtmlText, sanitizeFilename } from "./utils/cleaner.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -115,7 +114,29 @@ function determineMerchantLevel({ content, section }) {
   return "beginner";
 }
 
-// async function scrapeDoc(url, section, browser) {
+// // Mock scraper for development - no Puppeteer needed
+async function scrapeDoc(url, section) {
+  console.log(`🌐 Mock scraping ${url}...`);
+  
+  // Return mock data for development
+  const mockContent = `This is mock content for ${section} section. 
+  In a real implementation, this would contain actual scraped content from ${url}.
+  For now, this allows the backend to run without Puppeteer dependencies.`;
+  
+  const doc = {
+    url,
+    section,
+    title: `${section} - Mock Data`,
+    content: mockContent,
+    links: [],
+    merchantLevel: determineMerchantLevel({ content: mockContent, section }),
+    scrapedAt: new Date().toISOString(),
+    wordCount: mockContent.split(/\s+/).length,
+  };
+
+  console.log(`✅ Mock scraped ${section}: ${doc.wordCount} words`);
+  return doc;
+}
 //   // Render via Puppeteer to avoid 403 and JS-rendered content
 //   const page = await browser.newPage();
 //   // Block non-essential resources for performance
@@ -168,7 +189,29 @@ function determineMerchantLevel({ content, section }) {
 //   };
 // }
 
-async function scrapeDoc(url, section, browser) {
+// Mock scraper for development - no Puppeteer needed
+async function scrapeDoc(url, section) {
+  console.log(`🌐 Mock scraping ${url}...`);
+  
+  // Return mock data for development
+  const mockContent = `This is mock content for ${section} section. 
+  In a real implementation, this would contain actual scraped content from ${url}.
+  For now, this allows the backend to run without Puppeteer dependencies.`;
+  
+  const doc = {
+    url,
+    section,
+    title: `${section} - Mock Data`,
+    content: mockContent,
+    links: [],
+    merchantLevel: determineMerchantLevel({ content: mockContent, section }),
+    scrapedAt: new Date().toISOString(),
+    wordCount: mockContent.split(/\s+/).length,
+  };
+
+  console.log(`✅ Mock scraped ${section}: ${doc.wordCount} words`);
+  return doc;
+}
   const page = await browser.newPage();
 
   // 🚀 Block non-essential requests
@@ -305,11 +348,11 @@ async function main() {
   const outDir = path.join(__dirname, "../data/shopify_docs");
   await fs.mkdir(outDir, { recursive: true });
   const docs = [];
-  const browser = await puppeteer.launch({ headless: "new" });
+  // No browser needed for mock scraping
   for (const [section, url] of Object.entries(SOURCES)) {
     console.log(`Scraping ${section} -> ${url}`);
     try {
-      const doc = await scrapeDoc(url, section, browser);
+      const doc = await scrapeDoc(url, section);
       docs.push(doc);
       const fname = sanitizeFilename(section) + ".json";
       await fs.writeFile(
@@ -325,7 +368,7 @@ async function main() {
       );
     }
   }
-  await browser.close();
+  // Browser cleanup not needed for mock scraping
   await fs.writeFile(
     path.join(outDir, "scraped.index.json"),
     JSON.stringify(docs, null, 2),

@@ -5,8 +5,13 @@ let pineconeClient = null;
 export async function getPineconeClient() {
   if (pineconeClient) return pineconeClient;
 
-  if (!process.env.PINECONE_API_KEY) {
-    throw new Error("PINECONE_API_KEY is required in environment variables");
+  if (
+    !process.env.PINECONE_API_KEY ||
+    process.env.PINECONE_API_KEY === "your_pinecone_api_key_here"
+  ) {
+    throw new Error(
+      "PINECONE_API_KEY is not configured - semantic search will be disabled"
+    );
   }
 
   pineconeClient = new Pinecone({
@@ -51,7 +56,7 @@ export async function createPineconeIndex() {
     console.log(`Creating Pinecone index "${indexName}"...`);
     await client.createIndex({
       name: indexName,
-      dimension: 384, // Dimension for all-MiniLM-L6-v2 embeddings
+      dimension: 768, // Dimension for Gemini embeddings
       metric: "cosine",
       spec: {
         serverless: {
