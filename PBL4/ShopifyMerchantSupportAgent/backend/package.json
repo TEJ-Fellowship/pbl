@@ -9,8 +9,11 @@
     "scrape": "node ./src/scraper.js",
     "ingest": "node ./src/ingest.js",
     "chat": "node ./src/chat.js",
+    "chat-optimized": "node ./src/optimized-chat.js",
     "test-pinecone": "node ./src/test-pinecone.js",
-    "start": "npm run scrape && npm run ingest && npm run chat"
+    "test-conversation": "node ./src/test-conversation-history.js",
+    "start": "npm run scrape && npm run ingest && npm run chat",
+    "start-optimized": "npm run scrape && npm run ingest && npm run chat-optimized"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -20,8 +23,10 @@
     "dotenv": "^16.4.5",
     "flexsearch": "^0.8.212",
     "inquirer": "^9.3.7",
+    "mongoose": "^8.0.0",
     "natural": "^8.1.0",
-    "puppeteer": "^24.3.0"
+    "puppeteer": "^24.3.0",
+    "uuid": "^9.0.0"
   },
   "optionalDependencies": {
     "@xenova/transformers": "^2.17.2"

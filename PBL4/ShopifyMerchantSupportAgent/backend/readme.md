@@ -9,12 +9,16 @@ A RAG-based support agent that scrapes Shopify documentation, chunks it, generat
 - **Vector Storage**: Stores embeddings in Pinecone for fast similarity search
 - **RAG Pipeline**: Retrieves relevant context and generates responses with Gemini AI
 - **Merchant Level Detection**: Automatically categorizes content by difficulty level
+- **Conversation History**: Maintains sliding window of last 8 messages (4 turns) using MongoDB
+- **Context-Aware Retrieval**: Uses conversation history for better query reformulation
+- **Persistent Sessions**: Conversation history persists across sessions
 
 ## Prerequisites
 
 1. **Node.js** (>=18.17.0)
 2. **Google Gemini API Key** - Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
 3. **Pinecone Account** - Sign up at [Pinecone](https://app.pinecone.io/)
+4. **MongoDB** - Install locally or use MongoDB Atlas cloud service
 
 ## Setup
 
@@ -35,6 +39,9 @@ A RAG-based support agent that scrapes Shopify documentation, chunks it, generat
    # Pinecone Configuration
    PINECONE_API_KEY=your_pinecone_api_key_here
    PINECONE_INDEX_NAME=shopify-merchant-support
+
+   # MongoDB Configuration
+   MONGODB_URI=mongodb://localhost:27017/shopify-support-agent
 
    # Embeddings Configuration
    EMBEDDINGS_PROVIDER=local
@@ -95,29 +102,35 @@ npm run chat
 
 ### Environment Variables
 
-| Variable              | Description                                             | Required |
-| --------------------- | ------------------------------------------------------- | -------- |
-| `GEMINI_API_KEY`      | Google Gemini API key                                   | Yes      |
-| `GEMINI_MODEL`        | Gemini model name (default: gemini-1.5-flash)           | No       |
-| `PINECONE_API_KEY`    | Pinecone API key                                        | Yes      |
-| `PINECONE_INDEX_NAME` | Pinecone index name (default: shopify-merchant-support) | No       |
-| `EMBEDDINGS_PROVIDER` | Embedding provider (default: local)                     | No       |
+| Variable              | Description                                                                          | Required |
+| --------------------- | ------------------------------------------------------------------------------------ | -------- |
+| `GEMINI_API_KEY`      | Google Gemini API key                                                                | Yes      |
+| `GEMINI_MODEL`        | Gemini model name (default: gemini-1.5-flash)                                        | No       |
+| `PINECONE_API_KEY`    | Pinecone API key                                                                     | Yes      |
+| `PINECONE_INDEX_NAME` | Pinecone index name (default: shopify-merchant-support)                              | No       |
+| `MONGODB_URI`         | MongoDB connection string (default: mongodb://localhost:27017/shopify-support-agent) | No       |
+| `EMBEDDINGS_PROVIDER` | Embedding provider (default: local)                                                  | No       |
 
 ## File Structure
 
 ```
 backend/
 ├── config/
-│   ├── db.js
+│   ├── db.js                # MongoDB connection configuration
 │   └── pinecone.js          # Pinecone configuration
 ├── controllers/
 │   └── controller.js
 ├── data/
 │   ├── chunks/              # Chunked content (for debugging)
 │   └── shopify_docs/        # Scraped documentation
+├── models/
+│   ├── Conversation.js      # MongoDB conversation model
+│   └── Message.js           # MongoDB message model
 ├── src/
-│   ├── chat.js              # Main chat interface
+│   ├── chat.js              # Main chat interface with conversation history
 │   ├── ingest.js            # Data ingestion to Pinecone
+│   ├── memory/
+│   │   └── BufferWindowMemory.js  # Conversation memory management
 │   ├── retriever.js         # Pinecone query interface
 │   ├── scraper.js           # Web scraping
 │   └── utils/

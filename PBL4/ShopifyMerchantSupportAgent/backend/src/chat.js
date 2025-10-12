@@ -3,6 +3,8 @@ import inquirer from "inquirer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createHybridRetriever } from "./hybrid-retriever.js";
 import { embedSingle } from "./utils/embeddings.js";
+import { connectDB, disconnectDB } from "../config/db.js";
+import BufferWindowMemory from "./memory/BufferWindowMemory.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -21,6 +23,14 @@ async function validateSetup() {
 
   if (!process.env.PINECONE_API_KEY) {
     errors.push("❌ Missing PINECONE_API_KEY in .env file");
+  }
+
+  // Check MongoDB connection
+  try {
+    await connectDB();
+    console.log("✅ MongoDB connection validated");
+  } catch (error) {
+    errors.push(`❌ MongoDB connection failed: ${error.message}`);
   }
 
   // Check if Pinecone index exists and has data
@@ -72,8 +82,18 @@ async function main() {
 
   console.log("✅ Setup validated successfully!\n");
   console.log(
-    "🤖 Loading Shopify Merchant Support Agent with Hybrid Search...\n"
+    "🤖 Loading Shopify Merchant Support Agent with Hybrid Search + Conversation History...\n"
   );
+
+  // Initialize conversation memory
+  const memory = new BufferWindowMemory({
+    windowSize: 8, // Last 8 messages (4 turns)
+    sessionId: `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`,
+  });
+
+  await memory.initializeConversation();
 
   const retriever = await createHybridRetriever({
     semanticWeight: 0.6, // Balanced weights for better diversity
@@ -114,8 +134,12 @@ async function main() {
     }
   }
 
-  console.log("Shopify Merchant Support (Tier 2) — Hybrid RAG Chat");
-  console.log("Type 'exit' to quit, 'stats' for search statistics.\n");
+  console.log(
+    "Shopify Merchant Support (Tier 2) — Hybrid RAG Chat + Conversation History"
+  );
+  console.log(
+    "Type 'exit' to quit, 'stats' for search statistics, 'clear' to clear conversation history.\n"
+  );
   console.log("─".repeat(60));
 
   while (true) {
@@ -134,26 +158,65 @@ async function main() {
 
     // Handle stats command
     if (question.toLowerCase() === "stats") {
-      const stats = retriever.getStats();
+      const retrieverStats = retriever.getStats();
+      const memoryStats = await memory.getStats();
+
       console.log("\n📊 Hybrid Search Statistics:");
-      console.log(`   Total Documents: ${stats.totalDocuments}`);
-      console.log(`   Semantic Weight: ${stats.semanticWeight}`);
-      console.log(`   Keyword Weight: ${stats.keywordWeight}`);
-      console.log(`   Max Results: ${stats.maxResults}`);
-      console.log(`   Final K: ${stats.finalK}`);
-      console.log(`   Initialized: ${stats.isInitialized}`);
+      console.log(`   Total Documents: ${retrieverStats.totalDocuments}`);
+      console.log(`   Semantic Weight: ${retrieverStats.semanticWeight}`);
+      console.log(`   Keyword Weight: ${retrieverStats.keywordWeight}`);
+      console.log(`   Max Results: ${retrieverStats.maxResults}`);
+      console.log(`   Final K: ${retrieverStats.finalK}`);
+      console.log(`   Initialized: ${retrieverStats.isInitialized}`);
+
+      console.log("\n💾 Conversation Memory Statistics:");
+      console.log(`   Session ID: ${memoryStats.sessionId}`);
+      console.log(`   Message Count: ${memoryStats.messageCount}`);
+      console.log(`   Window Size: ${memoryStats.windowSize}`);
+      console.log(`   Conversation ID: ${memoryStats.conversationId}`);
+      console.log(`   Created: ${memoryStats.createdAt}`);
+      console.log(`   Updated: ${memoryStats.updatedAt}`);
+      continue;
+    }
+
+    // Handle clear command
+    if (question.toLowerCase() === "clear") {
+      await memory.clearHistory();
+      console.log(
+        "✅ Conversation history cleared. Starting fresh conversation.\n"
+      );
       continue;
     }
 
     try {
-      console.log("\n🔎 Performing hybrid search (semantic + keyword)...");
+      const startTime = Date.now();
 
-      // Embed query
-      const queryEmbedding = await embedSingle(question);
-      console.log("📊 Query embedded, searching vectors...");
+      // Store user message in conversation history
+      await memory.addMessage("user", question);
+
+      // Update conversation title if this is the first user message
+      const stats = await memory.getStats();
+      if (stats.messageCount === 1) {
+        await memory.updateTitle(question);
+      }
+
+      // Get conversation context for query reformulation
+      const conversationContext = await memory.getConversationContext();
+
+      console.log("\n🔎 Performing hybrid search with conversation context...");
+      console.log(
+        "📝 Using conversation history for better context understanding"
+      );
+
+      // Embed query with conversation context
+      const contextualQuery = conversationContext
+        ? `${conversationContext}Current question: ${question}`
+        : question;
+      const queryEmbedding = await embedSingle(contextualQuery);
+      console.log("📊 Query embedded with context, searching vectors...");
 
       const results = await retriever.search({
-        query: question,
+        query: contextualQuery,
         queryEmbedding,
         k: 6, // Increased to get more comprehensive results
       });
@@ -191,20 +254,26 @@ async function main() {
           }, Category: ${result.metadata?.category || "unknown"})`
         );
       });
-      console.log("\n💭 Generating answer using retrieved context...\n");
+      console.log(
+        "\n💭 Generating answer using retrieved context and conversation history...\n"
+      );
 
       const prompt = `You are a helpful Shopify Merchant Support Assistant.
 
 Instructions:
 - Answer the question using ONLY the provided documentation context below.
+- Consider the conversation history to provide contextually relevant answers.
 - Be clear, concise, and actionable.
 - If the answer is not in the context, respond with: "I couldn't find this information in the available documentation."
 - Format your response in a friendly, supportive tone.
+- Reference previous conversation context when relevant to provide continuity.
+
+${conversationContext ? `Conversation History:\n${conversationContext}` : ""}
 
 Retrieved Documentation:
 ${context}
 
-User Question: ${question}
+Current User Question: ${question}
 
 Answer:`;
 
@@ -254,6 +323,20 @@ Answer:`;
 
       const answer = result.response?.text() || "No response generated.";
 
+      // Store assistant's response in conversation history
+      await memory.addMessage("assistant", answer, {
+        searchResults: results.map((r) => ({
+          title: r.metadata?.title || "Unknown",
+          source_url: r.metadata?.source_url || "N/A",
+          category: r.metadata?.category || "unknown",
+          score: r.score,
+          searchType: r.searchType,
+        })),
+        modelUsed: modelName,
+        processingTime: Date.now() - startTime,
+        tokensUsed: 0, // Gemini doesn't provide token count in this API
+      });
+
       console.log("─".repeat(60));
       console.log("📝 Answer:\n");
       console.log(answer);
@@ -288,12 +371,18 @@ Answer:`;
   }
 
   console.log("\n👋 Goodbye!\n");
+
+  // Clean up MongoDB connection
+  await disconnectDB();
 }
 
-main().catch((e) => {
+main().catch(async (e) => {
   console.error("\n❌ Fatal error:", e.message || e);
   console.error(
     "\n💡 If you need help, check README.md for setup instructions.\n"
   );
+
+  // Ensure MongoDB connection is closed on error
+  await disconnectDB();
   process.exit(1);
 });
