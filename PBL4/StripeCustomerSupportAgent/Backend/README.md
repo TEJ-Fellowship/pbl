@@ -57,8 +57,7 @@ graph TB
 
     %% Search orchestration
     CHAT -->|"Process query"| SEARCH
-    SEARCH -->|"Keyword search"| BM25
-    SEARCH -->|"Semantic search"| VECTOR
+    SEARCH -->|"Keyword search</br>with</br>raw query"| BM25
     BM25 -->|"Query documents"| POSTGRES
     VECTOR -->|"Vector similarity"| PINECONE
 
@@ -72,7 +71,7 @@ graph TB
     GEMINI -->|"AI-generated response"| CHAT
     CHAT -->|"user query"| GEMINI
     SEARCH -->|"user query"| EMBEDDINGS
-    EMBEDDINGS -->|"query vector"| VECTOR
+    EMBEDDINGS -->|"Semantic Search</br>with</br>vector query"| VECTOR
 ```
 
 ### Data Scraping & Ingestion Architecture
