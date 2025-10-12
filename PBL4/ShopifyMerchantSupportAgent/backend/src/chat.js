@@ -5,6 +5,7 @@ import { createHybridRetriever } from "./hybrid-retriever.js";
 import { embedSingle } from "./utils/embeddings.js";
 import { connectDB, disconnectDB } from "../config/db.js";
 import BufferWindowMemory from "./memory/BufferWindowMemory.js";
+import { EnhancedResponseHandler } from "./enhanced-response-handler.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -82,8 +83,11 @@ async function main() {
 
   console.log("✅ Setup validated successfully!\n");
   console.log(
-    "🤖 Loading Shopify Merchant Support Agent with Hybrid Search + Conversation History...\n"
+    "🤖 Loading Enhanced Shopify Merchant Support Agent (Tier 2) with Hybrid Search + Conversation History...\n"
   );
+
+  // Initialize enhanced response handler for Tier 2 improvements
+  const responseHandler = new EnhancedResponseHandler();
 
   // Initialize conversation memory with token-aware windowing
   const memory = new BufferWindowMemory({
@@ -139,7 +143,10 @@ async function main() {
   }
 
   console.log(
-    "Shopify Merchant Support (Tier 2) — Hybrid RAG Chat + Conversation History"
+    "Enhanced Shopify Merchant Support (Tier 2) — Hybrid RAG Chat + Conversation History + Response Improvements"
+  );
+  console.log(
+    "✨ Features: Source citations, confidence scoring, code formatting, edge case handling\n"
   );
   console.log(
     "Type 'exit' to quit, 'stats' for search statistics, 'clear' to clear conversation history.\n"
@@ -208,7 +215,7 @@ async function main() {
       const systemPrompt = `You are a helpful Shopify merchant support agent. Use the provided context to answer questions accurately and helpfully.`;
 
       console.log(
-        "\n🔎 Performing hybrid search with token-aware context windowing..."
+        "\n🔎 Performing enhanced hybrid search with Tier 2 improvements and token-aware context windowing..."
       );
 
       // First, get retrieved documents
@@ -296,14 +303,18 @@ async function main() {
               .join("\n")
           : "";
 
-      const prompt = `You are a helpful Shopify Merchant Support Assistant.
+      const prompt = `You are a helpful Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
 
 Instructions:
 - Answer the question using ONLY the provided documentation context below.
 - Consider the conversation history to provide contextually relevant answers.
-- Be clear, concise, and actionable.
-- If the answer is not in the context, respond with: "I couldn't find this information in the available documentation."
-- Format your response in a friendly, supportive tone.
+- Be clear, concise, and actionable in your response.
+- If the answer involves code or technical steps, provide specific examples with proper formatting.
+- If the answer is not in the context, respond with: "I couldn't find this information in the available documentation. Please try rephrasing your question or contact Shopify support for assistance."
+- Format your response in a friendly, professional tone.
+- Use bullet points or numbered lists when appropriate for clarity.
+- Include relevant code examples when applicable.
+- Cite specific sources when referencing documentation.
 - Reference previous conversation context when relevant to provide continuity.
 
 ${conversationHistory ? `Conversation History:\n${conversationHistory}\n` : ""}
@@ -318,6 +329,9 @@ Answer:`;
       // Try generating content; if the model is unavailable, silently
       // fallback to gemini-1.5-flash and retry once.
       let result;
+      let answer = "";
+      let error = null;
+
       try {
         result = await model.generateContent({
           contents: [
@@ -327,7 +341,9 @@ Answer:`;
             },
           ],
         });
+        answer = result.response?.text() || "No response generated.";
       } catch (err) {
+        error = err;
         const msg = (err && err.message) || "";
         const unavailable =
           msg.includes("not available") ||
@@ -349,43 +365,60 @@ Answer:`;
                 },
               ],
             });
+            answer = result.response?.text() || "No response generated.";
+            error = null;
           } catch (err2) {
             // Give a safe fallback response instead of throwing an error
-            result = { response: { text: () => "No response generated." } };
+            answer = "No response generated due to model unavailability.";
+            error = err2;
           }
         } else {
           // Non-model-availability error: return safe fallback
-          result = { response: { text: () => "No response generated." } };
+          answer = "No response generated due to an error.";
         }
       }
 
-      const answer = result.response?.text() || "No response generated.";
+      // Process response with enhanced Tier 2 features
+      const enhancedResponse = responseHandler.processResponse(
+        answer,
+        tokenAwareContext.documents,
+        question,
+        error
+      );
 
       // Store assistant's response in conversation history with token usage info
-      await memory.addMessage("assistant", answer, {
-        searchResults: tokenAwareContext.documents.map((r) => ({
-          title: r.metadata?.title || "Unknown",
-          source_url: r.metadata?.source_url || "N/A",
-          category: r.metadata?.category || "unknown",
-          score: r.score,
-          searchType: r.searchType,
-        })),
-        modelUsed: modelName,
-        processingTime: Date.now() - startTime,
-        tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
-        tokenAwareContext: {
-          truncated: tokenAwareContext.truncated,
-          messageTokens: tokenAwareContext.tokenUsage.messageTokens,
-          documentTokens: tokenAwareContext.tokenUsage.documentTokens,
-          totalTokens: tokenAwareContext.tokenUsage.totalTokens,
-          maxTokens: memory.maxTokens,
-          windowingStrategy: tokenAwareContext.windowingStrategy,
-        },
-      });
+      await memory.addMessage(
+        "assistant",
+        enhancedResponse.rawAnswer || answer,
+        {
+          searchResults: tokenAwareContext.documents.map((r) => ({
+            title: r.metadata?.title || "Unknown",
+            source_url: r.metadata?.source_url || "N/A",
+            category: r.metadata?.category || "unknown",
+            score: r.score,
+            searchType: r.searchType,
+          })),
+          modelUsed: modelName,
+          processingTime: Date.now() - startTime,
+          tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
+          tokenAwareContext: {
+            truncated: tokenAwareContext.truncated,
+            messageTokens: tokenAwareContext.tokenUsage.messageTokens,
+            documentTokens: tokenAwareContext.tokenUsage.documentTokens,
+            totalTokens: tokenAwareContext.tokenUsage.totalTokens,
+            maxTokens: memory.maxTokens,
+            windowingStrategy: tokenAwareContext.windowingStrategy,
+          },
+          enhancedResponse: {
+            confidence: enhancedResponse.confidence,
+            sources: enhancedResponse.sources,
+          },
+        }
+      );
 
       console.log("─".repeat(60));
-      console.log("📝 Answer:\n");
-      console.log(answer);
+      console.log("📝 Enhanced Answer:\n");
+      console.log(enhancedResponse.formatted);
       console.log("\n" + "─".repeat(60));
     } catch (err) {
       console.error("\n❌ Error processing request:");

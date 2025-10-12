@@ -3,6 +3,7 @@ import inquirer from "inquirer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createOptimizedHybridRetriever } from "./optimized-hybrid-retriever.js";
 import { embedQuery } from "./utils/enhanced-embeddings.js";
+import { EnhancedResponseHandler } from "./enhanced-response-handler.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -79,7 +80,9 @@ async function main() {
   await validateSetup();
 
   console.log("✅ Setup validated successfully!\n");
-  console.log("🚀 Loading Optimized Shopify Merchant Support Agent...\n");
+  console.log(
+    "🚀 Loading Enhanced Shopify Merchant Support Agent (Tier 2)...\n"
+  );
 
   // Create optimized retriever with enhanced settings
   const retriever = await createOptimizedHybridRetriever({
@@ -90,6 +93,9 @@ async function main() {
     enableQueryExpansion: true,
     enableIntentDetection: true,
   });
+
+  // Initialize enhanced response handler for Tier 2 improvements
+  const responseHandler = new EnhancedResponseHandler();
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -121,7 +127,10 @@ async function main() {
     }
   }
 
-  console.log("🎯 Optimized Shopify Merchant Support Agent");
+  console.log("🎯 Enhanced Shopify Merchant Support Agent (Tier 2)");
+  console.log(
+    "✨ Features: Source citations, confidence scoring, code formatting, edge case handling\n"
+  );
   console.log(
     "Type 'exit' to quit, 'stats' for search statistics, 'help' for commands.\n"
   );
@@ -177,7 +186,9 @@ async function main() {
     }
 
     try {
-      console.log("\n🔎 Performing optimized hybrid search...");
+      console.log(
+        "\n🔎 Performing enhanced hybrid search with Tier 2 improvements..."
+      );
 
       // Use enhanced query embedding
       const queryEmbedding = await embedQuery(question);
@@ -188,14 +199,6 @@ async function main() {
         queryEmbedding,
         k: 4,
       });
-
-      if (results.length === 0) {
-        console.log("\n❌ No relevant documentation found.");
-        console.log(
-          "💡 Try rephrasing your question or using different keywords.\n"
-        );
-        continue;
-      }
 
       // Enhanced context building with better formatting
       const context = results
@@ -208,7 +211,7 @@ async function main() {
         .join("\n\n---\n\n");
 
       console.log(
-        `✅ Found ${results.length} relevant sections using optimized hybrid search:`
+        `✅ Found ${results.length} relevant sections using enhanced hybrid search:`
       );
       results.forEach((result, i) => {
         const boost = result.relevanceBoost
@@ -223,19 +226,21 @@ async function main() {
         );
       });
       console.log(
-        "\n💭 Generating enhanced answer using retrieved context...\n"
+        "\n💭 Generating enhanced answer with Tier 2 improvements...\n"
       );
 
-      // Enhanced prompt with better instructions
+      // Enhanced prompt with better instructions for Tier 2
       const prompt = `You are an expert Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
 
 Instructions:
 - Answer the question using ONLY the provided documentation context below.
 - Be clear, concise, and actionable in your response.
-- If the answer involves code or technical steps, provide specific examples.
+- If the answer involves code or technical steps, provide specific examples with proper formatting.
 - If the answer is not in the context, respond with: "I couldn't find this information in the available documentation. Please try rephrasing your question or contact Shopify support for assistance."
 - Format your response in a friendly, professional tone.
 - Use bullet points or numbered lists when appropriate for clarity.
+- Include relevant code examples when applicable.
+- Cite specific sources when referencing documentation.
 
 Retrieved Documentation:
 ${context}
@@ -246,6 +251,9 @@ Answer:`;
 
       // Generate response with error handling
       let result;
+      let answer = "";
+      let error = null;
+
       try {
         result = await model.generateContent({
           contents: [
@@ -255,7 +263,9 @@ Answer:`;
             },
           ],
         });
+        answer = result.response?.text() || "No response generated.";
       } catch (err) {
+        error = err;
         const msg = (err && err.message) || "";
         const unavailable =
           msg.includes("not available") ||
@@ -276,26 +286,28 @@ Answer:`;
                 },
               ],
             });
+            answer = result.response?.text() || "No response generated.";
+            error = null;
           } catch (err2) {
-            result = {
-              response: {
-                text: () =>
-                  "No response generated due to model unavailability.",
-              },
-            };
+            answer = "No response generated due to model unavailability.";
+            error = err2;
           }
         } else {
-          result = {
-            response: { text: () => "No response generated due to an error." },
-          };
+          answer = "No response generated due to an error.";
         }
       }
 
-      const answer = result.response?.text() || "No response generated.";
+      // Process response with enhanced Tier 2 features
+      const enhancedResponse = responseHandler.processResponse(
+        answer,
+        results,
+        question,
+        error
+      );
 
       console.log("─".repeat(60));
-      console.log("📝 Answer:\n");
-      console.log(answer);
+      console.log("📝 Enhanced Answer:\n");
+      console.log(enhancedResponse.formatted);
       console.log("\n" + "─".repeat(60));
     } catch (err) {
       console.error("\n❌ Error processing request:");
