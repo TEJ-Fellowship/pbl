@@ -1,0 +1,2 @@
+Polls FAQ: If enabled on the server, you can share and vote in polls. 
+What Are Text And Voice Channels?

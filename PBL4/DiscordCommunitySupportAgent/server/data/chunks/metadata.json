@@ -1,0 +1,212 @@
+[
+  {
+    "id": "206029707_1",
+    "content": "One of the great things about creating communities on Discord is our permission system! In this Help Center article, you'll learn more about permissions, how to create and customize permissions based on roles, and the difference between server, category, and channel permissions.\n\nWhat does this article cover?\n\nWhat are permissions?\nHow to Set Up Server Permissions\nStep 1 - Create a role\nStep 2 -  Customize the role\nStep 3 - Assign the role\nUnderstanding Category and Channel Permissions\nHow to Set Up Channel Permissions\nHow to Set Up Category Permissions\nUnderstanding Synced and Not-Synced Permissions\nLearn more about how to use permissions\nWhat Are Permissions?",
+    "source": "206029707.txt",
+    "chunkIndex": 1,
+    "fileName": "206029707_chunk_1.txt"
+  },
+  {
+    "id": "206029707_2",
+    "content": "Permissions allow users to have specific privileges and functions in their server. Some permissions can be as basic as allowing users the ability to add reactions to messages while other permissions grant users more administrative actions. These permissions are based on the roles assigned to users in a server and permissions can be assigned per role on both the server level and channel level.\n\nHow To Set Up Server Permissions\nStep 1 - Create Roles\n\nYour journey to setting up permissions in your server begins with you creating roles!",
+    "source": "206029707.txt",
+    "chunkIndex": 2,
+    "fileName": "206029707_chunk_2.txt"
+  },
+  {
+    "id": "206029707_3",
+    "content": "When you first create your server there is only one pre-made role: @everyone. The @everyone role defines the permissions that are enabled for everyone on your server even if they have no other roles assigned to them.\n\nNote: As the creator of your server you don't need to assign any roles or permissions to yourself. You will always have access to everything.\nPress on the downward arrow next to the server name.\nChoose Server Settings > Roles > Create Role.",
+    "source": "206029707.txt",
+    "chunkIndex": 3,
+    "fileName": "206029707_chunk_3.txt"
+  },
+  {
+    "id": "206029707_4",
+    "content": "Step 2 - Customize Role And Permissions\nGive the new role a name. You can always change this later! Feel free to change the display of this role at this point, but for this article, we'll focus on Permissions.\nSelect on the Permissions tab of the new role you just created to see the list of server Permissions you can assign under this role.\nMake sure to consider what you want users in this role to do in your server when choosing permissions.\nDon't forget to Save the changes you're making to this role!\n\nStep 3 - Assign The Role\n\nFinally, once you've configured the role's permission, you can assign the role to members of your server.",
+    "source": "206029707.txt",
+    "chunkIndex": 4,
+    "fileName": "206029707_chunk_4.txt"
+  },
+  {
+    "id": "206029707_5",
+    "content": "Select the Manage Members tab for the list of server members and pick the user you want to assign the role to.\nOr you can press on a user's avatar in the server then select the plus sign under the role section to select a role from the pop-up window\n\nNow this user has the server-wide permissions that you assigned to that role.\n\nUnderstanding Channel And Category Permissions\nHow To Set Up Channel Permissions\n\nNow that you've set up roles with server permissions, it's important to understand channel permissions. Like server permissions, channel permissions allow specific users on how they can interact with a specific channel. Here's how to set up channel permissions.",
+    "source": "206029707.txt",
+    "chunkIndex": 5,
+    "fileName": "206029707_chunk_5.txt"
+  },
+  {
+    "id": "206029707_6",
+    "content": "Note: Channel permissions will override server permissions.\nYou can adjust permissions of specific channels, both text and voice, through the channel settings menu by hovering over a channel and clicking on the cog icon.\nSelect the Permissions tab on the left-hand side.\nBy default @everyone has access to all features of a channel. You can allow or deny the permissions everyone has on this particular channel by clicking the check boxes.\nYou can add roles or specific people whom you want to manage channel permissions for by clicking the plus sign.\nOnce you have added a Role or member you can begin assigning channel permissions to this group or person.\nHow To Set Up Category Permissions",
+    "source": "206029707.txt",
+    "chunkIndex": 6,
+    "fileName": "206029707_chunk_6.txt"
+  },
+  {
+    "id": "206029707_7",
+    "content": "In your server, you're also capable of adjusting Category permissions so that the channels under a category can all have the same permissions. Here's how you can set up Category permissions.\n\nRight-click the category and choose Edit Category.\nSelect Permissions in the left-hand panel to alter permissions and add roles.\n\nUnderstanding Synced And Not-Synced Permissions\n\nThere are two default states for a channel in regards to category permissions: synced and not-synced. A synced channel will have permissions that completely match that of the category. A not-synced channel will have permissions that differ from the permissions set for the category.\n\nA synced channel!\n\nA not synced channel!",
+    "source": "206029707.txt",
+    "chunkIndex": 7,
+    "fileName": "206029707_chunk_7.txt"
+  },
+  {
+    "id": "206029707_8",
+    "content": "A synced channel!\n\nA not synced channel!\n\nIf you change the permissions on a category, all channels that are synced will automatically update.\n\nIf you do not sync permissions when moving a channel between categories, or if you change an individual permission on the channel level, it will then show that the channel is not synced with the category.\n\nThis means the channel currently does not share the same permissions as the category and will not automatically update when you make changes to the category's permissions.\n\nIf you want a not-synced channel to sync with its category again, here's how you can do it:",
+    "source": "206029707.txt",
+    "chunkIndex": 8,
+    "fileName": "206029707_chunk_8.txt"
+  },
+  {
+    "id": "206029707_9",
+    "content": "Right-click on the not-synced channel and choose Edit Channel from the drop-down menu.\nPress the Permissions option in the left-hand panel.\nPress the Sync Now button and the channel's permission will match the permissions of the category.\n\nNote: Synced and not-synced channels can coexist within a category. Changing a category’s permissions will change all synced channel’s permissions, but not the permissions of any not-synced channel!\n\nOne final note on category permissions - if you don't want to utilize them at all, you can leave all channels within the category as \"not synced\" and manage them individually. Permissions can also be managed on a per-channel basis.",
+    "source": "206029707.txt",
+    "chunkIndex": 9,
+    "fileName": "206029707_chunk_9.txt"
+  },
+  {
+    "id": "206029707_10",
+    "content": "Learn More About How To Use Permissions\n\nYou can check out step-by-step instructions for the following popular permission settings:\n\nHow do I set up a private server?\nHow do I set up a leaders channel?\nHow do I set up an announcements channel?\nHow is the permission hierarchy structured?",
+    "source": "206029707.txt",
+    "chunkIndex": 10,
+    "fileName": "206029707_chunk_10.txt"
+  },
+  {
+    "id": "228383668_1",
+    "content": "Discord's built in Webhooks function as an easy way to get automated messages and data updates sent to a text channel in your server.\n\nThink of them as one of those fancy pneumatic tube things you used to love sending money into at a bank and watch disappear, but instead of never seeing your money again, you're actually sending messages into Discord from another platform.\n\nBy creating a webhook endpoint in your server, you'll generate a Webhook URL that you can drop into a number of different other services to link the two.",
+    "source": "228383668.txt",
+    "chunkIndex": 1,
+    "fileName": "228383668_chunk_1.txt"
+  },
+  {
+    "id": "228383668_2",
+    "content": "While everyone absolutely loves pneumatic tubes (100% true), it's important to note that webhooks require another website to use (though programming-inclined users can make their own tube schoomper themselves). \n\nSome services and websites are built to easily incorporate webhooks and send messages outwards, but some aren't. Here's a little handy reference list:\n\n  Can use webhooks:\tCan't really use webhooks:\n  GitHub\t  Twitch / YouTube\n  CircleCI\t  Nelly The Hamster\n  DataDog\t  Facebook\nMaking A Webhook\n\nWith that in mind, if you want to update your Discord server with GitHub commits and pull requests or track analytics from DataDog or anything similar, here's how!",
+    "source": "228383668.txt",
+    "chunkIndex": 2,
+    "fileName": "228383668_chunk_2.txt"
+  },
+  {
+    "id": "228383668_3",
+    "content": "Open your Server Settings and head into the Integrations tab:\nClick the \"Create Webhook\" button to create a new webhook!\n\nYou'll have a few options here. You can:\n\n Edit the avatar: By clicking the avatar next to the Name in the top left\nChoose what channel the Webhook posts to: By selecting the desired text channel in the  dropdown menu.\nName your Webhook: Good for distinguishing multiple webhooks for multiple different services.\n\nYou now have your own handy URL / pneumatic tube schoomp-er that you can link to more websites to receive messages from. \n\nQuick Example: GitHub Webhook Integration",
+    "source": "228383668.txt",
+    "chunkIndex": 3,
+    "fileName": "228383668_chunk_3.txt"
+  },
+  {
+    "id": "228383668_4",
+    "content": "Quick Example: GitHub Webhook Integration\n\nSince webhooks can't really function on their own and need to be linked to another website to function as intended, I figured it'd be best to include a sample integration for any of you GitHub enthusiasts and code-pushers.\n\nYou can use Discord's webhooks to send any code merge or push updates in a repository of yours into a text channel in your server.  \n\n1. Get the webhook URL for the server/channel you want to receive messages:\n\nIn my server, I've created a text channel labeled #general-chat and I want my repo updates to post messages here!\n\nTherefore, I'll grab the webhook URL for this channel by pressing the Copy Webhook URL button:",
+    "source": "228383668.txt",
+    "chunkIndex": 4,
+    "fileName": "228383668_chunk_4.txt"
+  },
+  {
+    "id": "228383668_5",
+    "content": "2. Add the webhook URL into your GitHub repo settings\n\nChoose the repository that you'd like to get updates from in your Discord server. Once you've selected the repo, go into the Settings > Webhooks menu\n\nAnd then click the \"Add webhook\" button, and enter the Discord-generated URL in the \"Payload URL\" blank. \n\nTo make the webhook display messages properly, it's really really really REALLY really important that you append '/github' at the end of it. Yes, like five-reallys important.",
+    "source": "228383668.txt",
+    "chunkIndex": 5,
+    "fileName": "228383668_chunk_5.txt"
+  },
+  {
+    "id": "228383668_6",
+    "content": "In addition to the URL, you have some more GitHub-specific options to choose from. For content type, stick with application/json. Discord's webhook format really likes JSON. In the next section, you can choose to customize what kind of events trigger webhook messages. \n\nClick the last \"Add webhook\" button beneath the event notifications customization option, and you're all set! Pushing any updates in the repo (including editing the readme file) will show up in your text channel:",
+    "source": "228383668.txt",
+    "chunkIndex": 6,
+    "fileName": "228383668_chunk_6.txt"
+  },
+  {
+    "id": "228383668_7",
+    "content": "And you're all set! GitHub is just one example of an integration that can post messages via webhook. If you've got a knack for JSON application-building or HTTP POST requests and want to customize your own webhooks, you can dig up some more information in our developer docs.",
+    "source": "228383668.txt",
+    "chunkIndex": 7,
+    "fileName": "228383668_chunk_7.txt"
+  },
+  {
+    "id": "360045138571_1",
+    "content": "Welcome to the comprehensive beginner's guide to Discord!\nWhat this article covers:\n\nWhat is Discord?\nAccount Setup and Troubleshooting\nWhat is a Discord Server?\nWhat are Text and Voice Channels?\nHow to Share your Screen\nAdditional Discord Features\nAccount Connections\nHow to Customize your Discord User Profile\nWhat Is Discord?\n\nDiscord is a communication platform that allows users to interact through text, voice, and video. Users can join or create their own communities, which can be organized around various topics, interests, or gaming groups.\n\nCheck out our Video Tutorials to learn even more about Discord.\nAccount Setup And Troubleshooting",
+    "source": "360045138571.txt",
+    "chunkIndex": 1,
+    "fileName": "360045138571_chunk_1.txt"
+  },
+  {
+    "id": "360045138571_2",
+    "content": "You can register a Discord account through the desktop app, your mobile device, or through a browser. \n\nYou can learn more about registering a Discord account, or about any possible registration errors, by checking out these articles:",
+    "source": "360045138571.txt",
+    "chunkIndex": 2,
+    "fileName": "360045138571_chunk_2.txt"
+  },
+  {
+    "id": "360045138571_3",
+    "content": "Discord Sign-Up and Registration Guide: Need help signing up and registering for a Discord account? Check out this full guide to help you through the process. \nHow to Verify Your Discord Account: Having trouble verifying your account? Check out this guide for more detailed information on account verification. \nDiscord Login & Email Troubleshooting Guide: Having trouble logging in or registering a Discord account? Please check out this guide for additional help.\nWhat Is A Discord Server?",
+    "source": "360045138571.txt",
+    "chunkIndex": 3,
+    "fileName": "360045138571_chunk_3.txt"
+  },
+  {
+    "id": "360045138571_4",
+    "content": "Discord servers provide you with the ability to create private, invite-only spaces for your friends or community—places where you can connect, collaborate, and enjoy meaningful conversations together. These dedicated spaces are what we call servers.\n\nYou can join existing servers or create your own for virtually any type of community or interest group. Whether you're organizing a book club 📚, coordinating with classmates in a study group 🖊️, managing a dance class 💃, or simply staying connected with close friends, Discord servers offer the perfect platform to bring people together around shared interests and activities.\n\nExample of a Discord server",
+    "source": "360045138571.txt",
+    "chunkIndex": 4,
+    "fileName": "360045138571_chunk_4.txt"
+  },
+  {
+    "id": "360045138571_5",
+    "content": "Example of a Discord server\n\nYou can learn more about Discord Servers by checking out these articles:",
+    "source": "360045138571.txt",
+    "chunkIndex": 5,
+    "fileName": "360045138571_chunk_5.txt"
+  },
+  {
+    "id": "360045138571_6",
+    "content": "Discord Server Setup Guide: Learn more about how to set up your own Discord server.\nSetting Up Permissions FAQ: Learn more about how to set up Server Permissions to manage and moderate your server members.\nHow do I set up a Role-Exclusive channel?: Need to set up role-exclusive channels for your server? Learn how in this article!\nNotifications Settings 101: Learn everything you need to know and more about your notification settings.\nServer Boosting FAQ: Learn more about Server Boosting and Additional Perks you can have for your server.\nCustom Emojis: Learn how to upload custom emojis to your server or other servers you’re a part of.",
+    "source": "360045138571.txt",
+    "chunkIndex": 6,
+    "fileName": "360045138571_chunk_6.txt"
+  },
+  {
+    "id": "360045138571_7",
+    "content": "Polls FAQ: If enabled on the server, you can share and vote in polls. \nWhat Are Text And Voice Channels?",
+    "source": "360045138571.txt",
+    "chunkIndex": 7,
+    "fileName": "360045138571_chunk_7.txt"
+  },
+  {
+    "id": "360045138571_8",
+    "content": "Your server is made up of text channels and voice channels. This allows you to communicate with the other members of the server.\n\nText Channels\n\nText channels provide dedicated spaces for written conversations, helping to keep discussions organized and ensuring everyone has room to participate. You can create individual channels for each topic your group enjoys discussing—whether that's planning fishing trips, sharing cooking tips, or any other shared interests.\n\nExample of what a Text Channel is in a Discord server\nVoice Channels",
+    "source": "360045138571.txt",
+    "chunkIndex": 8,
+    "fileName": "360045138571_chunk_8.txt"
+  },
+  {
+    "id": "360045138571_9",
+    "content": "Voice channels allow you to connect with others through voice and video chat. Simply click on a voice channel to join—no calling or ringing necessary. Other members of your server can see when you're in a voice channel and easily drop in to chat, say hello on video, or share their screen with the group.\n\nExample of what a Voice Channel is in a Discord server\n\nYou can learn more about text and voice channels below.\n\nText Channels & Text Chat In Voice Channels: Learn more about setting up, editing, and managing text channels. \nVoice Channels FAQs: Learn more about setting up, editing, and managing voice channels.\nHow To Share Your Screen",
+    "source": "360045138571.txt",
+    "chunkIndex": 9,
+    "fileName": "360045138571_chunk_9.txt"
+  },
+  {
+    "id": "360045138571_10",
+    "content": "You can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. \n\nExample of what it looks like when someone is streaming on Discord\n\nYou can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.\n\nAdditional Discord Features\nAccount Connections\n\nYou can connect a variety of outside apps like PlayStation, Spotify, and Xbox to your Discord account. This allows for your User Profile not only to display various information, but also what song you’re currently listening to on Spotify. To learn more about how to connect an account to your Discord account check out this Help Center article.",
+    "source": "360045138571.txt",
+    "chunkIndex": 10,
+    "fileName": "360045138571_chunk_10.txt"
+  },
+  {
+    "id": "360045138571_11",
+    "content": "You can learn more about individual account connection options through the Connections Help Center category.\n\nHow To Customize Your Discord User Profile\n\nThere are multiple ways to customize your user profile, from changing your avatar, to rocking a profile effect, and more. Please check out one of the articles below to learn more about how to personalize your Discord profile.",
+    "source": "360045138571.txt",
+    "chunkIndex": 11,
+    "fileName": "360045138571_chunk_11.txt"
+  },
+  {
+    "id": "360045138571_12",
+    "content": "Custom Profiles: Learn how to customize your Discord User Profile. From changing your avatar, to your “about me” section, and more. \nCustom Status: Learn how to set a Custom Status on Discord.\nAvatar Decorations: Learn more about Avatar Decorations, whether it’s how to set one or purchase one from the shop.\nProfile Badges 101: Learn about all of the profile badges that are currently available.\nProfile Effects: Learn more about Profile Effects, whether it’s how to set one or purchase one from the shop.\nPer-server Profile: Are you a Nitro subscriber? Learn how to set a custom per-server profile.",
+    "source": "360045138571.txt",
+    "chunkIndex": 12,
+    "fileName": "360045138571_chunk_12.txt"
+  },
+  {
+    "id": "360045138571_13",
+    "content": "Contact Us: Have any additional questions or just something you are not sure of? Please reach out to our Support team through here: dis.gd/contact",
+    "source": "360045138571.txt",
+    "chunkIndex": 13,
+    "fileName": "360045138571_chunk_13.txt"
+  }
+]
