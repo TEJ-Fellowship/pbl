@@ -70,8 +70,9 @@ graph TB
 
     %% AI response generation
     GEMINI -->|"AI-generated response"| CHAT
-    SEARCH -->|"Generate embeddings(query)"| EMBEDDINGS
-    EMBEDDINGS -->|"Vector representations"| GEMINI
+    CHAT -->|"user query"| GEMINI
+    SEARCH -->|"user query"| EMBEDDINGS
+    EMBEDDINGS -->|"query vector"| VECTOR
 ```
 
 ### Data Scraping & Ingestion Architecture
