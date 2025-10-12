@@ -8,9 +8,172 @@ import BufferWindowMemory from "./memory/BufferWindowMemory.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import MarkdownIt from "markdown-it";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize markdown renderer
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+});
+
+// Confidence scoring function
+function calculateConfidence(results, answer) {
+  let confidence = 0;
+  let confidenceFactors = [];
+
+  // Factor 1: Number of relevant sources (0-25 points)
+  const sourceCount = results.length;
+  if (sourceCount >= 4) {
+    confidence += 25;
+    confidenceFactors.push("Multiple relevant sources found");
+  } else if (sourceCount >= 2) {
+    confidence += 15;
+    confidenceFactors.push("Several relevant sources found");
+  } else if (sourceCount >= 1) {
+    confidence += 10;
+    confidenceFactors.push("Limited sources found");
+  }
+
+  // Factor 2: Average relevance score (0-25 points)
+  const avgScore =
+    results.reduce((sum, r) => sum + r.score, 0) / results.length;
+  if (avgScore >= 0.7) {
+    confidence += 25;
+    confidenceFactors.push("High relevance scores");
+  } else if (avgScore >= 0.5) {
+    confidence += 20;
+    confidenceFactors.push("Good relevance scores");
+  } else if (avgScore >= 0.3) {
+    confidence += 15;
+    confidenceFactors.push("Moderate relevance scores");
+  } else {
+    confidence += 5;
+    confidenceFactors.push("Low relevance scores");
+  }
+
+  // Factor 3: Answer quality indicators (0-25 points)
+  const answerLength = answer.length;
+  const hasCodeBlocks = answer.includes("```") || answer.includes("`");
+  const hasSpecifics =
+    answer.includes("API") ||
+    answer.includes("endpoint") ||
+    answer.includes("parameter");
+
+  if (answerLength > 200 && hasSpecifics) {
+    confidence += 25;
+    confidenceFactors.push("Detailed answer with specific information");
+  } else if (answerLength > 100 && (hasCodeBlocks || hasSpecifics)) {
+    confidence += 20;
+    confidenceFactors.push("Good answer with technical details");
+  } else if (answerLength > 100) {
+    confidence += 15;
+    confidenceFactors.push("Good answer for moderate query");
+  } else {
+    confidence += 10;
+    confidenceFactors.push("Basic answer provided");
+  }
+
+  // Factor 4: Search method diversity (0-25 points)
+  const searchTypes = [...new Set(results.map((r) => r.searchType))];
+  if (searchTypes.length >= 2) {
+    confidence += 25;
+    confidenceFactors.push("Multiple search methods used");
+  } else {
+    confidence += 15;
+    confidenceFactors.push("Single search method used");
+  }
+
+  // Determine confidence level
+  let confidenceLevel;
+  if (confidence >= 80) {
+    confidenceLevel = "High";
+  } else if (confidence >= 60) {
+    confidenceLevel = "Medium";
+  } else {
+    confidenceLevel = "Low";
+  }
+
+  return {
+    score: Math.min(confidence, 100),
+    level: confidenceLevel,
+    factors: confidenceFactors,
+  };
+}
+
+// Format response with confidence and sources
+function formatResponse(answer, results, confidence) {
+  const confidenceColor =
+    confidence.level === "High"
+      ? "🟢"
+      : confidence.level === "Medium"
+      ? "🟡"
+      : "🟠";
+
+  let formattedResponse = `<p>${confidenceColor} <strong>Confidence: ${confidence.level}</strong> (${confidence.score}/100)</p>\n`;
+  formattedResponse += `<p><em>Based on: ${confidence.factors.join(
+    ", "
+  )}</em></p>\n`;
+
+  // Format the answer with markdown
+  const formattedAnswer = md.render(answer);
+  formattedResponse += formattedAnswer;
+
+  // Add source citation
+  if (results.length > 0) {
+    const primarySource = results[0];
+    formattedResponse += `\n<p>(Source: [Source ${1}] ${
+      primarySource.metadata?.title || "Unknown"
+    })</p>`;
+  }
+
+  formattedResponse += "\n<hr>\n";
+  formattedResponse += "<p><strong>Sources:</strong></p>\n<ol>\n";
+
+  results.forEach((result, i) => {
+    const sourceTitle = result.metadata?.title || "Unknown";
+    const score = result.score.toFixed(3);
+    const searchType = result.searchType;
+    formattedResponse += `<li><strong>${sourceTitle}</strong> (Score: ${score}, ${searchType})</li>\n`;
+  });
+
+  formattedResponse += "</ol>";
+
+  return formattedResponse;
+}
+
+// Handle edge cases with fallback responses
+function handleEdgeCases(results, question) {
+  if (results.length === 0) {
+    return {
+      answer:
+        "I couldn't find this information in the available documentation. Please try rephrasing your question or contact Shopify support for assistance.",
+      confidence: { score: 0, level: "Low", factors: ["No sources found"] },
+      isEdgeCase: true,
+    };
+  }
+
+  // Check for very low relevance scores
+  const avgScore =
+    results.reduce((sum, r) => sum + r.score, 0) / results.length;
+  if (avgScore < 0.2) {
+    return {
+      answer:
+        "I found some related information, but it may not directly answer your question. Please try rephrasing your question with more specific terms or contact Shopify support for assistance.",
+      confidence: {
+        score: 20,
+        level: "Low",
+        factors: ["Very low relevance scores"],
+      },
+      isEdgeCase: true,
+    };
+  }
+
+  return null; // No edge case detected
+}
 
 // Validate prerequisites before starting
 async function validateSetup() {
@@ -224,8 +387,17 @@ async function main() {
         k: 6, // Increased to get more comprehensive results
       });
 
-      if (results.length === 0) {
-        console.log("\n❌ No relevant documentation found.\n");
+      // Check for edge cases first
+      const edgeCase = handleEdgeCases(results, question);
+      if (edgeCase) {
+        console.log("\n⚠️ Edge case detected - providing fallback response\n");
+        const formattedResponse = formatResponse(
+          edgeCase.answer,
+          results,
+          edgeCase.confidence
+        );
+        console.log(formattedResponse);
+        console.log("\n" + "─".repeat(60));
         continue;
       }
 
@@ -305,6 +477,8 @@ Instructions:
 - If the answer is not in the context, respond with: "I couldn't find this information in the available documentation."
 - Format your response in a friendly, supportive tone.
 - Reference previous conversation context when relevant to provide continuity.
+- When providing information, cite the source using format: "According to [Source X]..." where X is the source number.
+- Use markdown formatting for better readability (bold, lists, code blocks, etc.).
 
 ${conversationHistory ? `Conversation History:\n${conversationHistory}\n` : ""}
 
@@ -361,6 +535,19 @@ Answer:`;
 
       const answer = result.response?.text() || "No response generated.";
 
+      // Calculate confidence score
+      const confidence = calculateConfidence(
+        tokenAwareContext.documents,
+        answer
+      );
+
+      // Format response with confidence and sources
+      const formattedResponse = formatResponse(
+        answer,
+        tokenAwareContext.documents,
+        confidence
+      );
+
       // Store assistant's response in conversation history with token usage info
       await memory.addMessage("assistant", answer, {
         searchResults: tokenAwareContext.documents.map((r) => ({
@@ -373,6 +560,7 @@ Answer:`;
         modelUsed: modelName,
         processingTime: Date.now() - startTime,
         tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
+        confidence: confidence,
         tokenAwareContext: {
           truncated: tokenAwareContext.truncated,
           messageTokens: tokenAwareContext.tokenUsage.messageTokens,
@@ -385,7 +573,7 @@ Answer:`;
 
       console.log("─".repeat(60));
       console.log("📝 Answer:\n");
-      console.log(answer);
+      console.log(formattedResponse);
       console.log("\n" + "─".repeat(60));
     } catch (err) {
       console.error("\n❌ Error processing request:");

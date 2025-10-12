@@ -26,6 +26,7 @@
     "flexsearch": "^0.8.212",
     "inquirer": "^9.3.7",
     "js-tiktoken": "^1.0.21",
+    "markdown-it": "^14.1.0",
     "mongoose": "^8.0.0",
     "natural": "^8.1.0",
     "puppeteer": "^24.3.0",
