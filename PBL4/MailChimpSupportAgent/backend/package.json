@@ -5,6 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "setup": "node setup.js",
+    "scrape": "node src/scraper.js",
+    "ingest": "node src/ingest.js",
+    "enhanced-ingest": "node src/enhanced-ingest.js",
+    "faq": "node src/faq-interface.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
