@@ -10,8 +10,8 @@ import config from "../config/config.js";
 const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 600;
 const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const BATCH_SIZE = parseInt(config.BATCH_SIZE) || 50;
-const SCRAPED_PATH = path.resolve("../data/mailerbyte_docs/scraped.json");
-const OUTPUT_PATH = path.resolve("../data/processed_chunks/chunks.json");
+const SCRAPED_PATH = path.resolve("./data/mailerbyte_docs/scraped.json");
+const OUTPUT_PATH = path.resolve("./data/processed_chunks/chunks.json");
 
 // ---------------- INITIALIZERS ----------------
 function initEmbeddings() {
@@ -117,11 +117,36 @@ function mapDifficulty(
   sectionType = ""
 ) {
   const text = content.toLowerCase();
-  if (sectionType === "introduction" || category.includes("gettingstarted"))
+  
+  // Beginner indicators
+  if (sectionType === "introduction" || 
+      category.includes("gettingstarted") ||
+      text.includes("getting started") ||
+      text.includes("first time") ||
+      text.includes("beginner") ||
+      text.includes("basic") ||
+      text.includes("setup") ||
+      text.includes("create account") ||
+      tokenCount < 100) {
     return "beginner";
-  if (text.includes("api") || text.includes("developer") || tokenCount >= 120)
+  }
+  
+  // Advanced indicators
+  if (text.includes("api") || 
+      text.includes("developer") || 
+      text.includes("advanced") ||
+      text.includes("integration") ||
+      text.includes("custom") ||
+      text.includes("automation") ||
+      text.includes("workflow") ||
+      text.includes("segment") ||
+      text.includes("analytics") ||
+      tokenCount >= 150) {
     return "advanced";
-  return "beginner";
+  }
+  
+  // Intermediate for everything else
+  return "intermediate";
 }
 
 // ---------------- STORE IN PINECONE ----------------
@@ -167,8 +192,31 @@ async function storeChunks(chunks, embeddings, pinecone) {
 
 // ---------------- LOCAL BACKUP ----------------
 async function storeChunksLocally(chunks) {
+  // Process chunks with metadata mapping before saving locally
+  const processedChunks = chunks.map(chunk => {
+    const m = chunk.metadata;
+    return {
+      ...chunk,
+      metadata: {
+        ...m,
+        category: mapCategory(
+          m.category,
+          m.heading,
+          chunk.pageContent,
+          m.sectionType
+        ),
+        difficulty: mapDifficulty(
+          m.category,
+          m.tokenCount,
+          chunk.pageContent,
+          m.sectionType
+        ),
+      }
+    };
+  });
+
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
-  await fs.writeFile(OUTPUT_PATH, JSON.stringify(chunks, null, 2), "utf-8");
+  await fs.writeFile(OUTPUT_PATH, JSON.stringify(processedChunks, null, 2), "utf-8");
   console.log(`Chunks saved locally to ${OUTPUT_PATH}`);
 }
 

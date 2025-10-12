@@ -116,7 +116,7 @@ async function main() {
     }
   }
 
-  const dir = path.resolve("../data/mailerbyte_docs");
+  const dir = path.resolve("./data/mailerbyte_docs");
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, "scraped.json"),
