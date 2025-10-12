@@ -9,11 +9,13 @@
     "scrape": "node ./src/scraper.js",
     "ingest": "node ./src/ingest.js",
     "chat": "node ./src/chat.js",
-    "chat-optimized": "node ./src/optimized-chat.js",
+    "optchat": "node ./src/optimized-chat.js",
     "test-pinecone": "node ./src/test-pinecone.js",
     "test-conversation": "node ./src/test-conversation-history.js",
+    "test-token-windowing": "node ./src/test-token-windowing.js",
+    "test-context-windowing-demo": "node ./src/test-context-windowing-demo.js",
     "start": "npm run scrape && npm run ingest && npm run chat",
-    "start-optimized": "npm run scrape && npm run ingest && npm run chat-optimized"
+    "start-optimized": "npm run scrape && npm run ingest && npm run optchat"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -23,6 +25,7 @@
     "dotenv": "^16.4.5",
     "flexsearch": "^0.8.212",
     "inquirer": "^9.3.7",
+    "js-tiktoken": "^1.0.21",
     "mongoose": "^8.0.0",
     "natural": "^8.1.0",
     "puppeteer": "^24.3.0",

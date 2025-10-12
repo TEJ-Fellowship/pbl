@@ -85,12 +85,16 @@ async function main() {
     "🤖 Loading Shopify Merchant Support Agent with Hybrid Search + Conversation History...\n"
   );
 
-  // Initialize conversation memory
+  // Initialize conversation memory with token-aware windowing
   const memory = new BufferWindowMemory({
     windowSize: 8, // Last 8 messages (4 turns)
     sessionId: `session_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`,
+    maxTokens: 6000, // Maximum tokens for context
+    modelName: "gemini-1.5-flash",
+    prioritizeRecent: true,
+    prioritizeRelevance: true,
   });
 
   await memory.initializeConversation();
@@ -200,20 +204,19 @@ async function main() {
         await memory.updateTitle(question);
       }
 
-      // Get conversation context for query reformulation
-      const conversationContext = await memory.getConversationContext();
+      // Get token-aware context window (includes conversation + retrieved docs)
+      const systemPrompt = `You are a helpful Shopify merchant support agent. Use the provided context to answer questions accurately and helpfully.`;
 
-      console.log("\n🔎 Performing hybrid search with conversation context...");
       console.log(
-        "📝 Using conversation history for better context understanding"
+        "\n🔎 Performing hybrid search with token-aware context windowing..."
       );
 
-      // Embed query with conversation context
+      // First, get retrieved documents
+      const conversationContext = await memory.getConversationContext();
       const contextualQuery = conversationContext
         ? `${conversationContext}Current question: ${question}`
         : question;
       const queryEmbedding = await embedSingle(contextualQuery);
-      console.log("📊 Query embedded with context, searching vectors...");
 
       const results = await retriever.search({
         query: contextualQuery,
@@ -226,7 +229,30 @@ async function main() {
         continue;
       }
 
-      const context = results
+      // Get token-aware context window
+      const tokenAwareContext = await memory.getTokenAwareContext(
+        results,
+        systemPrompt
+      );
+
+      console.log(`📊 Token-aware context windowing applied:`);
+      console.log(
+        `   Messages: ${tokenAwareContext.tokenUsage.messageTokens} tokens`
+      );
+      console.log(
+        `   Documents: ${tokenAwareContext.tokenUsage.documentTokens} tokens`
+      );
+      console.log(
+        `   Total: ${tokenAwareContext.tokenUsage.totalTokens}/${memory.maxTokens} tokens`
+      );
+
+      if (tokenAwareContext.truncated) {
+        console.log(
+          `⚠️ Context truncated: ${tokenAwareContext.windowingStrategy.selectedMessageCount}/${tokenAwareContext.windowingStrategy.originalMessageCount} messages, ${tokenAwareContext.windowingStrategy.selectedDocCount}/${tokenAwareContext.windowingStrategy.originalDocCount} documents`
+        );
+      }
+
+      const context = tokenAwareContext.documents
         .map(
           (r, i) =>
             `[Source ${i + 1}] ${r.metadata?.title || "Unknown"} (${
@@ -236,16 +262,20 @@ async function main() {
         .join("\n\n---\n\n");
 
       console.log(
-        `✓ Found ${results.length} relevant sections using enhanced hybrid search:`
+        `✓ Found ${tokenAwareContext.documents.length} relevant sections using token-aware hybrid search:`
       );
 
       // Show category diversity
       const categories = [
-        ...new Set(results.map((r) => r.metadata?.category || "unknown")),
+        ...new Set(
+          tokenAwareContext.documents.map(
+            (r) => r.metadata?.category || "unknown"
+          )
+        ),
       ];
       console.log(`📊 Categories represented: ${categories.join(", ")}`);
 
-      results.forEach((result, i) => {
+      tokenAwareContext.documents.forEach((result, i) => {
         console.log(
           `   ${i + 1}. ${
             result.metadata?.title || "Unknown"
@@ -258,6 +288,14 @@ async function main() {
         "\n💭 Generating answer using retrieved context and conversation history...\n"
       );
 
+      // Build conversation history from token-aware context
+      const conversationHistory =
+        tokenAwareContext.messages.length > 0
+          ? tokenAwareContext.messages
+              .map((msg) => `${msg.role}: ${msg.content}`)
+              .join("\n")
+          : "";
+
       const prompt = `You are a helpful Shopify Merchant Support Assistant.
 
 Instructions:
@@ -268,7 +306,7 @@ Instructions:
 - Format your response in a friendly, supportive tone.
 - Reference previous conversation context when relevant to provide continuity.
 
-${conversationContext ? `Conversation History:\n${conversationContext}` : ""}
+${conversationHistory ? `Conversation History:\n${conversationHistory}\n` : ""}
 
 Retrieved Documentation:
 ${context}
@@ -323,9 +361,9 @@ Answer:`;
 
       const answer = result.response?.text() || "No response generated.";
 
-      // Store assistant's response in conversation history
+      // Store assistant's response in conversation history with token usage info
       await memory.addMessage("assistant", answer, {
-        searchResults: results.map((r) => ({
+        searchResults: tokenAwareContext.documents.map((r) => ({
           title: r.metadata?.title || "Unknown",
           source_url: r.metadata?.source_url || "N/A",
           category: r.metadata?.category || "unknown",
@@ -334,7 +372,15 @@ Answer:`;
         })),
         modelUsed: modelName,
         processingTime: Date.now() - startTime,
-        tokensUsed: 0, // Gemini doesn't provide token count in this API
+        tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
+        tokenAwareContext: {
+          truncated: tokenAwareContext.truncated,
+          messageTokens: tokenAwareContext.tokenUsage.messageTokens,
+          documentTokens: tokenAwareContext.tokenUsage.documentTokens,
+          totalTokens: tokenAwareContext.tokenUsage.totalTokens,
+          maxTokens: memory.maxTokens,
+          windowingStrategy: tokenAwareContext.windowingStrategy,
+        },
       });
 
       console.log("─".repeat(60));
