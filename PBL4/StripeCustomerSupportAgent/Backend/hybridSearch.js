@@ -127,29 +127,6 @@ class HybridSearch {
           semanticScore: match.score,
           searchType: "semantic",
         }));
-      } else {
-        // Local vector store search
-        const similarities = this.documents.map((doc) => {
-          if (!doc.embedding || !Array.isArray(doc.embedding)) {
-            return { doc, similarity: 0 };
-          }
-          return {
-            doc,
-            similarity: this.cosineSimilarity(queryEmbedding, doc.embedding),
-          };
-        });
-
-        semanticResults = similarities
-          .sort((a, b) => b.similarity - a.similarity)
-          .slice(0, topK)
-          .map((item, index) => ({
-            id: item.doc.id,
-            content: item.doc.content,
-            metadata: item.doc.metadata,
-            source: item.doc.source,
-            semanticScore: item.similarity,
-            searchType: "semantic",
-          }));
       }
 
       console.log(`📊 Semantic search found ${semanticResults.length} results`);
@@ -163,12 +140,12 @@ class HybridSearch {
   /**
    * Calculate cosine similarity between two vectors
    */
-  cosineSimilarity(a, b) {
-    const dotProduct = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
-    const magnitudeA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
-    const magnitudeB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
-    return dotProduct / (magnitudeA * magnitudeB);
-  }
+  // cosineSimilarity(a, b) {
+  //   const dotProduct = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
+  //   const magnitudeA = Math.sqrt(a.reduce((sum, ai) => sum + ai * ai, 0));
+  //   const magnitudeB = Math.sqrt(b.reduce((sum, bi) => sum + bi * bi, 0));
+  //   return dotProduct / (magnitudeA * magnitudeB);
+  // }
 
   /**
    * Normalize scores to 0-1 range using min-max normalization
