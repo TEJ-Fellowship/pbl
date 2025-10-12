@@ -9,28 +9,60 @@ import { cleanHtmlText, sanitizeFilename } from "./utils/cleaner.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Focus on key Shopify sections for Tier 1 (combine core + additional sources)
+// Enhanced Shopify documentation sources with comprehensive coverage
 const SOURCES = {
-  // Existing core paths
+  // Core Shopify Concepts
   getting_started:
     "https://help.shopify.com/en/manual/intro-to-shopify/getting-started",
+  what_is_shopify:
+    "https://help.shopify.com/en/manual/intro-to-shopify/what-is-shopify",
+  shopify_overview: "https://help.shopify.com/en/manual/intro-to-shopify",
+
+  // Product Management
   products: "https://help.shopify.com/en/manual/products",
+  product_creation:
+    "https://help.shopify.com/en/manual/products/adding-products",
+  product_variants: "https://help.shopify.com/en/manual/products/variants",
+  product_inventory: "https://help.shopify.com/en/manual/products/inventory",
+
+  // Order Management
   orders: "https://help.shopify.com/en/manual/orders",
-  // Additional sources from provided sample
-  helpCenter: "https://help.shopify.com/en",
-  manual_getting_started: "https://help.shopify.com/en/manual/getting-started",
-  manual_products: "https://help.shopify.com/en/manual/products",
-  manual_orders: "https://help.shopify.com/en/manual/orders",
-  // API Documentation - Overview and specific references
-  api: "https://shopify.dev/docs/api",
+  order_fulfillment: "https://help.shopify.com/en/manual/orders/fulfill-orders",
+  order_shipping: "https://help.shopify.com/en/manual/shipping",
+
+  // Store Setup & Configuration
+  store_setup: "https://help.shopify.com/en/manual/shopify-admin/setup",
+  payment_setup: "https://help.shopify.com/en/manual/payments",
+  tax_setup: "https://help.shopify.com/en/manual/taxes",
+
+  // Themes & Customization
+  themes: "https://help.shopify.com/en/manual/online-store/themes",
+  theme_customization:
+    "https://help.shopify.com/en/manual/online-store/themes/customize-theme",
+  liquid_templates: "https://shopify.dev/docs/themes/liquid",
+
+  // API Documentation - Comprehensive coverage
+  api_overview: "https://shopify.dev/docs/api",
   api_admin_graphql: "https://shopify.dev/docs/api/admin-graphql",
   api_admin_rest: "https://shopify.dev/docs/api/admin-rest",
   api_storefront: "https://shopify.dev/docs/api/storefront",
+
+  // Specific API Objects
   api_products:
     "https://shopify.dev/docs/api/admin-graphql/latest/objects/product",
   api_orders: "https://shopify.dev/docs/api/admin-graphql/latest/objects/order",
-  theme: "https://shopify.dev/docs/themes",
-  forum: "https://community.shopify.com/",
+  api_customers:
+    "https://shopify.dev/docs/api/admin-graphql/latest/objects/customer",
+  api_inventory:
+    "https://shopify.dev/docs/api/admin-graphql/latest/objects/inventoryitem",
+
+  // App Development
+  app_development: "https://shopify.dev/docs/apps",
+  webhooks: "https://shopify.dev/docs/apps/webhooks",
+
+  // Help Center
+  help_center: "https://help.shopify.com/en",
+  community_forum: "https://community.shopify.com/",
 };
 
 async function delay(ms) {
@@ -171,11 +203,15 @@ function determineMerchantLevel({ content, section }) {
 async function scrapeDoc(url, section, browser) {
   const page = await browser.newPage();
 
-  // 🚀 Block non-essential requests
+  // 🚀 Block non-essential requests for faster scraping
   await page.setRequestInterception(true);
   page.on("request", (req) => {
     const type = req.resourceType();
-    if (["image", "media", "font", "stylesheet", "websocket"].includes(type)) {
+    if (
+      ["image", "media", "font", "stylesheet", "websocket", "other"].includes(
+        type
+      )
+    ) {
       req.abort();
     } else req.continue();
   });
@@ -184,109 +220,171 @@ async function scrapeDoc(url, section, browser) {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
   );
 
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page
-    .waitForSelector("main, article, body", { timeout: 15000 })
-    .catch(() => {});
+  try {
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 90000 });
+    await page.waitForSelector("main, article, body, .content", {
+      timeout: 20000,
+    });
+  } catch (error) {
+    console.log(`⚠️ Timeout for ${url}, proceeding with available content`);
+  }
+
   const html = await page.content();
   const $ = cheerio.load(html);
 
-  // 🧹 Remove noise
+  // 🧹 Enhanced noise removal
   $(
-    "nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb, .search-bar"
+    "nav, footer, header, .site-nav, .sidebar, .toc, .breadcrumb, .search-bar, .cookie-banner, .advertisement, script, style"
   ).remove();
 
-  let title = $("h1").first().text() || $("title").text();
+  // Remove common navigation elements
+  $(
+    ".navigation, .nav, .menu, .header, .footer, .sidebar, .toc, .breadcrumb"
+  ).remove();
+
+  // Remove Shopify-specific navigation
+  $(
+    ".site-header, .site-footer, .site-nav, .breadcrumb, .toc, .search, .cookie-notice"
+  ).remove();
+
+  let title = "";
   let mainContent = "";
   const contentBlocks = [];
+  const structuredContent = [];
 
-  // 🧠 1️⃣ API Docs: shopify.dev/docs/api (all API pages)
-  if (url.includes("shopify.dev/docs/api")) {
-    mainContent = $(".Docs__Content, main, article, body").text();
+  // 🎯 Enhanced content extraction based on site type
+  if (url.includes("shopify.dev")) {
+    // Developer documentation
+    title = $("h1").first().text().trim() || $("title").text().trim();
 
-    // Extract code blocks from various patterns
-    $("pre code").each((_, el) => {
-      const code = $(el).text().trim();
-      if (code) contentBlocks.push({ type: "code", content: code });
-    });
+    // Extract main content with better selectors
+    const contentSelectors = [
+      ".Docs__Content",
+      ".content",
+      "main",
+      "article",
+      ".prose",
+      ".markdown-body",
+    ];
 
-    // Also check for inline code that might be substantial
-    $("code").each((_, el) => {
-      const code = $(el).text().trim();
-      if (
-        code &&
-        code.length > 20 &&
-        !contentBlocks.some((cb) => cb.content === code)
-      ) {
-        contentBlocks.push({ type: "inline", content: code });
+    for (const selector of contentSelectors) {
+      const content = $(selector).text().trim();
+      if (content && content.length > mainContent.length) {
+        mainContent = content;
+      }
+    }
+
+    // Extract structured content (headings, lists, etc.)
+    $("h1, h2, h3, h4, h5, h6").each((_, el) => {
+      const heading = $(el).text().trim();
+      if (heading) {
+        structuredContent.push({
+          type: "heading",
+          level: el.tagName.toLowerCase(),
+          content: heading,
+        });
       }
     });
 
-    // Extract GraphQL mutations and queries specifically
-    $(".graphql").each((_, el) => {
-      const graphql = $(el).text().trim();
-      if (graphql) contentBlocks.push({ type: "graphql", content: graphql });
+    // Extract code examples with better detection
+    $("pre code, code").each((_, el) => {
+      const code = $(el).text().trim();
+      if (code && code.length > 10) {
+        const language =
+          $(el)
+            .attr("class")
+            ?.match(/language-(\w+)/)?.[1] || "javascript";
+        contentBlocks.push({ type: "code", language, content: code });
+      }
     });
 
-    // Extract curl examples
+    // Extract API examples
     $("pre").each((_, el) => {
       const preText = $(el).text().trim();
       if (
         preText.includes("curl") ||
         preText.includes("POST") ||
-        preText.includes("GET")
+        preText.includes("GET") ||
+        preText.includes("mutation")
       ) {
-        contentBlocks.push({ type: "curl", content: preText });
+        contentBlocks.push({ type: "api", content: preText });
       }
     });
-  }
+  } else if (url.includes("help.shopify.com")) {
+    // Help center documentation
+    title = $("h1").first().text().trim() || $("title").text().trim();
 
-  // 🎨 2️⃣ Theme Docs: shopify.dev/docs/themes
-  else if (url.includes("shopify.dev/docs/themes")) {
-    mainContent = $(".Docs__Content, main, article, body").text();
+    // Extract help content
+    const helpSelectors = [
+      ".help-content",
+      ".content",
+      "main",
+      "article",
+      ".help-article",
+    ];
 
-    // Extract code blocks from theme documentation
-    $("pre code").each((_, el) => {
-      const code = $(el).text().trim();
-      if (code) contentBlocks.push({ type: "code", content: code });
-    });
+    for (const selector of helpSelectors) {
+      const content = $(selector).text().trim();
+      if (content && content.length > mainContent.length) {
+        mainContent = content;
+      }
+    }
 
-    // Also check for inline code
-    $("code").each((_, el) => {
-      const code = $(el).text().trim();
-      if (
-        code &&
-        code.length > 20 &&
-        !contentBlocks.some((cb) => cb.content === code)
-      ) {
-        contentBlocks.push({ type: "inline", content: code });
+    // Extract step-by-step instructions
+    $("ol li, ul li").each((_, el) => {
+      const step = $(el).text().trim();
+      if (step && step.length > 20) {
+        structuredContent.push({ type: "step", content: step });
       }
     });
-  }
+  } else if (url.includes("community.shopify.com")) {
+    // Community forum
+    title =
+      $(".lia-message-subject").first().text().trim() ||
+      $("title").text().trim();
 
-  // 💬 3️⃣ Community Forum
-  else if (url.includes("community.shopify.com")) {
-    title = $(".lia-message-subject").first().text() || title;
-    const question = $(".lia-message-body-content").first().text();
-    const accepted = $(
+    const question = $(".lia-message-body-content").first().text().trim();
+    const acceptedAnswer = $(
       ".lia-message-body-content:contains('Accepted Solution')"
-    ).text();
+    )
+      .text()
+      .trim();
     const replies = $(".lia-message-body-content")
-      .slice(0, 3)
-      .map((_, el) => $(el).text())
-      .get()
+      .slice(1, 4)
+      .map((_, el) => $(el).text().trim())
+      .get();
+
+    mainContent = [question, acceptedAnswer, ...replies]
+      .filter(Boolean)
       .join("\n\n---\n\n");
-    mainContent = [question, accepted, replies].filter(Boolean).join("\n\n");
   }
 
-  // 📘 4️⃣ Default (Help Center, Manual)
-  else {
+  // Fallback content extraction
+  if (!mainContent) {
     mainContent = $("main").text() || $("article").text() || $("body").text();
   }
 
-  // ✨ Clean up text
-  const cleaned = cleanHtmlText(mainContent);
-  const merchant_level = determineMerchantLevel({ content: cleaned, section });
+  // ✨ Enhanced text cleaning
+  let cleaned = cleanHtmlText(mainContent);
+
+  // Remove common noise patterns
+  cleaned = cleaned
+    .replace(/Skip to main content/g, "")
+    .replace(/Collapse sidebar/g, "")
+    .replace(/Assistant/g, "")
+    .replace(/Shopify uses cookies.*?functionality and improv[^.]*\./g, "")
+    .replace(/window\.__[^;]*;/g, "")
+    .replace(/import\s+[^;]*;/g, "")
+    .replace(/console\.log\([^)]*\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Determine merchant level with enhanced logic
+  const merchant_level = determineMerchantLevel({
+    content: cleaned,
+    section,
+    url,
+  });
 
   await page.close();
 
@@ -296,8 +394,13 @@ async function scrapeDoc(url, section, browser) {
     title: (title || section).trim(),
     content: cleaned,
     code_blocks: contentBlocks.length ? contentBlocks : undefined,
+    structured_content: structuredContent.length
+      ? structuredContent
+      : undefined,
     merchant_level,
     scrapedAt: new Date().toISOString(),
+    content_length: cleaned.length,
+    word_count: cleaned.split(/\s+/).length,
   };
 }
 

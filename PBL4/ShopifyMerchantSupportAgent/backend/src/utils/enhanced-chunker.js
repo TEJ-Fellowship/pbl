@@ -1,355 +1,188 @@
-// Enhanced chunker with intelligent text segmentation and metadata enrichment
-export function estimateTokens(t) {
-  if (!t) return 0;
-  const byChars = Math.ceil(t.length / 4);
-  const byWords = (t.match(/\S+/g) || []).length;
-  return Math.max(byWords, byChars);
-}
+// Enhanced chunking with better semantic boundaries and context preservation
+import { estimateTokens } from "./chunker.js";
 
 /**
- * Enhanced text chunking with intelligent segmentation
- * Features:
- * - Semantic boundary detection
- * - Technical content preservation
- * - Metadata enrichment
- * - Adaptive chunk sizing
+ * Enhanced chunking that preserves semantic boundaries and context
  */
-export function splitTextIntoEnhancedChunks(options) {
+export function createEnhancedChunks(options = {}) {
   const {
     text,
-    // Optimized chunk sizes for better search
-    chunkSizeChars = 2000, // Reduced for more focused chunks
-    chunkOverlapChars = 300,
-    // Token-aware settings
-    chunkSizeTokens,
-    chunkOverlapTokens,
-    model,
-    // Enhanced options
+    chunkSizeTokens = 1200, // Increased for better context
+    chunkOverlapTokens = 200,
     preserveCodeBlocks = true,
-    preserveTechnicalContent = true,
-    enrichMetadata = true,
+    preserveHeadings = true,
+    preserveLists = true,
+    minChunkSize = 200, // Minimum chunk size to avoid tiny fragments
   } = options || {};
 
-  if (!text) return [];
+  if (!text || text.trim().length === 0) return [];
 
-  const useTokens = Number.isFinite(chunkSizeTokens) && chunkSizeTokens > 0;
-  const countTokens = estimateTokens;
+  // Step 1: Split by major semantic boundaries
+  const semanticSections = splitBySemanticBoundaries(text);
 
-  // First, identify semantic boundaries
-  const semanticBoundaries = identifySemanticBoundaries(text);
-
-  // Split by semantic boundaries first
-  const semanticSegments = splitBySemanticBoundaries(text, semanticBoundaries);
-
-  // Then chunk each segment
+  // Step 2: Process each section
   const chunks = [];
 
-  for (const segment of semanticSegments) {
-    if (segment.length <= chunkSizeChars) {
-      // Segment fits in one chunk
-      chunks.push(segment);
+  for (const section of semanticSections) {
+    if (estimateTokens(section.content) <= chunkSizeTokens) {
+      // Section fits in one chunk
+      chunks.push({
+        content: section.content,
+        metadata: section.metadata,
+        tokens: estimateTokens(section.content),
+      });
     } else {
-      // Need to further chunk this segment
-      const subChunks = chunkSegment(segment, {
-        chunkSizeChars,
-        chunkOverlapChars,
-        useTokens,
+      // Split large sections while preserving structure
+      const subChunks = splitLargeSection(section, {
         chunkSizeTokens,
+        chunkOverlapTokens,
         preserveCodeBlocks,
-        preserveTechnicalContent,
+        preserveHeadings,
+        preserveLists,
       });
       chunks.push(...subChunks);
     }
   }
 
-  // Add overlap between chunks
-  const chunksWithOverlap = addIntelligentOverlap(chunks, {
-    chunkOverlapChars,
-    chunkOverlapTokens,
-    useTokens,
-  });
-
-  // Enrich chunks with metadata
-  if (enrichMetadata) {
-    return chunksWithOverlap.map((chunk, index) => ({
-      text: chunk,
-      metadata: enrichChunkMetadata(chunk, index, options),
-    }));
-  }
-
-  return chunksWithOverlap;
+  // Step 3: Add overlap between chunks
+  return addSemanticOverlap(chunks, chunkOverlapTokens, minChunkSize);
 }
 
 /**
- * Identify semantic boundaries in text
+ * Split text by semantic boundaries (headings, code blocks, lists)
  */
-function identifySemanticBoundaries(text) {
-  const boundaries = [];
+function splitBySemanticBoundaries(text) {
+  const sections = [];
+  let currentSection = { content: "", metadata: {} };
 
-  // Headers and titles
-  const headerPatterns = [
-    /^#{1,6}\s+.+$/gm, // Markdown headers
-    /^[A-Z][A-Z\s]+$/gm, // ALL CAPS headers
-    /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$/gm, // Title Case headers
-  ];
+  // Split by major headings first
+  const headingSplit = text.split(/(\n#{1,6}\s+.+)/);
 
-  headerPatterns.forEach((pattern) => {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      boundaries.push({
-        type: "header",
-        position: match.index,
-        content: match[0],
-      });
+  for (let i = 0; i < headingSplit.length; i++) {
+    const part = headingSplit[i].trim();
+    if (!part) continue;
+
+    if (part.match(/^#{1,6}\s+/)) {
+      // This is a heading
+      if (currentSection.content.trim()) {
+        sections.push(currentSection);
+        currentSection = { content: "", metadata: {} };
+      }
+      currentSection.metadata.heading = part;
+      currentSection.content = part + "\n\n";
+    } else {
+      currentSection.content += part + "\n\n";
     }
-  });
-
-  // Code blocks
-  const codePattern = /```[\s\S]*?```/g;
-  let match;
-  while ((match = codePattern.exec(text)) !== null) {
-    boundaries.push({
-      type: "code_block",
-      position: match.index,
-      content: match[0],
-    });
   }
 
-  // Lists
-  const listPattern = /^(?:\s*[-*+]|\s*\d+\.)\s+.+$/gm;
-  while ((match = listPattern.exec(text)) !== null) {
-    boundaries.push({
-      type: "list",
-      position: match.index,
-      content: match[0],
-    });
+  if (currentSection.content.trim()) {
+    sections.push(currentSection);
   }
 
-  // Paragraph breaks
-  const paragraphPattern = /\n\s*\n/g;
-  while ((match = paragraphPattern.exec(text)) !== null) {
-    boundaries.push({
-      type: "paragraph",
-      position: match.index,
-      content: match[0],
-    });
-  }
-
-  // Sort by position
-  boundaries.sort((a, b) => a.position - b.position);
-
-  return boundaries;
-}
-
-/**
- * Split text by semantic boundaries
- */
-function splitBySemanticBoundaries(text, boundaries) {
-  if (boundaries.length === 0) {
-    return [text];
-  }
-
-  const segments = [];
-  let lastIndex = 0;
-
-  for (const boundary of boundaries) {
-    if (boundary.position > lastIndex) {
-      const segment = text.slice(lastIndex, boundary.position).trim();
-      if (segment.length > 0) {
-        segments.push(segment);
+  // If no headings found, split by paragraphs
+  if (sections.length === 0) {
+    const paragraphs = text.split(/\n{2,}/);
+    for (const para of paragraphs) {
+      if (para.trim()) {
+        sections.push({
+          content: para.trim(),
+          metadata: {},
+        });
       }
     }
-    lastIndex = boundary.position + boundary.content.length;
   }
 
-  // Add remaining text
-  if (lastIndex < text.length) {
-    const segment = text.slice(lastIndex).trim();
-    if (segment.length > 0) {
-      segments.push(segment);
-    }
-  }
-
-  return segments;
+  return sections;
 }
 
 /**
- * Chunk a single segment with enhanced logic
+ * Split large sections while preserving code blocks and structure
  */
-function chunkSegment(segment, options) {
-  const {
-    chunkSizeChars,
-    chunkOverlapChars,
-    useTokens,
-    chunkSizeTokens,
-    preserveCodeBlocks,
-    preserveTechnicalContent,
-  } = options;
-
+function splitLargeSection(section, options) {
+  const { chunkSizeTokens, preserveCodeBlocks, preserveHeadings } = options;
   const chunks = [];
 
+  // First, extract and preserve code blocks
+  const codeBlocks = [];
+  let textWithoutCode = section.content;
+
   if (preserveCodeBlocks) {
-    // Split around code blocks
-    const parts = segment.split(/(```[\s\S]*?```)/g);
-    let currentChunk = "";
-
-    for (const part of parts) {
-      if (!part) continue;
-
-      if (/^```[\s\S]*?```$/.test(part)) {
-        // This is a code block
-        const candidateChunk = currentChunk + part;
-
-        if (useTokens) {
-          if (countTokens(candidateChunk) <= chunkSizeTokens) {
-            currentChunk = candidateChunk;
-          } else {
-            if (currentChunk) {
-              chunks.push(currentChunk.trim());
-            }
-            currentChunk = part;
-          }
-        } else {
-          if (candidateChunk.length <= chunkSizeChars) {
-            currentChunk = candidateChunk;
-          } else {
-            if (currentChunk) {
-              chunks.push(currentChunk.trim());
-            }
-            currentChunk = part;
-          }
-        }
-      } else {
-        // Regular text
-        const subChunks = chunkRegularText(part, {
-          chunkSizeChars,
-          chunkSizeTokens,
-          useTokens,
-          preserveTechnicalContent,
-        });
-
-        if (subChunks.length === 1) {
-          const candidateChunk = currentChunk + subChunks[0];
-
-          if (useTokens) {
-            if (countTokens(candidateChunk) <= chunkSizeTokens) {
-              currentChunk = candidateChunk;
-            } else {
-              if (currentChunk) {
-                chunks.push(currentChunk.trim());
-              }
-              currentChunk = subChunks[0];
-            }
-          } else {
-            if (candidateChunk.length <= chunkSizeChars) {
-              currentChunk = candidateChunk;
-            } else {
-              if (currentChunk) {
-                chunks.push(currentChunk.trim());
-              }
-              currentChunk = subChunks[0];
-            }
-          }
-        } else {
-          // Multiple sub-chunks
-          if (currentChunk) {
-            chunks.push(currentChunk.trim());
-          }
-          chunks.push(...subChunks);
-          currentChunk = "";
-        }
-      }
+    const codeRegex = /```[\s\S]*?```/g;
+    let match;
+    while ((match = codeRegex.exec(section.content)) !== null) {
+      codeBlocks.push({
+        content: match[0],
+        start: match.index,
+        end: match.index + match[0].length,
+      });
     }
 
-    if (currentChunk) {
-      chunks.push(currentChunk.trim());
-    }
-  } else {
-    // Regular chunking
-    chunks.push(
-      ...chunkRegularText(segment, {
-        chunkSizeChars,
-        chunkSizeTokens,
-        useTokens,
-        preserveTechnicalContent,
-      })
+    // Remove code blocks from text for chunking
+    textWithoutCode = section.content.replace(
+      codeRegex,
+      `[CODE_BLOCK_${codeBlocks.length}]`
     );
+  }
+
+  // Split the text without code blocks
+  const textChunks = splitTextIntoOptimalChunks(
+    textWithoutCode,
+    chunkSizeTokens
+  );
+
+  // Reinsert code blocks into appropriate chunks
+  for (let i = 0; i < textChunks.length; i++) {
+    let chunkContent = textChunks[i];
+
+    // Reinsert code blocks that belong to this chunk
+    if (preserveCodeBlocks) {
+      codeBlocks.forEach((codeBlock, index) => {
+        const placeholder = `[CODE_BLOCK_${index + 1}]`;
+        if (chunkContent.includes(placeholder)) {
+          chunkContent = chunkContent.replace(placeholder, codeBlock.content);
+        }
+      });
+    }
+
+    chunks.push({
+      content: chunkContent.trim(),
+      metadata: {
+        ...section.metadata,
+        chunkIndex: i,
+        totalChunks: textChunks.length,
+      },
+      tokens: estimateTokens(chunkContent),
+    });
   }
 
   return chunks;
 }
 
 /**
- * Chunk regular text with technical content preservation
+ * Split text into optimal chunks based on token count
  */
-function chunkRegularText(text, options) {
-  const {
-    chunkSizeChars,
-    chunkSizeTokens,
-    useTokens,
-    preserveTechnicalContent,
-  } = options;
-
+function splitTextIntoOptimalChunks(text, maxTokens) {
   const chunks = [];
   const sentences = text.split(/(?<=[.!?])\s+/);
 
   let currentChunk = "";
+  let currentTokens = 0;
 
   for (const sentence of sentences) {
-    const candidateChunk = currentChunk
-      ? currentChunk + " " + sentence
-      : sentence;
+    const sentenceTokens = estimateTokens(sentence);
 
-    const withinBudget = useTokens
-      ? countTokens(candidateChunk) <= chunkSizeTokens
-      : candidateChunk.length <= chunkSizeChars;
-
-    if (withinBudget) {
-      currentChunk = candidateChunk;
+    if (currentTokens + sentenceTokens > maxTokens && currentChunk.trim()) {
+      // Current chunk is full, start a new one
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+      currentTokens = sentenceTokens;
     } else {
-      if (currentChunk) {
-        chunks.push(currentChunk.trim());
-      }
-
-      // Check if sentence itself is too long
-      if (
-        useTokens
-          ? countTokens(sentence) > chunkSizeTokens
-          : sentence.length > chunkSizeChars
-      ) {
-        // Split long sentence by words
-        const words = sentence.split(/\s+/);
-        let wordChunk = "";
-
-        for (const word of words) {
-          const candidateWordChunk = wordChunk ? wordChunk + " " + word : word;
-
-          const wordWithinBudget = useTokens
-            ? countTokens(candidateWordChunk) <= chunkSizeTokens
-            : candidateWordChunk.length <= chunkSizeChars;
-
-          if (wordWithinBudget) {
-            wordChunk = candidateWordChunk;
-          } else {
-            if (wordChunk) {
-              chunks.push(wordChunk.trim());
-            }
-            wordChunk = word;
-          }
-        }
-
-        if (wordChunk) {
-          currentChunk = wordChunk;
-        } else {
-          currentChunk = "";
-        }
-      } else {
-        currentChunk = sentence;
-      }
+      currentChunk += (currentChunk ? " " : "") + sentence;
+      currentTokens += sentenceTokens;
     }
   }
 
-  if (currentChunk) {
+  if (currentChunk.trim()) {
     chunks.push(currentChunk.trim());
   }
 
@@ -357,216 +190,126 @@ function chunkRegularText(text, options) {
 }
 
 /**
- * Add intelligent overlap between chunks
+ * Add semantic overlap between chunks
  */
-function addIntelligentOverlap(chunks, options) {
-  const { chunkOverlapChars, chunkOverlapTokens, useTokens } = options;
+function addSemanticOverlap(chunks, overlapTokens, minChunkSize) {
+  if (chunks.length <= 1) return chunks;
 
-  if (chunks.length <= 1) {
-    return chunks;
-  }
-
-  const chunksWithOverlap = [];
+  const overlappedChunks = [];
 
   for (let i = 0; i < chunks.length; i++) {
     let chunk = chunks[i];
 
+    // Add overlap from previous chunk
     if (i > 0) {
-      // Add overlap from previous chunk
       const prevChunk = chunks[i - 1];
-      const overlap = extractIntelligentOverlap(prevChunk, {
-        chunkOverlapChars,
-        chunkOverlapTokens,
-        useTokens,
-      });
+      const overlap = extractSemanticOverlap(prevChunk.content, overlapTokens);
 
       if (overlap) {
-        chunk = overlap + "\n\n" + chunk;
+        chunk.content = overlap + "\n\n" + chunk.content;
+        chunk.tokens = estimateTokens(chunk.content);
       }
     }
 
-    chunksWithOverlap.push(chunk);
-  }
-
-  return chunksWithOverlap;
-}
-
-/**
- * Extract intelligent overlap from chunk
- */
-function extractIntelligentOverlap(chunk, options) {
-  const { chunkOverlapChars, chunkOverlapTokens, useTokens } = options;
-
-  if (useTokens) {
-    // Token-based overlap
-    const targetTokens = chunkOverlapTokens || 0;
-    if (targetTokens <= 0) return "";
-
-    const sentences = chunk.split(/(?<=[.!?])\s+/);
-    let overlap = "";
-
-    for (let i = sentences.length - 1; i >= 0; i--) {
-      const candidateOverlap = sentences[i] + (overlap ? " " + overlap : "");
-      if (countTokens(candidateOverlap) <= targetTokens) {
-        overlap = candidateOverlap;
-      } else {
-        break;
-      }
+    // Only include chunks that meet minimum size
+    if (chunk.tokens >= minChunkSize) {
+      overlappedChunks.push(chunk);
     }
-
-    return overlap;
-  } else {
-    // Character-based overlap
-    const targetChars = chunkOverlapChars || 0;
-    if (targetChars <= 0) return "";
-
-    return chunk.slice(Math.max(0, chunk.length - targetChars));
   }
+
+  return overlappedChunks;
 }
 
 /**
- * Enrich chunk with metadata
+ * Extract semantic overlap from previous chunk
  */
-function enrichChunkMetadata(chunk, index, options) {
-  const metadata = {
-    chunk_index: index,
-    chunk_length: chunk.length,
-    estimated_tokens: estimateTokens(chunk),
-    has_code: /```[\s\S]*?```/.test(chunk),
-    has_api_terms: /\b(api|endpoint|rest|graphql|webhook|oauth)\b/i.test(chunk),
-    has_technical_terms:
-      /\b(authentication|authorization|token|request|response)\b/i.test(chunk),
-    has_shopify_terms: /\bshopify\b/i.test(chunk),
-    sentence_count: (chunk.match(/[.!?]+/g) || []).length,
-    word_count: (chunk.match(/\S+/g) || []).length,
+function extractSemanticOverlap(content, targetTokens) {
+  const sentences = content.split(/(?<=[.!?])\s+/);
+  let overlap = "";
+  let tokens = 0;
+
+  // Start from the end and work backwards
+  for (let i = sentences.length - 1; i >= 0; i--) {
+    const sentence = sentences[i];
+    const sentenceTokens = estimateTokens(sentence);
+
+    if (tokens + sentenceTokens <= targetTokens) {
+      overlap = sentence + (overlap ? " " : "") + overlap;
+      tokens += sentenceTokens;
+    } else {
+      break;
+    }
+  }
+
+  return overlap.trim();
+}
+
+/**
+ * Enhanced chunking for documents with metadata
+ */
+export function chunkDocument(document, options = {}) {
+  const {
+    chunkSizeTokens = 1200,
+    chunkOverlapTokens = 200,
+    preserveCodeBlocks = true,
+    preserveHeadings = true,
+    preserveLists = true,
+    minChunkSize = 200,
+  } = options;
+
+  // Extract base metadata
+  const baseMetadata = {
+    title: document.title || "Unknown",
+    section: document.section || "unknown",
+    source: document.url || "N/A",
+    category: document.section || "unknown",
+    merchant_level: document.merchant_level || "intermediate",
+    scraped_at: document.scrapedAt || new Date().toISOString(),
   };
 
-  // Extract key terms
-  metadata.key_terms = extractKeyTerms(chunk);
+  // Create chunks
+  const chunks = createEnhancedChunks({
+    text: document.content,
+    chunkSizeTokens,
+    chunkOverlapTokens,
+    preserveCodeBlocks,
+    preserveHeadings,
+    preserveLists,
+    minChunkSize,
+  });
 
-  // Determine content type
-  metadata.content_type = determineContentType(chunk);
-
-  // Calculate readability score
-  metadata.readability_score = calculateReadabilityScore(chunk);
-
-  return metadata;
+  // Add metadata and IDs to chunks
+  return chunks.map((chunk, index) => ({
+    id: `${document.section || "doc"}-${Date.now()}-${index}`,
+    text: chunk.content,
+    tokens: chunk.tokens,
+    metadata: {
+      ...baseMetadata,
+      ...chunk.metadata,
+      chunk_index: index,
+      total_chunks: chunks.length,
+      content_length: chunk.content.length,
+      word_count: chunk.content.split(/\s+/).length,
+    },
+  }));
 }
 
 /**
- * Extract key terms from chunk
+ * Process multiple documents and create comprehensive chunks
  */
-function extractKeyTerms(chunk) {
-  const terms = new Set();
+export function processDocuments(documents, options = {}) {
+  const allChunks = [];
 
-  // Technical terms
-  const techPatterns = [
-    /\b(api|rest|graphql|webhook|oauth|jwt)\b/gi,
-    /\b(create|update|delete|get|post|put|patch)\b/gi,
-    /\b(product|order|customer|theme|app|shop)\b/gi,
-    /\b(endpoint|url|request|response|header|body)\b/gi,
-    /\b(authentication|authorization|token|key|secret)\b/gi,
-  ];
-
-  techPatterns.forEach((pattern) => {
-    const matches = chunk.match(pattern);
-    if (matches) {
-      matches.forEach((match) => terms.add(match.toLowerCase()));
+  for (const doc of documents) {
+    try {
+      const chunks = chunkDocument(doc, options);
+      allChunks.push(...chunks);
+      console.log(`✅ Processed ${doc.section}: ${chunks.length} chunks`);
+    } catch (error) {
+      console.error(`❌ Error processing ${doc.section}:`, error.message);
     }
-  });
-
-  return Array.from(terms);
-}
-
-/**
- * Determine content type
- */
-function determineContentType(chunk) {
-  if (/```[\s\S]*?```/.test(chunk)) {
-    return "code_example";
-  } else if (/\b(api|endpoint|rest|graphql)\b/i.test(chunk)) {
-    return "api_documentation";
-  } else if (/\b(how to|tutorial|guide|step)\b/i.test(chunk)) {
-    return "tutorial";
-  } else if (/\b(error|problem|issue|troubleshoot)\b/i.test(chunk)) {
-    return "troubleshooting";
-  } else if (/\b(what is|explain|definition)\b/i.test(chunk)) {
-    return "explanation";
-  } else {
-    return "general";
-  }
-}
-
-/**
- * Calculate readability score
- */
-function calculateReadabilityScore(chunk) {
-  const sentences = (chunk.match(/[.!?]+/g) || []).length;
-  const words = (chunk.match(/\S+/g) || []).length;
-  const syllables = chunk
-    .toLowerCase()
-    .replace(/[^a-z]/g, "")
-    .replace(/[aeiouy]+/g, "a")
-    .replace(/a/g, "").length;
-
-  if (sentences === 0 || words === 0) return 0;
-
-  // Simple readability formula
-  const avgWordsPerSentence = words / sentences;
-  const avgSyllablesPerWord = syllables / words;
-
-  const score =
-    206.835 - 1.015 * avgWordsPerSentence - 84.6 * avgSyllablesPerWord;
-  return Math.max(0, Math.min(100, score));
-}
-
-// Backward compatibility exports
-export function splitTextIntoChunks(options) {
-  return splitTextIntoEnhancedChunks(options);
-}
-
-export function splitRespectingCodeBlocks(text, opts = {}) {
-  return splitTextIntoEnhancedChunks({
-    text,
-    ...opts,
-    preserveCodeBlocks: true,
-  });
-}
-
-export function enhanceChunkWithCodeBlocks(chunk, codeBlocks, opts = {}) {
-  if (!codeBlocks || codeBlocks.length === 0) {
-    return chunk;
   }
 
-  const codeContext = codeBlocks
-    .map(
-      (cb) =>
-        `\n\nCode Example:\n\`\`\`${cb.type || "javascript"}\n${
-          cb.content
-        }\n\`\`\``
-    )
-    .join("\n");
-
-  const enhancedText = chunk + codeContext;
-  const estimatedTokens = estimateTokens(enhancedText);
-  const maxTokens = opts.chunkSizeTokens || 800;
-
-  if (estimatedTokens <= maxTokens) {
-    return enhancedText;
-  } else {
-    const limitedCodeBlocks = codeBlocks.slice(
-      0,
-      Math.min(2, codeBlocks.length)
-    );
-    const limitedContext = limitedCodeBlocks
-      .map(
-        (cb) =>
-          `\n\nCode Example:\n\`\`\`${cb.type || "javascript"}\n${
-            cb.content
-          }\n\`\`\``
-      )
-      .join("\n");
-
-    return chunk + limitedContext;
-  }
+  console.log(`📊 Total chunks created: ${allChunks.length}`);
+  return allChunks;
 }
