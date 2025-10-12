@@ -14,14 +14,6 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
 - **📊 Advanced Chunking**: Intelligent document chunking with code detection
 - **🎯 Weighted Fusion**: Combines BM25 and semantic search results for optimal relevance
 
-### Technical Features
-
-- **REST API**: Support ticket management endpoints
-- **Error Handling**: Comprehensive error handling and logging
-- **Rate Limiting**: Built-in rate limiting for API calls
-- **Database Migration**: Automated migration from JSON to PostgreSQL
-- **Testing Suite**: Comprehensive test coverage
-
 ## 🏗️ System Architecture
 
 The Stripe Customer Support Agent uses a hybrid search approach combining keyword and semantic search to provide accurate, context-aware responses.
@@ -30,56 +22,87 @@ The Stripe Customer Support Agent uses a hybrid search approach combining keywor
 
 ```mermaid
 graph TB
-    subgraph "User Interface"
-        CLI[CLI Chat Interface]
-        API[REST API]
+    subgraph "User Interface Layer"
+        CLI["CLI Chat Interface"]
+        API["REST API Endpoints"]
     end
 
-    subgraph "Core Application"
-        CHAT[Chat Service]
-        SEARCH[Hybrid Search Engine]
-        SERVER[Express Server]
+    subgraph "Application Layer"
+        CHAT["Chat Service<br/>Query processing"]
+        SEARCH["Hybrid Search Engine<br/>BM25 + Semantic fusion"]
+        SERVER["Express Server<br/>Request routing"]
     end
 
-    subgraph "Search Components"
-        BM25[PostgreSQL BM25]
-        VECTOR[Pinecone Vector Search]
-        FUSION[Result Fusion]
+    subgraph "Search Processing"
+        BM25["PostgreSQL BM25<br/>Keyword matching"]
+        VECTOR["Pinecone Vector Search<br/>Semantic similarity"]
+        FUSION["Result Fusion Engine<br/>Weighted scoring"]
     end
 
     subgraph "AI Services"
-        GEMINI[Gemini API]
-        EMBEDDINGS[Text Embeddings]
+        GEMINI["Gemini 2.0-flash<br/>Response generation"]
+        EMBEDDINGS["Text Embeddings<br/>Vector generation"]
     end
 
-    subgraph "Data Storage"
-        POSTGRES[(PostgreSQL)]
-        PINECONE[(Pinecone)]
-
+    subgraph "Data Storage Layer"
+        POSTGRES[("PostgreSQL<br/>Document chunks")]
+        PINECONE[("Pinecone<br/>Vector embeddings")]
     end
 
-    %% User interactions
-    CLI --> CHAT
-    SERVER --> CHAT
-    CHAT --> CLI
-    API --> SERVER
+    %% User interaction flow
+    CLI -->|"User query input"| CHAT
+    API -->|"HTTP requests"| SERVER
+    SERVER -->|"Route to chat service"| CHAT
+    CHAT -->|"Formatted response"| CLI
 
-    %% Search flow
-    CHAT --> SEARCH
-    SEARCH --> BM25
-    SEARCH --> VECTOR
-    BM25 --> POSTGRES
-    VECTOR --> PINECONE
-    SEARCH --> FUSION
-    FUSION --> CHAT
-    FUSION --> GEMINI
+    %% Search orchestration
+    CHAT -->|"Process query"| SEARCH
+    SEARCH -->|"Keyword search"| BM25
+    SEARCH -->|"Semantic search"| VECTOR
+    BM25 -->|"Query documents"| POSTGRES
+    VECTOR -->|"Vector similarity"| PINECONE
 
-    %% AI processing
-    GEMINI --> CHAT
-    SEARCH --> EMBEDDINGS
-    EMBEDDINGS --> GEMINI
+    %% Result processing
+    BM25 -->|"BM25 results"| FUSION
+    VECTOR -->|"Vector results"| FUSION
+    FUSION -->|"Ranked results"| CHAT
+    FUSION -->|"Context + sources"| GEMINI
 
+    %% AI response generation
+    GEMINI -->|"AI-generated response"| CHAT
+    SEARCH -->|"Generate embeddings(query)"| EMBEDDINGS
+    EMBEDDINGS -->|"Vector representations"| GEMINI
+```
 
+### Data Scraping & Ingestion Architecture
+
+```mermaid
+graph TB
+    subgraph "Data Sources"
+        STRIPE_DOCS["Stripe Documentation<br/>API Reference, Guides"]
+    end
+
+    subgraph "Data Collection"
+        SCRAPER["Web Scraper<br/>Extract content"]
+    end
+
+    subgraph "Processing Pipeline"
+        CHUNKER["Advanced Chunker<br/>Split into chunks"]
+        EMBEDDINGS["Text Embeddings<br/>Generate vectors"]
+    end
+
+    subgraph "Storage Systems"
+        POSTGRES[("PostgreSQL<br/>Raw & Processed Documents")]
+        PINECONE[("Pinecone<br/>Vector Embeddings")]
+    end
+
+    %% Data flow
+    STRIPE_DOCS -->|"Scrape content"| SCRAPER
+    SCRAPER -->|"Raw documents"| POSTGRES
+    POSTGRES -->|"Process documents"| CHUNKER
+    CHUNKER -->|"Chunked content"| POSTGRES
+    CHUNKER -->|"Generate embeddings"| EMBEDDINGS
+    EMBEDDINGS -->|"Vector embeddings"| PINECONE
 ```
 
 ### How It Works
@@ -89,6 +112,15 @@ graph TB
 3. **Result Fusion**: Combines and ranks results from both search methods
 4. **AI Response**: Gemini generates a contextual response with source citations
 5. **User Answer**: Final answer delivered with references to Stripe documentation
+
+### Data Ingestion Process
+
+1. **Web Scraping**: Scrape Stripe documentation content
+2. **Raw Storage**: Store raw documents in PostgreSQL
+3. **Document Processing**: Chunk documents using advanced chunking with code detection
+4. **Processed Storage**: Store processed chunks in PostgreSQL
+5. **Vector Generation**: Generate embeddings using Google's text-embedding-004 model
+6. **Vector Storage**: Store embeddings in Pinecone for semantic search
 
 ### Key Components
 
