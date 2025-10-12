@@ -9,8 +9,8 @@ export default function AnimatedText({ text, className = "" }) {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2, // faster stagger for smoother flow
-        delayChildren: 0.2,
+        staggerChildren: 0.1, // much faster stagger
+        delayChildren: 0.1,
       },
     },
   };
@@ -21,7 +21,7 @@ export default function AnimatedText({ text, className = "" }) {
       opacity: 1,
       y: `0em`,
       transition: {
-        duration: 0.3, // faster animation
+        duration: 0.3, // much faster animation
         ease: [0.16, 1, 0.3, 1], // smooth cubic bezier
       },
     },
