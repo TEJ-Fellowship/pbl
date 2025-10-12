@@ -1,5 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import React, { useEffect, useRef } from "react";
 
 const ParticleAnimation = () => {
   const containerRef = useRef(null);
@@ -8,29 +7,50 @@ const ParticleAnimation = () => {
     const container = containerRef.current;
     if (!container) return;
 
-    const numStars = 600;
+    const numStars = 350; // Reduced for better performance
+    const garlandPaths = 10; // Number of garland paths
+    const starsPerPath = Math.floor(numStars / garlandPaths);
 
     // Clear any existing stars
     container.innerHTML = "";
 
-    for (let i = 0; i < numStars; i++) {
-      const star = document.createElement("div");
-      star.className = "star";
-      const size = Math.random() * 2.5 + 0.5;
-      star.style.width = `${size}px`;
-      star.style.height = `${size}px`;
+    // Create multiple garland paths
+    for (let path = 0; path < garlandPaths; path++) {
+      const pathContainer = document.createElement("div");
+      pathContainer.className = "garland-path";
+      pathContainer.style.animationDelay = `${path * 1}s`;
+      pathContainer.style.animationDuration = `${25 + Math.random() * 10}s`;
 
-      const angle = Math.random() * 2 * Math.PI;
-      const radius = Math.sqrt(Math.random()) * 50;
-      const x = 50 + radius * Math.cos(angle);
-      const y = 50 + radius * Math.sin(angle);
+      for (let i = 0; i < starsPerPath; i++) {
+        const star = document.createElement("div");
+        star.className = "garland-star";
 
-      star.style.top = `${y}%`;
-      star.style.left = `${x}%`;
-      star.style.animationDelay = `${Math.random() * 3}s`;
-      star.style.animationDuration = `${Math.random() * 2 + 1.5}s`;
+        // Vary star sizes
+        const size = Math.random() * 3 + 1;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
 
-      container.appendChild(star);
+        // Position stars along a curved garland path
+        const progress = i / (starsPerPath - 1);
+        const baseAngle = (path / garlandPaths) * Math.PI * 2;
+        const waveOffset = Math.sin(progress * Math.PI * 4) * 15; // Wave effect
+        const jumbleOffset = (Math.random() - 0.5) * 20; // Random jumbling
+
+        const angle = baseAngle + progress * Math.PI * 2 + waveOffset * 0.1;
+        const radius = 40 + waveOffset + jumbleOffset;
+
+        const x = 50 + radius * Math.cos(angle);
+        const y = 50 + radius * Math.sin(angle);
+
+        star.style.top = `${y}%`;
+        star.style.left = `${x}%`;
+        star.style.animationDelay = `${Math.random() * 3}s`;
+        star.style.animationDuration = `${4 + Math.random() * 4}s`;
+
+        pathContainer.appendChild(star);
+      }
+
+      container.appendChild(pathContainer);
     }
 
     // Cleanup to prevent duplicates on re-render
@@ -39,61 +59,7 @@ const ParticleAnimation = () => {
     };
   }, []);
 
-  return <div ref={containerRef} className="particle-animation" />;
+  return <div ref={containerRef} className="garland-animation" />;
 };
-
-// const ParticleAnimation = () => {
-//   const vantaRef = useRef(null);
-//   const [vantaEffect, setVantaEffect] = useState(null);
-
-//   useEffect(() => {
-//     if (!vantaEffect && vantaRef.current) {
-//       // Dynamic import to avoid build issues
-//       import("vanta/dist/vanta.globe.min").then((VANTA) => {
-//         setVantaEffect(
-//           VANTA.default({
-//             el: vantaRef.current,
-//             THREE,
-//             mouseControls: true,
-//             touchControls: true,
-//             minHeight: 200.0,
-//             minWidth: 200.0,
-//             scale: 1.0,
-//             scaleMobile: 1.0,
-//             color: 0xb71ea0,
-//             backgroundColor: 0x000000,
-//             size: 1.0,
-//             spacing: 15.0,
-//             // Add these for better centering
-//             gyroControls: false,
-//             focus: 0.0, // Adjust focus point
-//             rotation: 0.0,
-//           })
-//         );
-//       });
-//     }
-
-//     return () => {
-//       if (vantaEffect) vantaEffect.destroy();
-//     };
-//   }, [vantaEffect]);
-
-//   return (
-//     <div
-//       ref={vantaRef}
-//       className="w-full h-screen"
-//       style={{
-//         position: "fixed",
-//         top: 0,
-//         left: 0,
-//         width: "100vw",
-//         height: "100vh",
-//         zIndex: 1,
-//         transform: "scaleX(-1)",
-//         pointerEvents: "none", // Allow clicks to pass through
-//       }}
-//     />
-//   );
-// };
 
 export default ParticleAnimation;

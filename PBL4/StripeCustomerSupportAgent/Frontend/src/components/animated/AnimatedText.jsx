@@ -9,19 +9,19 @@ export default function AnimatedText({ text, className = "" }) {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2, // controls delay between letters
+        staggerChildren: 0.2, // faster stagger for smoother flow
         delayChildren: 0.2,
       },
     },
   };
 
   const child = {
-    hidden: { opacity: 0, y: `1.2em` }, // start clearly below
+    hidden: { opacity: 0, y: `0.5em` }, // reduced movement for better flow
     visible: {
       opacity: 1,
       y: `0em`,
       transition: {
-        duration: 0.6, // slightly slower for fluidity
+        duration: 0.3, // faster animation
         ease: [0.16, 1, 0.3, 1], // smooth cubic bezier
       },
     },
@@ -41,11 +41,11 @@ export default function AnimatedText({ text, className = "" }) {
           part.split("").map((char, index) => (
             <span
               key={`${i}-${index}`}
-              className="inline-block overflow-hidden align-bottom"
+              className="inline-block overflow-hidden"
               style={{
                 verticalAlign: "baseline",
-                lineHeight: "1em",
-                height: "1em",
+                lineHeight: "inherit",
+                height: "auto",
               }}
             >
               <motion.span
