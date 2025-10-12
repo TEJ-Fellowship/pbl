@@ -18,6 +18,12 @@ const config = {
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
   PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME || "twilio",
 
+  pg_host: "localhost", // Or your PostgreSQL server IP/hostname
+  // pg_user: "", // e.g., "postgres" or your system username
+  pg_password: "pass@sql18", // The password you set during installation
+  pg_database: "twilio", // The database you want to use (must exist)
+  pg_port: 5432, // The port you verified earlier (default is 5432)
+
   // Server
   //   PORT: process.env.PORT,
   //   HOST: process.env.HOST,
