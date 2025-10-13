@@ -918,3 +918,98 @@
     opacity: 0.8;
   }
 }
+
+/* MCP Tools Section */
+.mcp-tools-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.mcp-tools-header {
+  margin-bottom: 0.75rem;
+}
+
+.mcp-tools-title {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.mcp-tools-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tool-result {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.tool-name {
+  font-weight: 600;
+  color: #96bf47;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  text-transform: capitalize;
+}
+
+.tool-error {
+  color: #dc3545;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.tool-calculations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.calculations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calculation-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.calculation-expression {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  color: #495057;
+  border: 1px solid #e9ecef;
+}
+
+.calculation-result {
+  font-weight: 600;
+  color: #96bf47;
+  font-size: 0.85rem;
+}
+
+.tool-summary {
+  background: #e7f3ff;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid #96bf47;
+  font-size: 0.85rem;
+  color: #495057;
+  line-height: 1.4;
+}
+
+.tool-summary strong {
+  color: #96bf47;
+}

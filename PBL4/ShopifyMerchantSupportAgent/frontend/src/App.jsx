@@ -83,6 +83,7 @@ function App() {
         sources: response.data.sources || [],
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
+        mcpTools: response.data.mcpTools || {},
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -303,6 +304,64 @@ function App() {
                     )}
                   </div>
                 )}
+
+                {message.mcpTools &&
+                  message.mcpTools.toolsUsed &&
+                  message.mcpTools.toolsUsed.length > 0 && (
+                    <div className="mcp-tools-section">
+                      <div className="mcp-tools-header">
+                        <span className="mcp-tools-title">
+                          🔧 Tools Used: {message.mcpTools.toolsUsed.join(", ")}
+                        </span>
+                      </div>
+                      {message.mcpTools.toolResults &&
+                        Object.keys(message.mcpTools.toolResults).length >
+                          0 && (
+                          <div className="mcp-tools-results">
+                            {Object.entries(message.mcpTools.toolResults).map(
+                              ([toolName, result]) => (
+                                <div key={toolName} className="tool-result">
+                                  <div className="tool-name">{toolName}</div>
+                                  {result.error ? (
+                                    <div className="tool-error">
+                                      Error: {result.error}
+                                    </div>
+                                  ) : (
+                                    <div className="tool-calculations">
+                                      {result.calculations &&
+                                        result.calculations.length > 0 && (
+                                          <div className="calculations-list">
+                                            {result.calculations.map(
+                                              (calc, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="calculation-item"
+                                                >
+                                                  <code className="calculation-expression">
+                                                    {calc.original}
+                                                  </code>
+                                                  <span className="calculation-result">
+                                                    = {calc.formatted}
+                                                  </span>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      {result.summary && (
+                                        <div className="tool-summary">
+                                          {result.summary}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
+                    </div>
+                  )}
 
                 {message.tokenUsage && (
                   <div className="token-usage">
