@@ -42,3 +42,36 @@
 | 🗂️ **Conversation Memory**              | **Swikar**  | Track session-level state: language, API being used, past queries. Feed context to `generateAnswer` for coherent multi-turn conversation.                                                      |
 | 🎨 **Formatting + Syntax Highlighting** | **Both**    | Ensure code blocks in terminal or web UI are syntax-highlighted. Color explanations, source links.                                                                                             |
 | 🧪 **Testing & Validation**             | **Both**    | Test hybrid search, code retrieval, error code queries, multi-turn chat. Compare CLI vs web UI outputs.                                                                                        |
+
+# Tier 3: MCP + Advanced Features
+
+- **MCP Tools:**
+  - Web search for recent Twilio updates or known issues
+  - Code validator: Check API endpoint URLs, required parameters
+  - Twilio Status API: Check for service disruptions
+  - Webhook tester: Validate webhook signatures and payload formats
+  - Rate limit calculator: Estimate if user's volume exceeds limits
+  - Code executor (sandboxed): Test simple Twilio API calls in test mode
+- Query classification: `getting_started`, `debugging`, `error_resolution`, `best_practices`, `billing`
+- Programming language detection from code snippets in questions
+- Multi-turn debugging: Ask for error logs, guide through diagnostic steps
+- Confidence-based code suggestions: Show multiple approaches if uncertain
+- Error pattern recognition: "This error often occurs when..." with frequency data
+- Analytics: Most common errors by API, language-specific pain points
+- Feedback loop improving code example relevance
+
+| Tool / Feature                        | Owner          | Description / Responsibilities                                                                                                      | Dependencies / Notes                                            |
+| ------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **MCP Core / Hub**                    | Swikar         | Build the main MCP orchestrator. Manage tool registration, central logging, and interface for tools to plug in.                     | Both’s tools plug into this. Must agree on input/output format. |
+| **Web Search Tool**                   | Swikar + Manoj | Search recent Twilio updates/issues. Swikar handles query formation + API, Manoj handles result formatting + analytics integration. | Needs shared MCP core API.                                      |
+| **Code Validator**                    | Swikar         | Validate Twilio API endpoint URLs, required parameters, request format. Produce structured results for MCP.                         | MCP core for tool registration.                                 |
+| **Twilio Status API**                 | Manoj          | Fetch live Twilio service status and map it to tool-friendly format. Trigger alerts if service is down.                             | MCP core, optional dashboard integration.                       |
+| **Webhook Tester**                    | Manoj          | Validate webhook payloads and signatures. Provide feedback if invalid.                                                              | MCP core; Twilio credentials for testing.                       |
+| **Rate Limit Calculator**             | Swikar         | Compute estimated usage vs Twilio limits. Warn if exceeding thresholds.                                                             | Needs configuration for Twilio limits.                          |
+| **Code Executor (Sandboxed)**         | Manoj          | Safely run simple Twilio API calls in test mode. Return result logs without risking production data.                                | Sandbox setup, Twilio test credentials.                         |
+| **Query Classification**              | Swikar         | Tag incoming queries into: getting_started, debugging, error_resolution, best_practices, billing.                                   | Preprocessing utils; may use ML or rules.                       |
+| **Multi-turn Debugging Flow**         | Swikar + Manoj | Guide users through errors step-by-step. Swikar handles flow logic, Manoj handles integration with error patterns and tool results. | Depends on query classification and error pattern recognition.  |
+| **Confidence-based Code Suggestions** | Swikar         | Detect low-confidence generated code, offer multiple alternatives with reasoning.                                                   | Requires code validation results.                               |
+| **Error Pattern Recognition**         | Manoj          | Map common Twilio errors to causes and solutions. Include frequency statistics.                                                     | Requires Twilio docs / logs; integrate with debugging flow.     |
+| **Analytics / Reporting**             | Manoj          | Collect data from tools (errors, API usage, common languages). Display dashboards or logs.                                          | Depends on all other tool outputs.                              |
+| **Feedback Loop System**              | Swikar + Manoj | Record user ratings and update tool relevance. Swikar handles storing logic, Manoj handles dashboard/visualization.                 | Shared database / storage.                                      |
