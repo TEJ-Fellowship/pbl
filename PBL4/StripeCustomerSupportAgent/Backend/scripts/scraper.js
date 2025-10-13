@@ -3,6 +3,7 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
+import DocumentStorageService from "../services/documentStorageService.js";
 
 // Stripe documentation sources
 const SOURCES = {
@@ -44,7 +45,45 @@ async function scrapeDoc(url, category) {
 
     // Extract main content
     const content = $("main").text() || $("article").text() || $("body").text();
-    const title = $("h1").first().text() || $("title").text();
+
+    // Extract title with multiple fallback strategies
+    let title = "";
+
+    // Try different title extraction methods
+    if ($("h1").length > 0) {
+      title = $("h1").first().text().trim();
+    } else if ($("title").length > 0) {
+      title = $("title").text().trim();
+    } else if ($("h2").length > 0) {
+      title = $("h2").first().text().trim();
+    } else if ($(".page-title").length > 0) {
+      title = $(".page-title").first().text().trim();
+    } else if ($("[data-testid='page-title']").length > 0) {
+      title = $("[data-testid='page-title']").first().text().trim();
+    }
+
+    // Clean up title
+    title = title
+      .replace(/\s+/g, " ") // Replace multiple whitespace with single space
+      .replace(/^\s*-\s*Stripe\s*$/, "") // Remove trailing "- Stripe"
+      .replace(/^\s*Stripe\s*-\s*/, "") // Remove leading "Stripe -"
+      .trim();
+
+    // If no title found, use a default based on category
+    if (!title || title.length === 0) {
+      const categoryTitles = {
+        api: "API Reference",
+        webhooks: "Webhooks",
+        errors: "Error Codes",
+        payments: "Payment Methods",
+        billing: "Billing",
+        disputes: "Disputes",
+        integration: "Integration Guide",
+        support: "Support",
+        connect: "Connect",
+      };
+      title = categoryTitles[category] || "Documentation";
+    }
     // Clean up the content
     const cleanContent = content
       .replace(/\s+/g, " ") // Replace multiple whitespace with single space
@@ -124,18 +163,32 @@ async function main() {
     }
   }
 
-  // Create output directory
-  const outputDir = path.join(process.cwd(), "data", "stripe_docs");
-  await fs.mkdir(outputDir, { recursive: true });
+  // Store documents in PostgreSQL
+  console.log(`\n💾 Storing ${docs.length} documents in PostgreSQL...`);
+  const documentStorageService = new DocumentStorageService();
 
-  // Save scraped data
-  const outputFile = path.join(outputDir, "scraped.json");
-  await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
+  try {
+    await documentStorageService.storeDocuments(docs);
+    console.log(
+      `✅ Successfully stored ${docs.length} documents in PostgreSQL`
+    );
+  } catch (error) {
+    console.error(`❌ Failed to store documents in PostgreSQL:`, error.message);
+
+    // Fallback: Save to JSON file as backup
+    console.log(`🔄 Falling back to JSON file storage...`);
+    const outputDir = path.join(process.cwd(), "data", "stripe_docs");
+    await fs.mkdir(outputDir, { recursive: true });
+    const outputFile = path.join(outputDir, "scraped.json");
+    await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
+    console.log(`💾 Saved to: ${outputFile}`);
+  } finally {
+    await documentStorageService.close();
+  }
 
   console.log(`\n🎉 Scraping completed!`);
   console.log(`📊 Total documents: ${docs.length}`);
   console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
-  console.log(`💾 Saved to: ${outputFile}`);
 
   // Display summary
   console.log(`\n📋 Scraped sources:`);
@@ -144,9 +197,43 @@ async function main() {
   });
 }
 
+/**
+ * Get latest scraped documents from PostgreSQL
+ */
+async function getLatestScrapedDocuments(limit = 10) {
+  console.log("📂 Getting latest scraped documents from PostgreSQL...");
+
+  const documentStorageService = new DocumentStorageService();
+
+  try {
+    const documents = await documentStorageService.getUnprocessedDocuments(
+      limit
+    );
+    console.log(`📊 Found ${documents.length} unprocessed documents`);
+
+    // Display documents
+    documents.forEach((doc, index) => {
+      console.log(
+        `  ${index + 1}. ${doc.title || "Untitled"} (${doc.category})`
+      );
+      console.log(`     - URL: ${doc.url}`);
+      console.log(`     - Words: ${doc.word_count}`);
+      console.log(`     - Scraped: ${doc.scraped_at}`);
+      console.log("");
+    });
+
+    return documents;
+  } catch (error) {
+    console.error("❌ Failed to get documents from PostgreSQL:", error.message);
+    return [];
+  } finally {
+    await documentStorageService.close();
+  }
+}
+
 // Handle CLI execution
 if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
   main().catch(console.error);
 }
 
-export { scrapeDoc, SOURCES };
+export { scrapeDoc, SOURCES, getLatestScrapedDocuments };

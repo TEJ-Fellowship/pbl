@@ -1,7 +1,7 @@
 import HybridSearch from "../hybridSearch.js";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
-import config from "../../config/config.js";
+import config from "../config/config.js";
 
 /**
  * Test script for hybrid search system
