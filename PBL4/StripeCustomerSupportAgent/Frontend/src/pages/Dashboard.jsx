@@ -66,7 +66,7 @@ const Dashboard = () => {
 
   return (
     <div className="fixed left-[15%] right-0 h-screen bg-surface-dark overflow-y-auto">
-      <div className="p-6">
+      <div className="p-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text-dark mb-2">Dashboard</h1>
@@ -110,7 +110,7 @@ const Dashboard = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Activities */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -221,6 +221,48 @@ const Dashboard = () => {
                   </span>
                   <p className="text-sm font-medium">{action.name}</p>
                 </motion.button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* System Status */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-gray-800/50"
+          >
+            <h2 className="text-xl font-semibold text-text-dark mb-6">
+              System Status
+            </h2>
+            <div className="space-y-4">
+              {[
+                {
+                  name: "API Status",
+                  status: "Online",
+                  color: "text-green-400",
+                },
+                {
+                  name: "Database",
+                  status: "Healthy",
+                  color: "text-green-400",
+                },
+                { name: "Webhooks", status: "Active", color: "text-green-400" },
+                {
+                  name: "Payments",
+                  status: "Processing",
+                  color: "text-yellow-400",
+                },
+              ].map((item, index) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between"
+                >
+                  <span className="text-text-dark">{item.name}</span>
+                  <span className={`text-sm font-medium ${item.color}`}>
+                    {item.status}
+                  </span>
+                </div>
               ))}
             </div>
           </motion.div>

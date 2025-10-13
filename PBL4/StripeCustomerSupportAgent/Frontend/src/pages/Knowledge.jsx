@@ -117,7 +117,7 @@ const Knowledge = () => {
 
   return (
     <div className="fixed left-[15%] right-0 h-screen bg-surface-dark overflow-y-auto">
-      <div className="p-6">
+      <div className="p-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text-dark mb-2">
@@ -144,7 +144,7 @@ const Knowledge = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Categories Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-gray-800/50">
@@ -175,7 +175,7 @@ const Knowledge = () => {
           </div>
 
           {/* Articles List */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-gray-800/50">
               <div className="p-6 border-b border-gray-800/50">
                 <div className="flex items-center justify-between">

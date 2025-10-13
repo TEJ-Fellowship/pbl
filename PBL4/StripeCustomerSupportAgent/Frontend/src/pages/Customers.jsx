@@ -85,7 +85,7 @@ const Customers = () => {
 
   return (
     <div className="fixed left-[15%] right-0 h-screen bg-surface-dark overflow-y-auto">
-      <div className="p-6">
+      <div className="p-6 max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text-dark mb-2">
