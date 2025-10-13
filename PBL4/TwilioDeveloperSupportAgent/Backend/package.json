@@ -16,9 +16,11 @@
     "chat:memory": "node src/chat.js",
     "test-pipeline": "node test_pipeline.js",
     "test-memory": "node test_memory.js",
+    "test-web-search": "node test_web_search.js",
+    "demo-web-search": "node demo_web_search.js",
     "build": "npm run scrape && npm run chunk && npm run ingest",
     "dev": "npm run build && npm run chat",
-    "test": "npm run test-pipeline && npm run test-memory"
+    "test": "npm run test-pipeline && npm run test-memory && npm run test-web-search"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",
@@ -36,7 +38,9 @@
     "express": "^4.21.2",
     "flexsearch": "^0.8.212",
     "openai": "^4.28.0",
-    "tiktoken": "^1.0.22"
+    "tiktoken": "^1.0.22",
+    "node-html-parser": "^6.1.12",
+    "date-fns": "^3.6.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

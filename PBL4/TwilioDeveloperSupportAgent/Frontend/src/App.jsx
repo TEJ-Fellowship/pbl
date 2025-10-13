@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Send, Bot, User, Copy, Check, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, Copy, Check, Loader2, Sparkles, Search } from "lucide-react";
 import ChatContainer from "./components/ChatContainer";
 import MessageList from "./components/MessageList";
 import MessageInput from "./components/MessageInput";
 import CodeEditor from "./components/CodeEditor";
 import ResponseFormatter from "./components/ResponseFormatter";
+import WebSearchPanel from "./components/WebSearchPanel";
 import {
   sendMessage,
   getConversationHistory,
@@ -14,6 +15,7 @@ import {
 function App() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showWebSearch, setShowWebSearch] = useState(false);
   const [sessionId] = useState(
     () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
@@ -112,6 +114,13 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowWebSearch(true)}
+                className="flex items-center space-x-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <Search className="w-4 h-4" />
+                <span>Web Search</span>
+              </button>
               <div className="text-sm text-slate-500">
                 Session: {sessionId.split("_")[1]}
               </div>
@@ -152,6 +161,17 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Web Search Panel */}
+      {showWebSearch && (
+        <WebSearchPanel
+          onSearchResult={(results) => {
+            console.log("Web search results:", results);
+            // You can integrate this with the chat or display results
+          }}
+          onClose={() => setShowWebSearch(false)}
+        />
+      )}
     </div>
   );
 }

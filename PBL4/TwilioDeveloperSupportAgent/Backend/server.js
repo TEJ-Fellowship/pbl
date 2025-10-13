@@ -18,6 +18,7 @@ import {
 } from "./src/chat.js";
 import ConversationMemory from "./src/conversationMemory.js";
 import APIDetector from "./src/apiDetector.js";
+import { toolManager, generateEnhancedResponse } from "./src/mcpWrapper.js";
 
 // Load environment variables
 dotenv.config();
@@ -192,6 +193,238 @@ app.get("/api/preferences/:sessionId", async (req, res) => {
     console.error("❌ Get preferences error:", error);
     res.status(500).json({
       error: "Failed to retrieve user preferences",
+      message: error.message,
+    });
+  }
+});
+
+// Web search endpoints
+app.post("/api/search/web", async (req, res) => {
+  try {
+    const { query, options = {} } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({
+        error: "Query is required and cannot be empty",
+      });
+    }
+
+    console.log(`🔍 Web search request: "${query}"`);
+    const startTime = Date.now();
+
+    const results = await toolManager.executeTool("web_search", query, options);
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      ...results,
+      responseTime,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Web search error:", error);
+    res.status(500).json({
+      error: "Web search failed",
+      message: error.message,
+    });
+  }
+});
+
+// Twilio updates search endpoint
+app.post("/api/search/updates", async (req, res) => {
+  try {
+    const { query, options = {} } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({
+        error: "Query is required and cannot be empty",
+      });
+    }
+
+    console.log(`📰 Twilio updates search: "${query}"`);
+    const startTime = Date.now();
+
+    const results = await toolManager.executeTool("twilio_updates", query, options);
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      ...results,
+      responseTime,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Twilio updates search error:", error);
+    res.status(500).json({
+      error: "Twilio updates search failed",
+      message: error.message,
+    });
+  }
+});
+
+// Error solutions search endpoint
+app.post("/api/search/error-solutions", async (req, res) => {
+  try {
+    const { errorCode, query = "", options = {} } = req.body;
+
+    if (!errorCode || errorCode.trim().length === 0) {
+      return res.status(400).json({
+        error: "Error code is required",
+      });
+    }
+
+    console.log(`🔧 Error solutions search: "${errorCode}" - "${query}"`);
+    const startTime = Date.now();
+
+    const results = await toolManager.executeTool("error_solutions", errorCode, query, options);
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      ...results,
+      responseTime,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Error solutions search error:", error);
+    res.status(500).json({
+      error: "Error solutions search failed",
+      message: error.message,
+    });
+  }
+});
+
+// Community discussions search endpoint
+app.post("/api/search/community", async (req, res) => {
+  try {
+    const { query, options = {} } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({
+        error: "Query is required and cannot be empty",
+      });
+    }
+
+    console.log(`💬 Community discussions search: "${query}"`);
+    const startTime = Date.now();
+
+    const results = await toolManager.executeTool("community_discussions", query, options);
+    const responseTime = Date.now() - startTime;
+
+    res.json({
+      ...results,
+      responseTime,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Community discussions search error:", error);
+    res.status(500).json({
+      error: "Community discussions search failed",
+      message: error.message,
+    });
+  }
+});
+
+// Get available tools endpoint
+app.get("/api/tools", (req, res) => {
+  try {
+    const tools = toolManager.getAvailableTools();
+    res.json({
+      tools,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Get tools error:", error);
+    res.status(500).json({
+      error: "Failed to retrieve available tools",
+      message: error.message,
+    });
+  }
+});
+
+// Enhanced chat endpoint with web search
+app.post("/api/chat/enhanced", async (req, res) => {
+  try {
+    const { query, sessionId, useWebSearch = false } = req.body;
+
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({
+        error: "Query is required and cannot be empty",
+      });
+    }
+
+    console.log(`📝 Processing enhanced query: "${query}" (web search: ${useWebSearch})`);
+    const startTime = Date.now();
+
+    // Retrieve relevant chunks using hybrid search
+    const chunks = await retrieveChunksWithEmbeddings(
+      query,
+      vectorStore,
+      embeddings,
+      { textChunks: [], codeChunks: [] }
+    );
+
+    if (chunks.length === 0) {
+      return res.json({
+        answer:
+          "❌ No relevant information found. Try rephrasing your question.",
+        sources: [],
+        metadata: {},
+        responseTime: Date.now() - startTime,
+      });
+    }
+
+    // Convert chunks to context blocks
+    const contextBlocks = chunks.map((chunk, index) => ({
+      id: `chunk_${index}`,
+      type: chunk.metadata?.type || "documentation",
+      title: chunk.metadata?.title || "Documentation",
+      content: chunk.content,
+      metadata: chunk.metadata,
+      weight: 1.0,
+    }));
+
+    // Generate enhanced response with web search
+    const result = await generateEnhancedResponse({
+      geminiClient,
+      query,
+      contextBlocks,
+      instructions: "Provide a comprehensive answer with code examples and best practices.",
+      maxTokens: 2048,
+      useWebSearch,
+      toolManager,
+    });
+
+    const responseTime = Date.now() - startTime;
+
+    // Add conversation turn to memory
+    await memory.addConversationTurn(query, result.text, {
+      language: detectQueryLanguage(query),
+      api: apiDetector.detectAPI(query),
+      errorCodes: detectErrorCodes(query),
+      chunkCount: chunks.length,
+      responseTime: responseTime,
+      webSearchUsed: useWebSearch,
+    });
+
+    // Format response for frontend
+    const formattedResponse = {
+      answer: result.text,
+      sources: result.sources || [],
+      metadata: {
+        ...result.metadata,
+        responseTime,
+        chunkCount: chunks.length,
+        sessionId: sessionId || "default",
+        webSearchUsed: useWebSearch,
+        webSearchResults: result.webSearchResults || null,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    console.log(`✅ Enhanced response generated in ${responseTime}ms`);
+    res.json(formattedResponse);
+  } catch (error) {
+    console.error("❌ Enhanced chat API error:", error);
+    res.status(500).json({
+      error: "Internal server error",
       message: error.message,
     });
   }
