@@ -1,17 +1,32 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { CHAT, LANDING_PAGE } from "../../constants/routes";
+import {
+  CHAT,
+  LANDING_PAGE,
+  DASHBOARD,
+  CUSTOMERS,
+  KNOWLEDGE,
+} from "../../constants/routes";
 import AnimatedText from "../animated/AnimatedText";
+import { motion, AnimatePresence } from "framer-motion";
 
 const LandingSidebar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOthersOpen, setIsOthersOpen] = useState(false);
   const location = useLocation();
 
-  const menuItems = [
+  const mainMenuItems = [
     { name: "Home", path: LANDING_PAGE },
     { name: "Chat", path: CHAT },
-    { name: "Knowledge", path: "#" },
-    { name: "Analytics", path: "#" },
+    { name: "Knowledge", path: KNOWLEDGE },
+    { name: "Dashboard", path: DASHBOARD },
+    { name: "Customers", path: CUSTOMERS },
+    { name: "Others", path: "#" },
+  ];
+
+  const otherMenuItems = [
+    { name: "Tools", path: "#" },
+    { name: "Admin", path: "#" },
     { name: "Settings", path: "#" },
     { name: "Profile", path: "#" },
   ];
@@ -54,28 +69,89 @@ const LandingSidebar = () => {
           transformOrigin: "top center",
         }}
       >
-        <div className="flex items-center overflow-hidden justify-center gap-1 sm:gap-2 py-2 px-2 sm:px-4 max-w-[90vw] sm:max-w-none">
-          {menuItems.reverse().map((item, index) => (
-            <Link
-              key={item.name}
-              to={item.path}
-              // onClick={() => setIsMenuOpen(false)}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-text-dark hover:bg-gray-600/50 transition-all duration-150 whitespace-nowrap text-xs sm:text-sm ${
-                isMenuOpen
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-2"
-              } ${
-                location.pathname === item.path
-                  ? "bg-primary/20 text-primary border border-primary/30 scale-105"
-                  : "hover:scale-105"
-              }`}
-              style={{
-                transitionDelay: isMenuOpen ? `${index * 50}ms` : "0ms",
-              }}
-            >
-              {item.name}
-            </Link>
-          ))}
+        <div className="flex items-center justify-center gap-1 sm:gap-2 py-2 px-2 sm:px-4 max-w-[90vw] sm:max-w-none">
+          {/* Main Menu Items */}
+          {mainMenuItems.reverse().map((item, index) => {
+            if (item.name === "Others") {
+              return (
+                <div
+                  key={item.name}
+                  className="relative"
+                  onMouseEnter={() => setIsOthersOpen(true)}
+                  onMouseLeave={() => setIsOthersOpen(false)}
+                >
+                  <button
+                    className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-text-dark hover:bg-gray-600/50 transition-all duration-150 whitespace-nowrap text-xs sm:text-sm ${
+                      isMenuOpen
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-2"
+                    } hover:scale-105 flex items-center gap-1`}
+                    style={{
+                      transitionDelay: isMenuOpen ? `${index * 50}ms` : "0ms",
+                    }}
+                  >
+                    Others
+                    <span className="material-symbols-outlined text-xs">
+                      expand_more
+                    </span>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {isOthersOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-0 mt-5 w-48 bg-stone-800/95 backdrop-blur-md rounded-lg shadow-2xl border border-gray-600/50 py-2 z-[100]"
+                      >
+                        {otherMenuItems.map((item) => (
+                          <Link
+                            key={item.name}
+                            to={item.path}
+                            onClick={() => {
+                              // setIsMenuOpen(false);
+                              setIsOthersOpen(false);
+                            }}
+                            className={`block px-4 py-2 text-sm text-text-dark hover:bg-gray-700/50 transition-colors ${
+                              location.pathname === item.path
+                                ? "bg-primary/20 text-primary"
+                                : ""
+                            }`}
+                          >
+                            {item.name}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            } else {
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  // onClick={() => setIsMenuOpen(false)}
+                  className={`px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md text-text-dark hover:bg-gray-600/50 transition-all duration-150 whitespace-nowrap text-xs sm:text-sm ${
+                    isMenuOpen
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-2"
+                  } ${
+                    location.pathname === item.path
+                      ? "bg-primary/20 text-primary border border-primary/30 scale-105"
+                      : "hover:scale-105"
+                  }`}
+                  style={{
+                    transitionDelay: isMenuOpen ? `${index * 50}ms` : "0ms",
+                  }}
+                >
+                  {item.name}
+                </Link>
+              );
+            }
+          })}
         </div>
       </div>
 
