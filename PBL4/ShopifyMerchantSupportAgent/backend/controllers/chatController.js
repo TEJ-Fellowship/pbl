@@ -7,6 +7,7 @@ import BufferWindowMemory from "../src/memory/BufferWindowMemory.js";
 import MarkdownIt from "markdown-it";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
+import MCPOrchestrator from "../src/mcp/mcpOrchestrator.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -172,9 +173,10 @@ function handleEdgeCases(results, question) {
 let retriever = null;
 let model = null;
 let genAI = null;
+let mcpOrchestrator = null;
 
 async function initializeAI() {
-  if (retriever && model) return; // Already initialized
+  if (retriever && model && mcpOrchestrator) return; // Already initialized
 
   try {
     await connectDB();
@@ -202,6 +204,10 @@ async function initializeAI() {
         throw err;
       }
     }
+
+    // Initialize MCP Orchestrator
+    mcpOrchestrator = new MCPOrchestrator();
+    console.log("🔧 MCP Orchestrator initialized successfully");
   } catch (error) {
     console.error("Failed to initialize AI components:", error);
     throw error;
@@ -392,11 +398,32 @@ EXPERT ANSWER:`;
     // Calculate confidence score
     const confidence = calculateConfidence(tokenAwareContext.documents, answer);
 
+    // Process with MCP tools if needed
+    let enhancedAnswer = answer;
+    let toolResults = {};
+    let toolsUsed = [];
+
+    if (mcpOrchestrator) {
+      try {
+        const mcpResult = await mcpOrchestrator.processWithTools(
+          message,
+          confidence.score / 100, // Convert to 0-1 scale
+          answer
+        );
+        enhancedAnswer = mcpResult.enhancedAnswer;
+        toolResults = mcpResult.toolResults;
+        toolsUsed = mcpResult.toolsUsed;
+      } catch (error) {
+        console.error("MCP processing error:", error);
+        // Continue with original answer if MCP fails
+      }
+    }
+
     // Create assistant message
     const assistantMessage = new Message({
       conversationId: conversation._id,
       role: "assistant",
-      content: answer,
+      content: enhancedAnswer,
       metadata: {
         searchResults: tokenAwareContext.documents.map((r) => ({
           title: r.metadata?.title || "Unknown",
@@ -408,13 +435,17 @@ EXPERT ANSWER:`;
         modelUsed: "gemini-2.5-flash",
         processingTime: Date.now() - startTime,
         tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
       },
     });
     await assistantMessage.save();
     await conversation.addMessage(assistantMessage._id);
 
     return {
-      answer,
+      answer: enhancedAnswer,
       confidence,
       sources: tokenAwareContext.documents.map((r, i) => ({
         id: i + 1,
@@ -427,6 +458,10 @@ EXPERT ANSWER:`;
       })),
       tokenUsage: tokenAwareContext.tokenUsage,
       truncated: tokenAwareContext.truncated,
+      mcpTools: {
+        toolsUsed: toolsUsed,
+        toolResults: toolResults,
+      },
     };
   } catch (error) {
     console.error("Error processing chat message:", error);
