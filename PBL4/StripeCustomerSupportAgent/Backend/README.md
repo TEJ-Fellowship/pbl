@@ -9,6 +9,7 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
 - **🤖 AI-Powered Chat**: Interactive chat interface with Stripe documentation using Gemini 2.0-flash
 - **🧠 Conversational Memory**: Intelligent memory system with short-term buffer and long-term persistence
 - **🔄 AI Query Reformulation**: Gemini-powered query enhancement with context integration
+- **📝 AI Conversation Summarization**: Intelligent conversation summaries using Gemini AI for better context retention
 - **🔍 Hybrid Search**: Combines PostgreSQL BM25 keyword search with Pinecone semantic search
 - **📚 Scraping and Ingestion**: Web scraping and ingestion of Stripe documentation
 - **🗄️ PostgreSQL & PineCone Integration**: Scalable document storage with hybrid search capabilities
@@ -38,6 +39,7 @@ graph TB
     subgraph "Memory System"
         BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
+        AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
         QUERY_REFORM["Query Reformulation<br/>AI-powered context integration"]
     end
 
@@ -53,9 +55,9 @@ graph TB
     end
 
     subgraph "Data Storage Layer"
-        POSTGRES[("PostgreSQL<br/>Document chunks & Memory")]
+        POSTGRES[("PostgreSQL<br/>Document chunks<br/> & <br/>Memory")]
         PINECONE[("Pinecone<br/>Vector embeddings")]
-        MEMORY_DB[("PostgreSQL Memory<br/>Sessions, Q&A pairs, Summaries")]
+        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
     end
 
     %% User interaction flow
@@ -89,6 +91,13 @@ graph TB
     GEMINI -->|"AI-generated response"| CHAT
     CHAT -->|"Assistant response"| MEMORY_CTRL
     MEMORY_CTRL -->|"Extract Q&A pairs"| MEMORY_DB
+
+    %% Conversation Summarization with AI
+    MEMORY_CTRL -->|"Conversation history"| AI_SUMMARY
+    AI_SUMMARY -->|"AI-generated summary"| MEMORY_DB
+    AI_SUMMARY -->|"Key topics & insights"| MEMORY_CTRL
+
+    %% Search and embeddings flow
     SEARCH -->|"user query"| EMBEDDINGS
     EMBEDDINGS -->|"Semantic Search</br>with</br>vector query"| VECTOR
 ```
@@ -147,6 +156,7 @@ graph TB
 
     subgraph "AI Integration"
         GEMINI["Gemini 2.0-flash<br/>Query reformulation & Q&A analysis"]
+        AI_SUMMARY["AI Conversation Summarization<br/>Intelligent conversation analysis"]
         CONTEXT["Context Integration<br/>Recent + Long-term memory"]
     end
 
@@ -163,8 +173,12 @@ graph TB
     BUFFER --> MESSAGES
     POSTGRES_MEM --> MESSAGES
     POSTGRES_MEM --> SESSIONS
-    GEMINI --> SUMMARIES
     GEMINI --> QA_PAIRS
+
+    %% AI Conversation Summarization flow
+    POSTGRES_MEM -->|"Conversation history"| AI_SUMMARY
+    AI_SUMMARY -->|"AI-generated summary"| SUMMARIES
+    AI_SUMMARY -->|"Key topics & insights"| POSTGRES_MEM
 ```
 
 ### Memory Features
@@ -189,7 +203,15 @@ graph TB
 - **Technical Enhancement**: Adds Stripe-specific terminology and concepts
 - **Fallback System**: Graceful fallback to rule-based reformulation if AI fails
 
-#### **4. PostgreSQL Search Capabilities**
+#### **4. AI-Powered Conversation Summarization**
+
+- **Gemini AI Integration**: Uses Google's Gemini 2.0-flash for intelligent conversation analysis
+- **Comprehensive Analysis**: Identifies main issues, solutions, outcomes, and technical details
+- **Context-Aware Summaries**: Incorporates key topics and conversation themes
+- **Intelligent Fallback**: Graceful degradation to rule-based summarization if AI unavailable
+- **Optimized Configuration**: Uses appropriate temperature and token limits for consistent summaries
+
+#### **5. PostgreSQL Search Capabilities**
 
 - **Full-text Search**: Uses PostgreSQL's `to_tsvector` and `plainto_tsquery` for English language processing
 - **Multi-field Search**: Searches across questions, answers, and context fields
@@ -337,6 +359,47 @@ console.log(reformulation.method); // "gemini_ai" or "rule_based_fallback"
 - Cached retrieval for improved performance
 - Automatic cleanup of old data
 - AI-powered optimization for better memory utilization
+
+### AI Conversation Summarization
+
+The system features intelligent conversation summarization powered by Gemini AI, providing comprehensive analysis of customer support interactions.
+
+#### **Features**
+
+- **Intelligent Analysis**: AI identifies main issues, solutions, and outcomes
+- **Context Preservation**: Captures technical details and conversation themes
+- **Structured Summaries**: Organized summaries with key points and next steps
+- **Fallback Support**: Rule-based summarization when AI is unavailable
+
+#### **Usage Example**
+
+```javascript
+// Create conversation summary with AI
+const summary = await memoryController.createConversationSummary();
+
+// The AI generates comprehensive summaries like:
+/*
+"Customer Support Session Summary:
+
+The user encountered issues with Stripe webhook signature verification while implementing payment processing. The main problem was related to incorrect signature validation logic in their Node.js application. 
+
+Key solutions provided included:
+1. Proper webhook signature verification using Stripe's webhook signing secret
+2. Implementation of secure signature comparison to prevent timing attacks
+3. Error handling for invalid signatures with appropriate logging
+
+The conversation covered technical implementation details including code examples for Express.js middleware, environment variable configuration, and testing strategies using Stripe CLI. The user was provided with complete working code samples and best practices for production deployment.
+
+Next steps: The user should implement the provided signature verification middleware and test using Stripe's webhook testing tools before going live."
+*/
+```
+
+#### **AI Summarization Benefits**
+
+- **Comprehensive Coverage**: Captures all important aspects of the conversation
+- **Technical Accuracy**: Preserves technical details and implementation specifics
+- **Actionable Insights**: Identifies next steps and follow-up actions
+- **Context Retention**: Maintains conversation flow for future reference
 
 ### How It Works
 
@@ -511,7 +574,9 @@ The chat interface provides:
   - User message processing with context integration
   - Assistant response processing and Q&A extraction
   - Complete memory context retrieval for RAG
-  - Conversation summarization and cleanup
+  - AI-powered conversation summarization with Gemini
+  - Intelligent fallback to rule-based summarization
+  - Conversation cleanup and memory optimization
 
 #### 2. BufferWindowMemory (`services/bufferWindowMemory.js`)
 
@@ -530,8 +595,9 @@ The chat interface provides:
   - Session and message storage
   - Q&A pair storage with AI analysis
   - Full-text search across conversation history
-  - Conversation summarization
+  - AI-powered conversation summarization storage
   - Cross-session memory retrieval
+  - Intelligent summary retrieval and search
   - Memory statistics and analytics
 
 #### 4. QueryReformulationService (`services/queryReformulationService.js`)
