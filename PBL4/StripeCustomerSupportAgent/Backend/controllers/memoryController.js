@@ -1,6 +1,8 @@
 import BufferWindowMemory from "../services/bufferWindowMemory.js";
 import PostgreSQLMemoryService from "../services/postgresMemoryService.js";
 import QueryReformulationService from "../services/queryReformulationService.js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import config from "../config/config.js";
 
 /**
  * Memory Controller
@@ -17,6 +19,28 @@ class MemoryController {
     );
     this.currentSessionId = null;
     this.currentUserId = null;
+    this.geminiClient = null;
+    this.initializeGemini();
+  }
+
+  /**
+   * Initialize Gemini client for AI-powered summarization
+   */
+  initializeGemini() {
+    try {
+      if (!config.GEMINI_API_KEY) {
+        console.warn(
+          "⚠️  GEMINI_API_KEY not found, using rule-based summarization"
+        );
+        return;
+      }
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+      console.log(
+        "✅ Gemini client initialized for conversation summarization"
+      );
+    } catch (error) {
+      console.warn("⚠️  Failed to initialize Gemini client:", error.message);
+    }
   }
 
   /**
@@ -274,8 +298,8 @@ class MemoryController {
       // Extract key topics from conversation
       const keyTopics = this.extractKeyTopics(conversationHistory);
 
-      // Create summary text
-      const summaryText = this.generateSummaryText(
+      // Create summary text using Gemini AI
+      const summaryText = await this.generateSummaryText(
         conversationHistory,
         keyTopics
       );
@@ -319,9 +343,93 @@ class MemoryController {
   }
 
   /**
-   * Generate summary text from conversation
+   * Generate summary text from conversation using Gemini AI
    */
-  generateSummaryText(conversationHistory, keyTopics) {
+  async generateSummaryText(conversationHistory, keyTopics) {
+    try {
+      // If Gemini is not available, fall back to rule-based summarization
+      if (!this.geminiClient) {
+        return this.generateRuleBasedSummary(conversationHistory, keyTopics);
+      }
+
+      console.log("🤖 Generating AI-powered conversation summary with Gemini");
+
+      // Prepare conversation context for Gemini
+      const conversationText =
+        this.formatConversationForGemini(conversationHistory);
+
+      // Create prompt for Gemini
+      const prompt = this.createSummaryPrompt(conversationText, keyTopics);
+
+      // Get Gemini model
+      const model = this.geminiClient.getGenerativeModel({
+        model: "gemini-2.0-flash",
+        generationConfig: {
+          temperature: 0.3,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 512,
+        },
+      });
+
+      // Generate summary with Gemini
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const summary = response.text();
+
+      console.log("✅ AI-powered conversation summary generated: ", summary);
+      return summary;
+    } catch (error) {
+      console.warn(
+        "⚠️  Failed to generate AI summary, falling back to rule-based:",
+        error.message
+      );
+      return this.generateRuleBasedSummary(conversationHistory, keyTopics);
+    }
+  }
+
+  /**
+   * Format conversation history for Gemini processing
+   */
+  formatConversationForGemini(conversationHistory) {
+    return conversationHistory
+      .map((msg, index) => {
+        const role = msg.role === "user" ? "User" : "Assistant";
+        const timestamp = msg.timestamp
+          ? new Date(msg.timestamp).toISOString()
+          : "";
+        return `${role} (${timestamp}): ${msg.content}`;
+      })
+      .join("\n\n");
+  }
+
+  /**
+   * Create prompt for Gemini summarization
+   */
+  createSummaryPrompt(conversationText, keyTopics) {
+    const topicsText =
+      keyTopics.length > 0
+        ? `\n\nKey topics identified: ${keyTopics.join(", ")}`
+        : "";
+
+    return `You are an expert at analyzing customer support conversations. Please create a comprehensive summary of the following conversation between a user and a Stripe customer support assistant.
+
+      ${conversationText}${topicsText}
+
+      Please provide a summary that includes:
+      1. The main issues or questions the user had
+      2. Key solutions or information provided by the assistant
+      3. The overall outcome or resolution status
+      4. Important technical details or topics discussed
+      5. Any follow-up actions or next steps mentioned
+
+      Keep the summary concise but informative (2-3 paragraphs maximum). Focus on the most important aspects that would be useful for future reference or context.`;
+  }
+
+  /**
+   * Fallback rule-based summary generation
+   */
+  generateRuleBasedSummary(conversationHistory, keyTopics) {
     const userMessages = conversationHistory.filter(
       (msg) => msg.role === "user"
     );

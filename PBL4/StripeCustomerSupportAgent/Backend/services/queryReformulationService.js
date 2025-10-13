@@ -148,20 +148,20 @@ class QueryReformulationService {
     // Create the prompt for Gemini
     const prompt = `You are an expert query reformulation assistant for a Stripe customer support system. Your task is to reformulate user queries to be more effective for document retrieval while maintaining the original intent.
 
-CONTEXT INFORMATION:
-${contextString}
+      CONTEXT INFORMATION:
+      ${contextString}
 
-ORIGINAL USER QUERY: "${originalQuery}"
+      ORIGINAL USER QUERY: "${originalQuery}"
 
-INSTRUCTIONS:
-1. Reformulate the query to be more specific and search-friendly
-2. Include relevant context from the conversation history
-3. Add technical terms that might help with document retrieval
-4. Maintain the original question's intent
-5. Make the query self-contained for better search results
-6. Focus on Stripe API, payments, webhooks, and technical concepts
+      INSTRUCTIONS:
+      1. Reformulate the query to be more specific and search-friendly
+      2. Include relevant context from the conversation history
+      3. Add technical terms that might help with document retrieval
+      4. Maintain the original question's intent
+      5. Make the query self-contained for better search results
+      6. Focus on Stripe API, payments, webhooks, and technical concepts
 
-REFORMULATED QUERY:`;
+      REFORMULATED QUERY:`;
 
     try {
       const model = this.geminiClient.getGenerativeModel({
