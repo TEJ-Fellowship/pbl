@@ -1,0 +1,421 @@
+import BufferWindowMemory from "../services/bufferWindowMemory.js";
+import PostgreSQLMemoryService from "../services/postgresMemoryService.js";
+import QueryReformulationService from "../services/queryReformulationService.js";
+
+/**
+ * Memory Controller
+ * Orchestrates short-term (BufferWindowMemory) and long-term (PostgreSQL) memory
+ * Implements the complete conversational memory system as described in the guidelines
+ */
+class MemoryController {
+  constructor() {
+    this.bufferMemory = new BufferWindowMemory(8); // Last 8 messages (4 turns)
+    this.postgresMemory = new PostgreSQLMemoryService();
+    this.queryReformulation = new QueryReformulationService(
+      this.bufferMemory,
+      this.postgresMemory
+    );
+    this.currentSessionId = null;
+    this.currentUserId = null;
+  }
+
+  /**
+   * Initialize memory system for a new session
+   */
+  async initializeSession(sessionId, userId = null, metadata = {}) {
+    try {
+      console.log(`🧠 Initializing memory system for session: ${sessionId}`);
+
+      // Initialize buffer memory
+      this.bufferMemory.initialize(sessionId);
+
+      // Create or get PostgreSQL session
+      await this.postgresMemory.createOrGetSession(sessionId, userId, metadata);
+
+      // Set current session
+      this.currentSessionId = sessionId;
+      this.currentUserId = userId;
+
+      console.log(`✅ Memory system initialized for session: ${sessionId}`);
+      return {
+        sessionId,
+        userId,
+        metadata,
+        initialized: true,
+      };
+    } catch (error) {
+      console.error("❌ Failed to initialize memory system:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Process user message with memory integration
+   */
+  async processUserMessage(userMessage, metadata = {}) {
+    if (!this.currentSessionId) {
+      throw new Error(
+        "Memory system not initialized. Call initializeSession() first."
+      );
+    }
+
+    try {
+      console.log(
+        `👤 Processing user message: "${userMessage.substring(0, 100)}..."`
+      );
+
+      // Add to buffer memory
+      const bufferMessage = this.bufferMemory.addMessage(
+        "user",
+        userMessage,
+        metadata
+      );
+
+      // Store in PostgreSQL
+      await this.postgresMemory.storeMessage(
+        this.currentSessionId,
+        "user",
+        userMessage,
+        metadata
+      );
+
+      console.log(`✅ User message processed and stored`);
+      return bufferMessage;
+    } catch (error) {
+      console.error("❌ Failed to process user message:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Process assistant response with memory integration
+   */
+  async processAssistantResponse(assistantResponse, metadata = {}) {
+    if (!this.currentSessionId) {
+      throw new Error(
+        "Memory system not initialized. Call initializeSession() first."
+      );
+    }
+
+    try {
+      console.log(
+        `🤖 Processing assistant response: "${assistantResponse.substring(
+          0,
+          100
+        )}..."`
+      );
+
+      // Add to buffer memory
+      const bufferMessage = this.bufferMemory.addMessage(
+        "assistant",
+        assistantResponse,
+        metadata
+      );
+
+      // Store in PostgreSQL
+      await this.postgresMemory.storeMessage(
+        this.currentSessionId,
+        "assistant",
+        assistantResponse,
+        metadata
+      );
+
+      // Extract Q&A pair for long-term memory
+      const lastUserMessage = this.bufferMemory.getLastUserMessage();
+      if (lastUserMessage) {
+        await this.queryReformulation.extractQAPairs(
+          this.currentSessionId,
+          lastUserMessage.content,
+          assistantResponse
+        );
+      }
+
+      console.log(`✅ Assistant response processed and stored`);
+      return bufferMessage;
+    } catch (error) {
+      console.error("❌ Failed to process assistant response:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Reformulate query with context integration
+   */
+  async reformulateQuery(originalQuery) {
+    if (!this.currentSessionId) {
+      throw new Error(
+        "Memory system not initialized. Call initializeSession() first."
+      );
+    }
+
+    try {
+      console.log(`🔄 Reformulating query with memory context`);
+
+      const reformulation = await this.queryReformulation.reformulateQuery(
+        originalQuery,
+        this.currentSessionId,
+        this.currentUserId
+      );
+
+      console.log(`✅ Query reformulated with context integration`);
+      return reformulation;
+    } catch (error) {
+      console.error("❌ Failed to reformulate query:", error.message);
+      // Fallback to original query
+      return {
+        originalQuery,
+        reformulatedQuery: originalQuery,
+        context: null,
+      };
+    }
+  }
+
+  /**
+   * Get recent conversation context
+   */
+  getRecentContext() {
+    return {
+      bufferMemory: this.bufferMemory.getRecentMessages(),
+      contextString: this.bufferMemory.getContextString(),
+      summary: this.bufferMemory.getConversationSummary(),
+      hasContext: this.bufferMemory.hasRecentContext(),
+    };
+  }
+
+  /**
+   * Get long-term memory context
+   */
+  async getLongTermContext(query) {
+    try {
+      const relevantQAs = await this.postgresMemory.getRelevantQAPairs(
+        query,
+        this.currentSessionId,
+        5
+      );
+
+      const conversationSummary =
+        await this.postgresMemory.getConversationSummary(this.currentSessionId);
+
+      return {
+        relevantQAs,
+        conversationSummary,
+        hasLongTermContext:
+          relevantQAs.length > 0 || conversationSummary !== null,
+      };
+    } catch (error) {
+      console.error("❌ Failed to get long-term context:", error.message);
+      return {
+        relevantQAs: [],
+        conversationSummary: null,
+        hasLongTermContext: false,
+      };
+    }
+  }
+
+  /**
+   * Get complete memory context for RAG
+   */
+  async getCompleteMemoryContext(originalQuery) {
+    try {
+      console.log(`🧠 Gathering complete memory context for query`);
+
+      // Get recent context
+      const recentContext = this.getRecentContext();
+
+      // Get long-term context
+      const longTermContext = await this.getLongTermContext(originalQuery);
+
+      // Reformulate query with context
+      const reformulation = await this.reformulateQuery(originalQuery);
+
+      return {
+        originalQuery,
+        reformulatedQuery: reformulation.reformulatedQuery,
+        recentContext,
+        longTermContext,
+        reformulationContext: reformulation.context,
+        memoryStats: this.getMemoryStats(),
+      };
+    } catch (error) {
+      console.error("❌ Failed to get complete memory context:", error.message);
+      return {
+        originalQuery,
+        reformulatedQuery: originalQuery,
+        recentContext: null,
+        longTermContext: null,
+        reformulationContext: null,
+        memoryStats: null,
+      };
+    }
+  }
+
+  /**
+   * Create conversation summary
+   */
+  async createConversationSummary() {
+    if (!this.currentSessionId) {
+      throw new Error(
+        "Memory system not initialized. Call initializeSession() first."
+      );
+    }
+
+    try {
+      console.log(
+        `📝 Creating conversation summary for session: ${this.currentSessionId}`
+      );
+
+      const recentMessages = this.bufferMemory.getRecentMessages();
+      const conversationHistory =
+        await this.postgresMemory.getConversationHistory(
+          this.currentSessionId,
+          20
+        );
+
+      // Extract key topics from conversation
+      const keyTopics = this.extractKeyTopics(conversationHistory);
+
+      // Create summary text
+      const summaryText = this.generateSummaryText(
+        conversationHistory,
+        keyTopics
+      );
+
+      // Store summary
+      const summary = await this.postgresMemory.storeConversationSummary(
+        this.currentSessionId,
+        summaryText,
+        keyTopics
+      );
+
+      console.log(`✅ Conversation summary created and stored`);
+      return summary;
+    } catch (error) {
+      console.error("❌ Failed to create conversation summary:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract key topics from conversation
+   */
+  extractKeyTopics(conversationHistory) {
+    const topics = new Set();
+
+    conversationHistory.forEach((message) => {
+      const content = message.content.toLowerCase();
+
+      // Extract technical topics
+      if (content.includes("payment")) topics.add("payment");
+      if (content.includes("webhook")) topics.add("webhook");
+      if (content.includes("api")) topics.add("api");
+      if (content.includes("error")) topics.add("error");
+      if (content.includes("integration")) topics.add("integration");
+      if (content.includes("stripe")) topics.add("stripe");
+      if (content.includes("authentication")) topics.add("authentication");
+      if (content.includes("security")) topics.add("security");
+    });
+
+    return Array.from(topics);
+  }
+
+  /**
+   * Generate summary text from conversation
+   */
+  generateSummaryText(conversationHistory, keyTopics) {
+    const userMessages = conversationHistory.filter(
+      (msg) => msg.role === "user"
+    );
+    const assistantMessages = conversationHistory.filter(
+      (msg) => msg.role === "assistant"
+    );
+
+    let summary = `Conversation with ${userMessages.length} user questions and ${assistantMessages.length} assistant responses. `;
+
+    if (keyTopics.length > 0) {
+      summary += `Key topics discussed: ${keyTopics.join(", ")}. `;
+    }
+
+    if (userMessages.length > 0) {
+      const firstQuestion = userMessages[0].content.substring(0, 100);
+      summary += `Started with: "${firstQuestion}...". `;
+    }
+
+    if (assistantMessages.length > 0) {
+      const lastResponse = assistantMessages[
+        assistantMessages.length - 1
+      ].content.substring(0, 100);
+      summary += `Latest discussion: "${lastResponse}...".`;
+    }
+
+    return summary;
+  }
+
+  /**
+   * Get memory statistics
+   */
+  getMemoryStats() {
+    return {
+      bufferMemory: this.bufferMemory.getStats(),
+      sessionId: this.currentSessionId,
+      userId: this.currentUserId,
+      hasRecentContext: this.bufferMemory.hasRecentContext(),
+      messageCount: this.bufferMemory.getRecentMessages().length,
+    };
+  }
+
+  /**
+   * Get session statistics from PostgreSQL
+   */
+  async getSessionStats() {
+    if (!this.currentSessionId) {
+      return null;
+    }
+
+    try {
+      return await this.postgresMemory.getSessionStats(this.currentSessionId);
+    } catch (error) {
+      console.error("❌ Failed to get session stats:", error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Search conversation history
+   */
+  async searchConversations(query, limit = 20) {
+    try {
+      return await this.postgresMemory.searchConversations(
+        query,
+        this.currentUserId,
+        limit
+      );
+    } catch (error) {
+      console.error("❌ Failed to search conversations:", error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Clear current session memory
+   */
+  clearSessionMemory() {
+    this.bufferMemory.clear();
+    this.currentSessionId = null;
+    this.currentUserId = null;
+    console.log(`🧹 Session memory cleared`);
+  }
+
+  /**
+   * Close memory system
+   */
+  async close() {
+    try {
+      await this.postgresMemory.close();
+      console.log(`🔒 Memory system closed`);
+    } catch (error) {
+      console.error("❌ Failed to close memory system:", error.message);
+    }
+  }
+}
+
+export default MemoryController;

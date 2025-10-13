@@ -1,0 +1,363 @@
+import pool from "../config/database.js";
+import { v4 as uuidv4 } from "uuid";
+
+/**
+ * PostgreSQL Memory Service
+ * Handles long-term conversation memory persistence and retrieval
+ * Implements conversation history, Q&A pairs, and semantic search
+ */
+class PostgreSQLMemoryService {
+  constructor() {
+    this.pool = pool;
+  }
+
+  /**
+   * Create or get existing conversation session
+   */
+  async createOrGetSession(sessionId, userId = null, metadata = {}) {
+    const client = await this.pool.connect();
+
+    try {
+      // Check if session exists
+      const existingSession = await client.query(
+        "SELECT * FROM conversation_sessions WHERE session_id = $1",
+        [sessionId]
+      );
+
+      if (existingSession.rows.length > 0) {
+        // Update last activity
+        await client.query(
+          "UPDATE conversation_sessions SET updated_at = NOW() WHERE session_id = $1",
+          [sessionId]
+        );
+        return existingSession.rows[0];
+      }
+
+      // Create new session
+      const newSession = await client.query(
+        `INSERT INTO conversation_sessions (session_id, user_id, metadata) 
+         VALUES ($1, $2, $3) 
+         RETURNING *`,
+        [sessionId, userId, JSON.stringify(metadata)]
+      );
+
+      console.log(`🆕 Created new conversation session: ${sessionId}`);
+      return newSession.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Store a conversation message
+   */
+  async storeMessage(sessionId, role, content, metadata = {}) {
+    const client = await this.pool.connect();
+
+    try {
+      const messageId = uuidv4();
+      const result = await client.query(
+        `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+        [messageId, sessionId, role, content, JSON.stringify(metadata)]
+      );
+
+      console.log(`💾 Stored ${role} message for session: ${sessionId}`);
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get recent messages for a session (BufferWindowMemory simulation)
+   */
+  async getRecentMessages(sessionId, limit = 8) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT message_id, role, content, created_at, metadata
+         FROM conversation_messages 
+         WHERE session_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT $2`,
+        [sessionId, limit]
+      );
+
+      return result.rows.reverse(); // Return in chronological order
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Store Q&A pair for long-term memory
+   */
+  async storeQAPair(
+    sessionId,
+    question,
+    answer,
+    context = "",
+    relevanceScore = 0.5,
+    isImportant = false,
+    tags = []
+  ) {
+    const client = await this.pool.connect();
+
+    try {
+      const qaId = uuidv4();
+      const result = await client.query(
+        `INSERT INTO conversation_qa_pairs 
+         (qa_id, session_id, question, answer, context, relevance_score, is_important, tags)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          qaId,
+          sessionId,
+          question,
+          answer,
+          context,
+          relevanceScore,
+          isImportant,
+          tags,
+        ]
+      );
+
+      console.log(`🧠 Stored Q&A pair for long-term memory: ${qaId}`);
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Retrieve relevant Q&A pairs for a query
+   */
+  async getRelevantQAPairs(query, sessionId = null, limit = 5) {
+    const client = await this.pool.connect();
+
+    try {
+      let whereClause = `(
+        to_tsvector('english', question) @@ plainto_tsquery('english', $1)
+        OR to_tsvector('english', answer) @@ plainto_tsquery('english', $1)
+        OR to_tsvector('english', context) @@ plainto_tsquery('english', $1)
+      )`;
+
+      let queryParams = [query];
+      let paramIndex = 2;
+
+      if (sessionId) {
+        whereClause += ` AND session_id = $${paramIndex}`;
+        queryParams.push(sessionId);
+        paramIndex++;
+      }
+
+      const result = await client.query(
+        `SELECT qa_id, question, answer, context, relevance_score, session_id, created_at
+         FROM conversation_qa_pairs 
+         WHERE ${whereClause}
+         ORDER BY 
+           relevance_score DESC,
+           ts_rank(to_tsvector('english', question), plainto_tsquery('english', $1)) DESC
+         LIMIT $${paramIndex}`,
+        [...queryParams, limit]
+      );
+
+      console.log(
+        `🔍 Found ${result.rows.length} relevant Q&A pairs for query`
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Store conversation summary
+   */
+  async storeConversationSummary(sessionId, summaryText, keyTopics = []) {
+    const client = await this.pool.connect();
+
+    try {
+      const summaryId = uuidv4();
+      const result = await client.query(
+        `INSERT INTO conversation_summaries (summary_id, session_id, summary_text, key_topics)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [summaryId, sessionId, summaryText, keyTopics]
+      );
+
+      console.log(`📝 Stored conversation summary for session: ${sessionId}`);
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get conversation summary for a session
+   */
+  async getConversationSummary(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT summary_text, key_topics, created_at
+         FROM conversation_summaries 
+         WHERE session_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [sessionId]
+      );
+
+      return result.rows.length > 0 ? result.rows[0] : null;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get conversation history for a session
+   */
+  async getConversationHistory(sessionId, limit = 50) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT message_id, role, content, created_at, metadata
+         FROM conversation_messages 
+         WHERE session_id = $1 
+         ORDER BY created_at ASC 
+         LIMIT $2`,
+        [sessionId, limit]
+      );
+
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Search conversations by content
+   */
+  async searchConversations(query, userId = null, limit = 20) {
+    const client = await this.pool.connect();
+
+    try {
+      let whereClause = `(
+        to_tsvector('english', cm.content) @@ plainto_tsquery('english', $1)
+      )`;
+
+      let queryParams = [query];
+      let paramIndex = 2;
+
+      if (userId) {
+        whereClause += ` AND cs.user_id = $${paramIndex}`;
+        queryParams.push(userId);
+        paramIndex++;
+      }
+
+      const result = await client.query(
+        `SELECT DISTINCT 
+           cs.session_id, 
+           cs.user_id, 
+           cs.created_at,
+           cs.metadata,
+           COUNT(cm.message_id) as message_count
+         FROM conversation_sessions cs
+         JOIN conversation_messages cm ON cs.session_id = cm.session_id
+         WHERE ${whereClause}
+         GROUP BY cs.session_id, cs.user_id, cs.created_at, cs.metadata
+         ORDER BY cs.created_at DESC
+         LIMIT $${paramIndex}`,
+        [...queryParams, limit]
+      );
+
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get session statistics
+   */
+  async getSessionStats(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT 
+           COUNT(cm.message_id) as total_messages,
+           COUNT(CASE WHEN cm.role = 'user' THEN 1 END) as user_messages,
+           COUNT(CASE WHEN cm.role = 'assistant' THEN 1 END) as assistant_messages,
+           COUNT(qa.qa_id) as qa_pairs,
+           COUNT(s.summary_id) as summaries
+         FROM conversation_sessions cs
+         LEFT JOIN conversation_messages cm ON cs.session_id = cm.session_id
+         LEFT JOIN conversation_qa_pairs qa ON cs.session_id = qa.session_id
+         LEFT JOIN conversation_summaries s ON cs.session_id = s.session_id
+         WHERE cs.session_id = $1`,
+        [sessionId]
+      );
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Clean up old conversations (optional maintenance)
+   */
+  async cleanupOldConversations(daysOld = 30) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `DELETE FROM conversation_sessions 
+         WHERE updated_at < NOW() - INTERVAL '${daysOld} days' 
+         AND is_active = false`
+      );
+
+      console.log(`🧹 Cleaned up ${result.rowCount} old conversations`);
+      return result.rowCount;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get memory statistics
+   */
+  async getMemoryStats() {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT 
+           (SELECT COUNT(*) FROM conversation_sessions) as total_sessions,
+           (SELECT COUNT(*) FROM conversation_messages) as total_messages,
+           (SELECT COUNT(*) FROM conversation_qa_pairs) as total_qa_pairs,
+           (SELECT COUNT(*) FROM conversation_summaries) as total_summaries,
+           (SELECT COUNT(*) FROM conversation_sessions WHERE is_active = true) as active_sessions`
+      );
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Close the connection pool
+   */
+  async close() {
+    await this.pool.end();
+  }
+}
+
+export default PostgreSQLMemoryService;
