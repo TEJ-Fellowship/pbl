@@ -5,7 +5,7 @@
     "url": "https://support.discord.com/",
     "type": "support-center",
     "pageName": "Discord Support Center",
-    "scrapedAt": "2025-10-11T04:19:07.540Z"
+    "scrapedAt": "2025-10-13T02:50:14.679Z"
   },
   {
     "title": "Beginner's Guide to Discord",
@@ -13,7 +13,7 @@
     "url": "https://support.discord.com/hc/en-us/articles/360045138571",
     "type": "support",
     "pageName": "Server Setup Guide",
-    "scrapedAt": "2025-10-11T04:19:10.283Z"
+    "scrapedAt": "2025-10-13T02:50:17.422Z"
   },
   {
     "title": "Setting Up Permissions FAQ",
@@ -21,7 +21,7 @@
     "url": "https://support.discord.com/hc/en-us/articles/206029707",
     "type": "support",
     "pageName": "Roles & Permissions",
-    "scrapedAt": "2025-10-11T04:19:13.185Z"
+    "scrapedAt": "2025-10-13T02:50:19.779Z"
   },
   {
     "title": "oops",
@@ -29,7 +29,7 @@
     "url": "https://support.discord.com/hc/en-us/sections/360008589993-Moderation",
     "type": "support-section",
     "pageName": "Moderation Tools",
-    "scrapedAt": "2025-10-11T04:19:15.980Z"
+    "scrapedAt": "2025-10-13T02:50:21.568Z"
   },
   {
     "title": "Intro to Webhooks",
@@ -37,7 +37,7 @@
     "url": "https://support.discord.com/hc/en-us/articles/228383668",
     "type": "support",
     "pageName": "Bot Integration",
-    "scrapedAt": "2025-10-11T04:19:19.259Z"
+    "scrapedAt": "2025-10-13T02:50:24.045Z"
   },
   {
     "title": "Intro | Documentation | Discord Developer Portal",
@@ -45,7 +45,7 @@
     "url": "https://discord.com/developers/docs/",
     "type": "developer",
     "pageName": "Discord Developer Docs",
-    "scrapedAt": "2025-10-11T04:19:21.658Z"
+    "scrapedAt": "2025-10-13T02:50:26.466Z"
   },
   {
     "title": "Webhook Resource",
@@ -53,7 +53,7 @@
     "url": "https://discord.com/developers/docs/resources/webhook",
     "type": "developer",
     "pageName": "Webhooks Guide",
-    "scrapedAt": "2025-10-11T04:19:24.439Z"
+    "scrapedAt": "2025-10-13T02:50:28.748Z"
   },
   {
     "title": "OAuth2",
@@ -61,7 +61,7 @@
     "url": "https://discord.com/developers/docs/topics/oauth2",
     "type": "developer",
     "pageName": "Bot API Reference",
-    "scrapedAt": "2025-10-11T04:19:26.655Z"
+    "scrapedAt": "2025-10-13T02:50:30.960Z"
   },
   {
     "title": "Discord Community Guidelines",
@@ -69,7 +69,7 @@
     "url": "https://discord.com/guidelines",
     "type": "guidelines",
     "pageName": "Community Guidelines",
-    "scrapedAt": "2025-10-11T04:19:29.574Z"
+    "scrapedAt": "2025-10-13T02:50:34.222Z"
   },
   {
     "title": "oops",
@@ -77,6 +77,6 @@
     "url": "https://support.discord.com/hc/en-us/sections/360000045712",
     "type": "support-section",
     "pageName": "Safety & Privacy",
-    "scrapedAt": "2025-10-11T04:19:32.353Z"
+    "scrapedAt": "2025-10-13T02:50:36.912Z"
   }
 ]

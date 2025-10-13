@@ -72,7 +72,6 @@ class RAGService {
 
       // Format results
       const formattedResults = this.formatSearchResults(results);
-
       console.log(`Found ${formattedResults.length} relevant results`);
       return formattedResults;
     } catch (error) {

@@ -1,6 +1,7 @@
 import { ChromaClient } from "chromadb";
 import GeminiConfig from "./gemini.js";
 import { config } from "../config/index.js";
+import Formatters from "../utils/formatters.js";
 
 class DatabaseConfig {
   constructor() {
@@ -16,16 +17,17 @@ class DatabaseConfig {
 
       this.gemini = new GeminiConfig();
 
-      this.gemini.initialize();
+      await this.gemini.initialize();
 
       try {
-        this.client = new ChromaClient();
-        console.log("Chromadb client created in embedded mode");
-      } catch (error) {
-        console.error("Embedded mode failed, try with local path...");
+        // Try embedded mode first
         this.client = new ChromaClient({
           path: config.chroma.dbPath,
         });
+        console.log("Chromadb client created in embedded mode");
+      } catch (error) {
+        console.error("Embedded mode failed, trying default client...");
+        this.client = new ChromaClient();
       }
 
       try {
@@ -37,16 +39,16 @@ class DatabaseConfig {
           `Found existing collection: ${config.chroma.collectionName}`
         );
       } catch (error) {
+        // Create collection without embedding function (we'll provide embeddings manually)
         this.collection = await this.client.createCollection({
           name: config.chroma.collectionName,
           metadata: {
             description: "Discord Support Documentation",
             created_at: new Date().toISOString(),
-          },
+          }
         });
+        console.log(`Created new collection: ${config.chroma.collectionName}`);
       }
-
-      console.log(`Created new collection: ${config.chroma.collectionName}`);
 
       this.isInitialized = true;
       console.log(
@@ -156,7 +158,6 @@ class DatabaseConfig {
           });
         }
       }
-
       return formattedResult;
     } catch (error) {
       console.error(
