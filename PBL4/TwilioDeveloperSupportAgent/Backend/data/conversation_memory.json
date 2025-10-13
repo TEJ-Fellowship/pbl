@@ -71,7 +71,7 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-10T08:21:25.570Z",
-      "lastActivity": "2025-10-11T00:26:21.503Z",
+      "lastActivity": "2025-10-12T22:49:49.941Z",
       "conversationHistory": [
         {
           "timestamp": "2025-10-10T08:21:36.409Z",
@@ -158,6 +158,58 @@
             "chunkCount": 8,
             "responseTime": 7420
           }
+        },
+        {
+          "timestamp": "2025-10-12T22:12:49.759Z",
+          "query": "What does error 30001 mean?",
+          "response": "Error 30001 means \"Queue overflow\" [Source 2].\n\nThis error indicates that Twilio's SMS queue is experiencing a high volume of traffic and is temporarily unable to process your message. This is usually a transient issue.\n\n**Possible Causes and Solutions:**\n\n*   **High Traffic:** Twilio's SMS queue might be overloaded due to a surge in messaging traffic.\n    *   **Solution:** Implement retry logic in your code to resend the message after a short delay (e.g., exponential backoff). This can help your messages get through once the queue clears.\n*   **Sending Messages Too Quickly:** You might be sending messages at a rate that exceeds Twilio's processing capacity.\n    *   **Solution:** Implement rate limiting in your application to control the number of messages sent per second or minute. This will prevent overwhelming the queue.\n*   **Temporary Twilio Issue:** There might be a temporary issue on Twilio's end.\n    *   **Solution:** Check Twilio's status page for any reported incidents. If there is an ongoing incident, wait for it to be resolved and then retry sending your messages.\n\n**Code Example (JavaScript with exponential backoff):**\n\n```javascript\nconst twilioClient = require('twilio')(accountSid, authToken);\n\nasync function sendMessageWithRetry(to, from, body, retries = 3, delay = 1000) {\n  try {\n    const message = await twilioClient.messages.create({\n      to: to,\n      from: from,\n      body: body,\n    });\n    console.log(`Message sent successfully: ${message.sid}`);\n  } catch (error) {\n    if (error.code === 30001 && retries > 0) {\n      console.log(`Queue overflow error. Retrying in ${delay}ms...`);\n      await new Promise(resolve => setTimeout(resolve, delay));\n      return sendMessageWithRetry(to, from, body, retries - 1, delay * 2); // Exponential backoff\n    } else {\n      console.error(`Failed to send message after retries: ${error}`);\n      throw error; // Re-throw the error for handling at a higher level\n    }\n  }\n}\n\n// Example usage:\nconst toNumber = '+1234567890'; // Replace with the recipient's phone number\nconst fromNumber = '+11234567890'; // Replace with your Twilio phone number\nconst messageBody = 'Hello from Twilio!';\n\nsendMessageWithRetry(toNumber, fromNumber, messageBody)\n  .then(() => console.log('Message sending process completed.'))\n  .catch(error => console.error('Message sending failed.', error));\n```\n\n**Explanation:**\n\n1.  **`sendMessageWithRetry(to, from, body, retries, delay)`:** This function attempts to send the SMS message and retries if it encounters a 30001 error.\n2.  **`twilioClient.messages.create(...)`:** This is the standard Twilio API call to send an SMS message.\n3.  **`if (error.code === 30001 && retries > 0)`:** This checks if the error code is 30001 (Queue overflow) and if there are remaining retries.\n4.  **`await new Promise(resolve => setTimeout(resolve, delay))`:** This introduces a delay before retrying the message.\n5.  **`sendMessageWithRetry(to, from, body, retries - 1, delay * 2)`:** This recursively calls the `sendMessageWithRetry` function with one less retry and a doubled delay (exponential backoff).\n6.  **Error Handling:** If the message fails after all retries, the error is re-thrown to be handled by the calling code.\n\n**Important Considerations:**\n\n*   **A2P 10DLC Compliance:** As discussed in the previous conversation, ensure that you have completed the A2P 10DLC registration process if you are sending messages to US phone numbers. Failure to do so can lead to message blocking and other issues.\n*   **Rate Limiting:** Implement rate limiting to avoid overwhelming Twilio's SMS queue, especially during peak hours.\n*   **Monitoring:** Monitor your application's SMS sending performance and error rates to identify and address any issues proactively.\n*   **Twilio Status Page:** Regularly check Twilio's status page for any reported incidents that might be affecting SMS delivery.\n\nBy implementing these solutions, you can mitigate the impact of error 30001 and improve the reliability of your SMS messaging.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [
+              "30001"
+            ],
+            "chunkCount": 8,
+            "responseTime": 11828
+          }
+        },
+        {
+          "timestamp": "2025-10-12T22:48:19.798Z",
+          "query": "fuuuihi",
+          "response": "I'm sorry, I'm not able to understand your last question, \"fuuuihi\". Can you please rephrase it or provide more context about what you are trying to achieve?\n\nI understand you've been working with the Twilio SMS API and encountered error 30001. To best assist you, please clarify your current issue or question. Do you have another error code you're trying to understand, or are you trying to resolve the 30001 error you previously encountered?\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 1,
+            "responseTime": 6497
+          }
+        },
+        {
+          "timestamp": "2025-10-12T22:48:51.590Z",
+          "query": "What does error 30001 mean?",
+          "response": "Error 30001 in the Programmable SMS API indicates a \"Queue overflow\" [Source 2].\n\n**Explanation:**\n\nThis error suggests that Twilio's SMS queue is experiencing a high volume of requests, and your message could not be processed at that specific time. This is usually a temporary issue.\n\n**Possible Causes:**\n\n*   **High Traffic:** Twilio's SMS infrastructure might be experiencing a surge in message traffic.\n*   **Rate Limiting:** You might be exceeding the allowed message rate for your account or phone number.\n*   **Temporary Outage:** A temporary issue within Twilio's systems could cause queuing problems.\n\n**Troubleshooting and Mitigation:**\n\n1.  **Retry Mechanism:** Implement a retry mechanism in your code to resend the message after a short delay. This can automatically handle temporary queue overflows.\n\n    ```javascript\n    async function sendMessageWithRetry(params, maxRetries = 3, delay = 1000) {\n      let retries = 0;\n      while (retries < maxRetries) {\n        try {\n          // Replace with your actual Twilio client initialization\n          const client = require('twilio')(accountSid, authToken);\n          const message = await client.messages.create(params);\n          console.log('Message sent successfully:', message.sid);\n          return message; // Exit the function if successful\n        } catch (error) {\n          if (error.code === 30001) {\n            retries++;\n            console.log(`Queue overflow error. Retrying in ${delay}ms (attempt ${retries}/${maxRetries})`);\n            await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying\n          } else {\n            // Re-throw the error if it's not a queue overflow\n            throw error;\n          }\n        }\n      }\n      throw new Error('Max retries reached. Message could not be sent.');\n    }\n\n    // Example usage:\n    const messageParams = {\n      to: '+1234567890',\n      from: '+11234567890',\n      body: 'Hello, Twilio!'\n    };\n\n    sendMessageWithRetry(messageParams)\n      .then(message => console.log('Message SID:', message.sid))\n      .catch(error => console.error('Failed to send message:', error));\n    ```\n\n2.  **Monitor Twilio Status:** Check the Twilio status page ([https://status.twilio.com/](https://status.twilio.com/)) for any reported incidents or outages.\n\n3.  **Rate Limits:** Review your account's SMS sending limits and ensure you are not exceeding them. Consider using a Messaging Service with Copilot features enabled to intelligently manage message sending and avoid hitting rate limits.\n\n4.  **Optimize Sending Logic:** If you are sending a large volume of messages, optimize your sending logic to distribute messages more evenly over time. Avoid sending large bursts of messages.\n\n5.  **Error Logging:** Implement robust error logging to capture instances of error 30001 and other SMS-related errors. This will help you identify patterns and troubleshoot issues more effectively.\n\n**API Endpoints and Parameters (Relevant - shown in example above):**\n\n*   `client.messages.create(params)`:  This is the primary endpoint for sending SMS messages. The `params` object should include:\n    *   `to`: The recipient's phone number.\n    *   `from`: Your Twilio phone number or Messaging Service SID.\n    *   `body`: The message content.\n\n**Prerequisites:**\n\n*   A Twilio account.\n*   A Twilio phone number or Messaging Service SID.\n*   The Twilio Node.js library installed (`npm install twilio`).\n\n**Security Considerations:**\n\n*   **API Keys:** Protect your Twilio API credentials (Account SID and Auth Token). Do not expose them in client-side code or commit them to public repositories. Use environment variables or a secure configuration management system.\n*   **Rate Limiting:** Implement your own rate limiting mechanisms in addition to Twilio's to prevent abuse and ensure fair usage of your application.\n\n**Note:** The information about the error code 30001 is based on the provided documentation [Source 2].\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [
+              "30001"
+            ],
+            "chunkCount": 8,
+            "responseTime": 9165
+          }
+        },
+        {
+          "timestamp": "2025-10-12T22:49:49.941Z",
+          "query": "How can I port US phone number to Twilio?",
+          "response": "I am sorry, but I cannot provide specific instructions on porting a US phone number to Twilio based on the available documentation. The provided sources focus on error codes, SMS sending, and other phone number-related issues, but do not detail the porting process.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 7,
+            "responseTime": 4253
+          }
         }
       ],
       "userPreferences": {
@@ -168,11 +220,12 @@
       "currentContext": {
         "topic": "sms",
         "relatedAPIs": [
-          "sms"
+          "sms",
+          "voice"
         ],
         "errorCodes": [],
-        "lastQuery": "What are A2P 10DLC campaign approval requirements for all brand types?",
-        "lastUpdated": "2025-10-11T00:26:18.823Z"
+        "lastQuery": "How can I port US phone number to Twilio?",
+        "lastUpdated": "2025-10-12T22:49:48.611Z"
       }
     }
   },

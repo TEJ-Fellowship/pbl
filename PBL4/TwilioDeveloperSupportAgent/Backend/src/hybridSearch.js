@@ -19,7 +19,7 @@ class HybridSearch {
       // user: config.pg_user,
       password: config.pg_password,
       database: config.pg_database,
-      port: config.pg_port || 5432,
+      port: config.pg_port || 5431,
     });
   }
 
