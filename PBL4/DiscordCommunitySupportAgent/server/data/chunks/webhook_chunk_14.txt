@@ -1,0 +1,6 @@
+payload_json **	string	JSON encoded body of non-file params	multipart/form-data only
+attachments **	array of partial attachment objects	attachment objects with filename and description	false
+flags ***	integer	message flags combined as a bitfield (only SUPPRESS_EMBEDS, SUPPRESS_NOTIFICATIONS and IS_COMPONENTS_V2 can be set)	false
+thread_name	string	name of thread to create (requires the webhook channel to be a forum or media channel)	false
+applied_tags	array of snowflakes	array of tag ids to apply to the thread (requires the webhook channel to be a forum or media channel)	false
+poll	poll request object	A poll!	one of content, file, embeds, poll

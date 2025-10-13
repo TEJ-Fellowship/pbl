@@ -1,0 +1,16 @@
+JSON Params
+FIELD	TYPE	DESCRIPTION
+name	string	the default name of the webhook
+avatar	?image data	image for the default webhook avatar
+channel_id	snowflake	the new channel id this webhook should be moved to
+Modify Webhook with Token
+PATCH
+/webhooks/{webhook.id}/{webhook.token}
+
+Same as above, except this call does not require authentication, does not accept a channel_id parameter in the body, and does not return a user in the webhook object.
+
+Delete Webhook
+DELETE
+/webhooks/{webhook.id}
+
+Delete a webhook permanently. Requires the MANAGE_WEBHOOKS permission. Returns a 204 No Content response on success. Fires a Webhooks Update Gateway event.

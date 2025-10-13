@@ -1,0 +1,9 @@
+Press the Sync Now button and the channel's permission will match the permissions of the category.
+
+Note: Synced and not-synced channels can coexist within a category. Changing a category’s permissions will change all synced channel’s permissions, but not the permissions of any not-synced channel!
+
+One final note on category permissions - if you don't want to utilize them at all, you can leave all channels within the category as "not synced" and manage them individually. Permissions can also be managed on a per-channel basis.
+
+Learn More About How To Use Permissions
+
+You can check out step-by-step instructions for the following popular permission settings:

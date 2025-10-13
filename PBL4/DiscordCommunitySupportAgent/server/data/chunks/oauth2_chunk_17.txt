@@ -1,0 +1,21 @@
+code is now exchanged for the user's access token by making a POST request to the token URL with the following parameters:
+
+grant_type - must be set to authorization_code
+code - the code from the querystring
+redirect_uri - the redirect_uri associated with this authorization, usually from your authorization URL
+Access Token Exchange Example
+Copy
+import requests
+
+API_ENDPOINT = 'https://discord.com/api/v10'
+CLIENT_ID = '332269999912132097'
+CLIENT_SECRET = '937it3ow87i4ery69876wqire'
+REDIRECT_URI = 'https://nicememe.website'
+
+def exchange_code(code):
+  data = {
+    'grant_type': 'authorization_code',
+    'code': code,
+    'redirect_uri': REDIRECT_URI
+  }
+  headers = {

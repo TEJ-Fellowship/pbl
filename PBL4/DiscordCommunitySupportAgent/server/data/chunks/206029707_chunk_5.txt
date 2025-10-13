@@ -1,0 +1,9 @@
+Now this user has the server-wide permissions that you assigned to that role.
+
+Understanding Channel And Category Permissions
+How To Set Up Channel Permissions
+
+Now that you've set up roles with server permissions, it's important to understand channel permissions. Like server permissions, channel permissions allow specific users on how they can interact with a specific channel. Here's how to set up channel permissions.
+
+Note: Channel permissions will override server permissions.
+You can adjust permissions of specific channels, both text and voice, through the channel settings menu by hovering over a channel and clicking on the cog icon.

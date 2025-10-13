@@ -1,0 +1,7 @@
+Setting Up Permissions FAQ: Learn more about how to set up Server Permissions to manage and moderate your server members.
+How do I set up a Role-Exclusive channel?: Need to set up role-exclusive channels for your server? Learn how in this article!
+Notifications Settings 101: Learn everything you need to know and more about your notification settings.
+Server Boosting FAQ: Learn more about Server Boosting and Additional Perks you can have for your server.
+Custom Emojis: Learn how to upload custom emojis to your server or other servers you’re a part of. 
+Polls FAQ: If enabled on the server, you can share and vote in polls. 
+What Are Text And Voice Channels?

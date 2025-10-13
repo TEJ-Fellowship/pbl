@@ -1,0 +1,23 @@
+Activity Design Patterns
+
+Best practices for multiplayer, game design, and player experience.
+
+Discord Social SDK: Bring Social Features to Your Game
+
+Enable rich presence, voice chat, and more to create a seamless social experience for your players and grow your game.
+
+Discord Social SDK Overview
+
+Explore rich presence, relationships, voice chat, and more.
+
+Build with the Discord Social SDK
+
+Start here for a step-by-step guide to adding social features to your game.
+
+Design Guidelines
+
+Best practices for integrating Discord Social SDK features into your game.
+
+Find Support
+
+Connect with the developer community, report issues, and stay updated with API changes.

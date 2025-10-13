@@ -1,0 +1,9 @@
+permissions	the permissions you're requesting
+guild_id	pre-fills the dropdown picker with a guild for the user
+disable_guild_select	true or false—disallows the user from changing the guild dropdown
+URL Example
+Copy
+https://discord.com/oauth2/authorize?client_id=157730590492196864&scope=bot&permissions=1
+
+
+In the case of bots, the scope parameter should be set to bot. There's also a new parameter, permissions, which is an integer corresponding to the permission calculations for the bot. You'll also notice the absence of response_type and redirect_uri. Bot authorization does not require these parameters because there is no need to retrieve the user's access token.

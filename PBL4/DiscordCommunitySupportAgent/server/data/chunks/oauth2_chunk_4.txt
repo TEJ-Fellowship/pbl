@@ -1,0 +1,6 @@
+NAME	DESCRIPTION
+activities.read	allows your app to fetch data from a user's "Now Playing/Recently Played" list — not currently available for apps
+activities.write	allows your app to update a user's activity - not currently available for apps (NOT REQUIRED FOR GAMESDK ACTIVITY MANAGER)
+applications.builds.read	allows your app to read build data for a user's applications
+applications.builds.upload	allows your app to upload/update builds for a user's applications - requires Discord approval
+applications.commands	allows your app to add commands to a guild - included by default with the bot scope

@@ -1,0 +1,5 @@
+rpc.notifications.read	for local rpc server access, this allows you to receive notifications pushed out to the user - requires Discord approval
+rpc.voice.read	for local rpc server access, this allows you to read a user's voice settings and listen for voice events - requires Discord approval
+rpc.voice.write	for local rpc server access, this allows you to update a user's voice settings - requires Discord approval
+voice	allows your app to connect to voice on user's behalf and see all the voice members - requires Discord approval
+webhook.incoming	this generates a webhook that is returned in the oauth token response for authorization code grants

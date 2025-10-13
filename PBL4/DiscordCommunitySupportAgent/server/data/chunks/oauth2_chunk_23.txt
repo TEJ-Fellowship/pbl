@@ -1,0 +1,5 @@
+On redirect, your redirect URI will contain additional URI fragments: access_token, token_type, expires_in, scope, and state(if specified). These are not querystring parameters. Be mindful of the "#" character:
+
+Redirect URL Example
+Copy
+https://findingfakeurlsisprettyhard.tv/#access_token=RTfP0OK99U3kbRtHOoKLmJbOn45PjL&token_type=Bearer&expires_in=604800&scope=identify&state=15773059ghq9183habn

@@ -1,0 +1,6 @@
+applications.commands.update	allows your app to update its commands using a Bearer token - client credentials grant only
+applications.commands.permissions.update	allows your app to update permissions for its commands in a guild a user has permissions to
+applications.entitlements	allows your app to read entitlements for a user's applications
+applications.store.update	allows your app to read and update store data (SKUs, store listings, achievements, etc.) for a user's applications
+bot	for oauth2 bots, this puts the bot in the user's selected guild by default
+connections	allows /users/@me/connections to return linked third-party accounts

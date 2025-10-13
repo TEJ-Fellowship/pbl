@@ -1,0 +1,87 @@
+Welcome to the comprehensive beginner's guide to Discord!
+What this article covers:
+
+What is Discord?
+Account Setup and Troubleshooting
+What is a Discord Server?
+What are Text and Voice Channels?
+How to Share your Screen
+Additional Discord Features
+Account Connections
+How to Customize your Discord User Profile
+What Is Discord?
+
+Discord is a communication platform that allows users to interact through text, voice, and video. Users can join or create their own communities, which can be organized around various topics, interests, or gaming groups.
+
+Check out our Video Tutorials to learn even more about Discord.
+Account Setup And Troubleshooting
+
+You can register a Discord account through the desktop app, your mobile device, or through a browser. 
+
+You can learn more about registering a Discord account, or about any possible registration errors, by checking out these articles:
+
+Discord Sign-Up and Registration Guide: Need help signing up and registering for a Discord account? Check out this full guide to help you through the process. 
+How to Verify Your Discord Account: Having trouble verifying your account? Check out this guide for more detailed information on account verification. 
+Discord Login & Email Troubleshooting Guide: Having trouble logging in or registering a Discord account? Please check out this guide for additional help.
+What Is A Discord Server?
+
+Discord servers provide you with the ability to create private, invite-only spaces for your friends or community—places where you can connect, collaborate, and enjoy meaningful conversations together. These dedicated spaces are what we call servers.
+
+You can join existing servers or create your own for virtually any type of community or interest group. Whether you're organizing a book club 📚, coordinating with classmates in a study group 🖊️, managing a dance class 💃, or simply staying connected with close friends, Discord servers offer the perfect platform to bring people together around shared interests and activities.
+
+Example of a Discord server
+
+You can learn more about Discord Servers by checking out these articles: 
+
+Discord Server Setup Guide: Learn more about how to set up your own Discord server.
+Setting Up Permissions FAQ: Learn more about how to set up Server Permissions to manage and moderate your server members.
+How do I set up a Role-Exclusive channel?: Need to set up role-exclusive channels for your server? Learn how in this article!
+Notifications Settings 101: Learn everything you need to know and more about your notification settings.
+Server Boosting FAQ: Learn more about Server Boosting and Additional Perks you can have for your server.
+Custom Emojis: Learn how to upload custom emojis to your server or other servers you’re a part of. 
+Polls FAQ: If enabled on the server, you can share and vote in polls. 
+What Are Text And Voice Channels? 
+
+Your server is made up of text channels and voice channels. This allows you to communicate with the other members of the server.
+
+Text Channels
+
+Text channels provide dedicated spaces for written conversations, helping to keep discussions organized and ensuring everyone has room to participate. You can create individual channels for each topic your group enjoys discussing—whether that's planning fishing trips, sharing cooking tips, or any other shared interests.
+
+Example of what a Text Channel is in a Discord server
+Voice Channels
+
+Voice channels allow you to connect with others through voice and video chat. Simply click on a voice channel to join—no calling or ringing necessary. Other members of your server can see when you're in a voice channel and easily drop in to chat, say hello on video, or share their screen with the group.
+
+Example of what a Voice Channel is in a Discord server
+
+You can learn more about text and voice channels below.
+
+Text Channels & Text Chat In Voice Channels: Learn more about setting up, editing, and managing text channels. 
+Voice Channels FAQs: Learn more about setting up, editing, and managing voice channels.
+How To Share Your Screen
+
+You can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. 
+
+Example of what it looks like when someone is streaming on Discord
+
+You can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.
+
+Additional Discord Features
+Account Connections
+
+You can connect a variety of outside apps like PlayStation, Spotify, and Xbox to your Discord account. This allows for your User Profile not only to display various information, but also what song you’re currently listening to on Spotify. To learn more about how to connect an account to your Discord account check out this Help Center article.
+
+You can learn more about individual account connection options through the Connections Help Center category.
+
+How To Customize Your Discord User Profile
+
+There are multiple ways to customize your user profile, from changing your avatar, to rocking a profile effect, and more. Please check out one of the articles below to learn more about how to personalize your Discord profile.
+
+Custom Profiles: Learn how to customize your Discord User Profile. From changing your avatar, to your “about me” section, and more. 
+Custom Status: Learn how to set a Custom Status on Discord.
+Avatar Decorations: Learn more about Avatar Decorations, whether it’s how to set one or purchase one from the shop.
+Profile Badges 101: Learn about all of the profile badges that are currently available.
+Profile Effects: Learn more about Profile Effects, whether it’s how to set one or purchase one from the shop.
+Per-server Profile: Are you a Nitro subscriber? Learn how to set a custom per-server profile.
+Contact Us: Have any additional questions or just something you are not sure of? Please reach out to our Support team through here: dis.gd/contact

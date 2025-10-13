@@ -1,30 +1,198 @@
 import { MdLogin } from "react-icons/md";
-import { Search } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Code, FileText, Zap } from "lucide-react";
+import { useState } from "react";
 
 const Hero = () => {
-    return (
-      <section className="relative px-4 pt-14 pb-10 md:pt-24 md:pb-14">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 md:mb-6">
-            Your AI-Powered Community
-            <span className="block">Assistant</span>
-          </h1>
-          <p className="text-gray-400 text-base md:text-lg leading-relaxed mb-6 md:mb-8">
-            Automate moderation, answer questions, and manage your Discord server with ease. 
-            Need help? Search our knowledge base below.
-          </p>
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedSources, setExpandedSources] = useState({});
+  const [serverContext, setServerContext] = useState({
+    type: 'general',
+    size: 'unknown',
+    purpose: 'community'
+  });
 
-          <div className="mx-auto max-w-2xl">
-            <div className="flex items-stretch rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
-              <div className="px-3 hidden sm:flex items-center text-gray-400"><Search size={16} /></div>
-              <input
-                type="text"
-                placeholder="Search for help articles..."
-                className="flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-500"
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    
+    setIsLoading(true);
+    setAiAnswer("");
+    setResults([]);
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          query, 
+          sessionId: 'user123',
+          serverContext: serverContext,
+          useHybridSearch: true
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAiAnswer(data.answer); // AI-generated answer
+        setResults(data.results || []); // Source documents
+      } else {
+        setAiAnswer("Sorry, I couldn't find relevant information for your query.");
+        setResults([]);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setAiAnswer("Sorry, there was an error processing your request. Please try again.");
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  const toggleSourceExpansion = (index) => {
+    setExpandedSources(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
+
+  const formatMarkdown = (text) => {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.*?)`/g, '<code class="bg-gray-700 px-1 py-0.5 rounded text-blue-300">$1</code>')
+      .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-blue-500 pl-4 italic text-gray-300">$1</blockquote>')
+      .replace(/^• (.*$)/gm, '<li class="ml-4">• $1</li>')
+      .replace(/\n/g, '<br>');
+  };
+
+  return (
+    <section className="relative px-4 pt-14 pb-10 md:pt-24 md:pb-14">
+      <div className="max-w-4xl mx-auto text-center">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 md:mb-6">
+          Your AI-Powered Community
+          <span className="block">Assistant</span>
+        </h1>
+        <p className="text-gray-400 text-base md:text-lg leading-relaxed mb-6 md:mb-8">
+          Automate moderation, answer questions, and manage your Discord server with ease. 
+          Need help? Search our knowledge base below.
+        </p>
+
+        <div className="mx-auto max-w-2xl">
+          <div className="flex items-stretch rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+            <div className="px-3 hidden sm:flex items-center text-gray-400"><Search size={16} /></div>
+            <input
+              type="text"
+              placeholder="Search for help articles..."
+              className="flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-500"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
+            />
+            <button 
+              onClick={handleSearch}
+              disabled={isLoading}
+              className="bg-blue-600 px-4 md:px-5 text-sm font-medium hover:bg-blue-500 disabled:opacity-50"
+            >
+              {isLoading ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+        </div>
+
+        {/* AI Generated Answer */}
+        {aiAnswer && (
+          <div className="mt-8 max-w-4xl mx-auto">
+            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-6 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <h3 className="text-lg font-semibold text-blue-300">AI Answer</h3>
+              </div>
+              <div 
+                className="text-gray-200 leading-relaxed prose prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: formatMarkdown(aiAnswer) }}
               />
-              <button className="bg-blue-600 px-4 md:px-5 text-sm font-medium hover:bg-blue-500">Search</button>
             </div>
           </div>
+        )}
+
+        {/* Source Documents with Accordions */}
+        {results.length > 0 && (
+          <div className="mt-4 max-w-4xl mx-auto">
+            <h3 className="text-lg font-semibold mb-4 text-gray-300 flex items-center gap-2">
+              <FileText size={20} />
+              Sources Used ({results.length})
+            </h3>
+            <div className="space-y-3">
+              {results.map((result, index) => (
+                <div key={index} className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden">
+                  {/* Source Header */}
+                  <div 
+                    className="p-4 cursor-pointer hover:bg-gray-700/50 transition-colors"
+                    onClick={() => toggleSourceExpansion(index)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {expandedSources[index] ? 
+                          <ChevronDown size={16} className="text-gray-400" /> : 
+                          <ChevronRight size={16} className="text-gray-400" />
+                        }
+                        <span className="text-sm bg-blue-600 text-white px-2 py-1 rounded">
+                          {result.source}
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Zap size={12} />
+                            {(result.combinedScore * 100).toFixed(1)}%
+                          </span>
+                          {result.semanticScore > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Code size={12} />
+                              Semantic: {(result.semanticScore * 100).toFixed(1)}%
+                            </span>
+                          )}
+                          {result.keywordScore > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Search size={12} />
+                              Keyword: {(result.keywordScore * 100).toFixed(1)}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Expandable Content */}
+                  {expandedSources[index] && (
+                    <div className="px-4 pb-4 border-t border-gray-700">
+                      <div className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-300 mb-2">Content Preview:</h4>
+                        <div className="bg-gray-900/50 rounded p-3">
+                          <p className="text-gray-400 text-sm leading-relaxed">
+                            {result.content.substring(0, 300)}
+                            {result.content.length > 300 && '...'}
+                          </p>
+                        </div>
+                        <div className="mt-2 text-xs text-gray-500">
+                          Chunk {result.metadata?.chunkIndex || 'N/A'} • 
+                          File: {result.metadata?.fileName || 'Unknown'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
           <div className="mt-6 flex items-center justify-center gap-3">
             <button className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">

@@ -3,3 +3,4 @@
 .history
 *.env
 .env*
+node_modules

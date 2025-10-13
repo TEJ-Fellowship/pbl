@@ -1,0 +1,849 @@
+[
+  {
+    "id": "206029707_1",
+    "content": "One of the great things about creating communities on Discord is our permission system! In this Help Center article, you'll learn more about permissions, how to create and customize permissions based on roles, and the difference between server, category, and channel permissions.\r\n\r\nWhat does this article cover?\r\n\r\nWhat are permissions?\r\nHow to Set Up Server Permissions\r\nStep 1 - Create a role\r\nStep 2 -  Customize the role\r\nStep 3 - Assign the role\r\nUnderstanding Category and Channel Permissions\r\nHow to Set Up Channel Permissions\r\nHow to Set Up Category Permissions\r\nUnderstanding Synced and Not-Synced Permissions\r\nLearn more about how to use permissions\r\nWhat Are Permissions?",
+    "source": "206029707.txt",
+    "chunkIndex": 1,
+    "fileName": "206029707_chunk_1.txt"
+  },
+  {
+    "id": "206029707_2",
+    "content": "What Are Permissions?\r\n\r\nPermissions allow users to have specific privileges and functions in their server. Some permissions can be as basic as allowing users the ability to add reactions to messages while other permissions grant users more administrative actions. These permissions are based on the roles assigned to users in a server and permissions can be assigned per role on both the server level and channel level.\r\n\r\nHow To Set Up Server Permissions\r\nStep 1 - Create Roles\r\n\r\nYour journey to setting up permissions in your server begins with you creating roles!",
+    "source": "206029707.txt",
+    "chunkIndex": 2,
+    "fileName": "206029707_chunk_2.txt"
+  },
+  {
+    "id": "206029707_3",
+    "content": "When you first create your server there is only one pre-made role: @everyone. The @everyone role defines the permissions that are enabled for everyone on your server even if they have no other roles assigned to them.\r\n\r\nNote: As the creator of your server you don't need to assign any roles or permissions to yourself. You will always have access to everything.\r\nPress on the downward arrow next to the server name.\r\nChoose Server Settings > Roles > Create Role.\r\n\r\nStep 2 - Customize Role And Permissions\r\nGive the new role a name. You can always change this later! Feel free to change the display of this role at this point, but for this article, we'll focus on Permissions.",
+    "source": "206029707.txt",
+    "chunkIndex": 3,
+    "fileName": "206029707_chunk_3.txt"
+  },
+  {
+    "id": "206029707_4",
+    "content": "Select on the Permissions tab of the new role you just created to see the list of server Permissions you can assign under this role.\r\nMake sure to consider what you want users in this role to do in your server when choosing permissions.\r\nDon't forget to Save the changes you're making to this role!\r\n\r\nStep 3 - Assign The Role\r\n\r\nFinally, once you've configured the role's permission, you can assign the role to members of your server.\r\n\r\nSelect the Manage Members tab for the list of server members and pick the user you want to assign the role to.\r\nOr you can press on a user's avatar in the server then select the plus sign under the role section to select a role from the pop-up window",
+    "source": "206029707.txt",
+    "chunkIndex": 4,
+    "fileName": "206029707_chunk_4.txt"
+  },
+  {
+    "id": "206029707_5",
+    "content": "Now this user has the server-wide permissions that you assigned to that role.\r\n\r\nUnderstanding Channel And Category Permissions\r\nHow To Set Up Channel Permissions\r\n\r\nNow that you've set up roles with server permissions, it's important to understand channel permissions. Like server permissions, channel permissions allow specific users on how they can interact with a specific channel. Here's how to set up channel permissions.\r\n\r\nNote: Channel permissions will override server permissions.\r\nYou can adjust permissions of specific channels, both text and voice, through the channel settings menu by hovering over a channel and clicking on the cog icon.",
+    "source": "206029707.txt",
+    "chunkIndex": 5,
+    "fileName": "206029707_chunk_5.txt"
+  },
+  {
+    "id": "206029707_6",
+    "content": "Select the Permissions tab on the left-hand side.\r\nBy default @everyone has access to all features of a channel. You can allow or deny the permissions everyone has on this particular channel by clicking the check boxes.\r\nYou can add roles or specific people whom you want to manage channel permissions for by clicking the plus sign.\r\nOnce you have added a Role or member you can begin assigning channel permissions to this group or person.\r\nHow To Set Up Category Permissions\r\n\r\nIn your server, you're also capable of adjusting Category permissions so that the channels under a category can all have the same permissions. Here's how you can set up Category permissions.",
+    "source": "206029707.txt",
+    "chunkIndex": 6,
+    "fileName": "206029707_chunk_6.txt"
+  },
+  {
+    "id": "206029707_7",
+    "content": "Right-click the category and choose Edit Category.\r\nSelect Permissions in the left-hand panel to alter permissions and add roles.\r\n\r\nUnderstanding Synced And Not-Synced Permissions\r\n\r\nThere are two default states for a channel in regards to category permissions: synced and not-synced. A synced channel will have permissions that completely match that of the category. A not-synced channel will have permissions that differ from the permissions set for the category.\r\n\r\nA synced channel!\r\n\r\nA not synced channel!\r\n\r\nIf you change the permissions on a category, all channels that are synced will automatically update.",
+    "source": "206029707.txt",
+    "chunkIndex": 7,
+    "fileName": "206029707_chunk_7.txt"
+  },
+  {
+    "id": "206029707_8",
+    "content": "If you do not sync permissions when moving a channel between categories, or if you change an individual permission on the channel level, it will then show that the channel is not synced with the category.\r\n\r\nThis means the channel currently does not share the same permissions as the category and will not automatically update when you make changes to the category's permissions.\r\n\r\nIf you want a not-synced channel to sync with its category again, here's how you can do it:\r\n\r\nRight-click on the not-synced channel and choose Edit Channel from the drop-down menu.\r\nPress the Permissions option in the left-hand panel.",
+    "source": "206029707.txt",
+    "chunkIndex": 8,
+    "fileName": "206029707_chunk_8.txt"
+  },
+  {
+    "id": "206029707_9",
+    "content": "Press the Sync Now button and the channel's permission will match the permissions of the category.\r\n\r\nNote: Synced and not-synced channels can coexist within a category. Changing a category’s permissions will change all synced channel’s permissions, but not the permissions of any not-synced channel!\r\n\r\nOne final note on category permissions - if you don't want to utilize them at all, you can leave all channels within the category as \"not synced\" and manage them individually. Permissions can also be managed on a per-channel basis.\r\n\r\nLearn More About How To Use Permissions\r\n\r\nYou can check out step-by-step instructions for the following popular permission settings:",
+    "source": "206029707.txt",
+    "chunkIndex": 9,
+    "fileName": "206029707_chunk_9.txt"
+  },
+  {
+    "id": "206029707_10",
+    "content": "How do I set up a private server?\r\nHow do I set up a leaders channel?\r\nHow do I set up an announcements channel?\r\nHow is the permission hierarchy structured?",
+    "source": "206029707.txt",
+    "chunkIndex": 10,
+    "fileName": "206029707_chunk_10.txt"
+  },
+  {
+    "id": "228383668_1",
+    "content": "Discord's built in Webhooks function as an easy way to get automated messages and data updates sent to a text channel in your server.\r\n\r\nThink of them as one of those fancy pneumatic tube things you used to love sending money into at a bank and watch disappear, but instead of never seeing your money again, you're actually sending messages into Discord from another platform.\r\n\r\nBy creating a webhook endpoint in your server, you'll generate a Webhook URL that you can drop into a number of different other services to link the two.",
+    "source": "228383668.txt",
+    "chunkIndex": 1,
+    "fileName": "228383668_chunk_1.txt"
+  },
+  {
+    "id": "228383668_2",
+    "content": "While everyone absolutely loves pneumatic tubes (100% true), it's important to note that webhooks require another website to use (though programming-inclined users can make their own tube schoomper themselves). \r\n\r\nSome services and websites are built to easily incorporate webhooks and send messages outwards, but some aren't. Here's a little handy reference list:\r\n\r\n  Can use webhooks:\tCan't really use webhooks:\r\n  GitHub\t  Twitch / YouTube\r\n  CircleCI\t  Nelly The Hamster\r\n  DataDog\t  Facebook\r\nMaking A Webhook\r\n\r\nWith that in mind, if you want to update your Discord server with GitHub commits and pull requests or track analytics from DataDog or anything similar, here's how!",
+    "source": "228383668.txt",
+    "chunkIndex": 2,
+    "fileName": "228383668_chunk_2.txt"
+  },
+  {
+    "id": "228383668_3",
+    "content": "Open your Server Settings and head into the Integrations tab:\r\nClick the \"Create Webhook\" button to create a new webhook!\r\n\r\nYou'll have a few options here. You can:\r\n\r\n Edit the avatar: By clicking the avatar next to the Name in the top left\r\nChoose what channel the Webhook posts to: By selecting the desired text channel in the  dropdown menu.\r\nName your Webhook: Good for distinguishing multiple webhooks for multiple different services.\r\n\r\nYou now have your own handy URL / pneumatic tube schoomp-er that you can link to more websites to receive messages from. \r\n\r\nQuick Example: GitHub Webhook Integration",
+    "source": "228383668.txt",
+    "chunkIndex": 3,
+    "fileName": "228383668_chunk_3.txt"
+  },
+  {
+    "id": "228383668_4",
+    "content": "Quick Example: GitHub Webhook Integration\r\n\r\nSince webhooks can't really function on their own and need to be linked to another website to function as intended, I figured it'd be best to include a sample integration for any of you GitHub enthusiasts and code-pushers.\r\n\r\nYou can use Discord's webhooks to send any code merge or push updates in a repository of yours into a text channel in your server.  \r\n\r\n1. Get the webhook URL for the server/channel you want to receive messages:\r\n\r\nIn my server, I've created a text channel labeled #general-chat and I want my repo updates to post messages here!",
+    "source": "228383668.txt",
+    "chunkIndex": 4,
+    "fileName": "228383668_chunk_4.txt"
+  },
+  {
+    "id": "228383668_5",
+    "content": "Therefore, I'll grab the webhook URL for this channel by pressing the Copy Webhook URL button:\r\n\r\n2. Add the webhook URL into your GitHub repo settings\r\n\r\nChoose the repository that you'd like to get updates from in your Discord server. Once you've selected the repo, go into the Settings > Webhooks menu\r\n\r\nAnd then click the \"Add webhook\" button, and enter the Discord-generated URL in the \"Payload URL\" blank. \r\n\r\nTo make the webhook display messages properly, it's really really really REALLY really important that you append '/github' at the end of it. Yes, like five-reallys important.",
+    "source": "228383668.txt",
+    "chunkIndex": 5,
+    "fileName": "228383668_chunk_5.txt"
+  },
+  {
+    "id": "228383668_6",
+    "content": "In addition to the URL, you have some more GitHub-specific options to choose from. For content type, stick with application/json. Discord's webhook format really likes JSON. In the next section, you can choose to customize what kind of events trigger webhook messages. \r\n\r\nClick the last \"Add webhook\" button beneath the event notifications customization option, and you're all set! Pushing any updates in the repo (including editing the readme file) will show up in your text channel:",
+    "source": "228383668.txt",
+    "chunkIndex": 6,
+    "fileName": "228383668_chunk_6.txt"
+  },
+  {
+    "id": "228383668_7",
+    "content": "And you're all set! GitHub is just one example of an integration that can post messages via webhook. If you've got a knack for JSON application-building or HTTP POST requests and want to customize your own webhooks, you can dig up some more information in our developer docs.",
+    "source": "228383668.txt",
+    "chunkIndex": 7,
+    "fileName": "228383668_chunk_7.txt"
+  },
+  {
+    "id": "360045138571_1",
+    "content": "Welcome to the comprehensive beginner's guide to Discord!\r\nWhat this article covers:\r\n\r\nWhat is Discord?\r\nAccount Setup and Troubleshooting\r\nWhat is a Discord Server?\r\nWhat are Text and Voice Channels?\r\nHow to Share your Screen\r\nAdditional Discord Features\r\nAccount Connections\r\nHow to Customize your Discord User Profile\r\nWhat Is Discord?\r\n\r\nDiscord is a communication platform that allows users to interact through text, voice, and video. Users can join or create their own communities, which can be organized around various topics, interests, or gaming groups.\r\n\r\nCheck out our Video Tutorials to learn even more about Discord.\r\nAccount Setup And Troubleshooting",
+    "source": "360045138571.txt",
+    "chunkIndex": 1,
+    "fileName": "360045138571_chunk_1.txt"
+  },
+  {
+    "id": "360045138571_2",
+    "content": "Account Setup And Troubleshooting\r\n\r\nYou can register a Discord account through the desktop app, your mobile device, or through a browser. \r\n\r\nYou can learn more about registering a Discord account, or about any possible registration errors, by checking out these articles:\r\n\r\nDiscord Sign-Up and Registration Guide: Need help signing up and registering for a Discord account? Check out this full guide to help you through the process. \r\nHow to Verify Your Discord Account: Having trouble verifying your account? Check out this guide for more detailed information on account verification.",
+    "source": "360045138571.txt",
+    "chunkIndex": 2,
+    "fileName": "360045138571_chunk_2.txt"
+  },
+  {
+    "id": "360045138571_3",
+    "content": "Discord Login & Email Troubleshooting Guide: Having trouble logging in or registering a Discord account? Please check out this guide for additional help.\r\nWhat Is A Discord Server?\r\n\r\nDiscord servers provide you with the ability to create private, invite-only spaces for your friends or community—places where you can connect, collaborate, and enjoy meaningful conversations together. These dedicated spaces are what we call servers.",
+    "source": "360045138571.txt",
+    "chunkIndex": 3,
+    "fileName": "360045138571_chunk_3.txt"
+  },
+  {
+    "id": "360045138571_4",
+    "content": "You can join existing servers or create your own for virtually any type of community or interest group. Whether you're organizing a book club 📚, coordinating with classmates in a study group 🖊️, managing a dance class 💃, or simply staying connected with close friends, Discord servers offer the perfect platform to bring people together around shared interests and activities.\r\n\r\nExample of a Discord server\r\n\r\nYou can learn more about Discord Servers by checking out these articles: \r\n\r\nDiscord Server Setup Guide: Learn more about how to set up your own Discord server.",
+    "source": "360045138571.txt",
+    "chunkIndex": 4,
+    "fileName": "360045138571_chunk_4.txt"
+  },
+  {
+    "id": "360045138571_5",
+    "content": "Setting Up Permissions FAQ: Learn more about how to set up Server Permissions to manage and moderate your server members.\r\nHow do I set up a Role-Exclusive channel?: Need to set up role-exclusive channels for your server? Learn how in this article!\r\nNotifications Settings 101: Learn everything you need to know and more about your notification settings.\r\nServer Boosting FAQ: Learn more about Server Boosting and Additional Perks you can have for your server.\r\nCustom Emojis: Learn how to upload custom emojis to your server or other servers you’re a part of. \r\nPolls FAQ: If enabled on the server, you can share and vote in polls. \r\nWhat Are Text And Voice Channels?",
+    "source": "360045138571.txt",
+    "chunkIndex": 5,
+    "fileName": "360045138571_chunk_5.txt"
+  },
+  {
+    "id": "360045138571_6",
+    "content": "What Are Text And Voice Channels? \r\n\r\nYour server is made up of text channels and voice channels. This allows you to communicate with the other members of the server.\r\n\r\nText Channels\r\n\r\nText channels provide dedicated spaces for written conversations, helping to keep discussions organized and ensuring everyone has room to participate. You can create individual channels for each topic your group enjoys discussing—whether that's planning fishing trips, sharing cooking tips, or any other shared interests.\r\n\r\nExample of what a Text Channel is in a Discord server\r\nVoice Channels",
+    "source": "360045138571.txt",
+    "chunkIndex": 6,
+    "fileName": "360045138571_chunk_6.txt"
+  },
+  {
+    "id": "360045138571_7",
+    "content": "Voice Channels\r\n\r\nVoice channels allow you to connect with others through voice and video chat. Simply click on a voice channel to join—no calling or ringing necessary. Other members of your server can see when you're in a voice channel and easily drop in to chat, say hello on video, or share their screen with the group.\r\n\r\nExample of what a Voice Channel is in a Discord server\r\n\r\nYou can learn more about text and voice channels below.\r\n\r\nText Channels & Text Chat In Voice Channels: Learn more about setting up, editing, and managing text channels. \r\nVoice Channels FAQs: Learn more about setting up, editing, and managing voice channels.\r\nHow To Share Your Screen",
+    "source": "360045138571.txt",
+    "chunkIndex": 7,
+    "fileName": "360045138571_chunk_7.txt"
+  },
+  {
+    "id": "360045138571_8",
+    "content": "How To Share Your Screen\r\n\r\nYou can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. \r\n\r\nExample of what it looks like when someone is streaming on Discord\r\n\r\nYou can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.\r\n\r\nAdditional Discord Features\r\nAccount Connections",
+    "source": "360045138571.txt",
+    "chunkIndex": 8,
+    "fileName": "360045138571_chunk_8.txt"
+  },
+  {
+    "id": "360045138571_9",
+    "content": "Account Connections\r\n\r\nYou can connect a variety of outside apps like PlayStation, Spotify, and Xbox to your Discord account. This allows for your User Profile not only to display various information, but also what song you’re currently listening to on Spotify. To learn more about how to connect an account to your Discord account check out this Help Center article.\r\n\r\nYou can learn more about individual account connection options through the Connections Help Center category.\r\n\r\nHow To Customize Your Discord User Profile",
+    "source": "360045138571.txt",
+    "chunkIndex": 9,
+    "fileName": "360045138571_chunk_9.txt"
+  },
+  {
+    "id": "360045138571_10",
+    "content": "How To Customize Your Discord User Profile\r\n\r\nThere are multiple ways to customize your user profile, from changing your avatar, to rocking a profile effect, and more. Please check out one of the articles below to learn more about how to personalize your Discord profile.\r\n\r\nCustom Profiles: Learn how to customize your Discord User Profile. From changing your avatar, to your “about me” section, and more. \r\nCustom Status: Learn how to set a Custom Status on Discord.\r\nAvatar Decorations: Learn more about Avatar Decorations, whether it’s how to set one or purchase one from the shop.\r\nProfile Badges 101: Learn about all of the profile badges that are currently available.",
+    "source": "360045138571.txt",
+    "chunkIndex": 10,
+    "fileName": "360045138571_chunk_10.txt"
+  },
+  {
+    "id": "360045138571_11",
+    "content": "Profile Effects: Learn more about Profile Effects, whether it’s how to set one or purchase one from the shop.\r\nPer-server Profile: Are you a Nitro subscriber? Learn how to set a custom per-server profile.\r\nContact Us: Have any additional questions or just something you are not sure of? Please reach out to our Support team through here: dis.gd/contact",
+    "source": "360045138571.txt",
+    "chunkIndex": 11,
+    "fileName": "360045138571_chunk_11.txt"
+  },
+  {
+    "id": "guidelines_1",
+    "content": "Download\r\nNitro\r\nDiscover\r\nSafety\r\nQuests\r\nSupport\r\nBlog\r\nDevelopers\r\nCareers\r\nLog In\r\nArchived Versions\r\nDISCORD COMMUNITY GUIDELINES\r\nEffective: September 29, 2025\r\nLast Updated: August 29, 2025\r\n\r\n‍\r\n\r\nDiscord enables you to build meaningful connections around the joy of playing games through voice, video and text features. Our Community Guidelines ensure everyone can express themselves and find community — but not at the expense of anyone else.",
+    "source": "guidelines.txt",
+    "chunkIndex": 1,
+    "fileName": "guidelines_chunk_1.txt"
+  },
+  {
+    "id": "guidelines_2",
+    "content": "These Guidelines are incorporated into our Terms of Service, and further explain what isn’t allowed on Discord so that we can help create a positive environment for everyone. Everyone on Discord must follow these rules, and they apply to all parts of our platform, including your content, behaviors, servers, and apps. To learn more about the requirements for developing a bot or other app on Discord, please refer to our Discord Developer Terms of Service and our Discord Developer Policy.\r\n\r\n\r\nIf you plan to monetize your content, please review the additional rules outlined in our Monetization Policy and Monetization Terms.",
+    "source": "guidelines.txt",
+    "chunkIndex": 2,
+    "fileName": "guidelines_chunk_2.txt"
+  },
+  {
+    "id": "guidelines_3",
+    "content": "Our Trust & Safety team reviews reports by users, moderators, trusted third-party partners, or where required by law. When we proactively or reactively discover a violation of these Guidelines, we may take a number of enforcement steps based on the severity of the violation, including issuing warnings, removing content, temporarily suspending account access to Discord, or permanently removing violative accounts and servers, and even reporting them to law enforcement. We may also consider relevant off-platform behavior when making assessments for violations of specific Community Guidelines.",
+    "source": "guidelines.txt",
+    "chunkIndex": 3,
+    "fileName": "guidelines_chunk_3.txt"
+  },
+  {
+    "id": "guidelines_4",
+    "content": "If you come across an account, server, or content that appears to break these Guidelines, please report it to us.\r\n\r\nRESPECT EACH OTHER\r\n\r\n1. Do not promote, coordinate, or engage in harassment. We do not allow any type of harassing behavior, including sexual harassment, ban or block evasion, or coordinating server joins for the purpose of harassing server members, also referred to as “server raiding.\" (See our Bullying, Harassment, and Threats Policy Explainer for more.)\r\n\r\n\r\n2. Do not threaten to harm another individual or group of people. This includes direct, indirect, and suggestive threats. (See our Bullying, Harassment, and Threats Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 4,
+    "fileName": "guidelines_chunk_4.txt"
+  },
+  {
+    "id": "guidelines_5",
+    "content": "3. Do not share or threaten to share the personally identifiable information (PII) of an individual without consent. This includes providing services that facilitate doxxing, such as buying or selling doxxes or compiling doxxes for others. (See our Doxxing Policy Explainer for more.)\r\n\r\n\r\n4. Do not use hate speech or engage in other hateful conduct. This includes the use of hate symbols, imagery, and claims that deny the history of mass human atrocities.\r\n\r\n\r\nWe consider hate speech to be any form of expression that either attacks other people or promotes hatred or violence against them based on their protected characteristics. (See our Hateful Conduct Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 5,
+    "fileName": "guidelines_chunk_5.txt"
+  },
+  {
+    "id": "guidelines_6",
+    "content": "5. Do not organize, promote, or support violent extremism. This also includes coordinating violent acts; glorifying or promoting violence or the perpetrators of violent acts; and promoting conspiracy theories that could encourage or incite violence against others. (See our Violent Extremism and Violence and Graphic Content Policy Explainers for more.)\r\n\r\n\r\n6. Do not create, post, solicit, share, or make attempts to distribute content on Discord that depicts, promotes, or attempts to normalize child sexual abuse. This includes manipulated, non-manipulated, or synthetic (artificial intelligence-generated) media involving real, fictional, and/or anthropomorphized children.",
+    "source": "guidelines.txt",
+    "chunkIndex": 6,
+    "fileName": "guidelines_chunk_6.txt"
+  },
+  {
+    "id": "guidelines_7",
+    "content": "This also includes animation, drawing, text, and technical commands or prompts to create media depicting child sexual abuse or child sexualization.\r\n\r\n\r\nWe report child sexual abuse material (CSAM) and grooming to the National Center for Missing & Exploited Children, which may subsequently work with local law enforcement. (See our Teen and Child Safety Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 7,
+    "fileName": "guidelines_chunk_7.txt"
+  },
+  {
+    "id": "guidelines_8",
+    "content": "7. If you are under the age of 18, you may not engage in sexual conduct or any other conduct using Discord that puts your online or physical safety at risk. This includes consensual sexual interactions between you and other teens of a similar age, as well as any encouragement or coordination of behavior that may be harmful for you or others, such as vigilantism.\r\n\r\n\r\nWe want teens to be able to express themselves as authentically as possible on Discord. However, given the risks associated with online dating, we will remove spaces that encourage or facilitate dating between teens. (See our Teen and Child Safety Policy Explainer and our Teen Safety Assist function for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 8,
+    "fileName": "guidelines_chunk_8.txt"
+  },
+  {
+    "id": "guidelines_9",
+    "content": "8. Do not engage in any sexual conduct with anyone under the age of 18. This includes soliciting, sharing, or exchanging sexual content.\r\n\r\nWe report child sexual abuse material (CSAM) and grooming to the National Center for Missing & Exploited Children, which may subsequently work with local law enforcement. (See our Teen and Child Safety Policy Explainer for more.)\r\n\r\n\r\n9. Do not make sexually explicit content available to anyone under the age of 18.  Discord users must be aged 18 or older to view, gain access to, or participate in adult sexual content on Discord.",
+    "source": "guidelines.txt",
+    "chunkIndex": 9,
+    "fileName": "guidelines_chunk_9.txt"
+  },
+  {
+    "id": "guidelines_10",
+    "content": "Server owners must apply an age-restricted label to any channels that contain sexually explicit content involving adults or content involving adults that is shared solely for the purposes of sexual gratification.\r\n\r\n\r\nUsers may not post sexually explicit content in any space that cannot be age-restricted, including in avatars, custom statuses or bios, server banners, server icons, invite splashes, emoji, and stickers. (See our Sexual Content Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 10,
+    "fileName": "guidelines_chunk_10.txt"
+  },
+  {
+    "id": "guidelines_11",
+    "content": "10. Do not share, distribute, or create sexually explicit or sexually suggestive content of other people over the age of 18 without the subject’s explicit consent. This includes the non-consensual distribution of intimate media that was created either with or without an individual’s consent. (See our Non-Consensual Adult Intimate Media Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 11,
+    "fileName": "guidelines_chunk_11.txt"
+  },
+  {
+    "id": "guidelines_12",
+    "content": "11. Do not share content that glorifies, promotes, or normalizes suicide or other acts of physical self-harm. This includes content that encourages others to cut, burn, or starve themselves, as well as content that normalizes eating disorders, such as anorexia and bulimia. Self-harm acts or threats used as a form of emotional manipulation or coercion are also prohibited. (See our Suicide and Self-Harm Policy Explainer for more.)\r\n\r\n‍12. Do not upload or share  any material depicting violence, gore, or animal cruelty, especially with the intention to harass or shock others. (See our Violence and Graphic Content Policy Explainer for more.)\r\n\r\nRESPECT DISCORD",
+    "source": "guidelines.txt",
+    "chunkIndex": 12,
+    "fileName": "guidelines_chunk_12.txt"
+  },
+  {
+    "id": "guidelines_13",
+    "content": "RESPECT DISCORD\r\n\r\n13. Do not send unsolicited bulk messages (or spam) to others. Also, do not facilitate this activity, such as by selling spambots, server “raid” tools, account-creation tools, token generators, CAPTCHA-solving services, or other spam tools. (See our Platform Manipulation Policy Explainer for more.)\r\n\r\n\r\n14. Do not use self-bots or user-bots. Each account must be associated with a human, not a bot. (See our Platform Manipulation Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 13,
+    "fileName": "guidelines_chunk_13.txt"
+  },
+  {
+    "id": "guidelines_14",
+    "content": "15. Do not engage with our service in an inauthentic way. This includes artificially inflating server membership, manipulating engagement metrics, and selling artificial engagement services. (See our Platform Manipulation Policy Explainer for more.)\r\n\r\n\r\n16. Do not sell or purchase Discord assets, including accounts, usernames, servers, server permissions, or custom server invite links. (See our Platform Manipulation Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 14,
+    "fileName": "guidelines_chunk_14.txt"
+  },
+  {
+    "id": "guidelines_15",
+    "content": "17. Do not share false or misleading information (otherwise known as misinformation). Content that is false, misleading, and can lead to significant risk of physical or societal harm may not be shared on Discord. We may remove content if we reasonably believe its spread could result in damage to physical infrastructure, injury of others, obstruction of participation in civic processes, or the endangerment of public health. (See our Misinformation Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 15,
+    "fileName": "guidelines_chunk_15.txt"
+  },
+  {
+    "id": "guidelines_16",
+    "content": "18. Do not misrepresent your identity on Discord in a deceptive or harmful way. This includes creating fake profiles and attempts to impersonate an individual, group, or organization. (See our Identity and Authenticity Policy Explainer for more.)\r\n\r\n\r\n19. Do not evade permanent Discord-level enforcement actions. This includes creating new or using existing accounts or communities after being removed for violating our platform rules. (See our Identity and Authenticity Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 16,
+    "fileName": "guidelines_chunk_16.txt"
+  },
+  {
+    "id": "guidelines_17",
+    "content": "20. Do not engage in activities that could damage or compromise the security of an account, network, or system. This includes using deceptive techniques to trick others into revealing sensitive information (phishing), using malicious software (malware), and flooding a target with traffic in order to make a resource unavailable (denial-of-service attacks). (See our Deceptive Practices Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 17,
+    "fileName": "guidelines_chunk_17.txt"
+  },
+  {
+    "id": "guidelines_18",
+    "content": "21. Do not use or attempt to use Discord to promote, coordinate, or execute financial scams. A financial scam is any intentionally deceptive act taken with the intent to receive an illegal, unethical, or otherwise dishonest gain. (See our Deceptive Practices Policy Explainer for more.)\r\n\r\n\r\n22. Do not engage in activities that fraudulently generate a profit at the expense of others. This includes facilitating, providing instructions for, and participating in fraud. We do not allow coordinated efforts to defraud businesses, price gouging, forgery, money laundering, counterfeit goods, or tools that facilitate illegal behavior. (See our Deceptive Practices Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 18,
+    "fileName": "guidelines_chunk_18.txt"
+  },
+  {
+    "id": "guidelines_19",
+    "content": "23. Do not submit false, misleading, or abusive reports or requests to Discord’s support teams. A report or request will be considered false or misleading if it contains demonstrably untrue information submitted with the intent to manipulate staff into taking a desired action. (See our Discord Support Abuse Policy Explainer for more.)\r\n\r\nFOLLOW APPLICABLE LAWS\r\n\r\nAs described in our Terms of Service, you must comply with all applicable laws, rules, and regulations. This includes:\r\n\r\n\r\n24. Do not share content that violates anyone's intellectual property or other rights. This includes sharing or selling game cheats or hacks. (See our Unauthorized Copyright Access Policy for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 19,
+    "fileName": "guidelines_chunk_19.txt"
+  },
+  {
+    "id": "guidelines_20",
+    "content": "For more information on how Discord handles copyright complaints, please view our Copyright & Intellectual Property Policy.\r\n\r\n\r\n25. Do not organize, promote, or engage in the selling or facilitation of sales of regulated or potentially dangerous goods. Regulated goods have laws in place that restrict the purchase, sale, trade, or ownership of the goods. Dangerous goods have a reasonable potential to cause real-world, physical harm to individuals. (See our Dangerous and Regulated Goods Policy Explainer for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 20,
+    "fileName": "guidelines_chunk_20.txt"
+  },
+  {
+    "id": "guidelines_21",
+    "content": "26. Do not coordinate or participate in illegal gambling. Users are responsible for complying with applicable gambling laws and regulation. (See our Gambling Policy Explainer for more.)\r\n\r\n\r\n27. Do not organize, promote, or engage in any illegal activity that harms the dignity, safety, or wellbeing of another person. This includes but is not limited to human trafficking and sexual solicitation. (See our Human Trafficking and Sexual Solicitation Policy Explainers for more.)",
+    "source": "guidelines.txt",
+    "chunkIndex": 21,
+    "fileName": "guidelines_chunk_21.txt"
+  },
+  {
+    "id": "guidelines_22",
+    "content": "If you see any content or activity that violates these Guidelines, our Terms of Service, or any of our other policies, please report it to us. You can learn more on how to report to us here. However, please note that we strongly discourage and may take action against vigilantism, as this behavior can put individuals in harm’s way and can also interfere with our investigations and ability to report to law enforcement.\r\n\r\n\r\nThese Guidelines will continue to evolve over time. This means we may take action against an account, server, or content that violates the spirit of these Guidelines when we encounter a new threat or harm that is not explicitly covered in the current version.",
+    "source": "guidelines.txt",
+    "chunkIndex": 22,
+    "fileName": "guidelines_chunk_22.txt"
+  },
+  {
+    "id": "guidelines_23",
+    "content": "We will always make our best effort to notify you when we update these Guidelines, but it is up to you to follow them and to use Discord responsibly: Keep Discord safe and help us ensure it remains a great place to build friendships around the joy of playing games. Thanks for doing your part.‍\r\n\r\nLanguage\r\nEnglish\r\nSocial\r\nProduct\r\nDownload\r\nNitro\r\nStatus\r\nApp Directory\r\nCompany\r\nAbout\r\nJobs\r\nBrand\r\nNewsroom\r\nResources\r\nCollege\r\nSupport\r\nSafety\r\nBlog\r\nStreamKit\r\nCreators\r\nCommunity\r\nDevelopers\r\nQuests\r\nOfficial 3rd Party Merch\r\nFeedback\r\nPolicies\r\nTerms\r\nPrivacy\r\nCookie Settings\r\nGuidelines\r\nAcknowledgements\r\nLicenses\r\nCompany Information",
+    "source": "guidelines.txt",
+    "chunkIndex": 23,
+    "fileName": "guidelines_chunk_23.txt"
+  },
+  {
+    "id": "intro_1",
+    "content": "BUILD WHERE THE WORLD PLAYS\r\nCreate social games, experiences, and integrations for millions of users on Discord\r\nBuild with Discord\r\n\r\nDiscord provides a platform for building social experiences, whether you're creating apps within Discord or integrating Discord's features into your game.\r\n\r\nApps\r\n\r\nDevelop apps, bots, and integrations to enhance the Discord experience.\r\n\r\nActivities\r\n\r\nBuild multiplayer games and social experiences that run directly in Discord.\r\n\r\nDiscord Social SDK\r\n\r\nAdd rich social features into your game across desktop, mobile, and console.\r\n\r\nApps: Extend Discord with Custom Integrations\r\n\r\nEnhance the Discord experience with custom apps, commands, and integrations.",
+    "source": "intro.txt",
+    "chunkIndex": 1,
+    "fileName": "intro_chunk_1.txt"
+  },
+  {
+    "id": "intro_2",
+    "content": "Apps Overview\r\n\r\nLearn the fundamentals of building Discord apps and commands.\r\n\r\nBuild Your First Discord App\r\n\r\nCreate a bot user that plays \"rock, paper, scissors\" with users.\r\n\r\nSlash Commands and Interactions\r\n\r\nCreate custom commands and interactions for your app.\r\n\r\nActivities: Build Multiplayer Games in Discord\r\n\r\nUse the Embedded App SDK to create real-time games and social experiences that users can launch directly inside Discord.\r\n\r\nActivities Overview\r\n\r\nDiscover how Activities work in Discord.\r\n\r\nBuild Your First Activity\r\n\r\nBuild and test an Activity using the Embedded App SDK.\r\n\r\nActivity Design Patterns",
+    "source": "intro.txt",
+    "chunkIndex": 2,
+    "fileName": "intro_chunk_2.txt"
+  },
+  {
+    "id": "intro_3",
+    "content": "Activity Design Patterns\r\n\r\nBest practices for multiplayer, game design, and player experience.\r\n\r\nDiscord Social SDK: Bring Social Features to Your Game\r\n\r\nEnable rich presence, voice chat, and more to create a seamless social experience for your players and grow your game.\r\n\r\nDiscord Social SDK Overview\r\n\r\nExplore rich presence, relationships, voice chat, and more.\r\n\r\nBuild with the Discord Social SDK\r\n\r\nStart here for a step-by-step guide to adding social features to your game.\r\n\r\nDesign Guidelines\r\n\r\nBest practices for integrating Discord Social SDK features into your game.\r\n\r\nFind Support\r\n\r\nConnect with the developer community, report issues, and stay updated with API changes.",
+    "source": "intro.txt",
+    "chunkIndex": 3,
+    "fileName": "intro_chunk_3.txt"
+  },
+  {
+    "id": "intro_4",
+    "content": "Join the Developer Discord\r\n\r\nGet support, API announcements, and participate in developer events.\r\n\r\nReport Issues on GitHub\r\n\r\nSubmit API bugs, feature requests, or contribute to the documentation.\r\n\r\nVisit the Developer Help Center\r\n\r\nFind articles, FAQs, and reach out to Discord's developer support team.",
+    "source": "intro.txt",
+    "chunkIndex": 4,
+    "fileName": "intro_chunk_4.txt"
+  },
+  {
+    "id": "oauth2_1",
+    "content": "OAuth2\r\n\r\nOAuth2 enables application developers to build applications that utilize authentication and data from the Discord API. Within Discord, there are multiple types of OAuth2 authentication. We support the authorization code grant, the implicit grant, client credentials, and some modified special-for-Discord flows for Bots and Webhooks.\r\n\r\nShared Resources",
+    "source": "oauth2.txt",
+    "chunkIndex": 1,
+    "fileName": "oauth2_chunk_1.txt"
+  },
+  {
+    "id": "oauth2_2",
+    "content": "Shared Resources\r\n\r\nThe first step in implementing OAuth2 is registering a developer application and retrieving your client ID and client secret. Most people who will be implementing OAuth2 will want to find and utilize a library in the language of their choice. For those implementing OAuth2 from scratch, please see RFC 6749 for details. After you create your application with Discord, make sure that you have your client_id and client_secret handy. The next step is to figure out which OAuth2 flow is right for your purposes.\r\n\r\nOAuth2 URLs\r\nURL\tDESCRIPTION\r\nhttps://discord.com/oauth2/authorize\tBase authorization URL\r\nhttps://discord.com/api/oauth2/token\tToken URL",
+    "source": "oauth2.txt",
+    "chunkIndex": 2,
+    "fileName": "oauth2_chunk_2.txt"
+  },
+  {
+    "id": "oauth2_3",
+    "content": "https://discord.com/api/oauth2/token\tToken URL\r\nhttps://discord.com/api/oauth2/token/revoke\tToken Revocation URL\r\nIn accordance with the relevant RFCs, the token and token revocation URLs will only accept a content type of application/x-www-form-urlencoded. JSON content is not permitted and will return an error.\r\nOAuth2 Scopes\r\n\r\nThese are a list of all the OAuth2 scopes that Discord supports. Some scopes require approval from Discord to use. Requesting them from a user without approval from Discord may cause errors or undocumented behavior in the OAuth2 flow.\r\n\r\nNAME\tDESCRIPTION",
+    "source": "oauth2.txt",
+    "chunkIndex": 3,
+    "fileName": "oauth2_chunk_3.txt"
+  },
+  {
+    "id": "oauth2_4",
+    "content": "NAME\tDESCRIPTION\r\nactivities.read\tallows your app to fetch data from a user's \"Now Playing/Recently Played\" list — not currently available for apps\r\nactivities.write\tallows your app to update a user's activity - not currently available for apps (NOT REQUIRED FOR GAMESDK ACTIVITY MANAGER)\r\napplications.builds.read\tallows your app to read build data for a user's applications\r\napplications.builds.upload\tallows your app to upload/update builds for a user's applications - requires Discord approval\r\napplications.commands\tallows your app to add commands to a guild - included by default with the bot scope",
+    "source": "oauth2.txt",
+    "chunkIndex": 4,
+    "fileName": "oauth2_chunk_4.txt"
+  },
+  {
+    "id": "oauth2_5",
+    "content": "applications.commands.update\tallows your app to update its commands using a Bearer token - client credentials grant only\r\napplications.commands.permissions.update\tallows your app to update permissions for its commands in a guild a user has permissions to\r\napplications.entitlements\tallows your app to read entitlements for a user's applications\r\napplications.store.update\tallows your app to read and update store data (SKUs, store listings, achievements, etc.) for a user's applications\r\nbot\tfor oauth2 bots, this puts the bot in the user's selected guild by default\r\nconnections\tallows /users/@me/connections to return linked third-party accounts",
+    "source": "oauth2.txt",
+    "chunkIndex": 5,
+    "fileName": "oauth2_chunk_5.txt"
+  },
+  {
+    "id": "oauth2_6",
+    "content": "dm_channels.read\tallows your app to see information about the user's DMs and group DMs - requires Discord approval\r\nemail\tenables /users/@me to return an email\r\ngdm.join\tallows your app to join users to a group dm\r\nguilds\tallows /users/@me/guilds to return basic information about all of a user's guilds\r\nguilds.join\tallows /guilds/{guild.id}/members/{user.id} to be used for joining users to a guild\r\nguilds.members.read\tallows /users/@me/guilds/{guild.id}/member to return a user's member information in a guild\r\nidentify\tallows /users/@me without email",
+    "source": "oauth2.txt",
+    "chunkIndex": 6,
+    "fileName": "oauth2_chunk_6.txt"
+  },
+  {
+    "id": "oauth2_7",
+    "content": "identify\tallows /users/@me without email\r\nmessages.read\tfor local rpc server api access, this allows you to read messages from all client channels (otherwise restricted to channels/guilds your app creates)\r\nrelationships.read\tallows your app to know a user's friends and implicit relationships - requires Discord approval\r\nrole_connections.write\tallows your app to update a user's connection and metadata for the app\r\nrpc\tfor local rpc server access, this allows you to control a user's local Discord client - requires Discord approval\r\nrpc.activities.write\tfor local rpc server access, this allows you to update a user's activity - requires Discord approval",
+    "source": "oauth2.txt",
+    "chunkIndex": 7,
+    "fileName": "oauth2_chunk_7.txt"
+  },
+  {
+    "id": "oauth2_8",
+    "content": "rpc.notifications.read\tfor local rpc server access, this allows you to receive notifications pushed out to the user - requires Discord approval\r\nrpc.voice.read\tfor local rpc server access, this allows you to read a user's voice settings and listen for voice events - requires Discord approval\r\nrpc.voice.write\tfor local rpc server access, this allows you to update a user's voice settings - requires Discord approval\r\nvoice\tallows your app to connect to voice on user's behalf and see all the voice members - requires Discord approval\r\nwebhook.incoming\tthis generates a webhook that is returned in the oauth token response for authorization code grants",
+    "source": "oauth2.txt",
+    "chunkIndex": 8,
+    "fileName": "oauth2_chunk_8.txt"
+  },
+  {
+    "id": "oauth2_9",
+    "content": "In order to add a user to a guild, your bot has to already belong to that guild. role_connections.write cannot be used with the Implicit grant type.\r\nState and Security",
+    "source": "oauth2.txt",
+    "chunkIndex": 9,
+    "fileName": "oauth2_chunk_9.txt"
+  },
+  {
+    "id": "oauth2_10",
+    "content": "State and Security\r\n\r\nBefore we dive into the semantics of the different OAuth2 grants, we should stop and discuss security, specifically the use of the state parameter. Cross-site request forgery, or CSRF, and Clickjacking are security vulnerabilities that must be addressed by individuals implementing OAuth. This is typically accomplished using the state parameter. state is sent in the authorization request and returned back in the response and should be a value that binds the user's request to their authenticated state. For example, state could be a hash of the user's session cookie, or some other nonce that can be linked to the user's session.",
+    "source": "oauth2.txt",
+    "chunkIndex": 10,
+    "fileName": "oauth2_chunk_10.txt"
+  },
+  {
+    "id": "oauth2_11",
+    "content": "When a user begins an authorization flow on the client, a state is generated that is unique to that user's request. This value is stored somewhere only accessible to the client and the user, i.e. protected by the same-origin policy. When the user is redirected, the state parameter is returned. The client validates the request by checking that the state returned matches the stored value. If they match, it is a valid authorization request. If they do not match, it's possible that someone intercepted the request or otherwise falsely authorized themselves to another user's resources, and the request should be denied.",
+    "source": "oauth2.txt",
+    "chunkIndex": 11,
+    "fileName": "oauth2_chunk_11.txt"
+  },
+  {
+    "id": "oauth2_12",
+    "content": "While Discord does not require the use of the state parameter, we support it and highly recommend that you implement it for the security of your own applications and data.\r\n\r\nAuthorization Code Grant\r\n\r\nThe authorization code grant is what most developers will recognize as \"standard OAuth2\" and involves retrieving an access code and exchanging it for a user's access token. It allows the authorization server to act as an intermediary between the client and the resource owner, so the resource owner's credentials are never shared directly with the client.",
+    "source": "oauth2.txt",
+    "chunkIndex": 12,
+    "fileName": "oauth2_chunk_12.txt"
+  },
+  {
+    "id": "oauth2_13",
+    "content": "All calls to the OAuth2 endpoints require either HTTP Basic authentication or client_id and client_secret supplied in the form data body.\r\n\r\nAuthorization URL Example\r\nCopy\r\nhttps://discord.com/oauth2/authorize?response_type=code&client_id=157730590492196864&scope=identify%20guilds.join&state=15773059ghq9183habn&redirect_uri=https%3A%2F%2Fnicememe.website&prompt=consent&integration_type=0\r\n\r\n\r\nclient_id is your application's client_id. scope is a list of OAuth2 scopes separated by url encoded spaces (%20). redirect_uri is whatever URL you registered when creating your application, url-encoded. state is the unique string mentioned in State and Security.",
+    "source": "oauth2.txt",
+    "chunkIndex": 13,
+    "fileName": "oauth2_chunk_13.txt"
+  },
+  {
+    "id": "oauth2_14",
+    "content": "When someone navigates to this URL, they will be prompted to authorize your application for the requested scopes. On acceptance, they will be redirected to your redirect_uri, which will contain an additional querystring parameter, code. state will also be returned if previously sent, and should be validated at this point.",
+    "source": "oauth2.txt",
+    "chunkIndex": 14,
+    "fileName": "oauth2_chunk_14.txt"
+  },
+  {
+    "id": "oauth2_15",
+    "content": "prompt controls how the authorization flow handles existing authorizations. If a user has previously authorized your application with the requested scopes and prompt is set to consent, it will request them to reapprove their authorization. If set to none, it will skip the authorization screen and redirect them back to your redirect URI without requesting their authorization. For passthrough scopes, like bot and webhook.incoming, authorization is always required.",
+    "source": "oauth2.txt",
+    "chunkIndex": 15,
+    "fileName": "oauth2_chunk_15.txt"
+  },
+  {
+    "id": "oauth2_16",
+    "content": "The integration_type parameter specifies the installation context for the authorization. The installation context determines where the application will be installed, and is only relevant when scope contains applications.commands. When set to 0 (GUILD_INSTALL) the application will be authorized for installation to a server, and when set to 1 (USER_INSTALL) the application will be authorized for installation to a user. The application must be configured in the Developer Portal to support the provided integration_type.\r\n\r\nRedirect URL Example\r\nCopy\r\nhttps://nicememe.website/?code=NhhvTDYsFcdgNLnnLijcl7Ku7bEEeee&state=15773059ghq9183habn",
+    "source": "oauth2.txt",
+    "chunkIndex": 16,
+    "fileName": "oauth2_chunk_16.txt"
+  },
+  {
+    "id": "oauth2_17",
+    "content": "code is now exchanged for the user's access token by making a POST request to the token URL with the following parameters:\r\n\r\ngrant_type - must be set to authorization_code\r\ncode - the code from the querystring\r\nredirect_uri - the redirect_uri associated with this authorization, usually from your authorization URL\r\nAccess Token Exchange Example\r\nCopy\r\nimport requests\r\n\r\nAPI_ENDPOINT = 'https://discord.com/api/v10'\r\nCLIENT_ID = '332269999912132097'\r\nCLIENT_SECRET = '937it3ow87i4ery69876wqire'\r\nREDIRECT_URI = 'https://nicememe.website'\r\n\r\ndef exchange_code(code):\r\n  data = {\r\n    'grant_type': 'authorization_code',\r\n    'code': code,\r\n    'redirect_uri': REDIRECT_URI\r\n  }\r\n  headers = {",
+    "source": "oauth2.txt",
+    "chunkIndex": 17,
+    "fileName": "oauth2_chunk_17.txt"
+  },
+  {
+    "id": "oauth2_18",
+    "content": "}\r\n  headers = {\r\n    'Content-Type': 'application/x-www-form-urlencoded'\r\n  }\r\n  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))\r\n  r.raise_for_status()\r\n  return r.json()\r\n\r\n\r\nIn response, you will receive:\r\n\r\nAccess Token Response\r\nCopy\r\n{\r\n  \"access_token\": \"6qrZcUqja7812RVdnEKjpzOL4CvHBFG\",\r\n  \"token_type\": \"Bearer\",\r\n  \"expires_in\": 604800,\r\n  \"refresh_token\": \"D43f5y0ahjqew82jZ4NViEr2YafMKhue\",\r\n  \"scope\": \"identify\"\r\n}",
+    "source": "oauth2.txt",
+    "chunkIndex": 18,
+    "fileName": "oauth2_chunk_18.txt"
+  },
+  {
+    "id": "oauth2_19",
+    "content": "\"scope\": \"identify\"\r\n}\r\n\r\n\r\nHaving the user's access token allows your application to make certain requests to the API on their behalf, restricted to whatever scopes were requested. expires_in is how long, in seconds, until the returned access token expires, allowing you to anticipate the expiration and refresh the token. To refresh, make another POST request to the token URL with the following parameters:\r\n\r\ngrant_type - must be set to refresh_token\r\nrefresh_token - the user's refresh token\r\nRefresh Token Exchange Example\r\nCopy\r\nimport requests\r\n\r\nAPI_ENDPOINT = 'https://discord.com/api/v10'\r\nCLIENT_ID = '332269999912132097'\r\nCLIENT_SECRET = '937it3ow87i4ery69876wqire'",
+    "source": "oauth2.txt",
+    "chunkIndex": 19,
+    "fileName": "oauth2_chunk_19.txt"
+  },
+  {
+    "id": "oauth2_20",
+    "content": "CLIENT_SECRET = '937it3ow87i4ery69876wqire'\r\n\r\ndef refresh_token(refresh_token):\r\n  data = {\r\n    'grant_type': 'refresh_token',\r\n    'refresh_token': refresh_token\r\n  }\r\n  headers = {\r\n    'Content-Type': 'application/x-www-form-urlencoded'\r\n  }\r\n  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))\r\n  r.raise_for_status()\r\n  return r.json()\r\n\r\n\r\nBoom; fresh access token response!\r\n\r\nToken Revocation Example\r\n\r\nTo disable an access or refresh token, you can revoke it by making a POST request to the token revocation URL with the following parameters:\r\n\r\ntoken - the access token or refresh token to revoke",
+    "source": "oauth2.txt",
+    "chunkIndex": 20,
+    "fileName": "oauth2_chunk_20.txt"
+  },
+  {
+    "id": "oauth2_21",
+    "content": "token_type_hint (optional) - the token parameter's type—either access_token or refresh_token\r\nWhen you revoke a token, any active access or refresh tokens associated with that authorization will be revoked, regardless of the token and token_type_hint values you pass in.\r\nCopy\r\nimport requests\r\n\r\nAPI_ENDPOINT = 'https://discord.com/api/v10'\r\nCLIENT_ID = '332269999912132097'\r\nCLIENT_SECRET = '937it3ow87i4ery69876wqire'\r\n\r\ndef revoke_access_token(access_token):\r\n  data = {\r\n    'token': access_token,\r\n    'token_type_hint': 'access_token'\r\n  }\r\n  headers = {\r\n    'Content-Type': 'application/x-www-form-urlencoded'\r\n  }",
+    "source": "oauth2.txt",
+    "chunkIndex": 21,
+    "fileName": "oauth2_chunk_21.txt"
+  },
+  {
+    "id": "oauth2_22",
+    "content": "}\r\n  requests.post('%s/oauth2/token/revoke' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))\r\n\r\n\r\nBoom; the tokens are safely revoked.\r\n\r\nImplicit Grant\r\n\r\nThe implicit OAuth2 grant is a simplified flow optimized for in-browser clients. Instead of issuing the client an authorization code to be exchanged for an access token, the client is directly issued an access token. The URL is formatted as follows:\r\n\r\nAuthorization URL Example\r\nCopy\r\nhttps://discord.com/oauth2/authorize?response_type=token&client_id=290926444748734499&state=15773059ghq9183habn&scope=identify",
+    "source": "oauth2.txt",
+    "chunkIndex": 22,
+    "fileName": "oauth2_chunk_22.txt"
+  },
+  {
+    "id": "oauth2_23",
+    "content": "On redirect, your redirect URI will contain additional URI fragments: access_token, token_type, expires_in, scope, and state(if specified). These are not querystring parameters. Be mindful of the \"#\" character:\r\n\r\nRedirect URL Example\r\nCopy\r\nhttps://findingfakeurlsisprettyhard.tv/#access_token=RTfP0OK99U3kbRtHOoKLmJbOn45PjL&token_type=Bearer&expires_in=604800&scope=identify&state=15773059ghq9183habn",
+    "source": "oauth2.txt",
+    "chunkIndex": 23,
+    "fileName": "oauth2_chunk_23.txt"
+  },
+  {
+    "id": "oauth2_24",
+    "content": "There are tradeoffs in using the implicit grant flow. It is both quicker and easier to implement, but rather than exchanging a code and getting a token returned in a secure HTTP body, the access token is returned in the URI fragment, which makes it possibly exposed to unauthorized parties. You also are not returned a refresh token, so the user must explicitly re-authorize once their token expires.\r\n\r\nClient Credentials Grant",
+    "source": "oauth2.txt",
+    "chunkIndex": 24,
+    "fileName": "oauth2_chunk_24.txt"
+  },
+  {
+    "id": "oauth2_25",
+    "content": "Client Credentials Grant\r\n\r\nThe client credential flow is a quick and easy way for bot developers to get their own bearer tokens for testing purposes. By making a POST request to the token URL with a grant type of client_credentials, using Basic authentication with your client id as the username and your client secret as the password, you will be returned an access token for the bot owner. Therefore, always be super-extra-very-we-are-not-kidding-like-really-be-secure-make-sure-your-info-is-not-in-your-source-code careful with your client_id and client_secret. We don't take kindly to imposters around these parts.",
+    "source": "oauth2.txt",
+    "chunkIndex": 25,
+    "fileName": "oauth2_chunk_25.txt"
+  },
+  {
+    "id": "oauth2_26",
+    "content": "You can specify scopes with the scope parameter, which is a list of OAuth2 scopes separated by spaces:\r\n\r\nTeam applications are limited to the identify and applications.commands.update scope, because teams are not bound to a specific user.\r\nClient Credentials Token Request Example\r\nCopy\r\nimport requests\r\n\r\nAPI_ENDPOINT = 'https://discord.com/api/v10'\r\nCLIENT_ID = '332269999912132097'\r\nCLIENT_SECRET = '937it3ow87i4ery69876wqire'\r\n\r\ndef get_token():\r\n  data = {\r\n    'grant_type': 'client_credentials',\r\n    'scope': 'identify connections'\r\n  }\r\n  headers = {\r\n    'Content-Type': 'application/x-www-form-urlencoded'\r\n  }",
+    "source": "oauth2.txt",
+    "chunkIndex": 26,
+    "fileName": "oauth2_chunk_26.txt"
+  },
+  {
+    "id": "oauth2_27",
+    "content": "}\r\n  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))\r\n  r.raise_for_status()\r\n  return r.json()\r\n\r\n\r\nIn return, you will receive an access token (without a refresh token):\r\n\r\nClient Credentials Access Token Response\r\nCopy\r\n{\r\n  \"access_token\": \"6qrZcUqja7812RVdnEKjpzOL4CvHBFG\",\r\n  \"token_type\": \"Bearer\",\r\n  \"expires_in\": 604800,\r\n  \"scope\": \"identify connections\"\r\n}\r\n\r\nBot Users",
+    "source": "oauth2.txt",
+    "chunkIndex": 27,
+    "fileName": "oauth2_chunk_27.txt"
+  },
+  {
+    "id": "oauth2_28",
+    "content": "}\r\n\r\nBot Users\r\n\r\nDiscord's API provides bot users, which are a separate type of user dedicated to automation. Bot users are automatically added to all apps, and are authenticated using the bot token found in your app's settings. Unlike the normal OAuth2 flow, bot users have full access to most API routes without using bearer tokens, and can connect to the Real Time Gateway.\r\n\r\nBot vs User Accounts\r\nDevelopers must abide by the terms of service, which includes refraining from automating standard user accounts (generally called \"self-bots\") outside of the OAuth2/bot API.\r\n\r\nBot users have a few differences compared to standard Discord users:",
+    "source": "oauth2.txt",
+    "chunkIndex": 28,
+    "fileName": "oauth2_chunk_28.txt"
+  },
+  {
+    "id": "oauth2_29",
+    "content": "Bots are added to guilds through the OAuth2 API, and cannot accept normal invites.\r\nBots cannot have friends or be added to or join Group DMs.\r\nVerified bots do not have a maximum number of guilds.\r\nBots have an entirely separate set of rate limits.\r\nBot Authorization Flow\r\n\r\nBot authorization is a special server-less and callback-less OAuth2 flow that makes it easy for users to add bots to guilds. The URL you create looks similar to what we use for full stack implementation:\r\n\r\nBot Auth Parameters\r\nNAME\tDESCRIPTION\r\nclient_id\tyour app's client id\r\nscope\tneeds to include bot for the bot flow\r\npermissions\tthe permissions you're requesting",
+    "source": "oauth2.txt",
+    "chunkIndex": 29,
+    "fileName": "oauth2_chunk_29.txt"
+  },
+  {
+    "id": "oauth2_30",
+    "content": "permissions\tthe permissions you're requesting\r\nguild_id\tpre-fills the dropdown picker with a guild for the user\r\ndisable_guild_select\ttrue or false—disallows the user from changing the guild dropdown\r\nURL Example\r\nCopy\r\nhttps://discord.com/oauth2/authorize?client_id=157730590492196864&scope=bot&permissions=1\r\n\r\n\r\nIn the case of bots, the scope parameter should be set to bot. There's also a new parameter, permissions, which is an integer corresponding to the permission calculations for the bot. You'll also notice the absence of response_type and redirect_uri. Bot authorization does not require these parameters because there is no need to retrieve the user's access token.",
+    "source": "oauth2.txt",
+    "chunkIndex": 30,
+    "fileName": "oauth2_chunk_30.txt"
+  },
+  {
+    "id": "oauth2_31",
+    "content": "When the user navigates to this page, they'll be prompted to add the bot to a guild in which they have proper permissions. On acceptance, the bot will be added. Super easy!\r\n\r\nIf you happen to already know the ID of the guild the user will add your bot to, you can provide this ID in the URL as a guild_id=GUILD_ID parameter. When the authorization page loads, that guild will be preselected in the dialog if that user has permission to add the bot to that guild. You can use this in conjunction with the parameter disable_guild_select=true to disallow the user from picking a different guild.",
+    "source": "oauth2.txt",
+    "chunkIndex": 31,
+    "fileName": "oauth2_chunk_31.txt"
+  },
+  {
+    "id": "oauth2_32",
+    "content": "If your bot is super specific to your private clubhouse, or you just don't like sharing, you can leave the Public Bot option unchecked in your application's settings. If unchecked, only you can add the bot to guilds. If marked as public, anyone with your bot's URL can add it to guilds in which they have proper permissions.\r\n\r\nAdvanced Bot Authorization",
+    "source": "oauth2.txt",
+    "chunkIndex": 32,
+    "fileName": "oauth2_chunk_32.txt"
+  },
+  {
+    "id": "oauth2_33",
+    "content": "Advanced Bot Authorization\r\n\r\nDevs can extend the bot authorization functionality. You can request additional scopes outside of bot and applications.commands, which will prompt a continuation into a complete authorization code grant flow and add the ability to request the user's access token. If you request any scopes outside of bot and applications.commands, response_type is again mandatory; we will also automatically redirect the user to the first URI in your application's registered list unless redirect_uri is specified.",
+    "source": "oauth2.txt",
+    "chunkIndex": 33,
+    "fileName": "oauth2_chunk_33.txt"
+  },
+  {
+    "id": "oauth2_34",
+    "content": "When receiving the access code on redirect, there will be additional querystring parameters of guild_id and permissions. The guild_id parameter should only be used as a hint as to the relationship between your bot and a guild. To be sure of the relationship between your bot and the guild, consider requiring the Oauth2 code grant in your bot's settings. Enabling it requires anyone adding your bot to a server to go through a full OAuth2 authorization code grant flow. When you retrieve the user's access token, you'll also receive information about the guild to which your bot was added:\r\n\r\nExtended Bot Authorization Access Token Example\r\nCopy\r\n{\r\n  \"token_type\": \"Bearer\",\r\n  \"guild\": {",
+    "source": "oauth2.txt",
+    "chunkIndex": 34,
+    "fileName": "oauth2_chunk_34.txt"
+  },
+  {
+    "id": "oauth2_35",
+    "content": "Copy\r\n{\r\n  \"token_type\": \"Bearer\",\r\n  \"guild\": {\r\n    \"mfa_level\": 0,\r\n    \"emojis\": [],\r\n    \"application_id\": null,\r\n    \"name\": \"SomeTest\",\r\n    \"roles\": [\r\n      {\r\n        \"hoist\": false,\r\n        \"name\": \"@everyone\",\r\n        \"mentionable\": false,\r\n        \"color\": 0,\r\n        \"position\": 0,\r\n        \"id\": \"290926798626357250\",\r\n        \"managed\": false,\r\n        \"permissions\": 49794241,\r\n        \"permissions_new\": \"49794241\"\r\n      }\r\n    ],\r\n    \"afk_timeout\": 300,\r\n    \"system_channel_id\": null,\r\n    \"widget_channel_id\": null,\r\n    \"region\": \"us-east\",\r\n    \"default_message_notifications\": 1,\r\n    \"explicit_content_filter\": 0,\r\n    \"splash\": null,\r\n    \"features\": [],",
+    "source": "oauth2.txt",
+    "chunkIndex": 35,
+    "fileName": "oauth2_chunk_35.txt"
+  },
+  {
+    "id": "oauth2_36",
+    "content": "\"splash\": null,\r\n    \"features\": [],\r\n    \"afk_channel_id\": null,\r\n    \"widget_enabled\": false,\r\n    \"verification_level\": 0,\r\n    \"owner_id\": \"53908232999183680\",\r\n    \"id\": \"2909267986347357250\",\r\n    \"icon\": null,\r\n    \"description\": null,\r\n    \"public_updates_channel_id\": null,\r\n    \"safety_alerts_channel_id\": null,\r\n    \"rules_channel_id\": null,\r\n    \"max_members\": 100000,\r\n    \"vanity_url_code\": null,\r\n    \"premium_subscription_count\": 0,\r\n    \"premium_tier\": 0,\r\n    \"preferred_locale\": \"en-US\",\r\n    \"system_channel_flags\": 0,\r\n    \"banner\": null,\r\n    \"max_presences\": null,\r\n    \"discovery_splash\": null,\r\n    \"max_video_channel_users\": 25\r\n  },",
+    "source": "oauth2.txt",
+    "chunkIndex": 36,
+    "fileName": "oauth2_chunk_36.txt"
+  },
+  {
+    "id": "oauth2_37",
+    "content": "\"max_video_channel_users\": 25\r\n  },\r\n  \"access_token\": \"zMndOe7jFLXGawdlxMOdNvXjjOce5X\",\r\n  \"scope\": \"bot\",\r\n  \"expires_in\": 604800,\r\n  \"refresh_token\": \"mgp8qnvBwJcmadwgCYKyYD5CAzGAX4\"\r\n}\r\n\r\nTwo-Factor Authentication Requirement\r\n\r\nFor bots with elevated permissions (permissions with a * next to them), we enforce two-factor authentication on the owner's account when added to guilds that have server-wide 2FA enabled.\r\n\r\nWebhooks\r\n\r\nDiscord's webhook flow is a specialized version of an authorization code implementation. In this case, the scope querystring parameter needs to be set to webhook.incoming:\r\n\r\nURL Example\r\nCopy",
+    "source": "oauth2.txt",
+    "chunkIndex": 37,
+    "fileName": "oauth2_chunk_37.txt"
+  },
+  {
+    "id": "oauth2_38",
+    "content": "URL Example\r\nCopy\r\nhttps://discord.com/oauth2/authorize?response_type=code&client_id=157730590492196864&scope=webhook.incoming&state=15773059ghq9183habn&redirect_uri=https%3A%2F%2Fnicememe.website\r\n\r\n\r\nWhen the user navigates to this URL, they will be prompted to select a channel in which to allow the webhook. When the webhook is executed, it will post its message into this channel. On acceptance, the user will be redirected to your redirect_uri. The URL will contain the code querystring parameter which should be exchanged for an access token. In return, you will receive a slightly modified token response:\r\n\r\nWebhook Token Response Example\r\nCopy\r\n{\r\n  \"token_type\": \"Bearer\",",
+    "source": "oauth2.txt",
+    "chunkIndex": 38,
+    "fileName": "oauth2_chunk_38.txt"
+  },
+  {
+    "id": "oauth2_39",
+    "content": "Copy\r\n{\r\n  \"token_type\": \"Bearer\",\r\n  \"access_token\": \"GNaVzEtATqdh173tNHEXY9ZYAuhiYxvy\",\r\n  \"scope\": \"webhook.incoming\",\r\n  \"expires_in\": 604800,\r\n  \"refresh_token\": \"PvPL7ELyMDc1836457XCDh1Y8jPbRm\",\r\n  \"webhook\": {\r\n    \"application_id\": \"310954232226357250\",\r\n    \"name\": \"testwebhook\",\r\n    \"url\": \"https://discord.com/api/webhooks/347114750880120863/kKDdjXa1g9tKNs0-_yOwLyALC9gydEWP6gr9sHabuK1vuofjhQDDnlOclJeRIvYK-pj_\",\r\n    \"channel_id\": \"345626669224982402\",\r\n    \"token\": \"kKDdjXa1g9tKNs0-_yOwLyALC9gydEWP6gr9sHabuK1vuofjhQDDnlOclJeRIvYK-pj_\",\r\n    \"type\": 1,\r\n    \"avatar\": null,\r\n    \"guild_id\": \"290926792226357250\",\r\n    \"id\": \"347114750880120863\"\r\n  }\r\n}",
+    "source": "oauth2.txt",
+    "chunkIndex": 39,
+    "fileName": "oauth2_chunk_39.txt"
+  },
+  {
+    "id": "oauth2_40",
+    "content": "\"id\": \"347114750880120863\"\r\n  }\r\n}\r\n\r\n\r\nFrom this object, you should store the webhook.token and webhook.id. See the execute webhook documentation for how to send messages with the webhook.\r\n\r\nAny user that wishes to add your webhook to their channel will need to go through the full OAuth2 flow. A new webhook is created each time, so you will need to save the token and id. If you wish to send a message to all your webhooks, you'll need to iterate over each stored id\r\ncombination and make POST requests to each one. Be mindful of our Rate Limits!\r\n\r\nGet Current Bot Application Information\r\nGET\r\n/oauth2/applications/@me\r\n\r\nReturns the bot's application object.",
+    "source": "oauth2.txt",
+    "chunkIndex": 40,
+    "fileName": "oauth2_chunk_40.txt"
+  },
+  {
+    "id": "oauth2_41",
+    "content": "Returns the bot's application object.\r\n\r\nGet Current Authorization Information\r\nGET\r\n/oauth2/@me\r\n\r\nReturns info about the current authorization. Requires authentication with a bearer token.\r\n\r\nResponse Structure\r\nFIELD\tTYPE\tDESCRIPTION\r\napplication\tpartial application object\tthe current application\r\nscopes\tarray of strings\tthe scopes the user has authorized the application for\r\nexpires\tISO8601 timestamp\twhen the access token expires\r\nuser?\tuser object\tthe user who has authorized, if the user has authorized with the identify scope\r\nExample Authorization Information\r\nCopy\r\n{\r\n    \"application\": {\r\n        \"id\": \"159799960412356608\",\r\n        \"name\": \"AIRHORN SOLUTIONS\",",
+    "source": "oauth2.txt",
+    "chunkIndex": 41,
+    "fileName": "oauth2_chunk_41.txt"
+  },
+  {
+    "id": "oauth2_42",
+    "content": "\"name\": \"AIRHORN SOLUTIONS\",\r\n        \"icon\": \"f03590d3eb764081d154a66340ea7d6d\",\r\n        \"description\": \"\",\r\n        \"hook\": true,\r\n        \"bot_public\": true,\r\n        \"bot_require_code_grant\": false,\r\n        \"verify_key\": \"c8cde6a3c8c6e49d86af3191287b3ce255872be1fff6dc285bdb420c06a2c3c8\"\r\n    },\r\n    \"scopes\": [\r\n        \"guilds.join\",\r\n        \"identify\"\r\n    ],\r\n    \"expires\": \"2021-01-23T02:33:17.017000+00:00\",\r\n    \"user\": {\r\n        \"id\": \"268473310986240001\",\r\n        \"username\": \"discord\",\r\n        \"avatar\": \"f749bb0cbeeb26ef21eca719337d20f1\",\r\n        \"discriminator\": \"0\",\r\n        \"global_name\": \"Discord\",\r\n        \"public_flags\": 131072\r\n    }\r\n}",
+    "source": "oauth2.txt",
+    "chunkIndex": 42,
+    "fileName": "oauth2_chunk_42.txt"
+  },
+  {
+    "id": "webhook_1",
+    "content": "Webhook Resource\r\n\r\nWebhooks are a low-effort way to post messages to channels in Discord. They do not require a bot user or authentication to use.\r\n\r\nApps can also subscribe to webhook events (i.e. outgoing webhooks) when events happen in Discord, which is detailed in the Webhook Events documentation.\r\n\r\nWebhook Object\r\n\r\nUsed to represent a webhook.\r\n\r\nWebhook Structure\r\nFIELD\tTYPE\tDESCRIPTION\r\nid\tsnowflake\tthe id of the webhook\r\ntype\tinteger\tthe type of the webhook\r\nguild_id?\t?snowflake\tthe guild id this webhook is for, if any\r\nchannel_id\t?snowflake\tthe channel id this webhook is for, if any",
+    "source": "webhook.txt",
+    "chunkIndex": 1,
+    "fileName": "webhook_chunk_1.txt"
+  },
+  {
+    "id": "webhook_2",
+    "content": "user?\tuser object\tthe user this webhook was created by (not returned when getting a webhook with its token)\r\nname\t?string\tthe default name of the webhook\r\navatar\t?string\tthe default user avatar hash of the webhook\r\ntoken?\tstring\tthe secure token of the webhook (returned for Incoming Webhooks)\r\napplication_id\t?snowflake\tthe bot/OAuth2 application that created this webhook\r\nsource_guild? *\tpartial guild object\tthe guild of the channel that this webhook is following (returned for Channel Follower Webhooks)\r\nsource_channel? *\tpartial channel object\tthe channel that this webhook is following (returned for Channel Follower Webhooks)",
+    "source": "webhook.txt",
+    "chunkIndex": 2,
+    "fileName": "webhook_chunk_2.txt"
+  },
+  {
+    "id": "webhook_3",
+    "content": "url?\tstring\tthe url used for executing the webhook (returned by the webhooks OAuth2 flow)\r\n\r\n* These fields will be absent if the webhook creator has since lost access to the guild where the followed channel resides\r\n\r\nWebhook Types\r\nThese types don't include webhook events, which are outgoing webhooks sent to your app by Discord. See Webhook Events for details.\r\nVALUE\tNAME\tDESCRIPTION\r\n1\tIncoming\tIncoming Webhooks can post messages to channels with a generated token\r\n2\tChannel Follower\tChannel Follower Webhooks are internal webhooks used with Channel Following to post new messages into channels\r\n3\tApplication\tApplication webhooks are webhooks used with Interactions",
+    "source": "webhook.txt",
+    "chunkIndex": 3,
+    "fileName": "webhook_chunk_3.txt"
+  },
+  {
+    "id": "webhook_4",
+    "content": "Example Incoming Webhook\r\nCopy\r\n{\r\n  \"name\": \"test webhook\",\r\n  \"type\": 1,\r\n  \"channel_id\": \"199737254929760256\",\r\n  \"token\": \"3d89bb7572e0fb30d8128367b3b1b44fecd1726de135cbe28a41f8b2f777c372ba2939e72279b94526ff5d1bd4358d65cf11\",\r\n  \"avatar\": null,\r\n  \"guild_id\": \"199737254929760256\",\r\n  \"id\": \"223704706495545344\",\r\n  \"application_id\": null,\r\n  \"user\": {\r\n    \"username\": \"test\",\r\n    \"discriminator\": \"7479\",\r\n    \"id\": \"190320984123768832\",\r\n    \"avatar\": \"b004ec1740a63ca06ae2e14c5cee11f3\",\r\n    \"public_flags\": 131328\r\n  }\r\n}\r\n\r\nExample Channel Follower Webhook\r\nCopy\r\n{\r\n  \"type\": 2,\r\n  \"id\": \"752831914402115456\",\r\n  \"name\": \"Guildy name\",\r\n  \"avatar\": \"bb71f469c158984e265093a81b3397fb\",",
+    "source": "webhook.txt",
+    "chunkIndex": 4,
+    "fileName": "webhook_chunk_4.txt"
+  },
+  {
+    "id": "webhook_5",
+    "content": "\"avatar\": \"bb71f469c158984e265093a81b3397fb\",\r\n  \"channel_id\": \"561885260615255432\",\r\n  \"guild_id\": \"56188498421443265\",\r\n  \"application_id\": null,\r\n  \"source_guild\": {\r\n    \"id\": \"56188498421476534\",\r\n    \"name\": \"Guildy name\",\r\n    \"icon\": \"bb71f469c158984e265093a81b3397fb\"\r\n  },\r\n  \"source_channel\": {\r\n    \"id\": \"5618852344134324\",\r\n    \"name\": \"announcements\"\r\n  },\r\n  \"user\": {\r\n    \"username\": \"test\",\r\n    \"discriminator\": \"7479\",\r\n    \"id\": \"190320984123768832\",\r\n    \"avatar\": \"b004ec1740a63ca06ae2e14c5cee11f3\",\r\n    \"public_flags\": 131328\r\n  }\r\n}\r\n\r\nExample Application Webhook\r\nCopy\r\n{\r\n  \"type\": 3,\r\n  \"id\": \"658822586720976555\",\r\n  \"name\": \"Clyde\",",
+    "source": "webhook.txt",
+    "chunkIndex": 5,
+    "fileName": "webhook_chunk_5.txt"
+  },
+  {
+    "id": "webhook_6",
+    "content": "\"name\": \"Clyde\",\r\n  \"avatar\": \"689161dc90ac261d00f1608694ac6bfd\",\r\n  \"channel_id\": null,\r\n  \"guild_id\": null,\r\n  \"application_id\": \"658822586720976555\"\r\n}\r\n\r\nCreate Webhook\r\nPOST\r\n/channels/{channel.id}/webhooks\r\n\r\nCreates a new webhook and returns a webhook object on success. Requires the MANAGE_WEBHOOKS permission. Fires a Webhooks Update Gateway event.\r\n\r\nAn error will be returned if a webhook name (name) is not valid. A webhook name is valid if:\r\n\r\nIt does not contain the substrings clyde or discord (case-insensitive)\r\nIt follows the nickname guidelines in the Usernames and Nicknames documentation, with an exception that webhook names can be up to 80 characters",
+    "source": "webhook.txt",
+    "chunkIndex": 6,
+    "fileName": "webhook_chunk_6.txt"
+  },
+  {
+    "id": "webhook_7",
+    "content": "This endpoint supports the X-Audit-Log-Reason header.\r\nJSON Params\r\nFIELD\tTYPE\tDESCRIPTION\r\nname\tstring\tname of the webhook (1-80 characters)\r\navatar?\t?image data\timage for the default webhook avatar\r\nGet Channel Webhooks\r\nGET\r\n/channels/{channel.id}/webhooks\r\n\r\nReturns a list of channel webhook objects. Requires the MANAGE_WEBHOOKS permission.\r\n\r\nGet Guild Webhooks\r\nGET\r\n/guilds/{guild.id}/webhooks\r\n\r\nReturns a list of guild webhook objects. Requires the MANAGE_WEBHOOKS permission.\r\n\r\nGet Webhook\r\nGET\r\n/webhooks/{webhook.id}\r\n\r\nReturns the new webhook object for the given id.",
+    "source": "webhook.txt",
+    "chunkIndex": 7,
+    "fileName": "webhook_chunk_7.txt"
+  },
+  {
+    "id": "webhook_8",
+    "content": "This request requires the MANAGE_WEBHOOKS permission unless the application making the request owns the webhook. (see: webhook.application_id)\r\n\r\nGet Webhook with Token\r\nGET\r\n/webhooks/{webhook.id}/{webhook.token}\r\n\r\nSame as above, except this call does not require authentication and returns no user in the webhook object.\r\n\r\nModify Webhook\r\nPATCH\r\n/webhooks/{webhook.id}\r\n\r\nModify a webhook. Requires the MANAGE_WEBHOOKS permission. Returns the updated webhook object on success. Fires a Webhooks Update Gateway event.\r\n\r\nAll parameters to this endpoint are optional\r\nThis endpoint supports the X-Audit-Log-Reason header.\r\nJSON Params\r\nFIELD\tTYPE\tDESCRIPTION",
+    "source": "webhook.txt",
+    "chunkIndex": 8,
+    "fileName": "webhook_chunk_8.txt"
+  },
+  {
+    "id": "webhook_9",
+    "content": "JSON Params\r\nFIELD\tTYPE\tDESCRIPTION\r\nname\tstring\tthe default name of the webhook\r\navatar\t?image data\timage for the default webhook avatar\r\nchannel_id\tsnowflake\tthe new channel id this webhook should be moved to\r\nModify Webhook with Token\r\nPATCH\r\n/webhooks/{webhook.id}/{webhook.token}\r\n\r\nSame as above, except this call does not require authentication, does not accept a channel_id parameter in the body, and does not return a user in the webhook object.\r\n\r\nDelete Webhook\r\nDELETE\r\n/webhooks/{webhook.id}\r\n\r\nDelete a webhook permanently. Requires the MANAGE_WEBHOOKS permission. Returns a 204 No Content response on success. Fires a Webhooks Update Gateway event.",
+    "source": "webhook.txt",
+    "chunkIndex": 9,
+    "fileName": "webhook_chunk_9.txt"
+  },
+  {
+    "id": "webhook_10",
+    "content": "This endpoint supports the X-Audit-Log-Reason header.\r\nDelete Webhook with Token\r\nDELETE\r\n/webhooks/{webhook.id}/{webhook.token}\r\n\r\nSame as above, except this call does not require authentication.\r\n\r\nExecute Webhook\r\nPOST\r\n/webhooks/{webhook.id}/{webhook.token}\r\n\r\nRefer to Uploading Files for details on attachments and multipart/form-data requests. Returns a message or 204 No Content depending on the wait query parameter.\r\n\r\nNote that when sending a message, you must provide a value for at least one of content, embeds, components, file, or poll.",
+    "source": "webhook.txt",
+    "chunkIndex": 10,
+    "fileName": "webhook_chunk_10.txt"
+  },
+  {
+    "id": "webhook_11",
+    "content": "If the webhook channel is a forum or media channel, you must provide either thread_id in the query string params, or thread_name in the JSON/form params. If thread_id is provided, the message will send in that thread. If thread_name is provided, a thread with that name will be created in the channel.\r\nDiscord may strip certain characters from message content, like invalid unicode characters or characters which cause unexpected message formatting. If you are passing user-generated strings into message content, consider sanitizing the data to prevent unexpected behavior and using allowed_mentions to prevent unexpected mentions.\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED",
+    "source": "webhook.txt",
+    "chunkIndex": 11,
+    "fileName": "webhook_chunk_11.txt"
+  },
+  {
+    "id": "webhook_12",
+    "content": "FIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nwait\tboolean\twaits for server confirmation of message send before response, and returns the created message body (defaults to false; when false a message that is not saved does not return an error)\tfalse\r\nthread_id\tsnowflake\tSend a message to the specified thread within a webhook's channel. The thread will automatically be unarchived.\tfalse\r\nwith_components\tboolean\twhether to respect the components field of the request. When enabled, allows application-owned webhooks to use all components and non-owned webhooks to use non-interactive components. (defaults to false)\tfalse\r\nJSON/Form Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED",
+    "source": "webhook.txt",
+    "chunkIndex": 12,
+    "fileName": "webhook_chunk_12.txt"
+  },
+  {
+    "id": "webhook_13",
+    "content": "FIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\ncontent\tstring\tthe message contents (up to 2000 characters)\tone of content, file, embeds, poll\r\nusername\tstring\toverride the default username of the webhook\tfalse\r\navatar_url\tstring\toverride the default avatar of the webhook\tfalse\r\ntts\tboolean\ttrue if this is a TTS message\tfalse\r\nembeds\tarray of up to 10 embed objects\tembedded rich content\tone of content, file, embeds, poll\r\nallowed_mentions\tallowed mention object\tallowed mentions for the message\tfalse\r\ncomponents *\tarray of message component\tthe components to include with the message\tfalse\r\nfiles[n] **\tfile contents\tthe contents of the file being sent\tone of content, file, embeds, poll",
+    "source": "webhook.txt",
+    "chunkIndex": 13,
+    "fileName": "webhook_chunk_13.txt"
+  },
+  {
+    "id": "webhook_14",
+    "content": "payload_json **\tstring\tJSON encoded body of non-file params\tmultipart/form-data only\r\nattachments **\tarray of partial attachment objects\tattachment objects with filename and description\tfalse\r\nflags ***\tinteger\tmessage flags combined as a bitfield (only SUPPRESS_EMBEDS, SUPPRESS_NOTIFICATIONS and IS_COMPONENTS_V2 can be set)\tfalse\r\nthread_name\tstring\tname of thread to create (requires the webhook channel to be a forum or media channel)\tfalse\r\napplied_tags\tarray of snowflakes\tarray of tag ids to apply to the thread (requires the webhook channel to be a forum or media channel)\tfalse\r\npoll\tpoll request object\tA poll!\tone of content, file, embeds, poll",
+    "source": "webhook.txt",
+    "chunkIndex": 14,
+    "fileName": "webhook_chunk_14.txt"
+  },
+  {
+    "id": "webhook_15",
+    "content": "* Application-owned webhooks can always send components. Non-application-owned webhooks cannot send interactive components, and the components field will be ignored unless they set the with_components query param.\r\n\r\n** See Uploading Files for details.\r\n\r\n*** When the flag IS_COMPONENTS_V2 is set, the webhook message can only contain components. Providing content, embeds, files[n] or poll will fail with a 400 BAD REQUEST response.\r\n\r\nFor the webhook embed objects, you can set every field except type (it will be rich regardless of if you try to set it), provider, video, and any height, width, or proxy_url values for images.\r\nExecute Slack-Compatible Webhook\r\nPOST",
+    "source": "webhook.txt",
+    "chunkIndex": 15,
+    "fileName": "webhook_chunk_15.txt"
+  },
+  {
+    "id": "webhook_16",
+    "content": "Execute Slack-Compatible Webhook\r\nPOST\r\n/webhooks/{webhook.id}/{webhook.token}/slack\r\n\r\nRefer to Slack's documentation for more information. We do not support Slack's channel, icon_emoji, mrkdwn, or mrkdwn_in properties.\r\n\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nthread_id\tsnowflake\tid of the thread to send the message in\tfalse\r\nwait\tboolean\twaits for server confirmation of message send before response (defaults to true; when false a message that is not saved does not return an error)\tfalse\r\nExecute GitHub-Compatible Webhook\r\nPOST\r\n/webhooks/{webhook.id}/{webhook.token}/github",
+    "source": "webhook.txt",
+    "chunkIndex": 16,
+    "fileName": "webhook_chunk_16.txt"
+  },
+  {
+    "id": "webhook_17",
+    "content": "/webhooks/{webhook.id}/{webhook.token}/github\r\n\r\nAdd a new webhook to your GitHub repo (in the repo's settings), and use this endpoint as the \"Payload URL.\" You can choose what events your Discord channel receives by choosing the \"Let me select individual events\" option and selecting individual events for the new webhook you're configuring. The supported events are commit_comment, create, delete, fork, issue_comment, issues, member, public, pull_request, pull_request_review, pull_request_review_comment, push, release, watch, check_run, check_suite, discussion, and discussion_comment.\r\n\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED",
+    "source": "webhook.txt",
+    "chunkIndex": 17,
+    "fileName": "webhook_chunk_17.txt"
+  },
+  {
+    "id": "webhook_18",
+    "content": "FIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nthread_id\tsnowflake\tid of the thread to send the message in\tfalse\r\nwait\tboolean\twaits for server confirmation of message send before response (defaults to true; when false a message that is not saved does not return an error)\tfalse\r\nGet Webhook Message\r\nGET\r\n/webhooks/{webhook.id}/{webhook.token}/messages/{message.id}\r\n\r\nReturns a previously-sent webhook message from the same token. Returns a message object on success.\r\n\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nthread_id\tsnowflake\tid of the thread the message is in\tfalse\r\nEdit Webhook Message\r\nPATCH\r\n/webhooks/{webhook.id}/{webhook.token}/messages/{message.id}",
+    "source": "webhook.txt",
+    "chunkIndex": 18,
+    "fileName": "webhook_chunk_18.txt"
+  },
+  {
+    "id": "webhook_19",
+    "content": "Edits a previously-sent webhook message from the same token. Returns a message object on success.",
+    "source": "webhook.txt",
+    "chunkIndex": 19,
+    "fileName": "webhook_chunk_19.txt"
+  },
+  {
+    "id": "webhook_20",
+    "content": "When the content field is edited, the arrays mentions and mention_roles and the boolean mention_everyone in the message object will be reconstructed from scratch based on the new content. When the message flag IS_COMPONENTS_V2 is set, the reconstructed arrays and boolean are based on the edited content in the components array. The allowed_mentions field of the edit request controls how this happens. If there is no explicit allowed_mentions in the edit request, the content will be parsed with default allowances, that is, without regard to whether or not an allowed_mentions was present in the request that originally created the message.",
+    "source": "webhook.txt",
+    "chunkIndex": 20,
+    "fileName": "webhook_chunk_20.txt"
+  },
+  {
+    "id": "webhook_21",
+    "content": "Refer to Uploading Files for details on attachments and multipart/form-data requests. Any provided files will be appended to the message. To remove or replace files you will have to supply the attachments field which specifies the files to retain on the message after edit.\r\n\r\nStarting with API v10, the attachments array must contain all attachments that should be present after edit, including retained and new attachments provided in the request body.\r\nAll parameters to this endpoint are optional and nullable.\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nthread_id\tsnowflake\tid of the thread the message is in\tfalse",
+    "source": "webhook.txt",
+    "chunkIndex": 21,
+    "fileName": "webhook_chunk_21.txt"
+  },
+  {
+    "id": "webhook_22",
+    "content": "with_components\tboolean\twhether to respect the components field of the request. When enabled, allows application-owned webhooks to use all components and non-owned webhooks to use non-interactive components. (defaults to false)\tfalse\r\nJSON/Form Params\r\nFIELD\tTYPE\tDESCRIPTION\r\ncontent\tstring\tthe message contents (up to 2000 characters)\r\nembeds\tarray of up to 10 embed objects\tembedded rich content\r\nflags *\tinteger\tmessage flags combined as a bitfield (SUPPRESS_EMBEDS and IS_COMPONENTS_V2 only)\r\nallowed_mentions\tallowed mention object\tallowed mentions for the message\r\ncomponents **\tarray of message component\tthe components to include with the message",
+    "source": "webhook.txt",
+    "chunkIndex": 22,
+    "fileName": "webhook_chunk_22.txt"
+  },
+  {
+    "id": "webhook_23",
+    "content": "files[n] ***\tfile contents\tthe contents of the file being sent/edited\r\npayload_json ***\tstring\tJSON encoded body of non-file params (multipart/form-data only)\r\nattachments ***\tarray of partial attachment objects\tattached files to keep and possible descriptions for new files\r\npoll ****\tpoll request object\tA poll!\r\n\r\n* The SUPPRESS_EMBEDS flag can be both set and unset, while the IS_COMPONENTS_V2 flag can only be set. When the IS_COMPONENTS_V2 flag is set, any of the used content, embeds, files[n] or poll values in the initial message must be set to null first, otherwise it will fail with a 400 BAD REQUEST response.",
+    "source": "webhook.txt",
+    "chunkIndex": 23,
+    "fileName": "webhook_chunk_23.txt"
+  },
+  {
+    "id": "webhook_24",
+    "content": "** Application-owned webhooks can always send components. Non-application-owned webhooks cannot send interactive components, and the components field will be ignored unless they set the with_components query param.\r\n\r\n*** See Uploading Files for details.\r\n\r\n**** Polls can only be added when editing a deferred interaction response.\r\n\r\nDelete Webhook Message\r\nDELETE\r\n/webhooks/{webhook.id}/{webhook.token}/messages/{message.id}\r\n\r\nDeletes a message that was created by the webhook. Returns a 204 No Content response on success.\r\n\r\nQuery String Params\r\nFIELD\tTYPE\tDESCRIPTION\tREQUIRED\r\nthread_id\tsnowflake\tid of the thread the message is in\tfalse",
+    "source": "webhook.txt",
+    "chunkIndex": 24,
+    "fileName": "webhook_chunk_24.txt"
+  }
+]

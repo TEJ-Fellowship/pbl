@@ -1,0 +1,81 @@
+BUILD WHERE THE WORLD PLAYS
+Create social games, experiences, and integrations for millions of users on Discord
+Build with Discord
+
+Discord provides a platform for building social experiences, whether you're creating apps within Discord or integrating Discord's features into your game.
+
+Apps
+
+Develop apps, bots, and integrations to enhance the Discord experience.
+
+Activities
+
+Build multiplayer games and social experiences that run directly in Discord.
+
+Discord Social SDK
+
+Add rich social features into your game across desktop, mobile, and console.
+
+Apps: Extend Discord with Custom Integrations
+
+Enhance the Discord experience with custom apps, commands, and integrations.
+
+Apps Overview
+
+Learn the fundamentals of building Discord apps and commands.
+
+Build Your First Discord App
+
+Create a bot user that plays "rock, paper, scissors" with users.
+
+Slash Commands and Interactions
+
+Create custom commands and interactions for your app.
+
+Activities: Build Multiplayer Games in Discord
+
+Use the Embedded App SDK to create real-time games and social experiences that users can launch directly inside Discord.
+
+Activities Overview
+
+Discover how Activities work in Discord.
+
+Build Your First Activity
+
+Build and test an Activity using the Embedded App SDK.
+
+Activity Design Patterns
+
+Best practices for multiplayer, game design, and player experience.
+
+Discord Social SDK: Bring Social Features to Your Game
+
+Enable rich presence, voice chat, and more to create a seamless social experience for your players and grow your game.
+
+Discord Social SDK Overview
+
+Explore rich presence, relationships, voice chat, and more.
+
+Build with the Discord Social SDK
+
+Start here for a step-by-step guide to adding social features to your game.
+
+Design Guidelines
+
+Best practices for integrating Discord Social SDK features into your game.
+
+Find Support
+
+Connect with the developer community, report issues, and stay updated with API changes.
+
+Join the Developer Discord
+
+Get support, API announcements, and participate in developer events.
+
+Report Issues on GitHub
+
+Submit API bugs, feature requests, or contribute to the documentation.
+
+Visit the Developer Help Center
+
+Find articles, FAQs, and reach out to Discord's developer support team.

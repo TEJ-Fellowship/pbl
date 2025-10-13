@@ -1,0 +1,7 @@
+When receiving the access code on redirect, there will be additional querystring parameters of guild_id and permissions. The guild_id parameter should only be used as a hint as to the relationship between your bot and a guild. To be sure of the relationship between your bot and the guild, consider requiring the Oauth2 code grant in your bot's settings. Enabling it requires anyone adding your bot to a server to go through a full OAuth2 authorization code grant flow. When you retrieve the user's access token, you'll also receive information about the guild to which your bot was added:
+
+Extended Bot Authorization Access Token Example
+Copy
+{
+  "token_type": "Bearer",
+  "guild": {
