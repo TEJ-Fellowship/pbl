@@ -13,11 +13,13 @@ const __dirname = path.dirname(__filename);
  */
 export class HybridRetriever {
   constructor(options = {}) {
-    this.semanticWeight = options.semanticWeight || 0.6; // Balanced weights for better diversity
-    this.keywordWeight = options.keywordWeight || 0.4;
-    this.maxResults = options.maxResults || 15; // Get more results for better fusion
-    this.finalK = options.finalK || 6; // Return more results for comprehensive answers
-    this.diversityBoost = options.diversityBoost || 0.1; // Boost for category diversity
+    this.semanticWeight = options.semanticWeight || 0.7; // Increased semantic weight for better context understanding
+    this.keywordWeight = options.keywordWeight || 0.3;
+    this.maxResults = options.maxResults || 20; // Get more results for better fusion
+    this.finalK = options.finalK || 8; // Return more results for comprehensive answers
+    this.diversityBoost = options.diversityBoost || 0.15; // Increased boost for category diversity
+    this.minRelevanceScore = options.minRelevanceScore || 0.1; // Minimum relevance threshold
+    this.queryExpansion = options.queryExpansion || true; // Enable query expansion
 
     // Initialize FlexSearch index for keyword search
     this.keywordIndex = new FlexSearch.Document({
@@ -100,51 +102,85 @@ export class HybridRetriever {
   }
 
   /**
+   * Enhanced query preprocessing for better search results
+   */
+  preprocessQuery(query) {
+    // Expand common Shopify terms
+    const expansions = {
+      shopify: "shopify ecommerce platform store",
+      api: "api rest graphql endpoint",
+      product: "product inventory item",
+      order: "order fulfillment shipping",
+      theme: "theme template design",
+      app: "app integration development",
+      webhook: "webhook notification event",
+      liquid: "liquid template language",
+      checkout: "checkout payment cart",
+      customer: "customer user account",
+    };
+
+    let expandedQuery = query.toLowerCase();
+
+    // Apply expansions
+    for (const [term, expansion] of Object.entries(expansions)) {
+      if (expandedQuery.includes(term)) {
+        expandedQuery = expandedQuery.replace(new RegExp(term, "g"), expansion);
+      }
+    }
+
+    // Extract key terms
+    const keyTerms = expandedQuery
+      .split(/\s+/)
+      .filter((term) => term.length > 2);
+
+    return {
+      original: query,
+      expanded: expandedQuery,
+      keyTerms: keyTerms,
+      hasShopifyTerms: keyTerms.some((term) =>
+        ["shopify", "ecommerce", "platform", "store"].includes(term)
+      ),
+      isApiQuery: keyTerms.some((term) =>
+        ["api", "rest", "graphql", "endpoint", "webhook"].includes(term)
+      ),
+      isProductQuery: keyTerms.some((term) =>
+        ["product", "inventory", "item", "variant"].includes(term)
+      ),
+    };
+  }
+
+  /**
    * Perform hybrid search combining semantic and keyword search
    */
-  async search({ query, queryEmbedding, k = 4 }) {
+  async search({ query, queryEmbedding, k = 6 }) {
     if (!this.isInitialized) {
       await this.initialize();
     }
 
     try {
+      // Preprocess query for better results
+      const processedQuery = this.preprocessQuery(query);
+      console.log(`🔍 Processed query: "${processedQuery.expanded}"`);
+
       // Get Pinecone index
       const index = await getPineconeIndex();
 
-      // 1. Semantic search using Pinecone
+      // 1. Enhanced semantic search using Pinecone
       console.log("🔍 Performing semantic search...");
       const semanticResults = await index.query({
         vector: queryEmbedding,
         topK: this.maxResults,
         includeMetadata: true,
         includeValues: false,
+        filter: this.buildSemanticFilter(processedQuery),
       });
 
-      // 2. Keyword search using FlexSearch
+      // 2. Enhanced keyword search using FlexSearch
       console.log("🔍 Performing keyword search...");
-      const keywordSearchResults = this.keywordIndex.search(query, {
-        limit: this.maxResults,
-        suggest: true,
-      });
-
-      // Process FlexSearch results format
-      const keywordResults = [];
-      if (keywordSearchResults && keywordSearchResults.length > 0) {
-        keywordSearchResults.forEach((fieldResult) => {
-          if (fieldResult.result && fieldResult.result.length > 0) {
-            fieldResult.result.forEach((docId) => {
-              const document = this.findDocumentById(docId);
-              if (document) {
-                keywordResults.push({
-                  id: docId,
-                  score: 1.0, // FlexSearch doesn't provide scores, use 1.0
-                  document: document,
-                });
-              }
-            });
-          }
-        });
-      }
+      const keywordQueries = this.buildKeywordQueries(processedQuery);
+      const keywordResults = await this.performMultiKeywordSearch(
+        keywordQueries
+      );
 
       // Debug keyword search results
       console.log(`📊 Keyword search found ${keywordResults.length} results`);
@@ -306,6 +342,116 @@ export class HybridRetriever {
       .sort((a, b) => b.finalScore - a.finalScore);
 
     return fusedResults;
+  }
+
+  /**
+   * Build semantic filter based on query type
+   */
+  buildSemanticFilter(processedQuery) {
+    const filters = {};
+
+    // Add category filters based on query type
+    if (processedQuery.isApiQuery) {
+      filters.category = {
+        $in: [
+          "api",
+          "api_admin_graphql",
+          "api_admin_rest",
+          "api_storefront",
+          "api_products",
+          "api_orders",
+        ],
+      };
+    } else if (processedQuery.isProductQuery) {
+      filters.category = {
+        $in: ["products", "api_products", "manual_products"],
+      };
+    }
+
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }
+
+  /**
+   * Build multiple keyword queries for better coverage
+   */
+  buildKeywordQueries(processedQuery) {
+    const queries = [];
+
+    // Original query
+    queries.push({
+      query: processedQuery.original,
+      weight: 1.0,
+      type: "original",
+    });
+
+    // Expanded query
+    if (processedQuery.expanded !== processedQuery.original) {
+      queries.push({
+        query: processedQuery.expanded,
+        weight: 0.8,
+        type: "expanded",
+      });
+    }
+
+    // Key terms query
+    if (processedQuery.keyTerms.length > 0) {
+      queries.push({
+        query: processedQuery.keyTerms.join(" "),
+        weight: 0.6,
+        type: "keyterms",
+      });
+    }
+
+    return queries;
+  }
+
+  /**
+   * Perform multi-query keyword search
+   */
+  async performMultiKeywordSearch(keywordQueries) {
+    const allResults = new Map();
+
+    for (const queryObj of keywordQueries) {
+      try {
+        const searchResults = this.keywordIndex.search(queryObj.query, {
+          limit: this.maxResults,
+          suggest: true,
+        });
+
+        if (searchResults && searchResults.length > 0) {
+          searchResults.forEach((fieldResult) => {
+            if (fieldResult.result && fieldResult.result.length > 0) {
+              fieldResult.result.forEach((docId, index) => {
+                const document = this.findDocumentById(docId);
+                if (document) {
+                  const score = queryObj.weight * (1 / (index + 1)); // Rank-based scoring
+
+                  if (!allResults.has(docId)) {
+                    allResults.set(docId, {
+                      id: docId,
+                      score: score,
+                      document: document,
+                      searchTypes: [queryObj.type],
+                    });
+                  } else {
+                    const existing = allResults.get(docId);
+                    existing.score += score;
+                    existing.searchTypes.push(queryObj.type);
+                  }
+                }
+              });
+            }
+          });
+        }
+      } catch (error) {
+        console.warn(
+          `⚠️ Keyword search failed for query "${queryObj.query}":`,
+          error.message
+        );
+      }
+    }
+
+    return Array.from(allResults.values()).sort((a, b) => b.score - a.score);
   }
 
   /**
