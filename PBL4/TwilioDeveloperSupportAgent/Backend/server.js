@@ -18,7 +18,7 @@ import {
 } from "./src/chat.js";
 import ConversationMemory from "./src/conversationMemory.js";
 import APIDetector from "./src/apiDetector.js";
-import { toolManager, generateEnhancedResponse } from "./src/mcpWrapper.js";
+import mcpWrapper, { generateEnhancedResponse } from "./src/mcpWrapper.js";
 
 // Load environment variables
 dotenv.config();
@@ -212,7 +212,7 @@ app.post("/api/search/web", async (req, res) => {
     console.log(`🔍 Web search request: "${query}"`);
     const startTime = Date.now();
 
-    const results = await toolManager.executeTool("web_search", query, options);
+    const results = await mcpWrapper.toolManager.executeTool("web_search", query, options);
     const responseTime = Date.now() - startTime;
 
     res.json({
@@ -243,7 +243,7 @@ app.post("/api/search/updates", async (req, res) => {
     console.log(`📰 Twilio updates search: "${query}"`);
     const startTime = Date.now();
 
-    const results = await toolManager.executeTool("twilio_updates", query, options);
+    const results = await mcpWrapper.toolManager.executeTool("twilio_updates", query, options);
     const responseTime = Date.now() - startTime;
 
     res.json({
@@ -274,7 +274,7 @@ app.post("/api/search/error-solutions", async (req, res) => {
     console.log(`🔧 Error solutions search: "${errorCode}" - "${query}"`);
     const startTime = Date.now();
 
-    const results = await toolManager.executeTool("error_solutions", errorCode, query, options);
+    const results = await mcpWrapper.toolManager.executeTool("error_solutions", errorCode, query, options);
     const responseTime = Date.now() - startTime;
 
     res.json({
@@ -305,7 +305,7 @@ app.post("/api/search/community", async (req, res) => {
     console.log(`💬 Community discussions search: "${query}"`);
     const startTime = Date.now();
 
-    const results = await toolManager.executeTool("community_discussions", query, options);
+    const results = await mcpWrapper.toolManager.executeTool("community_discussions", query, options);
     const responseTime = Date.now() - startTime;
 
     res.json({
@@ -325,7 +325,7 @@ app.post("/api/search/community", async (req, res) => {
 // Get available tools endpoint
 app.get("/api/tools", (req, res) => {
   try {
-    const tools = toolManager.getAvailableTools();
+    const tools = mcpWrapper.toolManager.getAvailableTools();
     res.json({
       tools,
       timestamp: new Date().toISOString(),
@@ -389,7 +389,7 @@ app.post("/api/chat/enhanced", async (req, res) => {
       instructions: "Provide a comprehensive answer with code examples and best practices.",
       maxTokens: 2048,
       useWebSearch,
-      toolManager,
+      toolManager: mcpWrapper.toolManager,
     });
 
     const responseTime = Date.now() - startTime;

@@ -85,7 +85,8 @@ class MCPToolManager {
   initializeTools() {
     this.tools.set("web_search", {
       name: "Web Search",
-      description: "Search for recent Twilio updates, issues, and community discussions",
+      description:
+        "Search for recent Twilio updates, issues, and community discussions",
       execute: async (query, options = {}) => {
         return await this.webSearchTool.search(query, options);
       },
@@ -103,7 +104,11 @@ class MCPToolManager {
       name: "Error Solutions",
       description: "Search for solutions to specific Twilio error codes",
       execute: async (errorCode, query = "", options = {}) => {
-        return await this.webSearchTool.searchErrorSolutions(errorCode, query, options);
+        return await this.webSearchTool.searchErrorSolutions(
+          errorCode,
+          query,
+          options
+        );
       },
     });
 
@@ -111,7 +116,10 @@ class MCPToolManager {
       name: "Community Discussions",
       description: "Search for community discussions and forum posts",
       execute: async (query, options = {}) => {
-        return await this.webSearchTool.searchCommunityDiscussions(query, options);
+        return await this.webSearchTool.searchCommunityDiscussions(
+          query,
+          options
+        );
       },
     });
   }
@@ -173,41 +181,59 @@ export async function generateEnhancedResponse({
   if (useWebSearch && toolManager) {
     try {
       console.log("🔍 Performing web search for additional context...");
-      
+
       // Determine search strategy based on query
       const errorCodes = extractErrorCodes(query);
       if (errorCodes.length > 0) {
         // Search for error-specific solutions
-        webSearchResults = await toolManager.executeTool("error_solutions", errorCodes[0], query);
+        webSearchResults = await toolManager.executeTool(
+          "error_solutions",
+          errorCodes[0],
+          query
+        );
       } else if (isUpdateQuery(query)) {
         // Search for recent updates
-        webSearchResults = await toolManager.executeTool("twilio_updates", query);
+        webSearchResults = await toolManager.executeTool(
+          "twilio_updates",
+          query
+        );
       } else {
         // General web search
         webSearchResults = await toolManager.executeTool("web_search", query);
       }
 
       // Convert web search results to context blocks
-      if (webSearchResults && webSearchResults.results && webSearchResults.results.length > 0) {
-        const webBlocks = webSearchResults.results.slice(0, 3).map((result, index) => ({
-          id: `web_${index}`,
-          type: "web_search",
-          title: result.title,
-          content: `${result.snippet}\n\nSource: ${result.url}`,
-          metadata: {
-            source: result.source,
-            url: result.url,
-            relevance: result.relevance,
-            timestamp: result.timestamp,
-          },
-          weight: result.relevance * 0.8, // Slightly lower weight than documentation
-        }));
+      if (
+        webSearchResults &&
+        webSearchResults.results &&
+        webSearchResults.results.length > 0
+      ) {
+        const webBlocks = webSearchResults.results
+          .slice(0, 3)
+          .map((result, index) => ({
+            id: `web_${index}`,
+            type: "web_search",
+            title: result.title,
+            content: `${result.snippet}\n\nSource: ${result.url}`,
+            metadata: {
+              source: result.source,
+              url: result.url,
+              relevance: result.relevance,
+              timestamp: result.timestamp,
+            },
+            weight: result.relevance * 0.8, // Slightly lower weight than documentation
+          }));
 
         enhancedContextBlocks.push(...webBlocks);
-        console.log(`📊 Added ${webBlocks.length} web search results to context`);
+        console.log(
+          `📊 Added ${webBlocks.length} web search results to context`
+        );
       }
     } catch (error) {
-      console.warn("⚠️ Web search failed, continuing without web results:", error.message);
+      console.warn(
+        "⚠️ Web search failed, continuing without web results:",
+        error.message
+      );
     }
   }
 
@@ -273,12 +299,21 @@ function extractErrorCodes(query) {
  */
 function isUpdateQuery(query) {
   const updateKeywords = [
-    "update", "new", "recent", "latest", "change", "announcement",
-    "news", "release", "version", "2024", "2025"
+    "update",
+    "new",
+    "recent",
+    "latest",
+    "change",
+    "announcement",
+    "news",
+    "release",
+    "version",
+    "2024",
+    "2025",
   ];
-  
+
   const queryLower = query.toLowerCase();
-  return updateKeywords.some(keyword => queryLower.includes(keyword));
+  return updateKeywords.some((keyword) => queryLower.includes(keyword));
 }
 
 // Create global tool manager instance
