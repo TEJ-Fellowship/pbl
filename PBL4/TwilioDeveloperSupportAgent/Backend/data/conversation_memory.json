@@ -71,7 +71,7 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-10T08:21:25.570Z",
-      "lastActivity": "2025-10-11T00:26:21.503Z",
+      "lastActivity": "2025-10-13T06:49:18.471Z",
       "conversationHistory": [
         {
           "timestamp": "2025-10-10T08:21:36.409Z",
@@ -158,6 +158,18 @@
             "chunkCount": 8,
             "responseTime": 7420
           }
+        },
+        {
+          "timestamp": "2025-10-13T06:49:18.471Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js, you can use the Twilio Node.js library [Source 2]. Here's a step-by-step guide based on the provided information:\n\n**1. Prerequisites:**\n\n*   Make sure you have Node.js and npm installed.\n*   You'll need a Twilio account. If you don't have one, you can sign up for free at [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio) [Source 2].\n*   Obtain your Account SID and Auth Token from the Twilio Console ([twilio.com/console](http://twilio.com/console)) [Source 2].\n*   Set your Account SID and Auth Token as environment variables. This is crucial for security [Source 2].\n\n**2. Installation:**\n\nInstall the Twilio Node.js library using npm:\n\n```bash\nnpm install twilio\n```\n\n**3. Code Example:**\n\nHere's the code to send an SMS using the Twilio Node.js library [Source 2]:\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Find your Account SID and Auth Token at twilio.com/console\n// and set the environment variables. See http://twil.io/secure\nconst twilio = require(\"twilio\"); // Or, for ESM: import twilio from \"twilio\";\n\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst client = twilio(accountSid, authToken);\n\nasync function createMessage() {\n  const message = await client.messages\n    .create({\n      body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n      from: \"+15017122661\", // Replace with your Twilio phone number\n      to: \"+15558675310\",   // Replace with the recipient's phone number\n    })\n    .then(message => console.log(message.sid))\n    .catch(error => console.error(error));\n}\n\ncreateMessage();\n```\n\n**4. Explanation:**\n\n*   **Import the Twilio module:** `const twilio = require(\"twilio\");` This line imports the Twilio library [Source 2].\n*   **Authenticate:** Create a new Twilio client using your Account SID and Auth Token. `const client = twilio(accountSid, authToken);` [Source 2].\n*   **Create a message:** Use the `client.messages.create()` method to send an SMS. This method takes an object with the `body`, `from`, and `to` parameters [Source 2].\n*   **Error Handling:** The `.catch()` block is used to handle any errors [Source 2].\n*   **Asynchronous Function:** The `createMessage()` function is declared as `async` to allow the use of `await` [Source 2].\n\n**5. Running the Code:**\n\n1.  Save the code in a file named, for example, `send-sms.js`.\n2.  Set the environment variables `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`.\n3.  Run the script from your terminal: `node send-sms.js`\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 2,
+            "responseTime": 11261
+          }
         }
       ],
       "userPreferences": {
@@ -171,8 +183,8 @@
           "sms"
         ],
         "errorCodes": [],
-        "lastQuery": "What are A2P 10DLC campaign approval requirements for all brand types?",
-        "lastUpdated": "2025-10-11T00:26:18.823Z"
+        "lastQuery": "How do I send an SMS in Node.js?",
+        "lastUpdated": "2025-10-13T06:49:12.571Z"
       }
     }
   },
