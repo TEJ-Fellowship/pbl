@@ -85,7 +85,7 @@ class MemoryController {
 
     try {
       console.log(
-        `👤 Processing user message: "${userMessage.substring(0, 100)}..."`
+        `\n👤 Processing user message: "${userMessage.substring(0, 100)}..."`
       );
 
       // Add to buffer memory
@@ -173,7 +173,7 @@ class MemoryController {
     }
 
     try {
-      console.log(`🔄 Reformulating query with memory context`);
+      console.log(`\n🔄 Reformulating query with memory context`);
 
       const reformulation = await this.queryReformulation.reformulateQuery(
         originalQuery,
@@ -198,11 +198,13 @@ class MemoryController {
    * Get recent conversation context
    */
   getRecentContext() {
+    const recentMessages = this.bufferMemory.getRecentMessages();
     return {
-      bufferMemory: this.bufferMemory.getRecentMessages(),
+      bufferMemory: recentMessages,
       contextString: this.bufferMemory.getContextString(),
       summary: this.bufferMemory.getConversationSummary(),
       hasContext: this.bufferMemory.hasRecentContext(),
+      messageCount: recentMessages.length,
     };
   }
 
@@ -211,14 +213,34 @@ class MemoryController {
    */
   async getLongTermContext(query) {
     try {
+      console.log(`🔍 Searching for relevant Q&A pairs for query: "${query}"`);
+      console.log(`📊 Current session ID: ${this.currentSessionId}`);
+
       const relevantQAs = await this.postgresMemory.getRelevantQAPairs(
         query,
         this.currentSessionId,
         5
       );
 
+      console.log(`📋 Found ${relevantQAs.length} relevant Q&A pairs`);
+
       const conversationSummary =
         await this.postgresMemory.getConversationSummary(this.currentSessionId);
+
+      console.log(
+        `📝 Conversation summary:`,
+        conversationSummary ? "Found" : "None"
+      );
+
+      // Debug: Check if this is a new session with no data yet
+      if (relevantQAs.length === 0 && !conversationSummary) {
+        console.log(
+          "ℹ️  No long-term context available yet - this is normal for new sessions"
+        );
+        console.log(
+          "ℹ️  Long-term context will be populated as conversations progress"
+        );
+      }
 
       return {
         relevantQAs,
@@ -241,14 +263,12 @@ class MemoryController {
    */
   async getCompleteMemoryContext(originalQuery) {
     try {
-      console.log(`🧠 Gathering complete memory context for query`);
+      console.log(`\n🧠 Gathering complete memory context for query`);
 
       // Get recent context
       const recentContext = this.getRecentContext();
-
       // Get long-term context
       const longTermContext = await this.getLongTermContext(originalQuery);
-
       // Reformulate query with context
       const reformulation = await this.reformulateQuery(originalQuery);
 
@@ -483,6 +503,29 @@ class MemoryController {
       return await this.postgresMemory.getSessionStats(this.currentSessionId);
     } catch (error) {
       console.error("❌ Failed to get session stats:", error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Check database status and provide debugging information
+   */
+  async checkDatabaseStatus() {
+    try {
+      console.log("🔍 Checking database status...");
+
+      // Check if tables exist and have data
+      const stats = await this.postgresMemory.getDatabaseStats();
+      console.log("📊 Database statistics:", stats);
+
+      if (this.currentSessionId) {
+        const sessionStats = await this.getSessionStats();
+        console.log("📋 Session statistics:", sessionStats);
+      }
+
+      return stats;
+    } catch (error) {
+      console.error("❌ Failed to check database status:", error.message);
       return null;
     }
   }

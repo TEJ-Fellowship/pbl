@@ -353,6 +353,28 @@ class PostgreSQLMemoryService {
   }
 
   /**
+   * Get database statistics for debugging
+   */
+  async getDatabaseStats() {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM conversation_sessions) as sessions,
+          (SELECT COUNT(*) FROM conversation_messages) as messages,
+          (SELECT COUNT(*) FROM conversation_qa_pairs) as qa_pairs,
+          (SELECT COUNT(*) FROM conversation_summaries) as summaries,
+          (SELECT COUNT(*) FROM memory_retrieval_cache) as cache_entries
+      `);
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Close the connection pool
    */
   async close() {
