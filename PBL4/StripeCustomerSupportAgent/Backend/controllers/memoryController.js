@@ -123,7 +123,7 @@ class MemoryController {
 
     try {
       console.log(
-        `🤖 Processing assistant response: "${assistantResponse.substring(
+        `\n🤖 Processing assistant response: "${assistantResponse.substring(
           0,
           100
         )}..."`

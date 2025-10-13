@@ -277,7 +277,7 @@ async function generateResponseWithMemory(
   memoryContext
 ) {
   try {
-    console.log("🤖 Generating response with memory context...");
+    console.log("\n🤖 Generating response with memory context...");
 
     // Prepare context from retrieved chunks
     const context = chunks
@@ -317,35 +317,35 @@ async function generateResponseWithMemory(
     // Generate response using Gemini with memory context
     const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
 
-You have access to both current Stripe documentation and previous conversation context to provide contextually aware responses.
+      You have access to both current Stripe documentation and previous conversation context to provide contextually aware responses.
 
-CURRENT STRIPE DOCUMENTATION:
-${context}
+      CURRENT STRIPE DOCUMENTATION:
+      ${context}
 
-CURRENT USER QUESTION: ${query}
-${memoryContextString}
+      CURRENT USER QUESTION: ${query}
+      ${memoryContextString}
 
-RESPONSE GUIDELINES:
-1. **Context Awareness**: Use previous conversation context to provide more relevant and personalized responses
-2. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
-3. **Continuity**: Reference previous discussions when relevant to maintain conversation flow
-4. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
-5. **Include Code**: Always include practical code examples in the appropriate programming language
-6. **Step-by-Step**: Break down complex processes into clear, actionable steps
-7. **Error Handling**: Mention common errors and how to handle them
-8. **Best Practices**: Include security considerations and best practices
-9. **Source Citations**: Reference specific sources using [Source X] format
-10. **If Uncertain**: Clearly state when information isn't available in the context
+      RESPONSE GUIDELINES:
+      1. **Context Awareness**: Use previous conversation context to provide more relevant and personalized responses
+      2. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+      3. **Continuity**: Reference previous discussions when relevant to maintain conversation flow
+      4. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+      5. **Include Code**: Always include practical code examples in the appropriate programming language
+      6. **Step-by-Step**: Break down complex processes into clear, actionable steps
+      7. **Error Handling**: Mention common errors and how to handle them
+      8. **Best Practices**: Include security considerations and best practices
+      9. **Source Citations**: Reference specific sources using [Source X] format
+      10. **If Uncertain**: Clearly state when information isn't available in the context
 
-FORMAT YOUR RESPONSE:
-- Start with a direct answer to the question
-- Reference previous context when relevant (e.g., "Building on our previous discussion about...")
-- Provide detailed explanation with code examples
-- Include relevant API endpoints and parameters
-- Mention any prerequisites or setup requirements
-- End with source citations
+      FORMAT YOUR RESPONSE:
+      - Start with a direct answer to the question
+      - Reference previous context when relevant (e.g., "Building on our previous discussion about...")
+      - Provide detailed explanation with code examples
+      - Include relevant API endpoints and parameters
+      - Mention any prerequisites or setup requirements
+      - End with source citations
 
-Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
+      Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -476,7 +476,12 @@ async function startChat() {
 
           // Use reformulated query for retrieval
           const searchQuery = memoryContext.reformulatedQuery || query;
-          console.log(`🔍 Searching with reformulated query: "${searchQuery}"`);
+          console.log(
+            `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+              0,
+              100
+            )}..."`
+          );
 
           // Retrieve relevant chunks using hybrid search with reformulated query
           const chunks = await retrieveChunksWithHybridSearch(

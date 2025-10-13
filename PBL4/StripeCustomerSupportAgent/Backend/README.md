@@ -41,6 +41,7 @@ graph TB
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
         AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
         QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
+        QnA_ANALYSIS["Analysis of <br/>User Query <br/>&<br/>Response"]
     end
 
     subgraph "Search Processing"
@@ -50,7 +51,7 @@ graph TB
     end
 
     subgraph "AI Services"
-        GEMINI["Gemini 2.0-flash<br/>Response generation & Query reformulation"]
+        GEMINI["Gemini 2.0-flash<br/>Response generation"]
         EMBEDDINGS["Text Embeddings<br/>Vector generation"]
     end
 
@@ -69,15 +70,16 @@ graph TB
     %% Memory processing flow
     CHAT -->|"User message"| MEMORY_CTRL
     MEMORY_CTRL -->|"Store in buffer"| BUFFER
-    MEMORY_CTRL -->|"Store in persistent memory"| MEMORY_DB
+    MEMORY_CTRL -->|"Store in <br/>persistent memory"| MEMORY_DB
+    MEMORY_CTRL -->|"QnA"|QnA_ANALYSIS
     BUFFER -->|"Recent context"| MEMORY_CTRL
     MEMORY_DB -->|"Relevant Q&A pairs<br/>SessionContext"| MEMORY_CTRL
     MEMORY_CTRL -->|"User Query<br/>Relevant Q&A pairs<br/>SessionContext<br/>RecentContext"| QUERY_REFORM
 
 
     %% Search orchestration with memory
-    CHAT -->|"Process query"| SEARCH
-    QUERY_REFORM -->|"Reformulated query"| SEARCH
+    CHAT -->|"Process reformulated query"| SEARCH
+    QUERY_REFORM -->|"Reformulated query"| CHAT
     SEARCH -->|"Keyword search</br>with</br>enhanced query"| BM25
     BM25 -->|"Query documents"| POSTGRES
     VECTOR -->|"Vector similarity"| PINECONE
@@ -86,12 +88,13 @@ graph TB
     BM25 -->|"BM25 results"| FUSION
     VECTOR -->|"Vector results"| FUSION
     FUSION -->|"Ranked results"| CHAT
-    FUSION -->|"Context + sources + memory"| GEMINI
+    FUSION -->|"Context + sources"| GEMINI
 
     %% AI response generation with memory
     GEMINI -->|"AI-generated response"| CHAT
     CHAT -->|"Assistant response"| MEMORY_CTRL
-    MEMORY_CTRL -->|"Extract Q&A pairs"| MEMORY_DB
+    QnA_ANALYSIS -->|"Processed Q&A pairs"| MEMORY_DB
+    MEMORY_CTRL -->|"Memory Context"| GEMINI
 
     %% Conversation Summarization with AI
     MEMORY_CTRL -->|"Conversation history<br/>with SessionID"| AI_SUMMARY
@@ -99,7 +102,7 @@ graph TB
 
 
     %% Search and embeddings flow
-    SEARCH -->|"user query"| EMBEDDINGS
+    SEARCH -->|"Search query"| EMBEDDINGS
     EMBEDDINGS -->|"Semantic Search</br>with</br>vector query"| VECTOR
 ```
 

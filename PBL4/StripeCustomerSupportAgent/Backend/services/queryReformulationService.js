@@ -218,7 +218,7 @@ class QueryReformulationService {
         .trim();
 
       console.log(
-        `\n🤖 Gemini reformulated: "${originalQuery}" → "${cleanQuery}"`
+        `\n🤖 Gemini reformulated: "${originalQuery}"\n → "${cleanQuery}"`
       );
       return cleanQuery;
     } catch (error) {
@@ -358,30 +358,30 @@ class QueryReformulationService {
 
     const prompt = `You are an expert at analyzing customer support conversations for a Stripe API support system. Analyze the following user question and assistant response to extract key information.
 
-USER QUESTION: "${userMessage}"
+      USER QUESTION: "${userMessage}"
 
-ASSISTANT RESPONSE: "${assistantResponse}"
+      ASSISTANT RESPONSE: "${assistantResponse}"
 
-Please analyze this conversation and provide:
+      Please analyze this conversation and provide:
 
-1. QUESTION: A clean, well-formatted version of the user's question
-2. ANSWER: A clean, well-formatted version of the assistant's response
-3. CONTEXT: A brief context summary of what was discussed
-4. RELEVANCE_SCORE: A score from 0.0 to 1.0 indicating how valuable this Q&A is for future reference
-5. IS_IMPORTANT: true/false - whether this Q&A contains important technical information
-6. TAGS: An array of relevant tags (e.g., ["payment", "api", "webhook", "error"])
+      1. QUESTION: A clean, well-formatted version of the user's question
+      2. ANSWER: A clean, well-formatted version of the assistant's response
+      3. CONTEXT: A brief context summary of what was discussed
+      4. RELEVANCE_SCORE: A score from 0.0 to 1.0 indicating how valuable this Q&A is for future reference
+      5. IS_IMPORTANT: true/false - whether this Q&A contains important technical information
+      6. TAGS: An array of relevant tags (e.g., ["payment", "api", "webhook", "error"])
 
-Focus on Stripe API concepts, payment processing, webhooks, errors, and technical implementation details.
+      Focus on Stripe API concepts, payment processing, webhooks, errors, and technical implementation details.
 
-Respond in this exact JSON format:
-{
-  "question": "cleaned question",
-  "answer": "cleaned answer", 
-  "context": "brief context summary",
-  "relevanceScore": 0.8,
-  "isImportant": true,
-  "tags": ["tag1", "tag2", "tag3"]
-}`;
+      Respond in this exact JSON format:
+      {
+        "question": "cleaned question",
+        "answer": "cleaned answer", 
+        "context": "brief context summary",
+        "relevanceScore": 0.8,
+        "isImportant": true,
+        "tags": ["tag1", "tag2", "tag3"]
+      }`;
 
     try {
       const model = this.geminiClient.getGenerativeModel({
