@@ -1,5 +1,5 @@
 import React from "react";
-import AnimatedText from "./animated/AnimatedText";
+import AnimatedText from "../animated/AnimatedText";
 
 const HeroSection = () => {
   return (

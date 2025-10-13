@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { LOGIN_ROUTE } from "../../constants/routes";
 
 const Header = () => {
   return (
@@ -10,9 +12,12 @@ const Header = () => {
             <span className="material-icons text-base">expand_more</span>
           </button>
         </div>
-        <button className="px-6 py-3 bg-primary/70 text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors">
-          Sign In
-        </button>
+        <Link
+          to={LOGIN_ROUTE}
+          className="px-6 py-3 bg-primary/70 text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          Login
+        </Link>
       </div>
     </header>
   );

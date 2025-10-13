@@ -1,43 +1,29 @@
 import React from "react";
-import Header from "../components/Header";
 import ParticleAnimation from "../components/animated/ParticleAnimation";
-import HeroSection from "../components/HeroSection";
-import LandingSidebar from "../components/LandingSidebar";
-import AnimatedText from "../components/animated/AnimatedText";
+import HeroSection from "../components/landingPage/HeroSection";
+import Header from "../components/landingPage/Header";
 
 const LandingPage = () => {
   return (
-    <div className="bg-background-dark text-text-dark font-display h-screen overflow-hidden flex">
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Header */}
+    <div className="h-screen overflow-hidden flex">
+      {/* Header */}
+      <div className="fixed top-0 right-0 p-6 z-40">
         <Header />
+      </div>
 
+      {/* Description at Bottom Right */}
+      <div className="fixed bottom-6 right-6 z-30">
+        <p className="font-light text-xs text-subtle-dark max-w-xs text-right">
+          API Integration & Billing Assistant. Trained on official documentation
+          for accurate, context-aware responses.
+        </p>
+      </div>
+
+      <main className="flex-1 flex flex-col relative overflow-hidden">
         {/* Main Content with Animation */}
         <div className="flex-1 flex items-center justify-end relative">
           <ParticleAnimation />
           <HeroSection />
-        </div>
-
-        {/* Menu Button at Top Left */}
-        <div className="absolute top-6 left-6 z-10">
-          <LandingSidebar />
-        </div>
-
-        {/* Stripe.AI Text at Bottom Left */}
-        <div className="absolute bottom-6 left-6 z-10">
-          <div
-            className="vertical-text text-7xl font-thin tracking-tighter text-text-dark"
-            style={{ height: "15rem" }}
-          >
-            <AnimatedText text="Stripe.AI" />
-          </div>
-        </div>
-
-        <div className="absolute bottom-6 right-6 z-10">
-          <p className="font-light text-xs text-subtle-dark max-w-xs text-right">
-            API Integration & Billing Assistant. Trained on official
-            documentation for accurate, context-aware responses.
-          </p>
         </div>
       </main>
     </div>

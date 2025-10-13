@@ -1,12 +1,10 @@
-// import "./App.css";
-
-import LandingPage from "./pages/LandingPage";
+import Routes from "./Routes";
 
 function App() {
   return (
-    <>
-      <LandingPage />
-    </>
+    <div className="h-full w-full m-0 p-0 box-border overflow-x-hidden">
+      <Routes />
+    </div>
   );
 }
 
