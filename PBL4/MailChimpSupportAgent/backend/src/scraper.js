@@ -10,11 +10,11 @@ const SOURCES = {
   campaigncreation:
     "https://mailchimp.com/help/getting-started-with-campaigns/",
   listmanage: "https://mailchimp.com/help/getting-started-audience/",
-  automation: "https://mailchimp.com/help/about-classic-automations/",
-  reports: "https://mailchimp.com/help/getting-started-reports/",
-  api: "https://mailchimp.com/developer/",
-  resources: "https://mailchimp.com/resources/",
-  analytics: "https://mailchimp.com/features/reports-and-analytics/",
+  // automation: "https://mailchimp.com/help/about-classic-automations/",
+  // reports: "https://mailchimp.com/help/getting-started-reports/",
+  // api: "https://mailchimp.com/developer/",
+  // resources: "https://mailchimp.com/resources/",
+  // analytics: "https://mailchimp.com/features/reports-and-analytics/",
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

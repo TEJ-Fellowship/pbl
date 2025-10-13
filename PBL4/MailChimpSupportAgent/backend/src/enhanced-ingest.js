@@ -11,7 +11,9 @@ const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 600;
 const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const BATCH_SIZE = parseInt(config.BATCH_SIZE) || 50;
 const SCRAPED_PATH = path.resolve("./data/mailerbyte_docs/scraped.json");
-const OUTPUT_PATH = path.resolve("./data/processed_chunks/enhanced_chunks.json");
+const OUTPUT_PATH = path.resolve(
+  "./data/processed_chunks/enhanced_chunks.json"
+);
 
 // ---------------- INITIALIZERS ----------------
 function initEmbeddings() {
@@ -35,87 +37,88 @@ async function initPinecone() {
 // ---------------- ENHANCED CONTENT PROCESSING ----------------
 function extractScreenshots($, element) {
   const screenshots = [];
-  
+
   // Look for images with alt text or captions
   element.find("img").each((_, img) => {
     const $img = $(img);
     const src = $img.attr("src");
     const alt = $img.attr("alt") || "";
-    const caption = $img.next("figcaption").text().trim() || 
-                   $img.parent("figure").find("figcaption").text().trim();
-    
+    const caption =
+      $img.next("figcaption").text().trim() ||
+      $img.parent("figure").find("figcaption").text().trim();
+
     if (src && (alt || caption)) {
       screenshots.push({
         src: src.startsWith("http") ? src : `https://mailchimp.com${src}`,
         alt: alt,
         caption: caption,
-        description: caption || alt
+        description: caption || alt,
       });
     }
   });
-  
+
   return screenshots;
 }
 
 function extractNumberedLists($, element) {
   const lists = [];
-  
+
   // Extract ordered lists (ol) and their context
   element.find("ol").each((_, ol) => {
     const $ol = $(ol);
     const listItems = [];
-    
+
     $ol.find("li").each((_, li) => {
       const itemText = $(li).text().trim();
       if (itemText) {
         listItems.push(itemText);
       }
     });
-    
+
     if (listItems.length > 0) {
       // Get context before the list
       const context = $ol.prevAll("p, h3, h4").first().text().trim();
-      
+
       lists.push({
         type: "numbered",
         context: context,
         items: listItems,
-        count: listItems.length
+        count: listItems.length,
       });
     }
   });
-  
+
   return lists;
 }
 
 function extractBulletPoints($, element) {
   const lists = [];
-  
+
   // Extract unordered lists (ul) and their context
   element.find("ul").each((_, ul) => {
     const $ul = $(ul);
     const listItems = [];
-    
+
     $ul.find("li").each((_, li) => {
       const itemText = $(li).text().trim();
       if (itemText) {
         listItems.push(itemText);
       }
     });
-    
+
     if (listItems.length > 0) {
       // Get context before the list
       const context = $ul.prevAll("p, h3, h4").first().text().trim();
-      
+
       lists.push({
         type: "bulleted",
         context: context,
         items: listItems,
-        count: listItems.length
+        count: listItems.length,
       });
     }
   });
-  
+
   return lists;
 }
 
@@ -123,10 +126,10 @@ function enhanceContentWithStructure($, element, originalContent) {
   const screenshots = extractScreenshots($, element);
   const numberedLists = extractNumberedLists($, element);
   const bulletPoints = extractBulletPoints($, element);
-  
+
   // Create enhanced content that preserves structure
   let enhancedContent = originalContent;
-  
+
   // Add screenshot references
   if (screenshots.length > 0) {
     enhancedContent += "\n\n[Screenshots in this section:]\n";
@@ -134,7 +137,7 @@ function enhanceContentWithStructure($, element, originalContent) {
       enhancedContent += `${index + 1}. ${screenshot.description}\n`;
     });
   }
-  
+
   // Add numbered list context
   if (numberedLists.length > 0) {
     enhancedContent += "\n\n[Step-by-step instructions:]\n";
@@ -147,7 +150,7 @@ function enhanceContentWithStructure($, element, originalContent) {
       });
     });
   }
-  
+
   // Add bullet point context
   if (bulletPoints.length > 0) {
     enhancedContent += "\n\n[Key points:]\n";
@@ -160,7 +163,7 @@ function enhanceContentWithStructure($, element, originalContent) {
       });
     });
   }
-  
+
   return {
     enhancedContent,
     metadata: {
@@ -171,8 +174,8 @@ function enhanceContentWithStructure($, element, originalContent) {
       hasNumberedLists: numberedLists.length > 0,
       hasBulletPoints: bulletPoints.length > 0,
       totalSteps: numberedLists.reduce((sum, list) => sum + list.count, 0),
-      totalPoints: bulletPoints.reduce((sum, list) => sum + list.count, 0)
-    }
+      totalPoints: bulletPoints.reduce((sum, list) => sum + list.count, 0),
+    },
   };
 }
 
@@ -193,7 +196,8 @@ async function loadDocuments() {
             heading: section.heading,
             url: doc.url,
             scrapedAt: doc.scrapedAt,
-            sectionType: section.heading === doc.title ? "introduction" : "content",
+            sectionType:
+              section.heading === doc.title ? "introduction" : "content",
           },
         })
     )
@@ -210,11 +214,11 @@ function createEnhancedTextSplitter() {
     chunkOverlap: CHUNK_OVERLAP,
     separators: [
       "\n\n\n", // Triple newlines (major sections)
-      "\n\n",   // Double newlines (paragraphs)
-      "\n",      // Single newlines
-      ". ",      // Sentences
-      " ",       // Words
-      ""         // Characters
+      "\n\n", // Double newlines (paragraphs)
+      "\n", // Single newlines
+      ". ", // Sentences
+      " ", // Words
+      "", // Characters
     ],
     keepSeparator: true,
   });
@@ -229,10 +233,10 @@ async function processDocumentsWithStructure(documents) {
     // Parse the HTML content to extract structure
     const cheerio = await import("cheerio");
     const $ = cheerio.load(`<div>${doc.pageContent}</div>`);
-    
+
     // Enhance content with structure information
     const enhanced = enhanceContentWithStructure($, $("div"), doc.pageContent);
-    
+
     // Create a new document with enhanced content
     const enhancedDoc = new Document({
       pageContent: enhanced.enhancedContent,
@@ -241,7 +245,7 @@ async function processDocumentsWithStructure(documents) {
         ...enhanced.metadata,
       },
     });
-    
+
     const splits = await splitter.splitDocuments([enhancedDoc]);
     splits.forEach((chunk, i) => {
       chunk.metadata.chunk_id = `${doc.metadata.title}_${i}`;
@@ -268,25 +272,43 @@ function mapEnhancedCategory(
   const combined = `${heading} ${content}`.toLowerCase();
 
   // Check for automation indicators
-  if (combined.includes("automation") || combined.includes("workflow") || combined.includes("trigger")) {
+  if (
+    combined.includes("automation") ||
+    combined.includes("workflow") ||
+    combined.includes("trigger")
+  ) {
     return "automation";
   }
-  
+
   // Check for campaign indicators
-  if (cat.includes("campaign") || combined.includes("email") || combined.includes("send")) {
+  if (
+    cat.includes("campaign") ||
+    combined.includes("email") ||
+    combined.includes("send")
+  ) {
     return "campaigns";
   }
-  
+
   // Check for audience/list indicators
-  if (cat.includes("list") || cat.includes("audience") || combined.includes("contact") || combined.includes("import")) {
+  if (
+    cat.includes("list") ||
+    cat.includes("audience") ||
+    combined.includes("contact") ||
+    combined.includes("import")
+  ) {
     return "lists";
   }
-  
+
   // Check for getting started indicators
-  if (sectionType === "introduction" || cat.includes("gettingstarted") || combined.includes("setup") || combined.includes("beginner")) {
+  if (
+    sectionType === "introduction" ||
+    cat.includes("gettingstarted") ||
+    combined.includes("setup") ||
+    combined.includes("beginner")
+  ) {
     return "getting-started";
   }
-  
+
   return "general";
 }
 
@@ -298,37 +320,41 @@ function mapEnhancedDifficulty(
   metadata = {}
 ) {
   const text = content.toLowerCase();
-  
+
   // Beginner indicators
-  if (sectionType === "introduction" || 
-      category.includes("gettingstarted") ||
-      text.includes("getting started") ||
-      text.includes("first time") ||
-      text.includes("beginner") ||
-      text.includes("basic") ||
-      text.includes("setup") ||
-      text.includes("create account") ||
-      tokenCount < 100) {
+  if (
+    sectionType === "introduction" ||
+    category.includes("gettingstarted") ||
+    text.includes("getting started") ||
+    text.includes("first time") ||
+    text.includes("beginner") ||
+    text.includes("basic") ||
+    text.includes("setup") ||
+    text.includes("create account") ||
+    tokenCount < 100
+  ) {
     return "beginner";
   }
-  
+
   // Advanced indicators
-  if (text.includes("api") || 
-      text.includes("developer") || 
-      text.includes("advanced") ||
-      text.includes("integration") ||
-      text.includes("custom") ||
-      text.includes("automation") ||
-      text.includes("workflow") ||
-      text.includes("segment") ||
-      text.includes("analytics") ||
-      text.includes("conditional") ||
-      text.includes("trigger") ||
-      tokenCount >= 150 ||
-      metadata.hasScreenshots && metadata.totalSteps > 5) {
+  if (
+    text.includes("api") ||
+    text.includes("developer") ||
+    text.includes("advanced") ||
+    text.includes("integration") ||
+    text.includes("custom") ||
+    text.includes("automation") ||
+    text.includes("workflow") ||
+    text.includes("segment") ||
+    text.includes("analytics") ||
+    text.includes("conditional") ||
+    text.includes("trigger") ||
+    tokenCount >= 150 ||
+    (metadata.hasScreenshots && metadata.totalSteps > 5)
+  ) {
     return "advanced";
   }
-  
+
   // Intermediate for everything else
   return "intermediate";
 }
@@ -345,7 +371,7 @@ async function storeEnhancedChunks(chunks, embeddings, pinecone) {
       batch.map(async (chunk) => {
         const embedding = await embeddings.embedQuery(chunk.pageContent);
         const m = chunk.metadata;
-        
+
         return {
           id: m.chunk_id,
           values: embedding,
@@ -366,7 +392,8 @@ async function storeEnhancedChunks(chunks, embeddings, pinecone) {
               m
             ),
             // Enhanced metadata
-            hasStructure: m.hasScreenshots || m.hasNumberedLists || m.hasBulletPoints,
+            hasStructure:
+              m.hasScreenshots || m.hasNumberedLists || m.hasBulletPoints,
             stepCount: m.totalSteps || 0,
             pointCount: m.totalPoints || 0,
             isInstructional: m.hasNumberedLists || m.totalSteps > 0,
@@ -386,7 +413,7 @@ async function storeEnhancedChunks(chunks, embeddings, pinecone) {
 // ---------------- LOCAL BACKUP ----------------
 async function storeEnhancedChunksLocally(chunks) {
   // Process chunks with enhanced metadata mapping before saving locally
-  const processedChunks = chunks.map(chunk => {
+  const processedChunks = chunks.map((chunk) => {
     const m = chunk.metadata;
     return {
       ...chunk,
@@ -407,24 +434,31 @@ async function storeEnhancedChunksLocally(chunks) {
           m
         ),
         // Enhanced metadata
-        hasStructure: m.hasScreenshots || m.hasNumberedLists || m.hasBulletPoints,
+        hasStructure:
+          m.hasScreenshots || m.hasNumberedLists || m.hasBulletPoints,
         stepCount: m.totalSteps || 0,
         pointCount: m.totalPoints || 0,
         isInstructional: m.hasNumberedLists || m.totalSteps > 0,
         hasVisuals: m.hasScreenshots || false,
-      }
+      },
     };
   });
 
   await fs.mkdir(path.dirname(OUTPUT_PATH), { recursive: true });
-  await fs.writeFile(OUTPUT_PATH, JSON.stringify(processedChunks, null, 2), "utf-8");
+  await fs.writeFile(
+    OUTPUT_PATH,
+    JSON.stringify(processedChunks, null, 2),
+    "utf-8"
+  );
   console.log(`Enhanced chunks saved locally to ${OUTPUT_PATH}`);
 }
 
 // ---------------- MAIN ----------------
 async function main() {
   console.log("Starting enhanced Mailchimp ingestion pipeline...");
-  console.log("Features: Screenshot preservation, numbered lists, step-by-step instructions");
+  console.log(
+    "Features: Screenshot preservation, numbered lists, step-by-step instructions"
+  );
 
   try {
     const embeddings = initEmbeddings();
@@ -440,7 +474,9 @@ async function main() {
       await storeEnhancedChunksLocally(chunks);
     }
 
-    console.log(`Enhanced ingestion complete! ${chunks.length} chunks processed.`);
+    console.log(
+      `Enhanced ingestion complete! ${chunks.length} chunks processed.`
+    );
     console.log("Enhanced features:");
     console.log("- Screenshot references preserved");
     console.log("- Numbered lists maintained as step-by-step instructions");
