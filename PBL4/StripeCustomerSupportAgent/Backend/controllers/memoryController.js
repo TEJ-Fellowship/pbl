@@ -213,7 +213,9 @@ class MemoryController {
    */
   async getLongTermContext(query) {
     try {
-      console.log(`🔍 Searching for relevant Q&A pairs for query: "${query}"`);
+      console.log(
+        `\n🔍 Searching for relevant Q&A pairs for query: "${query}"`
+      );
       console.log(`📊 Current session ID: ${this.currentSessionId}`);
 
       const relevantQAs = await this.postgresMemory.getRelevantQAPairs(
@@ -221,8 +223,6 @@ class MemoryController {
         this.currentSessionId,
         5
       );
-
-      console.log(`📋 Found ${relevantQAs.length} relevant Q&A pairs`);
 
       const conversationSummary =
         await this.postgresMemory.getConversationSummary(this.currentSessionId);

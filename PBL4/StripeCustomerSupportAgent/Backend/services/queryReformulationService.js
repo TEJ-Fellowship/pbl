@@ -47,7 +47,7 @@ class QueryReformulationService {
     preFetchedContext = null
   ) {
     console.log(
-      `🔄 Reformulating query with Gemini AI (OPTIMIZED): "${originalQuery}"`
+      `\n🔄 Reformulating query with Gemini AI (OPTIMIZED): "${originalQuery}"`
     );
 
     try {
@@ -70,7 +70,7 @@ class QueryReformulationService {
       );
 
       console.log(
-        `✅ Query reformulated with AI context integration (OPTIMIZED)`
+        `✅ Query reformulated with AI context integration (OPTIMIZED)\n`
       );
       return {
         originalQuery,
@@ -218,7 +218,7 @@ class QueryReformulationService {
         .trim();
 
       console.log(
-        `🤖 Gemini reformulated: "${originalQuery}" → "${cleanQuery}"`
+        `\n🤖 Gemini reformulated: "${originalQuery}" → "${cleanQuery}"`
       );
       return cleanQuery;
     } catch (error) {

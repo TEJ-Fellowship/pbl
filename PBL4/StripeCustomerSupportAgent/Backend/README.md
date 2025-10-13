@@ -40,7 +40,7 @@ graph TB
         BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
         AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
-        QUERY_REFORM["Query Reformulation<br/>AI-powered context integration"]
+        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
     end
 
     subgraph "Search Processing"
@@ -55,9 +55,9 @@ graph TB
     end
 
     subgraph "Data Storage Layer"
+        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
         POSTGRES[("PostgreSQL<br/>Document chunks<br/> & <br/>Memory")]
         PINECONE[("Pinecone<br/>Vector embeddings")]
-        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
     end
 
     %% User interaction flow
@@ -70,9 +70,10 @@ graph TB
     CHAT -->|"User message"| MEMORY_CTRL
     MEMORY_CTRL -->|"Store in buffer"| BUFFER
     MEMORY_CTRL -->|"Store in persistent memory"| MEMORY_DB
-    BUFFER -->|"Recent context"| QUERY_REFORM
-    MEMORY_DB -->|"Relevant Q&A pairs"| QUERY_REFORM
-    QUERY_REFORM -->|"AI-enhanced query"| GEMINI
+    BUFFER -->|"Recent context"| MEMORY_CTRL
+    MEMORY_DB -->|"Relevant Q&A pairs<br/>SessionContext"| MEMORY_CTRL
+    MEMORY_CTRL -->|"User Query<br/>Relevant Q&A pairs<br/>SessionContext<br/>RecentContext"| QUERY_REFORM
+
 
     %% Search orchestration with memory
     CHAT -->|"Process query"| SEARCH
@@ -93,9 +94,9 @@ graph TB
     MEMORY_CTRL -->|"Extract Q&A pairs"| MEMORY_DB
 
     %% Conversation Summarization with AI
-    MEMORY_CTRL -->|"Conversation history"| AI_SUMMARY
+    MEMORY_CTRL -->|"Conversation history<br/>with SessionID"| AI_SUMMARY
     AI_SUMMARY -->|"AI-generated summary"| MEMORY_DB
-    AI_SUMMARY -->|"Key topics & insights"| MEMORY_CTRL
+
 
     %% Search and embeddings flow
     SEARCH -->|"user query"| EMBEDDINGS
