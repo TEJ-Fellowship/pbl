@@ -2,6 +2,7 @@ import React from "react";
 import Header from "../components/Header";
 import ParticleAnimation from "../components/animated/ParticleAnimation";
 import HeroSection from "../components/HeroSection";
+import LandingSidebar from "../components/LandingSidebar";
 import AnimatedText from "../components/animated/AnimatedText";
 
 const LandingPage = () => {
@@ -17,7 +18,12 @@ const LandingPage = () => {
           <HeroSection />
         </div>
 
-        {/* Corner Elements */}
+        {/* Menu Button at Top Left */}
+        <div className="absolute top-6 left-6 z-10">
+          <LandingSidebar />
+        </div>
+
+        {/* Stripe.AI Text at Bottom Left */}
         <div className="absolute bottom-6 left-6 z-10">
           <div
             className="vertical-text text-7xl font-thin tracking-tighter text-text-dark"
