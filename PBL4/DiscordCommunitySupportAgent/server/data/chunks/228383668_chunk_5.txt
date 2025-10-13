@@ -1,3 +1,5 @@
+Therefore, I'll grab the webhook URL for this channel by pressing the Copy Webhook URL button:
+
 2. Add the webhook URL into your GitHub repo settings
 
 Choose the repository that you'd like to get updates from in your Discord server. Once you've selected the repo, go into the Settings > Webhooks menu

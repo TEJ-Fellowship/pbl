@@ -1,6 +1,10 @@
-Discord Server Setup Guide: Learn more about how to set up your own Discord server.
-Setting Up Permissions FAQ: Learn more about how to set up Server Permissions to manage and moderate your server members.
-How do I set up a Role-Exclusive channel?: Need to set up role-exclusive channels for your server? Learn how in this article!
-Notifications Settings 101: Learn everything you need to know and more about your notification settings.
-Server Boosting FAQ: Learn more about Server Boosting and Additional Perks you can have for your server.
-Custom Emojis: Learn how to upload custom emojis to your server or other servers you’re a part of.
+What Are Text And Voice Channels? 
+
+Your server is made up of text channels and voice channels. This allows you to communicate with the other members of the server.
+
+Text Channels
+
+Text channels provide dedicated spaces for written conversations, helping to keep discussions organized and ensuring everyone has room to participate. You can create individual channels for each topic your group enjoys discussing—whether that's planning fishing trips, sharing cooking tips, or any other shared interests.
+
+Example of what a Text Channel is in a Discord server
+Voice Channels

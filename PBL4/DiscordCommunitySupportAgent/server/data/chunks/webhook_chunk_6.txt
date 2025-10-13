@@ -1,0 +1,17 @@
+"name": "Clyde",
+  "avatar": "689161dc90ac261d00f1608694ac6bfd",
+  "channel_id": null,
+  "guild_id": null,
+  "application_id": "658822586720976555"
+}
+
+Create Webhook
+POST
+/channels/{channel.id}/webhooks
+
+Creates a new webhook and returns a webhook object on success. Requires the MANAGE_WEBHOOKS permission. Fires a Webhooks Update Gateway event.
+
+An error will be returned if a webhook name (name) is not valid. A webhook name is valid if:
+
+It does not contain the substrings clyde or discord (case-insensitive)
+It follows the nickname guidelines in the Usernames and Nicknames documentation, with an exception that webhook names can be up to 80 characters

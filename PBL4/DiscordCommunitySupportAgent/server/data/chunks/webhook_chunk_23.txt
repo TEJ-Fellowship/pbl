@@ -1,0 +1,6 @@
+files[n] ***	file contents	the contents of the file being sent/edited
+payload_json ***	string	JSON encoded body of non-file params (multipart/form-data only)
+attachments ***	array of partial attachment objects	attached files to keep and possible descriptions for new files
+poll ****	poll request object	A poll!
+
+* The SUPPRESS_EMBEDS flag can be both set and unset, while the IS_COMPONENTS_V2 flag can only be set. When the IS_COMPONENTS_V2 flag is set, any of the used content, embeds, files[n] or poll values in the initial message must be set to null first, otherwise it will fail with a 400 BAD REQUEST response.

@@ -1,0 +1,4 @@
+These Guidelines are incorporated into our Terms of Service, and further explain what isn’t allowed on Discord so that we can help create a positive environment for everyone. Everyone on Discord must follow these rules, and they apply to all parts of our platform, including your content, behaviors, servers, and apps. To learn more about the requirements for developing a bot or other app on Discord, please refer to our Discord Developer Terms of Service and our Discord Developer Policy.
+
+
+If you plan to monetize your content, please review the additional rules outlined in our Monetization Policy and Monetization Terms.

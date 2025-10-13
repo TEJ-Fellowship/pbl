@@ -7,5 +7,3 @@ You can use Discord's webhooks to send any code merge or push updates in a repos
 1. Get the webhook URL for the server/channel you want to receive messages:
 
 In my server, I've created a text channel labeled #general-chat and I want my repo updates to post messages here!
-
-Therefore, I'll grab the webhook URL for this channel by pressing the Copy Webhook URL button:

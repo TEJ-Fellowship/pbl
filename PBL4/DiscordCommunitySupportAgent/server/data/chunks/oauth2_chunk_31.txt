@@ -1,0 +1,3 @@
+When the user navigates to this page, they'll be prompted to add the bot to a guild in which they have proper permissions. On acceptance, the bot will be added. Super easy!
+
+If you happen to already know the ID of the guild the user will add your bot to, you can provide this ID in the URL as a guild_id=GUILD_ID parameter. When the authorization page loads, that guild will be preselected in the dialog if that user has permission to add the bot to that guild. You can use this in conjunction with the parameter disable_guild_select=true to disallow the user from picking a different guild.

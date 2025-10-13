@@ -1,5 +1,3 @@
-In your server, you're also capable of adjusting Category permissions so that the channels under a category can all have the same permissions. Here's how you can set up Category permissions.
-
 Right-click the category and choose Edit Category.
 Select Permissions in the left-hand panel to alter permissions and add roles.
 
@@ -10,3 +8,5 @@ There are two default states for a channel in regards to category permissions: s
 A synced channel!
 
 A not synced channel!
+
+If you change the permissions on a category, all channels that are synced will automatically update.

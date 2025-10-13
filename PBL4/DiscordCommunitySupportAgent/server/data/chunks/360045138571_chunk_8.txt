@@ -1,8 +1,10 @@
-Your server is made up of text channels and voice channels. This allows you to communicate with the other members of the server.
+How To Share Your Screen
 
-Text Channels
+You can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. 
 
-Text channels provide dedicated spaces for written conversations, helping to keep discussions organized and ensuring everyone has room to participate. You can create individual channels for each topic your group enjoys discussing—whether that's planning fishing trips, sharing cooking tips, or any other shared interests.
+Example of what it looks like when someone is streaming on Discord
 
-Example of what a Text Channel is in a Discord server
-Voice Channels
+You can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.
+
+Additional Discord Features
+Account Connections

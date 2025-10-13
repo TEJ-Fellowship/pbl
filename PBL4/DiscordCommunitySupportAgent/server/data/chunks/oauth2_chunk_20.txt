@@ -1,0 +1,22 @@
+CLIENT_SECRET = '937it3ow87i4ery69876wqire'
+
+def refresh_token(refresh_token):
+  data = {
+    'grant_type': 'refresh_token',
+    'refresh_token': refresh_token
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }
+  r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))
+  r.raise_for_status()
+  return r.json()
+
+
+Boom; fresh access token response!
+
+Token Revocation Example
+
+To disable an access or refresh token, you can revoke it by making a POST request to the token revocation URL with the following parameters:
+
+token - the access token or refresh token to revoke

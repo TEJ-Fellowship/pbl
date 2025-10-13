@@ -1,11 +1,8 @@
-A synced channel!
-
-A not synced channel!
-
-If you change the permissions on a category, all channels that are synced will automatically update.
-
 If you do not sync permissions when moving a channel between categories, or if you change an individual permission on the channel level, it will then show that the channel is not synced with the category.
 
 This means the channel currently does not share the same permissions as the category and will not automatically update when you make changes to the category's permissions.
 
 If you want a not-synced channel to sync with its category again, here's how you can do it:
+
+Right-click on the not-synced channel and choose Edit Channel from the drop-down menu.
+Press the Permissions option in the left-hand panel.

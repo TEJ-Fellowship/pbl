@@ -1,10 +1,8 @@
-You can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. 
+How To Customize Your Discord User Profile
 
-Example of what it looks like when someone is streaming on Discord
+There are multiple ways to customize your user profile, from changing your avatar, to rocking a profile effect, and more. Please check out one of the articles below to learn more about how to personalize your Discord profile.
 
-You can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.
-
-Additional Discord Features
-Account Connections
-
-You can connect a variety of outside apps like PlayStation, Spotify, and Xbox to your Discord account. This allows for your User Profile not only to display various information, but also what song you’re currently listening to on Spotify. To learn more about how to connect an account to your Discord account check out this Help Center article.
+Custom Profiles: Learn how to customize your Discord User Profile. From changing your avatar, to your “about me” section, and more. 
+Custom Status: Learn how to set a Custom Status on Discord.
+Avatar Decorations: Learn more about Avatar Decorations, whether it’s how to set one or purchase one from the shop.
+Profile Badges 101: Learn about all of the profile badges that are currently available.

@@ -1,0 +1,4 @@
+15. Do not engage with our service in an inauthentic way. This includes artificially inflating server membership, manipulating engagement metrics, and selling artificial engagement services. (See our Platform Manipulation Policy Explainer for more.)
+
+
+16. Do not sell or purchase Discord assets, including accounts, usernames, servers, server permissions, or custom server invite links. (See our Platform Manipulation Policy Explainer for more.)

@@ -1,0 +1,15 @@
+** Application-owned webhooks can always send components. Non-application-owned webhooks cannot send interactive components, and the components field will be ignored unless they set the with_components query param.
+
+*** See Uploading Files for details.
+
+**** Polls can only be added when editing a deferred interaction response.
+
+Delete Webhook Message
+DELETE
+/webhooks/{webhook.id}/{webhook.token}/messages/{message.id}
+
+Deletes a message that was created by the webhook. Returns a 204 No Content response on success.
+
+Query String Params
+FIELD	TYPE	DESCRIPTION	REQUIRED
+thread_id	snowflake	id of the thread the message is in	false

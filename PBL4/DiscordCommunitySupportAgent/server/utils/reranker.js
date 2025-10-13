@@ -1,15 +1,39 @@
 import { pipeline } from '@xenova/transformers';
 
 let crossEncoder = null;
+let isInitialized = false;
 
 export async function initializeCrossEncoder() {
+  if (isInitialized) {
+    return crossEncoder !== null;
+  }
+  
   try {
-    console.log("🧠 Initializing cross-encoder for re-ranking...");
-    crossEncoder = await pipeline('text-classification', 'cross-encoder/ms-marco-MiniLM-L-6-v2');
-    console.log("✅ Cross-encoder initialized");
+    console.log("🔄 Initializing cross-encoder for re-ranking...");
+    
+    // Try to initialize cross-encoder with better error handling
+    crossEncoder = await pipeline(
+      'text-classification', 
+      'Xenova/cross-encoder-ms-marco-MiniLM-L-6-v2',
+      {
+        quantized: true,
+        progress_callback: (progress) => {
+          if (progress.status === 'downloading') {
+            console.log(`📥 Downloading model: ${progress.file} (${Math.round(progress.loaded / progress.total * 100)}%)`);
+          }
+        }
+      }
+    );
+    
+    isInitialized = true;
+    console.log("✅ Cross-encoder initialized successfully");
     return true;
+    
   } catch (error) {
-    console.error("❌ Cross-encoder initialization failed:", error.message);
+    console.log("⚠️ Cross-encoder initialization failed:", error.message);
+    console.log("🔄 Continuing without re-ranking (this is normal for first run)...");
+    crossEncoder = null;
+    isInitialized = true;
     return false;
   }
 }

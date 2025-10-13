@@ -1,0 +1,6 @@
+RESPECT DISCORD
+
+13. Do not send unsolicited bulk messages (or spam) to others. Also, do not facilitate this activity, such as by selling spambots, server “raid” tools, account-creation tools, token generators, CAPTCHA-solving services, or other spam tools. (See our Platform Manipulation Policy Explainer for more.)
+
+
+14. Do not use self-bots or user-bots. Each account must be associated with a human, not a bot. (See our Platform Manipulation Policy Explainer for more.)

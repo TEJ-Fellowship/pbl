@@ -1,7 +1,7 @@
-Note: Channel permissions will override server permissions.
-You can adjust permissions of specific channels, both text and voice, through the channel settings menu by hovering over a channel and clicking on the cog icon.
 Select the Permissions tab on the left-hand side.
 By default @everyone has access to all features of a channel. You can allow or deny the permissions everyone has on this particular channel by clicking the check boxes.
 You can add roles or specific people whom you want to manage channel permissions for by clicking the plus sign.
 Once you have added a Role or member you can begin assigning channel permissions to this group or person.
 How To Set Up Category Permissions
+
+In your server, you're also capable of adjusting Category permissions so that the channels under a category can all have the same permissions. Here's how you can set up Category permissions.

@@ -17,31 +17,45 @@ export async function createGeminiEmbeddings(chunks) {
   console.log("🔮 Creating Gemini embeddings for chunks...");
   
   const embeddings = [];
+  const BATCH_SIZE = 10; // Process 10 chunks at a time
   
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i];
+  // Process chunks in batches for much faster processing
+  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+    const batch = chunks.slice(i, i + BATCH_SIZE);
+    console.log(`📝 Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(chunks.length/BATCH_SIZE)} (${batch.length} chunks)`);
     
-    try {
-      console.log(`📝 Embedding chunk ${i + 1}/${chunks.length}: ${chunk.id}`);
-      
-      const model = genAI.getGenerativeModel({ model: "embedding-001" });
-      const result = await model.embedContent(chunk.content);
-      const embedding = result.embedding.values;
-      
-      embeddings.push({
-        id: chunk.id,
-        content: chunk.content,
-        embedding: embedding,
-        source: chunk.source,
-        chunkIndex: chunk.chunkIndex,
-        fileName: chunk.fileName
-      });
-      
-      // Add small delay to respect rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-    } catch (error) {
-      console.error(`❌ Error embedding chunk ${chunk.id}:`, error.message);
+    // Process batch in parallel
+    const batchPromises = batch.map(async (chunk) => {
+      try {
+        const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+        const result = await model.embedContent(chunk.content);
+        const embedding = result.embedding.values;
+        
+        return {
+          id: chunk.id,
+          content: chunk.content,
+          embedding: embedding,
+          source: chunk.source,
+          chunkIndex: chunk.chunkIndex,
+          fileName: chunk.fileName
+        };
+      } catch (error) {
+        console.error(`❌ Error embedding chunk ${chunk.id}:`, error.message);
+        return null;
+      }
+    });
+    
+    // Wait for all embeddings in this batch to complete
+    const batchResults = await Promise.all(batchPromises);
+    
+    // Add successful results to embeddings array
+    batchResults.forEach(result => {
+      if (result) embeddings.push(result);
+    });
+    
+    // Small delay between batches to be respectful to API
+    if (i + BATCH_SIZE < chunks.length) {
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
   }
   
@@ -57,7 +71,7 @@ export async function createGeminiEmbeddings(chunks) {
 
 export async function embedQueryWithGemini(query) {
   try {
-    const model = genAI.getGenerativeModel({ model: "embedding-001" });
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     const result = await model.embedContent(query);
     return result.embedding.values;
   } catch (error) {

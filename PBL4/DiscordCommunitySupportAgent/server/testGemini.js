@@ -20,7 +20,7 @@ async function testGemini() {
   try {
     console.log('🧪 Testing Gemini embeddings...');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'embedding-001' });
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
     
     const result = await model.embedContent('Test embedding');
     console.log('✅ SUCCESS! Gemini embeddings working!');

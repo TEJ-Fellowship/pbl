@@ -1,0 +1,11 @@
+Join the Developer Discord
+
+Get support, API announcements, and participate in developer events.
+
+Report Issues on GitHub
+
+Submit API bugs, feature requests, or contribute to the documentation.
+
+Visit the Developer Help Center
+
+Find articles, FAQs, and reach out to Discord's developer support team.

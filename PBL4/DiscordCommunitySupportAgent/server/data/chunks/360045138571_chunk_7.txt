@@ -1,2 +1,11 @@
-Polls FAQ: If enabled on the server, you can share and vote in polls. 
-What Are Text And Voice Channels?
+Voice Channels
+
+Voice channels allow you to connect with others through voice and video chat. Simply click on a voice channel to join—no calling or ringing necessary. Other members of your server can see when you're in a voice channel and easily drop in to chat, say hello on video, or share their screen with the group.
+
+Example of what a Voice Channel is in a Discord server
+
+You can learn more about text and voice channels below.
+
+Text Channels & Text Chat In Voice Channels: Learn more about setting up, editing, and managing text channels. 
+Voice Channels FAQs: Learn more about setting up, editing, and managing voice channels.
+How To Share Your Screen

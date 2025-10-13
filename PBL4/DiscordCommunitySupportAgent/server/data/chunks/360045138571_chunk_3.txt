@@ -1,4 +1,4 @@
-Discord Sign-Up and Registration Guide: Need help signing up and registering for a Discord account? Check out this full guide to help you through the process. 
-How to Verify Your Discord Account: Having trouble verifying your account? Check out this guide for more detailed information on account verification. 
 Discord Login & Email Troubleshooting Guide: Having trouble logging in or registering a Discord account? Please check out this guide for additional help.
 What Is A Discord Server?
+
+Discord servers provide you with the ability to create private, invite-only spaces for your friends or community—places where you can connect, collaborate, and enjoy meaningful conversations together. These dedicated spaces are what we call servers.
