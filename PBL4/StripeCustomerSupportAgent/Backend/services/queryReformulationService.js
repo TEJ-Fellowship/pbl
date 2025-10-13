@@ -49,7 +49,12 @@ class QueryReformulationService {
         this.getRelevantQAs(originalQuery, sessionId),
         this.getSessionContext(sessionId),
       ]);
-
+      console.log("🔍 Found recentContext:", recentContext.messageCount);
+      console.log("🔍 Found relevantQAs:", relevantQAs.qaCount);
+      console.log(
+        "🔍 Found sessionContext:",
+        sessionContext.stats.total_messages
+      );
       // Use Gemini AI for intelligent query reformulation
       const reformulatedQuery = await this.reformulateWithGemini(
         originalQuery,
@@ -213,7 +218,6 @@ class QueryReformulationService {
           timestamp: msg.timestamp,
         })),
       };
-
       return context;
     } catch (error) {
       console.error("❌ Failed to get recent context:", error.message);
