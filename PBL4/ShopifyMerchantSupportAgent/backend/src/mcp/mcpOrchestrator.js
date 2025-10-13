@@ -1,4 +1,6 @@
 import CalculatorTool from "./calculatorTool.js";
+import WebSearchTool from "./webSearchTool.js";
+import ShopifyStatusTool from "./shopifyStatusTool.js";
 
 /**
  * MCP Client Orchestrator for Shopify Merchant Support Agent
@@ -18,6 +20,14 @@ export class MCPOrchestrator {
     const calculatorTool = new CalculatorTool();
     this.tools.set("calculator", calculatorTool);
 
+    // Register Web Search Tool
+    const webSearchTool = new WebSearchTool();
+    this.tools.set("web_search", webSearchTool);
+
+    // Register Shopify Status Tool
+    const shopifyStatusTool = new ShopifyStatusTool();
+    this.tools.set("shopify_status", shopifyStatusTool);
+
     console.log("🔧 MCP Tools initialized:", Array.from(this.tools.keys()));
   }
 
@@ -30,17 +40,34 @@ export class MCPOrchestrator {
   decideToolUse(query, confidence) {
     const toolsToUse = [];
 
+    // Check for Shopify status issues
+    if (this.shouldUseStatusChecker(query)) {
+      toolsToUse.push("shopify_status");
+    }
+
     // Check for mathematical expressions that require calculator
     if (this.shouldUseCalculator(query)) {
       toolsToUse.push("calculator");
     }
 
-    // Future tools can be added here
-    // if (confidence < 0.6) {
-    //   toolsToUse.push('web_search');
-    // }
+    // Check for web search fallback when confidence is low or recent info needed
+    if (this.shouldUseWebSearch(query, confidence)) {
+      toolsToUse.push("web_search");
+    }
 
     return toolsToUse;
+  }
+
+  /**
+   * Determine if Shopify status checker should be used
+   * @param {string} query - User query
+   * @returns {boolean} Whether to use status checker
+   */
+  shouldUseStatusChecker(query) {
+    const statusTool = this.tools.get("shopify_status");
+    if (!statusTool) return false;
+
+    return statusTool.shouldUseStatusChecker(query);
   }
 
   /**
@@ -68,19 +95,41 @@ export class MCPOrchestrator {
   }
 
   /**
+   * Determine if web search tool should be used
+   * @param {string} query - User query
+   * @param {number} confidence - RAG confidence score
+   * @returns {boolean} Whether to use web search
+   */
+  shouldUseWebSearch(query, confidence) {
+    const webSearchTool = this.tools.get("web_search");
+    if (!webSearchTool) return false;
+
+    return webSearchTool.shouldUseWebSearch(query, confidence);
+  }
+
+  /**
    * Execute the specified tools with the given query
    * @param {Array} toolNames - Array of tool names to execute
    * @param {string} query - User query
+   * @param {number} confidence - RAG confidence score
    * @returns {Object} Results from all executed tools
    */
-  async executeTools(toolNames, query) {
+  async executeTools(toolNames, query, confidence = 0.5) {
     const results = {};
 
     for (const toolName of toolNames) {
       if (this.tools.has(toolName)) {
         try {
           const tool = this.tools.get(toolName);
-          results[toolName] = await tool.calculate(query);
+
+          // Pass confidence to web search tool, handle different tool methods
+          if (toolName === "web_search") {
+            results[toolName] = await tool.search(query, confidence);
+          } else if (toolName === "shopify_status") {
+            results[toolName] = await tool.checkStatus(query);
+          } else {
+            results[toolName] = await tool.calculate(query);
+          }
         } catch (error) {
           console.error(`Error executing tool ${toolName}:`, error);
           results[toolName] = {
@@ -122,7 +171,7 @@ export class MCPOrchestrator {
 
     console.log(`🔧 Using MCP tools: ${toolsToUse.join(", ")}`);
 
-    const toolResults = await this.executeTools(toolsToUse, query);
+    const toolResults = await this.executeTools(toolsToUse, query, confidence);
 
     // Enhance the original answer with tool results
     const enhancedAnswer = this.enhanceAnswerWithToolResults(
@@ -161,6 +210,33 @@ export class MCPOrchestrator {
                 calc.formatted
               }**\n`;
             }
+          });
+        }
+      }
+    }
+
+    // Add Shopify status results if available
+    if (toolResults.shopify_status && !toolResults.shopify_status.error) {
+      const statusResults = toolResults.shopify_status;
+
+      if (statusResults.summary) {
+        enhancedAnswer += `\n\n${statusResults.summary}`;
+      }
+    }
+
+    // Add web search results if available
+    if (toolResults.web_search && !toolResults.web_search.error) {
+      const searchResults = toolResults.web_search;
+
+      if (searchResults.summary) {
+        enhancedAnswer += `\n\n## 🔍 **Web Search Results**\n\n${searchResults.summary}`;
+
+        if (searchResults.results && searchResults.results.length > 0) {
+          enhancedAnswer += "\n\n**Sources:**\n";
+          searchResults.results.forEach((result, index) => {
+            enhancedAnswer += `${index + 1}. [${result.title}](${
+              result.url
+            }) (${result.source})\n`;
           });
         }
       }

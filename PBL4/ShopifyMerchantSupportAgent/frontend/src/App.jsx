@@ -328,6 +328,7 @@ function App() {
                                     </div>
                                   ) : (
                                     <div className="tool-calculations">
+                                      {/* Calculator Results */}
                                       {result.calculations &&
                                         result.calculations.length > 0 && (
                                           <div className="calculations-list">
@@ -348,6 +349,232 @@ function App() {
                                             )}
                                           </div>
                                         )}
+
+                                      {/* Shopify Status Results */}
+                                      {result.status && (
+                                        <div className="shopify-status-results">
+                                          <div className="status-overview">
+                                            <div className="status-indicator">
+                                              <span className="status-emoji">
+                                                {result.status.overallStatus ===
+                                                "operational"
+                                                  ? "🟢"
+                                                  : result.status
+                                                      .overallStatus === "minor"
+                                                  ? "🟡"
+                                                  : result.status
+                                                      .overallStatus === "major"
+                                                  ? "🟠"
+                                                  : "🔴"}
+                                              </span>
+                                              <span className="status-text">
+                                                {
+                                                  result.status
+                                                    .overallDescription
+                                                }
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          {result.status.incidents &&
+                                            result.status.incidents.length >
+                                              0 && (
+                                              <div className="status-incidents">
+                                                <h4 className="status-section-title">
+                                                  🚨 Active Issues (
+                                                  {
+                                                    result.status.incidents
+                                                      .length
+                                                  }
+                                                  )
+                                                </h4>
+                                                {result.status.incidents.map(
+                                                  (incident, index) => (
+                                                    <div
+                                                      key={incident.id}
+                                                      className="status-incident"
+                                                    >
+                                                      <div className="incident-header">
+                                                        <span className="incident-name">
+                                                          {incident.name}
+                                                        </span>
+                                                        <span className="incident-impact">
+                                                          {incident.impact ===
+                                                          "critical"
+                                                            ? "🔴"
+                                                            : incident.impact ===
+                                                              "major"
+                                                            ? "🟠"
+                                                            : incident.impact ===
+                                                              "minor"
+                                                            ? "🟡"
+                                                            : "✅"}{" "}
+                                                          {incident.impact}
+                                                        </span>
+                                                      </div>
+                                                      <div className="incident-status">
+                                                        Status:{" "}
+                                                        {incident.status}
+                                                      </div>
+                                                      {incident.shortlink && (
+                                                        <a
+                                                          href={
+                                                            incident.shortlink
+                                                          }
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="incident-link"
+                                                        >
+                                                          View Details
+                                                        </a>
+                                                      )}
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            )}
+
+                                          {result.status.maintenance &&
+                                            result.status.maintenance.length >
+                                              0 && (
+                                              <div className="status-maintenance">
+                                                <h4 className="status-section-title">
+                                                  🔧 Scheduled Maintenance (
+                                                  {
+                                                    result.status.maintenance
+                                                      .length
+                                                  }
+                                                  )
+                                                </h4>
+                                                {result.status.maintenance.map(
+                                                  (maintenance, index) => (
+                                                    <div
+                                                      key={maintenance.id}
+                                                      className="status-maintenance-item"
+                                                    >
+                                                      <div className="maintenance-name">
+                                                        {maintenance.name}
+                                                      </div>
+                                                      <div className="maintenance-schedule">
+                                                        {new Date(
+                                                          maintenance.scheduledFor
+                                                        ).toLocaleString()}{" "}
+                                                        -
+                                                        {new Date(
+                                                          maintenance.scheduledUntil
+                                                        ).toLocaleString()}
+                                                      </div>
+                                                      {maintenance.shortlink && (
+                                                        <a
+                                                          href={
+                                                            maintenance.shortlink
+                                                          }
+                                                          target="_blank"
+                                                          rel="noopener noreferrer"
+                                                          className="maintenance-link"
+                                                        >
+                                                          View Details
+                                                        </a>
+                                                      )}
+                                                    </div>
+                                                  )
+                                                )}
+                                              </div>
+                                            )}
+
+                                          {result.status.components &&
+                                            result.status.components.length >
+                                              0 && (
+                                              <div className="status-components">
+                                                <h4 className="status-section-title">
+                                                  📊 Service Components
+                                                </h4>
+                                                <div className="components-grid">
+                                                  {result.status.components.map(
+                                                    (component, index) => (
+                                                      <div
+                                                        key={component.id}
+                                                        className="component-item"
+                                                      >
+                                                        <span className="component-name">
+                                                          {component.name}
+                                                        </span>
+                                                        <span
+                                                          className={`component-status status-${component.status}`}
+                                                        >
+                                                          {component.status ===
+                                                          "operational"
+                                                            ? "🟢"
+                                                            : component.status ===
+                                                              "degraded_performance"
+                                                            ? "🟡"
+                                                            : component.status ===
+                                                              "partial_outage"
+                                                            ? "🟠"
+                                                            : "🔴"}{" "}
+                                                          {component.status}
+                                                        </span>
+                                                      </div>
+                                                    )
+                                                  )}
+                                                </div>
+                                              </div>
+                                            )}
+
+                                          <div className="status-footer">
+                                            <small className="status-last-updated">
+                                              Last updated:{" "}
+                                              {new Date(
+                                                result.status.lastUpdated
+                                              ).toLocaleString()}
+                                            </small>
+                                            <a
+                                              href="https://status.shopify.com"
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="status-page-link"
+                                            >
+                                              View Full Status Page
+                                            </a>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Web Search Results */}
+                                      {result.results &&
+                                        result.results.length > 0 && (
+                                          <div className="web-search-sources">
+                                            {result.results.map(
+                                              (searchResult, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="web-search-source"
+                                                >
+                                                  <div className="web-search-source-title">
+                                                    {searchResult.title}
+                                                  </div>
+                                                  <div className="web-search-source-content">
+                                                    {searchResult.content}
+                                                  </div>
+                                                  <div className="web-search-source-meta">
+                                                    <a
+                                                      href={searchResult.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="web-search-source-url"
+                                                    >
+                                                      View Source
+                                                    </a>
+                                                    <span className="web-search-source-type">
+                                                      {searchResult.source}
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+
                                       {result.summary && (
                                         <div className="tool-summary">
                                           {result.summary}
