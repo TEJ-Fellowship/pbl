@@ -394,6 +394,55 @@ class ConversationMemory {
       totalSessions: Object.keys(this.memory.sessions).length,
     };
   }
+
+  /**
+   * Return the last `n` turns (default 6) in the session's history
+   * Useful for feeding recent conversation into MCP
+   */
+  getRecentTurns(n = 6) {
+    const session = this.getCurrentSession();
+    if (!session) return [];
+    // Convert stored turn format (timestamp, query, response, metadata) into simple object
+    return (session.conversationHistory || []).slice(-n).map((t) => ({
+      timestamp: t.timestamp,
+      query: t.query,
+      response: t.response,
+      metadata: t.metadata || {},
+    }));
+  }
+
+  /**
+   * Return user's current preferences (language, api, etc.)
+   */
+  getUserPreferences() {
+    const session = this.getCurrentSession();
+    if (!session) return {};
+    return session.userPreferences || {};
+  }
+
+  /**
+   * Small wrapper to store assistant or user turn using existing addConversationTurn
+   * turn: { role: 'user'|'assistant', content: '...' }
+   */
+  async storeTurn(turn) {
+    if (!turn) return;
+    if (turn.role === "assistant") {
+      await this.addConversationTurn(turn.query || "", turn.content || "", {
+        language: turn.metadata?.language,
+        api: turn.metadata?.api,
+        errorCodes: turn.metadata?.errorCodes || [],
+        chunkCount: turn.metadata?.chunkCount || 0,
+        responseTime: turn.metadata?.responseTime || 0,
+      });
+    } else if (turn.role === "user") {
+      // For user turns, we can add with empty response
+      await this.addConversationTurn(turn.content || "", "", {
+        language: turn.metadata?.language,
+        api: turn.metadata?.api,
+        errorCodes: turn.metadata?.errorCodes || [],
+      });
+    }
+  }
 }
 
 export default ConversationMemory;
