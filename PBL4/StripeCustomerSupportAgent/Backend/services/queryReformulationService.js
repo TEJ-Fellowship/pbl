@@ -37,24 +37,30 @@ class QueryReformulationService {
   }
 
   /**
-   * Reformulate user query with AI-powered context integration
+   * Reformulate user query with AI-powered context integration - OPTIMIZED VERSION
+   * Accepts pre-fetched context to eliminate redundant database queries
    */
-  async reformulateQuery(originalQuery, sessionId, userId = null) {
-    console.log(`🔄 Reformulating query with Gemini AI: "${originalQuery}"`);
+  async reformulateQueryWithContext(
+    originalQuery,
+    sessionId,
+    userId = null,
+    preFetchedContext = null
+  ) {
+    console.log(
+      `🔄 Reformulating query with Gemini AI (OPTIMIZED): "${originalQuery}"`
+    );
 
     try {
-      // Get context from different sources
-      const [recentContext, relevantQAs, sessionContext] = await Promise.all([
-        this.getRecentContext(sessionId),
-        this.getRelevantQAs(originalQuery, sessionId),
-        this.getSessionContext(sessionId),
-      ]);
-      console.log("🔍 Found recentContext:", recentContext.messageCount);
-      console.log("🔍 Found relevantQAs:", relevantQAs.qaCount);
-      console.log(
-        "🔍 Found sessionContext:",
-        sessionContext.stats.total_messages
-      );
+      // Use pre-fetched context to avoid redundant queries
+      console.log("📦 Using pre-fetched context");
+      const { recentContext, relevantQAs, sessionContext } = preFetchedContext;
+
+      console.log("🔍 Context summary:", {
+        recentMessages: recentContext?.messageCount || 0,
+        relevantQAs: relevantQAs?.length || 0,
+        sessionStats: sessionContext?.stats?.total_messages || 0,
+      });
+
       // Use Gemini AI for intelligent query reformulation
       const reformulatedQuery = await this.reformulateWithGemini(
         originalQuery,
@@ -63,7 +69,9 @@ class QueryReformulationService {
         sessionContext
       );
 
-      console.log(`✅ Query reformulated with AI context integration`);
+      console.log(
+        `✅ Query reformulated with AI context integration (OPTIMIZED)`
+      );
       return {
         originalQuery,
         reformulatedQuery,
@@ -72,13 +80,14 @@ class QueryReformulationService {
           relevantQAs,
           sessionContext,
         },
-        method: "gemini_ai",
+        method: "gemini_ai_optimized",
       };
     } catch (error) {
       console.error("❌ AI query reformulation failed:", error.message);
       console.log("🔄 Falling back to rule-based reformulation...");
 
       // Fallback to rule-based reformulation
+      const { recentContext, relevantQAs, sessionContext } = preFetchedContext;
       const reformulatedQuery = this.buildReformulatedQuery(
         originalQuery,
         recentContext,
@@ -115,8 +124,11 @@ class QueryReformulationService {
     // Build context string for Gemini
     let contextString = "";
 
-    // Add recent conversation context
-    if (recentContext && recentContext.hasRecentContext) {
+    // Add recent conversation context - handle both old and new formats
+    if (
+      recentContext &&
+      (recentContext.hasRecentContext || recentContext.messageCount > 0)
+    ) {
       contextString += "RECENT CONVERSATION:\n";
       if (recentContext.lastUserMessage) {
         contextString += `Last user question: ${recentContext.lastUserMessage}\n`;
@@ -130,23 +142,47 @@ class QueryReformulationService {
       contextString += "\n";
     }
 
-    // Add relevant Q&A context
-    if (relevantQAs && relevantQAs.hasRelevantQAs) {
+    // Add relevant Q&A context - handle both old and new formats
+    if (
+      relevantQAs &&
+      (relevantQAs.hasRelevantQAs ||
+        (Array.isArray(relevantQAs) && relevantQAs.length > 0))
+    ) {
       contextString += "RELEVANT PREVIOUS DISCUSSIONS:\n";
-      relevantQAs.qaPairs.slice(0, 2).forEach((qa, index) => {
+      const qaPairs = relevantQAs.qaPairs || relevantQAs; // Handle both formats
+      qaPairs.slice(0, 2).forEach((qa, index) => {
         contextString += `${index + 1}. Q: ${qa.question}\n`;
         contextString += `   A: ${qa.answer.substring(0, 150)}...\n\n`;
       });
     }
 
-    // Add session context
-    if (sessionContext && sessionContext.metadata) {
-      const project = sessionContext.metadata.project;
-      const context = sessionContext.metadata.context;
-      if (project || context) {
-        contextString += `SESSION CONTEXT: ${
-          project ? `Project: ${project}` : ""
-        }${context ? `, Context: ${context}` : ""}\n\n`;
+    // Add session context and summary
+    if (sessionContext) {
+      // Add session metadata
+      if (sessionContext.metadata) {
+        const project = sessionContext.metadata.project;
+        const context = sessionContext.metadata.context;
+        if (project || context) {
+          contextString += `SESSION CONTEXT: ${
+            project ? `Project: ${project}` : ""
+          }${context ? `, Context: ${context}` : ""}\n`;
+        }
+      }
+
+      // Add conversation summary if available
+      if (sessionContext.conversationSummary && sessionContext.hasSummary) {
+        contextString += `CONVERSATION SUMMARY:\n`;
+        contextString += `${sessionContext.conversationSummary.summaryText}\n`;
+
+        if (
+          sessionContext.conversationSummary.keyTopics &&
+          sessionContext.conversationSummary.keyTopics.length > 0
+        ) {
+          contextString += `Key Topics: ${sessionContext.conversationSummary.keyTopics.join(
+            ", "
+          )}\n`;
+        }
+        contextString += "\n";
       }
     }
 
@@ -188,92 +224,6 @@ class QueryReformulationService {
     } catch (error) {
       console.error("❌ Gemini reformulation failed:", error.message);
       throw error;
-    }
-  }
-
-  /**
-   * Get recent conversation context
-   */
-  async getRecentContext(sessionId) {
-    try {
-      // Get recent messages from buffer memory
-      const recentMessages = this.bufferMemory.getRecentMessages();
-
-      if (recentMessages.length === 0) {
-        return null;
-      }
-
-      // Extract key context from recent conversation
-      const context = {
-        hasRecentContext: true,
-        messageCount: recentMessages.length,
-        lastUserMessage: this.bufferMemory.getLastUserMessage()?.content,
-        lastAssistantMessage:
-          this.bufferMemory.getLastAssistantMessage()?.content,
-        conversationFlow: recentMessages.map((msg) => ({
-          role: msg.role,
-          content:
-            msg.content.substring(0, 200) +
-            (msg.content.length > 200 ? "..." : ""),
-          timestamp: msg.timestamp,
-        })),
-      };
-      return context;
-    } catch (error) {
-      console.error("❌ Failed to get recent context:", error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Get relevant Q&A pairs from long-term memory
-   */
-  async getRelevantQAs(query, sessionId) {
-    try {
-      const relevantQAs = await this.postgresMemory.getRelevantQAPairs(
-        query,
-        sessionId,
-        3
-      );
-
-      if (relevantQAs.length === 0) {
-        return null;
-      }
-
-      return {
-        hasRelevantQAs: true,
-        qaCount: relevantQAs.length,
-        qaPairs: relevantQAs.map((qa) => ({
-          question: qa.question,
-          answer:
-            qa.answer.substring(0, 300) + (qa.answer.length > 300 ? "..." : ""),
-          relevanceScore: qa.relevance_score,
-          context: qa.context,
-        })),
-      };
-    } catch (error) {
-      console.error("❌ Failed to get relevant Q&As:", error.message);
-      return null;
-    }
-  }
-
-  /**
-   * Get session context and metadata
-   */
-  async getSessionContext(sessionId) {
-    try {
-      const session = await this.postgresMemory.createOrGetSession(sessionId);
-      const stats = await this.postgresMemory.getSessionStats(sessionId);
-
-      return {
-        sessionId: sessionId,
-        metadata: session.metadata || {},
-        stats: stats,
-        isActive: session.is_active,
-      };
-    } catch (error) {
-      console.error("❌ Failed to get session context:", error.message);
-      return null;
     }
   }
 
@@ -321,16 +271,38 @@ class QueryReformulationService {
       }
     }
 
-    // Add session metadata context if available
-    if (sessionContext && sessionContext.metadata) {
-      const project = sessionContext.metadata.project;
-      const context = sessionContext.metadata.context;
+    // Add session metadata and summary context if available
+    if (sessionContext) {
+      // Add session metadata
+      if (sessionContext.metadata) {
+        const project = sessionContext.metadata.project;
+        const context = sessionContext.metadata.context;
 
-      if (project) {
-        reformulatedQuery = `${reformulatedQuery} (In the context of ${project} project)`;
+        if (project) {
+          reformulatedQuery = `${reformulatedQuery} (In the context of ${project} project)`;
+        }
+        if (context) {
+          reformulatedQuery = `${reformulatedQuery} (Specifically for ${context})`;
+        }
       }
-      if (context) {
-        reformulatedQuery = `${reformulatedQuery} (Specifically for ${context})`;
+
+      // Add conversation summary context
+      if (sessionContext.conversationSummary && sessionContext.hasSummary) {
+        const summary = sessionContext.conversationSummary.summaryText;
+        const keyTopics = sessionContext.conversationSummary.keyTopics;
+
+        if (summary && summary.length > 0) {
+          // Extract first sentence or first 100 characters of summary
+          const summaryExcerpt =
+            summary.split(".")[0] || summary.substring(0, 100);
+          reformulatedQuery = `${reformulatedQuery} (Building on previous discussion: ${summaryExcerpt}...)`;
+        }
+
+        if (keyTopics && keyTopics.length > 0) {
+          reformulatedQuery = `${reformulatedQuery} (Related to topics: ${keyTopics
+            .slice(0, 3)
+            .join(", ")})`;
+        }
       }
     }
 

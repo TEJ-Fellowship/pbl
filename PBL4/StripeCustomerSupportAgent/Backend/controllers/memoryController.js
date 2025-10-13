@@ -259,18 +259,88 @@ class MemoryController {
   }
 
   /**
-   * Get complete memory context for RAG
+   * Get session context and metadata - OPTIMIZED VERSION with Session Summarization
+   */
+  async getSessionContext() {
+    if (!this.currentSessionId) {
+      return null;
+    }
+
+    try {
+      // Fetch session data, stats, and conversation summary in parallel
+      const [session, stats, conversationSummary] = await Promise.all([
+        this.postgresMemory.createOrGetSession(this.currentSessionId),
+        this.postgresMemory.getSessionStats(this.currentSessionId),
+        this.postgresMemory.getConversationSummary(this.currentSessionId),
+      ]);
+
+      console.log(
+        `📊 Session context: ${stats?.total_messages || 0} messages, ${
+          stats?.qa_pairs || 0
+        } Q&A pairs`
+      );
+      console.log(
+        `📝 Session summary: ${conversationSummary ? "Available" : "None"}`
+      );
+
+      return {
+        sessionId: this.currentSessionId,
+        metadata: session.metadata || {},
+        stats: stats,
+        isActive: session.is_active,
+        conversationSummary: conversationSummary
+          ? {
+              summaryText: conversationSummary.summary_text,
+              keyTopics: conversationSummary.key_topics || [],
+              createdAt: conversationSummary.created_at,
+            }
+          : null,
+        hasSummary: conversationSummary !== null,
+      };
+    } catch (error) {
+      console.error("❌ Failed to get session context:", error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get complete memory context for RAG - OPTIMIZED VERSION
+   * Fetches all context once and passes it to reformulation to eliminate redundancies
    */
   async getCompleteMemoryContext(originalQuery) {
     try {
-      console.log(`\n🧠 Gathering complete memory context for query`);
+      console.log(
+        `\n🧠 Gathering complete memory context for query (OPTIMIZED)`
+      );
 
-      // Get recent context
-      const recentContext = this.getRecentContext();
-      // Get long-term context
-      const longTermContext = await this.getLongTermContext(originalQuery);
-      // Reformulate query with context
-      const reformulation = await this.reformulateQuery(originalQuery);
+      // Fetch all context in parallel - SINGLE RETRIEVAL
+      const [recentContext, longTermContext, sessionContext] =
+        await Promise.all([
+          this.getRecentContext(),
+          this.getLongTermContext(originalQuery),
+          this.getSessionContext(),
+        ]);
+
+      console.log(
+        `📊 Context fetched: ${
+          recentContext?.messageCount || 0
+        } recent messages, ${
+          longTermContext?.relevantQAs?.length || 0
+        } relevant Q&As`
+      );
+
+      // Pass pre-fetched context to reformulation to avoid duplicate queries
+      const reformulation =
+        await this.queryReformulation.reformulateQueryWithContext(
+          originalQuery,
+          this.currentSessionId,
+          this.currentUserId,
+          {
+            recentContext,
+            relevantQAs: longTermContext?.relevantQAs || [],
+            sessionContext,
+          }
+        );
 
       return {
         originalQuery,
