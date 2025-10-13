@@ -1,0 +1,17 @@
+token_type_hint (optional) - the token parameter's type—either access_token or refresh_token
+When you revoke a token, any active access or refresh tokens associated with that authorization will be revoked, regardless of the token and token_type_hint values you pass in.
+Copy
+import requests
+
+API_ENDPOINT = 'https://discord.com/api/v10'
+CLIENT_ID = '332269999912132097'
+CLIENT_SECRET = '937it3ow87i4ery69876wqire'
+
+def revoke_access_token(access_token):
+  data = {
+    'token': access_token,
+    'token_type_hint': 'access_token'
+  }
+  headers = {
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }

@@ -1,0 +1,56 @@
+Discord's built in Webhooks function as an easy way to get automated messages and data updates sent to a text channel in your server.
+
+Think of them as one of those fancy pneumatic tube things you used to love sending money into at a bank and watch disappear, but instead of never seeing your money again, you're actually sending messages into Discord from another platform.
+
+By creating a webhook endpoint in your server, you'll generate a Webhook URL that you can drop into a number of different other services to link the two.
+
+While everyone absolutely loves pneumatic tubes (100% true), it's important to note that webhooks require another website to use (though programming-inclined users can make their own tube schoomper themselves). 
+
+Some services and websites are built to easily incorporate webhooks and send messages outwards, but some aren't. Here's a little handy reference list:
+
+  Can use webhooks:	Can't really use webhooks:
+  GitHub	  Twitch / YouTube
+  CircleCI	  Nelly The Hamster
+  DataDog	  Facebook
+Making A Webhook
+
+With that in mind, if you want to update your Discord server with GitHub commits and pull requests or track analytics from DataDog or anything similar, here's how!
+
+Open your Server Settings and head into the Integrations tab:
+Click the "Create Webhook" button to create a new webhook!
+
+You'll have a few options here. You can:
+
+ Edit the avatar: By clicking the avatar next to the Name in the top left
+Choose what channel the Webhook posts to: By selecting the desired text channel in the  dropdown menu.
+Name your Webhook: Good for distinguishing multiple webhooks for multiple different services.
+
+You now have your own handy URL / pneumatic tube schoomp-er that you can link to more websites to receive messages from. 
+
+Quick Example: GitHub Webhook Integration
+
+Since webhooks can't really function on their own and need to be linked to another website to function as intended, I figured it'd be best to include a sample integration for any of you GitHub enthusiasts and code-pushers.
+
+You can use Discord's webhooks to send any code merge or push updates in a repository of yours into a text channel in your server.  
+
+1. Get the webhook URL for the server/channel you want to receive messages:
+
+In my server, I've created a text channel labeled #general-chat and I want my repo updates to post messages here!
+
+Therefore, I'll grab the webhook URL for this channel by pressing the Copy Webhook URL button:
+
+2. Add the webhook URL into your GitHub repo settings
+
+Choose the repository that you'd like to get updates from in your Discord server. Once you've selected the repo, go into the Settings > Webhooks menu
+
+And then click the "Add webhook" button, and enter the Discord-generated URL in the "Payload URL" blank. 
+
+To make the webhook display messages properly, it's really really really REALLY really important that you append '/github' at the end of it. Yes, like five-reallys important.
+
+In addition to the URL, you have some more GitHub-specific options to choose from. For content type, stick with application/json. Discord's webhook format really likes JSON. In the next section, you can choose to customize what kind of events trigger webhook messages. 
+
+Click the last "Add webhook" button beneath the event notifications customization option, and you're all set! Pushing any updates in the repo (including editing the readme file) will show up in your text channel: 
+
+ 
+
+And you're all set! GitHub is just one example of an integration that can post messages via webhook. If you've got a knack for JSON application-building or HTTP POST requests and want to customize your own webhooks, you can dig up some more information in our developer docs.

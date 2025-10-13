@@ -1,0 +1,22 @@
+This endpoint supports the X-Audit-Log-Reason header.
+JSON Params
+FIELD	TYPE	DESCRIPTION
+name	string	name of the webhook (1-80 characters)
+avatar?	?image data	image for the default webhook avatar
+Get Channel Webhooks
+GET
+/channels/{channel.id}/webhooks
+
+Returns a list of channel webhook objects. Requires the MANAGE_WEBHOOKS permission.
+
+Get Guild Webhooks
+GET
+/guilds/{guild.id}/webhooks
+
+Returns a list of guild webhook objects. Requires the MANAGE_WEBHOOKS permission.
+
+Get Webhook
+GET
+/webhooks/{webhook.id}
+
+Returns the new webhook object for the given id.

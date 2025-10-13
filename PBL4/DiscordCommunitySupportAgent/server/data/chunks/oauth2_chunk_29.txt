@@ -1,0 +1,13 @@
+Bots are added to guilds through the OAuth2 API, and cannot accept normal invites.
+Bots cannot have friends or be added to or join Group DMs.
+Verified bots do not have a maximum number of guilds.
+Bots have an entirely separate set of rate limits.
+Bot Authorization Flow
+
+Bot authorization is a special server-less and callback-less OAuth2 flow that makes it easy for users to add bots to guilds. The URL you create looks similar to what we use for full stack implementation:
+
+Bot Auth Parameters
+NAME	DESCRIPTION
+client_id	your app's client id
+scope	needs to include bot for the bot flow
+permissions	the permissions you're requesting

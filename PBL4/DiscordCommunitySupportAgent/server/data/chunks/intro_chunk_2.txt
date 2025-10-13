@@ -1,0 +1,25 @@
+Apps Overview
+
+Learn the fundamentals of building Discord apps and commands.
+
+Build Your First Discord App
+
+Create a bot user that plays "rock, paper, scissors" with users.
+
+Slash Commands and Interactions
+
+Create custom commands and interactions for your app.
+
+Activities: Build Multiplayer Games in Discord
+
+Use the Embedded App SDK to create real-time games and social experiences that users can launch directly inside Discord.
+
+Activities Overview
+
+Discover how Activities work in Discord.
+
+Build Your First Activity
+
+Build and test an Activity using the Embedded App SDK.
+
+Activity Design Patterns

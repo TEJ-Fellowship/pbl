@@ -1,0 +1,13 @@
+Execute Slack-Compatible Webhook
+POST
+/webhooks/{webhook.id}/{webhook.token}/slack
+
+Refer to Slack's documentation for more information. We do not support Slack's channel, icon_emoji, mrkdwn, or mrkdwn_in properties.
+
+Query String Params
+FIELD	TYPE	DESCRIPTION	REQUIRED
+thread_id	snowflake	id of the thread to send the message in	false
+wait	boolean	waits for server confirmation of message send before response (defaults to true; when false a message that is not saved does not return an error)	false
+Execute GitHub-Compatible Webhook
+POST
+/webhooks/{webhook.id}/{webhook.token}/github

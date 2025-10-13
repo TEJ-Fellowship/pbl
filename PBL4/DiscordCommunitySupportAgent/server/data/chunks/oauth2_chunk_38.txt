@@ -1,0 +1,11 @@
+URL Example
+Copy
+https://discord.com/oauth2/authorize?response_type=code&client_id=157730590492196864&scope=webhook.incoming&state=15773059ghq9183habn&redirect_uri=https%3A%2F%2Fnicememe.website
+
+
+When the user navigates to this URL, they will be prompted to select a channel in which to allow the webhook. When the webhook is executed, it will post its message into this channel. On acceptance, the user will be redirected to your redirect_uri. The URL will contain the code querystring parameter which should be exchanged for an access token. In return, you will receive a slightly modified token response:
+
+Webhook Token Response Example
+Copy
+{
+  "token_type": "Bearer",

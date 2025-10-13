@@ -1,0 +1,10 @@
+How To Share Your Screen
+
+You can share your screen or gameplay while connected to a voice channel, a direct message (DM), or group DM. 
+
+Example of what it looks like when someone is streaming on Discord
+
+You can learn more about screen sharing by checking out the Go Live and Screen Share Help Center article.
+
+Additional Discord Features
+Account Connections

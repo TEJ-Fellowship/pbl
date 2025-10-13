@@ -1,0 +1,8 @@
+with_components	boolean	whether to respect the components field of the request. When enabled, allows application-owned webhooks to use all components and non-owned webhooks to use non-interactive components. (defaults to false)	false
+JSON/Form Params
+FIELD	TYPE	DESCRIPTION
+content	string	the message contents (up to 2000 characters)
+embeds	array of up to 10 embed objects	embedded rich content
+flags *	integer	message flags combined as a bitfield (SUPPRESS_EMBEDS and IS_COMPONENTS_V2 only)
+allowed_mentions	allowed mention object	allowed mentions for the message
+components **	array of message component	the components to include with the message

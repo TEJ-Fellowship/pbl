@@ -1,0 +1,18 @@
+"max_video_channel_users": 25
+  },
+  "access_token": "zMndOe7jFLXGawdlxMOdNvXjjOce5X",
+  "scope": "bot",
+  "expires_in": 604800,
+  "refresh_token": "mgp8qnvBwJcmadwgCYKyYD5CAzGAX4"
+}
+
+Two-Factor Authentication Requirement
+
+For bots with elevated permissions (permissions with a * next to them), we enforce two-factor authentication on the owner's account when added to guilds that have server-wide 2FA enabled.
+
+Webhooks
+
+Discord's webhook flow is a specialized version of an authorization code implementation. In this case, the scope querystring parameter needs to be set to webhook.incoming:
+
+URL Example
+Copy

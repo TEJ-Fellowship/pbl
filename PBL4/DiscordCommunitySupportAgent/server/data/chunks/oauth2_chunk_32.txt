@@ -1,0 +1,3 @@
+If your bot is super specific to your private clubhouse, or you just don't like sharing, you can leave the Public Bot option unchecked in your application's settings. If unchecked, only you can add the bot to guilds. If marked as public, anyone with your bot's URL can add it to guilds in which they have proper permissions.
+
+Advanced Bot Authorization

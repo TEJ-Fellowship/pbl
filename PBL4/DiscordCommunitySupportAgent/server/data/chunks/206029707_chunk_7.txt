@@ -1,0 +1,12 @@
+Right-click the category and choose Edit Category.
+Select Permissions in the left-hand panel to alter permissions and add roles.
+
+Understanding Synced And Not-Synced Permissions
+
+There are two default states for a channel in regards to category permissions: synced and not-synced. A synced channel will have permissions that completely match that of the category. A not-synced channel will have permissions that differ from the permissions set for the category.
+
+A synced channel!
+
+A not synced channel!
+
+If you change the permissions on a category, all channels that are synced will automatically update.

@@ -1,0 +1,3 @@
+State and Security
+
+Before we dive into the semantics of the different OAuth2 grants, we should stop and discuss security, specifically the use of the state parameter. Cross-site request forgery, or CSRF, and Clickjacking are security vulnerabilities that must be addressed by individuals implementing OAuth. This is typically accomplished using the state parameter. state is sent in the authorization request and returned back in the response and should be a value that binds the user's request to their authenticated state. For example, state could be a hash of the user's session cookie, or some other nonce that can be linked to the user's session.

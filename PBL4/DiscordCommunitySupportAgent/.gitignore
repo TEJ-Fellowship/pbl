@@ -1,0 +1,6 @@
+
+# local history and env
+.history
+*.env
+.env*
+node_modules

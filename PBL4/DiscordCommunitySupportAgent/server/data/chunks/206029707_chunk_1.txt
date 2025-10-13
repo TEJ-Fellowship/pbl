@@ -1,0 +1,15 @@
+One of the great things about creating communities on Discord is our permission system! In this Help Center article, you'll learn more about permissions, how to create and customize permissions based on roles, and the difference between server, category, and channel permissions.
+
+What does this article cover?
+
+What are permissions?
+How to Set Up Server Permissions
+Step 1 - Create a role
+Step 2 -  Customize the role
+Step 3 - Assign the role
+Understanding Category and Channel Permissions
+How to Set Up Channel Permissions
+How to Set Up Category Permissions
+Understanding Synced and Not-Synced Permissions
+Learn more about how to use permissions
+What Are Permissions?

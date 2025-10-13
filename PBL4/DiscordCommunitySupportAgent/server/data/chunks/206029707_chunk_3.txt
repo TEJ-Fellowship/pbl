@@ -1,0 +1,8 @@
+When you first create your server there is only one pre-made role: @everyone. The @everyone role defines the permissions that are enabled for everyone on your server even if they have no other roles assigned to them.
+
+Note: As the creator of your server you don't need to assign any roles or permissions to yourself. You will always have access to everything.
+Press on the downward arrow next to the server name.
+Choose Server Settings > Roles > Create Role.
+
+Step 2 - Customize Role And Permissions
+Give the new role a name. You can always change this later! Feel free to change the display of this role at this point, but for this article, we'll focus on Permissions.

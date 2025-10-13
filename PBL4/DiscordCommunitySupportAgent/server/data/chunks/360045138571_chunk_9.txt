@@ -1,0 +1,7 @@
+Account Connections
+
+You can connect a variety of outside apps like PlayStation, Spotify, and Xbox to your Discord account. This allows for your User Profile not only to display various information, but also what song you’re currently listening to on Spotify. To learn more about how to connect an account to your Discord account check out this Help Center article.
+
+You can learn more about individual account connection options through the Connections Help Center category.
+
+How To Customize Your Discord User Profile

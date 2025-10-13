@@ -1,0 +1,4 @@
+How do I set up a private server?
+How do I set up a leaders channel?
+How do I set up an announcements channel?
+How is the permission hierarchy structured?

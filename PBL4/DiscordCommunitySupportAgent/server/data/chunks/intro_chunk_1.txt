@@ -1,0 +1,21 @@
+BUILD WHERE THE WORLD PLAYS
+Create social games, experiences, and integrations for millions of users on Discord
+Build with Discord
+
+Discord provides a platform for building social experiences, whether you're creating apps within Discord or integrating Discord's features into your game.
+
+Apps
+
+Develop apps, bots, and integrations to enhance the Discord experience.
+
+Activities
+
+Build multiplayer games and social experiences that run directly in Discord.
+
+Discord Social SDK
+
+Add rich social features into your game across desktop, mobile, and console.
+
+Apps: Extend Discord with Custom Integrations
+
+Enhance the Discord experience with custom apps, commands, and integrations.

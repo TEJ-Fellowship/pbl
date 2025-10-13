@@ -1,0 +1,3 @@
+In addition to the URL, you have some more GitHub-specific options to choose from. For content type, stick with application/json. Discord's webhook format really likes JSON. In the next section, you can choose to customize what kind of events trigger webhook messages. 
+
+Click the last "Add webhook" button beneath the event notifications customization option, and you're all set! Pushing any updates in the repo (including editing the readme file) will show up in your text channel:

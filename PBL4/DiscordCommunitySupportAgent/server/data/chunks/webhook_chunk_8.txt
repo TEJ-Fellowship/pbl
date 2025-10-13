@@ -1,0 +1,18 @@
+This request requires the MANAGE_WEBHOOKS permission unless the application making the request owns the webhook. (see: webhook.application_id)
+
+Get Webhook with Token
+GET
+/webhooks/{webhook.id}/{webhook.token}
+
+Same as above, except this call does not require authentication and returns no user in the webhook object.
+
+Modify Webhook
+PATCH
+/webhooks/{webhook.id}
+
+Modify a webhook. Requires the MANAGE_WEBHOOKS permission. Returns the updated webhook object on success. Fires a Webhooks Update Gateway event.
+
+All parameters to this endpoint are optional
+This endpoint supports the X-Audit-Log-Reason header.
+JSON Params
+FIELD	TYPE	DESCRIPTION
