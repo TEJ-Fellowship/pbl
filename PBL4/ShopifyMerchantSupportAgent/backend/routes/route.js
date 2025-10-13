@@ -1,5 +1,4 @@
 import express from "express";
-import { shopifySupport } from "../controllers/controller.js";
 import {
   processChatMessage,
   getConversationHistory,
@@ -7,8 +6,14 @@ import {
 
 const router = express.Router();
 
-// Original route
-router.get("/", shopifySupport);
+// Health check route
+router.get("/", (req, res) => {
+  res.json({
+    message: "Shopify Merchant Support Agent API",
+    status: "running",
+    endpoints: ["/chat", "/history/:sessionId"],
+  });
+});
 
 // Chat API endpoints
 router.post("/chat", async (req, res) => {
