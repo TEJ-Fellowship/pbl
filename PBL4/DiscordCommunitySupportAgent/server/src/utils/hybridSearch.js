@@ -1,105 +1,159 @@
-import FlexSearch from "flexsearch";
-import { searchDocuments } from "./simpleSearch.js";
-import { loadChunks } from "./simpleSearch.js";
+import { bm25Search } from "./bm25Search.js";
+import { searchSimilarDocuments } from "./chromaClient.js";
 import { rerankResults } from "./reranker.js";
 
-// Initialize FlexSearch for BM25 keyword search
-const flexSearch = new FlexSearch.Index({
-  tokenize: "forward",
-  resolution: 3,
-  depth: 2
-});
-
-let chunks = [];
-let isIndexed = false;
+let isInitialized = false;
+let documents = [];
 
 export async function initializeHybridSearch() {
   console.log("🔍 Initializing hybrid search system...");
   
-  // Load chunks
-  chunks = loadChunks();
-  
-  if (chunks.length === 0) {
-    console.log("❌ No chunks found. Please run processDocsSimple.js first.");
+  try {
+    // Load documents for BM25 indexing
+    documents = bm25Search.loadDocuments();
+    
+    if (documents.length === 0) {
+      console.log("❌ No documents found for indexing.");
+      return false;
+    }
+    
+    // Build BM25 index
+    bm25Search.buildIndex(documents);
+    
+    // Verify semantic search is available
+    const { vectorStore } = await import('./chromaClient.js');
+    if (vectorStore.length === 0) {
+      console.log("⚠️ No semantic embeddings found. Hybrid search will use BM25 only.");
+    }
+    
+    isInitialized = true;
+    console.log(`✅ Hybrid search initialized with ${documents.length} documents`);
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Failed to initialize hybrid search:", error.message);
     return false;
   }
-  
-  // Index chunks for BM25 search
-  chunks.forEach((chunk, index) => {
-    flexSearch.add(index, chunk.content);
-  });
-  
-  isIndexed = true;
-  console.log(`✅ Indexed ${chunks.length} chunks for BM25 search`);
-  return true;
 }
 
 export async function hybridSearch(query, limit = 5, semanticWeight = 0.65, keywordWeight = 0.35, enableReranking = true) {
-  if (!isIndexed) {
+  if (!isInitialized) {
     console.log("❌ Search not initialized. Run initializeHybridSearch() first.");
     return [];
   }
   
-  // BM25 keyword search
-  const keywordResults = flexSearch.search(query, limit * 2);
+  console.log(`🔀 Starting hybrid search for: "${query}"`);
+  console.log(`⚖️ Weights - Semantic: ${semanticWeight}, BM25: ${keywordWeight}`);
   
-  // Simple semantic search (our improved keyword search)
-  const semanticResults = searchDocuments(query, chunks, limit * 2);
+  const results = new Map();
   
-  // Combine and score results
-  const combinedResults = new Map();
-  
-  // Add semantic results
-  semanticResults.forEach((result, index) => {
-    const semanticScore = (semanticResults.length - index) / semanticResults.length;
-    const chunkIndex = chunks.findIndex(chunk => chunk.id === result.id);
+  try {
+    // 1. BM25 Keyword Search
+    console.log("🔍 Running BM25 keyword search...");
+    const bm25Results = bm25Search.search(query, limit * 2);
     
-    if (chunkIndex !== -1) {
-      combinedResults.set(chunkIndex, {
+    // Normalize BM25 scores to 0-1 range
+    const maxBm25Score = Math.max(...bm25Results.map(r => r.bm25Score), 1);
+    bm25Results.forEach(result => {
+      const normalizedScore = result.bm25Score / maxBm25Score;
+      results.set(result.docIndex, {
         ...result,
-        semanticScore: semanticScore,
-        keywordScore: 0,
-        combinedScore: semanticScore * semanticWeight
-      });
-    }
-  });
-  
-  // Add keyword results
-  keywordResults.forEach((chunkIndex, index) => {
-    const keywordScore = (keywordResults.length - index) / keywordResults.length;
-    const chunk = chunks[chunkIndex];
-    
-    if (combinedResults.has(chunkIndex)) {
-      // Update existing result
-      const existing = combinedResults.get(chunkIndex);
-      existing.keywordScore = keywordScore;
-      existing.combinedScore = (existing.semanticScore * semanticWeight) + (keywordScore * keywordWeight);
-    } else {
-      // Add new result
-      combinedResults.set(chunkIndex, {
-        ...chunk,
         semanticScore: 0,
-        keywordScore: keywordScore,
-        combinedScore: keywordScore * keywordWeight
+        keywordScore: normalizedScore,
+        combinedScore: normalizedScore * keywordWeight,
+        searchMethod: 'bm25'
       });
+    });
+    
+    console.log(`✅ BM25 found ${bm25Results.length} results`);
+    
+  } catch (error) {
+    console.log("⚠️ BM25 search failed:", error.message);
+  }
+  
+  try {
+    // 2. Semantic Search (if embeddings available)
+    console.log("🧠 Running semantic search...");
+    const semanticResults = await searchSimilarDocuments(query, limit * 2);
+    
+    if (semanticResults.documents && semanticResults.documents[0]) {
+      const semanticDocs = semanticResults.documents[0];
+      const semanticMetadatas = semanticResults.metadatas[0];
+      const semanticDistances = semanticResults.distances[0];
+      
+      semanticDocs.forEach((content, index) => {
+        const similarity = 1 - semanticDistances[index]; // Convert distance to similarity
+        const metadata = semanticMetadatas[index];
+        
+        // Try to find matching document by content similarity
+        let docIndex = -1;
+        for (let i = 0; i < documents.length; i++) {
+          if (documents[i].content === content || 
+              documents[i].content.includes(content.substring(0, 100))) {
+            docIndex = i;
+            break;
+          }
+        }
+        
+        // If no exact match, use a hash-based approach
+        if (docIndex === -1) {
+          docIndex = Math.abs(content.split('').reduce((a, b) => {
+            a = ((a << 5) - a) + b.charCodeAt(0);
+            return a & a;
+          }, 0)) % documents.length;
+        }
+        
+        if (results.has(docIndex)) {
+          // Update existing result
+          const existing = results.get(docIndex);
+          existing.semanticScore = similarity;
+          existing.combinedScore = (similarity * semanticWeight) + (existing.keywordScore * keywordWeight);
+          existing.searchMethod = 'hybrid';
+        } else {
+          // Add new semantic result
+          results.set(docIndex, {
+            content: content,
+            source: metadata?.source || 'Discord Documentation',
+            metadata: metadata,
+            semanticScore: similarity,
+            keywordScore: 0,
+            combinedScore: similarity * semanticWeight,
+            docIndex: docIndex,
+            searchMethod: 'semantic'
+          });
+        }
+      });
+      
+      console.log(`✅ Semantic search found ${semanticDocs.length} results`);
     }
-  });
+    
+  } catch (error) {
+    console.log("⚠️ Semantic search failed:", error.message);
+  }
   
-  // Sort by combined score
-  let finalResults = Array.from(combinedResults.values())
+  // 3. Combine and normalize results
+  let finalResults = Array.from(results.values())
     .sort((a, b) => b.combinedScore - a.combinedScore)
-    .slice(0, limit * 2); // Get more results for re-ranking
+    .slice(0, limit * 2); // Get more results for potential re-ranking
   
-  // Apply cross-encoder re-ranking if enabled
+  // 4. Apply cross-encoder re-ranking if enabled and available
   if (enableReranking && finalResults.length > 1) {
     try {
+      console.log("🔄 Applying cross-encoder re-ranking...");
       finalResults = await rerankResults(query, finalResults, limit);
+      console.log("✅ Re-ranking completed");
     } catch (error) {
       console.log("⚠️ Re-ranking failed, using original results:", error.message);
     }
   }
   
-  return finalResults.slice(0, limit);
+  // 5. Return top results
+  const topResults = finalResults.slice(0, limit);
+  
+  console.log(`🎯 Returning ${topResults.length} hybrid search results`);
+  console.log(`📊 Score range: ${topResults[0]?.combinedScore?.toFixed(4)} - ${topResults[topResults.length-1]?.combinedScore?.toFixed(4)}`);
+  
+  return topResults;
 }
 
-export { chunks, flexSearch };
+export { documents, bm25Search };

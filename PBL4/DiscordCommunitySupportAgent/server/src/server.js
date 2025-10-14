@@ -3,7 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { searchSimilarDocuments } from './utils/chromaClient.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { initializeHybridSearch, hybridSearch } from './utils/hybridSearch.js';
+import { initializeHybridSearch, hybridSearch } from './utils/enhancedHybridSearch.js';
+import { initializeCrossEncoder } from './utils/reranker.js';
 
 // Load environment variables
 dotenv.config();
@@ -17,16 +18,21 @@ const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 // Initialize advanced search features
 let hybridSearchReady = false;
+let crossEncoderReady = false;
 
 async function initializeAdvancedSearch() {
   try {
     console.log('🔧 Initializing advanced search features...');
     
-    // Initialize hybrid search (without cross-encoder)
+    // Initialize hybrid search
     hybridSearchReady = await initializeHybridSearch();
     
+    // Initialize cross-encoder for re-ranking
+    console.log('🔄 Initializing cross-encoder re-ranking...');
+    crossEncoderReady = await initializeCrossEncoder();
+    
     console.log(`✅ Hybrid search: ${hybridSearchReady ? 'Ready' : 'Failed'}`);
-    console.log(`✅ Cross-encoder reranking: Disabled (using semantic + keyword only)`);
+    console.log(`✅ Cross-encoder reranking: ${crossEncoderReady ? 'Ready' : 'Failed'}`);
     
   } catch (error) {
     console.error('❌ Advanced search initialization failed:', error.message);
@@ -56,16 +62,24 @@ Discord Documentation:
 ${context}
 
 Instructions:
-1. Provide a clear, helpful answer based on the context above
+1. Provide a detailed, step-by-step answer based on the context above
 2. Use Discord-specific terminology correctly (channels, roles, permissions, etc.)
 3. Format your response with Discord-style markdown:
-   - Use **bold** for important terms
-   - Use \`code blocks\` for commands and settings
-   - Use > blockquotes for important notes
-   - Use bullet points for step-by-step instructions
-4. Include relevant Discord emojis (⚙️, 🔒, ➕, 📝, 🎮, etc.)
-5. If there are step-by-step instructions, present them clearly
-6. Be concise but thorough
+   - Use **bold** for important terms and headings
+   - Use \`code blocks\` for commands, settings, and file names
+   - Use > blockquotes for important notes and warnings
+   - Use numbered lists (1., 2., 3.) for step-by-step instructions
+   - Use bullet points (•) for sub-steps or additional information
+4. Include relevant Discord emojis (⚙️, 🔒, ➕, 📝, 🎮, 💻, 📱, 🌐, etc.)
+5. For account creation queries, provide specific steps like:
+   - Download Discord app or visit website
+   - Click "Register" button
+   - Enter email, username, password
+   - Verify email
+   - Complete setup
+6. Be detailed and actionable - don't just say "refer to the guide"
+7. If the context contains specific steps, use them exactly
+8. Make it beginner-friendly with clear explanations
 
 Answer:`;
 
@@ -87,16 +101,40 @@ app.get('/api/health', (req, res) => {
     gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not configured',
     features: {
       hybridSearch: hybridSearchReady,
-      reranking: false, // Disabled to avoid cross-encoder issues
-      semanticSearch: true
+      bm25Search: hybridSearchReady,
+      faissSearch: hybridSearchReady,
+      semanticSearch: true,
+      sentenceTransformer: hybridSearchReady,
+      reranking: crossEncoderReady ? 'enabled' : 'disabled'
+    },
+    searchMethods: {
+      semantic: 'Vector similarity search using SentenceTransformer embeddings',
+      bm25: 'Probabilistic keyword search with term frequency',
+      faiss: 'Fast semantic similarity using FAISS index',
+      hybrid: 'Combined BM25 + FAISS search with configurable weights (α, β)',
+      reranking: 'Cross-encoder re-ranking (optional)'
+    },
+    normalizationMethods: {
+      minmax: 'Min-max normalization (0-1 range)',
+      softmax: 'Softmax normalization with temperature',
+      none: 'No normalization'
     }
   });
 });
 
-// Main search endpoint with hybrid search (no reranking)
+// Enhanced search endpoint with BM25 + FAISS hybrid search
 app.post('/api/search', async (req, res) => {
   try {
-    const { query, sessionId, serverContext = {}, useHybridSearch = true } = req.body;
+    const { 
+      query, 
+      sessionId, 
+      serverContext = {}, 
+      useHybridSearch = true, 
+      enableReranking = crossEncoderReady, // Enable by default if available
+      alpha = 0.7,  // Weight for semantic search
+      beta = 0.3,   // Weight for BM25 search
+      normalizationMethod = 'minmax'
+    } = req.body;
     
     if (!query) {
       return res.status(400).json({ 
@@ -105,30 +143,38 @@ app.post('/api/search', async (req, res) => {
       });
     }
     
-    console.log(`🔍 Searching for: "${query}" (hybrid: ${useHybridSearch && hybridSearchReady})`);
+    console.log(`🔍 Enhanced Search: "${query}" (hybrid: ${useHybridSearch && hybridSearchReady})`);
+    console.log(`⚖️ Weights - Semantic (α): ${alpha}, BM25 (β): ${beta}`);
     
     let retrievedDocs = [];
+    let searchMethod = 'semantic';
     
-    // Use hybrid search if available, otherwise fallback to semantic search
+    // Use enhanced hybrid search if available, otherwise fallback to semantic search
     if (useHybridSearch && hybridSearchReady) {
-      console.log('🔀 Using hybrid search (semantic + keyword)...');
-      const hybridResults = await hybridSearch(query, 5, 0.65, 0.35, false); // No reranking
+      console.log('🔀 Using enhanced hybrid search (BM25 + FAISS + SentenceTransformer)...');
+      const hybridResults = await hybridSearch(query, 8, alpha, beta, enableReranking, normalizationMethod);
       
       retrievedDocs = hybridResults.map(result => ({
         content: result.content,
         metadata: {
           source: result.source || 'unknown',
-          chunkIndex: result.chunkIndex || 0,
-          fileName: result.fileName || 'unknown'
+          chunkIndex: result.docIndex || 0,
+          fileName: result.metadata?.fileName || 'unknown'
         },
         similarity: result.combinedScore || result.score || 0,
         semanticScore: result.semanticScore || 0,
         keywordScore: result.keywordScore || 0,
-        crossEncoderScore: 0 // No reranking
+        bm25Score: result.bm25Score || 0,
+        faissScore: result.faissScore || 0,
+        crossEncoderScore: result.crossEncoderScore || 0,
+        searchMethod: result.searchMethod || 'hybrid'
       }));
+      
+      searchMethod = 'hybrid';
+      
     } else {
-      console.log('🔍 Using semantic search...');
-      const results = await searchSimilarDocuments(query, 5);
+      console.log('🔍 Using semantic search only...');
+      const results = await searchSimilarDocuments(query, 8);
       
       if (!results.documents || results.documents.length === 0) {
         return res.json({
@@ -147,8 +193,12 @@ app.post('/api/search', async (req, res) => {
         similarity: 1 - results.distances[0][index],
         semanticScore: 1 - results.distances[0][index],
         keywordScore: 0,
-        crossEncoderScore: 0
+        bm25Score: 0,
+        crossEncoderScore: 0,
+        searchMethod: 'semantic'
       }));
+      
+      searchMethod = 'semantic';
     }
     
     if (retrievedDocs.length === 0) {
@@ -158,7 +208,7 @@ app.post('/api/search', async (req, res) => {
         answer: "I couldn't find relevant information about that topic. Please try rephrasing your question.",
         sources: [],
         sessionId,
-        searchMethod: useHybridSearch && hybridSearchReady ? 'hybrid' : 'semantic'
+        searchMethod
       });
     }
     
@@ -179,20 +229,26 @@ app.post('/api/search', async (req, res) => {
         metadata: doc.metadata,
         semanticScore: doc.semanticScore,
         keywordScore: doc.keywordScore,
-        crossEncoderScore: doc.crossEncoderScore
+        bm25Score: doc.bm25Score,
+        faissScore: doc.faissScore,
+        crossEncoderScore: doc.crossEncoderScore,
+        searchMethod: doc.searchMethod
       })),
       sources: retrievedDocs.map(doc => ({
         source: doc.metadata.source,
         similarity: doc.similarity,
         semanticScore: doc.semanticScore,
         keywordScore: doc.keywordScore,
-        crossEncoderScore: doc.crossEncoderScore
+        bm25Score: doc.bm25Score,
+        faissScore: doc.faissScore,
+        crossEncoderScore: doc.crossEncoderScore,
+        searchMethod: doc.searchMethod
       })),
       sessionId,
-      searchMethod: useHybridSearch && hybridSearchReady ? 'hybrid' : 'semantic',
+      searchMethod,
       features: {
         hybridSearch: hybridSearchReady,
-        reranking: false,
+        reranking: enableReranking && crossEncoderReady,
         serverContext: Object.keys(serverContext).length > 0
       },
       timestamp: new Date().toISOString()
@@ -233,6 +289,79 @@ app.post('/api/server-context', (req, res) => {
   }
 });
 
+// Authentication endpoints
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { username, email, serverType, serverSize, purpose } = req.body;
+    
+    // In a real app, you would validate credentials against a database
+    // For now, we'll just create a mock user session
+    const user = {
+      id: Date.now().toString(),
+      username,
+      email,
+      serverContext: {
+        type: serverType || 'general',
+        size: serverSize || 'unknown',
+        purpose: purpose || 'community'
+      },
+      loginTime: new Date().toISOString()
+    };
+    
+    console.log(`🔐 User login: ${username} (${email}) - ${serverType} server`);
+    
+    res.json({
+      success: true,
+      user,
+      message: 'Login successful'
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error.message);
+    res.status(500).json({ 
+      error: 'Login failed', 
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/auth/signup', (req, res) => {
+  try {
+    const { username, email, serverType, serverSize, purpose } = req.body;
+    
+    // In a real app, you would create a new user account
+    // For now, we'll just create a mock user
+    const user = {
+      id: Date.now().toString(),
+      username,
+      email,
+      serverContext: {
+        type: serverType || 'general',
+        size: serverSize || 'unknown',
+        purpose: purpose || 'community'
+      },
+      signupTime: new Date().toISOString()
+    };
+    
+    console.log(`📝 User signup: ${username} (${email}) - ${serverType} server`);
+    
+    res.json({
+      success: true,
+      user,
+      message: 'Account created successfully'
+    });
+    
+  } catch (error) {
+    console.error('Signup error:', error.message);
+    res.status(500).json({ 
+      error: 'Signup failed', 
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log('🚀 Discord Community Support API Server Started!');
@@ -245,13 +374,27 @@ app.listen(PORT, async () => {
   
   console.log('\n📋 Available endpoints:');
   console.log('  GET  /api/health - Health check');
-  console.log('  POST /api/search - Search with RAG (hybrid + semantic, no reranking)');
+  console.log('  POST /api/search - Enhanced RAG search (BM25 + FAISS + SentenceTransformer)');
   console.log('  POST /api/server-context - Update server context');
-  console.log('\n✨ Features:');
-  console.log('  🔀 Hybrid Search: Semantic + BM25 keyword search');
+  console.log('  POST /api/auth/login - User login');
+  console.log('  POST /api/auth/signup - User registration');
+  console.log('\n✨ Enhanced Features:');
+  console.log('  🔀 Hybrid Search: BM25 keyword + FAISS semantic search');
+  console.log('  📊 BM25 Algorithm: Probabilistic ranking with term frequency');
+  console.log('  🧠 FAISS Search: Fast semantic similarity using SentenceTransformer');
+  console.log('  🔤 SentenceTransformer: all-MiniLM-L6-v2 embeddings');
+  console.log('  ⚖️ Configurable Weights: α (semantic) + β (BM25) = 1.0');
+  console.log('  📊 Normalization: MinMax, Softmax, or None');
+  console.log(`  🔄 Cross-encoder Re-ranking: ${crossEncoderReady ? 'Enabled' : 'Disabled'}`);
   console.log('  🤖 AI Answers: Gemini-generated responses');
   console.log('  📝 Discord Markdown: Proper formatting');
   console.log('  🎯 Server Context: Gaming/study/community awareness');
+  console.log('\n🔧 Enhanced Search Parameters:');
+  console.log('  useHybridSearch: true/false (default: true)');
+  console.log('  enableReranking: true/false (default: false)');
+  console.log('  alpha: 0.7 (semantic weight, default)');
+  console.log('  beta: 0.3 (BM25 weight, default)');
+  console.log('  normalizationMethod: "minmax"|"softmax"|"none" (default: "minmax")');
 });
 
 export default app;

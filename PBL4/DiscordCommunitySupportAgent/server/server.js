@@ -23,14 +23,7 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3001;
 
 // Start server
-app.listen(PORT, () => {
-  console.log('🚀 Discord Community Support RAG Server Started!');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
-  console.log(`📋 Available endpoints:`);
-  console.log(`  GET  /api/health - Health check`);
-  console.log(`  POST /api/search - Search with RAG`);
-  console.log(`  GET  / - API information`);
-});
+// Note: The server is started in src/server.js
+// This file just imports and exports the app
 
 export default app;

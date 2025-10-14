@@ -45,10 +45,10 @@ class EmbeddingService {
         }
 
         console.log(`Processed ${chunks.length} chunks from ${doc.title}`);
-
-        console.log(`Total processed chunks ${totalChunks}`);
-        return processedChunks;
       }
+
+      console.log(`Total processed chunks ${totalChunks}`);
+      return processedChunks;
     } catch (error) {
       console.error("Failed to processed documents", error.message);
       throw error;

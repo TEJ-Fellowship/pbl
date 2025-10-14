@@ -4,14 +4,23 @@
   "description": "Discord Community Support Agent - RAG System with Hybrid Search",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --watch server.js",
     "dev": "node server.js",
     "scrape": "node scraper.js",
     "test": "node tests/testRAG.js",
     "test:api": "node tests/testAPI.js",
-    "test:gemini": "node tests/testGemini.js"
+    "test:gemini": "node tests/testGemini.js",
+    "test:hybrid": "node testHybridSearch.js",
+    "test:enhanced": "node testDiscordAccountCreation.js",
+    "test:ai": "node testImprovedAI.js"
   },
-  "keywords": ["discord", "rag", "ai", "support", "hybrid-search"],
+  "keywords": [
+    "discord",
+    "rag",
+    "ai",
+    "support",
+    "hybrid-search"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -26,6 +35,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "faiss-node": "^0.5.1",
     "flexsearch": "^0.8.212",
     "fs-extra": "^11.3.2",
     "helmet": "^8.1.0",
