@@ -5,11 +5,17 @@ export default {
     extend: {
       colors: {
         shopify: {
-          green: "#96bf47",
-          "green-light": "#7ba05b",
-          "green-dark": "#5a8a3a",
-          "green-darker": "#4a7c59",
-          "green-darkest": "#3d6b47",
+          // New color palette from image
+          "forest-green": "#2d5016", // Dark Forest Green
+          teal: "#20b2aa", // Vibrant Teal/Turquoise
+          mint: "#e8f5e8", // Light Pastel Mint Green
+          "bright-green": "#4caf50", // Medium Bright Green
+          // Legacy colors for compatibility
+          green: "#4caf50",
+          "green-light": "#20b2aa",
+          "green-dark": "#2d5016",
+          "green-darker": "#1b3a0e",
+          "green-darkest": "#0f2308",
           dark: "#1A1A1A",
           gray: "#F6F6F7",
           "gray-light": "#f8fafc",
@@ -54,9 +60,12 @@ export default {
         ],
       },
       boxShadow: {
-        shopify: "0 4px 20px rgba(150, 191, 71, 0.15)",
-        "shopify-lg": "0 8px 32px rgba(150, 191, 71, 0.2)",
-        "shopify-xl": "0 20px 60px rgba(150, 191, 71, 0.25)",
+        shopify: "0 4px 20px rgba(76, 175, 80, 0.15)",
+        "shopify-lg": "0 8px 32px rgba(76, 175, 80, 0.2)",
+        "shopify-xl": "0 20px 60px rgba(76, 175, 80, 0.25)",
+        forest: "0 4px 20px rgba(45, 80, 22, 0.15)",
+        teal: "0 4px 20px rgba(32, 178, 170, 0.15)",
+        mint: "0 4px 20px rgba(232, 245, 232, 0.15)",
       },
       animation: {
         "slide-in": "messageSlideIn 0.3s ease-out",
