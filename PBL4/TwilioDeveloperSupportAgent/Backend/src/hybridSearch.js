@@ -104,8 +104,8 @@ class HybridSearch {
    */
   isErrorCode(query) {
     const errorPatterns = [
-      // Stripe error codes
-      /card_declined|card_expired|insufficient_funds|invalid_cvc|processing_error/i,
+      // // Stripe error codes
+      // /card_declined|card_expired|insufficient_funds|invalid_cvc|processing_error/i,
       // API error patterns
       /err_\d+|error_\d+|api_error|validation_error/i,
       // HTTP status codes

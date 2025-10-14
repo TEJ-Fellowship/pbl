@@ -12,6 +12,7 @@ import {
   initPinecone,
   loadVectorStore,
   retrieveChunksWithEmbeddings,
+  retrieveChunksWithHybridSearch,
   generateMemoryAwareResponse,
   detectQueryLanguage,
   detectErrorCodes,
@@ -91,11 +92,10 @@ app.post("/api/chat", async (req, res) => {
     const startTime = Date.now();
 
     // Retrieve relevant chunks using hybrid search
-    const chunks = await retrieveChunksWithEmbeddings(
+    const chunks = await retrieveChunksWithHybridSearch(
       query,
       vectorStore,
-      embeddings,
-      { textChunks: [], codeChunks: [] }
+      embeddings
     );
 
     if (chunks.length === 0) {

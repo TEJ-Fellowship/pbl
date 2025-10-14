@@ -570,7 +570,7 @@ async function generateMemoryAwareResponse(
     };
   } catch (error) {
     console.error(
-      chalk.red("❌ Memory-aware response (MCP) failed:"),
+      chalk.red("❌ Memory-aware response failed:"),
       error.message
     );
     // fallback to previous non-MCP generation (call your generateResponse)
@@ -662,17 +662,6 @@ FORMAT YOUR RESPONSE:
   }
 }
 
-// Export functions for API server
-export {
-  initGeminiClient,
-  initGeminiEmbeddings,
-  initPinecone,
-  loadVectorStore,
-  retrieveChunksWithEmbeddings,
-  generateMemoryAwareResponse,
-  detectQueryLanguage,
-  detectErrorCodes,
-};
 
 // Main chat function with memory
 async function startChat() {
@@ -771,11 +760,10 @@ async function startChat() {
           const startTime = Date.now();
 
           // Retrieve relevant chunks using hybrid search
-          const chunks = await retrieveChunksWithEmbeddings(
+          const chunks = await retrieveChunksWithHybridSearch(
             query,
             vectorStore,
-            embeddings,
-            separateChunks
+            embeddings
           );
 
           if (chunks.length === 0) {
@@ -928,10 +916,15 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
   startChat().catch(console.error);
 }
 
-// export {
-//   generateResponse,
-//   loadVectorStore,
-//   initGeminiClient,
-//   initGeminiEmbeddings,
-//   retrieveChunksWithHybridSearch,
-// };
+export {
+  generateResponse,
+  loadVectorStore,
+  initGeminiClient,
+  initGeminiEmbeddings,
+  initPinecone,
+  retrieveChunksWithEmbeddings,
+  retrieveChunksWithHybridSearch,
+  generateMemoryAwareResponse,
+  detectQueryLanguage,
+  detectErrorCodes,
+};
