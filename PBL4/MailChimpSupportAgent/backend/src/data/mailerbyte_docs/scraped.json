@@ -1,6 +1,6 @@
 [
   {
-    "id": "helpdocs_1760331349381",
+    "id": "helpdocs_1760347894398",
     "url": "https://mailchimp.com/help/",
     "category": "helpdocs",
     "title": "Know More, Do More with Mailchimp",
@@ -134,10 +134,10 @@
         "content": "If you have a question about something that isn't covered here, check out our additional resources. And if that doesn't do the trick, you can send an inquiry through our contact form. Contact us"
       }
     ],
-    "scrapedAt": "2025-10-13T04:55:49.381Z"
+    "scrapedAt": "2025-10-13T09:31:34.398Z"
   },
   {
-    "id": "gettingstarted_1760331351435",
+    "id": "gettingstarted_1760347895514",
     "url": "https://mailchimp.com/help/getting-started-with-mailchimp/",
     "category": "gettingstarted",
     "title": "Getting Started with Mailchimp",
@@ -199,10 +199,10 @@
         "content": "Marketing API An API is a way for different applications to talk to one another. Advanced users who are familiar with custom coding can use Mailchimp’s Marketing API to pass data from their application to Mailchimp for advanced customization and utility. Mailchimp Developer"
       }
     ],
-    "scrapedAt": "2025-10-13T04:55:51.435Z"
+    "scrapedAt": "2025-10-13T09:31:35.514Z"
   },
   {
-    "id": "campaigncreation_1760331353573",
+    "id": "campaigncreation_1760347896612",
     "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
     "category": "campaigncreation",
     "title": "Getting Started with Campaigns",
@@ -256,10 +256,10 @@
         "content": "After you send or publish a campaign, you can monitor its performance in your campaign report. These reports include important metrics such as email opens and clicks, order revenue for connected stores, and social post shares. About Email Reports About Audience Analytics About SMS Reports Landing Page Reports About Social Post Reports"
       }
     ],
-    "scrapedAt": "2025-10-13T04:55:53.573Z"
+    "scrapedAt": "2025-10-13T09:31:36.612Z"
   },
   {
-    "id": "listmanage_1760331355568",
+    "id": "listmanage_1760347897710",
     "url": "https://mailchimp.com/help/getting-started-audience/",
     "category": "listmanage",
     "title": "Getting Started with Your Audience",
@@ -305,6 +305,6 @@
         "content": "The Stats overview gives you details about your email marketing engagement. View open and click rates, see the change in subscribed contacts, or compare the performance of your last 30 emails."
       }
     ],
-    "scrapedAt": "2025-10-13T04:55:55.568Z"
+    "scrapedAt": "2025-10-13T09:31:37.710Z"
   }
 ]

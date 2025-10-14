@@ -5,6 +5,7 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
+import HybridSearch from "./hybridSearch.js";
 
 class MailChimpFAQInterface {
   constructor() {
@@ -39,6 +40,8 @@ class MailChimpFAQInterface {
     this.pinecone = null;
     this.index = null;
     this.localChunks = null;
+    this.hybridSearch = null;
+    this.hybridSearchAvailable = false;
   }
 
   async initialize() {
@@ -53,6 +56,9 @@ class MailChimpFAQInterface {
     );
     console.log(
       `📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || "mailerbyte-rag"}`
+    );
+    console.log(
+      `🗄️  PostgreSQL Database: ${config.DB_NAME || "mailchimp_support_db"}`
     );
 
     // Try to load local chunks as fallback
@@ -69,7 +75,29 @@ class MailChimpFAQInterface {
 
       if (stats.totalVectorCount === 0) {
         console.log("⚠️  Pinecone index is empty! Using local data fallback.");
-        return false;
+      }
+
+      // Initialize Hybrid Search if embeddings are available
+      if (this.embeddingsAvailable) {
+        try {
+          console.log(
+            "🔧 Initializing Hybrid Search (BM25 + Semantic + Recency)..."
+          );
+          const vectorStore = {
+            type: "pinecone",
+            index: this.index,
+          };
+          this.hybridSearch = new HybridSearch(vectorStore, this.embeddings);
+          await this.hybridSearch.initialize();
+          this.hybridSearchAvailable = true;
+          console.log("✅ Hybrid Search initialized successfully");
+        } catch (error) {
+          console.log(
+            `⚠️  Hybrid Search initialization failed: ${error.message}`
+          );
+          console.log("🔄 Will use semantic-only search as fallback");
+          this.hybridSearchAvailable = false;
+        }
       }
 
       return true;
@@ -82,9 +110,11 @@ class MailChimpFAQInterface {
 
   async loadLocalChunks() {
     try {
-      const chunksPath = path.resolve("./data/processed_chunks/chunks.json");
+      const chunksPath = path.resolve(
+        "./src/data/processed_chunks/enhanced_chunks.json"
+      );
       const enhancedChunksPath = path.resolve(
-        "./data/processed_chunks/enhanced_chunks.json"
+        "./src/data/processed_chunks/enhanced_chunks.json"
       );
 
       // Try enhanced chunks first, then fallback to regular chunks
@@ -108,9 +138,36 @@ class MailChimpFAQInterface {
   async searchSimilarChunks(query, limit = 5) {
     console.log(`🔍 Searching for: "${query}"`);
 
-    // Try Pinecone first (only if embeddings are available)
+    // Try Hybrid Search first (BM25 + Semantic + Recency Boost)
+    if (this.hybridSearchAvailable && this.hybridSearch) {
+      try {
+        console.log("🔬 Using Hybrid Search (BM25 + Semantic + Recency Boost)");
+        const results = await this.hybridSearch.hybridSearch(query, limit);
+
+        if (results.length > 0) {
+          // Format results to match expected structure
+          return results.map((result) => ({
+            score: result.finalScore || result.semanticScore || 0,
+            metadata: {
+              ...result.metadata,
+              pageContent: result.content,
+              title: result.metadata?.title || "Untitled",
+              heading: result.metadata?.heading || "",
+              category: result.metadata?.category || "general",
+              difficulty: result.metadata?.difficulty || "intermediate",
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("❌ Hybrid search error:", error.message);
+        console.log("🔄 Falling back to semantic-only search...");
+      }
+    }
+
+    // Fallback to Pinecone semantic search
     if (this.index && this.embeddingsAvailable) {
       try {
+        console.log("🔍 Using semantic search (Pinecone only)");
         const queryEmbedding = await this.embeddings.embedQuery(query);
 
         const searchResponse = await this.index.query({
@@ -131,7 +188,7 @@ class MailChimpFAQInterface {
       }
     }
 
-    // Fallback to local search
+    // Final fallback to local search
     console.log("🔄 Using local search fallback...");
     return this.searchLocalChunks(query, limit);
   }
@@ -217,20 +274,21 @@ Content: ${chunk.metadata.pageContent || "No content available"}`;
     if (this.geminiAvailable) {
       try {
         const result = await this.model
-          .generateContent(`You are a MailChimp support agent. Answer the user's question using the provided context from MailChimp documentation.
+          .generateContent(`You are a professional Mailchimp Support AI trained on official Mailchimp documentation. Your goal is to help users by giving accurate, concise, and friendly explanations using only the provided documentation context.
+
 
 User Question: ${query}
 
 Context from MailChimp Documentation:
 ${context}
 
-Instructions:
-1. Provide a clear, step-by-step answer based on the context
-2. If the context doesn't contain enough information, say so and suggest where to find more help
-3. Include specific MailChimp features, tools, or steps mentioned in the context
-4. Keep the answer concise but comprehensive
-5. If there are numbered lists or specific steps in the context, preserve them
-6. Mention the source category (campaigns/automation/lists/getting-started) when relevant
+1. Use ONLY the context provided — do not invent or assume information.
+2. Give a clear, step-by-step answer tailored to the user’s question.
+3. Mention specific Mailchimp features, tools, or UI paths (e.g., “Campaigns → Automations → Create Email”).
+4. Preserve any numbered lists or bullet points from the documentation.
+5. Reference the **source category** (e.g., “Campaigns,” “Lists,” “Automation,” “Getting Started”) when explaining.
+6. If the context doesn’t have enough information, clearly say so and suggest checking the Mailchimp Help Center.
+7. Maintain a friendly, knowledgeable tone — like a real Mailchimp expert helping a user on chat.
 
 Answer:`);
 
@@ -378,6 +436,14 @@ Answer:`);
     console.log(
       `📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || "mailerbyte-rag"}`
     );
+    console.log(`🗄️  PostgreSQL: ${config.DB_NAME || "mailchimp_support_db"}`);
+    console.log(
+      `🔬 Hybrid Search: ${
+        this.hybridSearchAvailable
+          ? "✅ Active (BM25 + Semantic + Recency)"
+          : "❌ Inactive"
+      }`
+    );
     console.log(
       `📚 Local Chunks: ${
         this.localChunks ? this.localChunks.length : 0
@@ -393,10 +459,25 @@ Answer:`);
       }
     }
 
+    // Check PostgreSQL status
+    if (this.hybridSearch && this.hybridSearch.postgresBM25Service) {
+      try {
+        const dbStats = await this.hybridSearch.postgresBM25Service.getStats();
+        console.log(`🗄️  PostgreSQL Documents: ${dbStats.total_chunks}`);
+        console.log(`🗄️  PostgreSQL Categories: ${dbStats.categories}`);
+      } catch (error) {
+        console.log(`🗄️  PostgreSQL Status: ❌ ${error.message}`);
+      }
+    }
+
     console.log("\n💡 TROUBLESHOOTING:");
-    console.log("1. Make sure .env file exists with API keys");
-    console.log("2. Run: npm run enhanced-ingest");
-    console.log("3. Check Pinecone index name matches config");
+    console.log(
+      "1. Make sure .env file exists with API keys and DB credentials"
+    );
+    console.log("2. Run: npm run db:setup (setup PostgreSQL)");
+    console.log("3. Run: npm run enhanced-ingest (process documents)");
+    console.log("4. Run: npm run db:populate (populate PostgreSQL)");
+    console.log("5. Check Pinecone index name matches config");
   }
 
   async handleCustomQuestion() {

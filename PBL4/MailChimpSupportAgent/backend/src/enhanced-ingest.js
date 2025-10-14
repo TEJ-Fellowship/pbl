@@ -10,7 +10,7 @@ import config from "../config/config.js";
 const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 600;
 const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const BATCH_SIZE = parseInt(config.BATCH_SIZE) || 50;
-const SCRAPED_PATH = path.resolve("./data/mailerbyte_docs/scraped.json");
+const SCRAPED_PATH = path.resolve("./src/data/mailerbyte_docs/scraped.json");
 const OUTPUT_PATH = path.resolve(
   "./data/processed_chunks/enhanced_chunks.json"
 );
@@ -371,7 +371,7 @@ async function storeEnhancedChunks(chunks, embeddings, pinecone) {
       batch.map(async (chunk) => {
         const embedding = await embeddings.embedQuery(chunk.pageContent);
         const m = chunk.metadata;
-
+        delete m.loc;
         return {
           id: m.chunk_id,
           values: embedding,
