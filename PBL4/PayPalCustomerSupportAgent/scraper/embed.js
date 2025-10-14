@@ -28,23 +28,6 @@ const FRUSTRATED_KEYWORDS = [
 ];
 
 //UTILITIES
-function detectSentiment(text) {
-  const lowerText = text.toLowerCase();
-  const frustratedCount = FRUSTRATED_KEYWORDS.filter(keyword => 
-    lowerText.includes(keyword)
-  ).length;
-  
-  const hasExcessivePunctuation = /[!?]{2,}/.test(text);
-  const capsWords = text.split(" ").filter(word => 
-    word.length > 3 && word === word.toUpperCase()
-  ).length;
-  
-  const score = frustratedCount + (hasExcessivePunctuation ? 1 : 0) + (capsWords > 2 ? 1 : 0);
-  
-  if (score >= 2) return { sentiment: "frustrated", confidence: "high", score };
-  if (score === 1) return { sentiment: "concerned", confidence: "medium", score };
-  return { sentiment: "neutral", confidence: "high", score };
-}
 
 function parseContent(preview) {
   try {
