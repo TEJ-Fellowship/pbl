@@ -1,15 +1,16 @@
 {
   "name": "mcp-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
   },
-  "keywords": [],
+  "keywords": ["mcp", "paypal", "web-search"],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "MCP server for PayPal support tools including web search",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.19.1",
     "axios": "^1.12.2",

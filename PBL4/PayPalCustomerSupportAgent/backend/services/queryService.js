@@ -172,19 +172,37 @@ const sessionMemory = new Map(); // sessionId -> { messages: [...], issueType: s
 
 function classifyIssueType(text) {
   const t = String(text || "").toLowerCase();
+  
+  // Check for general greetings and identity questions first
+  if (/hello|hi|hey|good morning|good afternoon|good evening|greetings/.test(t)) return "greeting";
+  if (/who are you|what are you|your name|introduce|introduction/.test(t)) return "identity";
+  if (/help|support|assistance|how can you help/.test(t)) return "general_help";
+  
+  // Check for specific issue types
   if (/chargeback|dispute|case|resolution/.test(t)) return "dispute";
   if (/limit|limitation|restricted|hold/.test(t)) return "account_limitation";
   if (/fee|fees|charge|rate|pricing/.test(t)) return "fees";
   if (/refund|refunds|return/.test(t)) return "refund";
   if (/payment|transfer|send|receive|payout/.test(t)) return "payment_issue";
-  return "payment_issue";
+  
+  // Default to general help instead of payment issue
+  return "general_help";
 }
 
 function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
   const disclaimer = includeDisclaimer
     ? "This is general guidance based on PayPal documentation. For account‑specific issues or legal advice, please contact PayPal support."
     : "";
-  // Best effort: if model produced free-form text, keep it but prefix with structure headers
+  
+  // For greetings and identity questions, don't show "Issue:" prefix
+  if (issueType === "greeting" || issueType === "identity") {
+    return [
+      rawAnswer,
+      disclaimer && `Disclaimer: ${disclaimer}`
+    ].filter(Boolean).join("\n\n");
+  }
+  
+  // For other issue types, show the structured format
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
     rawAnswer,

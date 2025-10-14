@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const { Pool } = require("pg");
 const { logConversation } = require("../db.js");
+const { searchPayPalWeb, shouldUseWebSearch, combineHybridAndWebResults } = require("./webSearchService.js");
 dotenv.config();
 
 const PINECONE_INDEX = process.env.PINECONE_INDEX;
@@ -15,7 +16,7 @@ const pool = new Pool({
   host: 'localhost',
   database: 'paypalAgent',
   password: process.env.POSTGRES_PASSWORD || 'your_password_here',
-  port: 5433,
+  port: 5432,
 });
 
 // ===== UTILITIES =====
@@ -77,18 +78,37 @@ async function detectSentiment(text, genAI) {
 
 function classifyIssueType(text) {
   const t = String(text || "").toLowerCase();
+  
+  // Check for general greetings and identity questions first
+  if (/hello|hi|hey|good morning|good afternoon|good evening|greetings/.test(t)) return "greeting";
+  if (/who are you|what are you|your name|introduce|introduction/.test(t)) return "identity";
+  if (/help|support|assistance|how can you help/.test(t)) return "general_help";
+  
+  // Check for specific issue types
   if (/chargeback|dispute|case|resolution/.test(t)) return "dispute";
   if (/limit|limitation|restricted|hold/.test(t)) return "account_limitation";
   if (/fee|fees|charge|rate|pricing/.test(t)) return "fees";
   if (/refund|refunds|return/.test(t)) return "refund";
   if (/payment|transfer|send|receive|payout/.test(t)) return "payment_issue";
-  return "payment_issue";
+  
+  // Default to general help instead of payment issue
+  return "general_help";
 }
 
 function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
   const disclaimer = includeDisclaimer
     ? "This is general guidance based on PayPal documentation. For account‑specific issues or legal advice, please contact PayPal support."
     : "";
+  
+  // For greetings and identity questions, don't show "Issue:" prefix
+  if (issueType === "greeting" || issueType === "identity") {
+    return [
+      rawAnswer,
+      disclaimer && `Disclaimer: ${disclaimer}`
+    ].filter(Boolean).join("\n\n");
+  }
+  
+  // For other issue types, show the structured format
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
     rawAnswer,
@@ -260,9 +280,24 @@ async function handleQuery(query, sessionId) {
     }
 
     // Run hybrid search
-    const searchResults = await hybridSearch(query, embedder, index, dbClient);
+    const hybridResults = await hybridSearch(query, embedder, index, dbClient);
+    
+    // Check if we need web search for recent/current information
+    let webResults = [];
+    let finalSearchResults = hybridResults;
+    
+    if (shouldUseWebSearch(query)) {
+      console.log("🌐 Triggering web search for recent information...");
+      webResults = await searchPayPalWeb(query);
+      
+      if (webResults.length > 0) {
+        // Combine hybrid and web results
+        finalSearchResults = combineHybridAndWebResults(hybridResults, webResults);
+        console.log(`✅ Combined ${hybridResults.length} hybrid + ${webResults.length} web results`);
+      }
+    }
 
-    if (searchResults.length === 0) {
+    if (finalSearchResults.length === 0) {
       return { answer: "No relevant info found. Please contact PayPal support.", sentiment };
     }
 
@@ -270,9 +305,10 @@ async function handleQuery(query, sessionId) {
     const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
     
     // Prepare context from retrieved chunks
-    const context = searchResults.map((chunk, idx) => {
+    const context = finalSearchResults.map((chunk, idx) => {
       const content = chunk.metadata?.text || chunk.metadata?.preview || 'No content available';
-      return `[Source ${idx + 1} - ${chunk.source}]: ${content}`;
+      const sourceType = chunk.source === 'web_search' ? 'Web Search' : chunk.source;
+      return `[Source ${idx + 1} - ${sourceType}]: ${content}`;
     }).join("\n\n");
 
     // Build conversation context
@@ -313,7 +349,7 @@ Customer: ${query}`;
     const response = await result.response;
     const modelAnswer = response.text();
 
-    const includeDisclaimer = (searchResults[0]?.combinedScore || 0) < 0.5 || /account|legal|attorney|law|court|subpoena/i.test(query);
+    const includeDisclaimer = (finalSearchResults[0]?.combinedScore || 0) < 0.5 || /account|legal|attorney|law|court|subpoena/i.test(query);
     const finalAnswer = formatStructuredResponse(issueType, includeDisclaimer, modelAnswer);
 
     // Save assistant response to chat history
@@ -321,8 +357,8 @@ Customer: ${query}`;
       await saveChatMessage(sessionId, 'assistant', finalAnswer, { 
         sentiment, 
         issueType, 
-        confidence: searchResults[0]?.combinedScore || 0,
-        searchType: searchResults[0]?.source || 'unknown'
+        confidence: finalSearchResults[0]?.combinedScore || 0,
+        searchType: finalSearchResults[0]?.source || 'unknown'
       });
     }
 
@@ -332,7 +368,7 @@ Customer: ${query}`;
       query,
       issueType,
       sentiment,
-      topCitations: searchResults.map((c) => ({ 
+      topCitations: finalSearchResults.map((c) => ({ 
         source: c.metadata?.source || 'Unknown', 
         channel: c.source, 
         isPolicy: isPolicyLikeSource(c.metadata?.source), 
@@ -343,8 +379,8 @@ Customer: ${query}`;
     return {
       answer: finalAnswer,
       sentiment,
-      confidence: Math.min(100, Math.max(0, Math.round((searchResults[0]?.combinedScore || 0) * 100))),
-      citations: searchResults.map((c, idx) => ({
+      confidence: Math.min(100, Math.max(0, Math.round((finalSearchResults[0]?.combinedScore || 0) * 100))),
+      citations: finalSearchResults.map((c, idx) => ({
         label: `Source ${idx + 1}`,
         source: c.metadata?.source || "docs",
         isPolicy: isPolicyLikeSource(c.metadata?.source),
@@ -352,7 +388,7 @@ Customer: ${query}`;
       })),
       issueType,
       disclaimer: includeDisclaimer,
-      searchType: searchResults[0]?.source || 'unknown'
+      searchType: finalSearchResults[0]?.source || 'unknown'
     };
 
   } catch (error) {
