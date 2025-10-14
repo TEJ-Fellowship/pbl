@@ -1,21 +1,343 @@
-import React, { useEffect, useState } from "react";
+/*
+ * ========================================
+ * CHANGES MADE FOR i18next INTEGRATION:
+ * ========================================
+ *
+ * 1. ADDED useTranslation HOOK:
+ *    - Imported useTranslation from react-i18next
+ *    - This replaces manual language state management
+ *    - Provides t() function for translations and i18n object for language control
+ *
+ * 2. REMOVED MANUAL LANGUAGE STATE:
+ *    - Removed const [language, setLanguage] = useState("en")
+ *    - Now using i18n.language instead of local state
+ *    - Language persistence handled automatically by i18next
+ *
+ * 3. REPLACED ALL HARDCODED STRINGS:
+ *    - All text now uses t('translationKey') instead of ternary operators
+ *    - Translations stored in src/locales/en.json and src/locales/np.json
+ *    - Makes adding new languages much easier
+ *
+ * 4. UPDATED LANGUAGE SWITCHING:
+ *    - Replaced setLanguage() calls with i18n.changeLanguage()
+ *    - Language preference automatically saved to localStorage
+ *    - No need to manually manage language state
+ *
+ * 5. ADDED LANGUAGE CHANGE EFFECT:
+ *    - useEffect to update welcome message when language changes
+ *    - Ensures UI updates immediately when language switches
+ *
+ * 6. UPDATED API CALLS:
+ *    - Now sends i18n.language instead of local language state
+ *    - Backend receives correct language code for processing
+ *
+ * BENEFITS:
+ * - Professional internationalization
+ * - Automatic language detection and persistence
+ * - Easier maintenance and adding new languages
+ * - Industry standard approach
+ * - Better performance (no unnecessary re-renders)
+ */
 
-function App() {
-  const [status, setStatus] = useState("");
+import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next"; // ADDED: Import useTranslation hook for i18next
+import {
+  Send,
+  MessageCircle,
+  MapPin,
+  Clock,
+  Phone,
+  ChevronRight,
+  Loader,
+} from "lucide-react";
+
+export default function FoodmanduSupportAgent() {
+  // CHANGED: Added useTranslation hook to replace manual language management
+  const { t, i18n } = useTranslation();
+
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      type: "bot",
+      text: t("welcome"), // CHANGED: Now using translation key instead of hardcoded text
+      timestamp: new Date(),
+    },
+  ]);
+  const [input, setInput] = useState("");
+  // REMOVED: const [language, setLanguage] = useState("en"); - Now using i18n.language
+  const [showOrderTracking, setShowOrderTracking] = useState(false);
+  const [orderId, setOrderId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // ADDED: Effect to update welcome message when language changes
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === 1 ? { ...msg, text: t("welcome") } : msg))
+    );
+  }, [i18n.language, t]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/health")
-      .then(res => res.json())
-      .then(data => setStatus(data.status))
-      .catch(err => console.error(err));
-  }, []);
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = {
+      id: messages.length + 1,
+      type: "user",
+      text: input,
+      timestamp: new Date(),
+    };
+
+    setMessages([...messages, userMessage]);
+    const currentInput = input;
+    setInput("");
+    setLoading(true);
+
+    try {
+      // Call backend API
+      const response = await fetch("http://localhost:5000/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: currentInput,
+          language: i18n.language, // CHANGED: Now using i18n.language instead of local state
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const botResponse = {
+          id: messages.length + 2,
+          type: "bot",
+          text: data.answer,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } else {
+        throw new Error(data.error || "Failed to get response");
+      }
+    } catch (error) {
+      console.error("Error calling API:", error);
+      const errorResponse = {
+        id: messages.length + 2,
+        type: "bot",
+        text: t("errorMessage"), // CHANGED: Now using translation key instead of ternary operator
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CHANGED: Now using translation keys instead of ternary operators
+  const quickActions = [
+    {
+      label: t("trackOrder"),
+      icon: Clock,
+    },
+    {
+      label: t("requestRefund"),
+      icon: MapPin,
+    },
+    {
+      label: t("contactRestaurant"),
+      icon: Phone,
+    },
+  ];
+
+  // ADDED: Function to handle language changes using i18next
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+  };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "50px" }}>
-      <h1>🍔 Foodmandu Support Agent</h1>
-      <p>Backend status: {status}</p>
+    <div className="flex h-screen bg-gradient-to-br from-yellow-50 to-red-50">
+      {/* Sidebar */}
+      <div className="w-80 bg-white border-r border-yellow-100 flex flex-col shadow-sm">
+        {/* Header */}
+        <div className="p-6 bg-gradient-to-r from-yellow-500 to-yellow-300">
+          <div className="flex items-center gap-3 mb-4">
+            <div>
+              <img src="./logo-n.png" alt="logo" className="w-44" />
+              <p className="text-yellow-100 text-sm ml-10">Support Agent</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Language Toggle */}
+        <div className="p-4 border-b border-gray-200">
+          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase">
+            {t("language")}
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => changeLanguage("en")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                i18n.language === "en"
+                  ? "bg-yellow-500 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {t("english")}
+            </button>
+            <button
+              onClick={() => changeLanguage("np")}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                i18n.language === "np"
+                  ? "bg-yellow-500 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {t("nepali")}
+            </button>
+          </div>
+        </div>
+
+        {/* Order Tracking Section */}
+        <div className="p-4 border-b border-gray-200">
+          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase">
+            {t("quickTracking")}
+          </p>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder={t("enterOrderId")}
+              value={orderId}
+              onChange={(e) => setOrderId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            />
+            <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all">
+              {t("track")}
+            </button>
+          </div>
+        </div>
+
+        {/* Support Info */}
+        <div className="p-4 mt-auto border-t border-gray-200">
+          <div className="bg-blue-50 p-3 rounded-lg mb-4">
+            <p className="text-xs text-blue-900 font-medium">
+              {t("avgResponseTime")}
+            </p>
+          </div>
+          <p className="text-xs text-gray-500">{t("available247")}</p>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col bg-white">
+        {/* Chat Header */}
+        <div className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {t("supportChat")}
+            </h2>
+            <p className="text-sm text-green-600 font-medium">● online</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+              <Phone className="w-5 h-5 text-gray-600" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-all">
+              <MessageCircle className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${
+                msg.type === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-md px-4 py-3 rounded-2xl ${
+                  msg.type === "user"
+                    ? "bg-yellow-500 text-white rounded-br-none shadow-md"
+                    : "bg-gray-100 text-gray-900 rounded-bl-none"
+                }`}
+              >
+                <p className="text-sm leading-relaxed">{msg.text}</p>
+                <p
+                  className={`text-xs mt-2 ${
+                    msg.type === "user" ? "text-yellow-100" : "text-gray-500"
+                  }`}
+                >
+                  {msg.timestamp.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 text-gray-900 px-4 py-3 rounded-2xl rounded-bl-none">
+                <Loader className="w-4 h-4 animate-spin" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="px-8 py-3 border-t border-gray-200">
+          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase">
+            {t("quickActions")}
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {quickActions.map((action, idx) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={idx}
+                  className="flex items-center gap-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 text-yellow-700 rounded-lg text-xs font-medium transition-all"
+                >
+                  <Icon className="w-4 h-4" />
+                  {action.label}
+                  <ChevronRight className="w-3 h-3" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="p-6 bg-white border-t border-gray-200">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+              placeholder={t("typeMessage")}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+            />
+            <button
+              onClick={handleSendMessage}
+              className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              <span className="hidden sm:inline">{t("send")}</span>
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">{t("tip")}</p>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default App;

@@ -83,7 +83,7 @@ export async function retrieveTopSections(query, topK = 3) {
 }
 
 // --- Ask Gemini ---
-export async function askGemini(question, contextSections) {
+export async function askGemini(question, contextSections, language = "en") {
   if (!question || typeof question !== "string") {
     throw new Error("Invalid question for Gemini");
   }
@@ -98,7 +98,9 @@ export async function askGemini(question, contextSections) {
         ? contextSections.join("\n\n")
         : "No specific context available.";
 
-    const prompt = `You are a helpful and friendly Foodmandu support assistant. Your goal is to help users with their questions about Foodmandu services.
+    // Language-specific prompts
+    const languagePrompts = {
+      en: `You are a helpful and friendly Foodmandu support assistant. Your goal is to help users with their questions about Foodmandu services.
 
 ${
   contextSections.length > 0
@@ -106,7 +108,20 @@ ${
     : ""
 }Question: ${question}
 
-Please provide a clear, concise, and helpful answer. If the information is not available in the context, politely let the user know and suggest contacting support.`;
+Please provide a clear, concise, and helpful answer in English. If the information is not available in the context, politely let the user know and suggest contacting support.`,
+
+      np: `तपाईं एक सहायक र मित्रवत् Foodmandu सहायता सहायक हुनुहुन्छ। तपाईंको लक्ष्य Foodmandu सेवाहरूको बारेमा प्रयोगकर्ताहरूको प्रश्नहरूमा मद्दत गर्नु हो।
+
+${
+  contextSections.length > 0
+    ? `हाम्रो कागजातबाट सही जवाफहरू प्रदान गर्न निम्नलिखित सन्दर्भ प्रयोग गर्नुहोस्:\n\nसन्दर्भ:\n${context}\n\n`
+    : ""
+}प्रश्न: ${question}
+
+कृपया नेपालीमा स्पष्ट, संक्षिप्त र सहायक जवाफ प्रदान गर्नुहोस्। यदि जानकारी सन्दर्भमा उपलब्ध छैन भने, विनम्रतापूर्वक प्रयोगकर्तालाई थाहा दिनुहोस् र सहायतासँग सम्पर्क गर्न सुझाव दिनुहोस्।`,
+    };
+
+    const prompt = languagePrompts[language] || languagePrompts.en;
 
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" +
