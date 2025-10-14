@@ -150,12 +150,6 @@ const TemplateGallery = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/campaign-builder"
-              className="bg-yellow-400 text-black px-4 py-2 rounded-lg font-medium hover:bg-yellow-500 transition-colors"
-            >
-              Create Campaign
-            </Link>
           </div>
         </div>
       </header>

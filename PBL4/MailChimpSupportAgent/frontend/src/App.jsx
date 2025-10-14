@@ -5,7 +5,6 @@ import ChatPage from "./pages/ChatPage";
 import SearchPage from "./pages/SearchPage";
 import HelpCenter from "./pages/HelpCenter";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
-import CampaignBuilder from "./pages/CampaignBuilder";
 import TemplateGallery from "./pages/TemplateGallery";
 import AutomationWorkflow from "./pages/AutomationWorkflow";
 
@@ -18,7 +17,6 @@ function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/help-center" element={<HelpCenter />} />
         <Route path="/analytics" element={<AnalyticsDashboard />} />
-        <Route path="/campaign-builder" element={<CampaignBuilder />} />
         <Route path="/templates" element={<TemplateGallery />} />
         <Route path="/automation" element={<AutomationWorkflow />} />
       </Routes>

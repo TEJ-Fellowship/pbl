@@ -15,8 +15,6 @@ const Landingpage = () => {
           <Link to="/" className="hover:text-yellow-600">Home</Link>
           <Link to="/help-center" className="hover:text-yellow-600">Help Center</Link>
           <Link to="/analytics" className="hover:text-yellow-600">Analytics</Link>
-          <Link to="/campaign-builder" className="hover:text-yellow-600">Campaign Builder</Link>
-          <Link to="/templates" className="hover:text-yellow-600">Templates</Link>
           <Link to="/automation" className="hover:text-yellow-600">Automation</Link>
         </nav>
         <div className="flex items-center gap-4">
@@ -58,13 +56,6 @@ const Landingpage = () => {
             >
               <Search size={20} />
               Search for Help
-            </Link>
-            <Link 
-              to="/campaign-builder" 
-              className="text-white bg-white/20 backdrop-blur-sm px-8 py-4 rounded-xl hover:bg-white hover:text-black transition-all duration-200 flex items-center gap-2 border border-white/30 hover:border-transparent"
-            >
-              <Mail size={20} />
-              Build Campaign
             </Link>
             <Link 
               to="/analytics" 
