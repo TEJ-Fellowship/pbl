@@ -399,12 +399,12 @@ Answer:`);
     const choices = [
       "❓ Ask a custom question",
       "📧 How do I import contacts?",
-      "📊 What's a good open rate?",
+      "📊 How to improve click rates?",
       "🎯 How do I create a campaign?",
       "📋 How do I manage my audience?",
       "🤖 How do I set up automation?",
       "📈 How do I view reports?",
-      "🔧 Getting started with MailChimp",
+      "🔧 How do I generate an API key?",
       "🔍 Debug: Show system status",
       "❌ Exit",
     ];

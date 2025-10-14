@@ -12,7 +12,7 @@ const CHUNK_OVERLAP = parseInt(config.CHUNK_OVERLAP) || 100;
 const BATCH_SIZE = parseInt(config.BATCH_SIZE) || 50;
 const SCRAPED_PATH = path.resolve("./src/data/mailerbyte_docs/scraped.json");
 const OUTPUT_PATH = path.resolve(
-  "./data/processed_chunks/enhanced_chunks.json"
+  "./src/data/processed_chunks/enhanced_chunks.json"
 );
 
 // ---------------- INITIALIZERS ----------------
@@ -465,13 +465,16 @@ async function main() {
     const documents = await loadDocuments();
     const chunks = await processDocumentsWithStructure(documents);
 
+    // Always save locally first
+    await storeEnhancedChunksLocally(chunks);
+
+    // Then try to store in Pinecone
     try {
       const pinecone = await initPinecone();
       await storeEnhancedChunks(chunks, embeddings, pinecone);
     } catch (pineconeError) {
-      console.log("Pinecone unavailable — saving locally instead...");
+      console.log("Pinecone unavailable — chunks saved locally only");
       console.log(`Reason: ${pineconeError.message}`);
-      await storeEnhancedChunksLocally(chunks);
     }
 
     console.log(
