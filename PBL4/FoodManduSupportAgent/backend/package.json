@@ -4,6 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "dev": "node --watch index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +15,9 @@
     "@pinecone-database/pinecone": "^6.1.2",
     "axios": "^1.12.2",
     "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "fs": "^0.0.1-security",
     "fs-extra": "^11.3.2",
     "path": "^0.12.7",
