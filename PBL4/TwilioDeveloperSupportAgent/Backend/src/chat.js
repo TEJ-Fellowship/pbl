@@ -11,7 +11,6 @@ import { highlight } from "cli-highlight";
 import ConversationMemory from "./conversationMemory.js";
 import HybridSearch from "./hybridSearch.js";
 import APIDetector from "./apiDetector.js";
-import * as mcp from "./mcpWrapper.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -19,22 +18,6 @@ function initGeminiClient() {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
   return new GoogleGenerativeAI(config.GEMINI_API_KEY);
-}
-
-// Adapter so mcpWrapper can call the Gemini model in a consistent way
-function createGeminiAdapter(geminiClient, modelName = "gemini-2.0-flash") {
-  return {
-    // generate({ prompt, maxTokens }) should return { text: string }
-    generate: async ({ prompt, maxTokens = 1024 }) => {
-      const model = geminiClient.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt, {
-        maxOutputTokens: maxTokens,
-      });
-      const response = await result.response;
-      const text = response.text();
-      return { text };
-    },
-  };
 }
 
 // Initialize Gemini embeddings
@@ -447,7 +430,7 @@ async function retrieveChunksWithEmbeddings(
   }
 }
 
-// Generate memory-aware response using MCP wrapper + Gemini adapter
+// Generate memory-aware response using Gemini
 async function generateMemoryAwareResponse(
   query,
   chunks,
@@ -456,22 +439,23 @@ async function generateMemoryAwareResponse(
   apiDetector
 ) {
   try {
-    console.log(chalk.green("🤖 Generating memory-aware response (MCP)…"));
+    console.log(chalk.green("🤖 Generating memory-aware response..."));
 
-    // 1) Detect API and language from query
+    // Detect API and language from query
     const context = memory.getConversationContext();
     const apiDetection = apiDetector.detectAPI(query, context);
     const detectedLanguage = detectQueryLanguage(query);
 
-    // 2) Update memory preferences if needed
+    // Update memory with detected information
     if (detectedLanguage) {
       await memory.updateLanguagePreference(detectedLanguage);
     }
+
     if (apiDetection.primary) {
       await memory.updateAPIPreference(apiDetection.primary.api);
     }
 
-    // 3) Update current context in memory
+    // Update current context
     await memory.updateCurrentContext({
       topic: apiDetection.primary?.api || "general",
       relatedAPIs: apiDetection.all?.slice(0, 3).map((d) => d.api) || [],
@@ -479,102 +463,121 @@ async function generateMemoryAwareResponse(
       lastQuery: query,
     });
 
-    // 4) Build context blocks for MCP wrapper
-    // Document blocks (weighted by similarity)
-    const docBlocks = (chunks || []).map((chunk, idx) => ({
-      id: `doc_${idx}_${chunk.metadata?.chunk_index ?? idx}`,
-      type: "doc",
-      title:
-        chunk.metadata?.title || chunk.metadata?.source || `Doc ${idx + 1}`,
+    // Prepare context from retrieved chunks
+    const contextChunks = chunks
+      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .join("\n\n");
+
+    // Generate context-aware prompt
+    const contextPrompt = memory.generateContextPrompt(query);
+
+    // Add API-specific context
+    let apiContext = "";
+    if (apiDetection.primary) {
+      apiContext = `\nDETECTED API: The user is working with ${apiDetection.primary.api.toUpperCase()} API. `;
+      if (apiDetection.primary.reasons.length > 0) {
+        apiContext += `Detection based on: ${apiDetection.primary.reasons.join(
+          ", "
+        )}. `;
+      }
+
+      // Add related API suggestions
+      const relatedAPIs = apiDetector.getRelatedAPIs(apiDetection.primary.api);
+      if (relatedAPIs.length > 0) {
+        apiContext += `Related APIs that might be relevant: ${relatedAPIs.join(
+          ", "
+        )}. `;
+      }
+    }
+
+    const sources = chunks.map((chunk, index) => ({
       content: chunk.content,
-      metadata: {
-        source: chunk.metadata?.source,
-        api: chunk.metadata?.api,
-        error_codes: chunk.metadata?.error_codes || [],
-        language: chunk.metadata?.language,
-      },
-      // weight: use similarity if available else use fallback
-      weight: typeof chunk.similarity === "number" ? chunk.similarity : 0.5,
+      metadata: chunk.metadata,
+      similarity: chunk.similarity,
+      score: chunk.score || 0,
+      index: index + 1,
     }));
 
-    // Memory block (recent turns)
-    const recentTurns =
-      memory.getRecentTurns?.() ||
-      memory.getConversationContext().recentHistory ||
-      [];
-    const memoryContent = recentTurns
-      .map((t) => {
-        // t may be stored as {timestamp, query, response, metadata}
-        if (t.query && t.response)
-          return `USER: ${t.query}\nASSISTANT: ${t.response}`;
-        // or fallback if older shape
-        return JSON.stringify(t);
-      })
-      .join("\n\n");
-    const memoryBlock = {
-      id: `memory_${memory.sessionId || "default"}`,
-      type: "memory",
-      title: "Recent Conversation",
-      content: memoryContent || "No recent turns",
-      metadata: { sessionId: memory.sessionId || "default" },
-      weight: 0.8,
-    };
+    // Generate response using Gemini with memory context
+    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
 
-    // Preferences / API hint block
-    const prefs =
-      memory.getUserPreferences?.() ||
-      memory.getConversationContext().userPreferences ||
-      {};
-    const apiHint = apiDetection.primary?.api || prefs.api || null;
-    const prefsBlock = {
-      id: `prefs_${memory.sessionId || "default"}`,
-      type: "prefs",
-      title: "User Preferences & Hints",
-      content: `language: ${
-        prefs.language || detectedLanguage || "unknown"
-      }\napi_hint: ${apiHint || "unknown"}\nnotes: ${prefs.notes || ""}`,
-      metadata: prefs,
-      weight: 0.6,
-    };
+${contextPrompt}${apiContext}
 
-    // 5) Assemble blocks (priority order: memory, prefs, docs)
-    const contextBlocks = [memoryBlock, prefsBlock, ...docBlocks];
+CONTEXT (Twilio Documentation):
+${contextChunks}
 
-    // 6) Create Gemini adapter and call MCP wrapper
-    const adapter = createGeminiAdapter(geminiClient);
-    const mcpResult = await mcp.generateResponse({
-      geminiClient: adapter,
-      query,
-      contextBlocks,
-      instructions:
-        "Answer concisely and only use information from the context blocks. Include code examples in the user's preferred language when applicable. Cite the source by block number.",
-      maxTokens: 1024,
+USER QUESTION: ${query}
+
+RESPONSE GUIDELINES:
+1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
+2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+3. **Include Code**: Always include practical code examples in the appropriate programming language
+4. **Step-by-Step**: Break down complex processes into clear, actionable steps
+5. **Error Handling**: Mention common errors and how to handle them
+6. **Best Practices**: Include security considerations and best practices
+7. **Source Citations**: Reference specific sources using [Source X] format
+8. **If Uncertain**: Clearly state when information isn't available in the context
+9. **Memory Awareness**: Reference previous conversation context when relevant
+10. **API Focus**: Prioritize information relevant to the detected API
+
+FORMAT YOUR RESPONSE:
+- Start with a direct answer to the question
+- Provide detailed explanation with code examples
+- Include relevant API endpoints and parameters
+- Mention any prerequisites or setup requirements
+- Reference conversation context when helpful
+- End with source citations
+
+`;
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
     });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-    // mcpResult expected to be { text } per adapter contract
-    const text = mcpResult?.text || (mcpResult?.answer ?? "");
+    // Highlight code blocks in the response
+    const highlightedText = text.replace(
+      /```(.*?)\n([\s\S]*?)```/g,
+      (match, lang, code) => {
+        const highlighted = highlight(code, {
+          language: lang || detectedLanguage || "javascript",
+          ignoreIllegals: true,
+          theme: {
+            keyword: chalk.cyanBright,
+            built_in: chalk.yellowBright,
+            string: chalk.green,
+            literal: chalk.magenta,
+            section: chalk.blue,
+            comment: chalk.gray,
+            number: chalk.redBright,
+            attr: chalk.yellow,
+          },
+        });
+        return chalk.bgBlackBright(`\n${highlighted}\n`);
+      }
+    );
 
-    // Store metadata for return
-    const metadata = {
-      language: detectedLanguage,
-      api: apiDetection.primary?.api,
-      confidence: apiDetection.primary?.confidence,
-      reasoning: apiDetection.reasoning || null,
-    };
+    // Clean the response text by removing ANSI escape codes
+    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
 
-    // Return similar structure you already expect
     return {
-      answer: text,
+      answer: cleanText,
       sources: chunks,
-      metadata,
+      metadata: {
+        language: detectedLanguage,
+        api: apiDetection.primary?.api,
+        confidence: apiDetection.primary?.confidence,
+        reasoning: apiDetection.reasoning,
+      },
     };
   } catch (error) {
     console.error(
-      chalk.red("❌ Memory-aware response failed:"),
+      chalk.red("❌ Memory-aware response generation failed:"),
       error.message
     );
-    // fallback to previous non-MCP generation (call your generateResponse)
-    return await generateResponse(query, chunks, geminiClient);
+    throw error;
   }
 }
 
@@ -661,7 +664,6 @@ FORMAT YOUR RESPONSE:
     throw error;
   }
 }
-
 
 // Main chat function with memory
 async function startChat() {
@@ -919,6 +921,7 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
 export {
   generateResponse,
   loadVectorStore,
+  loadSeparateChunks,
   initGeminiClient,
   initGeminiEmbeddings,
   initPinecone,

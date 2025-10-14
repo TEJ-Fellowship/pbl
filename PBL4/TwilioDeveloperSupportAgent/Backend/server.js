@@ -40,7 +40,13 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Global variables for initialized services
-let geminiClient, embeddings, pinecone, vectorStore, memory, apiDetector;
+let geminiClient,
+  embeddings,
+  pinecone,
+  vectorStore,
+  memory,
+  apiDetector,
+  separateChunks;
 
 // Initialize services
 async function initializeServices() {
@@ -53,6 +59,10 @@ async function initializeServices() {
     vectorStore = await loadVectorStore();
     memory = new ConversationMemory();
     apiDetector = new APIDetector();
+
+    // Load separate chunks for hybrid search
+    const { loadSeparateChunks } = await import("./src/chat.js");
+    separateChunks = await loadSeparateChunks();
 
     console.log("✅ All services initialized successfully");
   } catch (error) {

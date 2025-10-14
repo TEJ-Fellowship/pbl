@@ -71,7 +71,7 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-10T08:21:25.570Z",
-      "lastActivity": "2025-10-14T07:32:02.042Z",
+      "lastActivity": "2025-10-14T13:35:41.051Z",
       "conversationHistory": [
         {
           "timestamp": "2025-10-10T08:21:36.409Z",
@@ -182,6 +182,18 @@
             "chunkCount": 8,
             "responseTime": 8834
           }
+        },
+        {
+          "timestamp": "2025-10-14T13:35:41.051Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js, you can use the Twilio Node.js library. Here's a step-by-step guide:\n\n**1. Prerequisites:**\n\n*   Make sure you have Node.js and npm (Node Package Manager) installed.\n*   You will need a Twilio account. If you don't have one, you can sign up for free at [https://www.twilio.com/try-twilio](https://www.twilio.com/try-twilio).\n*   Obtain your Account SID and Auth Token from the Twilio Console ([twilio.com/console](twilio.com/console)).\n*   Get a Twilio phone number. You can purchase one from the Twilio Console.\n\n**2. Install the Twilio Node.js library:**\n\n```bash\nnpm install twilio\n```\n\n**3. Code:**\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Alternatively, use the ESM syntax:\n// import twilio from \"twilio\";\nconst twilio = require(\"twilio\");\n\n// Find your Account SID and Auth Token at twilio.com/console\n// and set the environment variables. See http://twil.io/secure\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst client = twilio(accountSid, authToken);\n\nasync function createMessage() {\n  try {\n    const message = await client.messages.create({\n      body: \"This is the ship that made the Kessel Run in fourteen parsecs?\",\n      from: \"+15017122661\", // Replace with your Twilio phone number\n      to: \"+14158141829\",   // Replace with the recipient's phone number\n    });\n\n    console.log(message.sid);\n  } catch (error) {\n    console.error(`Error sending SMS: ${error.message}`);\n  }\n}\n\ncreateMessage();\n```\n\n**4. Explanation:**\n\n*   **Import the Twilio library:** `const twilio = require(\"twilio\");` [Source 3]\n*   **Authentication:**  Replace `process.env.TWILIO_ACCOUNT_SID` and `process.env.TWILIO_AUTH_TOKEN` with your actual Account SID and Auth Token from the Twilio Console. It's best practice to store these as environment variables for security. [Source 3]\n*   **Create a new Twilio client:** `const client = twilio(accountSid, authToken);` [Source 3]\n*   **Send an SMS:**  Use the `client.messages.create()` method to send an SMS.  [Source 3]\n    *   `to`: The recipient's phone number. Must be in E.164 format (e.g., +14155551212).\n    *   `from`: Your Twilio phone number.\n    *   `body`: The text of the SMS message.\n*   **Error Handling:** The `try...catch` block is used to handle potential errors during the SMS sending process.  It's crucial to implement error handling to gracefully manage issues such as invalid phone numbers, insufficient funds, or network problems.\n\n**5. Run the code:**\n\n```bash\nnode your-script-name.js\n```\n\n**Important Considerations:**\n\n*   **Phone Number Format:**  Always use E.164 format for phone numbers (e.g., +14155551212).\n*   **Twilio Phone Number:**  Make sure the `from` number is a valid Twilio phone number that you own.\n*   **Error Handling:** Implement robust error handling to catch exceptions and log errors for debugging.  Refer to the Twilio documentation for a list of possible error codes and their meanings. Given that you've encountered error 30001, ensure the 'to' number is correctly formatted and capable of receiving SMS.\n*   **Asynchronous Operations:**  The `client.messages.create()` method is asynchronous.  Use `async/await` or Promises to handle the asynchronous nature of the operation.\n*   **Security:** Protect your Account SID and Auth Token.  Do not hardcode them directly into your script. Use environment variables or a secure configuration management system.\n\nThis example provides a basic implementation of sending an SMS message. You can further customize the message with additional options.\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 14640
+          }
         }
       ],
       "userPreferences": {
@@ -196,7 +208,7 @@
         ],
         "errorCodes": [],
         "lastQuery": "How do I send an SMS in Node.js?",
-        "lastUpdated": "2025-10-14T07:31:58.407Z"
+        "lastUpdated": "2025-10-14T13:35:31.956Z"
       }
     }
   },
