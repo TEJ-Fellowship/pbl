@@ -7,16 +7,24 @@ const rl = readline.createInterface({
 
 async function askQuestion(question) {
   try {
-    const res = await fetch("http://localhost:5000/api/ask", {
+    const res = await fetch("http://localhost:5000/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
     });
 
     const data = await res.json();
-    console.log("\n🤖 Foodmandu Bot:", data.answer || "No answer found.\n");
+
+    if (data.success) {
+      console.log(
+        "\n🤖 Foodmandu Bot:",
+        data.data.answer || "No answer found.\n"
+      );
+    } else {
+      console.log("\n❌ Error:", data.error || "Unknown error\n");
+    }
   } catch (err) {
-    console.error("Error:", err.message);
+    console.error("❌ Error:", err.message);
   }
 }
 

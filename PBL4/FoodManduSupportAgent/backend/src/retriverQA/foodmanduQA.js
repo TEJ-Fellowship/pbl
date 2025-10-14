@@ -1,35 +1,22 @@
-// backend/src/retrieverQA/foodmanduQA.js
+// src/retrieverQA/foodmanduQA.js
 import readline from "readline";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { Pinecone } from "@pinecone-database/pinecone";
+import { connectDB } from "../config/db.js";
+import ChatLog from "../models/Chat.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
-// Setup Pinecone
+await connectDB();
+
 const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 const index = pinecone.index(process.env.PINECONE_INDEX_NAME);
 
-async function retrieveTopSections(query, topK = 3) {
-  // Embed the query
-  const queryEmbedding = await getGeminiEmbedding(query);
-
-  // Query Pinecone
-  const result = await index.query({
-    vector: queryEmbedding,
-    topK,
-    includeMetadata: true,
-  });
-
-  return (result.matches || [])
-    .map((m) => (m.metadata && (m.metadata.text || m.metadata.url)) || "")
-    .filter(Boolean);
-}
-
-// Gemini API call
+// Gemini Embedding function
 async function getGeminiEmbedding(text) {
   const MAX_CHARS = 8000;
   const input = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text;
@@ -55,13 +42,13 @@ async function getGeminiEmbedding(text) {
   throw new Error("Invalid embedding response format");
 }
 
-// Gemini QA call
+// Ask Gemini function
 async function askGemini(question, contextSections) {
   const context = contextSections.join("\n\n");
   const prompt = `You are a Foodmandu support assistant. Answer the question based on the context below:\n\nContext:\n${context}\n\nQuestion: ${question}`;
 
   const url =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" +
     process.env.GOOGLE_GEMINI_API_KEY;
 
   const response = await fetch(url, {
@@ -80,14 +67,30 @@ async function askGemini(question, contextSections) {
   const data = await response.json();
   if (!response.ok) throw new Error(JSON.stringify(data));
 
-  // Gemini generateContent response parsing
   const firstCandidate = data?.candidates?.[0];
   const firstPartText = firstCandidate?.content?.parts?.[0]?.text;
-  if (firstPartText) return firstPartText;
-  return "Sorry, I could not generate an answer.";
+  return firstPartText || "Sorry, I could not generate an answer.";
 }
 
-// Setup terminal
+async function logChat(question, contextSections, answer) {
+  const chat = new ChatLog({ question, answer });
+  await chat.save();
+  console.log("💾 Chat saved to MongoDB.");
+}
+
+async function retrieveTopSections(query, topK = 3) {
+  const queryEmbedding = await getGeminiEmbedding(query);
+  const result = await index.query({
+    vector: queryEmbedding,
+    topK,
+    includeMetadata: true,
+  });
+
+  return (result.matches || [])
+    .map((m) => (m.metadata && (m.metadata.text || m.metadata.url)) || "")
+    .filter(Boolean);
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -96,15 +99,15 @@ const rl = readline.createInterface({
 async function chat() {
   console.log("🟢 Foodmandu QA Chatbot (type 'exit' to quit)");
   while (true) {
-    const question = await new Promise((resolve) => {
-      rl.question("🟢 Question> ", resolve);
-    });
+    const question = await new Promise((r) => rl.question("🟢 Question> ", r));
     if (question.toLowerCase() === "exit") break;
 
     try {
-      const topSections = await retrieveTopSections(question, 3);
-      const answer = await askGemini(question, topSections);
+      const contextSections = await retrieveTopSections(question, 3);
+      const answer = await askGemini(question, contextSections);
+
       console.log(`💡 Answer: ${answer}\n`);
+      await logChat(question, contextSections, answer);
     } catch (err) {
       console.error("❌ Error:", err.message);
     }
