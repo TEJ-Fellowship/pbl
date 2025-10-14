@@ -1,6 +1,0 @@
-Custom Profiles: Learn how to customize your Discord User Profile. From changing your avatar, to your “about me” section, and more. 
-Custom Status: Learn how to set a Custom Status on Discord.
-Avatar Decorations: Learn more about Avatar Decorations, whether it’s how to set one or purchase one from the shop.
-Profile Badges 101: Learn about all of the profile badges that are currently available.
-Profile Effects: Learn more about Profile Effects, whether it’s how to set one or purchase one from the shop.
-Per-server Profile: Are you a Nitro subscriber? Learn how to set a custom per-server profile.

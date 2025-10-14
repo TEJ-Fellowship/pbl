@@ -1,9 +1,0 @@
-* Application-owned webhooks can always send components. Non-application-owned webhooks cannot send interactive components, and the components field will be ignored unless they set the with_components query param.
-
-** See Uploading Files for details.
-
-*** When the flag IS_COMPONENTS_V2 is set, the webhook message can only contain components. Providing content, embeds, files[n] or poll will fail with a 400 BAD REQUEST response.
-
-For the webhook embed objects, you can set every field except type (it will be rich regardless of if you try to set it), provider, video, and any height, width, or proxy_url values for images.
-Execute Slack-Compatible Webhook
-POST

@@ -1,5 +1,0 @@
-Discord's built in Webhooks function as an easy way to get automated messages and data updates sent to a text channel in your server.
-
-Think of them as one of those fancy pneumatic tube things you used to love sending money into at a bank and watch disappear, but instead of never seeing your money again, you're actually sending messages into Discord from another platform.
-
-By creating a webhook endpoint in your server, you'll generate a Webhook URL that you can drop into a number of different other services to link the two.

@@ -1,3 +1,0 @@
-Client Credentials Grant
-
-The client credential flow is a quick and easy way for bot developers to get their own bearer tokens for testing purposes. By making a POST request to the token URL with a grant type of client_credentials, using Basic authentication with your client id as the username and your client secret as the password, you will be returned an access token for the bot owner. Therefore, always be super-extra-very-we-are-not-kidding-like-really-be-secure-make-sure-your-info-is-not-in-your-source-code careful with your client_id and client_secret. We don't take kindly to imposters around these parts.

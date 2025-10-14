@@ -1,2 +1,0 @@
-In order to add a user to a guild, your bot has to already belong to that guild. role_connections.write cannot be used with the Implicit grant type.
-State and Security

@@ -2,11 +2,14 @@
   "name": "server",
   "version": "1.0.0",
   "description": "Discord Community Support Agent - RAG System with Hybrid Search",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node simpleApiRAGNoRerank.js",
-    "dev": "node simpleApiRAGNoRerank.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "scrape": "node scraper.js",
+    "test": "node tests/testRAG.js",
+    "test:api": "node tests/testAPI.js",
+    "test:gemini": "node tests/testGemini.js"
   },
   "keywords": ["discord", "rag", "ai", "support", "hybrid-search"],
   "author": "",

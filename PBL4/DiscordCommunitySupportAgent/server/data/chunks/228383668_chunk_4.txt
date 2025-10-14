@@ -1,9 +1,0 @@
-Quick Example: GitHub Webhook Integration
-
-Since webhooks can't really function on their own and need to be linked to another website to function as intended, I figured it'd be best to include a sample integration for any of you GitHub enthusiasts and code-pushers.
-
-You can use Discord's webhooks to send any code merge or push updates in a repository of yours into a text channel in your server.  
-
-1. Get the webhook URL for the server/channel you want to receive messages:
-
-In my server, I've created a text channel labeled #general-chat and I want my repo updates to post messages here!

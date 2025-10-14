@@ -1,3 +1,0 @@
-There are tradeoffs in using the implicit grant flow. It is both quicker and easier to implement, but rather than exchanging a code and getting a token returned in a secure HTTP body, the access token is returned in the URI fragment, which makes it possibly exposed to unauthorized parties. You also are not returned a refresh token, so the user must explicitly re-authorize once their token expires.
-
-Client Credentials Grant

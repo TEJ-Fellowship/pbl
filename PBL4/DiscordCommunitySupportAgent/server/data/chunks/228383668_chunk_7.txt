@@ -1,1 +1,0 @@
-And you're all set! GitHub is just one example of an integration that can post messages via webhook. If you've got a knack for JSON application-building or HTTP POST requests and want to customize your own webhooks, you can dig up some more information in our developer docs.

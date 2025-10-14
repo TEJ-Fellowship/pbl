@@ -1,3 +1,0 @@
-Advanced Bot Authorization
-
-Devs can extend the bot authorization functionality. You can request additional scopes outside of bot and applications.commands, which will prompt a continuation into a complete authorization code grant flow and add the ability to request the user's access token. If you request any scopes outside of bot and applications.commands, response_type is again mandatory; we will also automatically redirect the user to the first URI in your application's registered list unless redirect_uri is specified.

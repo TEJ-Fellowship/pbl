@@ -1,8 +1,0 @@
-What Are Permissions?
-
-Permissions allow users to have specific privileges and functions in their server. Some permissions can be as basic as allowing users the ability to add reactions to messages while other permissions grant users more administrative actions. These permissions are based on the roles assigned to users in a server and permissions can be assigned per role on both the server level and channel level.
-
-How To Set Up Server Permissions
-Step 1 - Create Roles
-
-Your journey to setting up permissions in your server begins with you creating roles!

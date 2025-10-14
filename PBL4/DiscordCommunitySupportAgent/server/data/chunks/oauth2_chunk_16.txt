@@ -1,5 +1,0 @@
-The integration_type parameter specifies the installation context for the authorization. The installation context determines where the application will be installed, and is only relevant when scope contains applications.commands. When set to 0 (GUILD_INSTALL) the application will be authorized for installation to a server, and when set to 1 (USER_INSTALL) the application will be authorized for installation to a user. The application must be configured in the Developer Portal to support the provided integration_type.
-
-Redirect URL Example
-Copy
-https://nicememe.website/?code=NhhvTDYsFcdgNLnnLijcl7Ku7bEEeee&state=15773059ghq9183habn

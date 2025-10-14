@@ -1,1 +1,0 @@
-When someone navigates to this URL, they will be prompted to authorize your application for the requested scopes. On acceptance, they will be redirected to your redirect_uri, which will contain an additional querystring parameter, code. state will also be returned if previously sent, and should be validated at this point.

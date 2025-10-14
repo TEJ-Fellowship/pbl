@@ -1,8 +1,0 @@
-Account Setup And Troubleshooting
-
-You can register a Discord account through the desktop app, your mobile device, or through a browser. 
-
-You can learn more about registering a Discord account, or about any possible registration errors, by checking out these articles:
-
-Discord Sign-Up and Registration Guide: Need help signing up and registering for a Discord account? Check out this full guide to help you through the process. 
-How to Verify Your Discord Account: Having trouble verifying your account? Check out this guide for more detailed information on account verification.

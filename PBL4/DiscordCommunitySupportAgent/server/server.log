@@ -1,0 +1,35 @@
+
+(process:674149): VIPS-WARNING **: 20:28:27.285: unable to load "/usr/lib/vips-modules-8.17/vips-openslide.so" -- libopenslide.so.1: cannot open shared object file: No such file or directory
+[dotenv@17.2.3] injecting env (9) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🚀 Discord Community Support API Server Started!
+📡 Server running on port 3001
+🔗 API Base URL: http://localhost:3001/api
+🤖 Gemini AI: Configured
+🔧 Initializing advanced search features...
+🔍 Initializing hybrid search system...
+✅ Loaded 10 chunks from processed data
+✅ Indexed 10 chunks for BM25 search
+🚀 Discord Community Support RAG Server Started!
+📡 Server running on port 3001
+🔗 API Base URL: http://localhost:3001/api
+📋 Available endpoints:
+  GET  /api/health - Health check
+  POST /api/search - Search with RAG
+  GET  / - API information
+✅ Hybrid search: Ready
+✅ Cross-encoder reranking: Disabled (using semantic + keyword only)
+
+📋 Available endpoints:
+  GET  /api/health - Health check
+  POST /api/search - Search with RAG (hybrid + semantic, no reranking)
+  POST /api/server-context - Update server context
+
+✨ Features:
+  🔀 Hybrid Search: Semantic + BM25 keyword search
+  🤖 AI Answers: Gemini-generated responses
+  📝 Discord Markdown: Proper formatting
+  🎯 Server Context: Gaming/study/community awareness
+🔍 Searching for: "bot admin permission" (hybrid: true)
+🔀 Using hybrid search (semantic + keyword)...
+🤖 Generating AI answer...
