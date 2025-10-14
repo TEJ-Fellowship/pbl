@@ -3,9 +3,11 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
+import url from "url";
 import config from "../config/config.js";
 
-// twilio documentation sources
+const BASE_DOMAIN = "https://www.twilio.com";
+
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
@@ -13,210 +15,173 @@ const SOURCES = {
   webhooks: "https://www.twilio.com/docs/usage/webhooks",
   voice_quickstart: "https://www.twilio.com/docs/voice/quickstart",
   whatsapp_api: "https://www.twilio.com/docs/whatsapp",
-  video_api: " https://www.twilio.com/docs/video",
+  video_api: "https://www.twilio.com/docs/video",
   node_SDK: "https://www.twilio.com/docs/libraries/node",
 };
 
 // Rate limiting: 1 request per second
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function scrapeDoc(url, category) {
-  console.log(`🔍 Scraping ${category}: ${url}`);
+const visited = new Set();
+
+/**
+ * Normalize Twilio URLs (remove hash/query and ensure full domain)
+ */
+function normalizeUrl(href, base) {
+  if (!href) return null;
+  if (href.startsWith("#") || href.startsWith("mailto:")) return null;
+
+  const absUrl = new URL(href, base).toString().split("#")[0];
+  if (!absUrl.startsWith(BASE_DOMAIN)) return null;
+  return absUrl.replace(/\/$/, "");
+}
+
+/**
+ * Scrape content from a single Twilio documentation page
+ */
+async function scrapePage(urlStr, category) {
+  if (visited.has(urlStr)) return null;
+  visited.add(urlStr);
+
+  console.log(`🔍 Scraping: ${urlStr}`);
+  await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
   try {
-    // Rate limiting
-    await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
-
-    const response = await axios.get(url, {
+    const res = await axios.get(urlStr, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
       },
       timeout: 30000,
     });
 
-    const $ = cheerio.load(response.data);
+    const $ = cheerio.load(res.data);
 
-    // Remove navigation, footer, ads, and other non-content elements
-    $(
-      "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style"
-    ).remove();
+    // Remove noise
+    $("nav, footer, script, style, .sidebar, .cookie-banner, .ad, .footer").remove();
 
-    // Extract code blocks BEFORE removing <pre>/<code>
+    // --- Extract code blocks ---
     const codeBlocks = [];
-
-    // 1. Extract complete code blocks from <pre> tags (highest priority)
-    $("pre code").each((_, el) => {
-      const t = $(el).text().replace(/\r/g, "").trim();
-      if (t && t.length > 10) {
-        // Only include substantial code blocks
-        codeBlocks.push(t);
-      }
+    $("pre code, pre, code").each((_, el) => {
+      const t = $(el).text().trim();
+      if (t && t.length > 15 && !codeBlocks.includes(t)) codeBlocks.push(t);
     });
 
-    // 2. Also capture standalone <pre> (without code wrapper)
-    $("pre").each((_, el) => {
-      // skip ones already captured with pre code (avoid duplicates)
-      if ($(el).find("code").length > 0) return;
-      const t = $(el).text().replace(/\r/g, "").trim();
-      if (t && t.length > 10) {
-        // Only include substantial code blocks
-        codeBlocks.push(t);
-      }
-    });
-
-    // 3. Only capture inline <code> that look like substantial code snippets
-    $("code").each((_, el) => {
-      // avoid capturing from inside <pre>
-      if ($(el).closest("pre").length > 0) return;
-
-      const t = $(el).text().replace(/\r/g, "").trim();
-
-      // Only include if it looks like a substantial code snippet
-      if (
-        t &&
-        t.length > 20 &&
-        // Multi-line code
-        (t.includes("\n") ||
-          // Contains code-like patterns
-          /(function|const|let|var|def |class |import |from |require|npm |pip |composer|curl|wget)/.test(
-            t
-          ) ||
-          // Contains brackets or parentheses (likely code)
-          /[{}();]/.test(t) ||
-          // Looks like a command or path
-          /^[a-z-]+\s+/.test(t) ||
-          // Contains API endpoints or URLs
-          /https?:\/\//.test(t))
-      ) {
-        codeBlocks.push(t);
-      }
-    });
-
-    // Deduplicate code blocks
-    const seenCode = new Set();
-    const uniqueCodeBlocks = codeBlocks.filter((c) => {
-      const k = c.replace(/\s+/g, " ").trim();
-      if (!k || seenCode.has(k)) return false;
-      seenCode.add(k);
-      return true;
-    });
-
-    // Remove code elements from text content to avoid duplication
+    // Remove code from main content
     $("pre, code").remove();
 
-    // Extract main content (text only, without code)
     const content = $("main").text() || $("article").text() || $("body").text();
     const title = $("h1").first().text() || $("title").text();
-    console.log("content before cleaning", content);
-    // Clean up the content
     const cleanContent = content
-      .replace(/\s+/g, " ") // Replace multiple whitespace with single space
-      .replace(/sk_test_[A-Za-z0-9]+/g, "sk_test_[REDACTED]") // Remove API keys
-      .replace(/sk_live_[A-Za-z0-9]+/g, "sk_live_[REDACTED]") // Remove live API keys
-      .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]") // Remove webhook secrets
-      .replace(/pk_test_[A-Za-z0-9]+/g, "pk_test_[REDACTED]") // Remove publishable keys
-      .replace(/pk_live_[A-Za-z0-9]+/g, "pk_live_[REDACTED]") // Remove live publishable keys
+      .replace(/\s+/g, " ")
+      .replace(/sk_(live|test)_[A-Za-z0-9]+/g, "sk_[REDACTED]")
+      .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]")
       .trim();
 
     const wordCount = cleanContent.split(/\s+/).length;
 
+    // Extract sub-links for deeper crawl
+    const links = [];
+    $("a").each((_, el) => {
+      const href = normalizeUrl($(el).attr("href"), urlStr);
+      if (href) links.push(href);
+    });
+
     return {
-      id: `${category}_${Date.now()}`,
-      url,
-      category,
-      title: title.trim(),
+      id: `${category}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      url: urlStr,
+      title,
       content: cleanContent,
+      codeBlocks,
       wordCount,
+      category,
       scrapedAt: new Date().toISOString(),
-      docType: "api",
-      codeBlocks: uniqueCodeBlocks,
       metadata: {
-        source: "twilio.com",
-        contentType: response.headers["content-type"] || "text/html",
+        source: BASE_DOMAIN,
+        contentType: res.headers["content-type"] || "text/html",
       },
+      links,
     };
-  } catch (error) {
-    console.error(`❌ Error scraping ${category}:`, error.message);
+  } catch (err) {
+    console.error(`❌ Error scraping ${urlStr}: ${err.message}`);
     return null;
   }
 }
 
-async function main() {
-  console.log("🚀 Starting Twilio documentation scraper...");
+/**
+ * Recursive crawler for Twilio documentation
+ */
+async function crawlDocs(startUrl, category, maxDepth = 2) {
+  const toVisit = [{ url: startUrl, depth: 0 }];
+  const results = [];
 
-  const args = process.argv.slice(2);
-  const sourcesArg = args
-    .find((arg) => arg.startsWith("--sources="))
-    ?.split("=")[1];
-  const limitArg = args
-    .find((arg) => arg.startsWith("--limit="))
-    ?.split("=")[1];
+  while (toVisit.length > 0) {
+    const { url: currentUrl, depth } = toVisit.shift();
 
-  let sourcesToScrape = Object.keys(SOURCES);
-  let limit = limitArg ? parseInt(limitArg) : null;
+    if (depth > maxDepth) continue;
+    const page = await scrapePage(currentUrl, category);
+    if (!page) continue;
 
-  if (sourcesArg) {
-    if (sourcesArg === "all") {
-      sourcesToScrape = Object.keys(SOURCES);
-    } else {
-      sourcesToScrape = sourcesArg.split(",").map((s) => s.trim());
+    results.push(page);
+
+    for (const link of page.links) {
+      if (!visited.has(link) && link.startsWith(BASE_DOMAIN + "/docs")) {
+        toVisit.push({ url: link, depth: depth + 1 });
+      }
     }
   }
+  return results;
+}
 
-  console.log(`📋 Sources to scrape: ${sourcesToScrape.join(", ")}`);
-  if (limit) console.log(`🔢 Limit: ${limit} documents per source`);
+/**
+ * CLI entry point
+ */
+async function main() {
+  console.log("🚀 Starting Twilio full documentation scraper...");
 
-  const docs = [];
+  const args = process.argv.slice(2);
+  const sourcesArg = args.find((a) => a.startsWith("--sources="))?.split("=")[1];
+  const limitArg = args.find((a) => a.startsWith("--limit="))?.split("=")[1];
+  const depthArg = args.find((a) => a.startsWith("--depth="))?.split("=")[1];
+
+  const limit = limitArg ? parseInt(limitArg) : null;
+  const maxDepth = depthArg ? parseInt(depthArg) : 2;
+
+  let sourcesToScrape = Object.keys(SOURCES);
+  if (sourcesArg && sourcesArg !== "all") {
+    sourcesToScrape = sourcesArg.split(",").map((s) => s.trim());
+  }
+
+  const allDocs = [];
   let totalWords = 0;
 
   for (const category of sourcesToScrape) {
-    if (!SOURCES[category]) {
-      console.log(`⚠️ Unknown source: ${category}`);
-      continue;
-    }
+    const baseUrl = SOURCES[category];
+    if (!baseUrl) continue;
 
-    const doc = await scrapeDoc(SOURCES[category], category);
-    if (doc) {
-      docs.push(doc);
-      totalWords += doc.wordCount;
-      console.log(`✅ Scraped ${category}: ${doc.wordCount} words`);
-    }
+    console.log(`\n🌐 Crawling category: ${category}`);
+    const docs = await crawlDocs(baseUrl, category, maxDepth);
 
-    if (limit && docs.length >= limit) {
-      console.log(`🛑 Reached limit of ${limit} documents`);
-      break;
-    }
+    allDocs.push(...docs);
+    totalWords += docs.reduce((sum, d) => sum + d.wordCount, 0);
+    console.log(`✅ ${category}: scraped ${docs.length} pages (${totalWords.toLocaleString()} words)`);
+
+    if (limit && allDocs.length >= limit) break;
   }
 
-  // Create output directory
-  const outputDir = path.join(process.cwd(), "data", "twilio_docs");
-  await fs.mkdir(outputDir, { recursive: true });
+  // Save output
+  const outDir = path.join(process.cwd(), "data", "twilio_docs_full");
+  await fs.mkdir(outDir, { recursive: true });
+  const filePath = path.join(outDir, "scraped_full.json");
+  await fs.writeFile(filePath, JSON.stringify(allDocs, null, 2));
 
-  // Save scraped data
-  const outputFile = path.join(outputDir, "scraped.json");
-  await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
-
-  console.log(`\n🎉 Scraping completed!`);
-  console.log(`📊 Total documents: ${docs.length}`);
-  console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
-  console.log(`💾 Saved to: ${outputFile}`);
-
-  // Display summary
-  console.log(`\n📋 Scraped sources:`);
-  docs.forEach((doc) => {
-    console.log(`  • ${doc.category}: ${doc.wordCount} words`);
-  });
-
-  console.log(`\n💡 Next steps:`);
-  console.log(`   Run 'npm run chunk' to process with code-aware chunking`);
-  console.log(`   Run 'npm run ingest' to create embeddings and vector store`);
-  console.log(`   Run 'npm run chat' to start the chat interface`);
+  console.log(`\n🎉 Done! Scraped ${allDocs.length} pages (${totalWords.toLocaleString()} words)`);
+  console.log(`💾 Output saved to: ${filePath}`);
+  console.log(`💡 Next: Run 'npm run chunk' → 'npm run ingest' → 'npm run chat'`);
 }
 
-// Handle CLI execution
-if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
+if (process.argv[1].endsWith("scraper.js")) {
   main().catch(console.error);
 }
 
-export { scrapeDoc, SOURCES };
+export { scrapePage, crawlDocs, SOURCES };
