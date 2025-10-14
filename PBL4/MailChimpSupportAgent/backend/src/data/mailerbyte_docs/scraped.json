@@ -1,6 +1,6 @@
 [
   {
-    "id": "helpdocs_1760347894398",
+    "id": "helpdocs_1760427998629",
     "url": "https://mailchimp.com/help/",
     "category": "helpdocs",
     "title": "Know More, Do More with Mailchimp",
@@ -134,10 +134,10 @@
         "content": "If you have a question about something that isn't covered here, check out our additional resources. And if that doesn't do the trick, you can send an inquiry through our contact form. Contact us"
       }
     ],
-    "scrapedAt": "2025-10-13T09:31:34.398Z"
+    "scrapedAt": "2025-10-14T07:46:38.629Z"
   },
   {
-    "id": "gettingstarted_1760347895514",
+    "id": "gettingstarted_1760428000160",
     "url": "https://mailchimp.com/help/getting-started-with-mailchimp/",
     "category": "gettingstarted",
     "title": "Getting Started with Mailchimp",
@@ -199,10 +199,43 @@
         "content": "Marketing API An API is a way for different applications to talk to one another. Advanced users who are familiar with custom coding can use Mailchimp’s Marketing API to pass data from their application to Mailchimp for advanced customization and utility. Mailchimp Developer"
       }
     ],
-    "scrapedAt": "2025-10-13T09:31:35.514Z"
+    "scrapedAt": "2025-10-14T07:46:40.160Z"
   },
   {
-    "id": "campaigncreation_1760347896612",
+    "id": "accountcreation_1760428001350",
+    "url": "https://mailchimp.com/help/create-an-account/",
+    "category": "accountcreation",
+    "title": "How to Create an Account",
+    "sections": [
+      {
+        "heading": "How to Create an Account",
+        "content": "Mailchimp's features and integrations allow you to create great looking campaigns and manage your audience. In this article, you'll learn what you need to get started with Mailchimp, and how to sign up for a free account."
+      },
+      {
+        "heading": "How to Create an Account",
+        "content": "Note The time it takes to receive the activation email can vary. If you haven't received the activation email, check your spam folder and read our activation email troubleshooting tips. Mailchimp blocks signups from role-based email addresses like admin@pottedplanter.com or security@example.com."
+      },
+      {
+        "heading": "Before you start",
+        "content": "Here are some things to know before you begin this process. Mailchimp is a web-based application. While it doesn't require you to install or download software, your web browser needs to meet our requirements. You'll need to provide an email address that will be associated with the account. We'll use this email to communicate with you, so it should be an address that you have access to. You must include a physical mailing address in all emails. This can be any address where you can receive mail, like an office address or P.O. Box. All accounts start on our Free plan, so you don't need a credit card to sign up. If you choose to purchase add-ons or upgrade to a paid plan, we'll need your credit card information. We can't accept bank transfers, e-checks, or checks from users outside the United States."
+      },
+      {
+        "heading": "Sign up for an account",
+        "content": "When you create a Mailchimp account, you agree to comply with our Terms of Use and anti-spam regulations. To maintain a positive sending reputation and keep your account in good standing, it's important that you remain in compliance with these policies. To create your account, follow these steps. Navigate to Mailchimp's signup page. Type in your Email and Password, then click Sign Up. Next we'll display a confirmation message. Check your inbox for the account activation email to complete your account setup. Open the account activation email, then click Activate Account."
+      },
+      {
+        "heading": "The signup process",
+        "content": "The first time you log in to your account, we'll ask for required information. We use this information to help make sure your account is compliant with our Terms of Use and to provide guidance that is relevant to you and your company's needs. In this section, you'll learn how we use this information. Name The name associated with your account profile. The profile is unique to you and can have access to multiple Mailchimp accounts. Business name The name of your company or organization. It will appear on every email along with your physical mailing address. Phone number (optional) A mobile phone number. It can be used for account verification, recovery, and 2-factor authentication setup. Physical address The mailing address where you can receive mail. A physical address is required by law on any email you send out. Ideas for a physical address include your personal address, business address, or a P.O. Box. Organization questions Details about your organization. These help us provide relevant content and guidance. Website URL The website URL for your company, organization, or personal website. Provide your website so Mailchimp can help you automatically create on-brand content. After you type in the information, follow the prompts to finish the activation process and get started in your new Mailchimp account."
+      },
+      {
+        "heading": "Next steps",
+        "content": "After you activate your account, your homepage will show a personalized list of recommended next steps. Here are some other resources to get to know Mailchimp's features. Getting Started with Mailchimp Get an overview of Mailchimp basics to get started. Verify your domain Verification makes sure your From email address is hosted at a domain that you can access. If you want to send from a personal or company domain, you'll need to go through the verification process before you can send through Mailchimp. It's best to send email campaigns with a personal or a company domain. Many free email providers have implemented DMARC authentication policies that affect the delivery of email campaigns that use a free provider's domain for the From email address. Add other people to your account If you want multiple logins for your account, you can invite users. Set different levels of permission based on how much access you want each user to have."
+      }
+    ],
+    "scrapedAt": "2025-10-14T07:46:41.350Z"
+  },
+  {
+    "id": "campaigncreation_1760428002519",
     "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
     "category": "campaigncreation",
     "title": "Getting Started with Campaigns",
@@ -256,12 +289,12 @@
         "content": "After you send or publish a campaign, you can monitor its performance in your campaign report. These reports include important metrics such as email opens and clicks, order revenue for connected stores, and social post shares. About Email Reports About Audience Analytics About SMS Reports Landing Page Reports About Social Post Reports"
       }
     ],
-    "scrapedAt": "2025-10-13T09:31:36.612Z"
+    "scrapedAt": "2025-10-14T07:46:42.519Z"
   },
   {
-    "id": "listmanage_1760347897710",
+    "id": "audience_1760428004478",
     "url": "https://mailchimp.com/help/getting-started-audience/",
-    "category": "listmanage",
+    "category": "audience",
     "title": "Getting Started with Your Audience",
     "sections": [
       {
@@ -305,6 +338,169 @@
         "content": "The Stats overview gives you details about your email marketing engagement. View open and click rates, see the change in subscribed contacts, or compare the performance of your last 30 emails."
       }
     ],
-    "scrapedAt": "2025-10-13T09:31:37.710Z"
+    "scrapedAt": "2025-10-14T07:46:44.478Z"
+  },
+  {
+    "id": "reports_1760428005629",
+    "url": "https://mailchimp.com/help/getting-started-reports/",
+    "category": "reports",
+    "title": "Getting Started with Reports",
+    "sections": [
+      {
+        "heading": "Getting Started with Reports",
+        "content": "Your Mailchimp account contains data about your campaigns, website, audience, and more. Mailchimp compiles this data into various reports that provide powerful insights to help inform your next steps and marketing strategy. Use reports to help you understand who your audience is, what’s working with your marketing, and where your revenue comes from. In this article, you’ll learn about reports and how to find them in your account."
+      },
+      {
+        "heading": "Campaign reports",
+        "content": "A campaign is any distributed content that's created and measured in Mailchimp, including regular emails, automations, landing pages, and ads. All campaign reports can be found in the Campaign Reports section of your account."
+      },
+      {
+        "heading": "Email campaign reports",
+        "content": "Email campaign reports contain a summary of the campaign’s performance, including who received the campaign, when they opened it, what links they clicked, and how many successful deliveries were made. You can click through the report to view more detailed stats and to discover deeper insights about your campaign’s performance. About Email Campaign Reports Create a Regular Email Campaign Use Comparative Reports to compare stats from multiple email campaigns. Add filter conditions and compare subscriber engagement over time. This advanced reporting tool is included with the Standard plan or higher. About Comparative Reports"
+      },
+      {
+        "heading": "Classic automation reports",
+        "content": "Classic automation reports are similar to email campaign reports, except they show complete automation statistics as well as individual statistics for each email within the automation. About Classic Automation Reports About Classic Automations"
+      },
+      {
+        "heading": "Landing page reports",
+        "content": "Landing page reports help you measure how your pages perform with metrics like views, clicks, signups, and revenue. Landing Page Reports About Landing Pages"
+      },
+      {
+        "heading": "Ad reports",
+        "content": "Ad reports help you measure engagement and audience response for your ad including views, clicks, and return on investment (ROI). Google Remarketing Ad Reports"
+      },
+      {
+        "heading": "Social post reports",
+        "content": "Social post reports contain information about how your posts perform including reach, impressions, likes, and shares. About Social Post Reports Create a Social Post"
+      },
+      {
+        "heading": "Surveys",
+        "content": "Survey reports contain information about who responds to your survey as well as details about individual responses. View Survey Results"
+      },
+      {
+        "heading": "Marketing automation flow reports",
+        "content": "Marketing automation flow data and reports are found throughout the automation flow. You can track your contacts’ progress through the flow, see stats for each step, and view individual email reports. About Marketing Automation Flows View Automation Flow Stats and Queue About Marketing Automation Flow Reports"
+      },
+      {
+        "heading": "Website reports",
+        "content": "Website reports help you monitor traffic and learn how visitors interact with your site. Use the report to view metrics like pageviews, signups, and the conversion rate for email marketing subscriptions. About Website Reports About Your Website in Mailchimp"
+      },
+      {
+        "heading": "Audience data",
+        "content": "Use the audience dashboard and stats overview pages to view information such as recent growth, predicted demographics, campaign engagement, and contact location. About the Audience Dashboard All About Audience Stats"
+      },
+      {
+        "heading": "E-commerce data",
+        "content": "If you have an e-commerce store connected to your Mailchimp account, you can find data about revenue in various reports. Email campaign, automation, and landing page reports These reports contain information about revenue generated from the campaign. Ad reports Reports generated from Google Remarketing Ads include information about return on investment (ROI), first time customers, total revenue, and more. Audience dashboard View predictive insights about your contacts to estimate their Customer Lifetime Value and Purchase Likelihood on your audience dashboard. Website dashboard View orders, total revenue, average order value, and purchase conversion rate in the Business Highlights section of your website dashboard."
+      },
+      {
+        "heading": "Integration data",
+        "content": "When you integrate Mailchimp with other tools and apps, your data collection can expand. Some integrations include reports that work alongside your Mailchimp data. These reports might be viewed within Mailchimp or within the integrated tool. Check individual integration descriptions for more information about the available data and reports. Here are some common integrations to get you started. View Google Analytics data in Mailchimp View SurveyMonkey survey results"
+      }
+    ],
+    "scrapedAt": "2025-10-14T07:46:45.629Z"
+  },
+  {
+    "id": "open_and_click_rates_1760428006771",
+    "url": "https://mailchimp.com/help/about-open-and-click-rates/",
+    "category": "open_and_click_rates",
+    "title": "About Open and Click Rates",
+    "sections": [
+      {
+        "heading": "About Open and Click Rates",
+        "content": "Your Mailchimp tracking reports include open and click rates, which measure your recipients' engagement with your subject lines and email content. Open rates and click rates provide key information about your email marketing, and are a great starting point to test and improve your emails."
+      },
+      {
+        "heading": "About Open and Click Rates",
+        "content": "Note The Apple MPP (Mail Privacy Protection) policy for email was released September 21, 2021 with the iOS 15 operating system. With this release, Apple downloads incoming emails on its own server. This makes it appear as if a recipient opened the email, which inflates the sender’s open-related metrics. You have the option to exclude emails opened by Apple MPP from your open-related metrics for emails sent on or after June 22, 2024."
+      },
+      {
+        "heading": "How we calculate open and click rates",
+        "content": "The open rate is a percentage that tells you how many successfully delivered emails were opened by recipients. Mailchimp loads a tiny, transparent image into each email and counts how often the image is downloaded for delivered emails. The image is invisible to your recipients. Open rate tracking relies on images, so it isn't 100% accurate. For example, if a recipient's email client has images turned off, the tracking image won't load, and their email won't register as opened. Mailchimp reduces this margin of error by factoring in click-throughs with open rates. Recipients must open an email to click a link inside it. We'll consider those clicks as opens, even if the tracking image didn't load. We recommend that you exclude Apple MPP from your reports for more accurate opens and open-related metrics. To learn more about Apple MPP, check out About Apple Mail Privacy Protection (MPP). Want to know more about different types of opens, including unique opens and total opens? Check out About Email Reports and Use Open Tracking in Emails. The click rate is a percentage that tells you how many delivered emails registered at least 1 click. Your click rate reveals general trends, but isn't detailed. For information about different types of clicks, check out Use Open Tracking in Emails and About Email Reports."
+      },
+      {
+        "heading": "Why open and click rates are important",
+        "content": "Open and click rates can give you a good idea of how your emails are performing with a particular audience. A high open rate may mean that your audience is connecting with the subject lines. If your click rates are good, this could mean that your content is important to recipients. Average open and click rates can vary from audience to audience, and differ by industry, company size, and other factors. Check out the Email Marketing Benchmarks report, which can give you an idea of how your rates stack up against similar users. Once you know where you stand, you can use Mailchimp tools such as A/B tests or multivariate tests to test and improve your email marketing. Make time to review your reports after every email, consider what factors might have affected your results, and test."
+      },
+      {
+        "heading": "How to improve open rates",
+        "content": "A low open rate could be a result of one or more of these things. Your subject line isn't relevant or interesting enough Your audience has a wide variety of subscribers who aren't segmented You may be sending too many or too few emails"
+      },
+      {
+        "heading": "Test your subject line",
+        "content": "A good subject line clearly shows what's in your emails. You'll want to try a few different ones to find out what works best for your audience. Create 2 or 3 subject lines that differ slightly. For example, \"Company 123 Weekly Newsletter\" and \"News from Company 123,\" and set them up in an A/B or multivariate test."
+      },
+      {
+        "heading": "Segment your audience",
+        "content": "Think about who your subscribed contacts are and what kind of information is most useful to them. If sales reps, store owners, and consumers all receive the same content, some could become frustrated by irrelevant content and stop opening your emails. Segment your audience based on their location, interests, or actions to send targeted content. Use segments to create stronger emails and build trust with your subscribed contacts."
+      },
+      {
+        "heading": "Change your send frequency",
+        "content": "Depending on your email marketing goals, you may send emails 10 times a day or once a quarter. If your open rate is much lower than your industry's benchmark and you're using tested subject lines and targeting your emails, consider testing how often you send. In general, sending more emails negatively impacts the level of engagement per email sent, but it's different for everyone."
+      },
+      {
+        "heading": "How to improve click rates",
+        "content": "Your click rate tells you how many of your recipients find your email content useful. To improve your click rate, create content that applies to a wide variety of recipients. Like open rates, you can sometimes achieve this by sending specific content to a smaller, segmented audience. You can also try changing your link text and testing content blocks in your emails."
+      },
+      {
+        "heading": "Make links more effective",
+        "content": "We suggest that you avoid the generic phrase \"click here\" for click-through text. Some people won't click it because it's unclear where the link goes. It also leaves out important information screen readers need for accessibility. Also, \"click here\" suggests clicking a mouse, which doesn't apply for people viewing their emails on a touchscreen. Make your link text descriptive and concise. Your URL should send people to the most important information. If your content is about a service, link to that service's webpage instead of your business homepage."
+      },
+      {
+        "heading": "Embed more links",
+        "content": "You may wish to include multiple links to the same content in a single email. This is helpful for emails with a single call to action, such as asking recipients to donate. You could place donate buttons in several areas, or vary link text throughout your email. Use several links to increase the chances that someone will click them, even if every link points to the same webpage. It's always a good idea to test your links."
+      },
+      {
+        "heading": "Test content with A/B or multivariate tests",
+        "content": "A/B and multivariate tests can help you test many things, including the content in your email or SMS. Mailchimp will send each version to a different group of people and track their responses. The one that performs better is sent to your subscribed contacts who weren't sent the test versions. Open and click rates improve when you provide relevant content to the most interested group of people. Review your reports and test often to get the most out of your emails."
+      }
+    ],
+    "scrapedAt": "2025-10-14T07:46:46.771Z"
+  },
+  {
+    "id": "api_1760428007884",
+    "url": "https://mailchimp.com/help/about-api-keys/",
+    "category": "api",
+    "title": "About API Keys",
+    "sections": [
+      {
+        "heading": "About API Keys",
+        "content": "In this article, we'll cover what an API is and how to generate an API key to grant access to your Mailchimp account. We’ll also cover where to go for support with questions about the Mailchimp Marketing API."
+      },
+      {
+        "heading": "About API Keys",
+        "content": "Note This article refers only to API keys for the Mailchimp Marketing API. To learn more about the Mailchimp Transactional API, check out the Transactional API Quick Start Guide."
+      },
+      {
+        "heading": "About API Keys",
+        "content": "Note You’ll only be able to see the full API key immediately after you generate it. After that, you’ll only see the name you’ve given it and its first 4 digits."
+      },
+      {
+        "heading": "About API Keys",
+        "content": "To generate an API key, follow these steps. Click your profile icon and choose Profile. Click the Extras drop-down then choose API keys. In the Your API Keys section, click Create A Key. Name your key. Be descriptive, so you know what app uses that key. Keep in mind that you’ll see only this name and the first 4 key digits on your list of API keys. Click Generate Key. Once we generate your key, click Copy Key to Clipboard. Save your key someplace secure–you won’t be able to see or copy it again. If you lose this key, you’ll need to generate a new key and update any integration that uses it. Click Done."
+      },
+      {
+        "heading": "What is an API?",
+        "content": "API stands for application programming interface. Think of an API as a way for different apps to talk to one another. You send and receive data between apps using API requests and responses. An API key is a unique series of characters that’s included in a request to verify that the requesting system is allowed to communicate with the receiving system."
+      },
+      {
+        "heading": "Generate an API key",
+        "content": "You’ll often need to generate an API key when you set up an integration with your Mailchimp account. Users with Manager permissions can generate their own API keys. Users with Admin permissions can also see the API keys other account users have generated."
+      },
+      {
+        "heading": "Revoke an API key",
+        "content": "If an API key has been compromised, or you no longer use the integration that was accessing your account through it, you can revoke that API key. Once you’ve revoked an API key, it can’t be reactivated. You’ll need to generate a new key and update any integrations that use the original key. To revoke an API key, follow these steps. Click your profile icon and choose Profile. Click the Extras drop-down then choose API keys. Find the API key you want to revoke and click Revoke. In the pop-up modal, type REVOKE then click Revoke to confirm your action."
+      },
+      {
+        "heading": "API key security",
+        "content": "API keys grant full access to your Mailchimp account. You should protect them the same way you would protect your password. Keep these common scenarios in mind when working with API keys. Give each integration its own API key. Assign descriptive names to each key so you know which key goes with which app. If a specific API key is compromised, you can revoke that key without disabling access to your other integrations. Be careful not to expose the key to the public (such as in screenshots, videos, or help documents). Remember that blurring your data isn't always enough. It's best to remove the data completely. Because of the potential security risks that come with exposing account API keys, Mailchimp doesn’t support client-side implementation of our API using CORS requests or including API keys in mobile apps. If you need to share access to your account, generate a new key and name it so you’ll know which key to revoke, if needed. Never email an API key. This could allow access to your Mailchimp account if hackers were to compromise your email account. If you revoke a user's access to your Mailchimp account, we’ll remove any API keys that user generated from your account. The role of the user who generated the API key determines access to each endpoint. To learn more about user level permissions, visit Manage User Levels in Your Account."
+      },
+      {
+        "heading": "API support",
+        "content": "Our Mailchimp Support team isn't trained for in-depth API troubleshooting. If you need a developer to help you configure something using the API, check out our great Experts Directory. This lists third-party Mailchimp experts who can be hired to help out. If you're a developer who wants to build your own integration with Mailchimp, check out our API documentation."
+      }
+    ],
+    "scrapedAt": "2025-10-14T07:46:47.884Z"
   }
 ]

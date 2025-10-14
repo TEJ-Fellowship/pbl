@@ -7,11 +7,15 @@ import config from "../config/config.js";
 const SOURCES = {
   helpdocs: "https://mailchimp.com/help/",
   gettingstarted: "https://mailchimp.com/help/getting-started-with-mailchimp/",
+  accountcreation: "https://mailchimp.com/help/create-an-account/",
   campaigncreation:
     "https://mailchimp.com/help/getting-started-with-campaigns/",
-  listmanage: "https://mailchimp.com/help/getting-started-audience/",
+  audience: "https://mailchimp.com/help/getting-started-audience/",
+  reports: "https://mailchimp.com/help/getting-started-reports/",
+  open_and_click_rates:
+    "https://mailchimp.com/help/about-open-and-click-rates/",
+  api: "https://mailchimp.com/help/about-api-keys/",
   // automation: "https://mailchimp.com/help/about-classic-automations/",
-  // reports: "https://mailchimp.com/help/getting-started-reports/",
   // api: "https://mailchimp.com/developer/",
   // resources: "https://mailchimp.com/resources/",
   // analytics: "https://mailchimp.com/features/reports-and-analytics/",
@@ -122,7 +126,7 @@ async function main() {
     }
   }
 
-  const dir = path.resolve("../src/data/mailerbyte_docs");
+  const dir = path.resolve("/home/immahesh/Documents/pbl/PBL4/MailChimpSupportAgent/backend/src/data/mailerbyte_docs");
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, "scraped.json"),
