@@ -7,7 +7,7 @@ import readline from "readline";
 
 dotenv.config();
 
-//CONFIG 
+//CONFIG  
 const PINECONE_INDEX = process.env.PINECONE_INDEX;
 const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
