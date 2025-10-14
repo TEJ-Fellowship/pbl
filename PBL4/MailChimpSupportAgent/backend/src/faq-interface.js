@@ -5,6 +5,7 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
+import HybridSearch from "./hybridSearch.js";
 
 class MailChimpFAQInterface {
   constructor() {
@@ -39,32 +40,66 @@ class MailChimpFAQInterface {
     this.pinecone = null;
     this.index = null;
     this.localChunks = null;
+    this.hybridSearch = null;
+    this.hybridSearchAvailable = false;
   }
-
 
   async initialize() {
     console.log("🔧 Initializing FAQ Interface...");
-    console.log(`📊 Gemini API Key: ${config.GEMINI_API_KEY ? '✅ Set' : '❌ Missing'}`);
-    console.log(`🌲 Pinecone API Key: ${config.PINECONE_API_KEY ? '✅ Set' : '❌ Missing'}`);
-    console.log(`📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || 'mailerbyte-rag'}`);
-    
+    console.log(
+      `📊 Gemini API Key: ${config.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"}`
+    );
+    console.log(
+      `🌲 Pinecone API Key: ${
+        config.PINECONE_API_KEY ? "✅ Set" : "❌ Missing"
+      }`
+    );
+    console.log(
+      `📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || "mailerbyte-rag"}`
+    );
+    console.log(
+      `🗄️  PostgreSQL Database: ${config.DB_NAME || "mailchimp_support_db"}`
+    );
+
     // Try to load local chunks as fallback
     await this.loadLocalChunks();
-    
+
     try {
       this.pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
       this.index = this.pinecone.Index(config.PINECONE_INDEX_NAME);
-      
+
       // Test Pinecone connection
       const stats = await this.index.describeIndexStats();
       console.log("✅ Connected to Pinecone vector database");
       console.log(`📊 Index stats: ${stats.totalVectorCount} vectors`);
-      
+
       if (stats.totalVectorCount === 0) {
         console.log("⚠️  Pinecone index is empty! Using local data fallback.");
-        return false;
       }
-      
+
+      // Initialize Hybrid Search if embeddings are available
+      if (this.embeddingsAvailable) {
+        try {
+          console.log(
+            "🔧 Initializing Hybrid Search (BM25 + Semantic + Recency)..."
+          );
+          const vectorStore = {
+            type: "pinecone",
+            index: this.index,
+          };
+          this.hybridSearch = new HybridSearch(vectorStore, this.embeddings);
+          await this.hybridSearch.initialize();
+          this.hybridSearchAvailable = true;
+          console.log("✅ Hybrid Search initialized successfully");
+        } catch (error) {
+          console.log(
+            `⚠️  Hybrid Search initialization failed: ${error.message}`
+          );
+          console.log("🔄 Will use semantic-only search as fallback");
+          this.hybridSearchAvailable = false;
+        }
+      }
+
       return true;
     } catch (error) {
       console.error("❌ Failed to connect to Pinecone:", error.message);
@@ -75,9 +110,13 @@ class MailChimpFAQInterface {
 
   async loadLocalChunks() {
     try {
-      const chunksPath = path.resolve("./data/processed_chunks/chunks.json");
-      const enhancedChunksPath = path.resolve("./data/processed_chunks/enhanced_chunks.json");
-      
+      const chunksPath = path.resolve(
+        "./src/data/processed_chunks/enhanced_chunks.json"
+      );
+      const enhancedChunksPath = path.resolve(
+        "./src/data/processed_chunks/enhanced_chunks.json"
+      );
+
       // Try enhanced chunks first, then fallback to regular chunks
       let chunksData;
       try {
@@ -87,7 +126,7 @@ class MailChimpFAQInterface {
         chunksData = await fs.readFile(chunksPath, "utf-8");
         console.log("📁 Loaded regular chunks from local storage");
       }
-      
+
       this.localChunks = JSON.parse(chunksData);
       console.log(`📚 Local chunks loaded: ${this.localChunks.length} chunks`);
     } catch (error) {
@@ -98,12 +137,39 @@ class MailChimpFAQInterface {
 
   async searchSimilarChunks(query, limit = 5) {
     console.log(`🔍 Searching for: "${query}"`);
-    
-    // Try Pinecone first (only if embeddings are available)
+
+    // Try Hybrid Search first (BM25 + Semantic + Recency Boost)
+    if (this.hybridSearchAvailable && this.hybridSearch) {
+      try {
+        console.log("🔬 Using Hybrid Search (BM25 + Semantic + Recency Boost)");
+        const results = await this.hybridSearch.hybridSearch(query, limit);
+
+        if (results.length > 0) {
+          // Format results to match expected structure
+          return results.map((result) => ({
+            score: result.finalScore || result.semanticScore || 0,
+            metadata: {
+              ...result.metadata,
+              pageContent: result.content,
+              title: result.metadata?.title || "Untitled",
+              heading: result.metadata?.heading || "",
+              category: result.metadata?.category || "general",
+              difficulty: result.metadata?.difficulty || "intermediate",
+            },
+          }));
+        }
+      } catch (error) {
+        console.error("❌ Hybrid search error:", error.message);
+        console.log("🔄 Falling back to semantic-only search...");
+      }
+    }
+
+    // Fallback to Pinecone semantic search
     if (this.index && this.embeddingsAvailable) {
       try {
+        console.log("🔍 Using semantic search (Pinecone only)");
         const queryEmbedding = await this.embeddings.embedQuery(query);
-        
+
         const searchResponse = await this.index.query({
           vector: queryEmbedding,
           topK: limit,
@@ -113,7 +179,7 @@ class MailChimpFAQInterface {
 
         const matches = searchResponse.matches || [];
         console.log(`🌲 Pinecone found ${matches.length} matches`);
-        
+
         if (matches.length > 0) {
           return matches;
         }
@@ -121,8 +187,8 @@ class MailChimpFAQInterface {
         console.error("🌲 Pinecone search error:", error.message);
       }
     }
-    
-    // Fallback to local search
+
+    // Final fallback to local search
     console.log("🔄 Using local search fallback...");
     return this.searchLocalChunks(query, limit);
   }
@@ -139,49 +205,49 @@ class MailChimpFAQInterface {
     for (const chunk of this.localChunks) {
       const content = chunk.pageContent || "";
       const metadata = chunk.metadata || {};
-      
+
       // Simple keyword matching with scoring
       let score = 0;
       const contentLower = content.toLowerCase();
       const titleLower = (metadata.title || "").toLowerCase();
       const headingLower = (metadata.heading || "").toLowerCase();
       const categoryLower = (metadata.category || "").toLowerCase();
-      
+
       // Exact phrase match (highest score)
       if (contentLower.includes(queryLower)) {
         score += 10;
       }
-      
+
       // Title match
       if (titleLower.includes(queryLower)) {
         score += 8;
       }
-      
+
       // Heading match
       if (headingLower.includes(queryLower)) {
         score += 6;
       }
-      
+
       // Category match
       if (categoryLower.includes(queryLower)) {
         score += 4;
       }
-      
+
       // Word matches
       const queryWords = queryLower.split(/\s+/);
       const contentWords = contentLower.split(/\s+/);
-      const wordMatches = queryWords.filter(word => 
-        contentWords.some(cWord => cWord.includes(word))
+      const wordMatches = queryWords.filter((word) =>
+        contentWords.some((cWord) => cWord.includes(word))
       );
       score += wordMatches.length * 2;
-      
+
       if (score > 0) {
         scoredChunks.push({
           score: score / 20, // Normalize to 0-1 range
           metadata: {
             ...metadata,
-            pageContent: content
-          }
+            pageContent: content,
+          },
         });
       }
     }
@@ -189,7 +255,7 @@ class MailChimpFAQInterface {
     // Sort by score and return top results
     scoredChunks.sort((a, b) => b.score - a.score);
     const results = scoredChunks.slice(0, limit);
-    
+
     console.log(`📚 Local search found ${results.length} matches`);
     return results;
   }
@@ -200,30 +266,32 @@ class MailChimpFAQInterface {
         const metadata = chunk.metadata;
         return `[Source ${index + 1}] ${metadata.title} - ${metadata.heading}
 Category: ${metadata.category} | Difficulty: ${metadata.difficulty}
-Content: ${chunk.metadata.pageContent || 'No content available'}`;
+Content: ${chunk.metadata.pageContent || "No content available"}`;
       })
-      .join('\n\n');
+      .join("\n\n");
 
     // Try Gemini first (only if available), fallback to template-based response
     if (this.geminiAvailable) {
       try {
-        const result = await this.model.generateContent(`You are a MailChimp support agent. Answer the user's question using the provided context from MailChimp documentation.
+        const result = await this.model
+          .generateContent(`You are a professional Mailchimp Support AI trained on official Mailchimp documentation. Your goal is to help users by giving accurate, concise, and friendly explanations using only the provided documentation context.
+
 
 User Question: ${query}
 
 Context from MailChimp Documentation:
 ${context}
 
-Instructions:
-1. Provide a clear, step-by-step answer based on the context
-2. If the context doesn't contain enough information, say so and suggest where to find more help
-3. Include specific MailChimp features, tools, or steps mentioned in the context
-4. Keep the answer concise but comprehensive
-5. If there are numbered lists or specific steps in the context, preserve them
-6. Mention the source category (campaigns/automation/lists/getting-started) when relevant
+1. Use ONLY the context provided — do not invent or assume information.
+2. Give a clear, step-by-step answer tailored to the user’s question.
+3. Mention specific Mailchimp features, tools, or UI paths (e.g., “Campaigns → Automations → Create Email”).
+4. Preserve any numbered lists or bullet points from the documentation.
+5. Reference the **source category** (e.g., “Campaigns,” “Lists,” “Automation,” “Getting Started”) when explaining.
+6. If the context doesn’t have enough information, clearly say so and suggest checking the Mailchimp Help Center.
+7. Maintain a friendly, knowledgeable tone — like a real Mailchimp expert helping a user on chat.
 
 Answer:`);
-        
+
         const response = await result.response;
         return response.text();
       } catch (error) {
@@ -233,7 +301,7 @@ Answer:`);
     } else {
       console.log("🔄 Using template-based response (Gemini not available)...");
     }
-    
+
     // Fallback: Generate a structured response from the context
     return this.generateTemplateAnswer(query, relevantChunks);
   }
@@ -248,8 +316,8 @@ Answer:`);
 
     // Group chunks by category
     const categories = {};
-    relevantChunks.forEach(chunk => {
-      const category = chunk.metadata.category || 'general';
+    relevantChunks.forEach((chunk) => {
+      const category = chunk.metadata.category || "general";
       if (!categories[category]) {
         categories[category] = [];
       }
@@ -259,24 +327,28 @@ Answer:`);
     // Generate answer based on categories
     Object.entries(categories).forEach(([category, chunks]) => {
       answer += `**${category.toUpperCase()}:**\n`;
-      
+
       chunks.forEach((chunk, index) => {
-        const content = chunk.metadata.pageContent || '';
-        const heading = chunk.metadata.heading || '';
-        
+        const content = chunk.metadata.pageContent || "";
+        const heading = chunk.metadata.heading || "";
+
         // Extract key information
-        if (content.includes('step') || content.includes('1.') || content.includes('2.')) {
+        if (
+          content.includes("step") ||
+          content.includes("1.") ||
+          content.includes("2.")
+        ) {
           answer += `\n📋 ${heading}:\n${content}\n`;
-        } else if (content.includes('import') || content.includes('contact')) {
+        } else if (content.includes("import") || content.includes("contact")) {
           answer += `\n📧 ${heading}:\n${content}\n`;
-        } else if (content.includes('campaign') || content.includes('email')) {
+        } else if (content.includes("campaign") || content.includes("email")) {
           answer += `\n🎯 ${heading}:\n${content}\n`;
         } else {
           answer += `\n📖 ${heading}:\n${content}\n`;
         }
       });
-      
-      answer += '\n';
+
+      answer += "\n";
     });
 
     // Add helpful suggestions
@@ -290,9 +362,9 @@ Answer:`);
 
   async askQuestion(question) {
     console.log("\n🔍 Searching for relevant information...");
-    
+
     const chunks = await this.searchSimilarChunks(question, 5);
-    
+
     if (chunks.length === 0) {
       console.log("❌ No relevant information found in the knowledge base.");
       console.log("💡 Try running the ingestion process first:");
@@ -301,22 +373,24 @@ Answer:`);
     }
 
     console.log(`📚 Found ${chunks.length} relevant sources`);
-    
+
     console.log("\n🤖 Generating answer...");
     const answer = await this.generateAnswer(question, chunks);
-    
+
     console.log("\n" + "=".repeat(80));
     console.log("📋 ANSWER:");
     console.log("=".repeat(80));
     console.log(answer);
     console.log("=".repeat(80));
-    
+
     // Show sources
     console.log("\n📖 Sources:");
     chunks.forEach((chunk, index) => {
       const metadata = chunk.metadata;
       console.log(`${index + 1}. ${metadata.title} - ${metadata.heading}`);
-      console.log(`   Category: ${metadata.category} | Difficulty: ${metadata.difficulty}`);
+      console.log(
+        `   Category: ${metadata.category} | Difficulty: ${metadata.difficulty}`
+      );
       console.log(`   Score: ${(chunk.score * 100).toFixed(1)}%`);
     });
   }
@@ -332,7 +406,7 @@ Answer:`);
       "📈 How do I view reports?",
       "🔧 Getting started with MailChimp",
       "🔍 Debug: Show system status",
-      "❌ Exit"
+      "❌ Exit",
     ];
 
     const { choice } = await inquirer.prompt([
@@ -341,8 +415,8 @@ Answer:`);
         name: "choice",
         message: "What would you like to know about MailChimp?",
         choices: choices,
-        pageSize: 10
-      }
+        pageSize: 10,
+      },
     ]);
 
     return choice;
@@ -351,11 +425,31 @@ Answer:`);
   async showSystemStatus() {
     console.log("\n🔧 SYSTEM STATUS");
     console.log("=".repeat(50));
-    console.log(`📊 Gemini API: ${config.GEMINI_API_KEY ? '✅ Connected' : '❌ Missing'}`);
-    console.log(`🌲 Pinecone API: ${config.PINECONE_API_KEY ? '✅ Connected' : '❌ Missing'}`);
-    console.log(`📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || 'mailerbyte-rag'}`);
-    console.log(`📚 Local Chunks: ${this.localChunks ? this.localChunks.length : 0} available`);
-    
+    console.log(
+      `📊 Gemini API: ${config.GEMINI_API_KEY ? "✅ Connected" : "❌ Missing"}`
+    );
+    console.log(
+      `🌲 Pinecone API: ${
+        config.PINECONE_API_KEY ? "✅ Connected" : "❌ Missing"
+      }`
+    );
+    console.log(
+      `📦 Pinecone Index: ${config.PINECONE_INDEX_NAME || "mailerbyte-rag"}`
+    );
+    console.log(`🗄️  PostgreSQL: ${config.DB_NAME || "mailchimp_support_db"}`);
+    console.log(
+      `🔬 Hybrid Search: ${
+        this.hybridSearchAvailable
+          ? "✅ Active (BM25 + Semantic + Recency)"
+          : "❌ Inactive"
+      }`
+    );
+    console.log(
+      `📚 Local Chunks: ${
+        this.localChunks ? this.localChunks.length : 0
+      } available`
+    );
+
     if (this.index) {
       try {
         const stats = await this.index.describeIndexStats();
@@ -364,11 +458,26 @@ Answer:`);
         console.log(`🌲 Pinecone Status: ❌ ${error.message}`);
       }
     }
-    
+
+    // Check PostgreSQL status
+    if (this.hybridSearch && this.hybridSearch.postgresBM25Service) {
+      try {
+        const dbStats = await this.hybridSearch.postgresBM25Service.getStats();
+        console.log(`🗄️  PostgreSQL Documents: ${dbStats.total_chunks}`);
+        console.log(`🗄️  PostgreSQL Categories: ${dbStats.categories}`);
+      } catch (error) {
+        console.log(`🗄️  PostgreSQL Status: ❌ ${error.message}`);
+      }
+    }
+
     console.log("\n💡 TROUBLESHOOTING:");
-    console.log("1. Make sure .env file exists with API keys");
-    console.log("2. Run: npm run enhanced-ingest");
-    console.log("3. Check Pinecone index name matches config");
+    console.log(
+      "1. Make sure .env file exists with API keys and DB credentials"
+    );
+    console.log("2. Run: npm run db:setup (setup PostgreSQL)");
+    console.log("3. Run: npm run enhanced-ingest (process documents)");
+    console.log("4. Run: npm run db:populate (populate PostgreSQL)");
+    console.log("5. Check Pinecone index name matches config");
   }
 
   async handleCustomQuestion() {
@@ -377,8 +486,9 @@ Answer:`);
         type: "input",
         name: "question",
         message: "What's your question about MailChimp?",
-        validate: (input) => input.trim().length > 0 || "Please enter a question"
-      }
+        validate: (input) =>
+          input.trim().length > 0 || "Please enter a question",
+      },
     ]);
 
     await this.askQuestion(question);
@@ -386,19 +496,19 @@ Answer:`);
 
   async run() {
     console.log("🎯 MailChimp Support Agent - FAQ Interface");
-    console.log("=" .repeat(50));
-    
+    console.log("=".repeat(50));
+
     await this.initialize();
 
     while (true) {
       try {
         const choice = await this.showMainMenu();
-        
+
         if (choice === "❌ Exit") {
           console.log("\n👋 Thanks for using MailChimp Support Agent!");
           break;
         }
-        
+
         if (choice === "🔍 Debug: Show system status") {
           await this.showSystemStatus();
         } else if (choice === "❓ Ask a custom question") {
@@ -408,34 +518,33 @@ Answer:`);
           const question = choice.replace(/^[^\w]*/, "").replace(/\?$/, "");
           await this.askQuestion(question);
         }
-        
+
         // Ask if user wants to continue
         const { continue: shouldContinue } = await inquirer.prompt([
           {
             type: "confirm",
             name: "continue",
             message: "\nWould you like to ask another question?",
-            default: true
-          }
+            default: true,
+          },
         ]);
-        
+
         if (!shouldContinue) {
           console.log("\n👋 Thanks for using MailChimp Support Agent!");
           break;
         }
-        
       } catch (error) {
         console.error("❌ An error occurred:", error.message);
-        
+
         const { retry } = await inquirer.prompt([
           {
             type: "confirm",
             name: "retry",
             message: "Would you like to try again?",
-            default: true
-          }
+            default: true,
+          },
         ]);
-        
+
         if (!retry) break;
       }
     }

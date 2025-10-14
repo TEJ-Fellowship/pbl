@@ -5,10 +5,16 @@ import path from "path";
 import config from "../config/config.js";
 
 const SOURCES = {
+  helpdocs: "https://mailchimp.com/help/",
   gettingstarted: "https://mailchimp.com/help/getting-started-with-mailchimp/",
   campaigncreation:
     "https://mailchimp.com/help/getting-started-with-campaigns/",
   listmanage: "https://mailchimp.com/help/getting-started-audience/",
+  // automation: "https://mailchimp.com/help/about-classic-automations/",
+  // reports: "https://mailchimp.com/help/getting-started-reports/",
+  // api: "https://mailchimp.com/developer/",
+  // resources: "https://mailchimp.com/resources/",
+  // analytics: "https://mailchimp.com/features/reports-and-analytics/",
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -116,7 +122,7 @@ async function main() {
     }
   }
 
-  const dir = path.resolve("./data/mailerbyte_docs");
+  const dir = path.resolve("../src/data/mailerbyte_docs");
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, "scraped.json"),
