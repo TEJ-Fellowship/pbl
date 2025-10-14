@@ -4,7 +4,7 @@ import fs from "fs/promises";
 import path from "path";
 
 console.log("🔧 MailChimp Support Agent - Setup Helper");
-console.log("=" .repeat(50));
+console.log("=".repeat(50));
 
 // Check if .env exists
 const envPath = path.resolve(".env");
@@ -14,7 +14,7 @@ try {
 } catch {
   console.log("❌ .env file not found");
   console.log("📝 Creating .env template...");
-  
+
   const envTemplate = `# MailChimp Support Agent Environment Variables
 # Get your Gemini API key from: https://makersuite.google.com/app/apikey
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -24,6 +24,13 @@ PINECONE_API_KEY=your_pinecone_api_key_here
 
 # Pinecone index name (will be created if doesn't exist)
 PINECONE_INDEX_NAME=mailerbyte-rag
+
+# PostgreSQL Database Configuration (for BM25 search)
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=postgres
+DB_PASSWORD=password
+DB_PORT=5432
 
 # Chunking configuration
 CHUNK_SIZE=600
@@ -66,7 +73,9 @@ try {
 
 // Check if processed chunks exist
 const chunksPath = path.resolve("./data/processed_chunks/chunks.json");
-const enhancedChunksPath = path.resolve("./data/processed_chunks/enhanced_chunks.json");
+const enhancedChunksPath = path.resolve(
+  "./data/processed_chunks/enhanced_chunks.json"
+);
 
 let chunksExist = false;
 try {
@@ -94,14 +103,17 @@ if (!chunksExist) {
 }
 
 console.log("\n🚀 NEXT STEPS:");
-console.log("1. Edit .env file with your API keys");
-console.log("2. Run: npm run scrape");
-console.log("3. Run: npm run enhanced-ingest");
-console.log("4. Run: npm run faq");
+console.log("1. Edit .env file with your API keys and database credentials");
+console.log("2. Install dependencies: npm install");
+console.log("3. Set up PostgreSQL database: npm run db:setup");
+console.log("4. Run: npm run scrape");
+console.log("5. Run: npm run enhanced-ingest");
+console.log("6. Populate PostgreSQL: npm run db:populate");
+console.log("7. Run: npm run faq");
 
 console.log("\n🔍 DEBUGGING:");
 console.log("If FAQ interface shows 'No relevant information found':");
 console.log("1. Check .env file has correct API keys");
 console.log("2. Run ingestion process");
-console.log("3. Use 'Debug: Show system status' option in FAQ interface");
-
+console.log("3. Make sure PostgreSQL database is populated");
+console.log("4. Use 'Debug: Show system status' option in FAQ interface");

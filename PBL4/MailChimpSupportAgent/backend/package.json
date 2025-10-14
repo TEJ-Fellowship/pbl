@@ -10,6 +10,8 @@
     "ingest": "node src/ingest.js",
     "enhanced-ingest": "node src/enhanced-ingest.js",
     "faq": "node src/faq-interface.js",
+    "db:setup": "node src/database/setupDatabase.js",
+    "db:populate": "node src/database/populateDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -30,6 +32,7 @@
     "js-tiktoken": "^1.0.21",
     "langchain": "^0.3.35",
     "node-html-parser": "^7.0.1",
-    "openai": "^6.2.0"
+    "openai": "^6.2.0",
+    "pg": "^8.12.0"
   }
 }
