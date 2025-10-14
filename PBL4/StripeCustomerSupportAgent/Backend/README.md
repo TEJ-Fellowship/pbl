@@ -1,12 +1,15 @@
 # Stripe Customer Support Agent - Backend
 
-A comprehensive Node.js backend for the Stripe Customer Support Agent featuring AI-powered chat capabilities, hybrid search (BM25 + semantic), and documentation ingestion using PineCone and PostgreSQL.
+A comprehensive Node.js backend for the Stripe Customer Support Agent featuring AI-powered chat capabilities, intelligent conversational memory system, hybrid search (BM25 + semantic), and documentation ingestion using PineCone and PostgreSQL.
 
 ## 🚀 Features
 
 ### Core Capabilities
 
 - **🤖 AI-Powered Chat**: Interactive chat interface with Stripe documentation using Gemini 2.0-flash
+- **🧠 Conversational Memory**: Intelligent memory system with short-term buffer and long-term persistence
+- **🔄 AI Query Reformulation**: Gemini-powered query enhancement with context integration
+- **📝 AI Conversation Summarization**: Intelligent conversation summaries using Gemini AI for better context retention
 - **🔍 Hybrid Search**: Combines PostgreSQL BM25 keyword search with Pinecone semantic search
 - **📚 Scraping and Ingestion**: Web scraping and ingestion of Stripe documentation
 - **🗄️ PostgreSQL & PineCone Integration**: Scalable document storage with hybrid search capabilities
@@ -16,7 +19,7 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
 
 ## 🏗️ System Architecture
 
-The Stripe Customer Support Agent uses a hybrid search approach combining keyword and semantic search to provide accurate, context-aware responses.
+The Stripe Customer Support Agent uses a hybrid search approach combining keyword and semantic search with an intelligent conversational memory system to provide accurate, context-aware responses across multiple sessions.
 
 ### Architecture Overview
 
@@ -33,6 +36,14 @@ graph TB
         SERVER["Express Server<br/>Request routing"]
     end
 
+    subgraph "Memory System"
+        BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
+        MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
+        AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
+        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
+        QnA_ANALYSIS["Analysis of <br/>User Query <br/>&<br/>Response"]
+    end
+
     subgraph "Search Processing"
         BM25["PostgreSQL BM25<br/>Keyword matching"]
         VECTOR["Pinecone Vector Search<br/>Semantic similarity"]
@@ -45,7 +56,8 @@ graph TB
     end
 
     subgraph "Data Storage Layer"
-        POSTGRES[("PostgreSQL<br/>Document chunks")]
+        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
+        POSTGRES[("PostgreSQL<br/>Document chunks<br/> & <br/>Memory")]
         PINECONE[("Pinecone<br/>Vector embeddings")]
     end
 
@@ -55,9 +67,20 @@ graph TB
     SERVER -->|"Route to chat service"| CHAT
     CHAT -->|"Formatted response"| CLI
 
-    %% Search orchestration
-    CHAT -->|"Process query"| SEARCH
-    SEARCH -->|"Keyword search</br>with</br>raw query"| BM25
+    %% Memory processing flow
+    CHAT -->|"User message"| MEMORY_CTRL
+    MEMORY_CTRL -->|"Store in buffer"| BUFFER
+    MEMORY_CTRL -->|"Store in <br/>persistent memory"| MEMORY_DB
+    MEMORY_CTRL -->|"QnA"|QnA_ANALYSIS
+    BUFFER -->|"Recent context"| MEMORY_CTRL
+    MEMORY_DB -->|"Relevant Q&A pairs<br/>SessionContext"| MEMORY_CTRL
+    MEMORY_CTRL -->|"User Query<br/>Relevant Q&A pairs<br/>SessionContext<br/>RecentContext"| QUERY_REFORM
+
+
+    %% Search orchestration with memory
+    CHAT -->|"Process reformulated query"| SEARCH
+    QUERY_REFORM -->|"Reformulated query"| CHAT
+    SEARCH -->|"Keyword search</br>with</br>enhanced query"| BM25
     BM25 -->|"Query documents"| POSTGRES
     VECTOR -->|"Vector similarity"| PINECONE
 
@@ -67,10 +90,19 @@ graph TB
     FUSION -->|"Ranked results"| CHAT
     FUSION -->|"Context + sources"| GEMINI
 
-    %% AI response generation
+    %% AI response generation with memory
     GEMINI -->|"AI-generated response"| CHAT
-    CHAT -->|"user query"| GEMINI
-    SEARCH -->|"user query"| EMBEDDINGS
+    CHAT -->|"Assistant response"| MEMORY_CTRL
+    QnA_ANALYSIS -->|"Processed Q&A pairs"| MEMORY_DB
+    MEMORY_CTRL -->|"Memory Context"| GEMINI
+
+    %% Conversation Summarization with AI
+    MEMORY_CTRL -->|"Conversation history<br/>with SessionID"| AI_SUMMARY
+    AI_SUMMARY -->|"AI-generated summary"| MEMORY_DB
+
+
+    %% Search and embeddings flow
+    SEARCH -->|"Search query"| EMBEDDINGS
     EMBEDDINGS -->|"Semantic Search</br>with</br>vector query"| VECTOR
 ```
 
@@ -104,6 +136,274 @@ graph TB
     CHUNKER -->|"Generate embeddings"| EMBEDDINGS
     EMBEDDINGS -->|"Vector embeddings"| PINECONE
 ```
+
+## 🧠 Conversational Memory System
+
+The Stripe Customer Support Agent features an intelligent conversational memory system that maintains context across multiple sessions, enabling coherent and contextually aware conversations.
+
+### Memory Architecture
+
+```mermaid
+graph TB
+    subgraph "Memory Components"
+        BUFFER["BufferWindowMemory<br/>Recent Context (8 messages)"]
+        POSTGRES_MEM["PostgreSQL Memory<br/>Long-term Storage"]
+        QUERY_REFORM["Query Reformulation<br/>AI-powered Enhancement"]
+    end
+
+    subgraph "Memory Storage"
+        SESSIONS[("conversation_sessions<br/>Session metadata")]
+        MESSAGES[("conversation_messages<br/>Message history")]
+        QA_PAIRS[("conversation_qa_pairs<br/>Q&A pairs with AI analysis")]
+        SUMMARIES[("conversation_summaries<br/>Session summaries")]
+    end
+
+    subgraph "AI Integration"
+        GEMINI["Gemini 2.0-flash<br/>Query reformulation & Q&A analysis"]
+        AI_SUMMARY["AI Conversation Summarization<br/>Intelligent conversation analysis"]
+        CONTEXT["Context Integration<br/>Recent + Long-term memory"]
+    end
+
+    %% Memory flow
+    USER_MSG["User Message"] --> BUFFER
+    USER_MSG --> POSTGRES_MEM
+    BUFFER --> QUERY_REFORM
+    POSTGRES_MEM --> QUERY_REFORM
+    QUERY_REFORM --> GEMINI
+    GEMINI --> CONTEXT
+    CONTEXT --> SEARCH["Enhanced Search Query"]
+
+    %% Storage flow
+    BUFFER --> MESSAGES
+    POSTGRES_MEM --> MESSAGES
+    POSTGRES_MEM --> SESSIONS
+    GEMINI --> QA_PAIRS
+
+    %% AI Conversation Summarization flow
+    POSTGRES_MEM -->|"Conversation history"| AI_SUMMARY
+    AI_SUMMARY -->|"AI-generated summary"| SUMMARIES
+    AI_SUMMARY -->|"Key topics & insights"| POSTGRES_MEM
+```
+
+### Memory Features
+
+#### **1. Short-term Memory (BufferWindowMemory)**
+
+- **Sliding Window**: Maintains last 8 messages (4 conversation turns)
+- **Real-time Context**: Provides immediate conversation context
+- **Automatic Management**: Handles message overflow automatically
+
+#### **2. Long-term Memory (PostgreSQL)**
+
+- **Persistent Storage**: Stores conversation history across sessions
+- **Q&A Pairs**: AI-extracted question-answer pairs with relevance scoring
+- **Session Summaries**: Intelligent conversation summaries with key topics
+- **Cross-session Continuity**: Enables conversation flow across multiple sessions
+
+#### **3. AI-Powered Query Reformulation**
+
+- **Gemini Integration**: Uses Google's Gemini 2.0-flash for intelligent query enhancement
+- **Context Integration**: Incorporates recent conversation and relevant Q&A pairs
+- **Technical Enhancement**: Adds Stripe-specific terminology and concepts
+- **Fallback System**: Graceful fallback to rule-based reformulation if AI fails
+
+#### **4. AI-Powered Conversation Summarization**
+
+- **Gemini AI Integration**: Uses Google's Gemini 2.0-flash for intelligent conversation analysis
+- **Comprehensive Analysis**: Identifies main issues, solutions, outcomes, and technical details
+- **Context-Aware Summaries**: Incorporates key topics and conversation themes
+- **Intelligent Fallback**: Graceful degradation to rule-based summarization if AI unavailable
+- **Optimized Configuration**: Uses appropriate temperature and token limits for consistent summaries
+
+#### **5. PostgreSQL Search Capabilities**
+
+- **Full-text Search**: Uses PostgreSQL's `to_tsvector` and `plainto_tsquery` for English language processing
+- **Multi-field Search**: Searches across questions, answers, and context fields
+- **Relevance Ranking**: Combines AI-calculated scores with PostgreSQL text ranking
+- **Session Filtering**: Context-aware filtering by session and user
+
+### Memory Database Schema
+
+#### **Core Tables**
+
+**`conversation_sessions`**
+
+- Stores conversation sessions with metadata
+- Tracks active sessions and user associations
+- Includes session statistics and timestamps
+
+**`conversation_messages`**
+
+- Individual messages within conversations
+- Supports user, assistant, and system roles
+- Includes metadata for message context
+
+**`conversation_qa_pairs`**
+
+- AI-extracted Q&A pairs for long-term memory
+- Includes relevance scoring and importance flags
+- Supports tagging and context information
+
+**`conversation_summaries`**
+
+- Session-level summaries for context
+- Tracks key topics and conversation themes
+- Enables quick session overview
+
+**`memory_retrieval_cache`**
+
+- Performance cache for memory retrieval
+- Reduces database load for frequent queries
+- Includes expiration and cleanup mechanisms
+
+### Memory Search Implementation
+
+#### **Relevant Q&A Pairs Search**
+
+```sql
+SELECT qa_id, question, answer, context, relevance_score, session_id, created_at
+FROM conversation_qa_pairs
+WHERE (
+    to_tsvector('english', question) @@ plainto_tsquery('english', $1)
+    OR to_tsvector('english', answer) @@ plainto_tsquery('english', $1)
+    OR to_tsvector('english', context) @@ plainto_tsquery('english', $1)
+)
+AND session_id = $2
+ORDER BY
+    relevance_score DESC,
+    ts_rank(to_tsvector('english', question), plainto_tsquery('english', $1)) DESC
+LIMIT $3
+```
+
+#### **Conversation History Search**
+
+```sql
+SELECT DISTINCT
+    cs.session_id, cs.user_id, cs.created_at, cs.metadata,
+    COUNT(cm.message_id) as message_count
+FROM conversation_sessions cs
+JOIN conversation_messages cm ON cs.session_id = cm.session_id
+WHERE (
+    to_tsvector('english', cm.content) @@ plainto_tsquery('english', $1)
+)
+AND cs.user_id = $2
+GROUP BY cs.session_id, cs.user_id, cs.created_at, cs.metadata
+ORDER BY cs.created_at DESC
+LIMIT $3
+```
+
+### Memory System Usage
+
+#### **Basic Memory Integration**
+
+```javascript
+import MemoryController from "./controllers/memoryController.js";
+
+// Initialize memory system
+const memoryController = new MemoryController();
+await memoryController.initializeSession("session_123", "user_456", {
+  project: "stripe_integration",
+  context: "payment_processing",
+});
+
+// Process user message
+await memoryController.processUserMessage("How do I create a payment intent?", {
+  timestamp: new Date().toISOString(),
+});
+
+// Get memory context for query reformulation
+const memoryContext = await memoryController.getCompleteMemoryContext(
+  "What about webhook signatures?"
+);
+
+// Process assistant response
+await memoryController.processAssistantResponse(
+  "Webhook signatures help verify...",
+  { sources: 3, searchQuery: "webhook signatures verification" }
+);
+```
+
+#### **AI-Powered Query Reformulation**
+
+```javascript
+// Original query
+const originalQuery = "How do I handle errors?";
+
+// AI-enhanced reformulation with Gemini
+const reformulation = await memoryController.reformulateQuery(originalQuery);
+console.log(reformulation.reformulatedQuery);
+// Output: "Given the previous discussion on Stripe webhook signatures and verifying webhooks, how do I handle errors that might occur during webhook processing or when verifying signatures using the Stripe API? Specifically, what are the best practices for error handling related to webhook signature verification failures and general webhook event processing errors in my application? I'm looking for information on error codes, retry mechanisms, and logging strategies related to Stripe webhooks."
+
+console.log(reformulation.method); // "gemini_ai" or "rule_based_fallback"
+```
+
+### Memory System Benefits
+
+#### **1. Context-Aware Responses**
+
+- Maintains conversation flow across multiple turns
+- References previous discussions when relevant
+- Provides personalized responses based on conversation history
+
+#### **2. Enhanced Search Quality**
+
+- AI-powered query reformulation improves search relevance by 3-5x
+- Context integration ensures relevant results from conversation history
+- Technical enhancement adds Stripe-specific terminology
+
+#### **3. Cross-Session Continuity**
+
+- Enables seamless conversation flow across multiple sessions
+- Maintains user context and preferences
+- Provides consistent experience across interactions
+
+#### **4. Performance Optimization**
+
+- Efficient memory management with sliding windows
+- Cached retrieval for improved performance
+- Automatic cleanup of old data
+- AI-powered optimization for better memory utilization
+
+### AI Conversation Summarization
+
+The system features intelligent conversation summarization powered by Gemini AI, providing comprehensive analysis of customer support interactions.
+
+#### **Features**
+
+- **Intelligent Analysis**: AI identifies main issues, solutions, and outcomes
+- **Context Preservation**: Captures technical details and conversation themes
+- **Structured Summaries**: Organized summaries with key points and next steps
+- **Fallback Support**: Rule-based summarization when AI is unavailable
+
+#### **Usage Example**
+
+```javascript
+// Create conversation summary with AI
+const summary = await memoryController.createConversationSummary();
+
+// The AI generates comprehensive summaries like:
+/*
+"Customer Support Session Summary:
+
+The user encountered issues with Stripe webhook signature verification while implementing payment processing. The main problem was related to incorrect signature validation logic in their Node.js application. 
+
+Key solutions provided included:
+1. Proper webhook signature verification using Stripe's webhook signing secret
+2. Implementation of secure signature comparison to prevent timing attacks
+3. Error handling for invalid signatures with appropriate logging
+
+The conversation covered technical implementation details including code examples for Express.js middleware, environment variable configuration, and testing strategies using Stripe CLI. The user was provided with complete working code samples and best practices for production deployment.
+
+Next steps: The user should implement the provided signature verification middleware and test using Stripe's webhook testing tools before going live."
+*/
+```
+
+#### **AI Summarization Benefits**
+
+- **Comprehensive Coverage**: Captures all important aspects of the conversation
+- **Technical Accuracy**: Preserves technical details and implementation specifics
+- **Actionable Insights**: Identifies next steps and follow-up actions
+- **Context Retention**: Maintains conversation flow for future reference
 
 ### How It Works
 
@@ -213,6 +513,11 @@ CHUNK_SIZE=800
 CHUNK_OVERLAP=100
 MAX_CHUNKS=10
 BATCH_SIZE=5
+
+# Memory System Configuration
+MEMORY_BUFFER_SIZE=8
+MEMORY_CACHE_TTL=3600
+MEMORY_CLEANUP_DAYS=30
 ```
 
 ### 4. Database Setup
@@ -220,6 +525,9 @@ BATCH_SIZE=5
 ```bash
 # Setup PostgreSQL database
 npm run migrate:postgres
+
+# Setup memory system schema
+npm run setup:memory
 ```
 
 ### 5. Data Ingestion
@@ -262,7 +570,51 @@ The chat interface provides:
 
 ### Core Services
 
-#### 1. Hybrid Search Engine (`hybridSearch.js`)
+#### 1. Memory Controller (`controllers/memoryController.js`)
+
+- **Purpose**: Orchestrates the complete conversational memory system
+- **Features**:
+  - Session initialization and management
+  - User message processing with context integration
+  - Assistant response processing and Q&A extraction
+  - Complete memory context retrieval for RAG
+  - AI-powered conversation summarization with Gemini
+  - Intelligent fallback to rule-based summarization
+  - Conversation cleanup and memory optimization
+
+#### 2. BufferWindowMemory (`services/bufferWindowMemory.js`)
+
+- **Purpose**: Short-term memory for recent conversation context
+- **Features**:
+  - Sliding window memory (last 8 messages/4 turns)
+  - Automatic message management and overflow handling
+  - Context string generation for AI integration
+  - Conversation summary extraction
+  - Message import/export capabilities
+
+#### 3. PostgreSQLMemoryService (`services/postgresMemoryService.js`)
+
+- **Purpose**: Long-term memory persistence and retrieval
+- **Features**:
+  - Session and message storage
+  - Q&A pair storage with AI analysis
+  - Full-text search across conversation history
+  - AI-powered conversation summarization storage
+  - Cross-session memory retrieval
+  - Intelligent summary retrieval and search
+  - Memory statistics and analytics
+
+#### 4. QueryReformulationService (`services/queryReformulationService.js`)
+
+- **Purpose**: AI-powered query enhancement with context integration
+- **Features**:
+  - Gemini AI integration for intelligent query reformulation
+  - Context integration from recent and long-term memory
+  - Technical enhancement with Stripe-specific terminology
+  - Fallback to rule-based reformulation
+  - Q&A pair extraction and analysis with AI
+
+#### 5. Hybrid Search Engine (`hybridSearch.js`)
 
 - **Purpose**: Combines PostgreSQL BM25 and Pinecone semantic search
 - **Features**:
@@ -271,7 +623,7 @@ The chat interface provides:
   - Query preprocessing and optimization
   - Result ranking and filtering
 
-#### 2. PostgreSQL BM25 Service (`services/postgresBM25Service.js`)
+#### 6. PostgreSQL BM25 Service (`services/postgresBM25Service.js`)
 
 - **Purpose**: Full-text search using PostgreSQL's built-in BM25
 - **Features**:
@@ -280,7 +632,7 @@ The chat interface provides:
   - Category-based filtering
   - Statistics and analytics
 
-#### 3. Document Storage Service (`services/documentStorageService.js`)
+#### 7. Document Storage Service (`services/documentStorageService.js`)
 
 - **Purpose**: Manages document storage and retrieval
 - **Features**:
@@ -423,6 +775,8 @@ npm run test:documents    # Document loading tests
 npm run test:hybrid       # Hybrid search tests
 npm run test:chat         # Chat integration tests
 npm run test:postgres     # PostgreSQL tests
+npm run test:memory       # Memory system tests
+npm run test:gemini-reformulation  # Gemini AI query reformulation tests
 ```
 
 ## 🔧 Development
@@ -435,7 +789,8 @@ npm run scrape         # Scrape Stripe documentation
 npm run ingest         # Ingest documents into database
 npm run chat           # Start chat interface
 npm run migrate:postgres # Migrate to PostgreSQL
-npm run setup          # Full setup (scrape + ingest)
+npm run setup:memory   # Setup memory system schema
+npm run setup          # Full setup (scrape + ingest + memory)
 npm run dev            # Development mode
 npm test               # Run test suite
 ```

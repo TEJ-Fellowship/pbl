@@ -6,6 +6,7 @@ import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
 import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import MemoryController from "../controllers/memoryController.js";
 import config from "../config/config.js";
 
 // Initialize Gemini client
@@ -268,11 +269,108 @@ Remember: You're helping developers build payment solutions, so be practical and
   }
 }
 
+// Generate response with memory context integration
+async function generateResponseWithMemory(
+  query,
+  chunks,
+  geminiClient,
+  memoryContext
+) {
+  try {
+    console.log("\n🤖 Generating response with memory context...");
+
+    // Prepare context from retrieved chunks
+    const context = chunks
+      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .join("\n\n");
+
+    const sources = chunks.map((chunk, index) => ({
+      content: chunk.content,
+      metadata: chunk.metadata,
+      similarity: chunk.similarity,
+      score: chunk.score || 0,
+      index: index + 1,
+    }));
+
+    // Build memory context string
+    let memoryContextString = "";
+
+    if (memoryContext.recentContext && memoryContext.recentContext.hasContext) {
+      memoryContextString += `\n\nRECENT CONVERSATION CONTEXT:\n${memoryContext.recentContext.contextString}`;
+    }
+
+    if (
+      memoryContext.longTermContext &&
+      memoryContext.longTermContext.hasLongTermContext
+    ) {
+      const relevantQAs = memoryContext.longTermContext.relevantQAs;
+      if (relevantQAs && relevantQAs.length > 0) {
+        memoryContextString += `\n\nRELEVANT PREVIOUS DISCUSSIONS:\n`;
+        relevantQAs.forEach((qa, index) => {
+          memoryContextString += `[Previous Q&A ${index + 1}] Q: ${
+            qa.question
+          }\nA: ${qa.answer.substring(0, 200)}...\n\n`;
+        });
+      }
+    }
+
+    // Generate response using Gemini with memory context
+    const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+
+      You have access to both current Stripe documentation and previous conversation context to provide contextually aware responses.
+
+      CURRENT STRIPE DOCUMENTATION:
+      ${context}
+
+      CURRENT USER QUESTION: ${query}
+      ${memoryContextString}
+
+      RESPONSE GUIDELINES:
+      1. **Context Awareness**: Use previous conversation context to provide more relevant and personalized responses
+      2. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+      3. **Continuity**: Reference previous discussions when relevant to maintain conversation flow
+      4. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+      5. **Include Code**: Always include practical code examples in the appropriate programming language
+      6. **Step-by-Step**: Break down complex processes into clear, actionable steps
+      7. **Error Handling**: Mention common errors and how to handle them
+      8. **Best Practices**: Include security considerations and best practices
+      9. **Source Citations**: Reference specific sources using [Source X] format
+      10. **If Uncertain**: Clearly state when information isn't available in the context
+
+      FORMAT YOUR RESPONSE:
+      - Start with a direct answer to the question
+      - Reference previous context when relevant (e.g., "Building on our previous discussion about...")
+      - Provide detailed explanation with code examples
+      - Include relevant API endpoints and parameters
+      - Mention any prerequisites or setup requirements
+      - End with source citations
+
+      Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return {
+      answer: text,
+      sources: sources,
+    };
+  } catch (error) {
+    console.error("❌ Memory-aware response generation failed:", error.message);
+    // Fallback to regular response generation
+    return await generateResponse(query, chunks, geminiClient);
+  }
+}
+
 // Main chat function
 async function startChat() {
   console.log("💳 Stripe Customer Support Agent - Chat Interface");
   console.log("=".repeat(60));
   console.log("🤖 AI Provider: GEMINI");
+  console.log("🧠 Memory System: BufferWindowMemory + PostgreSQL");
   console.log("💡 Type 'exit' to quit, 'sample' for more questions");
   console.log("=".repeat(60));
   console.log("\n🚀 Sample Questions to Get Started:");
@@ -288,6 +386,17 @@ async function startChat() {
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
 
+    // Initialize memory system
+    const memoryController = new MemoryController();
+    const sessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    await memoryController.initializeSession(sessionId, "chat_user", {
+      project: "stripe_support",
+      context: "customer_support",
+      startTime: new Date().toISOString(),
+    });
+
     // Create readline interface
     const rl = readline.createInterface({
       input: process.stdin,
@@ -298,6 +407,20 @@ async function startChat() {
       rl.question("\n❓ Your question: ", async (query) => {
         if (query.toLowerCase() === "exit") {
           console.log("👋 Goodbye!");
+
+          // Create conversation summary before closing
+          try {
+            await memoryController.createConversationSummary();
+            console.log("📝 Conversation summary created and stored");
+          } catch (error) {
+            console.error(
+              "❌ Failed to create conversation summary:",
+              error.message
+            );
+          }
+
+          // Close memory system
+          await memoryController.close();
           rl.close();
           return;
         }
@@ -333,9 +456,36 @@ async function startChat() {
         }
 
         try {
-          // Retrieve relevant chunks using hybrid search , RETRIEVAL
+          // Process user message with memory system
+          await memoryController.processUserMessage(query, {
+            timestamp: new Date().toISOString(),
+            source: "chat_interface",
+          });
+
+          // Get complete memory context for query reformulation
+          const memoryContext = await memoryController.getCompleteMemoryContext(
+            query
+          );
+          console.log(
+            `🧠 Memory context: ${
+              memoryContext.recentContext?.messageCount || 0
+            } recent messages, ${
+              memoryContext.longTermContext?.relevantQAs?.length || 0
+            } relevant Q&As`
+          );
+
+          // Use reformulated query for retrieval
+          const searchQuery = memoryContext.reformulatedQuery || query;
+          console.log(
+            `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+              0,
+              100
+            )}..."`
+          );
+
+          // Retrieve relevant chunks using hybrid search with reformulated query
           const chunks = await retrieveChunksWithHybridSearch(
-            query,
+            searchQuery,
             vectorStore,
             embeddings
           );
@@ -348,8 +498,20 @@ async function startChat() {
             return;
           }
 
-          // Generate augmented response , AUGMENTATION & GENERATION
-          const result = await generateResponse(query, chunks, geminiClient);
+          // Generate augmented response with memory context
+          const result = await generateResponseWithMemory(
+            query,
+            chunks,
+            geminiClient,
+            memoryContext
+          );
+
+          // Process assistant response with memory system
+          await memoryController.processAssistantResponse(result.answer, {
+            timestamp: new Date().toISOString(),
+            sources: result.sources?.length || 0,
+            searchQuery: searchQuery,
+          });
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));

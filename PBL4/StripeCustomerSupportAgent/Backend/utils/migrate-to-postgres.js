@@ -5,7 +5,7 @@
  * This script helps transition from file-based storage to database storage
  */
 
-import { storeScrapedDocuments } from "./ingest.js";
+import { storeScrapedDocuments } from "../scripts/ingest.js";
 import DocumentStorageService from "./services/documentStorageService.js";
 
 async function migrateToPostgreSQL() {

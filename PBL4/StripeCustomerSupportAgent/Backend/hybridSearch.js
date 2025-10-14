@@ -68,7 +68,9 @@ class HybridSearch {
    */
   async searchBM25(query, topK = 10, filters = {}) {
     try {
-      console.log(`🔍 PostgreSQL BM25 search for: "${query}"`);
+      console.log(
+        `\n🔍 PostgreSQL BM25 search for: "${query.substring(0, 50)}..."`
+      );
 
       const results = await this.postgresBM25Service.searchBM25(
         query,
@@ -89,7 +91,7 @@ class HybridSearch {
    */
   async searchSemantic(query, topK = 10) {
     try {
-      console.log(`🔍 Semantic search for: "${query}"`);
+      console.log(`\n🔍 Semantic search for: "${query.substring(0, 50)}..."`);
 
       // Generate query embedding
       const queryEmbedding = await this.embeddings.embedQuery(query);
@@ -242,7 +244,7 @@ class HybridSearch {
       await this.initialize();
     }
 
-    console.log(`\n🔍 PostgreSQL Hybrid Search: "${query}"`);
+    console.log(`\n🔍 Hybrid Search: "${query}"`);
     console.log("=".repeat(50));
 
     // Detect if query contains error codes
