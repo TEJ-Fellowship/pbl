@@ -4,10 +4,12 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import url from "url";
+import crypto from "crypto";
 import config from "../config/config.js";
 
 const BASE_DOMAIN = "https://www.twilio.com";
 
+// Twilio documentation base sources
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
   sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
@@ -19,13 +21,15 @@ const SOURCES = {
   node_SDK: "https://www.twilio.com/docs/libraries/node",
 };
 
-// Rate limiting: 1 request per second
+// Rate limiting
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const visited = new Set();
+// Deduplication stores
+const visitedUrls = new Set();
+const contentHashes = new Set();
 
 /**
- * Normalize Twilio URLs (remove hash/query and ensure full domain)
+ * Normalize URLs for consistent comparison
  */
 function normalizeUrl(href, base) {
   if (!href) return null;
@@ -37,11 +41,18 @@ function normalizeUrl(href, base) {
 }
 
 /**
- * Scrape content from a single Twilio documentation page
+ * Generate SHA-256 hash of content to detect duplicates
+ */
+function hashContent(text) {
+  return crypto.createHash("sha256").update(text).digest("hex");
+}
+
+/**
+ * Scrape a single Twilio documentation page
  */
 async function scrapePage(urlStr, category) {
-  if (visited.has(urlStr)) return null;
-  visited.add(urlStr);
+  if (visitedUrls.has(urlStr)) return null;
+  visitedUrls.add(urlStr);
 
   console.log(`🔍 Scraping: ${urlStr}`);
   await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
@@ -57,17 +68,17 @@ async function scrapePage(urlStr, category) {
 
     const $ = cheerio.load(res.data);
 
-    // Remove noise
+    // Remove irrelevant parts
     $("nav, footer, script, style, .sidebar, .cookie-banner, .ad, .footer").remove();
 
-    // --- Extract code blocks ---
+    // Extract code blocks
     const codeBlocks = [];
     $("pre code, pre, code").each((_, el) => {
       const t = $(el).text().trim();
       if (t && t.length > 15 && !codeBlocks.includes(t)) codeBlocks.push(t);
     });
 
-    // Remove code from main content
+    // Remove code before text extraction
     $("pre, code").remove();
 
     const content = $("main").text() || $("article").text() || $("body").text();
@@ -78,9 +89,17 @@ async function scrapePage(urlStr, category) {
       .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]")
       .trim();
 
+    // Content deduplication via hash
+    const hash = hashContent(cleanContent);
+    if (contentHashes.has(hash)) {
+      console.log(`⚠️ Skipping duplicate content: ${urlStr}`);
+      return null;
+    }
+    contentHashes.add(hash);
+
     const wordCount = cleanContent.split(/\s+/).length;
 
-    // Extract sub-links for deeper crawl
+    // Extract links for recursive crawl
     const links = [];
     $("a").each((_, el) => {
       const href = normalizeUrl($(el).attr("href"), urlStr);
@@ -125,7 +144,10 @@ async function crawlDocs(startUrl, category, maxDepth = 2) {
     results.push(page);
 
     for (const link of page.links) {
-      if (!visited.has(link) && link.startsWith(BASE_DOMAIN + "/docs")) {
+      if (
+        !visitedUrls.has(link) &&
+        link.startsWith(BASE_DOMAIN + "/docs")
+      ) {
         toVisit.push({ url: link, depth: depth + 1 });
       }
     }
@@ -164,9 +186,7 @@ async function main() {
 
     allDocs.push(...docs);
     totalWords += docs.reduce((sum, d) => sum + d.wordCount, 0);
-    console.log(`✅ ${category}: scraped ${docs.length} pages (${totalWords.toLocaleString()} words)`);
-
-    if (limit && allDocs.length >= limit) break;
+    console.log(`✅ ${category}: scraped ${docs.length} unique pages`);
   }
 
   // Save output
@@ -175,7 +195,9 @@ async function main() {
   const filePath = path.join(outDir, "scraped_full.json");
   await fs.writeFile(filePath, JSON.stringify(allDocs, null, 2));
 
-  console.log(`\n🎉 Done! Scraped ${allDocs.length} pages (${totalWords.toLocaleString()} words)`);
+  console.log(`\n🎉 Done!`);
+  console.log(`📊 Total pages: ${allDocs.length}`);
+  console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
   console.log(`💾 Output saved to: ${filePath}`);
   console.log(`💡 Next: Run 'npm run chunk' → 'npm run ingest' → 'npm run chat'`);
 }
