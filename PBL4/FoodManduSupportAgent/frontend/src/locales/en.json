@@ -1,0 +1,20 @@
+{
+    "welcome": "Namaste! 🙏 Welcome to Foodmandu Support. How can I help you today?",
+    "language": "Language",
+    "english": "English",
+    "nepali": "नेपाली",
+    "quickTracking": "Quick Tracking",
+    "enterOrderId": "Enter Order ID",
+    "track": "Track",
+    "avgResponseTime": "⏱️ Avg response time: 2-3 minutes",
+    "available247": "Available 24/7 during service hours",
+    "supportChat": "Support Chat",
+    "quickActions": "Quick Actions",
+    "trackOrder": "Track Order",
+    "requestRefund": "Request Refund",
+    "contactRestaurant": "Contact Restaurant",
+    "typeMessage": "Type your message...",
+    "send": "Send",
+    "tip": "💡 Tip: Provide your order ID for faster assistance",
+    "errorMessage": "Sorry, I couldn't process your question. Please try again."
+  }

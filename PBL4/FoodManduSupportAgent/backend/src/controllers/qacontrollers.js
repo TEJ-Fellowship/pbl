@@ -28,9 +28,9 @@ export const handleChat = async (req, res) => {
   const startTime = Date.now();
 
   try {
-    const { question } = req.body;
+    const { question, language = "en" } = req.body;
 
-    console.log(`📝 New question: "${question}"`);
+    console.log(`📝 New question: "${question}" (Language: ${language})`);
 
     // Retrieve relevant context from Pinecone
     console.log("🔍 Searching for relevant context...");
@@ -44,10 +44,10 @@ export const handleChat = async (req, res) => {
 
     // Generate answer using Gemini
     console.log("🤖 Generating answer with Gemini...");
-    const answer = await askGemini(question, topSections);
+    const answer = await askGemini(question, topSections, language);
 
     // Save chat to DB
-    const newChat = new Chat({ question, answer });
+    const newChat = new Chat({ question, answer, language });
     await newChat.save();
     console.log(`💾 Chat saved to database (ID: ${newChat._id})`);
 
@@ -56,11 +56,13 @@ export const handleChat = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      answer: answer, // Frontend expects 'answer' field directly
       data: {
         question,
         answer,
         chatId: newChat._id,
         timestamp: newChat.createdAt,
+        language,
       },
       meta: {
         sectionsFound: topSections.length,
