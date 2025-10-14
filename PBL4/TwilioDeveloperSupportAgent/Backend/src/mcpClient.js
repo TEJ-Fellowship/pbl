@@ -117,11 +117,30 @@ export class TwilioMCPClient {
     }
   }
 
-  // Simple method to enhance chat context
+  // MCP Tool methods
   async enhanceChatContext(query, context = "") {
-    return await this.callTool("chat_context_enhancer", {
+    return await this.callTool("enhance_chat_context", {
       query,
       context,
+    });
+  }
+
+  async validateTwilioCode(code, language = "javascript") {
+    return await this.callTool("validate_twilio_code", {
+      code,
+      language,
+    });
+  }
+
+  async lookupErrorCode(errorCode) {
+    return await this.callTool("lookup_error_code", {
+      errorCode,
+    });
+  }
+
+  async detectProgrammingLanguage(text) {
+    return await this.callTool("detect_programming_language", {
+      text,
     });
   }
 

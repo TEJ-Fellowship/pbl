@@ -11,6 +11,7 @@ import { highlight } from "cli-highlight";
 import ConversationMemory from "./conversationMemory.js";
 import HybridSearch from "./hybridSearch.js";
 import APIDetector from "./apiDetector.js";
+import { TwilioMCPClient } from "./mcpClient.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -430,21 +431,67 @@ async function retrieveChunksWithEmbeddings(
   }
 }
 
-// Generate memory-aware response using Gemini
+// Generate memory-aware response using Gemini with MCP tools
 async function generateMemoryAwareResponse(
   query,
   chunks,
   geminiClient,
   memory,
-  apiDetector
+  apiDetector,
+  mcpClient = null
 ) {
   try {
-    console.log(chalk.green("🤖 Generating memory-aware response..."));
+    console.log(
+      chalk.green("🤖 Generating memory-aware response with MCP tools...")
+    );
 
     // Detect API and language from query
     const context = memory.getConversationContext();
     const apiDetection = apiDetector.detectAPI(query, context);
     const detectedLanguage = detectQueryLanguage(query);
+
+    // Use MCP tools for enhanced analysis if available
+    let mcpEnhancements = null;
+    let errorCodeInfo = null;
+    let codeValidation = null;
+
+    if (mcpClient && mcpClient.isConnected) {
+      try {
+        // Enhance context with MCP tools
+        const contextResult = await mcpClient.enhanceChatContext(
+          query,
+          context
+        );
+        if (contextResult.success) {
+          mcpEnhancements = JSON.parse(contextResult.result.content[0].text);
+        }
+
+        // Look up error codes if detected
+        const errorCodes = detectErrorCodes(query);
+        if (errorCodes.length > 0) {
+          const errorResult = await mcpClient.lookupErrorCode(errorCodes[0]);
+          if (errorResult.success) {
+            errorCodeInfo = JSON.parse(errorResult.result.content[0].text);
+          }
+        }
+
+        // Validate any code snippets in the query
+        const codeMatch = query.match(/```[\s\S]*?```/g);
+        if (codeMatch) {
+          const codeResult = await mcpClient.validateTwilioCode(
+            codeMatch[0],
+            detectedLanguage || "javascript"
+          );
+          if (codeResult.success) {
+            codeValidation = JSON.parse(codeResult.result.content[0].text);
+          }
+        }
+      } catch (mcpError) {
+        console.log(
+          chalk.yellow("⚠️ MCP tools unavailable, using fallback analysis")
+        );
+      }
+    }
 
     // Update memory with detected information
     if (detectedLanguage) {
@@ -490,6 +537,36 @@ async function generateMemoryAwareResponse(
       }
     }
 
+    // Add MCP tool insights
+    let mcpContext = "";
+    if (mcpEnhancements) {
+      mcpContext += `\nMCP ANALYSIS: `;
+      if (mcpEnhancements.enhancements.detectedLanguage) {
+        mcpContext += `Detected language: ${mcpEnhancements.enhancements.detectedLanguage}. `;
+      }
+      if (mcpEnhancements.enhancements.detectedAPI) {
+        mcpContext += `Detected API: ${mcpEnhancements.enhancements.detectedAPI}. `;
+      }
+      if (mcpEnhancements.enhancements.suggestedFocus) {
+        mcpContext += `Suggested focus: ${mcpEnhancements.enhancements.suggestedFocus}. `;
+      }
+    }
+
+    if (errorCodeInfo && errorCodeInfo.found) {
+      mcpContext += `\nERROR CODE ANALYSIS: ${errorCodeInfo.message} - ${errorCodeInfo.description}. Solution: ${errorCodeInfo.solution}`;
+    }
+
+    if (codeValidation) {
+      mcpContext += `\nCODE VALIDATION: `;
+      if (codeValidation.isValid) {
+        mcpContext += `Code appears valid. `;
+      } else {
+        mcpContext += `Issues found: ${codeValidation.issues.join(
+          ", "
+        )}. Suggestions: ${codeValidation.suggestions.join(", ")}. `;
+      }
+    }
+
     const sources = chunks.map((chunk, index) => ({
       content: chunk.content,
       metadata: chunk.metadata,
@@ -501,7 +578,7 @@ async function generateMemoryAwareResponse(
     // Generate response using Gemini with memory context
     const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
 
-${contextPrompt}${apiContext}
+${contextPrompt}${apiContext}${mcpContext}
 
 CONTEXT (Twilio Documentation):
 ${contextChunks}

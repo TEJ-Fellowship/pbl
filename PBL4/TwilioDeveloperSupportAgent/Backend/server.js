@@ -19,6 +19,7 @@ import {
 } from "./src/chat.js";
 import ConversationMemory from "./src/conversationMemory.js";
 import APIDetector from "./src/apiDetector.js";
+import { TwilioMCPClient } from "./src/mcpClient.js";
 
 // Load environment variables
 dotenv.config();
@@ -46,7 +47,8 @@ let geminiClient,
   vectorStore,
   memory,
   apiDetector,
-  separateChunks;
+  separateChunks,
+  mcpClient;
 
 // Initialize services
 async function initializeServices() {
@@ -63,6 +65,10 @@ async function initializeServices() {
     // Load separate chunks for hybrid search
     const { loadSeparateChunks } = await import("./src/chat.js");
     separateChunks = await loadSeparateChunks();
+
+    // Initialize MCP client (disabled for now due to SDK issues)
+    mcpClient = null;
+    console.log("⚠️ MCP client disabled, using enhanced prompt system");
 
     console.log("✅ All services initialized successfully");
   } catch (error) {
@@ -124,7 +130,8 @@ app.post("/api/chat", async (req, res) => {
       chunks,
       geminiClient,
       memory,
-      apiDetector
+      apiDetector,
+      mcpClient
     );
 
     const responseTime = Date.now() - startTime;
