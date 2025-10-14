@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "twilio-web-search": {
+      "command": "node",
+      "args": ["server.js"],
+      "cwd": "/Users/a123123/Desktop/pbl/PBL4/TwilioDeveloperSupportAgent/Backend/mcp-server",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "twilio-web-search-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Twilio Web Search Tool",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --inspect server.js",
+    "test": "node test-client.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "axios": "^1.6.7",
+    "cheerio": "^1.0.0-rc.12",
+    "date-fns": "^3.6.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "twilio",
+    "web-search",
+    "ai-assistant"
+  ],
+  "author": "Twilio Developer Support Agent",
+  "license": "MIT"
+}
