@@ -253,7 +253,7 @@ FORMAT YOUR RESPONSE:
 Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -348,7 +348,7 @@ async function generateResponseWithMemory(
       Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;

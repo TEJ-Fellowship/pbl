@@ -24,25 +24,52 @@ class ChatService {
 
     try {
       console.log("🔧 Initializing chat service...");
+      console.log("   📋 Configuration check:");
+      console.log(
+        `      • GEMINI_API_KEY: ${
+          config.GEMINI_API_KEY ? "✅ Set" : "❌ Missing"
+        }`
+      );
+      console.log(
+        `      • PINECONE_API_KEY: ${
+          config.PINECONE_API_KEY ? "✅ Set" : "❌ Missing"
+        }`
+      );
+      console.log(
+        `      • PINECONE_INDEX_NAME: ${
+          config.PINECONE_INDEX_NAME || "❌ Missing"
+        }`
+      );
+      console.log(
+        `      • DATABASE_URL: ${config.DATABASE_URL ? "✅ Set" : "❌ Missing"}`
+      );
 
       // Initialize Gemini client
+      console.log("   🤖 Initializing Gemini client...");
       this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-      console.log("✅ Gemini client initialized");
+      console.log("      ✅ Gemini client initialized");
 
       // Initialize embeddings
+      console.log("   🧠 Initializing Gemini embeddings...");
       this.embeddings = new GoogleGenerativeAIEmbeddings({
         apiKey: config.GEMINI_API_KEY,
         modelName: "text-embedding-004",
       });
-      console.log("✅ Gemini embeddings initialized");
+      console.log(
+        "      ✅ Gemini embeddings initialized (text-embedding-004)"
+      );
 
       // Initialize Pinecone
+      console.log("   🌲 Initializing Pinecone vector store...");
       const pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
       const index = pinecone.Index(config.PINECONE_INDEX_NAME);
       this.vectorStore = { type: "pinecone", index };
-      console.log("✅ Pinecone vector store initialized");
+      console.log(
+        `      ✅ Pinecone vector store initialized (${config.PINECONE_INDEX_NAME})`
+      );
 
       // Initialize hybrid search
+      console.log("   🔍 Initializing hybrid search system...");
       const postgresBM25Service = new PostgreSQLBM25Service();
       this.hybridSearch = new HybridSearch(
         this.vectorStore,
@@ -50,14 +77,17 @@ class ChatService {
         postgresBM25Service
       );
       await this.hybridSearch.initialize();
-      console.log("✅ Hybrid search initialized");
+      console.log(
+        "      ✅ Hybrid search initialized (PostgreSQL BM25 + Pinecone)"
+      );
 
       // Initialize memory controller
+      console.log("   🧠 Initializing memory controller...");
       this.memoryController = new MemoryController();
-      console.log("✅ Memory controller initialized");
+      console.log("      ✅ Memory controller initialized");
 
       this.isInitialized = true;
-      console.log("🎉 Chat service fully initialized");
+      console.log("🎉 Chat service fully initialized and ready!");
     } catch (error) {
       console.error("❌ Chat service initialization failed:", error);
       throw error;
@@ -86,6 +116,28 @@ class ChatService {
           context: "customer_support",
           startTime: timestamp,
         });
+      } else {
+        // For existing sessions, ensure memory system is initialized
+        console.log(`🔄 Checking existing session: ${sessionId}`);
+        console.log(
+          `   Current session ID: ${this.memoryController.currentSessionId}`
+        );
+
+        if (
+          !this.memoryController.currentSessionId ||
+          this.memoryController.currentSessionId !== sessionId
+        ) {
+          console.log(`   🔄 Reinitializing memory for session: ${sessionId}`);
+          await this.memoryController.initializeSession(sessionId, userId, {
+            project: "stripe_support",
+            context: "customer_support",
+            startTime: timestamp,
+          });
+        } else {
+          console.log(
+            `   ✅ Memory already initialized for session: ${sessionId}`
+          );
+        }
       }
 
       // Process user message with memory system
@@ -229,7 +281,7 @@ FORMAT YOUR RESPONSE:
 Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;

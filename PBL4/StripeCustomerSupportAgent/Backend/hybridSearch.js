@@ -26,14 +26,32 @@ class HybridSearch {
       console.log("🔧 Initializing PostgreSQL-based hybrid search system...");
 
       // Test PostgreSQL connection
+      console.log("   🗄️ Testing PostgreSQL BM25 service...");
       const stats = await this.postgresBM25Service.getStats();
-      console.log(`✅ PostgreSQL connection established`);
+      console.log(`      ✅ PostgreSQL connection established`);
       console.log(
-        `📊 Database stats: ${stats.total_chunks} chunks, ${stats.categories} categories`
+        `      📊 Database stats: ${stats.total_chunks} chunks, ${stats.categories} categories`
       );
 
+      // Test vector store connection
+      console.log("   🌲 Testing vector store connection...");
+      if (this.vectorStore.type === "pinecone") {
+        try {
+          const indexStats = await this.vectorStore.index.describeIndexStats();
+          console.log(`      ✅ Pinecone connection established`);
+          console.log(
+            `      📊 Vector count: ${indexStats.totalVectorCount || 0}`
+          );
+          console.log(
+            `      📏 Dimensions: ${indexStats.dimension || "Unknown"}`
+          );
+        } catch (error) {
+          console.log(`      ❌ Pinecone connection failed: ${error.message}`);
+        }
+      }
+
       this.isInitialized = true;
-      console.log("✅ PostgreSQL-based hybrid search initialized");
+      console.log("   ✅ PostgreSQL-based hybrid search initialized");
     } catch (error) {
       console.error(
         "❌ Failed to initialize PostgreSQL hybrid search:",

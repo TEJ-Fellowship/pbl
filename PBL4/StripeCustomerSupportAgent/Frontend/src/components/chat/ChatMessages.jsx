@@ -1,42 +1,131 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const MessageBubble = ({ message }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-    className={`flex items-start space-x-4 max-w-3xl ${
-      message.sender === "user" ? "ml-auto flex-row-reverse" : ""
-    }`}
-  >
-    <div
-      className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
-        message.sender === "user" ? "bg-gray-700" : "bg-primary"
-      }`}
+const SourcePanel = ({ sources, isOpen, onToggle }) => {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ height: isOpen ? "auto" : 0 }}
+      className="overflow-hidden"
     >
-      <span
-        className={`material-symbols-outlined text-lg ${
-          message.sender === "user" ? "text-white" : "text-white"
-        }`}
-      >
-        {message.sender === "user" ? "person" : "auto_awesome"}
+      <div className="mt-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-semibold text-gray-300">Sources</h4>
+          <button
+            onClick={onToggle}
+            className="text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">
+              {isOpen ? "expand_less" : "expand_more"}
+            </span>
+          </button>
+        </div>
+        {isOpen && (
+          <div className="space-y-2">
+            {sources.map((source, index) => (
+              <div key={index} className="text-xs text-gray-400">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">
+                    {source.metadata?.title || `Source ${index + 1}`}
+                  </span>
+                  <span className="text-gray-500">
+                    {(source.similarity || source.score || 0).toFixed(3)}
+                  </span>
+                </div>
+                {source.metadata?.source && (
+                  <div className="text-gray-500 truncate">
+                    {source.metadata.source}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const ConfidenceIndicator = ({ confidence }) => {
+  if (!confidence) return null;
+
+  const getConfidenceColor = (conf) => {
+    if (conf >= 0.8) return "text-green-400";
+    if (conf >= 0.6) return "text-yellow-400";
+    return "text-red-400";
+  };
+
+  const getConfidenceText = (conf) => {
+    if (conf >= 0.8) return "High";
+    if (conf >= 0.6) return "Medium";
+    return "Low";
+  };
+
+  return (
+    <div className="flex items-center space-x-2 mt-2">
+      <span className="text-xs text-gray-400">Confidence:</span>
+      <span className={`text-xs font-medium ${getConfidenceColor(confidence)}`}>
+        {getConfidenceText(confidence)} ({(confidence * 100).toFixed(0)}%)
       </span>
     </div>
-    <div
-      className={`p-4 rounded-lg ${
-        message.sender === "user"
-          ? "bg-blue-600/80 text-white rounded-tr-none"
-          : "bg-black/20 rounded-tl-none"
+  );
+};
+
+const MessageBubble = ({ message }) => {
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`flex items-start space-x-4 max-w-3xl ${
+        message.sender === "user" ? "ml-auto flex-row-reverse" : ""
       }`}
     >
-      {message.sender === "ai" && (
-        <p className="font-semibold text-primary mb-1">Stitch.AI</p>
-      )}
-      <p className="text-text-dark">{message.text}</p>
-    </div>
-  </motion.div>
-);
+      <div
+        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
+          message.sender === "user" ? "bg-gray-700" : "bg-primary"
+        }`}
+      >
+        <span
+          className={`material-symbols-outlined text-lg ${
+            message.sender === "user" ? "text-white" : "text-white"
+          }`}
+        >
+          {message.sender === "user" ? "person" : "auto_awesome"}
+        </span>
+      </div>
+      <div
+        className={`p-4 rounded-lg ${
+          message.sender === "user"
+            ? "bg-blue-600/80 text-white rounded-tr-none"
+            : message.isError
+            ? "bg-red-900/20 border border-red-500/30 rounded-tl-none"
+            : "bg-black/20 rounded-tl-none"
+        }`}
+      >
+        {message.sender === "ai" && (
+          <p className="font-semibold text-primary mb-1">Stripe.AI</p>
+        )}
+        <div className="text-text-dark whitespace-pre-wrap">{message.text}</div>
+
+        {message.sender === "ai" && !message.isError && (
+          <>
+            <ConfidenceIndicator confidence={message.confidence} />
+            <SourcePanel
+              sources={message.sources}
+              isOpen={sourcesOpen}
+              onToggle={() => setSourcesOpen(!sourcesOpen)}
+            />
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+};
 
 const TypingIndicator = () => (
   <motion.div

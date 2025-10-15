@@ -6,6 +6,7 @@ export const healthController = {
    */
   async getHealth(req, res) {
     try {
+      console.log("💚 Health check requested");
       res.json({
         status: "healthy",
         timestamp: new Date().toISOString(),
@@ -13,6 +14,7 @@ export const healthController = {
         version: "1.0.0",
       });
     } catch (error) {
+      console.log("❌ Health check failed");
       res.status(500).json({
         status: "unhealthy",
         error: error.message,
@@ -56,15 +58,12 @@ export const healthController = {
 async function checkDatabaseConnection() {
   try {
     // Import here to avoid circular dependencies
-    const { Pool } = await import("pg");
-    const pool = new Pool({
-      connectionString: config.DATABASE_URL,
-    });
+    const poolModule = await import("../config/database.js");
+    const pool = poolModule.default;
 
     const client = await pool.connect();
     await client.query("SELECT 1");
     client.release();
-    await pool.end();
 
     return { status: "connected", message: "Database connection successful" };
   } catch (error) {
@@ -104,7 +103,7 @@ async function checkGeminiConnection() {
   try {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Simple test generation
     const result = await model.generateContent("test");

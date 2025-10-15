@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { LANDING_PAGE } from "../../constants/routes";
+import StatusIndicator from "../StatusIndicator.jsx";
 
 const ChatHeader = () => {
   return (
@@ -12,11 +13,8 @@ const ChatHeader = () => {
           </span>
         </div>
         <div>
-          <h1 className="text-xl font-bold">API Integration Assistant</h1>
-          <p className="text-sm text-subtle-dark flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
-            <span>Online</span>
-          </p>
+          <h1 className="text-xl font-bold">Stripe Support Assistant</h1>
+          <StatusIndicator />
         </div>
       </div>
       <div className="flex items-center space-x-4">

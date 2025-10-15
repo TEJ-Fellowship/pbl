@@ -9,7 +9,15 @@ export const chatController = {
     try {
       const { message, sessionId, userId = "anonymous" } = req.body;
 
-      console.log(`💬 Chat request: ${message.substring(0, 50)}...`);
+      console.log("💬 New chat request received:");
+      console.log(
+        `   📝 Message: ${message.substring(0, 100)}${
+          message.length > 100 ? "..." : ""
+        }`
+      );
+      console.log(`   👤 User: ${userId}`);
+      console.log(`   🆔 Session: ${sessionId || "New session"}`);
+      console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
 
       // Process the message through the chat service
       const response = await chatService.processMessage({
@@ -18,6 +26,16 @@ export const chatController = {
         userId,
         timestamp: new Date().toISOString(),
       });
+
+      console.log("✅ Chat response generated:");
+      console.log(
+        `   📊 Response length: ${response.answer.length} characters`
+      );
+      console.log(`   📚 Sources found: ${response.sources?.length || 0}`);
+      console.log(
+        `   🎯 Confidence: ${(response.confidence * 100).toFixed(1)}%`
+      );
+      console.log(`   🆔 Session ID: ${response.sessionId}`);
 
       res.json({
         success: true,
@@ -48,12 +66,20 @@ export const chatController = {
       const { limit = 50, offset = 0 } = req.query;
 
       console.log(`📚 Getting history for session: ${sessionId}`);
+      console.log(`📋 Request params: limit=${limit}, offset=${offset}`);
 
       const history = await memoryService.getConversationHistory(
         sessionId,
         parseInt(limit),
         parseInt(offset)
       );
+
+      console.log(`📊 History result:`, {
+        messageCount: history.messages?.length || 0,
+        totalCount: history.totalCount,
+        hasMore: history.hasMore,
+        sessionId: history.sessionId,
+      });
 
       res.json({
         success: true,

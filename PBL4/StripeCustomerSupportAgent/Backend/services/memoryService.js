@@ -34,54 +34,39 @@ class MemoryService {
   }
 
   /**
-   * Get conversation history for a session
+   * Get conversation history for a session - FIXED VERSION
    */
   async getConversationHistory(sessionId, limit = 50, offset = 0) {
     try {
-      // Get recent context (last 8 messages)
-      const recentContext = await this.memoryController.getRecentContext();
+      console.log(
+        `📚 Retrieving conversation history for session: ${sessionId}`
+      );
 
-      // Get long-term context (relevant Q&As)
-      const longTermContext = await this.memoryController.getLongTermContext();
+      // Get messages directly from PostgreSQL database
+      const messages =
+        await this.memoryController.postgresMemory.getConversationHistory(
+          sessionId,
+          limit
+        );
 
-      // Combine and format messages
-      const messages = [];
+      console.log(`📊 Found ${messages.length} messages in database`);
+      console.log(`📋 Raw messages:`, messages.slice(0, 2)); // Log first 2 messages for debugging
 
-      // Add recent messages
-      if (recentContext && recentContext.messages) {
-        recentContext.messages.forEach((msg, index) => {
-          messages.push({
-            id: `recent_${index}`,
-            type: msg.type,
-            content: msg.content,
-            timestamp: msg.timestamp,
-            metadata: msg.metadata,
-          });
-        });
-      }
+      // Format messages for frontend
+      const formattedMessages = messages.map((msg) => ({
+        id: msg.message_id,
+        type: msg.role,
+        content: msg.content,
+        timestamp: msg.created_at,
+        metadata: msg.metadata,
+      }));
 
-      // Add relevant Q&As from long-term memory
-      if (longTermContext && longTermContext.relevantQAs) {
-        longTermContext.relevantQAs.forEach((qa, index) => {
-          messages.push({
-            id: `qa_${index}`,
-            type: "qa",
-            question: qa.question,
-            answer: qa.answer,
-            timestamp: qa.timestamp,
-            relevance: qa.relevance,
-          });
-        });
-      }
-
-      // Apply pagination
-      const paginatedMessages = messages.slice(offset, offset + limit);
-      const hasMore = messages.length > offset + limit;
+      console.log(`🔄 Formatted messages:`, formattedMessages.slice(0, 2)); // Log first 2 formatted messages
 
       return {
-        messages: paginatedMessages,
-        totalCount: messages.length,
-        hasMore,
+        messages: formattedMessages,
+        totalCount: formattedMessages.length,
+        hasMore: formattedMessages.length >= limit,
         sessionId,
       };
     } catch (error) {

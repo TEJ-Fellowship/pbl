@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 const ChatHistory = ({
   chatHistory,
-  currentChatId,
+  currentSessionId,
   handleNewChat,
   handleChatSelect,
 }) => {
@@ -49,26 +49,32 @@ const ChatHistory = ({
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto chat-container">
           <div className="p-4 space-y-2">
-            {chatHistory.map((chat) => (
-              <motion.div
-                key={chat.id}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => handleChatSelect(chat.id)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  currentChatId === chat.id
-                    ? "bg-surface-dark-secondary border border-primary/50"
-                    : "hover:bg-surface-dark-secondary/50"
-                }`}
-              >
-                <p className="font-semibold text-sm truncate">{chat.title}</p>
-                <p className="text-xs text-subtle-dark truncate">
-                  {chat.lastMessage}
-                </p>
-                <span className="text-xs text-gray-500 mt-1 block">
-                  {chat.timestamp.toLocaleDateString()}
-                </span>
-              </motion.div>
-            ))}
+            {chatHistory.map((chat) => {
+              // Debug: Log chat object to see its structure
+              console.log("Chat object:", chat);
+              return (
+                <motion.div
+                  key={chat.id}
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => handleChatSelect(chat.id)}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    currentSessionId === chat.sessionId
+                      ? "bg-surface-dark-secondary border border-primary/50"
+                      : "hover:bg-surface-dark-secondary/50"
+                  }`}
+                >
+                  <p className="font-semibold text-sm truncate">{chat.title}</p>
+                  <p className="text-xs text-subtle-dark truncate">
+                    {chat.lastMessage}
+                  </p>
+                  <span className="text-xs text-gray-500 mt-1 block">
+                    {chat.timestamp
+                      ? new Date(chat.timestamp).toLocaleDateString()
+                      : "Unknown date"}
+                  </span>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -83,14 +89,16 @@ const ChatHistory = ({
                 whileHover={{ scale: 1.1 }}
                 onClick={() => handleChatSelect(chat.id)}
                 className={`p-2 rounded-lg cursor-pointer transition-colors flex items-center justify-center ${
-                  currentChatId === chat.id
+                  currentSessionId === chat.sessionId
                     ? "bg-primary/20 border border-primary/50"
                     : "hover:bg-surface-dark-secondary/50"
                 }`}
                 title={chat.title}
               >
                 <span className="material-symbols-outlined text-sm">
-                  {chat.id === currentChatId ? "chat" : "chat_bubble_outline"}
+                  {chat.sessionId === currentSessionId
+                    ? "chat"
+                    : "chat_bubble_outline"}
                 </span>
               </motion.div>
             ))}
