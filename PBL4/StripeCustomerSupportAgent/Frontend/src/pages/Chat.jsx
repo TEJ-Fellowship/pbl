@@ -4,6 +4,7 @@ import ChatHeader from "../components/chat/ChatHeader";
 import ChatMessages from "../components/chat/ChatMessages";
 import ChatInput from "../components/chat/ChatInput";
 import ChatHistory from "../components/chat/ChatHistory";
+import TokenUsageIndicator from "../components/chat/TokenUsageIndicator";
 
 const Chat = () => {
   const {
@@ -15,12 +16,12 @@ const Chat = () => {
     currentSessionId,
     messagesEndRef,
     error,
-    sources,
-    confidence,
+    tokenUsage,
     handleSendMessage,
     handleNewChat,
     handleChatSelect,
     handleDeleteChat,
+    handleTokenLimitReached,
     handleKeyPress,
     clearError,
   } = useChat();
@@ -50,6 +51,16 @@ const Chat = () => {
       {/* Main Chat Container */}
       <div className="flex-1 flex flex-col bg-surface-dark">
         <ChatHeader />
+
+        {/* Token Usage Indicator */}
+        <div className="px-6 py-2 border-b border-gray-800/50 bg-surface-dark-secondary/30">
+          <TokenUsageIndicator
+            currentTokens={tokenUsage.currentTokens}
+            maxTokens={tokenUsage.maxTokens}
+            onNewSession={handleTokenLimitReached}
+          />
+        </div>
+
         <ChatMessages
           messages={messages}
           isTyping={isTyping}

@@ -81,36 +81,33 @@ const MessageBubble = ({ message }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`flex items-start space-x-4 max-w-3xl ${
-        message.sender === "user" ? "ml-auto flex-row-reverse" : ""
+      className={`flex items-start space-x-4 w-full ${
+        message.sender === "user" ? "justify-end" : "justify-start"
       }`}
     >
+      {message.sender === "ai" && (
+        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary mt-1">
+          <span className="material-symbols-outlined text-lg text-white">
+            auto_awesome
+          </span>
+        </div>
+      )}
+
       <div
-        className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
-          message.sender === "user" ? "bg-gray-700" : "bg-primary"
-        }`}
-      >
-        <span
-          className={`material-symbols-outlined text-lg ${
-            message.sender === "user" ? "text-white" : "text-white"
-          }`}
-        >
-          {message.sender === "user" ? "person" : "auto_awesome"}
-        </span>
-      </div>
-      <div
-        className={`p-4 rounded-lg ${
+        className={`p-5 rounded-lg ${
           message.sender === "user"
-            ? "bg-blue-600/80 text-white rounded-tr-none"
+            ? "bg-blue-600/80 text-white rounded-tr-none max-w-3xl"
             : message.isError
-            ? "bg-red-900/20 border border-red-500/30 rounded-tl-none"
-            : "bg-black/20 rounded-tl-none"
+            ? "bg-red-900/20 border border-red-500/30 rounded-tl-none w-full"
+            : "bg-gray-800/30 border border-gray-700/30 rounded-tl-none w-full"
         }`}
       >
         {message.sender === "ai" && (
           <p className="font-semibold text-primary mb-1">Stripe.AI</p>
         )}
-        <div className="text-text-dark whitespace-pre-wrap">{message.text}</div>
+        <div className="text-text-dark whitespace-pre-wrap leading-relaxed">
+          {message.text}
+        </div>
 
         {message.sender === "ai" && !message.isError && (
           <>
@@ -123,6 +120,14 @@ const MessageBubble = ({ message }) => {
           </>
         )}
       </div>
+
+      {message.sender === "user" && (
+        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-gray-700 mt-1">
+          <span className="material-symbols-outlined text-lg text-white">
+            person
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -131,15 +136,15 @@ const TypingIndicator = () => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="flex items-start space-x-4 max-w-3xl"
+    className="flex items-start space-x-4 w-full justify-start"
   >
-    <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center">
+    <div className="w-8 h-8 rounded-full bg-primary flex-shrink-0 flex items-center justify-center mt-1">
       <span className="material-symbols-outlined text-lg text-white">
         auto_awesome
       </span>
     </div>
-    <div className="bg-black/20 p-4 rounded-lg rounded-tl-none">
-      <p className="font-semibold text-primary mb-1">Stitch.AI</p>
+    <div className="bg-gray-800/30 border border-gray-700/30 p-5 rounded-lg rounded-tl-none w-full">
+      <p className="font-semibold text-primary mb-1">Stripe.AI</p>
       <div className="flex space-x-1">
         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
         <div
@@ -157,14 +162,22 @@ const TypingIndicator = () => (
 
 const ChatMessages = ({ messages, isTyping, messagesEndRef }) => {
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 chat-container">
-      <AnimatePresence>
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-        {isTyping && <TypingIndicator />}
-      </AnimatePresence>
-      <div ref={messagesEndRef} />
+    <div className="flex-1 overflow-y-auto p-6 space-y-8 chat-container">
+      <div className="max-w-none w-full">
+        <AnimatePresence>
+          {messages.map((message) => (
+            <div key={message.id} className="mb-8">
+              <MessageBubble message={message} />
+            </div>
+          ))}
+          {isTyping && (
+            <div className="mb-8">
+              <TypingIndicator />
+            </div>
+          )}
+        </AnimatePresence>
+        <div ref={messagesEndRef} />
+      </div>
     </div>
   );
 };

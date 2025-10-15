@@ -112,6 +112,23 @@ class ApiService {
   async getStatus() {
     return this.request(API_ENDPOINTS.STATUS);
   }
+
+  /**
+   * Get session token usage
+   */
+  async getTokenUsage(sessionId) {
+    return this.request(`/api/chat/tokens/${sessionId}`);
+  }
+
+  /**
+   * Update session token limit
+   */
+  async updateTokenLimit(sessionId, maxTokens) {
+    return this.request(`/api/chat/tokens/${sessionId}`, {
+      method: "PUT",
+      body: JSON.stringify({ maxTokens }),
+    });
+  }
 }
 
 // Export singleton instance

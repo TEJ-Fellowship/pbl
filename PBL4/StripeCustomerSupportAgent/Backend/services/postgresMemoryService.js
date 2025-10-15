@@ -328,6 +328,79 @@ class PostgreSQLMemoryService {
   }
 
   /**
+   * Get session token usage information
+   */
+  async getSessionTokenUsage(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT 
+           session_id,
+           total_tokens,
+           max_tokens,
+           token_usage_percentage,
+           created_at,
+           updated_at
+         FROM conversation_sessions 
+         WHERE session_id = $1`,
+        [sessionId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update session token limit
+   */
+  async updateSessionTokenLimit(sessionId, maxTokens) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query(
+        `UPDATE conversation_sessions 
+         SET max_tokens = $2, updated_at = NOW()
+         WHERE session_id = $1`,
+        [sessionId, maxTokens]
+      );
+
+      // Recalculate token usage with new limit
+      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+
+      console.log(
+        `📊 Updated token limit for session ${sessionId}: ${maxTokens}`
+      );
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get sessions approaching token limit
+   */
+  async getSessionsNearTokenLimit(threshold = 80) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT * FROM get_sessions_near_token_limit($1)`,
+        [threshold]
+      );
+
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get session statistics
    */
   async getSessionStats(sessionId) {

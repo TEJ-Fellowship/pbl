@@ -139,6 +139,52 @@ class MemoryService {
       throw error;
     }
   }
+
+  /**
+   * Get session token usage
+   */
+  async getSessionTokenUsage(sessionId) {
+    try {
+      return await this.memoryController.postgresMemory.getSessionTokenUsage(
+        sessionId
+      );
+    } catch (error) {
+      console.error("❌ Memory service - get token usage error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update session token limit
+   */
+  async updateSessionTokenLimit(sessionId, maxTokens) {
+    try {
+      return await this.memoryController.postgresMemory.updateSessionTokenLimit(
+        sessionId,
+        maxTokens
+      );
+    } catch (error) {
+      console.error("❌ Memory service - update token limit error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get sessions approaching token limit
+   */
+  async getSessionsNearTokenLimit(threshold = 80) {
+    try {
+      return await this.memoryController.postgresMemory.getSessionsNearTokenLimit(
+        threshold
+      );
+    } catch (error) {
+      console.error(
+        "❌ Memory service - get sessions near limit error:",
+        error
+      );
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

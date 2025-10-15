@@ -34,6 +34,13 @@ export const useChat = () => {
   const [error, setError] = useState(null);
   const [sources, setSources] = useState([]);
   const [confidence, setConfidence] = useState(null);
+  const [tokenUsage, setTokenUsage] = useState({
+    currentTokens: 0,
+    maxTokens: 4000,
+    usagePercentage: 0,
+    isNearLimit: false,
+    isAtLimit: false,
+  });
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -78,6 +85,13 @@ export const useChat = () => {
   useEffect(() => {
     loadExistingSession();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch token usage when session changes
+  useEffect(() => {
+    if (currentSessionId) {
+      fetchTokenUsage(currentSessionId);
+    }
+  }, [currentSessionId]);
 
   const loadExistingSession = async () => {
     try {
@@ -432,6 +446,38 @@ export const useChat = () => {
     }
   };
 
+  // Fetch token usage for current session
+  const fetchTokenUsage = async (sessionId) => {
+    try {
+      if (!sessionId) return;
+
+      const response = await apiService.getTokenUsage(sessionId);
+      if (response.success) {
+        setTokenUsage({
+          currentTokens: response.data.currentTokens,
+          maxTokens: response.data.maxTokens,
+          usagePercentage: response.data.usagePercentage,
+          isNearLimit: response.data.isNearLimit,
+          isAtLimit: response.data.isAtLimit,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch token usage:", error);
+    }
+  };
+
+  // Handle automatic new session when token limit is reached
+  const handleTokenLimitReached = async () => {
+    try {
+      console.log("⚠️ Token limit reached, creating new session...");
+      await initializeSession();
+      setError("Token limit reached. Started a new conversation.");
+    } catch (error) {
+      console.error("❌ Failed to create new session:", error);
+      setError("Token limit reached but failed to create new session.");
+    }
+  };
+
   return {
     messages,
     inputValue,
@@ -443,10 +489,12 @@ export const useChat = () => {
     error,
     sources,
     confidence,
+    tokenUsage,
     handleSendMessage,
     handleNewChat,
     handleChatSelect,
     handleDeleteChat,
+    handleTokenLimitReached,
     handleKeyPress,
     clearError,
     clearAllData,

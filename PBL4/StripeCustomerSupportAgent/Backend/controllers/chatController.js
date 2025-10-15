@@ -19,6 +19,22 @@ export const chatController = {
       console.log(`   🆔 Session: ${sessionId || "New session"}`);
       console.log(`   ⏰ Timestamp: ${new Date().toISOString()}`);
 
+      // Check token usage before processing (if session exists)
+      if (sessionId) {
+        const tokenUsage = await memoryService.getSessionTokenUsage(sessionId);
+        if (tokenUsage && tokenUsage.token_usage_percentage >= 95) {
+          console.log("⚠️ Token limit reached, creating new session...");
+          // Create new session
+          const newSession = await memoryService.createSession(userId, {
+            project: "stripe_support",
+            context: "customer_support",
+            startTime: new Date().toISOString(),
+          });
+          sessionId = newSession.sessionId;
+          console.log(`   🆕 New session created: ${sessionId}`);
+        }
+      }
+
       // Process the message through the chat service
       const response = await chatService.processMessage({
         message,
@@ -153,6 +169,77 @@ export const chatController = {
       res.status(500).json({
         success: false,
         error: "Failed to delete session",
+        message: error.message,
+      });
+    }
+  },
+
+  /**
+   * Get session token usage
+   */
+  async getTokenUsage(req, res) {
+    try {
+      const { sessionId } = req.params;
+
+      console.log(`📊 Getting token usage for session: ${sessionId}`);
+
+      const tokenUsage = await memoryService.getSessionTokenUsage(sessionId);
+
+      if (!tokenUsage) {
+        return res.status(404).json({
+          success: false,
+          error: "Session not found",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          sessionId: tokenUsage.session_id,
+          currentTokens: tokenUsage.total_tokens || 0,
+          maxTokens: tokenUsage.max_tokens || 4000,
+          usagePercentage: tokenUsage.token_usage_percentage || 0,
+          isNearLimit: (tokenUsage.token_usage_percentage || 0) >= 80,
+          isAtLimit: (tokenUsage.token_usage_percentage || 0) >= 95,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Get token usage error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to get token usage",
+        message: error.message,
+      });
+    }
+  },
+
+  /**
+   * Update session token limit
+   */
+  async updateTokenLimit(req, res) {
+    try {
+      const { sessionId } = req.params;
+      const { maxTokens } = req.body;
+
+      console.log(
+        `📊 Updating token limit for session: ${sessionId} to ${maxTokens}`
+      );
+
+      await memoryService.updateSessionTokenLimit(sessionId, maxTokens);
+
+      res.json({
+        success: true,
+        message: "Token limit updated successfully",
+        data: {
+          sessionId,
+          maxTokens,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Update token limit error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to update token limit",
         message: error.message,
       });
     }
