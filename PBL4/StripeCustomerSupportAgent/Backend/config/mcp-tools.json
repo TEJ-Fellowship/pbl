@@ -1,0 +1,41 @@
+{
+  "tools": {
+    "calculator": {
+      "enabled": true,
+      "name": "Calculator Tool",
+      "description": "Mathematical calculations and Stripe fee computations",
+      "dependencies": ["mathjs"],
+      "apiKeys": []
+    },
+    "status_checker": {
+      "enabled": true,
+      "name": "Status Checker Tool",
+      "description": "Real-time Stripe API status monitoring",
+      "dependencies": ["axios"],
+      "apiKeys": ["STRIPE_SECRET_KEY"]
+    },
+    "web_search": {
+      "enabled": false,
+      "name": "Web Search Tool",
+      "description": "Google Custom Search for current information",
+      "dependencies": ["axios"],
+      "apiKeys": ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_ENGINE_ID"]
+    },
+    "code_validator": {
+      "enabled": true,
+      "name": "Code Validator Tool",
+      "description": "Code syntax validation and API endpoint verification",
+      "dependencies": [],
+      "apiKeys": []
+    },
+    "datetime": {
+      "enabled": true,
+      "name": "DateTime Tool",
+      "description": "Date/time operations and business hours",
+      "dependencies": ["date-fns"],
+      "apiKeys": []
+    }
+  },
+  "lastUpdated": "2025-10-15T01:57:35.798Z",
+  "version": "1.0.0"
+}
