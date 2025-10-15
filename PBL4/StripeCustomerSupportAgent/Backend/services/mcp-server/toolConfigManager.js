@@ -19,39 +19,39 @@ class ToolConfigManager {
           name: "Calculator Tool",
           description: "Mathematical calculations and Stripe fee computations",
           dependencies: ["mathjs"],
-          apiKeys: []
+          apiKeys: [],
         },
         status_checker: {
           enabled: true,
-          name: "Status Checker Tool", 
+          name: "Status Checker Tool",
           description: "Real-time Stripe API status monitoring",
           dependencies: ["axios"],
-          apiKeys: ["STRIPE_SECRET_KEY"]
+          apiKeys: ["STRIPE_SECRET_KEY"],
         },
         web_search: {
           enabled: true,
           name: "Web Search Tool",
           description: "Google Custom Search for current information",
           dependencies: ["axios"],
-          apiKeys: ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_ENGINE_ID"]
+          apiKeys: ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_ENGINE_ID"],
         },
         code_validator: {
           enabled: true,
           name: "Code Validator Tool",
           description: "Code syntax validation and API endpoint verification",
           dependencies: [],
-          apiKeys: []
+          apiKeys: [],
         },
         datetime: {
           enabled: true,
           name: "DateTime Tool",
           description: "Date/time operations and business hours",
           dependencies: ["date-fns"],
-          apiKeys: []
-        }
+          apiKeys: [],
+        },
       },
       lastUpdated: new Date().toISOString(),
-      version: "1.0.0"
+      version: "1.0.0",
     };
     this.config = null;
   }
@@ -64,7 +64,10 @@ class ToolConfigManager {
       await this.loadConfig();
       console.log("✅ Tool Config Manager: Initialized");
     } catch (error) {
-      console.error("❌ Tool Config Manager: Failed to initialize:", error.message);
+      console.error(
+        "❌ Tool Config Manager: Failed to initialize:",
+        error.message
+      );
       await this.createDefaultConfig();
     }
   }
@@ -79,7 +82,9 @@ class ToolConfigManager {
       console.log("📋 Tool Config Manager: Configuration loaded");
     } catch (error) {
       if (error.code === "ENOENT") {
-        console.log("📋 Tool Config Manager: No config file found, creating default");
+        console.log(
+          "📋 Tool Config Manager: No config file found, creating default"
+        );
         await this.createDefaultConfig();
       } else {
         throw error;
@@ -101,7 +106,10 @@ class ToolConfigManager {
       this.config = { ...this.defaultConfig };
       console.log("✅ Tool Config Manager: Default configuration created");
     } catch (error) {
-      console.error("❌ Tool Config Manager: Failed to create default config:", error.message);
+      console.error(
+        "❌ Tool Config Manager: Failed to create default config:",
+        error.message
+      );
       throw error;
     }
   }
@@ -112,13 +120,13 @@ class ToolConfigManager {
   async saveConfig() {
     try {
       this.config.lastUpdated = new Date().toISOString();
-      await fs.writeFile(
-        this.configFile,
-        JSON.stringify(this.config, null, 2)
-      );
+      await fs.writeFile(this.configFile, JSON.stringify(this.config, null, 2));
       console.log("💾 Tool Config Manager: Configuration saved");
     } catch (error) {
-      console.error("❌ Tool Config Manager: Failed to save config:", error.message);
+      console.error(
+        "❌ Tool Config Manager: Failed to save config:",
+        error.message
+      );
       throw error;
     }
   }
@@ -140,16 +148,22 @@ class ToolConfigManager {
       const missingKeys = await this.checkApiKeys(tool);
 
       if (missingDeps.length > 0) {
-        console.warn(`⚠️ Tool '${toolName}': Missing dependencies: ${missingDeps.join(", ")}`);
+        console.warn(
+          `⚠️ Tool '${toolName}': Missing dependencies: ${missingDeps.join(
+            ", "
+          )}`
+        );
       }
 
       if (missingKeys.length > 0) {
-        console.warn(`⚠️ Tool '${toolName}': Missing API keys: ${missingKeys.join(", ")}`);
+        console.warn(
+          `⚠️ Tool '${toolName}': Missing API keys: ${missingKeys.join(", ")}`
+        );
       }
 
       this.config.tools[toolName].enabled = true;
       await this.saveConfig();
-      
+
       console.log(`✅ Tool '${toolName}' enabled successfully`);
       return true;
     } catch (error) {
@@ -171,7 +185,7 @@ class ToolConfigManager {
 
       this.config.tools[toolName].enabled = false;
       await this.saveConfig();
-      
+
       console.log(`✅ Tool '${toolName}' disabled successfully`);
       return true;
     } catch (error) {
@@ -193,13 +207,13 @@ class ToolConfigManager {
 
       const currentState = this.config.tools[toolName].enabled;
       const newState = !currentState;
-      
+
       if (newState) {
         await this.enableTool(toolName);
       } else {
         await this.disableTool(toolName);
       }
-      
+
       return newState;
     } catch (error) {
       console.error(`❌ Failed to toggle tool '${toolName}':`, error.message);
@@ -222,9 +236,9 @@ class ToolConfigManager {
    */
   getEnabledTools() {
     if (!this.config?.tools) return [];
-    
+
     return Object.keys(this.config.tools).filter(
-      toolName => this.config.tools[toolName].enabled
+      (toolName) => this.config.tools[toolName].enabled
     );
   }
 
@@ -234,9 +248,9 @@ class ToolConfigManager {
    */
   getDisabledTools() {
     if (!this.config?.tools) return [];
-    
+
     return Object.keys(this.config.tools).filter(
-      toolName => !this.config.tools[toolName].enabled
+      (toolName) => !this.config.tools[toolName].enabled
     );
   }
 
@@ -264,7 +278,7 @@ class ToolConfigManager {
    */
   async checkDependencies(tool) {
     const missing = [];
-    
+
     for (const dep of tool.dependencies || []) {
       try {
         await import(dep);
@@ -272,7 +286,7 @@ class ToolConfigManager {
         missing.push(dep);
       }
     }
-    
+
     return missing;
   }
 
@@ -283,13 +297,13 @@ class ToolConfigManager {
    */
   async checkApiKeys(tool) {
     const missing = [];
-    
+
     for (const key of tool.apiKeys || []) {
       if (!process.env[key]) {
         missing.push(key);
       }
     }
-    
+
     return missing;
   }
 
@@ -299,12 +313,24 @@ class ToolConfigManager {
    */
   getToolStatusSummary() {
     if (!this.config?.tools) {
-      return { enabled: 0, disabled: 0, total: 0, tools: {} };
+      return { enabled: 0, disabled: 0, total: 0, tools: {}, details: {} };
     }
 
     const tools = Object.keys(this.config.tools);
-    const enabled = tools.filter(name => this.config.tools[name].enabled);
-    const disabled = tools.filter(name => !this.config.tools[name].enabled);
+    const enabled = tools.filter((name) => this.config.tools[name].enabled);
+    const disabled = tools.filter((name) => !this.config.tools[name].enabled);
+
+    // Create details object with tool information
+    const details = {};
+    tools.forEach((toolName) => {
+      const tool = this.config.tools[toolName];
+      details[toolName] = {
+        enabled: tool.enabled,
+        description: tool.description || `${toolName} tool`,
+        dependencies: tool.dependencies || [],
+        apiKeys: tool.apiKeys || [],
+      };
+    });
 
     return {
       enabled: enabled.length,
@@ -312,8 +338,9 @@ class ToolConfigManager {
       total: tools.length,
       tools: {
         enabled: enabled,
-        disabled: disabled
-      }
+        disabled: disabled,
+      },
+      details: details,
     };
   }
 
@@ -328,7 +355,10 @@ class ToolConfigManager {
       console.log("🔄 Tool Config Manager: Reset to default configuration");
       return true;
     } catch (error) {
-      console.error("❌ Tool Config Manager: Failed to reset config:", error.message);
+      console.error(
+        "❌ Tool Config Manager: Failed to reset config:",
+        error.message
+      );
       return false;
     }
   }
