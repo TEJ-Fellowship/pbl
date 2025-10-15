@@ -1,0 +1,787 @@
+import readline from "readline";
+import fs from "fs/promises";
+import path from "path";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+import { Pinecone } from "@pinecone-database/pinecone";
+import HybridSearch from "../hybridSearch.js";
+import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import MemoryController from "../controllers/memoryController.js";
+import MCPIntegrationService from "../services/mcpIntegrationService.js";
+import config from "../config/config.js";
+
+// Initialize Gemini client
+function initGeminiClient() {
+  if (!config.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
+  }
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY);
+}
+
+// Initialize Gemini embeddings
+function initGeminiEmbeddings() {
+  if (!config.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is required");
+  }
+  return new GoogleGenerativeAIEmbeddings({
+    apiKey: config.GEMINI_API_KEY,
+    modelName: "text-embedding-004",
+  });
+}
+
+// Initialize Pinecone client
+async function initPinecone() {
+  try {
+    if (!config.PINECONE_API_KEY) {
+      throw new Error("PINECONE_API_KEY environment variable is required");
+    }
+
+    const pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
+    console.log("✅ Pinecone client initialized");
+    return pinecone;
+  } catch (error) {
+    console.error("❌ Pinecone initialization failed:", error.message);
+    throw error;
+  }
+}
+
+// Load vector store from Pinecone
+async function loadVectorStore() {
+  try {
+    const pinecone = await initPinecone();
+    const index = pinecone.index(config.PINECONE_INDEX_NAME);
+    console.log("✅ Vector store loaded from Pinecone");
+    return { type: "pinecone", index };
+  } catch (error) {
+    console.error("❌ Failed to load vector store:", error.message);
+    throw error;
+  }
+}
+
+// Calculate cosine similarity
+function cosineSimilarity(a, b) {
+  if (a.length !== b.length) return 0;
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// Retrieve relevant chunks using hybrid search
+async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
+  try {
+    console.log("🔍 Searching for relevant information using hybrid search...");
+
+    // Initialize hybrid search service
+    const hybridSearch = new HybridSearch();
+    const bm25Service = new PostgreSQLBM25Service();
+
+    // Perform hybrid search
+    const results = await hybridSearch.search(
+      query,
+      parseInt(config.MAX_CHUNKS) || 10
+    );
+
+    if (!results || results.length === 0) {
+      console.log(
+        "❌ No results from hybrid search, falling back to semantic search"
+      );
+      return retrieveChunksWithEmbeddings(query, vectorStore, embeddings);
+    }
+
+    // Format results for consistency
+    const topChunks = results.map((result) => ({
+      content: result.content,
+      metadata: result.metadata,
+      similarity: result.score || 0,
+      score: result.score || 0,
+      searchType: result.searchType || "hybrid",
+      bm25Score: result.bm25Score,
+      semanticScore: result.semanticScore,
+    }));
+
+    console.log(
+      `📊 Top hybrid scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
+
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using hybrid search`
+    );
+    return topChunks;
+  } catch (error) {
+    console.error(
+      "❌ Hybrid search failed, falling back to semantic search:",
+      error.message
+    );
+    return retrieveChunksWithEmbeddings(query, vectorStore, embeddings);
+  }
+}
+
+// Retrieve relevant chunks using embeddings (fallback)
+async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
+  try {
+    console.log(
+      "🔍 Searching for relevant information using Gemini embeddings..."
+    );
+
+    // Generate query embedding using LangChain Gemini embeddings
+    const queryEmbedding = await embeddings.embedQuery(query);
+
+    // Debug: Check if embedding was generated
+    if (
+      !queryEmbedding ||
+      !Array.isArray(queryEmbedding) ||
+      queryEmbedding.length === 0
+    ) {
+      throw new Error("Failed to generate query embedding");
+    }
+
+    console.log(
+      `📊 Query embedding generated with ${queryEmbedding.length} dimensions`
+    );
+
+    let topChunks = [];
+
+    if (vectorStore.type === "pinecone") {
+      console.log("🔍 Searching in Pinecone...");
+      const searchResponse = await vectorStore.index.query({
+        vector: queryEmbedding,
+        topK: parseInt(config.MAX_CHUNKS) || 10,
+        includeMetadata: true,
+      });
+
+      topChunks = searchResponse.matches.map((match) => ({
+        content: match.metadata.content,
+        metadata: {
+          source: match.metadata.source,
+          title: match.metadata.title,
+          category: match.metadata.category,
+          docType: match.metadata.docType,
+          chunk_index: match.metadata.chunk_index,
+          total_chunks: match.metadata.total_chunks,
+        },
+        similarity: match.score,
+      }));
+    } else {
+      console.log("🔍 Searching in local vector store...");
+      const similarities = vectorStore.data.chunks.map((chunk) => {
+        if (!chunk.embedding || !Array.isArray(chunk.embedding)) {
+          return { chunk, similarity: 0 };
+        }
+        return {
+          chunk,
+          similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+        };
+      });
+
+      topChunks = similarities
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, parseInt(config.MAX_CHUNKS) || 10)
+        .map((item) => ({
+          content: item.chunk.content,
+          metadata: item.chunk.metadata,
+          similarity: item.similarity,
+        }));
+    }
+
+    console.log(
+      `📊 Top similarity scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
+    );
+
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using semantic search`
+    );
+    return topChunks;
+  } catch (error) {
+    console.error("❌ Embedding retrieval failed:", error.message);
+    console.log("   Please check your Pinecone configuration and try again.");
+    throw error;
+  }
+}
+
+// Calculate confidence score from search results (new)
+function calculateConfidence(chunks) {
+  if (chunks.length === 0) return 0;
+
+  // Calculate average similarity score
+  const avgScore =
+    chunks.reduce((sum, chunk) => sum + (chunk.similarity || 0), 0) /
+    chunks.length;
+
+  // Normalize to 0-1 range
+  return Math.min(1, Math.max(0, avgScore));
+}
+
+// Generate response using Gemini with MCP integration (upgraded)
+async function generateResponseWithMCP(
+  query,
+  chunks,
+  geminiClient,
+  mcpService,
+  confidence
+) {
+  try {
+    console.log("\n🤖 Generating response with MCP integration...");
+
+    // Prepare context from retrieved chunks
+    const context = chunks
+      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .join("\n\n");
+
+    const sources = chunks.map((chunk, index) => ({
+      content: chunk.content,
+      metadata: chunk.metadata,
+      similarity: chunk.similarity,
+      score: chunk.score || 0,
+      index: index + 1,
+    }));
+
+    // Process query with MCP tools
+    let mcpEnhancement = "";
+    let mcpToolsUsed = [];
+    let mcpConfidence = 0;
+
+    try {
+      console.log("🔧 Processing with MCP tools...");
+      const mcpResult = await mcpService.processQueryWithMCP(query, confidence);
+
+      if (mcpResult.success && mcpResult.enhancedResponse) {
+        mcpEnhancement = mcpResult.enhancedResponse;
+        mcpToolsUsed = mcpResult.toolsUsed || [];
+        mcpConfidence = mcpResult.confidence || 0;
+
+        console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+        console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
+      } else {
+        console.log("ℹ️ No MCP tools needed for this query");
+      }
+    } catch (error) {
+      console.warn("⚠️ MCP processing failed:", error.message);
+      console.log("   Continuing with standard response generation...");
+    }
+
+    // Build enhanced prompt with MCP integration
+    let prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+
+CONTEXT (Stripe Documentation):
+${context}
+
+USER QUESTION: ${query}
+
+RESPONSE GUIDELINES:
+1. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+3. **Include Code**: Always include practical code examples in the appropriate programming language
+4. **Step-by-Step**: Break down complex processes into clear, actionable steps
+5. **Error Handling**: Mention common errors and how to handle them
+6. **Best Practices**: Include security considerations and best practices
+7. **Source Citations**: Reference specific sources using [Source X] format
+8. **If Uncertain**: Clearly state when information isn't available in the context
+
+FORMAT YOUR RESPONSE:
+- Start with a direct answer to the question
+- Provide detailed explanation with code examples
+- Include relevant API endpoints and parameters
+- Mention any prerequisites or setup requirements
+- End with source citations`;
+
+    // Add MCP enhancement if available
+    if (mcpEnhancement) {
+      prompt += `\n\nADDITIONAL INTELLIGENCE (MCP Tools):
+        ${mcpEnhancement}
+
+        INTEGRATION NOTES:
+        - Use the MCP tool results to enhance your response
+        - If MCP tools provided calculations, status checks, or validations, incorporate them
+        - Maintain the same response format while integrating MCP insights
+        - If MCP tools found conflicting information, prioritize the documentation context`;
+    }
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return {
+      answer: text,
+      sources: sources,
+      mcpEnhancement: mcpEnhancement,
+      mcpToolsUsed: mcpToolsUsed,
+      mcpConfidence: mcpConfidence,
+      overallConfidence: Math.max(confidence, mcpConfidence),
+    };
+  } catch (error) {
+    console.error("❌ Response generation failed:", error.message);
+    throw error;
+  }
+}
+
+// Generate response with memory context integration and MCP(upgraded)
+async function generateResponseWithMemoryAndMCP(
+  query,
+  chunks,
+  geminiClient,
+  memoryContext,
+  mcpService,
+  confidence
+) {
+  try {
+    console.log(
+      "\n🤖 Generating response with memory context and MCP integration..."
+    );
+
+    // Prepare context from retrieved chunks
+    const context = chunks
+      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .join("\n\n");
+
+    const sources = chunks.map((chunk, index) => ({
+      content: chunk.content,
+      metadata: chunk.metadata,
+      similarity: chunk.similarity,
+      score: chunk.score || 0,
+      index: index + 1,
+    }));
+
+    // Build memory context string
+    let memoryContextString = "";
+
+    if (memoryContext.recentContext && memoryContext.recentContext.hasContext) {
+      memoryContextString += `\n\nRECENT CONVERSATION CONTEXT:\n${memoryContext.recentContext.contextString}`;
+    }
+
+    if (
+      memoryContext.longTermContext &&
+      memoryContext.longTermContext.hasContext
+    ) {
+      memoryContextString += `\n\nRELEVANT HISTORICAL CONTEXT:\n${memoryContext.longTermContext.contextString}`;
+    }
+
+    // Process query with MCP tools
+    let mcpEnhancement = "";
+    let mcpToolsUsed = [];
+    let mcpConfidence = 0;
+
+    try {
+      console.log("🔧 Processing with MCP tools...");
+      const mcpResult = await mcpService.processQueryWithMCP(query, confidence);
+
+      if (mcpResult.success && mcpResult.enhancedResponse) {
+        mcpEnhancement = mcpResult.enhancedResponse;
+        mcpToolsUsed = mcpResult.toolsUsed || [];
+        mcpConfidence = mcpResult.confidence || 0;
+
+        console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+        console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
+      } else {
+        console.log("ℹ️ No MCP tools needed for this query");
+      }
+    } catch (error) {
+      console.warn("⚠️ MCP processing failed:", error.message);
+      console.log("   Continuing with standard response generation...");
+    }
+
+    // Build enhanced prompt with memory and MCP integration
+    let prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+
+    CONTEXT (Stripe Documentation):
+    ${context}${memoryContextString}
+
+    USER QUESTION: ${query}
+
+    RESPONSE GUIDELINES:
+    1. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+    2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+    3. **Include Code**: Always include practical code examples in the appropriate programming language
+    4. **Step-by-Step**: Break down complex processes into clear, actionable steps
+    5. **Error Handling**: Mention common errors and how to handle them
+    6. **Best Practices**: Include security considerations and best practices
+    7. **Source Citations**: Reference specific sources using [Source X] format
+    8. **Memory Integration**: Use conversation context to provide personalized responses
+    9. **If Uncertain**: Clearly state when information isn't available in the context
+
+    FORMAT YOUR RESPONSE:
+    - Start with a direct answer to the question
+    - Provide detailed explanation with code examples
+    - Include relevant API endpoints and parameters
+    - Mention any prerequisites or setup requirements
+    - End with source citations`;
+
+    // Add MCP enhancement if available
+    if (mcpEnhancement) {
+      prompt += `\n\nADDITIONAL INTELLIGENCE (MCP Tools):
+        ${mcpEnhancement}
+
+        INTEGRATION NOTES:
+        - Use the MCP tool results to enhance your response
+        - If MCP tools provided calculations, status checks, or validations, incorporate them
+        - Maintain the same response format while integrating MCP insights
+        - If MCP tools found conflicting information, prioritize the documentation context`;
+    }
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return {
+      answer: text,
+      sources: sources,
+      mcpEnhancement: mcpEnhancement,
+      mcpToolsUsed: mcpToolsUsed,
+      mcpConfidence: mcpConfidence,
+      overallConfidence: Math.max(confidence, mcpConfidence),
+    };
+  } catch (error) {
+    console.error("❌ Response generation failed:", error.message);
+    throw error;
+  }
+}
+
+// Main chat function with MCP integration
+async function startIntegratedChat() {
+  try {
+    console.log("🚀 Starting Integrated Stripe Support Chat with MCP Tools");
+    console.log("=".repeat(60));
+
+    // Initialize services
+    console.log("🔧 Initializing services...");
+    const geminiClient = initGeminiClient();
+    const embeddings = initGeminiEmbeddings();
+    const vectorStore = await loadVectorStore();
+    const memoryController = new MemoryController();
+    const mcpService = new MCPIntegrationService();
+
+    // Initialize memory session
+    const sessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    await memoryController.initializeSession(
+      sessionId,
+      "integrated_chat_user",
+      {
+        project: "stripe_support",
+        context: "customer_support_with_mcp",
+        startTime: new Date().toISOString(),
+      }
+    );
+
+    // Wait for MCP service to initialize
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("✅ All services initialized successfully");
+
+    // Create readline interface
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    const askQuestion = () => {
+      rl.question("\n❓ Your question: ", async (query) => {
+        if (query.toLowerCase() === "exit") {
+          console.log("👋 Goodbye!");
+
+          // Create conversation summary before closing
+          try {
+            await memoryController.createConversationSummary();
+            console.log("📝 Conversation summary created and stored");
+          } catch (error) {
+            console.error(
+              "❌ Failed to create conversation summary:",
+              error.message
+            );
+          }
+
+          // Close memory system
+          await memoryController.close();
+          rl.close();
+          return;
+        }
+
+        if (query.toLowerCase() === "mcp") {
+          console.log("\n🔧 MCP System Status:");
+          try {
+            const mcpStatus = mcpService.getToolManagementInfo();
+
+            // Check integration status with null safety
+            const integrationStatus = mcpStatus.integrationEnabled
+              ? "✅ Enabled"
+              : "❌ Disabled";
+            console.log(`   Integration: ${integrationStatus}`);
+
+            // Check tools status with null safety
+            console.log(`   Tools Available: ${mcpStatus.status?.total || 0}`);
+            console.log(`   Tools Enabled: ${mcpStatus.status?.enabled || 0}`);
+            console.log(
+              `   Tools Disabled: ${mcpStatus.status?.disabled || 0}`
+            );
+
+            // Show tool details if available
+            if (mcpStatus.status?.details) {
+              console.log("\n🛠️ Tool Details:");
+              Object.entries(mcpStatus.status.details).forEach(
+                ([toolName, details]) => {
+                  const status = details.enabled ? "✅" : "❌";
+                  console.log(
+                    `   ${status} ${toolName}: ${details.description}`
+                  );
+                }
+              );
+            } else {
+              console.log("\n🛠️ Tool Details: Not available");
+            }
+
+            // Show AI selection status if available
+            if (mcpStatus.aiSelection && mcpStatus.aiSelection.available) {
+              console.log("\n🤖 AI Selection:");
+              console.log(
+                `   Status: ${
+                  mcpStatus.aiSelection.available
+                    ? "✅ Available"
+                    : "❌ Unavailable"
+                }`
+              );
+              console.log(
+                `   AI Decisions: ${mcpStatus.aiSelection.aiDecisions || 0}`
+              );
+              console.log(
+                `   Fallback Decisions: ${
+                  mcpStatus.aiSelection.fallbackDecisions || 0
+                }`
+              );
+            } else {
+              console.log("\n🤖 AI Selection: Not available");
+            }
+          } catch (error) {
+            console.log("   ❌ Error getting MCP status:", error.message);
+            console.log("   ℹ️ MCP system may not be fully initialized");
+          }
+
+          askQuestion();
+          return;
+        }
+
+        if (query.toLowerCase() === "sample") {
+          console.log("\n💡 Example Questions by Category:");
+          console.log("\n🔧 API Integration:");
+          console.log("  • How do I create a payment intent with Stripe?");
+          console.log("  • How to handle Stripe API errors and exceptions?");
+          console.log("  • What's the difference between test and live mode?");
+          console.log("\n🔐 Security & Webhooks:");
+          console.log(
+            "  • What are webhook signatures and how do I verify them?"
+          );
+          console.log("  • How do I implement 3D Secure authentication?");
+          console.log("  • How to secure my Stripe integration?");
+          console.log("\n💳 Payments & Billing:");
+          console.log("  • How do I set up subscription billing with Stripe?");
+          console.log("  • How to handle refunds and disputes?");
+          console.log("  • What are Stripe Connect and marketplace payments?");
+          console.log("\n🛠️ Advanced Features:");
+          console.log("  • How to implement multi-party payments?");
+          console.log("  • How to handle international payments?");
+          console.log("  • How to set up Stripe Radar for fraud detection?");
+          console.log("\n🧮 MCP Tool Examples:");
+          console.log("  • What's Stripe's fee for $1000? (Calculator Tool)");
+          console.log("  • Is Stripe down right now? (Status Checker Tool)");
+          console.log(
+            "  • Validate this endpoint: /v1/charges (Code Validator Tool)"
+          );
+          console.log("  • What time is it now? (DateTime Tool)");
+          console.log(
+            "  • Search for latest Stripe API updates (Web Search Tool)"
+          );
+          askQuestion();
+          return;
+        }
+
+        if (query.trim() === "") {
+          console.log("❌ Please enter a question.");
+          askQuestion();
+          return;
+        }
+
+        try {
+          // Process user message with memory system
+          await memoryController.processUserMessage(query, {
+            timestamp: new Date().toISOString(),
+            source: "integrated_chat_interface",
+          });
+
+          // Get complete memory context for query reformulation
+          const memoryContext = await memoryController.getCompleteMemoryContext(
+            query
+          );
+          console.log(
+            `🧠 Memory context: ${
+              memoryContext.recentContext?.messageCount || 0
+            } recent messages, ${
+              memoryContext.longTermContext?.relevantQAs?.length || 0
+            } relevant Q&As`
+          );
+
+          // Use reformulated query for retrieval
+          const searchQuery = memoryContext.reformulatedQuery || query;
+          console.log(
+            `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+              0,
+              100
+            )}..."`
+          );
+
+          // Retrieve relevant chunks using hybrid search with reformulated query
+          const chunks = await retrieveChunksWithHybridSearch(
+            searchQuery,
+            vectorStore,
+            embeddings
+          );
+
+          if (chunks.length === 0) {
+            console.log(
+              "❌ No relevant information found. Try rephrasing your question."
+            );
+            askQuestion();
+            return;
+          }
+
+          // Calculate confidence score(new)
+          const confidence = calculateConfidence(chunks);
+          console.log(
+            `📊 Document confidence: ${(confidence * 100).toFixed(1)}%`
+          );
+
+          // Generate augmented response with memory context and MCP integration
+          const result = await generateResponseWithMemoryAndMCP(
+            query,
+            chunks,
+            geminiClient,
+            memoryContext,
+            mcpService,
+            confidence
+          );
+
+          // Process assistant response with memory system
+          await memoryController.processAssistantResponse(result.answer, {
+            timestamp: new Date().toISOString(),
+            sources: result.sources?.length || 0,
+            searchQuery: searchQuery,
+            mcpToolsUsed: result.mcpToolsUsed?.length || 0,
+            mcpConfidence: result.mcpConfidence || 0,
+          });
+
+          console.log("\n🤖 Assistant:");
+          console.log("-".repeat(40));
+          console.log(result.answer);
+          console.log("-".repeat(40));
+
+          // Show MCP tool usage if applicable
+          if (result.mcpToolsUsed && result.mcpToolsUsed.length > 0) {
+            console.log(
+              `\n🔧 MCP Tools Used: ${result.mcpToolsUsed.join(", ")}`
+            );
+            console.log(
+              `📊 MCP Confidence: ${(result.mcpConfidence * 100).toFixed(1)}%`
+            );
+            console.log(
+              `📊 Overall Confidence: ${(
+                result.overallConfidence * 100
+              ).toFixed(1)}%`
+            );
+          }
+
+          // Show sources
+          if (result.sources && result.sources.length > 0) {
+            console.log("\n📚 Sources:");
+            result.sources.forEach((source) => {
+              // Generate a better title from content if metadata title is empty
+              let title = source.metadata.title || source.metadata.doc_title;
+              if (!title || title.trim() === "") {
+                // Extract first meaningful line from content as title
+                const contentLines = source.content
+                  .split("\n")
+                  .filter((line) => line.trim() !== "");
+                const firstLine = contentLines[0] || "";
+                title =
+                  firstLine.length > 60
+                    ? firstLine.substring(0, 60) + "..."
+                    : firstLine;
+                if (!title) title = "Stripe Documentation";
+              }
+
+              const category = source.metadata.category || "documentation";
+              const url =
+                source.metadata.source ||
+                source.metadata.source_url ||
+                "https://stripe.com/docs";
+
+              console.log(`${source.index}. ${title} (${category})`);
+              console.log(`   URL: ${url}`);
+              const relevanceScore = source.similarity || source.score || 0;
+              let relevanceType = "similarity";
+              let relevanceDetails = "";
+
+              if (source.searchType === "hybrid") {
+                relevanceType = "hybrid";
+                const bm25Score = source.bm25Score || 0;
+                const semanticScore = source.semanticScore || 0;
+                relevanceDetails = ` (BM25: ${bm25Score.toFixed(
+                  3
+                )}, Semantic: ${semanticScore.toFixed(3)})`;
+              } else if (source.similarity) {
+                relevanceType = "semantic";
+              } else {
+                relevanceType = "keywords matched";
+              }
+
+              console.log(
+                `   Relevance: ${relevanceScore.toFixed(
+                  3
+                )} ${relevanceType}${relevanceDetails}`
+              );
+            });
+          }
+        } catch (error) {
+          console.error("❌ Error processing question:", error.message);
+        }
+
+        askQuestion();
+      });
+    };
+
+    askQuestion();
+  } catch (error) {
+    console.error("❌ Integrated chat initialization failed:", error.message);
+    process.exit(1);
+  }
+}
+
+// Handle CLI execution
+if (process.argv[1] && process.argv[1].endsWith("integratedChat.js")) {
+  startIntegratedChat().catch(console.error);
+}
+
+export {
+  generateResponseWithMCP,
+  generateResponseWithMemoryAndMCP,
+  loadVectorStore,
+  initGeminiClient,
+  initGeminiEmbeddings,
+  retrieveChunksWithHybridSearch,
+  calculateConfidence,
+};

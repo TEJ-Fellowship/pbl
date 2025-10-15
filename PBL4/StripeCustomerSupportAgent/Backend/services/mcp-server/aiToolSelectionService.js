@@ -260,8 +260,12 @@ Only respond with JSON, nothing else.`;
    */
   getStats() {
     return {
+      available: !!this.geminiClient,
       geminiAvailable: !!this.geminiClient,
       model: this.geminiClient ? "gemini-2.0-flash" : "unavailable",
+      aiDecisions: this.aiDecisions || 0,
+      fallbackDecisions: this.fallbackDecisions || 0,
+      totalDecisions: (this.aiDecisions || 0) + (this.fallbackDecisions || 0),
     };
   }
 }
