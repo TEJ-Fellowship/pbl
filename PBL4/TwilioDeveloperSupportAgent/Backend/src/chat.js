@@ -588,18 +588,19 @@ async function generateMemoryAwareResponse(
       }
     }
 
-    // Add web search results to context
+    // Add web search results to context with clear labeling
     if (
       webSearchResults &&
       webSearchResults.found &&
       webSearchResults.results
     ) {
-      mcpContext += `\nWEB SEARCH RESULTS (Latest Twilio Information): `;
+      mcpContext += `\n\n🌐 WEB SEARCH RESULTS (Latest Twilio Information from Internet): `;
       webSearchResults.results.forEach((result, index) => {
-        mcpContext += `\n${index + 1}. ${result.title} (${result.link}): ${
+        mcpContext += `\n[WEB-${index + 1}] ${result.title} (${result.link}): ${
           result.snippet
         } `;
       });
+      mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search and may contain the most up-to-date information.`;
     }
 
     const sources = chunks.map((chunk, index) => ({
@@ -608,7 +609,28 @@ async function generateMemoryAwareResponse(
       similarity: chunk.similarity,
       score: chunk.score || 0,
       index: index + 1,
+      sourceType: 'hybrid_search', // Mark as hybrid search
+      searchType: chunk.searchType || 'unknown', // semantic, bm25, or fused
     }));
+
+    // Add web search results to sources if available
+    if (webSearchResults && webSearchResults.found && webSearchResults.results) {
+      webSearchResults.results.forEach((result, index) => {
+        sources.push({
+          content: result.snippet,
+          metadata: {
+            source: result.link,
+            title: result.title,
+            displayLink: result.displayLink,
+          },
+          similarity: 1.0, // Web search results are considered highly relevant
+          score: 1.0,
+          index: sources.length + 1,
+          sourceType: 'web_search',
+          searchType: 'web',
+        });
+      });
+    }
 
     // Generate response using Gemini with memory context
     const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
@@ -638,6 +660,9 @@ FORMAT YOUR RESPONSE:
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
 - Reference conversation context when helpful
+- CLEARLY distinguish between information sources:
+  * Use [Source X] for hybrid search results (documentation)
+  * Use [WEB-X] for web search results (latest information)
 - End with source citations
 
 `;
@@ -770,8 +795,8 @@ FORMAT YOUR RESPONSE:
     // Clean the response text by removing ANSI escape codes
     const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
 
-    return { 
-      answer: cleanText, 
+    return {
+      answer: cleanText,
       sources: chunks,
       webSearchResults: webSearchResults || null,
       metadata: {
@@ -779,8 +804,8 @@ FORMAT YOUR RESPONSE:
         api: apiDetection.primary?.api,
         confidence: apiDetection.primary?.confidence,
         webSearchUsed: !!webSearchResults,
-        webSearchResultCount: webSearchResults?.results?.length || 0
-      }
+        webSearchResultCount: webSearchResults?.results?.length || 0,
+      },
     };
   } catch (error) {
     console.error(chalk.red("❌ Response generation failed:"), error.message);
