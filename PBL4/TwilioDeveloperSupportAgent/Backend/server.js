@@ -68,7 +68,7 @@ async function initializeServices() {
 
     // Initialize MCP server (create instance for web search only)
     try {
-      // Create a minimal instance that just has the performWebSearch method
+      // Create a minimal instance with web search and stub methods
       mcpServer = {
         performWebSearch: async (query, maxResults = 5) => {
           const { default: TwilioMCPServer } = await import(
@@ -81,6 +81,10 @@ async function initializeServices() {
             maxResults
           );
         },
+        // Stub methods to prevent errors
+        handleEnhanceChatContext: async () => ({ content: null }),
+        handleLookupErrorCode: async () => ({ content: null }),
+        handleValidateTwilioCode: async () => ({ content: null }),
       };
       console.log("✅ MCP web search initialized successfully");
     } catch (mcpError) {
@@ -170,6 +174,7 @@ app.post("/api/chat", async (req, res) => {
     const formattedResponse = {
       answer: result.answer,
       sources: result.sources || [],
+      webSearchResults: result.webSearchResults || null,
       metadata: {
         ...result.metadata,
         responseTime,

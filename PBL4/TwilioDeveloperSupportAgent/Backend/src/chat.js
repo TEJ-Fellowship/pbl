@@ -770,7 +770,18 @@ FORMAT YOUR RESPONSE:
     // Clean the response text by removing ANSI escape codes
     const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
 
-    return { answer: cleanText, sources: chunks };
+    return { 
+      answer: cleanText, 
+      sources: chunks,
+      webSearchResults: webSearchResults || null,
+      metadata: {
+        language: detectedLanguage,
+        api: apiDetection.primary?.api,
+        confidence: apiDetection.primary?.confidence,
+        webSearchUsed: !!webSearchResults,
+        webSearchResultCount: webSearchResults?.results?.length || 0
+      }
+    };
   } catch (error) {
     console.error(chalk.red("❌ Response generation failed:"), error.message);
     throw error;
