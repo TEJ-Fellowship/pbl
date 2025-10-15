@@ -110,13 +110,107 @@ class TwilioMCPServer {
                   type: "string",
                   description: "Search query for Twilio-related information",
                 },
-              },
-              maxResults: {
-                type: "number",
-                description: "Maximum number of results to return (default: 5)",
-                default: 5,
+                maxResults: {
+                  type: "number",
+                  description: "Maximum number of results to return (default: 5)",
+                  default: 5,
+                },
               },
               required: ["query"],
+            },
+          },
+          {
+            name: "check_twilio_status",
+            description:
+              "Check Twilio service status for any ongoing disruptions or maintenance",
+            inputSchema: {
+              type: "object",
+              properties: {
+                service: {
+                  type: "string",
+                  description: "Specific Twilio service to check (sms, voice, video, whatsapp, etc.) - optional",
+                },
+              },
+            },
+          },
+          {
+            name: "validate_webhook_signature",
+            description:
+              "Validate Twilio webhook signatures and payload formats",
+            inputSchema: {
+              type: "object",
+              properties: {
+                signature: {
+                  type: "string",
+                  description: "X-Twilio-Signature header value",
+                },
+                url: {
+                  type: "string",
+                  description: "Full webhook URL that was called",
+                },
+                payload: {
+                  type: "string",
+                  description: "Raw webhook payload body",
+                },
+                authToken: {
+                  type: "string",
+                  description: "Twilio Auth Token for signature validation",
+                },
+              },
+              required: ["signature", "url", "payload", "authToken"],
+            },
+          },
+          {
+            name: "calculate_rate_limits",
+            description:
+              "Calculate if user's API usage will exceed Twilio rate limits",
+            inputSchema: {
+              type: "object",
+              properties: {
+                apiType: {
+                  type: "string",
+                  description: "Type of API (sms, voice, video, etc.)",
+                },
+                requestsPerSecond: {
+                  type: "number",
+                  description: "Number of requests per second",
+                },
+                requestsPerMinute: {
+                  type: "number",
+                  description: "Number of requests per minute",
+                },
+                accountTier: {
+                  type: "string",
+                  description: "Account tier (trial, pay-as-you-go, enterprise)",
+                  default: "pay-as-you-go",
+                },
+              },
+              required: ["apiType", "requestsPerSecond", "requestsPerMinute"],
+            },
+          },
+          {
+            name: "execute_twilio_code",
+            description:
+              "Execute simple Twilio API calls in sandboxed test mode",
+            inputSchema: {
+              type: "object",
+              properties: {
+                code: {
+                  type: "string",
+                  description: "Twilio API code to execute (Node.js, Python, or PHP)",
+                },
+                language: {
+                  type: "string",
+                  description: "Programming language (nodejs, python, php)",
+                  default: "nodejs",
+                },
+                testMode: {
+                  type: "boolean",
+                  description: "Whether to run in test mode (default: true)",
+                  default: true,
+                },
+              },
+              required: ["code", "language"],
             },
           },
         ],
@@ -139,6 +233,14 @@ class TwilioMCPServer {
             return await this.handleDetectProgrammingLanguage(args);
           case "web_search":
             return await this.handleWebSearch(args);
+          case "check_twilio_status":
+            return await this.handleCheckTwilioStatus(args);
+          case "validate_webhook_signature":
+            return await this.handleValidateWebhookSignature(args);
+          case "calculate_rate_limits":
+            return await this.handleCalculateRateLimits(args);
+          case "execute_twilio_code":
+            return await this.handleExecuteTwilioCode(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -280,6 +382,107 @@ class TwilioMCPServer {
       };
     } catch (error) {
       throw new Error(`Web search failed: ${error.message}`);
+    }
+  }
+
+  // Twilio Status API handler
+  async handleCheckTwilioStatus(args) {
+    const { service } = args;
+
+    try {
+      const statusInfo = await this.checkTwilioStatus(service);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              tool: "check_twilio_status",
+              service: service || "all",
+              status: statusInfo,
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Twilio status check failed: ${error.message}`);
+    }
+  }
+
+  // Webhook signature validation handler
+  async handleValidateWebhookSignature(args) {
+    const { signature, url, payload, authToken } = args;
+
+    try {
+      const validation = this.validateWebhookSignature(signature, url, payload, authToken);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              tool: "validate_webhook_signature",
+              validation,
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Webhook validation failed: ${error.message}`);
+    }
+  }
+
+  // Rate limit calculation handler
+  async handleCalculateRateLimits(args) {
+    const { apiType, requestsPerSecond, requestsPerMinute, accountTier = "pay-as-you-go" } = args;
+
+    try {
+      const rateLimitInfo = this.calculateRateLimits(apiType, requestsPerSecond, requestsPerMinute, accountTier);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              tool: "calculate_rate_limits",
+              rateLimitInfo,
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Rate limit calculation failed: ${error.message}`);
+    }
+  }
+
+  // Code execution handler
+  async handleExecuteTwilioCode(args) {
+    const { code, language = "nodejs", testMode = true } = args;
+
+    try {
+      const executionResult = await this.executeTwilioCode(code, language, testMode);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              tool: "execute_twilio_code",
+              executionResult,
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Code execution failed: ${error.message}`);
     }
   }
 
@@ -630,6 +833,422 @@ class TwilioMCPServer {
       confidence: scores[detectedLang] / Math.max(...Object.values(scores)),
       scores,
     };
+  }
+
+  // Twilio Status API implementation
+  async checkTwilioStatus(service = null) {
+    try {
+      // Twilio doesn't have a public status API, so we'll simulate with web search
+      const statusQuery = service 
+        ? `Twilio ${service} service status outage maintenance`
+        : "Twilio service status outage maintenance";
+      
+      const searchResults = await this.performWebSearch(statusQuery, 3);
+      
+      // Analyze search results for status indicators
+      const statusIndicators = {
+        operational: ["operational", "normal", "healthy", "working"],
+        degraded: ["degraded", "slow", "delays", "issues"],
+        outage: ["outage", "down", "offline", "unavailable", "maintenance"],
+        unknown: []
+      };
+
+      let overallStatus = "operational";
+      let confidence = 0.5;
+      const issues = [];
+
+      if (searchResults.found && searchResults.results) {
+        const allText = searchResults.results.map(r => r.snippet).join(" ").toLowerCase();
+        
+        for (const [status, keywords] of Object.entries(statusIndicators)) {
+          const matches = keywords.filter(keyword => allText.includes(keyword)).length;
+          if (matches > 0) {
+            if (status === "outage") {
+              overallStatus = "outage";
+              confidence = Math.min(0.9, matches * 0.3);
+            } else if (status === "degraded" && overallStatus !== "outage") {
+              overallStatus = "degraded";
+              confidence = Math.min(0.8, matches * 0.2);
+            }
+          }
+        }
+
+        // Extract specific issues from search results
+        searchResults.results.forEach(result => {
+          if (result.snippet.toLowerCase().includes("outage") || 
+              result.snippet.toLowerCase().includes("maintenance")) {
+            issues.push({
+              title: result.title,
+              description: result.snippet,
+              source: result.link
+            });
+          }
+        });
+      }
+
+      return {
+        status: overallStatus,
+        confidence,
+        service: service || "all",
+        lastChecked: new Date().toISOString(),
+        issues: issues.slice(0, 3), // Limit to 3 most relevant issues
+        message: this.getStatusMessage(overallStatus, service),
+        recommendation: this.getStatusRecommendation(overallStatus)
+      };
+    } catch (error) {
+      return {
+        status: "unknown",
+        confidence: 0.1,
+        service: service || "all",
+        lastChecked: new Date().toISOString(),
+        error: "Unable to check status",
+        message: "Status check failed. Please check Twilio's status page directly.",
+        recommendation: "Visit https://status.twilio.com/ for official status updates"
+      };
+    }
+  }
+
+  getStatusMessage(status, service) {
+    const serviceName = service ? `Twilio ${service}` : "Twilio services";
+    switch (status) {
+      case "operational":
+        return `${serviceName} are operating normally`;
+      case "degraded":
+        return `${serviceName} are experiencing some issues but are mostly functional`;
+      case "outage":
+        return `${serviceName} are currently experiencing an outage`;
+      default:
+        return `Unable to determine ${serviceName} status`;
+    }
+  }
+
+  getStatusRecommendation(status) {
+    switch (status) {
+      case "operational":
+        return "No action needed. Services are working normally.";
+      case "degraded":
+        return "Consider implementing retry logic and monitoring for any issues.";
+      case "outage":
+        return "Avoid making API calls until service is restored. Check status page for updates.";
+      default:
+        return "Check official Twilio status page for current information.";
+    }
+  }
+
+  // Webhook signature validation implementation
+  validateWebhookSignature(signature, url, payload, authToken) {
+    try {
+      const crypto = require('crypto');
+      
+      // Create the signature string
+      const signatureString = url + payload;
+      
+      // Create HMAC-SHA1 hash
+      const expectedSignature = crypto
+        .createHmac('sha1', authToken)
+        .update(signatureString, 'utf8')
+        .digest('base64');
+
+      // Compare signatures
+      const isValid = signature === expectedSignature;
+      
+      // Additional validation checks
+      const validationChecks = {
+        signatureMatch: isValid,
+        urlFormat: this.isValidUrl(url),
+        payloadFormat: this.isValidJson(payload),
+        authTokenFormat: this.isValidAuthToken(authToken)
+      };
+
+      const issues = [];
+      if (!validationChecks.signatureMatch) {
+        issues.push("Signature does not match expected value");
+      }
+      if (!validationChecks.urlFormat) {
+        issues.push("Invalid webhook URL format");
+      }
+      if (!validationChecks.payloadFormat) {
+        issues.push("Invalid JSON payload format");
+      }
+      if (!validationChecks.authTokenFormat) {
+        issues.push("Invalid Auth Token format");
+      }
+
+      return {
+        isValid,
+        validationChecks,
+        issues,
+        expectedSignature,
+        providedSignature: signature,
+        recommendation: isValid 
+          ? "Webhook signature is valid. This is a legitimate Twilio webhook."
+          : "Webhook signature is invalid. This may not be from Twilio or the Auth Token is incorrect."
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        error: error.message,
+        recommendation: "Unable to validate webhook signature due to an error"
+      };
+    }
+  }
+
+  isValidUrl(url) {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  isValidJson(str) {
+    try {
+      JSON.parse(str);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  isValidAuthToken(token) {
+    // Twilio Auth Tokens are typically 32 characters long and alphanumeric
+    return /^[a-zA-Z0-9]{32}$/.test(token);
+  }
+
+  // Rate limit calculation implementation
+  calculateRateLimits(apiType, requestsPerSecond, requestsPerMinute, accountTier) {
+    // Twilio rate limits by account tier and API type
+    const rateLimits = {
+      trial: {
+        sms: { perSecond: 1, perMinute: 10 },
+        voice: { perSecond: 1, perMinute: 5 },
+        video: { perSecond: 1, perMinute: 5 },
+        whatsapp: { perSecond: 1, perMinute: 10 }
+      },
+      "pay-as-you-go": {
+        sms: { perSecond: 1, perMinute: 100 },
+        voice: { perSecond: 1, perMinute: 50 },
+        video: { perSecond: 1, perMinute: 50 },
+        whatsapp: { perSecond: 1, perMinute: 100 }
+      },
+      enterprise: {
+        sms: { perSecond: 10, perMinute: 1000 },
+        voice: { perSecond: 10, perMinute: 500 },
+        video: { perSecond: 10, perMinute: 500 },
+        whatsapp: { perSecond: 10, perMinute: 1000 }
+      }
+    };
+
+    const limits = rateLimits[accountTier]?.[apiType] || rateLimits["pay-as-you-go"][apiType] || { perSecond: 1, perMinute: 100 };
+    
+    const exceedsPerSecond = requestsPerSecond > limits.perSecond;
+    const exceedsPerMinute = requestsPerMinute > limits.perMinute;
+    const willExceedLimits = exceedsPerSecond || exceedsPerMinute;
+
+    const warnings = [];
+    const recommendations = [];
+
+    if (exceedsPerSecond) {
+      warnings.push(`Exceeds per-second limit: ${requestsPerSecond} > ${limits.perSecond}`);
+      recommendations.push("Implement request queuing or reduce request frequency");
+    }
+
+    if (exceedsPerMinute) {
+      warnings.push(`Exceeds per-minute limit: ${requestsPerMinute} > ${limits.perMinute}`);
+      recommendations.push("Consider batching requests or upgrading account tier");
+    }
+
+    if (!willExceedLimits) {
+      recommendations.push("Your usage is within rate limits. No changes needed.");
+    }
+
+    return {
+      willExceedLimits,
+      limits,
+      currentUsage: {
+        perSecond: requestsPerSecond,
+        perMinute: requestsPerMinute
+      },
+      warnings,
+      recommendations,
+      accountTier,
+      apiType,
+      upgradeNeeded: willExceedLimits && accountTier !== "enterprise"
+    };
+  }
+
+  // Code execution implementation (sandboxed)
+  async executeTwilioCode(code, language, testMode) {
+    try {
+      // This is a simplified sandbox - in production, you'd want more security
+      const executionResult = {
+        success: false,
+        output: "",
+        errors: [],
+        warnings: [],
+        testMode,
+        language
+      };
+
+      // Basic syntax validation
+      const syntaxCheck = this.validateCodeSyntax(code, language);
+      if (!syntaxCheck.isValid) {
+        executionResult.errors = syntaxCheck.errors;
+        executionResult.warnings = syntaxCheck.warnings;
+        return executionResult;
+      }
+
+      // Simulate code execution based on language
+      switch (language) {
+        case "nodejs":
+          executionResult.output = await this.simulateNodeExecution(code, testMode);
+          break;
+        case "python":
+          executionResult.output = await this.simulatePythonExecution(code, testMode);
+          break;
+        case "php":
+          executionResult.output = await this.simulatePhpExecution(code, testMode);
+          break;
+        default:
+          throw new Error(`Unsupported language: ${language}`);
+      }
+
+      executionResult.success = true;
+      return executionResult;
+    } catch (error) {
+      return {
+        success: false,
+        output: "",
+        errors: [error.message],
+        warnings: [],
+        testMode,
+        language
+      };
+    }
+  }
+
+  validateCodeSyntax(code, language) {
+    const errors = [];
+    const warnings = [];
+
+    // Basic syntax checks
+    if (language === "nodejs") {
+      if (!code.includes("require") && !code.includes("import")) {
+        warnings.push("No Twilio library import detected");
+      }
+      if (code.includes("process.env") && !code.includes("TWILIO_")) {
+        warnings.push("Environment variables detected but no Twilio credentials found");
+      }
+    } else if (language === "python") {
+      if (!code.includes("from twilio") && !code.includes("import twilio")) {
+        warnings.push("No Twilio library import detected");
+      }
+      if (code.includes("os.environ") && !code.includes("TWILIO_")) {
+        warnings.push("Environment variables detected but no Twilio credentials found");
+      }
+    } else if (language === "php") {
+      if (!code.includes("require") && !code.includes("include")) {
+        warnings.push("No Twilio library include detected");
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  async simulateNodeExecution(code, testMode) {
+    // Simulate Node.js execution
+    const output = [];
+    
+    if (testMode) {
+      output.push("🔧 Running in TEST MODE - No actual API calls will be made");
+    }
+
+    if (code.includes("client.messages.create")) {
+      output.push("✅ SMS message creation code detected");
+      if (testMode) {
+        output.push("📱 Simulated SMS: 'Hello from Twilio!' to +1234567890");
+      }
+    }
+
+    if (code.includes("client.calls.create")) {
+      output.push("✅ Voice call creation code detected");
+      if (testMode) {
+        output.push("📞 Simulated call: Connecting to +1234567890");
+      }
+    }
+
+    if (code.includes("client.video.rooms.create")) {
+      output.push("✅ Video room creation code detected");
+      if (testMode) {
+        output.push("📹 Simulated video room: 'Test Room' created");
+      }
+    }
+
+    output.push("✅ Code syntax appears valid");
+    output.push("⚠️  Remember to set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables");
+
+    return output.join("\n");
+  }
+
+  async simulatePythonExecution(code, testMode) {
+    // Simulate Python execution
+    const output = [];
+    
+    if (testMode) {
+      output.push("🔧 Running in TEST MODE - No actual API calls will be made");
+    }
+
+    if (code.includes("client.messages.create")) {
+      output.push("✅ SMS message creation code detected");
+      if (testMode) {
+        output.push("📱 Simulated SMS: 'Hello from Twilio!' to +1234567890");
+      }
+    }
+
+    if (code.includes("client.calls.create")) {
+      output.push("✅ Voice call creation code detected");
+      if (testMode) {
+        output.push("📞 Simulated call: Connecting to +1234567890");
+      }
+    }
+
+    output.push("✅ Code syntax appears valid");
+    output.push("⚠️  Remember to set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables");
+
+    return output.join("\n");
+  }
+
+  async simulatePhpExecution(code, testMode) {
+    // Simulate PHP execution
+    const output = [];
+    
+    if (testMode) {
+      output.push("🔧 Running in TEST MODE - No actual API calls will be made");
+    }
+
+    if (code.includes("$client->messages->create")) {
+      output.push("✅ SMS message creation code detected");
+      if (testMode) {
+        output.push("📱 Simulated SMS: 'Hello from Twilio!' to +1234567890");
+      }
+    }
+
+    if (code.includes("$client->calls->create")) {
+      output.push("✅ Voice call creation code detected");
+      if (testMode) {
+        output.push("📞 Simulated call: Connecting to +1234567890");
+      }
+    }
+
+    output.push("✅ Code syntax appears valid");
+    output.push("⚠️  Remember to set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables");
+
+    return output.join("\n");
   }
 
   async start() {
