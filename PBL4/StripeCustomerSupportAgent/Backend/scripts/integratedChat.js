@@ -83,11 +83,14 @@ async function retrieveChunksWithHybridSearch(
   try {
     console.log("🔍 Searching for relevant information using hybrid search...");
 
-    // Use the provided hybrid search service
-    const bm25Service = new PostgreSQLBM25Service();
+    // Ensure hybrid search is initialized
+    if (!hybridSearch.isInitialized) {
+      console.log("🔧 Initializing hybrid search...");
+      await hybridSearch.initialize();
+    }
 
     // Perform hybrid search
-    const results = await hybridSearch.search(
+    const results = await hybridSearch.hybridSearch(
       query,
       parseInt(config.MAX_CHUNKS) || 10
     );
@@ -103,8 +106,8 @@ async function retrieveChunksWithHybridSearch(
     const topChunks = results.map((result) => ({
       content: result.content,
       metadata: result.metadata,
-      similarity: result.score || 0,
-      score: result.score || 0,
+      similarity: result.finalScore || result.score || 0,
+      score: result.finalScore || result.score || 0,
       searchType: result.searchType || "hybrid",
       bm25Score: result.bm25Score,
       semanticScore: result.semanticScore,
@@ -472,7 +475,14 @@ async function startIntegratedChat() {
     const memoryController = new MemoryController();
     const mcpService = new MCPIntegrationService();
     const queryClassifier = new QueryClassifier();
-    const hybridSearch = new HybridSearch();
+
+    // Initialize PostgreSQL BM25 service for hybrid search
+    const postgresBM25Service = new PostgreSQLBM25Service();
+    const hybridSearch = new HybridSearch(
+      vectorStore,
+      embeddings,
+      postgresBM25Service
+    );
 
     // Initialize memory session
     const sessionId = `session_${Date.now()}_${Math.random()
@@ -490,6 +500,10 @@ async function startIntegratedChat() {
 
     // Wait for MCP service to initialize
     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Initialize hybrid search
+    console.log("🔧 Initializing hybrid search...");
+    await hybridSearch.initialize();
 
     console.log("✅ All services initialized successfully");
 
