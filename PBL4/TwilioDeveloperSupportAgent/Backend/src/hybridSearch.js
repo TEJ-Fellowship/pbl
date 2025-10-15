@@ -173,7 +173,8 @@ class HybridSearch {
 
       // Apply BM25-style scoring to semantic results
       const bm25Results = semanticResults.map((result, index) => {
-        const content = result.content.toLowerCase();
+        // Add null check for content
+        const content = (result.content || "").toLowerCase();
         const queryTerms = query.toLowerCase().split(/\s+/);
 
         // Simple BM25-style scoring based on term frequency

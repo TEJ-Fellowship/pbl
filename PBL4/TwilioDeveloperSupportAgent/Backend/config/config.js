@@ -38,6 +38,10 @@ const config = {
   // Rate Limiting
   RATE_LIMIT_DELAY: process.env.RATE_LIMIT_DELAY,
   EMBEDDING_DELAY: process.env.EMBEDDING_DELAY,
+
+  // Google Custom Search API
+  GOOGLE_CUSTOM_SEARCH_API_KEY: process.env.GOOGLE_CUSTOM_SEARCH_API_KEY,
+  GOOGLE_CUSTOM_SEARCH_ENGINE_ID: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
 };
 
 export default config;

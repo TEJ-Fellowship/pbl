@@ -144,6 +144,13 @@ export class TwilioMCPClient {
     });
   }
 
+  async webSearch(query, maxResults = 5) {
+    return await this.callTool("web_search", {
+      query,
+      maxResults,
+    });
+  }
+
   getAvailableTools() {
     return Array.from(this.tools.keys());
   }
