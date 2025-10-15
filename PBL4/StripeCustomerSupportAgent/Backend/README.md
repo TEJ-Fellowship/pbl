@@ -12,10 +12,21 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
 - **📝 AI Conversation Summarization**: Intelligent conversation summaries using Gemini AI for better context retention
 - **🔍 Hybrid Search**: Combines PostgreSQL BM25 keyword search with Pinecone semantic search
 - **📚 Scraping and Ingestion**: Web scraping and ingestion of Stripe documentation
-- **🗄️ PostgreSQL & PineCone Integration**: Scalable document storage with hybrid search capabilities
+- **🗄️ PostgreSQL & Pinecone Integration**: Scalable document storage with hybrid search capabilities
 - **🔗 Vector Embeddings**: Semantic search using Google's text-embedding-004 model
 - **📊 Advanced Chunking**: Intelligent document chunking with code detection
 - **🎯 Weighted Fusion**: Combines BM25 and semantic search results for optimal relevance
+- <details>
+    <summary><strong>🛠️ MCP Tool Integration (Toggleable)</strong>: Model Context Protocol tools for enhanced query processing</summary>
+
+  - **🧮 Calculator Tool**: Mathematical calculations and Stripe fee computations
+  - **⚠️ Status Checker**: Real-time Stripe system status monitoring
+  - **🔍 Web Search**: Enhanced web search capabilities for current information
+  - **✅ Code Validator**: Code validation and syntax checking
+  - **📅 DateTime Tool**: Date and time operations and formatting
+
+  <em>MCP Tool Integration can be enabled/disabled via environment/configuration.</em>
+  </details>
 
 ## 🏗️ System Architecture
 
@@ -136,6 +147,41 @@ graph TB
     CHUNKER -->|"Generate embeddings"| EMBEDDINGS
     EMBEDDINGS -->|"Vector embeddings"| PINECONE
 ```
+
+## 🔧 MCP Tool Integration
+
+The Stripe Customer Support Agent includes **Model Context Protocol (MCP)** tool integration, providing specialized tools for enhanced query processing and intelligent responses.
+
+### 🛠️ Available MCP Tools
+
+- **🧮 Calculator Tool**: Mathematical calculations and Stripe fee computations
+- **⚠️ Status Checker**: Real-time Stripe system status monitoring
+- **🔍 Web Search**: Enhanced web search capabilities for current information using google custom engine
+- **✅ Code Validator**: Code validation and syntax checking
+- **📅 DateTime Tool**: Date and time operations and formatting
+
+### 🎯 Key Features
+
+- **🤖 Intelligent Tool Selection**: AI automatically selects appropriate tools based on query context
+- **🔄 Seamless Integration**: Tools work seamlessly with existing chat and memory systems
+- **📊 Confidence Scoring**: Each tool response includes confidence levels for better decision making
+- **🛡️ Error Handling**: Robust error handling with fallback mechanisms
+
+### 🚀 Quick Start
+
+```bash
+# Test MCP integration
+npm run test:mcp
+
+# Run interactive MCP demo
+npm run demo:mcp
+
+# Start MCP-enhanced chat
+node examples/mcpChatExample.js
+```
+
+> 📖 **For detailed MCP documentation, see [MCP_DOCUMENTATION.md](../docs/MCP_DOCUMENTATION.md)**
+> 📖 **For detailed Google Search Setup documentation, see [GOOGLE_SEARCH_SETUP.md](../docs/GOOGLE_SEARCH_SETUP.md)**
 
 ## 🧠 Conversational Memory System
 
@@ -443,19 +489,34 @@ Backend/
 ├── routes/                     # API route definitions
 ├── services/
 │   ├── documentStorageService.js    # Document storage operations
-│   └── postgresBM25Service.js       # PostgreSQL BM25 search
+│   ├── postgresBM25Service.js       # PostgreSQL BM25 search
+│   ├── mcpIntegrationService.js     # MCP integration service
+│   ├── mcp-server/                  # MCP server components
+│   │   ├── agentOrchestrator.js    # MCP tool coordinator
+│   │   ├── aiToolSelectionService.js # AI-powered tool selection
+│   │   └── toolConfigManager.js    # Tool configuration manager
+│   └── mcp-tools/                  # MCP tool implementations
+│       ├── calculatorTool.js       # Mathematical calculations
+│       ├── statusCheckerTool.js     # System status checking
+│       ├── webSearchTool.js         # Web search functionality
+│       ├── codeValidatorTool.js     # Code validation
+│       └── dateTimeTool.js          # Date/time operations
 ├── scripts/
 │   ├── chat.js                # AI-powered chat interface
+│   ├── mcpDemo.js             # MCP integration demo
 │   ├── scraper.js              # Web scraper for Stripe docs
 │   ├── ingest.js               # Document ingestion pipeline
 │   ├── migrate-to-postgres.js  # Database migration script
 │   ├── setup_database.sql      # Database schema
 │   └── setup_raw_documents.sql # Raw documents schema
+├── examples/
+│   └── mcpChatExample.js       # MCP-enhanced chat example
 ├── tests/                      # Test suite
 │   ├── testChatIntegration.js
 │   ├── testHybridSearch.js
 │   ├── testPostgreSQL.js
-│   └── testDocumentLoading.js
+│   ├── testDocumentLoading.js
+│   └── testMCPIntegration.js   # MCP integration tests
 ├── utils/
 │   ├── advancedChunker.js      # Intelligent document chunking
 │   └── codeDetector.js         # Code detection utilities
@@ -777,6 +838,7 @@ npm run test:chat         # Chat integration tests
 npm run test:postgres     # PostgreSQL tests
 npm run test:memory       # Memory system tests
 npm run test:gemini-reformulation  # Gemini AI query reformulation tests
+npm run test:mcp          # MCP integration tests
 ```
 
 ## 🔧 Development
@@ -793,6 +855,11 @@ npm run setup:memory   # Setup memory system schema
 npm run setup          # Full setup (scrape + ingest + memory)
 npm run dev            # Development mode
 npm test               # Run test suite
+
+# MCP Integration Scripts
+npm run test:mcp       # Test MCP integration
+npm run demo:mcp       # Run MCP interactive demo
+node examples/mcpChatExample.js  # Start MCP-enhanced chat
 ```
 
 ### Development Workflow
