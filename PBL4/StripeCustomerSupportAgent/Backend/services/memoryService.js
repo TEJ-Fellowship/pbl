@@ -145,12 +145,29 @@ class MemoryService {
    */
   async getSessionTokenUsage(sessionId) {
     try {
+      // Try database first
       return await this.memoryController.postgresMemory.getSessionTokenUsage(
         sessionId
       );
     } catch (error) {
       console.error("❌ Memory service - get token usage error:", error);
-      throw error;
+
+      // Fallback to chat service in-memory counting
+      try {
+        const { chatService } = await import("./chatService.js");
+        return chatService.getSessionTokenUsage(sessionId);
+      } catch (fallbackError) {
+        console.error("❌ Fallback token counting failed:", fallbackError);
+        // Final fallback to default values
+        return {
+          sessionId,
+          currentTokens: 0,
+          maxTokens: 4000,
+          usagePercentage: 0,
+          isNearLimit: false,
+          isAtLimit: false,
+        };
+      }
     }
   }
 

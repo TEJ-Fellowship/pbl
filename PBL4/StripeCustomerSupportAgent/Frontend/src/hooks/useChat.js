@@ -169,10 +169,10 @@ export const useChat = () => {
     }
   };
 
-  const initializeSession = async () => {
+  const initializeSession = async (forceNew = false) => {
     try {
-      // If we already have a session, don't create a new one
-      if (currentSessionId) {
+      // If we already have a session and not forcing new, don't create a new one
+      if (currentSessionId && !forceNew) {
         console.log("✅ Using existing session:", currentSessionId);
         return;
       }
@@ -236,6 +236,11 @@ export const useChat = () => {
 
       // Update chat history
       updateChatHistory(messageText);
+
+      // Fetch updated token usage after message
+      setTimeout(() => {
+        fetchTokenUsage(currentSessionId);
+      }, 500);
     } catch (error) {
       console.log("❌ Message failed:", error.message);
       setError(error.message || "Failed to send message");
@@ -434,9 +439,21 @@ export const useChat = () => {
       setChatHistory(updatedHistory);
       saveChatHistory(updatedHistory);
 
-      // If we're deleting the current session, start a new one
+      // If we're deleting the current session, clear messages and start a new one
       if (currentSessionId === chatToDelete.sessionId) {
-        await initializeSession();
+        // Clear current messages
+        setMessages([]);
+        setSources([]);
+        setConfidence(null);
+        setError(null);
+
+        // If this was the last chat, we'll start fresh
+        if (updatedHistory.length === 0) {
+          console.log("🆕 Last chat deleted, starting fresh session");
+        }
+
+        // Start a new session (force new since we deleted the current one)
+        await initializeSession(true);
       }
 
       console.log("✅ Chat deleted successfully:", chatId);
@@ -470,7 +487,12 @@ export const useChat = () => {
   const handleTokenLimitReached = async () => {
     try {
       console.log("⚠️ Token limit reached, creating new session...");
-      await initializeSession();
+      // Clear current messages and start fresh
+      setMessages([]);
+      setSources([]);
+      setConfidence(null);
+      setError(null);
+      await initializeSession(true);
       setError("Token limit reached. Started a new conversation.");
     } catch (error) {
       console.error("❌ Failed to create new session:", error);

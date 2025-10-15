@@ -8,11 +8,6 @@ const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
-  // Database
-  MONGODB_URL: process.env.MONGODB_URL,
-  MONGODB_DB: process.env.MONGODB_DB,
-  MONGODB_URI: process.env.MONGODB_URI,
-
   // PostgreSQL Configuration
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,

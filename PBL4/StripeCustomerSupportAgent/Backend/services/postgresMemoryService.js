@@ -56,14 +56,33 @@ class PostgreSQLMemoryService {
 
     try {
       const messageId = uuidv4();
-      const result = await client.query(
-        `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [messageId, sessionId, role, content, JSON.stringify(metadata)]
+
+      // Calculate token count for the message
+      const tokenCount = await client.query(
+        `SELECT estimate_token_count($1) as token_count`,
+        [content]
       );
 
-      console.log(`💾 Stored ${role} message for session: ${sessionId}`);
+      const result = await client.query(
+        `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata, token_count)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          messageId,
+          sessionId,
+          role,
+          content,
+          JSON.stringify(metadata),
+          tokenCount.rows[0].token_count,
+        ]
+      );
+
+      // Update session token usage
+      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+
+      console.log(
+        `💾 Stored ${role} message for session: ${sessionId} (${tokenCount.rows[0].token_count} tokens)`
+      );
       return result.rows[0];
     } finally {
       client.release();

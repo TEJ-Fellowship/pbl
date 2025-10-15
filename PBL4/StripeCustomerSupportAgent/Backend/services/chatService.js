@@ -14,6 +14,62 @@ class ChatService {
     this.hybridSearch = null;
     this.memoryController = null;
     this.isInitialized = false;
+    this.sessionTokenCounts = new Map(); // Track tokens per session
+  }
+
+  /**
+   * Estimate token count for text (rough approximation)
+   */
+  estimateTokenCount(text) {
+    if (!text) return 0;
+    // Rough estimation: 1 token ≈ 4 characters for English text
+    return Math.max(1, Math.ceil(text.length / 4.0));
+  }
+
+  /**
+   * Get current token count for a session
+   */
+  getSessionTokenCount(sessionId) {
+    return this.sessionTokenCounts.get(sessionId) || 0;
+  }
+
+  /**
+   * Add tokens to session count
+   */
+  addTokensToSession(sessionId, tokens) {
+    const currentCount = this.getSessionTokenCount(sessionId);
+    this.sessionTokenCounts.set(sessionId, currentCount + tokens);
+    console.log(
+      `📊 Session ${sessionId}: +${tokens} tokens (Total: ${
+        currentCount + tokens
+      })`
+    );
+  }
+
+  /**
+   * Get token usage info for a session
+   */
+  getSessionTokenUsage(sessionId) {
+    const currentTokens = this.getSessionTokenCount(sessionId);
+    const maxTokens = 4000; // Default limit
+    const usagePercentage = (currentTokens / maxTokens) * 100;
+
+    return {
+      sessionId,
+      currentTokens,
+      maxTokens,
+      usagePercentage,
+      isNearLimit: usagePercentage >= 80,
+      isAtLimit: usagePercentage >= 95,
+    };
+  }
+
+  /**
+   * Reset token count for a session (when creating new session)
+   */
+  resetSessionTokenCount(sessionId) {
+    this.sessionTokenCounts.set(sessionId, 0);
+    console.log(`🔄 Reset token count for session: ${sessionId}`);
   }
 
   /**
@@ -116,6 +172,8 @@ class ChatService {
           context: "customer_support",
           startTime: timestamp,
         });
+        // Reset token count for new session
+        this.resetSessionTokenCount(sessionId);
       } else {
         // For existing sessions, ensure memory system is initialized
         console.log(`🔄 Checking existing session: ${sessionId}`);
@@ -139,6 +197,10 @@ class ChatService {
           );
         }
       }
+
+      // Count tokens for user message (fallback if database fails)
+      const userMessageTokens = this.estimateTokenCount(message);
+      this.addTokensToSession(sessionId, userMessageTokens);
 
       // Process user message with memory system
       await this.memoryController.processUserMessage(message, {
@@ -177,6 +239,10 @@ class ChatService {
         chunks,
         memoryContext
       );
+
+      // Count tokens for AI response (fallback if database fails)
+      const aiResponseTokens = this.estimateTokenCount(response.answer);
+      this.addTokensToSession(sessionId, aiResponseTokens);
 
       // Process assistant response with memory system
       await this.memoryController.processAssistantResponse(response.answer, {
