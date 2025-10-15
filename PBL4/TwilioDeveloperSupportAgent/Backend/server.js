@@ -19,7 +19,7 @@ import {
 } from "./src/chat.js";
 import ConversationMemory from "./src/conversationMemory.js";
 import APIDetector from "./src/apiDetector.js";
-import { TwilioMCPClient } from "./src/mcpClient.js";
+import TwilioMCPServer from "./src/mcpServer.js";
 
 // Load environment variables
 dotenv.config();
@@ -48,7 +48,7 @@ let geminiClient,
   memory,
   apiDetector,
   separateChunks,
-  mcpClient;
+  mcpServer;
 
 // Initialize services
 async function initializeServices() {
@@ -66,9 +66,34 @@ async function initializeServices() {
     const { loadSeparateChunks } = await import("./src/chat.js");
     separateChunks = await loadSeparateChunks();
 
-    // Initialize MCP client (disabled for now due to SDK issues)
-    mcpClient = null;
-    console.log("⚠️ MCP client disabled, using enhanced prompt system");
+    // Initialize MCP server (create instance for web search only)
+    try {
+      // Create a minimal instance with web search and stub methods
+      mcpServer = {
+        performWebSearch: async (query, maxResults = 5) => {
+          const { default: TwilioMCPServer } = await import(
+            "./src/mcpServer.js"
+          );
+          const tempServer = Object.create(TwilioMCPServer.prototype);
+          return await TwilioMCPServer.prototype.performWebSearch.call(
+            tempServer,
+            query,
+            maxResults
+          );
+        },
+        // Stub methods to prevent errors
+        handleEnhanceChatContext: async () => ({ content: null }),
+        handleLookupErrorCode: async () => ({ content: null }),
+        handleValidateTwilioCode: async () => ({ content: null }),
+      };
+      console.log("✅ MCP web search initialized successfully");
+    } catch (mcpError) {
+      console.log(
+        "⚠️ MCP web search failed to initialize, using enhanced prompt system"
+      );
+      console.log(`   Error: ${mcpError.message}`);
+      mcpServer = null;
+    }
 
     console.log("✅ All services initialized successfully");
   } catch (error) {
@@ -131,7 +156,7 @@ app.post("/api/chat", async (req, res) => {
       geminiClient,
       memory,
       apiDetector,
-      mcpClient
+      mcpServer
     );
 
     const responseTime = Date.now() - startTime;
@@ -149,6 +174,7 @@ app.post("/api/chat", async (req, res) => {
     const formattedResponse = {
       answer: result.answer,
       sources: result.sources || [],
+      webSearchResults: result.webSearchResults || null,
       metadata: {
         ...result.metadata,
         responseTime,
@@ -173,8 +199,11 @@ app.post("/api/chat", async (req, res) => {
 app.get("/api/conversation/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const history = await memory.getConversationHistory(sessionId || "default");
-    res.json({ history });
+    const context = memory.getConversationContext();
+    res.json({
+      history: context.recentHistory || [],
+      sessionId: sessionId || "default",
+    });
   } catch (error) {
     console.error("❌ Conversation history error:", error);
     res.status(500).json({

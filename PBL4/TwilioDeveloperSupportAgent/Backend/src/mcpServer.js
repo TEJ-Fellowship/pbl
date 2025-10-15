@@ -4,6 +4,8 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import chalk from "chalk";
+import axios from "axios";
+import config from "../config/config.js";
 
 class TwilioMCPServer {
   constructor() {
@@ -97,6 +99,26 @@ class TwilioMCPServer {
               required: ["text"],
             },
           },
+          {
+            name: "web_search",
+            description:
+              "Search the web for current Twilio documentation, updates, or recent issues",
+            inputSchema: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "Search query for Twilio-related information",
+                },
+              },
+              maxResults: {
+                type: "number",
+                description: "Maximum number of results to return (default: 5)",
+                default: 5,
+              },
+              required: ["query"],
+            },
+          },
         ],
       };
     });
@@ -115,6 +137,8 @@ class TwilioMCPServer {
             return await this.handleLookupErrorCode(args);
           case "detect_programming_language":
             return await this.handleDetectProgrammingLanguage(args);
+          case "web_search":
+            return await this.handleWebSearch(args);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -230,6 +254,99 @@ class TwilioMCPServer {
       };
     } catch (error) {
       throw new Error(`Language detection failed: ${error.message}`);
+    }
+  }
+
+  // Web search handler
+  async handleWebSearch(args) {
+    const { query, maxResults = 5 } = args;
+
+    try {
+      const searchResults = await this.performWebSearch(query, maxResults);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              tool: "web_search",
+              query,
+              results: searchResults,
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        ],
+      };
+    } catch (error) {
+      throw new Error(`Web search failed: ${error.message}`);
+    }
+  }
+
+  // Google Custom Search implementation
+  async performWebSearch(query, maxResults = 5) {
+    const apiKey = config.GOOGLE_CUSTOM_SEARCH_API_KEY;
+    const searchEngineId = config.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
+
+    if (!apiKey || !searchEngineId) {
+      throw new Error(
+        "Google Custom Search API credentials not configured. Please check your .env file."
+      );
+    }
+
+    // Enhance query with Twilio context
+    const enhancedQuery = `${query} site:twilio.com`;
+
+    try {
+      const response = await axios.get(
+        "https://www.googleapis.com/customsearch/v1",
+        {
+          params: {
+            key: apiKey,
+            cx: searchEngineId,
+            q: enhancedQuery,
+            num: Math.min(maxResults, 10), // Google allows max 10 results per request
+          },
+          timeout: 10000, // 10 second timeout
+        }
+      );
+
+      if (!response.data.items || response.data.items.length === 0) {
+        return {
+          found: false,
+          message: "No relevant results found",
+          query: enhancedQuery,
+        };
+      }
+
+      const results = response.data.items
+        .slice(0, maxResults)
+        .map((item, index) => ({
+          rank: index + 1,
+          title: item.title,
+          link: item.link,
+          snippet: item.snippet,
+          displayLink: item.displayLink,
+        }));
+
+      return {
+        found: true,
+        totalResults:
+          response.data.searchInformation?.totalResults || "Unknown",
+        searchTime: response.data.searchInformation?.searchTime || "Unknown",
+        query: enhancedQuery,
+        results,
+      };
+    } catch (error) {
+      if (error.response?.status === 403) {
+        throw new Error(
+          "Google Custom Search API quota exceeded or invalid credentials"
+        );
+      } else if (error.response?.status === 429) {
+        throw new Error("Google Custom Search API rate limit exceeded");
+      } else {
+        throw new Error(`Search API error: ${error.message}`);
+      }
     }
   }
 

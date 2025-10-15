@@ -438,7 +438,7 @@ async function generateMemoryAwareResponse(
   geminiClient,
   memory,
   apiDetector,
-  mcpClient = null
+  mcpServer = null
 ) {
   try {
     console.log(
@@ -454,37 +454,58 @@ async function generateMemoryAwareResponse(
     let mcpEnhancements = null;
     let errorCodeInfo = null;
     let codeValidation = null;
+    let webSearchResults = null;
 
-    if (mcpClient && mcpClient.isConnected) {
+    if (mcpServer) {
       try {
         // Enhance context with MCP tools
-        const contextResult = await mcpClient.enhanceChatContext(
+        const contextResult = await mcpServer.handleEnhanceChatContext({
           query,
-          context
-        );
-        if (contextResult.success) {
-          mcpEnhancements = JSON.parse(contextResult.result.content[0].text);
+          context,
+        });
+        if (contextResult.content) {
+          mcpEnhancements = JSON.parse(contextResult.content[0].text);
         }
 
         // Look up error codes if detected
         const errorCodes = detectErrorCodes(query);
         if (errorCodes.length > 0) {
-          const errorResult = await mcpClient.lookupErrorCode(errorCodes[0]);
-          if (errorResult.success) {
-            errorCodeInfo = JSON.parse(errorResult.result.content[0].text);
+          const errorResult = await mcpServer.handleLookupErrorCode({
+            errorCode: errorCodes[0],
+          });
+          if (errorResult.content) {
+            errorCodeInfo = JSON.parse(errorResult.content[0].text);
           }
         }
 
         // Validate any code snippets in the query
         const codeMatch = query.match(/```[\s\S]*?```/g);
         if (codeMatch) {
-          const codeResult = await mcpClient.validateTwilioCode(
-            codeMatch[0],
-            detectedLanguage || "javascript"
-          );
-          if (codeResult.success) {
-            codeValidation = JSON.parse(codeResult.result.content[0].text);
+          const codeResult = await mcpServer.handleValidateTwilioCode({
+            code: codeMatch[0],
+            language: detectedLanguage || "javascript",
+          });
+          if (codeResult.content) {
+            codeValidation = JSON.parse(codeResult.content[0].text);
           }
+        }
+
+        // Perform web search for additional context
+        console.log(
+          chalk.blue("🔍 Performing web search for additional context...")
+        );
+        try {
+          const searchResults = await mcpServer.performWebSearch(query, 3);
+          webSearchResults = searchResults;
+          console.log(
+            chalk.green(
+              `✅ Web search found ${
+                webSearchResults.results?.length || 0
+              } results`
+            )
+          );
+        } catch (webError) {
+          console.log(chalk.red("❌ Web search failed:", webError.message));
         }
       } catch (mcpError) {
         console.log(
@@ -567,13 +588,53 @@ async function generateMemoryAwareResponse(
       }
     }
 
+    // Add web search results to context with clear labeling
+    if (
+      webSearchResults &&
+      webSearchResults.found &&
+      webSearchResults.results
+    ) {
+      mcpContext += `\n\n🌐 WEB SEARCH RESULTS (Latest Twilio Information from Internet): `;
+      webSearchResults.results.forEach((result, index) => {
+        mcpContext += `\n[WEB-${index + 1}] ${result.title} (${result.link}): ${
+          result.snippet
+        } `;
+      });
+      mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search and may contain the most up-to-date information.`;
+    }
+
     const sources = chunks.map((chunk, index) => ({
       content: chunk.content,
       metadata: chunk.metadata,
       similarity: chunk.similarity,
       score: chunk.score || 0,
       index: index + 1,
+      sourceType: "hybrid_search", // Mark as hybrid search
+      searchType: chunk.searchType || "unknown", // semantic, bm25, or fused
     }));
+
+    // Add web search results to sources if available
+    if (
+      webSearchResults &&
+      webSearchResults.found &&
+      webSearchResults.results
+    ) {
+      webSearchResults.results.forEach((result, index) => {
+        sources.push({
+          content: result.snippet,
+          metadata: {
+            source: result.link,
+            title: result.title,
+            displayLink: result.displayLink,
+          },
+          similarity: 1.0, // Web search results are considered highly relevant
+          score: 1.0,
+          index: sources.length + 1,
+          sourceType: "web_search",
+          searchType: "web",
+        });
+      });
+    }
 
     // Generate response using Gemini with memory context
     const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
@@ -603,6 +664,9 @@ FORMAT YOUR RESPONSE:
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
 - Reference conversation context when helpful
+- CLEARLY distinguish between information sources:
+  * Use [Source X] for hybrid search results (documentation)
+  * Use [WEB-X] for web search results (latest information)
 - End with source citations
 
 `;
@@ -735,7 +799,18 @@ FORMAT YOUR RESPONSE:
     // Clean the response text by removing ANSI escape codes
     const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
 
-    return { answer: cleanText, sources: chunks };
+    return {
+      answer: cleanText,
+      sources: chunks,
+      webSearchResults: webSearchResults || null,
+      metadata: {
+        language: detectedLanguage,
+        api: apiDetection.primary?.api,
+        confidence: apiDetection.primary?.confidence,
+        webSearchUsed: !!webSearchResults,
+        webSearchResultCount: webSearchResults?.results?.length || 0,
+      },
+    };
   } catch (error) {
     console.error(chalk.red("❌ Response generation failed:"), error.message);
     throw error;
