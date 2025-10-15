@@ -28,15 +28,22 @@ const SourcePanel = ({ sources, isOpen, onToggle }) => {
               <div key={index} className="text-xs text-gray-400">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">
-                    {source.metadata?.title || `Source ${index + 1}`}
+                    {source.title ||
+                      source.metadata?.title ||
+                      `Source ${index + 1}`}
                   </span>
                   <span className="text-gray-500">
                     {(source.similarity || source.score || 0).toFixed(3)}
                   </span>
                 </div>
-                {source.metadata?.source && (
+                {(source.source || source.metadata?.source) && (
                   <div className="text-gray-500 truncate">
-                    {source.metadata.source}
+                    {source.source || source.metadata?.source}
+                  </div>
+                )}
+                {source.category && (
+                  <div className="text-gray-600 text-xs">
+                    Category: {source.category}
                   </div>
                 )}
               </div>
