@@ -242,30 +242,16 @@ async function generateResponseWithMCP(
   try {
     console.log("\n🤖 Generating response with MCP integration...");
 
-    // Prepare context from retrieved chunks
-    const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
-      .join("\n\n");
-
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
-
-    // Process query with MCP tools
-    let mcpEnhancement = "";
+    // Process query with MCP tools only
+    let mcpResult = null;
     let mcpToolsUsed = [];
     let mcpConfidence = 0;
 
     try {
       console.log("🔧 Processing with MCP tools...");
-      const mcpResult = await mcpService.processQueryWithMCP(query, confidence);
+      mcpResult = await mcpService.processQueryWithMCP(query, confidence);
 
       if (mcpResult.success && mcpResult.enhancedResponse) {
-        mcpEnhancement = mcpResult.enhancedResponse;
         mcpToolsUsed = mcpResult.toolsUsed || [];
         mcpConfidence = mcpResult.confidence || 0;
 
@@ -279,42 +265,19 @@ async function generateResponseWithMCP(
       console.log("   Continuing with standard response generation...");
     }
 
-    // Build enhanced prompt with MCP integration
-    let prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
-
-CONTEXT (Stripe Documentation):
-${context}
+    // Use MCP tool results only with simple prompt
+    let prompt = `You are a helpful assistant. Answer the user's question based on the provided information.
 
 USER QUESTION: ${query}
 
-RESPONSE GUIDELINES:
-1. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
-2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
-3. **Include Code**: Always include practical code examples in the appropriate programming language
-4. **Step-by-Step**: Break down complex processes into clear, actionable steps
-5. **Error Handling**: Mention common errors and how to handle them
-6. **Best Practices**: Include security considerations and best practices
-7. **Source Citations**: Reference specific sources using [Source X] format
-8. **If Uncertain**: Clearly state when information isn't available in the context
+INFORMATION:
+${
+  mcpResult && mcpResult.enhancedResponse
+    ? mcpResult.enhancedResponse
+    : "No specific information available."
+}
 
-FORMAT YOUR RESPONSE:
-- Start with a direct answer to the question
-- Provide detailed explanation with code examples
-- Include relevant API endpoints and parameters
-- Mention any prerequisites or setup requirements
-- End with source citations`;
-
-    // Add MCP enhancement if available
-    if (mcpEnhancement) {
-      prompt += `\n\nADDITIONAL INTELLIGENCE (MCP Tools):
-        ${mcpEnhancement}
-
-        INTEGRATION NOTES:
-        - Use the MCP tool results to enhance your response
-        - If MCP tools provided calculations, status checks, or validations, incorporate them
-        - Maintain the same response format while integrating MCP insights
-        - If MCP tools found conflicting information, prioritize the documentation context`;
-    }
+Please provide a simple, direct answer to the user's question.`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -325,11 +288,11 @@ FORMAT YOUR RESPONSE:
 
     return {
       answer: text,
-      sources: sources,
-      mcpEnhancement: mcpEnhancement,
+      sources: [],
+      mcpEnhancement: mcpResult?.enhancedResponse || "",
       mcpToolsUsed: mcpToolsUsed,
       mcpConfidence: mcpConfidence,
-      overallConfidence: Math.max(confidence, mcpConfidence),
+      overallConfidence: mcpConfidence,
     };
   } catch (error) {
     console.error("❌ Response generation failed:", error.message);
@@ -699,18 +662,18 @@ async function startIntegratedChat() {
             } relevant Q&As`
           );
 
-          // Use reformulated query for retrieval
+          // Use reformulated query for retrieval (not for mcp tools)
           const searchQuery = memoryContext.reformulatedQuery || query;
           console.log(
             `\n🔍 Searching with reformulated query: "${searchQuery.substring(
               0,
-              100
+              60
             )}..."`
           );
 
-          // Step 1: Classify the query to decide approach
+          // Step 1: Classify the original query to decide approach
           const classification = await queryClassifier.classifyQuery(
-            searchQuery,
+            query,
             0.5
           );
           console.log(
@@ -725,10 +688,7 @@ async function startIntegratedChat() {
             console.log("🔧 Using MCP tools only approach");
 
             // Try MCP tools first
-            const mcpResult = await mcpService.processQueryWithMCP(
-              searchQuery,
-              0.5
-            );
+            const mcpResult = await mcpService.processQueryWithMCP(query, 0.5);
 
             if (mcpResult.success && mcpResult.enhancedResponse) {
               // Generate response using MCP tools only
@@ -806,9 +766,9 @@ async function startIntegratedChat() {
 
             // Get both MCP and hybrid search results
             const [mcpResult, hybridResult] = await Promise.allSettled([
-              mcpService.processQueryWithMCP(searchQuery, 0.5),
+              mcpService.processQueryWithMCP(query, 0.5), // Use original query for MCP
               retrieveChunksWithHybridSearch(
-                searchQuery,
+                searchQuery, // Use reformulated query for hybrid search
                 vectorStore,
                 embeddings,
                 hybridSearch
@@ -856,7 +816,10 @@ async function startIntegratedChat() {
           await memoryController.processAssistantResponse(result.answer, {
             timestamp: new Date().toISOString(),
             sources: result.sources?.length || 0,
-            searchQuery: searchQuery,
+            searchQuery:
+              classification.approach === "MCP_TOOLS_ONLY"
+                ? query
+                : searchQuery || query,
             mcpToolsUsed: result.mcpToolsUsed?.length || 0,
             mcpConfidence: result.mcpConfidence || 0,
           });
@@ -881,7 +844,7 @@ async function startIntegratedChat() {
             );
           }
 
-          // Show sources
+          // Show sources only if not MCP-only response
           if (result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
             result.sources.forEach((source) => {
