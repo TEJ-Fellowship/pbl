@@ -477,6 +477,10 @@ async function startIntegratedChat() {
     });
 
     const askQuestion = () => {
+      console.log(
+        "\nType 'exit' to quit, 'mcp' to check MCP system status, 'classifier' to check query classifier status, 'sample' for more questions"
+      );
+      console.log("=".repeat(60));
       rl.question("\n❓ Your question: ", async (query) => {
         if (query.toLowerCase() === "exit") {
           console.log("👋 Goodbye!");
@@ -650,27 +654,6 @@ async function startIntegratedChat() {
             source: "integrated_chat_interface",
           });
 
-          // Get complete memory context for query reformulation
-          const memoryContext = await memoryController.getCompleteMemoryContext(
-            query
-          );
-          console.log(
-            `🧠 Memory context: ${
-              memoryContext.recentContext?.messageCount || 0
-            } recent messages, ${
-              memoryContext.longTermContext?.relevantQAs?.length || 0
-            } relevant Q&As`
-          );
-
-          // Use reformulated query for retrieval (not for mcp tools)
-          const searchQuery = memoryContext.reformulatedQuery || query;
-          console.log(
-            `\n🔍 Searching with reformulated query: "${searchQuery.substring(
-              0,
-              60
-            )}..."`
-          );
-
           // Step 1: Classify the original query to decide approach
           const classification = await queryClassifier.classifyQuery(
             query,
@@ -730,6 +713,25 @@ async function startIntegratedChat() {
           } else if (classification.approach === "HYBRID_SEARCH") {
             console.log("🔍 Using hybrid search only approach");
 
+            // Get complete memory context for query reformulation
+            const memoryContext =
+              await memoryController.getCompleteMemoryContext(query);
+            console.log(
+              `🧠 Memory context: ${
+                memoryContext.recentContext?.messageCount || 0
+              } recent messages, ${
+                memoryContext.longTermContext?.relevantQAs?.length || 0
+              } relevant Q&As`
+            );
+
+            // Use reformulated query for retrieval (not for mcp tools)
+            const searchQuery = memoryContext.reformulatedQuery || query;
+            console.log(
+              `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+                0,
+                60
+              )}..."`
+            );
             // Retrieve relevant chunks using hybrid search
             chunks = await retrieveChunksWithHybridSearch(
               searchQuery,
@@ -763,6 +765,26 @@ async function startIntegratedChat() {
             );
           } else if (classification.approach === "COMBINED") {
             console.log("🔧🔍 Using combined approach (MCP + Hybrid search)");
+
+            // Get complete memory context for query reformulation
+            const memoryContext =
+              await memoryController.getCompleteMemoryContext(query);
+            console.log(
+              `🧠 Memory context: ${
+                memoryContext.recentContext?.messageCount || 0
+              } recent messages, ${
+                memoryContext.longTermContext?.relevantQAs?.length || 0
+              } relevant Q&As`
+            );
+
+            // Use reformulated query for retrieval (not for mcp tools)
+            const searchQuery = memoryContext.reformulatedQuery || query;
+            console.log(
+              `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+                0,
+                60
+              )}..."`
+            );
 
             // Get both MCP and hybrid search results
             const [mcpResult, hybridResult] = await Promise.allSettled([
@@ -812,7 +834,7 @@ async function startIntegratedChat() {
             );
           }
 
-          // Process assistant response with memory system
+          //step 3: Process assistant response with memory system
           await memoryController.processAssistantResponse(result.answer, {
             timestamp: new Date().toISOString(),
             sources: result.sources?.length || 0,
