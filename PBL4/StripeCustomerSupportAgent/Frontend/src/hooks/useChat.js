@@ -401,6 +401,37 @@ export const useChat = () => {
     }
   };
 
+  const handleDeleteChat = async (chatId) => {
+    try {
+      console.log("🗑️ Deleting chat:", chatId);
+
+      // Find the chat to get sessionId
+      const chatToDelete = chatHistory.find((chat) => chat.id === chatId);
+      if (!chatToDelete) {
+        console.error("❌ Chat not found:", chatId);
+        return;
+      }
+
+      // Call API to delete session
+      await apiService.deleteSession(chatToDelete.sessionId);
+
+      // Remove from local state
+      const updatedHistory = chatHistory.filter((chat) => chat.id !== chatId);
+      setChatHistory(updatedHistory);
+      saveChatHistory(updatedHistory);
+
+      // If we're deleting the current session, start a new one
+      if (currentSessionId === chatToDelete.sessionId) {
+        await initializeSession();
+      }
+
+      console.log("✅ Chat deleted successfully:", chatId);
+    } catch (error) {
+      console.error("❌ Failed to delete chat:", error);
+      setError("Failed to delete chat. Please try again.");
+    }
+  };
+
   return {
     messages,
     inputValue,
@@ -415,6 +446,7 @@ export const useChat = () => {
     handleSendMessage,
     handleNewChat,
     handleChatSelect,
+    handleDeleteChat,
     handleKeyPress,
     clearError,
     clearAllData,

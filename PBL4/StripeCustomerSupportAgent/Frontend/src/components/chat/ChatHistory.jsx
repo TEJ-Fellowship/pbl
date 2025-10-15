@@ -1,13 +1,49 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 const ChatHistory = ({
   chatHistory,
   currentSessionId,
   handleNewChat,
   handleChatSelect,
+  handleDeleteChat,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    chatId: null,
+    chatTitle: "",
+  });
+
+  const handleDeleteClick = (e, chatId, chatTitle) => {
+    e.stopPropagation(); // Prevent chat selection
+    setDeleteModal({
+      isOpen: true,
+      chatId,
+      chatTitle,
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteModal.chatId && handleDeleteChat) {
+      handleDeleteChat(deleteModal.chatId);
+    }
+    setDeleteModal({
+      isOpen: false,
+      chatId: null,
+      chatTitle: "",
+    });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({
+      isOpen: false,
+      chatId: null,
+      chatTitle: "",
+    });
+  };
+
   return (
     <div
       className={`${
@@ -56,22 +92,39 @@ const ChatHistory = ({
                 <motion.div
                   key={chat.id}
                   whileHover={{ scale: 1.02 }}
-                  onClick={() => handleChatSelect(chat.id)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
                     currentSessionId === chat.sessionId
                       ? "bg-surface-dark-secondary border border-primary/50"
                       : "hover:bg-surface-dark-secondary/50"
                   }`}
                 >
-                  <p className="font-semibold text-sm truncate">{chat.title}</p>
-                  <p className="text-xs text-subtle-dark truncate">
-                    {chat.lastMessage}
-                  </p>
-                  <span className="text-xs text-gray-500 mt-1 block">
-                    {chat.timestamp
-                      ? new Date(chat.timestamp).toLocaleDateString()
-                      : "Unknown date"}
-                  </span>
+                  {/* Chat Content */}
+                  <div onClick={() => handleChatSelect(chat.id)}>
+                    <p className="font-semibold text-sm truncate pr-8">
+                      {chat.title}
+                    </p>
+                    <p className="text-xs text-subtle-dark truncate">
+                      {chat.lastMessage}
+                    </p>
+                    <span className="text-xs text-gray-500 mt-1 block">
+                      {chat.timestamp
+                        ? new Date(chat.timestamp).toLocaleDateString()
+                        : "Unknown date"}
+                    </span>
+                  </div>
+
+                  {/* Delete Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => handleDeleteClick(e, chat.id, chat.title)}
+                    className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                    title="Delete chat"
+                  >
+                    <span className="material-symbols-outlined text-sm">
+                      delete
+                    </span>
+                  </motion.button>
                 </motion.div>
               );
             })}
@@ -130,6 +183,14 @@ const ChatHistory = ({
           </motion.button>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        chatTitle={deleteModal.chatTitle}
+      />
     </div>
   );
 };

@@ -42,6 +42,13 @@ class MemoryService {
         `📚 Retrieving conversation history for session: ${sessionId}`
       );
 
+      // CRITICAL FIX: Initialize the session in memory controller first
+      console.log(`🔄 Initializing session in memory controller: ${sessionId}`);
+      await this.memoryController.initializeSession(sessionId, "web_user", {
+        project: "stripe_support",
+        context: "customer_support",
+      });
+
       // Get messages directly from PostgreSQL database
       const messages =
         await this.memoryController.postgresMemory.getConversationHistory(
@@ -80,8 +87,15 @@ class MemoryService {
    */
   async deleteSession(sessionId) {
     try {
-      await this.memoryController.close();
-      console.log(`✅ Session ${sessionId} deleted successfully`);
+      console.log(`🗑️ Deleting session: ${sessionId}`);
+
+      // Delete from PostgreSQL database
+      const result = await this.memoryController.postgresMemory.deleteSession(
+        sessionId
+      );
+
+      console.log(`✅ Session deleted successfully: ${sessionId}`);
+      return result;
     } catch (error) {
       console.error("❌ Memory service - delete session error:", error);
       throw error;

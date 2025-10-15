@@ -20,6 +20,7 @@ const Chat = () => {
     handleSendMessage,
     handleNewChat,
     handleChatSelect,
+    handleDeleteChat,
     handleKeyPress,
     clearError,
   } = useChat();
@@ -68,6 +69,7 @@ const Chat = () => {
         currentSessionId={currentSessionId}
         handleNewChat={handleNewChat}
         handleChatSelect={handleChatSelect}
+        handleDeleteChat={handleDeleteChat}
       />
     </div>
   );

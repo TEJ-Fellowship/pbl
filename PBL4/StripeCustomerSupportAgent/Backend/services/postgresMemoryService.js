@@ -283,6 +283,51 @@ class PostgreSQLMemoryService {
   }
 
   /**
+   * Delete a session and all its associated data
+   */
+  async deleteSession(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN"); // Start transaction
+
+      console.log(`🗑️ Deleting session: ${sessionId}`);
+
+      // Delete in order to respect foreign key constraints
+      const deleteOrder = [
+        "memory_retrieval_cache",
+        "conversation_summaries",
+        "conversation_qa_pairs",
+        "conversation_messages",
+        "conversation_sessions",
+      ];
+
+      for (const table of deleteOrder) {
+        const result = await client.query(
+          `DELETE FROM ${table} WHERE session_id = $1`,
+          [sessionId]
+        );
+        console.log(`   ✅ Deleted ${result.rowCount} rows from ${table}`);
+      }
+
+      await client.query("COMMIT"); // Commit transaction
+      console.log(`✅ Session ${sessionId} deleted successfully`);
+
+      return {
+        sessionId,
+        deleted: true,
+        message: "Session and all associated data deleted successfully",
+      };
+    } catch (error) {
+      await client.query("ROLLBACK"); // Rollback on error
+      console.error("❌ Failed to delete session:", error.message);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get session statistics
    */
   async getSessionStats(sessionId) {
