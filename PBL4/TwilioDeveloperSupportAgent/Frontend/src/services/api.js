@@ -113,4 +113,65 @@ export const getUserPreferences = async (sessionId = "default") => {
   }
 };
 
+// MCP Tools API functions
+export const getMCPTools = async () => {
+  try {
+    const response = await api.get("/mcp/tools");
+    return response.data;
+  } catch (error) {
+    console.error("Get MCP tools failed:", error);
+    throw error;
+  }
+};
+
+export const callMCPTool = async (tool, args = {}) => {
+  try {
+    const response = await api.post("/mcp/tools", {
+      tool,
+      args,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`MCP tool ${tool} failed:`, error);
+    throw error;
+  }
+};
+
+// Convenience functions for specific MCP tools
+export const enhanceChatContext = async (query, context = "") => {
+  return callMCPTool("enhance_chat_context", { query, context });
+};
+
+export const validateTwilioCode = async (code, language = "javascript") => {
+  return callMCPTool("validate_twilio_code", { code, language });
+};
+
+export const lookupErrorCode = async (errorCode) => {
+  return callMCPTool("lookup_error_code", { errorCode });
+};
+
+export const detectProgrammingLanguage = async (text) => {
+  return callMCPTool("detect_programming_language", { text });
+};
+
+export const searchWeb = async (query, maxResults = 5) => {
+  return callMCPTool("web_search", { query, maxResults });
+};
+
+export const checkTwilioStatus = async (service = null) => {
+  return callMCPTool("check_twilio_status", { service });
+};
+
+export const validateWebhookSignature = async (signature, url, payload, authToken) => {
+  return callMCPTool("validate_webhook_signature", { signature, url, payload, authToken });
+};
+
+export const calculateRateLimits = async (apiType, requestsPerSecond, requestsPerMinute, accountTier = "pay-as-you-go") => {
+  return callMCPTool("calculate_rate_limits", { apiType, requestsPerSecond, requestsPerMinute, accountTier });
+};
+
+export const executeTwilioCode = async (code, language = "nodejs", testMode = true) => {
+  return callMCPTool("execute_twilio_code", { code, language, testMode });
+};
+
 export default api;
