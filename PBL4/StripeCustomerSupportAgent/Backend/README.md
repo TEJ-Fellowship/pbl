@@ -32,6 +32,7 @@ graph TB
 
     subgraph "Application Layer"
         CHAT["Chat Service<br/>Query processing"]
+QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
         SEARCH["Hybrid Search Engine<br/>BM25 + Semantic fusion"]
         SERVER["Express Server<br/>Request routing"]
     end
@@ -40,7 +41,6 @@ graph TB
         BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
         AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
-        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
         QnA_ANALYSIS["Analysis of <br/>User Query <br/>&<br/>Response"]
     end
 
