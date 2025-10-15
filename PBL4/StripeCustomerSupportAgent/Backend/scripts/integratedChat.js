@@ -8,6 +8,7 @@ import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
 import MemoryController from "../controllers/memoryController.js";
 import MCPIntegrationService from "../services/mcpIntegrationService.js";
+import QueryClassifier from "../services/queryClassifier.js";
 import config from "../config/config.js";
 
 // Initialize Gemini client
@@ -73,12 +74,16 @@ function cosineSimilarity(a, b) {
 }
 
 // Retrieve relevant chunks using hybrid search
-async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
+async function retrieveChunksWithHybridSearch(
+  query,
+  vectorStore,
+  embeddings,
+  hybridSearch
+) {
   try {
     console.log("🔍 Searching for relevant information using hybrid search...");
 
-    // Initialize hybrid search service
-    const hybridSearch = new HybridSearch();
+    // Use the provided hybrid search service
     const bm25Service = new PostgreSQLBM25Service();
 
     // Perform hybrid search
@@ -223,7 +228,7 @@ function calculateConfidence(chunks) {
   return Math.min(1, Math.max(0, avgScore));
 }
 
-// Generate response using Gemini with MCP integration (upgraded)
+// Generate response using Gemini with MCP integration
 async function generateResponseWithMCP(
   query,
   chunks,
@@ -466,6 +471,8 @@ async function startIntegratedChat() {
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
     const mcpService = new MCPIntegrationService();
+    const queryClassifier = new QueryClassifier();
+    const hybridSearch = new HybridSearch();
 
     // Initialize memory session
     const sessionId = `session_${Date.now()}_${Math.random()
@@ -577,36 +584,78 @@ async function startIntegratedChat() {
           return;
         }
 
+        if (query.toLowerCase() === "classifier") {
+          console.log("\n🤖 Query Classifier Status:");
+          try {
+            const classifierStats = queryClassifier.getStats();
+            console.log(
+              `   Gemini AI: ${
+                classifierStats.geminiAvailable
+                  ? "✅ Available"
+                  : "❌ Unavailable"
+              }`
+            );
+            console.log(`   Model: ${classifierStats.model}`);
+
+            console.log("\n📊 Classification Approaches:");
+            console.log(
+              "   • MCP_TOOLS_ONLY - Direct tool responses (calculations, status checks)"
+            );
+            console.log(
+              "   • HYBRID_SEARCH - Documentation-based responses (API guides, tutorials)"
+            );
+            console.log(
+              "   • COMBINED - Both tools and documentation (complex queries)"
+            );
+          } catch (error) {
+            console.log(
+              "   ❌ Error getting classifier status:",
+              error.message
+            );
+          }
+
+          askQuestion();
+          return;
+        }
+
         if (query.toLowerCase() === "sample") {
-          console.log("\n💡 Example Questions by Category:");
-          console.log("\n🔧 API Integration:");
-          console.log("  • How do I create a payment intent with Stripe?");
-          console.log("  • How to handle Stripe API errors and exceptions?");
-          console.log("  • What's the difference between test and live mode?");
-          console.log("\n🔐 Security & Webhooks:");
-          console.log(
-            "  • What are webhook signatures and how do I verify them?"
-          );
-          console.log("  • How do I implement 3D Secure authentication?");
-          console.log("  • How to secure my Stripe integration?");
-          console.log("\n💳 Payments & Billing:");
-          console.log("  • How do I set up subscription billing with Stripe?");
-          console.log("  • How to handle refunds and disputes?");
-          console.log("  • What are Stripe Connect and marketplace payments?");
-          console.log("\n🛠️ Advanced Features:");
-          console.log("  • How to implement multi-party payments?");
-          console.log("  • How to handle international payments?");
-          console.log("  • How to set up Stripe Radar for fraud detection?");
-          console.log("\n🧮 MCP Tool Examples:");
+          console.log("\n💡 Example Questions by Classification:");
+          console.log("\n🔧 MCP_TOOLS_ONLY Examples:");
           console.log("  • What's Stripe's fee for $1000? (Calculator Tool)");
           console.log("  • Is Stripe down right now? (Status Checker Tool)");
-          console.log(
-            "  • Validate this endpoint: /v1/charges (Code Validator Tool)"
-          );
           console.log("  • What time is it now? (DateTime Tool)");
           console.log(
             "  • Search for latest Stripe API updates (Web Search Tool)"
           );
+          console.log(
+            "  • Validate this endpoint: /v1/charges (Code Validator Tool)"
+          );
+
+          console.log("\n📚 HYBRID_SEARCH Examples:");
+          console.log("  • How do I create a payment intent with Stripe?");
+          console.log("  • How to handle Stripe API errors and exceptions?");
+          console.log(
+            "  • What are webhook signatures and how do I verify them?"
+          );
+          console.log("  • How do I set up subscription billing with Stripe?");
+          console.log("  • How to handle refunds and disputes?");
+          console.log("  • How to implement multi-party payments?");
+
+          console.log("\n🔧📚 COMBINED Examples:");
+          console.log(
+            "  • Calculate Stripe fees for $500 and show me the API implementation"
+          );
+          console.log("  • Is Stripe working and how do I implement webhooks?");
+          console.log(
+            "  • What's the current status and how do I handle disputes?"
+          );
+          console.log("  • Calculate fees and show me how to set up billing");
+
+          console.log("\n💡 Commands:");
+          console.log("  • Type 'mcp' to check MCP system status");
+          console.log("  • Type 'classifier' to check query classifier status");
+          console.log("  • Type 'exit' to quit");
+
           askQuestion();
           return;
         }
@@ -645,36 +694,149 @@ async function startIntegratedChat() {
             )}..."`
           );
 
-          // Retrieve relevant chunks using hybrid search with reformulated query
-          const chunks = await retrieveChunksWithHybridSearch(
+          // Step 1: Classify the query to decide approach
+          const classification = await queryClassifier.classifyQuery(
             searchQuery,
-            vectorStore,
-            embeddings
+            0.5
           );
-
-          if (chunks.length === 0) {
-            console.log(
-              "❌ No relevant information found. Try rephrasing your question."
-            );
-            askQuestion();
-            return;
-          }
-
-          // Calculate confidence score(new)
-          const confidence = calculateConfidence(chunks);
           console.log(
-            `📊 Document confidence: ${(confidence * 100).toFixed(1)}%`
+            `📊 Classification: ${classification.approach} - ${classification.reasoning}`
           );
 
-          // Generate augmented response with memory context and MCP integration
-          const result = await generateResponseWithMemoryAndMCP(
-            query,
-            chunks,
-            geminiClient,
-            memoryContext,
-            mcpService,
-            confidence
-          );
+          let result;
+          let chunks = [];
+
+          // Step 2: Route based on classification
+          if (classification.approach === "MCP_TOOLS_ONLY") {
+            console.log("🔧 Using MCP tools only approach");
+
+            // Try MCP tools first
+            const mcpResult = await mcpService.processQueryWithMCP(
+              searchQuery,
+              0.5
+            );
+
+            if (mcpResult.success && mcpResult.enhancedResponse) {
+              // Generate response using MCP tools only
+              result = await generateResponseWithMCP(
+                query,
+                [], // No chunks needed for MCP-only
+                geminiClient,
+                mcpService,
+                0.8 // High confidence for MCP tools
+              );
+            } else {
+              // Fallback to hybrid search if MCP fails
+              console.log("⚠️ MCP tools failed, falling back to hybrid search");
+              chunks = await retrieveChunksWithHybridSearch(
+                searchQuery,
+                vectorStore,
+                embeddings,
+                hybridSearch
+              );
+
+              if (chunks.length === 0) {
+                console.log(
+                  "❌ No relevant information found. Try rephrasing your question."
+                );
+                askQuestion();
+                return;
+              }
+
+              const confidence = calculateConfidence(chunks);
+              result = await generateResponseWithMemoryAndMCP(
+                query,
+                chunks,
+                geminiClient,
+                memoryContext,
+                mcpService,
+                confidence
+              );
+            }
+          } else if (classification.approach === "HYBRID_SEARCH") {
+            console.log("🔍 Using hybrid search only approach");
+
+            // Retrieve relevant chunks using hybrid search
+            chunks = await retrieveChunksWithHybridSearch(
+              searchQuery,
+              vectorStore,
+              embeddings,
+              hybridSearch
+            );
+
+            if (chunks.length === 0) {
+              console.log(
+                "❌ No relevant information found. Try rephrasing your question."
+              );
+              askQuestion();
+              return;
+            }
+
+            // Calculate confidence score
+            const confidence = calculateConfidence(chunks);
+            console.log(
+              `📊 Document confidence: ${(confidence * 100).toFixed(1)}%`
+            );
+
+            // Generate response with memory context (no MCP tools)
+            result = await generateResponseWithMemoryAndMCP(
+              query,
+              chunks,
+              geminiClient,
+              memoryContext,
+              mcpService,
+              confidence
+            );
+          } else if (classification.approach === "COMBINED") {
+            console.log("🔧🔍 Using combined approach (MCP + Hybrid search)");
+
+            // Get both MCP and hybrid search results
+            const [mcpResult, hybridResult] = await Promise.allSettled([
+              mcpService.processQueryWithMCP(searchQuery, 0.5),
+              retrieveChunksWithHybridSearch(
+                searchQuery,
+                vectorStore,
+                embeddings,
+                hybridSearch
+              ),
+            ]);
+
+            // Use hybrid search results if available
+            if (
+              hybridResult.status === "fulfilled" &&
+              hybridResult.value.length > 0
+            ) {
+              chunks = hybridResult.value;
+            }
+
+            if (chunks.length === 0) {
+              console.log(
+                "❌ No relevant information found. Try rephrasing your question."
+              );
+              askQuestion();
+              return;
+            }
+
+            // Calculate confidence score
+            const confidence = calculateConfidence(chunks);
+            console.log(
+              `📊 Document confidence: ${(confidence * 100).toFixed(1)}%`
+            );
+
+            // Generate response with both MCP and hybrid search
+            result = await generateResponseWithMemoryAndMCP(
+              query,
+              chunks,
+              geminiClient,
+              memoryContext,
+              mcpService,
+              confidence
+            );
+          } else {
+            throw new Error(
+              `Unknown classification approach: ${classification.approach}`
+            );
+          }
 
           // Process assistant response with memory system
           await memoryController.processAssistantResponse(result.answer, {
