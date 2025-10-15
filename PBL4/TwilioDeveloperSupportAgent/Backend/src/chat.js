@@ -609,12 +609,16 @@ async function generateMemoryAwareResponse(
       similarity: chunk.similarity,
       score: chunk.score || 0,
       index: index + 1,
-      sourceType: 'hybrid_search', // Mark as hybrid search
-      searchType: chunk.searchType || 'unknown', // semantic, bm25, or fused
+      sourceType: "hybrid_search", // Mark as hybrid search
+      searchType: chunk.searchType || "unknown", // semantic, bm25, or fused
     }));
 
     // Add web search results to sources if available
-    if (webSearchResults && webSearchResults.found && webSearchResults.results) {
+    if (
+      webSearchResults &&
+      webSearchResults.found &&
+      webSearchResults.results
+    ) {
       webSearchResults.results.forEach((result, index) => {
         sources.push({
           content: result.snippet,
@@ -626,8 +630,8 @@ async function generateMemoryAwareResponse(
           similarity: 1.0, // Web search results are considered highly relevant
           score: 1.0,
           index: sources.length + 1,
-          sourceType: 'web_search',
-          searchType: 'web',
+          sourceType: "web_search",
+          searchType: "web",
         });
       });
     }
