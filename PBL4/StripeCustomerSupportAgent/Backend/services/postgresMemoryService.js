@@ -58,35 +58,83 @@ class PostgreSQLMemoryService {
       const messageId = uuidv4();
 
       // Calculate token count for the message
-      const tokenCount = await client.query(
-        `SELECT estimate_token_count($1) as token_count`,
-        [content]
-      );
+      let tokenCount;
+      try {
+        // Try to use the database function first
+        const tokenResult = await client.query(
+          `SELECT estimate_token_count($1) as token_count`,
+          [content]
+        );
+        tokenCount = tokenResult.rows[0].token_count;
+      } catch (error) {
+        // Fallback to JavaScript-based token estimation if database function doesn't exist
+        console.log(
+          "⚠️ Database function estimate_token_count not found, using fallback method"
+        );
+        tokenCount = this.estimateTokenCount(content);
+      }
 
-      const result = await client.query(
-        `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata, token_count)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [
-          messageId,
-          sessionId,
-          role,
-          content,
-          JSON.stringify(metadata),
-          tokenCount.rows[0].token_count,
-        ]
-      );
+      // Try to insert with token_count, fallback to without it if column doesn't exist
+      let result;
+      try {
+        result = await client.query(
+          `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata, token_count)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING *`,
+          [
+            messageId,
+            sessionId,
+            role,
+            content,
+            JSON.stringify(metadata),
+            tokenCount,
+          ]
+        );
+      } catch (error) {
+        if (error.message.includes("token_count")) {
+          console.log(
+            "⚠️ token_count column doesn't exist, inserting without it"
+          );
+          result = await client.query(
+            `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
+            [messageId, sessionId, role, content, JSON.stringify(metadata)]
+          );
+        } else {
+          throw error;
+        }
+      }
 
       // Update session token usage
-      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+      try {
+        await client.query(`SELECT update_session_token_usage($1)`, [
+          sessionId,
+        ]);
+      } catch (error) {
+        console.log(
+          "⚠️ Database function update_session_token_usage not found, skipping token usage update"
+        );
+      }
 
       console.log(
-        `💾 Stored ${role} message for session: ${sessionId} (${tokenCount.rows[0].token_count} tokens)`
+        `💾 Stored ${role} message for session: ${sessionId} (${tokenCount} tokens)`
       );
       return result.rows[0];
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Fallback token counting method
+   * Rough estimation: 1 token ≈ 4 characters for English text
+   */
+  estimateTokenCount(text) {
+    if (!text || typeof text !== "string") {
+      return 1;
+    }
+    return Math.max(1, Math.ceil(text.length / 4.0));
   }
 
   /**
@@ -391,7 +439,15 @@ class PostgreSQLMemoryService {
       );
 
       // Recalculate token usage with new limit
-      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+      try {
+        await client.query(`SELECT update_session_token_usage($1)`, [
+          sessionId,
+        ]);
+      } catch (error) {
+        console.log(
+          "⚠️ Database function update_session_token_usage not found, skipping token usage update"
+        );
+      }
 
       console.log(
         `📊 Updated token limit for session ${sessionId}: ${maxTokens}`

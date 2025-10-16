@@ -37,6 +37,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware (must be after body parsing)
+// Note: This application does not create any response.json files
 app.use(requestLogger);
 
 // Routes

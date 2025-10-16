@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { renderMarkdown, hasMarkdown } from "../../utils/markdownRenderer";
 
 const SourcePanel = ({ sources, isOpen, onToggle }) => {
   if (!sources || sources.length === 0) return null;
@@ -112,8 +113,17 @@ const MessageBubble = ({ message }) => {
         {message.sender === "ai" && (
           <p className="font-semibold text-primary mb-1">Stripe.AI</p>
         )}
-        <div className="text-text-dark whitespace-pre-wrap leading-relaxed">
-          {message.text}
+        <div className="text-text-dark leading-relaxed overflow-hidden">
+          {hasMarkdown(message.text) ? (
+            <div
+              className="prose prose-invert prose-sm max-w-none break-words"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(message.text) }}
+            />
+          ) : (
+            <div className="whitespace-pre-wrap break-words">
+              {message.text}
+            </div>
+          )}
         </div>
 
         {message.sender === "ai" && !message.isError && (

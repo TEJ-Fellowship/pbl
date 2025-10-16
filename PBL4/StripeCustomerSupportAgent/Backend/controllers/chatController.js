@@ -53,6 +53,7 @@ export const chatController = {
       );
       console.log(`   🆔 Session ID: ${response.sessionId}`);
 
+      // Send response without creating any files
       res.json({
         success: true,
         data: {

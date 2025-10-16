@@ -212,18 +212,42 @@ async function generateResponse(query, chunks, geminiClient) {
   try {
     console.log("🤖 Generating response...");
 
-    // Prepare context from retrieved chunks
+    // Prepare context from retrieved chunks with meaningful source titles
     const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
+    const sources = chunks.map((chunk, index) => {
+      const title =
+        chunk.metadata?.title ||
+        chunk.metadata?.doc_title ||
+        "Stripe Documentation";
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://stripe.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
 
     // Generate response using Gemini
     const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
@@ -240,7 +264,7 @@ RESPONSE GUIDELINES:
 4. **Step-by-Step**: Break down complex processes into clear, actionable steps
 5. **Error Handling**: Mention common errors and how to handle them
 6. **Best Practices**: Include security considerations and best practices
-7. **Source Citations**: Reference specific sources using [Source X] format
+7. **Source Citations**: ALWAYS reference sources using the EXACT format shown in the context: [Source X: Title (Category)]. For example, if you see "[Source 1: Stripe Webhooks Documentation (webhooks)]" in the context, use exactly that format in your response.
 8. **If Uncertain**: Clearly state when information isn't available in the context
 
 FORMAT YOUR RESPONSE:
@@ -248,7 +272,18 @@ FORMAT YOUR RESPONSE:
 - Provide detailed explanation with code examples
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
-- End with source citations
+- End with a formatted source list using this EXACT format:
+
+📚 **Sources Used:**
+🔗 [Source 1: Title (Category)] - URL
+🔗 [Source 2: Title (Category)] - URL
+🔗 [Source 3: Title (Category)] - URL
+
+IMPORTANT: 
+- Use the EXACT source titles and categories from the context
+- Include the actual URLs from the source metadata
+- Format sources as clickable links with emojis for visual separation
+- Do NOT use generic formats like [Source 1] or [Source 2]
 
 Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
@@ -279,18 +314,42 @@ async function generateResponseWithMemory(
   try {
     console.log("\n🤖 Generating response with memory context...");
 
-    // Prepare context from retrieved chunks
+    // Prepare context from retrieved chunks with meaningful source titles
     const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
+    const sources = chunks.map((chunk, index) => {
+      const title =
+        chunk.metadata?.title ||
+        chunk.metadata?.doc_title ||
+        "Stripe Documentation";
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://stripe.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
 
     // Build memory context string
     let memoryContextString = "";
@@ -334,7 +393,7 @@ async function generateResponseWithMemory(
       6. **Step-by-Step**: Break down complex processes into clear, actionable steps
       7. **Error Handling**: Mention common errors and how to handle them
       8. **Best Practices**: Include security considerations and best practices
-      9. **Source Citations**: Reference specific sources using [Source X] format
+      9. **Source Citations**: ALWAYS reference sources using the EXACT format shown in the context: [Source X: Title (Category)]. For example, if you see "[Source 1: Stripe Webhooks Documentation (webhooks)]" in the context, use exactly that format in your response.
       10. **If Uncertain**: Clearly state when information isn't available in the context
 
       FORMAT YOUR RESPONSE:
@@ -343,7 +402,18 @@ async function generateResponseWithMemory(
       - Provide detailed explanation with code examples
       - Include relevant API endpoints and parameters
       - Mention any prerequisites or setup requirements
-      - End with source citations
+      - End with a formatted source list using this EXACT format:
+
+      📚 **Sources Used:**
+      🔗 [Source 1: Title (Category)] - URL
+      🔗 [Source 2: Title (Category)] - URL
+      🔗 [Source 3: Title (Category)] - URL
+
+      IMPORTANT: 
+      - Use the EXACT source titles and categories from the context
+      - Include the actual URLs from the source metadata
+      - Format sources as clickable links with emojis for visual separation
+      - Do NOT use generic formats like [Source 1] or [Source 2]
 
       Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
