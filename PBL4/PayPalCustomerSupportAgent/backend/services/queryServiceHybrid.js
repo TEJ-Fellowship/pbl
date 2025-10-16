@@ -1,12 +1,15 @@
 const dotenv = require("dotenv");
 const { Pool } = require("pg");
-const { logConversation } = require("../db.js");
+const { logConversation } = require("../dbHybrid.js");
+const { combineHybridAndWebResults } = require("./webSearchService.js");
+const { getExchangeRate } = require("./currencyExchangeService.js");
+const MCPToolsService = require("../../mcp-server/src/index.js");
 dotenv.config();
 
 const PINECONE_INDEX = process.env.PINECONE_INDEX;
 const PINECONE_NAMESPACE = process.env.PINECONE_NAMESPACE || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const AGENT_NAME = process.env.AGENT_NAME || "";
+const AGENT_NAME = process.env.AGENT_NAME || "ashok limbu";
 const TOP_K = 3;
 
 // PostgreSQL connection pool
@@ -95,18 +98,30 @@ async function detectSentiment(text, genAI) {
 
 function classifyIssueType(text) {
   const t = String(text || "").toLowerCase();
+  
+  // Check for general greetings and identity questions first
+  if (/hello|hi|hey|good morning|good afternoon|good evening|greetings/.test(t)) return "greeting";
+  if (/who are you|what are you|your name|introduce|introduction/.test(t)) return "identity";
+  if (/help|support|assistance|how can you help/.test(t)) return "general_help";
+  
+  // Check for specific issue types
   if (/chargeback|dispute|case|resolution/.test(t)) return "dispute";
   if (/limit|limitation|restricted|hold/.test(t)) return "account_limitation";
   if (/fee|fees|charge|rate|pricing/.test(t)) return "fees";
   if (/refund|refunds|return/.test(t)) return "refund";
   if (/payment|transfer|send|receive|payout/.test(t)) return "payment_issue";
-  return "payment_issue";
+  
+  // Default to general help instead of payment issue
+  return "general_help";
 }
 
 function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
-  const disclaimer = includeDisclaimer
-    ? "This is general guidance based on PayPal documentation. For account‑specific issues or legal advice, please contact PayPal support."
-    : "";
+  // For greetings and identity questions, don't show "Issue:" prefix
+  if (issueType === "greeting" || issueType === "identity") {
+    return rawAnswer;
+  }
+  
+  // For other issue types, show the structured format
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
     rawAnswer,
@@ -133,7 +148,7 @@ async function hybridSearch(query, embedder, pineconeIndex, dbClient) {
   console.log("🔍 Running hybrid search...");
 
   // 1. Semantic Search (Pinecone)
-  console.log("   📊 Semantic search (Pinecone)...");
+  console.log(" Semantic search (Pinecone)...");
   const output = await embedder(query, { pooling: "mean", normalize: true });
   const queryEmbedding = Array.from(output.data);
 
@@ -149,7 +164,7 @@ async function hybridSearch(query, embedder, pineconeIndex, dbClient) {
     });
 
   // 2. Lexical Search (PostgreSQL BM25)
-  console.log("   🔤 Lexical search (PostgreSQL BM25)...");
+  console.log("Lexical search (PostgreSQL BM25)...");
   const lexicalQuery = `
     SELECT 
       id, source_file, original_index, chunk_index, text,
@@ -280,6 +295,25 @@ async function handleQuery(query, sessionId) {
   const dbClient = await pool.connect();
 
   try {
+    // Initialize MCP Tools Service
+    const mcpTools = new MCPToolsService();
+    
+    // Get triggered tools and their data
+    const triggeredTools = await mcpTools.getTriggeredTools(query);
+    const mcpData = {};
+    
+    // Get data from each triggered tool
+    for (const tool of triggeredTools) {
+      try {
+        const toolResult = await mcpTools.getToolData(tool, query);
+        if (toolResult) {
+          mcpData[tool] = toolResult;
+        }
+      } catch (error) {
+        console.error(`Error getting ${tool} data:`, error.message);
+      }
+    }
+
     const sentiment = await detectSentiment(query, genAI);
     const issueType = classifyIssueType(query);
 
@@ -293,7 +327,35 @@ async function handleQuery(query, sessionId) {
     }
 
     // Run hybrid search
-    const searchResults = await hybridSearch(query, embedder, index, dbClient);
+    const hybridResults = await hybridSearch(query, embedder, index, dbClient);
+    
+    // Check if we have MCP web search results to combine with hybrid search
+    let webResults = [];
+    let finalSearchResults = hybridResults;
+    
+    if (mcpData.websearch && mcpData.websearch.success && mcpData.websearch.data) {
+      console.log("Using MCP web search results for recent information...");
+      console.log(`Hybrid results before web search: ${hybridResults.length}`);
+      console.log(`Hybrid result sources: ${hybridResults.map(r => r.metadata?.source || 'unknown').join(', ')}`);
+      
+      webResults = mcpData.websearch.data;
+      console.log(`🌐 MCP Web search returned: ${webResults.length} results`);
+      
+      if (webResults.length > 0) {
+        console.log(`📊 Web result sources: ${webResults.map(r => r.metadata?.title || r.metadata?.source || 'unknown').join(', ')}`);
+        console.log(`📊 Web result links: ${webResults.map(r => r.metadata?.link || 'no-link').join(', ')}`);
+        
+        // Combine hybrid and web results
+        finalSearchResults = combineHybridAndWebResults(hybridResults, webResults);
+        console.log(`✅ Combined ${hybridResults.length} hybrid + ${webResults.length} web results`);
+        console.log(`📊 Final result sources: ${finalSearchResults.map(r => r.source).join(', ')}`);
+      } else {
+        console.log("⚠️ No MCP web search results found, using hybrid results only");
+        finalSearchResults = hybridResults;
+      }
+    } else {
+      console.log("📚 Using hybrid search only (no MCP web search results)");
+    }
 
     if (searchResults.length === 0) {
       return {
@@ -316,6 +378,17 @@ async function handleQuery(query, sessionId) {
       })
       .join("\n\n");
 
+    // Add MCP tool data to context
+    let mcpContext = '';
+    if (Object.keys(mcpData).length > 0) {
+      mcpContext = '\n\nAdditional Real-time Information:\n';
+      for (const [tool, data] of Object.entries(mcpData)) {
+        if (data.success && data.message) {
+          mcpContext += `\n[${tool.toUpperCase()} TOOL]: ${data.message}`;
+        }
+      }
+    }
+
     // Build conversation context
     const conversationContext =
       chatHistory.length > 0
@@ -336,7 +409,7 @@ async function handleQuery(query, sessionId) {
     const shouldIntroduce = introduceTriggers.some((re) => re.test(lowerQ));
     const sawProfanity = containsProfanity(query);
 
-    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent.`;
+    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent. Keep your responses concise and under 150 words.`;
     if (shouldIntroduce) {
       systemInstruction += ` If the user asked or greeted, briefly introduce yourself as ${AGENT_NAME}.`;
     } else {
@@ -347,18 +420,64 @@ async function handleQuery(query, sessionId) {
     } else if (sentiment.sentiment === "concerned") {
       systemInstruction += ` The customer is concerned. Be reassuring and calm.`;
     }
+    
+    // Add response length constraints
+    systemInstruction += `\n\nIMPORTANT RESPONSE GUIDELINES:
+    - Keep responses under 150 words
+    - Be direct and concise
+    - Focus on the most important information
+    - Use bullet points for multiple items
+    - Avoid lengthy explanations unless specifically requested`;
+    
+    // Enhanced instructions for hybrid + MCP tools integration
+    const hasWebResults = finalSearchResults.some(result => result.source === 'web_search');
+    const hasHybridResults = finalSearchResults.some(result => result.source === 'hybrid');
+    const hasMCPTools = Object.keys(mcpData).length > 0;
+    
+    if (hasMCPTools) {
+      systemInstruction += `\n\nIMPORTANT: You have access to real-time tool data in addition to documentation:
+      - PRIORITIZE real-time tool data for current status, currency conversions, and live information
+      - Use documentation for general policies, procedures, and detailed explanations
+      - Combine tool data with documentation to provide comprehensive answers
+      - Always mention when you're using real-time data vs documentation`;
+    } else if (hasWebResults && hasHybridResults) {
+      systemInstruction += `\n\nIMPORTANT: You have access to both documentation (hybrid search) and recent web information. Use this combined approach:
+      - PRIORITIZE recent web information for current status, outages, fees, and recent changes
+      - Use documentation for general policies, procedures, and detailed explanations
+      - For status/outage queries, clearly state current status based on web search results
+      - When web search and documentation conflict, prioritize the most recent information
+      - Always mention the source type (Recent Web Information vs Documentation) in your response
+      - Combine both sources to provide comprehensive and accurate answers`;
+    } else if (hasWebResults) {
+      systemInstruction += `\n\nIMPORTANT: You have access to recent web search information. When using this information:
+      - Prioritize recent and official PayPal sources marked as [OFFICIAL] and [CURRENT]
+      - For status/outage queries, clearly state if PayPal is currently experiencing issues
+      - Mention that this is recent information from web search
+      - Be cautious about information accuracy and suggest contacting PayPal support for verification`;
+    } else if (hasHybridResults) {
+      systemInstruction += `\n\nIMPORTANT: You have access to PayPal documentation. When using this information:
+      - Use the documentation to provide accurate, detailed answers
+      - For current status or recent changes, suggest checking PayPal's official status page
+      - Mention that this information is from official documentation`;
+    }
 
     const prompt = `${systemInstruction}
 
 Context from PayPal documentation (Hybrid Search Results):
-${context}${conversationContext}
+${context}${mcpContext}${conversationContext}
 
 Customer: ${query}`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const modelAnswer = response.text();
+    let modelAnswer = response.text();
+    
+    // Ensure response is under 150 words
+    const words = modelAnswer.split(' ');
+    if (words.length > 150) {
+      modelAnswer = words.slice(0, 150).join(' ') + '...';
+    }
 
     const includeDisclaimer =
       (searchResults[0]?.combinedScore || 0) < 0.5 ||
@@ -392,7 +511,7 @@ Customer: ${query}`;
         score: c.combinedScore,
       })),
     });
-
+    
     return {
       answer: finalAnswer,
       sentiment,
@@ -402,9 +521,12 @@ Customer: ${query}`;
       ),
       citations: searchResults.map((c, idx) => ({
         label: `Source ${idx + 1}`,
-        source: c.metadata?.source || "docs",
+        source: c.metadata?.source || c.metadata?.title || "docs",
         isPolicy: isPolicyLikeSource(c.metadata?.source),
         channel: c.source,
+        isOfficial: c.isOfficial || false,
+        isRecent: c.isRecent || false,
+        priority: c.priority || 'unknown'
       })),
       issueType,
       disclaimer: includeDisclaimer,

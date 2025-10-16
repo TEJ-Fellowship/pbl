@@ -9,8 +9,7 @@ const pool = new Pool({
   host: 'localhost',
   database: 'paypalAgent',
   password: process.env.POSTGRES_PASSWORD || 'your_password_here',
-  p
-  
+  port: 5432,
 });
 
 export default pool;
