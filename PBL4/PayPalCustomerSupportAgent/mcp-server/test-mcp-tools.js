@@ -76,11 +76,60 @@ async function testMCPTools() {
     }
   }
 
+  // Test API status checker queries
+  const statusQueries = [
+    "Is PayPal down?",
+    "PayPal status check",
+    "Is PayPal working today?",
+    "PayPal outage status",
+    "Are PayPal services available?"
+  ];
+  
+  console.log('\n\n📊 Testing API Status Checker:');
+  for (const query of statusQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ Result: ${result.message}`);
+      } else {
+        console.log('❌ No MCP tool triggered');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+
+  // Test fee calculator queries
+  const feeQueries = [
+    "What are PayPal fees for $100?",
+    "Calculate PayPal fees for $500 transaction",
+    "PayPal merchant fees for $1000",
+    "How much does PayPal charge for $50?",
+    "PayPal fee calculation for $250"
+  ];
+  
+  console.log('\n\n🧮 Testing Fee Calculator:');
+  for (const query of feeQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ Result: ${result.message}`);
+      } else {
+        console.log('❌ No MCP tool triggered');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+
   // Test regular queries (should not trigger MCP tools)
   const regularQueries = [
     "How do I request a refund?",
-    "What are PayPal fees?",
-    "How to dispute a transaction?"
+    "How to dispute a transaction?",
+    "How to change my password?",
+    "How to add a bank account?"
   ];
   
   console.log('\n\n📝 Testing Regular Queries (should not trigger MCP):');
