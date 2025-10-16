@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
     "scrape": "node scripts/scraper.js",
     "scrape:latest": "node tests/getLatestScraped.js",
     "ingest": "node scripts/ingest.js",
@@ -18,11 +19,11 @@
     "test:documents": "node tests/testDocumentLoading.js",
     "test:memory": "node tests/testMemorySystem.js",
     "test:gemini-reformulation": "node tests/testGeminiQueryReformulation.js",
+    "test:api": "node tests/testAPI.js",
     "migrate:postgres": "node utils/migrate-to-postgres.js",
     "setup:memory": "node utils/setup_memory_schema.js",
     "setup": "npm run scrape && npm run ingest && npm run setup:memory",
-    "dev": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
-    "test": "npm run test:documents && npm run test:hybrid && npm run test:chat && npm run test:postgres && npm run test:memory && npm run test:gemini-reformulation"
+    "test": "npm run test:documents && npm run test:hybrid && npm run test:chat && npm run test:postgres && npm run test:memory && npm run test:gemini-reformulation && npm run test:api"
   },
   "dependencies": {
     "@google/generative-ai": "^0.1.3",

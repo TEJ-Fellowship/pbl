@@ -56,18 +56,85 @@ class PostgreSQLMemoryService {
 
     try {
       const messageId = uuidv4();
-      const result = await client.query(
-        `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [messageId, sessionId, role, content, JSON.stringify(metadata)]
-      );
 
-      console.log(`💾 Stored ${role} message for session: ${sessionId}`);
+      // Calculate token count for the message
+      let tokenCount;
+      try {
+        // Try to use the database function first
+        const tokenResult = await client.query(
+          `SELECT estimate_token_count($1) as token_count`,
+          [content]
+        );
+        tokenCount = tokenResult.rows[0].token_count;
+      } catch (error) {
+        // Fallback to JavaScript-based token estimation if database function doesn't exist
+        console.log(
+          "⚠️ Database function estimate_token_count not found, using fallback method"
+        );
+        tokenCount = this.estimateTokenCount(content);
+      }
+
+      // Try to insert with token_count, fallback to without it if column doesn't exist
+      let result;
+      try {
+        result = await client.query(
+          `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata, token_count)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING *`,
+          [
+            messageId,
+            sessionId,
+            role,
+            content,
+            JSON.stringify(metadata),
+            tokenCount,
+          ]
+        );
+      } catch (error) {
+        if (error.message.includes("token_count")) {
+          console.log(
+            "⚠️ token_count column doesn't exist, inserting without it"
+          );
+          result = await client.query(
+            `INSERT INTO conversation_messages (message_id, session_id, role, content, metadata)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
+            [messageId, sessionId, role, content, JSON.stringify(metadata)]
+          );
+        } else {
+          throw error;
+        }
+      }
+
+      // Update session token usage
+      try {
+        await client.query(`SELECT update_session_token_usage($1)`, [
+          sessionId,
+        ]);
+      } catch (error) {
+        console.log(
+          "⚠️ Database function update_session_token_usage not found, skipping token usage update"
+        );
+      }
+
+      console.log(
+        `💾 Stored ${role} message for session: ${sessionId} (${tokenCount} tokens)`
+      );
       return result.rows[0];
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Fallback token counting method
+   * Rough estimation: 1 token ≈ 4 characters for English text
+   */
+  estimateTokenCount(text) {
+    if (!text || typeof text !== "string") {
+      return 1;
+    }
+    return Math.max(1, Math.ceil(text.length / 4.0));
   }
 
   /**
@@ -274,6 +341,132 @@ class PostgreSQLMemoryService {
          ORDER BY cs.created_at DESC
          LIMIT $${paramIndex}`,
         [...queryParams, limit]
+      );
+
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Delete a session and all its associated data
+   */
+  async deleteSession(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN"); // Start transaction
+
+      console.log(`🗑️ Deleting session: ${sessionId}`);
+
+      // Delete in order to respect foreign key constraints
+      const deleteOrder = [
+        "memory_retrieval_cache",
+        "conversation_summaries",
+        "conversation_qa_pairs",
+        "conversation_messages",
+        "conversation_sessions",
+      ];
+
+      for (const table of deleteOrder) {
+        const result = await client.query(
+          `DELETE FROM ${table} WHERE session_id = $1`,
+          [sessionId]
+        );
+        console.log(`   ✅ Deleted ${result.rowCount} rows from ${table}`);
+      }
+
+      await client.query("COMMIT"); // Commit transaction
+      console.log(`✅ Session ${sessionId} deleted successfully`);
+
+      return {
+        sessionId,
+        deleted: true,
+        message: "Session and all associated data deleted successfully",
+      };
+    } catch (error) {
+      await client.query("ROLLBACK"); // Rollback on error
+      console.error("❌ Failed to delete session:", error.message);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get session token usage information
+   */
+  async getSessionTokenUsage(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT 
+           session_id,
+           total_tokens,
+           max_tokens,
+           token_usage_percentage,
+           created_at,
+           updated_at
+         FROM conversation_sessions 
+         WHERE session_id = $1`,
+        [sessionId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Update session token limit
+   */
+  async updateSessionTokenLimit(sessionId, maxTokens) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query(
+        `UPDATE conversation_sessions 
+         SET max_tokens = $2, updated_at = NOW()
+         WHERE session_id = $1`,
+        [sessionId, maxTokens]
+      );
+
+      // Recalculate token usage with new limit
+      try {
+        await client.query(`SELECT update_session_token_usage($1)`, [
+          sessionId,
+        ]);
+      } catch (error) {
+        console.log(
+          "⚠️ Database function update_session_token_usage not found, skipping token usage update"
+        );
+      }
+
+      console.log(
+        `📊 Updated token limit for session ${sessionId}: ${maxTokens}`
+      );
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get sessions approaching token limit
+   */
+  async getSessionsNearTokenLimit(threshold = 80) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `SELECT * FROM get_sessions_near_token_limit($1)`,
+        [threshold]
       );
 
       return result.rows;
