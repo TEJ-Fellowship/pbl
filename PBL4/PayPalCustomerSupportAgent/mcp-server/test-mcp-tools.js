@@ -52,6 +52,30 @@ async function testMCPTools() {
     }
   }
   
+  // Test timeline estimation queries
+  const timelineQueries = [
+    "How long will my $500 payment be held?",
+    "When will funds be available for a $50 transaction?",
+    "Timeline for $2000 payment hold period",
+    "How long does it take for new account funds to be released?",
+    "When will my $100 refund be available?"
+  ];
+  
+  console.log('\n\n⏰ Testing Transaction Timeline:');
+  for (const query of timelineQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ Result: ${result.message}`);
+      } else {
+        console.log('❌ No MCP tool triggered');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+
   // Test regular queries (should not trigger MCP tools)
   const regularQueries = [
     "How do I request a refund?",

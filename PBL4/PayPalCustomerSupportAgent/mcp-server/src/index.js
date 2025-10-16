@@ -2,6 +2,7 @@ const CurrencyExchangeService = require('./components/currencyExchange');
 const WebSearchService = require('./components/webSearch');
 const ApiStatusChecker = require('./components/apiStatusChecker');
 const FeeCalculatorService = require('./components/feeCalculator');
+const TransactionTimelineService = require('./components/transactionTimeline');
 
 // ===== MCP TOOLS SERVICE =====
 class MCPToolsService {
@@ -10,6 +11,7 @@ class MCPToolsService {
     this.webSearchService = new WebSearchService();
     this.statusChecker = new ApiStatusChecker();
     this.feeCalculator = new FeeCalculatorService();
+    this.timelineService = new TransactionTimelineService();
   }
 
   // Check which tools should be triggered for this query
@@ -28,6 +30,9 @@ class MCPToolsService {
     if (this.feeCalculator.isFeeQuery(query)) {
       tools.push('feecalculator');
     }
+    if (this.timelineService.isTimelineQuery(query)) {
+      tools.push('timeline');
+    }
     
     return tools;
   }
@@ -43,6 +48,8 @@ class MCPToolsService {
         return await this.handleWebSearchQuery(query);
       case 'feecalculator':
         return await this.handleFeeQuery(query);
+      case 'timeline':
+        return await this.handleTimelineQuery(query);
       default:
         return null;
     }
@@ -112,6 +119,20 @@ class MCPToolsService {
       return {
         success: false,
         message: `Sorry, I couldn't calculate the fees: ${error.message}`
+      };
+    }
+  }
+
+  // Handle timeline estimation queries
+  async handleTimelineQuery(query) {
+    try {
+      const result = await this.timelineService.handleTimelineQuery(query);
+      return result;
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `Sorry, I couldn't estimate the timeline: ${error.message}`
       };
     }
   }
