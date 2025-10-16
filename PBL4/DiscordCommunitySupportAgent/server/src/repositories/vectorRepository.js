@@ -80,7 +80,7 @@ export async function addDocumentsToChroma(embeddings) {
 export async function searchSimilarDocuments(query, limit = 5) {
   try {
     // Import Gemini embedding function
-    const { embedQueryWithGemini } = await import('../utils/geminiEmbeddings.js');
+    const { embedQueryWithGemini } = await import('./geminiEmbeddings.js');
     
     // Simple cosine similarity function
     function cosineSimilarity(a, b) {

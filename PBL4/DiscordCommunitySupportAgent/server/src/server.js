@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { searchSimilarDocuments } from './utils/chromaClient.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { initializeHybridSearch, hybridSearch } from './utils/enhancedHybridSearch.js';
-import { initializeCrossEncoder } from './utils/reranker.js';
+import { config } from './config/index.js';
+import searchService from './services/searchService.js';
+import conversationService from './services/conversationService.js';
+import { validateQuery, validateServerContext, validateSearchOptions, validateSessionId } from './utils/validators.js';
+import { getUserProfile, saveUserProfile } from './repositories/conversationRepository.js';
+import { formatErrorMessage } from './utils/formatters.js';
 
 // Load environment variables
 dotenv.config();
@@ -12,30 +14,25 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// Initialize services
+let searchServiceReady = false;
+let conversationServiceReady = false;
 
-// Initialize advanced search features
-let hybridSearchReady = false;
-let crossEncoderReady = false;
-
-async function initializeAdvancedSearch() {
+async function initializeServices() {
   try {
-    console.log('🔧 Initializing advanced search features...');
+    console.log('🔧 Initializing services...');
     
-    // Initialize hybrid search
-    hybridSearchReady = await initializeHybridSearch();
+    // Initialize search service
+    searchServiceReady = await searchService.initialize();
     
-    // Initialize cross-encoder for re-ranking
-    console.log('🔄 Initializing cross-encoder re-ranking...');
-    crossEncoderReady = await initializeCrossEncoder();
+    // Initialize conversation service
+    conversationServiceReady = await conversationService.initialize();
     
-    console.log(`✅ Hybrid search: ${hybridSearchReady ? 'Ready' : 'Failed'}`);
-    console.log(`✅ Cross-encoder reranking: ${crossEncoderReady ? 'Ready' : 'Failed'}`);
+    console.log(`✅ Search Service: ${searchServiceReady ? 'Ready' : 'Failed'}`);
+    console.log(`✅ Conversation Service: ${conversationServiceReady ? 'Ready' : 'Failed'}`);
     
   } catch (error) {
-    console.error('❌ Advanced search initialization failed:', error.message);
+    console.error('❌ Service initialization failed:', error.message);
   }
 }
 
@@ -43,223 +40,93 @@ async function initializeAdvancedSearch() {
 app.use(cors());
 app.use(express.json());
 
-// Generate AI answer using RAG with Discord-style formatting
-async function generateRAGAnswer(query, retrievedDocs, serverContext = {}) {
-  try {
-    const context = retrievedDocs.map((doc, index) => 
-      `Source ${index + 1} (${doc.metadata.source}):\n${doc.content}\n`
-    ).join('\n');
-
-    const serverType = serverContext.type || 'general';
-    const serverSize = serverContext.size || 'unknown';
-
-    const prompt = `You are a Discord Community Support Agent. Answer this question based on the Discord documentation provided.
-
-User Question: ${query}
-Server Context: ${serverType} server (${serverSize} members)
-
-Discord Documentation:
-${context}
-
-Instructions:
-1. Provide a detailed, step-by-step answer based on the context above
-2. Use Discord-specific terminology correctly (channels, roles, permissions, etc.)
-3. Format your response with Discord-style markdown:
-   - Use **bold** for important terms and headings
-   - Use \`code blocks\` for commands, settings, and file names
-   - Use > blockquotes for important notes and warnings
-   - Use numbered lists (1., 2., 3.) for step-by-step instructions
-   - Use bullet points (•) for sub-steps or additional information
-4. Include relevant Discord emojis (⚙️, 🔒, ➕, 📝, 🎮, 💻, 📱, 🌐, etc.)
-5. For account creation queries, provide specific steps like:
-   - Download Discord app or visit website
-   - Click "Register" button
-   - Enter email, username, password
-   - Verify email
-   - Complete setup
-6. Be detailed and actionable - don't just say "refer to the guide"
-7. If the context contains specific steps, use them exactly
-8. Make it beginner-friendly with clear explanations
-
-Answer:`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
-    
-  } catch (error) {
-    console.error("Error generating answer:", error.message);
-    return "I apologize, but I'm having trouble generating an answer right now.";
-  }
-}
-
-// Health check
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     gemini: process.env.GEMINI_API_KEY ? 'configured' : 'not configured',
     features: {
-      hybridSearch: hybridSearchReady,
-      bm25Search: hybridSearchReady,
-      faissSearch: hybridSearchReady,
+      searchService: searchServiceReady,
+      conversationService: conversationServiceReady,
+      hybridSearch: searchServiceReady,
+      reranking: true,
       semanticSearch: true,
-      sentenceTransformer: hybridSearchReady,
-      reranking: crossEncoderReady ? 'enabled' : 'disabled'
+      conversationMemory: conversationServiceReady
     },
-    searchMethods: {
-      semantic: 'Vector similarity search using SentenceTransformer embeddings',
-      bm25: 'Probabilistic keyword search with term frequency',
-      faiss: 'Fast semantic similarity using FAISS index',
-      hybrid: 'Combined BM25 + FAISS search with configurable weights (α, β)',
-      reranking: 'Cross-encoder re-ranking (optional)'
-    },
-    normalizationMethods: {
-      minmax: 'Min-max normalization (0-1 range)',
-      softmax: 'Softmax normalization with temperature',
-      none: 'No normalization'
-    }
+    searchMethods: searchService.getStatus()
   });
 });
 
-// Enhanced search endpoint with BM25 + FAISS hybrid search
+// Main search endpoint
 app.post('/api/search', async (req, res) => {
   try {
-    const { 
-      query, 
-      sessionId, 
-      serverContext = {}, 
-      useHybridSearch = true, 
-      enableReranking = crossEncoderReady, // Enable by default if available
-      alpha = 0.7,  // Weight for semantic search
-      beta = 0.3,   // Weight for BM25 search
-      normalizationMethod = 'minmax'
-    } = req.body;
+    const { query, sessionId, serverContext = {}, searchOptions = {} } = req.body;
     
-    if (!query) {
+    // Validate inputs
+    const queryValidation = validateQuery(query);
+    if (!queryValidation.isValid) {
       return res.status(400).json({ 
-        error: 'Query is required',
+        error: queryValidation.error,
         success: false 
       });
     }
+
+    const contextValidation = validateServerContext(serverContext);
+    const optionsValidation = validateSearchOptions(searchOptions);
     
-    console.log(`🔍 Enhanced Search: "${query}" (hybrid: ${useHybridSearch && hybridSearchReady})`);
-    console.log(`⚖️ Weights - Semantic (α): ${alpha}, BM25 (β): ${beta}`);
+    const sanitizedQuery = queryValidation.sanitized;
+    const sanitizedContext = contextValidation.sanitized;
+    const sanitizedOptions = optionsValidation.sanitized;
     
-    let retrievedDocs = [];
-    let searchMethod = 'semantic';
+    console.log(`🔍 Searching for: "${sanitizedQuery}"`);
     
-    // Use enhanced hybrid search if available, otherwise fallback to semantic search
-    if (useHybridSearch && hybridSearchReady) {
-      console.log('🔀 Using enhanced hybrid search (BM25 + FAISS + SentenceTransformer)...');
-      const hybridResults = await hybridSearch(query, 8, alpha, beta, enableReranking, normalizationMethod);
-      
-      retrievedDocs = hybridResults.map(result => ({
-        content: result.content,
-        metadata: {
-          source: result.source || 'unknown',
-          chunkIndex: result.docIndex || 0,
-          fileName: result.metadata?.fileName || 'unknown'
-        },
-        similarity: result.combinedScore || result.score || 0,
-        semanticScore: result.semanticScore || 0,
-        keywordScore: result.keywordScore || 0,
-        bm25Score: result.bm25Score || 0,
-        faissScore: result.faissScore || 0,
-        crossEncoderScore: result.crossEncoderScore || 0,
-        searchMethod: result.searchMethod || 'hybrid'
-      }));
-      
-      searchMethod = 'hybrid';
-      
-    } else {
-      console.log('🔍 Using semantic search only...');
-      const results = await searchSimilarDocuments(query, 8);
-      
-      if (!results.documents || results.documents.length === 0) {
-        return res.json({
-          success: true,
-          query,
-          answer: "I couldn't find relevant information about that topic. Please try rephrasing your question.",
-          sources: [],
-          sessionId,
-          searchMethod: 'semantic'
-        });
-      }
-      
-      retrievedDocs = results.documents[0].map((doc, index) => ({
-        content: doc,
-        metadata: results.metadatas[0][index],
-        similarity: 1 - results.distances[0][index],
-        semanticScore: 1 - results.distances[0][index],
-        keywordScore: 0,
-        bm25Score: 0,
-        crossEncoderScore: 0,
-        searchMethod: 'semantic'
-      }));
-      
-      searchMethod = 'semantic';
-    }
+    // Perform search
+    const searchResults = await searchService.search(sanitizedQuery, {
+      method: sanitizedOptions.method,
+      limit: sanitizedOptions.limit,
+      semanticWeight: sanitizedOptions.semanticWeight,
+      keywordWeight: sanitizedOptions.keywordWeight,
+      enableReranking: sanitizedOptions.enableReranking
+    });
     
-    if (retrievedDocs.length === 0) {
+    if (searchResults.length === 0) {
       return res.json({
         success: true,
-        query,
+        query: sanitizedQuery,
         answer: "I couldn't find relevant information about that topic. Please try rephrasing your question.",
+        results: [],
         sources: [],
-        sessionId,
-        searchMethod
+        sessionId: sessionId || 'default',
+        searchMethod: sanitizedOptions.method,
+        features: {
+          hybridSearch: searchServiceReady,
+          reranking: sanitizedOptions.enableReranking,
+          serverContext: Object.keys(sanitizedContext).length > 0
+        },
+        timestamp: new Date().toISOString()
       });
     }
     
-    // Generate AI answer with server context
-    console.log('🤖 Generating AI answer...');
-    const answer = await generateRAGAnswer(query, retrievedDocs, serverContext);
+    // Process conversation
+    const response = await conversationService.processConversation(
+      sanitizedQuery, 
+      searchResults, 
+      {
+        sessionId: sessionId || 'default',
+        serverContext: sanitizedContext,
+        enableReranking: sanitizedOptions.enableReranking
+      }
+    );
     
-    // Return response in format expected by frontend
-    res.json({
-      success: true,
-      query,
-      answer,
-      results: retrievedDocs.map(doc => ({
-        content: doc.content,
-        source: doc.metadata.source,
-        combinedScore: doc.similarity,
-        score: doc.similarity,
-        metadata: doc.metadata,
-        semanticScore: doc.semanticScore,
-        keywordScore: doc.keywordScore,
-        bm25Score: doc.bm25Score,
-        faissScore: doc.faissScore,
-        crossEncoderScore: doc.crossEncoderScore,
-        searchMethod: doc.searchMethod
-      })),
-      sources: retrievedDocs.map(doc => ({
-        source: doc.metadata.source,
-        similarity: doc.similarity,
-        semanticScore: doc.semanticScore,
-        keywordScore: doc.keywordScore,
-        bm25Score: doc.bm25Score,
-        faissScore: doc.faissScore,
-        crossEncoderScore: doc.crossEncoderScore,
-        searchMethod: doc.searchMethod
-      })),
-      sessionId,
-      searchMethod,
-      features: {
-        hybridSearch: hybridSearchReady,
-        reranking: enableReranking && crossEncoderReady,
-        serverContext: Object.keys(serverContext).length > 0
-      },
-      timestamp: new Date().toISOString()
-    });
+    res.json(response);
     
   } catch (error) {
-    console.error('Search error:', error.message);
+    console.error('❌ Search error:', error.message);
     res.status(500).json({ 
       error: 'Search failed', 
       success: false,
-      message: error.message
+      message: formatErrorMessage(error, 'search')
     });
   }
 });
@@ -269,132 +136,215 @@ app.post('/api/server-context', (req, res) => {
   try {
     const { sessionId, serverType, serverSize, purpose } = req.body;
     
-    // Store server context (in a real app, this would go to MongoDB)
-    console.log(`📝 Server context updated for ${sessionId}: ${serverType} server (${serverSize} members) - ${purpose}`);
+    const contextValidation = validateServerContext({
+      type: serverType,
+      size: serverSize,
+      purpose: purpose
+    });
+    
+    if (!contextValidation.isValid) {
+      return res.status(400).json({ 
+        error: 'Invalid server context',
+        success: false 
+      });
+    }
+    
+    const sanitizedContext = contextValidation.sanitized;
+    
+    console.log(`📝 Server context updated for ${sessionId}: ${sanitizedContext.type} server (${sanitizedContext.size} members) - ${sanitizedContext.purpose}`);
     
     res.json({
       success: true,
-      sessionId,
+      sessionId: sessionId || 'default',
       serverContext: {
-        type: serverType,
-        size: serverSize,
-        purpose: purpose,
+        ...sanitizedContext,
         timestamp: new Date().toISOString()
       }
     });
     
   } catch (error) {
-    console.error('Server context error:', error.message);
-    res.status(500).json({ error: 'Failed to update server context' });
-  }
-});
-
-// Authentication endpoints
-app.post('/api/auth/login', (req, res) => {
-  try {
-    const { username, email, serverType, serverSize, purpose } = req.body;
-    
-    // In a real app, you would validate credentials against a database
-    // For now, we'll just create a mock user session
-    const user = {
-      id: Date.now().toString(),
-      username,
-      email,
-      serverContext: {
-        type: serverType || 'general',
-        size: serverSize || 'unknown',
-        purpose: purpose || 'community'
-      },
-      loginTime: new Date().toISOString()
-    };
-    
-    console.log(`🔐 User login: ${username} (${email}) - ${serverType} server`);
-    
-    res.json({
-      success: true,
-      user,
-      message: 'Login successful'
-    });
-    
-  } catch (error) {
-    console.error('Login error:', error.message);
+    console.error('❌ Server context error:', error.message);
     res.status(500).json({ 
-      error: 'Login failed', 
+      error: 'Failed to update server context',
       success: false,
-      message: error.message
+      message: formatErrorMessage(error, 'server context')
     });
   }
 });
 
-app.post('/api/auth/signup', (req, res) => {
+// Conversation history endpoint
+app.get('/api/conversations/:sessionId', async (req, res) => {
   try {
-    const { username, email, serverType, serverSize, purpose } = req.body;
+    const { sessionId } = req.params;
+    const { limit = 10 } = req.query;
     
-    // In a real app, you would create a new user account
-    // For now, we'll just create a mock user
-    const user = {
-      id: Date.now().toString(),
-      username,
-      email,
-      serverContext: {
-        type: serverType || 'general',
-        size: serverSize || 'unknown',
-        purpose: purpose || 'community'
-      },
-      signupTime: new Date().toISOString()
-    };
+    const sessionValidation = validateSessionId(sessionId);
+    if (!sessionValidation.isValid) {
+      return res.status(400).json({ 
+        error: sessionValidation.error,
+        success: false 
+      });
+    }
     
-    console.log(`📝 User signup: ${username} (${email}) - ${serverType} server`);
+    const conversations = await conversationService.getConversationHistory(
+      sessionValidation.sanitized, 
+      parseInt(limit)
+    );
     
     res.json({
       success: true,
-      user,
-      message: 'Account created successfully'
+      sessionId: sessionValidation.sanitized,
+      conversations,
+      count: conversations.length
     });
     
   } catch (error) {
-    console.error('Signup error:', error.message);
+    console.error('❌ Conversation history error:', error.message);
     res.status(500).json({ 
-      error: 'Signup failed', 
+      error: 'Failed to retrieve conversation history',
       success: false,
-      message: error.message
+      message: formatErrorMessage(error, 'conversation history')
     });
   }
+});
+
+// User profile endpoints
+app.get('/api/user/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    const sessionValidation = validateSessionId(sessionId);
+    if (!sessionValidation.isValid) {
+      return res.status(400).json({ 
+        error: sessionValidation.error,
+        success: false 
+      });
+    }
+    
+    const userProfile = await getUserProfile(sessionValidation.sanitized);
+    
+    res.json({
+      success: true,
+      sessionId: sessionValidation.sanitized,
+      userProfile: userProfile || {},
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ User profile error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve user profile',
+      success: false,
+      message: formatErrorMessage(error, 'user profile')
+    });
+  }
+});
+
+app.post('/api/user/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { name, preferences, ...otherData } = req.body;
+    
+    const sessionValidation = validateSessionId(sessionId);
+    if (!sessionValidation.isValid) {
+      return res.status(400).json({ 
+        error: sessionValidation.error,
+        success: false 
+      });
+    }
+    
+    const userData = { name, preferences, ...otherData };
+    const userProfile = await saveUserProfile(sessionValidation.sanitized, userData);
+    
+    res.json({
+      success: true,
+      sessionId: sessionValidation.sanitized,
+      userProfile: userProfile || {},
+      message: 'User profile updated successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ User profile update error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to update user profile',
+      success: false,
+      message: formatErrorMessage(error, 'user profile update')
+    });
+  }
+});
+
+// Search statistics endpoint
+app.get('/api/stats', (req, res) => {
+  try {
+    const searchStatus = searchService.getStatus();
+    
+    res.json({
+      success: true,
+      search: searchStatus,
+      features: {
+        hybridSearch: searchServiceReady,
+        reranking: true,
+        semanticSearch: true,
+        conversationMemory: true
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Stats error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve statistics',
+      success: false,
+      message: formatErrorMessage(error, 'statistics')
+    });
+  }
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('❌ Unhandled error:', error);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    message: formatErrorMessage(error, 'server')
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    message: 'The requested endpoint does not exist'
+  });
 });
 
 // Start server
 app.listen(PORT, async () => {
-  console.log('🚀 Discord Community Support API Server Started!');
+  console.log('🚀 Discord Community Support RAG Server Started!');
   console.log(`📡 Server running on port ${PORT}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
   console.log(`🤖 Gemini AI: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
   
-  // Initialize advanced search features
-  await initializeAdvancedSearch();
+  // Initialize services
+  await initializeServices();
   
   console.log('\n📋 Available endpoints:');
   console.log('  GET  /api/health - Health check');
-  console.log('  POST /api/search - Enhanced RAG search (BM25 + FAISS + SentenceTransformer)');
+  console.log('  POST /api/search - RAG search with hybrid search');
   console.log('  POST /api/server-context - Update server context');
-  console.log('  POST /api/auth/login - User login');
-  console.log('  POST /api/auth/signup - User registration');
-  console.log('\n✨ Enhanced Features:');
-  console.log('  🔀 Hybrid Search: BM25 keyword + FAISS semantic search');
-  console.log('  📊 BM25 Algorithm: Probabilistic ranking with term frequency');
-  console.log('  🧠 FAISS Search: Fast semantic similarity using SentenceTransformer');
-  console.log('  🔤 SentenceTransformer: all-MiniLM-L6-v2 embeddings');
-  console.log('  ⚖️ Configurable Weights: α (semantic) + β (BM25) = 1.0');
-  console.log('  📊 Normalization: MinMax, Softmax, or None');
-  console.log(`  🔄 Cross-encoder Re-ranking: ${crossEncoderReady ? 'Enabled' : 'Disabled'}`);
+  console.log('  GET  /api/conversations/:sessionId - Get conversation history');
+  console.log('  GET  /api/user/:sessionId - Get user profile');
+  console.log('  POST /api/user/:sessionId - Update user profile');
+  console.log('  GET  /api/stats - Get system statistics');
+  console.log('\n✨ Features:');
+  console.log('  🔀 Hybrid Search: Semantic + BM25 keyword search');
   console.log('  🤖 AI Answers: Gemini-generated responses');
   console.log('  📝 Discord Markdown: Proper formatting');
   console.log('  🎯 Server Context: Gaming/study/community awareness');
-  console.log('\n🔧 Enhanced Search Parameters:');
-  console.log('  useHybridSearch: true/false (default: true)');
-  console.log('  enableReranking: true/false (default: false)');
-  console.log('  alpha: 0.7 (semantic weight, default)');
-  console.log('  beta: 0.3 (BM25 weight, default)');
-  console.log('  normalizationMethod: "minmax"|"softmax"|"none" (default: "minmax")');
+  console.log('  💾 Conversation Memory: MongoDB storage');
+  console.log('  🔄 Cross-encoder Re-ranking: Optional');
 });
 
 export default app;

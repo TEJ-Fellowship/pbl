@@ -1,5 +1,5 @@
 import { bm25Search } from "./bm25Search.js";
-import { searchSimilarDocuments } from "./chromaClient.js";
+import { searchSimilarDocuments } from "../repositories/vectorRepository.js";
 import { rerankResults } from "./reranker.js";
 
 let isInitialized = false;
@@ -21,7 +21,7 @@ export async function initializeHybridSearch() {
     bm25Search.buildIndex(documents);
     
     // Verify semantic search is available
-    const { vectorStore } = await import('./chromaClient.js');
+    const { vectorStore } = await import('../repositories/vectorRepository.js');
     if (vectorStore.length === 0) {
       console.log("⚠️ No semantic embeddings found. Hybrid search will use BM25 only.");
     }

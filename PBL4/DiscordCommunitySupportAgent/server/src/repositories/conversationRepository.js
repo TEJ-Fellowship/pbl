@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 let client = null;
 let db = null;
@@ -17,19 +17,41 @@ export async function connectToMongoDB() {
     const dbName = process.env.MONGODB_DB || 'discord_support';
     
     console.log("🗄️ Connecting to MongoDB...");
-    client = new MongoClient(mongoUrl);
-    await client.connect();
+    console.log(`📡 MongoDB URI: ${mongoUrl}`);
+    console.log(`🗃️ Database: ${dbName}`);
     
+    client = new MongoClient(mongoUrl, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    
+    await client.connect();
     db = client.db(dbName);
     
     // Test connection
     await db.admin().ping();
     console.log("✅ Connected to MongoDB successfully");
     
+    // Create indexes for better performance
+    await createIndexes();
+    
     return db;
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
-    return null;
+    throw error;
+  }
+}
+
+async function createIndexes() {
+  try {
+    // Create indexes for better query performance
+    await db.collection('conversations').createIndex({ sessionId: 1, 'metadata.timestamp': -1 });
+    await db.collection('conversations').createIndex({ sessionId: 1 });
+    await db.collection('user_profiles').createIndex({ sessionId: 1 }, { unique: true });
+    await db.collection('server_contexts').createIndex({ sessionId: 1 }, { unique: true });
+    console.log("📊 Database indexes created successfully");
+  } catch (error) {
+    console.log("⚠️ Index creation failed (may already exist):", error.message);
   }
 }
 
@@ -101,6 +123,81 @@ export async function getServerContext(sessionId) {
     return context;
   } catch (error) {
     console.error("❌ Failed to get server context:", error.message);
+    return null;
+  }
+}
+
+// User Profile Management
+export async function saveUserProfile(sessionId, userData) {
+  try {
+    if (!db) {
+      console.log("⚠️ MongoDB not connected, skipping user profile save");
+      return null;
+    }
+    
+    const userProfiles = db.collection('user_profiles');
+    
+    const profile = {
+      sessionId,
+      ...userData,
+      lastUpdated: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    await userProfiles.updateOne(
+      { sessionId },
+      { $set: profile },
+      { upsert: true }
+    );
+    
+    console.log(`👤 User profile saved for session ${sessionId}`);
+    return profile;
+  } catch (error) {
+    console.error("❌ Failed to save user profile:", error.message);
+    return null;
+  }
+}
+
+export async function getUserProfile(sessionId) {
+  try {
+    if (!db) {
+      return null;
+    }
+    
+    const userProfiles = db.collection('user_profiles');
+    const profile = await userProfiles.findOne({ sessionId });
+    
+    return profile;
+  } catch (error) {
+    console.error("❌ Failed to get user profile:", error.message);
+    return null;
+  }
+}
+
+export async function updateUserProfile(sessionId, updates) {
+  try {
+    if (!db) {
+      console.log("⚠️ MongoDB not connected, skipping user profile update");
+      return null;
+    }
+    
+    const userProfiles = db.collection('user_profiles');
+    
+    const result = await userProfiles.updateOne(
+      { sessionId },
+      { 
+        $set: {
+          ...updates,
+          lastUpdated: new Date().toISOString()
+        }
+      },
+      { upsert: true }
+    );
+    
+    console.log(`👤 User profile updated for session ${sessionId}`);
+    return result;
+  } catch (error) {
+    console.error("❌ Failed to update user profile:", error.message);
     return null;
   }
 }
