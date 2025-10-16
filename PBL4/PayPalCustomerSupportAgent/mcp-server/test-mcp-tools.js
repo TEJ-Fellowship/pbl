@@ -1,0 +1,81 @@
+const MCPToolsService = require('./src/index.js');
+
+async function testMCPTools() {
+  console.log('🧪 Testing MCP Tools Service\n');
+  
+  const mcpTools = new MCPToolsService();
+  
+  // Test currency conversion queries
+  const currencyQueries = [
+    "Convert 100 USD to EUR",
+    "What's the exchange rate from GBP to USD?",
+    "How much is 50 EUR in Japanese Yen?",
+    "Convert 1000 USD to Indian Rupees",
+    "What's 75 GBP worth in Canadian Dollars?"
+  ];
+  
+  console.log('💱 Testing Currency Conversion:');
+  for (const query of currencyQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ Result: ${result.message}`);
+      } else {
+        console.log('❌ No MCP tool triggered');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+  
+  // Test web search queries
+  const webSearchQueries = [
+    "Recent PayPal outages",
+    "Current PayPal status",
+    "Latest PayPal news",
+    "PayPal down today"
+  ];
+  
+  console.log('\n\n🌐 Testing Web Search:');
+  for (const query of webSearchQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ Result: ${result.message}`);
+      } else {
+        console.log('❌ No MCP tool triggered');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+  
+  // Test regular queries (should not trigger MCP tools)
+  const regularQueries = [
+    "How do I request a refund?",
+    "What are PayPal fees?",
+    "How to dispute a transaction?"
+  ];
+  
+  console.log('\n\n📝 Testing Regular Queries (should not trigger MCP):');
+  for (const query of regularQueries) {
+    console.log(`\nQuery: "${query}"`);
+    try {
+      const result = await mcpTools.processQuery(query);
+      if (result) {
+        console.log(`✅ MCP tool triggered: ${result.type}`);
+      } else {
+        console.log('✅ No MCP tool triggered (as expected)');
+      }
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+  
+  console.log('\n\n✅ MCP Tools testing completed!');
+}
+
+// Run the test
+testMCPTools().catch(console.error);

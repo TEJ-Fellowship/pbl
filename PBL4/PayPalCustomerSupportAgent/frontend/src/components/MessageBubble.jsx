@@ -50,7 +50,7 @@ const MessageBubble = ({ msg }) => {
             </ul>
           </div>
         )}
-        {!isUser && msg.disclaimer && (
+        {!isUser && msg.disclaimer && msg.confidence < 40 && (
           <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
             This is general guidance. For account‑specific issues or legal advice, please contact PayPal support.
           </div>

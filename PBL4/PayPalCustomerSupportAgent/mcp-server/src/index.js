@@ -1,145 +1,162 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import axios from "axios";
-import dotenv from "dotenv";
+const CurrencyExchangeService = require('./components/currencyExchange');
+const WebSearchService = require('./components/webSearch');
+const ApiStatusChecker = require('./components/apiStatusChecker');
+const FeeCalculatorService = require('./components/feeCalculator');
 
-dotenv.config();
-
-// ===== CONFIGURATION =====
-const GOOGLE_API_KEY = process.env.GOOGLE_WEB_KEY;
-const SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ID;
-
-// ===== MCP SERVER SETUP =====
-const server = new Server(
-  {
-    name: "paypal-support-tools",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
+// ===== MCP TOOLS SERVICE =====
+class MCPToolsService {
+  constructor() {
+    this.currencyService = new CurrencyExchangeService();
+    this.webSearchService = new WebSearchService();
+    this.statusChecker = new ApiStatusChecker();
+    this.feeCalculator = new FeeCalculatorService();
   }
-);
 
-// ===== WEB SEARCH FUNCTION =====
-async function searchPayPalWeb(query) {
-  try {
-    console.log(`🔍 Searching web for: ${query}`);
+  // Check which tools should be triggered for this query
+  async getTriggeredTools(query) {
+    const tools = [];
     
-    // Call Google Custom Search API
-    const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
-      params: {
-        key: GOOGLE_API_KEY,
-        cx: SEARCH_ENGINE_ID,
-        q: `PayPal ${query}`,
-        num: 3, // Get top 3 results
-        safe: 'off'
-      }
-    });
-
-    const results = response.data.items || [];
+    if (this.statusChecker.isStatusQuery(query)) {
+      tools.push('status');
+    }
+    if (this.currencyService.isCurrencyQuery(query)) {
+      tools.push('currency');
+    }
+    if (this.webSearchService.shouldUseWebSearch(query)) {
+      tools.push('websearch');
+    }
+    if (this.feeCalculator.isFeeQuery(query)) {
+      tools.push('feecalculator');
+    }
     
-    // Format results similar to hybrid search
-    const formattedResults = results.map((item, index) => ({
-      id: `web_search_${index}`,
-      title: item.title,
-      snippet: item.snippet,
-      link: item.link,
-      displayLink: item.displayLink,
-      source: 'web_search',
-      combinedScore: 0.8 - (index * 0.1), // Decreasing score for ranking
-      metadata: {
-        source: 'web_search',
-        title: item.title,
-        text: item.snippet,
-        link: item.link,
-        preview: item.snippet.slice(0, 200) + '...'
+    return tools;
+  }
+
+  // Get data from triggered tools
+  async getToolData(toolType, query) {
+    switch (toolType) {
+      case 'status':
+        return await this.statusChecker.getStatusResponse();
+      case 'currency':
+        return await this.handleCurrencyQuery(query);
+      case 'websearch':
+        return await this.handleWebSearchQuery(query);
+      case 'feecalculator':
+        return await this.handleFeeQuery(query);
+      default:
+        return null;
+    }
+  }
+
+  // Handle currency conversion queries
+  async handleCurrencyQuery(query) {
+    try {
+      const currencyInfo = this.currencyService.parseCurrencyQuery(query);
+      
+      if (!currencyInfo) {
+        return {
+          success: false,
+          message: 'I couldn\'t understand the currency conversion. Please try: "Convert 100 USD to EUR" or "What\'s the exchange rate from USD to GBP?"'
+        };
       }
-    }));
 
-    console.log(`✅ Found ${formattedResults.length} web search results`);
-    return formattedResults;
+      const result = await this.currencyService.getExchangeRate(
+        currencyInfo.from_currency,
+        currencyInfo.to_currency,
+        currencyInfo.amount
+      );
 
-  } catch (error) {
-    console.error('❌ Web search error:', error.message);
-    return [];
+      const formattedFrom = this.currencyService.formatCurrency(result.amount, result.from_currency);
+      const formattedTo = this.currencyService.formatCurrency(result.converted_amount, result.to_currency);
+
+      return {
+        success: true,
+        message: `💱 Currency Conversion:\n\n${formattedFrom} = ${formattedTo}\n\nExchange Rate: 1 ${result.from_currency} = ${result.exchange_rate} ${result.to_currency}\n\n*Rate as of ${new Date(result.timestamp).toLocaleString()}*`,
+        data: result
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `Sorry, I couldn't get the exchange rate: ${error.message}`
+      };
+    }
+  }
+
+  // Handle web search queries
+  async handleWebSearchQuery(query) {
+    try {
+      const results = await this.webSearchService.searchPayPalWeb(query);
+      
+      return {
+        success: true,
+        message: `Found ${results.length} recent results about: ${query}`,
+        data: results
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `Sorry, I couldn't search for recent information: ${error.message}`
+      };
+    }
+  }
+
+  // Handle fee calculation queries
+  async handleFeeQuery(query) {
+    try {
+      const result = await this.feeCalculator.handleFeeQuery(query);
+      return result;
+
+    } catch (error) {
+      return {
+        success: false,
+        message: `Sorry, I couldn't calculate the fees: ${error.message}`
+      };
+    }
+  }
+
+  // Main processQuery method for testing and external use
+  async processQuery(query) {
+    try {
+      console.log(`🔍 Processing query: "${query}"`);
+      
+      // Get triggered tools
+      const triggeredTools = await this.getTriggeredTools(query);
+      console.log(`🛠️ Triggered tools: ${triggeredTools.join(', ')}`);
+      
+      if (triggeredTools.length === 0) {
+        return null; // No MCP tools triggered
+      }
+      
+      // Get data from the first triggered tool (for testing purposes)
+      const tool = triggeredTools[0];
+      const toolData = await this.getToolData(tool, query);
+      
+      if (toolData && toolData.success) {
+        return {
+          type: tool,
+          message: toolData.message,
+          data: toolData.data
+        };
+      } else {
+        return {
+          type: tool,
+          message: toolData?.message || 'Tool execution failed',
+          data: null
+        };
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in processQuery:', error.message);
+      return {
+        type: 'error',
+        message: `Error processing query: ${error.message}`,
+        data: null
+      };
+    }
   }
 }
 
-// ===== MCP TOOL HANDLERS =====
-server.setRequestHandler("tools/list", async () => {
-  return {
-    tools: [
-      {
-        name: "web_search_paypal",
-        description: "Search the web for recent PayPal information, updates, outages, or current policies",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "The search query about PayPal"
-            }
-          },
-          required: ["query"]
-        }
-      }
-    ]
-  };
-});
-
-server.setRequestHandler("tools/call", async (request) => {
-  const { name, arguments: args } = request.params;
-
-  if (name === "web_search_paypal") {
-    if (!GOOGLE_API_KEY || !SEARCH_ENGINE_ID) {
-      return {
-        content: [{
-          type: "text",
-          text: "Error: Google API credentials not configured. Please check GOOGLE_WEB_KEY and GOOGLE_SEARCH_ID environment variables."
-        }]
-      };
-    }
-
-    const query = args.query;
-    const searchResults = await searchPayPalWeb(query);
-
-    if (searchResults.length === 0) {
-      return {
-        content: [{
-          type: "text",
-          text: "No recent web information found for this query."
-        }]
-      };
-    }
-
-    // Format results for LLM consumption
-    const formattedText = searchResults.map((result, index) => 
-      `[Web Source ${index + 1}]: ${result.title}\n${result.snippet}\nLink: ${result.link}\n`
-    ).join('\n');
-
-    return {
-      content: [{
-        type: "text",
-        text: `Recent web search results for "${query}":\n\n${formattedText}`
-      }]
-    };
-  }
-
-  return {
-    content: [{
-      type: "text",
-      text: `Unknown tool: ${name}`
-    }]
-  };
-});
-
-// ===== START SERVER =====
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.log("🚀 PayPal MCP Server started with web search tool");
-}
-
-main().catch(console.error);
+// Export the service
+module.exports = MCPToolsService;

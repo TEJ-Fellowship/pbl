@@ -1,0 +1,144 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2024-01-15",
+  "currencies": {
+    "USD": {
+      "symbol": "$",
+      "decimal_places": 2
+    },
+    "EUR": {
+      "symbol": "€",
+      "decimal_places": 2
+    },
+    "GBP": {
+      "symbol": "£",
+      "decimal_places": 2
+    },
+    "JPY": {
+      "symbol": "¥",
+      "decimal_places": 0
+    },
+    "CAD": {
+      "symbol": "C$",
+      "decimal_places": 2
+    },
+    "AUD": {
+      "symbol": "A$",
+      "decimal_places": 2
+    },
+    "INR": {
+      "symbol": "₹",
+      "decimal_places": 2
+    },
+    "NPR": {
+      "symbol": "₨",
+      "decimal_places": 2
+    }
+  },
+  "fee_structures": {
+    "domestic": {
+      "personal": {
+        "paypal_balance": {
+          "percentage": 0.029,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "credit_card": {
+          "percentage": 0.0349,
+          "fixed_fee": 0.49,
+          "currency": "USD"
+        },
+        "debit_card": {
+          "percentage": 0.0349,
+          "fixed_fee": 0.49,
+          "currency": "USD"
+        }
+      },
+      "business": {
+        "paypal_balance": {
+          "percentage": 0.029,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "credit_card": {
+          "percentage": 0.0349,
+          "fixed_fee": 0.49,
+          "currency": "USD"
+        },
+        "debit_card": {
+          "percentage": 0.0349,
+          "fixed_fee": 0.49,
+          "currency": "USD"
+        }
+      }
+    },
+    "international": {
+      "personal": {
+        "paypal_balance": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "credit_card": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "debit_card": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        }
+      },
+      "business": {
+        "paypal_balance": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "credit_card": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        },
+        "debit_card": {
+          "percentage": 0.044,
+          "fixed_fee": 0.30,
+          "currency": "USD"
+        }
+      }
+    }
+  },
+  "currency_conversion": {
+    "additional_fee_percentage": 0.025,
+    "description": "Additional 2.5% fee for currency conversion"
+  },
+  "micropayments": {
+    "threshold": 10.00,
+    "currency": "USD",
+    "personal": {
+      "percentage": 0.05,
+      "fixed_fee": 0.05,
+      "currency": "USD"
+    },
+    "business": {
+      "percentage": 0.05,
+      "fixed_fee": 0.05,
+      "currency": "USD"
+    }
+  },
+  "mass_payments": {
+    "discount_threshold": 1000.00,
+    "currency": "USD",
+    "discount_percentage": 0.02,
+    "description": "2% discount for mass payments over $1000"
+  },
+  "refund_policy": {
+    "fee_refund": true,
+    "description": "PayPal fees are refunded when you refund a payment"
+  },
+  "supported_countries": {
+    "domestic": ["US", "CA", "GB", "DE", "FR", "AU", "JP", "IN", "NP"],
+    "international": ["US", "CA", "GB", "DE", "FR", "AU", "JP", "IN", "NP", "MX", "BR", "SG", "HK", "TW"]
+  }
+}

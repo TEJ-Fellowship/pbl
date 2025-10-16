@@ -46,7 +46,7 @@ Modeled after [PayPal's Resolution Center](https://www.paypal.com/disputes/) and
 - Query classification: `payment_issue`, `dispute`, `account_limitation`, `fees`, `refund`
 - Sentiment analysis with `sentiment` library → escalate if frustration detected
 - Multi-turn dispute resolution wizard: gather details step-by-step
-- Confidence scoring with mandatory escalation for account-specific or legal questions
+- Confidence scoring wit h mandatory escalation for account-specific or legal questions
 - Analytics: dispute types, resolution rate without escalation, avg satisfaction
 - Feedback loop identifying policy gaps in documentation
 

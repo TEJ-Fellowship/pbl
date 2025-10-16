@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const path = require("path");
 const MiniSearch = require("minisearch");
-const { logConversation } = require("../db.js");
+const { logConversation } = require("../dbHybrid.js");
 dotenv.config();
 
 const PINECONE_INDEX = process.env.PINECONE_INDEX;
@@ -190,23 +190,15 @@ function classifyIssueType(text) {
 }
 
 function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
-  const disclaimer = includeDisclaimer
-    ? "This is general guidance based on PayPal documentation. For account‑specific issues or legal advice, please contact PayPal support."
-    : "";
-  
   // For greetings and identity questions, don't show "Issue:" prefix
   if (issueType === "greeting" || issueType === "identity") {
-    return [
-      rawAnswer,
-      disclaimer && `Disclaimer: ${disclaimer}`
-    ].filter(Boolean).join("\n\n");
+    return rawAnswer;
   }
   
   // For other issue types, show the structured format
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
-    rawAnswer,
-    disclaimer && `Disclaimer: ${disclaimer}`
+    rawAnswer
   ].filter(Boolean).join("\n\n");
 }
 
