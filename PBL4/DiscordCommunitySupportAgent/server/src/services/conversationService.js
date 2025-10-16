@@ -1,6 +1,7 @@
 import { saveConversation, getConversationHistory, connectToMongoDB, saveUserProfile, getUserProfile, updateUserProfile } from '../repositories/conversationRepository.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config/index.js';
+import MCPToolsManager from '../mcp/mcpToolsManager.js';
 
 /**
  * Conversation Service - Handles conversation management and AI responses
@@ -10,6 +11,7 @@ class ConversationService {
     this.genAI = new GoogleGenerativeAI(config.gemini.apiKey);
     this.model = this.genAI.getGenerativeModel({ model: config.gemini.model });
     this.isInitialized = false;
+    this.mcpTools = new MCPToolsManager();
   }
 
   async initialize() {
@@ -69,6 +71,30 @@ class ConversationService {
    */
   async generateRAGAnswer(query, retrievedDocs, serverContext = {}, userProfile = {}) {
     try {
+      // Check if MCP tools should be used for this query
+      const mcpSuggestions = this.mcpTools.suggestToolsForQuery(query);
+      let mcpResults = '';
+      
+      if (mcpSuggestions.length > 0) {
+        console.log(`🔧 MCP tools suggested for query: ${mcpSuggestions.map(s => s.tool).join(', ')}`);
+        
+        // Execute suggested MCP tools
+        for (const suggestion of mcpSuggestions.slice(0, 2)) { // Limit to 2 tools per query
+          try {
+            const mcpResult = await this.executeMCPToolForQuery(suggestion.tool, query);
+            if (mcpResult && mcpResult.success) {
+              const formattedResult = this.formatMCPResultForAI(mcpResult.result, suggestion.tool);
+              mcpResults += `\n\nMCP Tool Result (${suggestion.tool}):\n${formattedResult}\n`;
+            } else {
+              console.log(`MCP tool ${suggestion.tool} returned unsuccessful result:`, mcpResult?.error || 'Unknown error');
+            }
+          } catch (error) {
+            console.error(`MCP tool ${suggestion.tool} failed:`, error.message);
+            // Continue with other tools even if one fails
+          }
+        }
+      }
+
       const context = retrievedDocs.map((doc, index) => 
         `Source ${index + 1} (${doc.metadata.source}):\n${doc.content}\n`
       ).join('\n');
@@ -85,6 +111,7 @@ Server Context: ${serverType} server (${serverSize} members)
 
 Discord Documentation:
 ${context}
+${mcpResults}
 
 Instructions:
 1. Provide a comprehensive, detailed answer based on the context above
@@ -115,6 +142,7 @@ Instructions:
 8. Be friendly and encouraging like a Discord community manager
 9. If there are step-by-step instructions, present them clearly with emojis
 10. End with an encouraging message and offer to help with follow-up questions
+11. If MCP tool results are provided, integrate them naturally into your response
 
 Answer:`;
 
@@ -124,8 +152,384 @@ Answer:`;
       
     } catch (error) {
       console.error("Error generating answer:", error.message);
-      return "I apologize, but I'm having trouble generating an answer right now.";
+      console.error("Error details:", error);
+      
+      // Try to provide a basic response even if AI generation fails
+      if (retrievedDocs && retrievedDocs.length > 0) {
+        return `I found some relevant information about your question, but I'm having trouble generating a complete response right now. Here's what I found:\n\n${retrievedDocs.slice(0, 2).map((doc, index) => 
+          `**Source ${index + 1}:** ${doc.metadata.source || 'Unknown'}\n${doc.content.substring(0, 200)}...`
+        ).join('\n\n')}\n\nPlease try rephrasing your question or contact support if the issue persists.`;
+      }
+      
+      return "I apologize, but I'm having trouble generating an answer right now. Please try again or contact support if the issue persists.";
     }
+  }
+
+  /**
+   * Execute MCP tool for a specific query
+   * @param {string} toolName - Name of the MCP tool
+   * @param {string} query - User query
+   * @returns {Promise<Object>} MCP tool result
+   */
+  async executeMCPToolForQuery(toolName, query) {
+    try {
+      switch (toolName) {
+        case 'free_web_search':
+          return await this.mcpTools.executeTool('free_web_search', { query });
+        
+        case 'discord_permission_calculator':
+          // Extract permission-related information from query
+          const permissionParams = this.extractPermissionParams(query);
+          return await this.mcpTools.executeTool('discord_permission_calculator', permissionParams);
+        
+        case 'discord_bot_token_validator':
+          // Extract token from query (if present)
+          const tokenParams = this.extractTokenParams(query);
+          if (tokenParams.token) {
+            return await this.mcpTools.executeTool('discord_bot_token_validator', tokenParams);
+          }
+          return { success: false, error: 'No token found in query' };
+        
+        case 'discord_webhook_tester':
+          // Extract webhook URL from query
+          const webhookParams = this.extractWebhookParams(query);
+          if (webhookParams.webhookUrl) {
+            return await this.mcpTools.executeTool('discord_webhook_tester', webhookParams);
+          }
+          return { success: false, error: 'No webhook URL found in query' };
+        
+        case 'discord_status_checker':
+          // Check Discord status
+          return await this.mcpTools.executeTool('discord_status_checker', { checkType: 'all' });
+        
+        case 'discord_role_hierarchy_checker':
+          // Extract role data from query
+          const roleParams = this.extractRoleParams(query);
+          if (roleParams.roles && roleParams.roles.length > 0) {
+            return await this.mcpTools.executeTool('discord_role_hierarchy_checker', roleParams);
+          }
+          return { success: false, error: 'No role data found in query' };
+        
+        default:
+          return { success: false, error: `Unknown tool: ${toolName}` };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Extract permission parameters from query
+   * @param {string} query - User query
+   * @returns {Object} Permission parameters
+   */
+  extractPermissionParams(query) {
+    const queryLower = query.toLowerCase();
+    
+    // Check for specific actions
+    if (queryLower.includes('calculate') || queryLower.includes('bitfield')) {
+      return { action: 'calculate', permissions: this.extractPermissionNames(query) };
+    } else if (queryLower.includes('parse') || queryLower.includes('decode')) {
+      return { action: 'parse', bitfield: this.extractBitfield(query) };
+    } else if (queryLower.includes('validate') || queryLower.includes('check')) {
+      return { action: 'validate', permissions: this.extractPermissionNames(query) };
+    }
+    
+    // Default to calculate
+    return { action: 'calculate', permissions: this.extractPermissionNames(query) };
+  }
+
+  /**
+   * Extract permission names from query
+   * @param {string} query - User query
+   * @returns {Array} Array of permission names
+   */
+  extractPermissionNames(query) {
+    const permissionKeywords = [
+      'ADMINISTRATOR', 'MANAGE_GUILD', 'MANAGE_CHANNELS', 'MANAGE_ROLES',
+      'KICK_MEMBERS', 'BAN_MEMBERS', 'MANAGE_MESSAGES', 'SEND_MESSAGES',
+      'VIEW_CHANNEL', 'CONNECT', 'SPEAK', 'MANAGE_WEBHOOKS'
+    ];
+    
+    const foundPermissions = [];
+    const queryUpper = query.toUpperCase();
+    
+    permissionKeywords.forEach(permission => {
+      if (queryUpper.includes(permission)) {
+        foundPermissions.push(permission);
+      }
+    });
+    
+    return foundPermissions;
+  }
+
+  /**
+   * Extract bitfield from query
+   * @param {string} query - User query
+   * @returns {string|null} Bitfield value
+   */
+  extractBitfield(query) {
+    const bitfieldMatch = query.match(/\b\d+\b/);
+    return bitfieldMatch ? bitfieldMatch[0] : null;
+  }
+
+  /**
+   * Extract webhook parameters from query
+   * @param {string} query - User query
+   * @returns {Object} Webhook parameters
+   */
+  extractWebhookParams(query) {
+    // Look for webhook URL patterns
+    const webhookUrlPattern = /https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-Za-z0-9_-]+/;
+    const webhookMatch = query.match(webhookUrlPattern);
+    
+    return {
+      webhookUrl: webhookMatch ? webhookMatch[0] : null,
+      testMessage: 'Test message from Discord Support Agent',
+      testEmbed: query.toLowerCase().includes('embed'),
+      testFile: query.toLowerCase().includes('file'),
+      validateOnly: query.toLowerCase().includes('validate only')
+    };
+  }
+
+  /**
+   * Extract role parameters from query
+   * @param {string} query - User query
+   * @returns {Object} Role parameters
+   */
+  extractRoleParams(query) {
+    // This is a simplified extraction - in a real implementation,
+    // you might want to parse role data from a more structured format
+    const roles = [];
+    
+    // Look for role mentions or role data patterns
+    const roleMentions = query.match(/<@&\d+>/g) || [];
+    
+    if (roleMentions.length > 0) {
+      // Mock role data for demonstration
+      roleMentions.forEach((mention, index) => {
+        roles.push({
+          id: `role_${index}`,
+          name: `Role ${index + 1}`,
+          position: index,
+          permissions: Math.floor(Math.random() * 1000000), // Mock permissions
+          color: 0x3498db,
+          hoist: false,
+          mentionable: true,
+          managed: false
+        });
+      });
+    }
+    
+    return {
+      roles,
+      checkPermissions: !query.toLowerCase().includes('no permissions'),
+      checkConflicts: !query.toLowerCase().includes('no conflicts'),
+      checkInheritance: !query.toLowerCase().includes('no inheritance'),
+      detailed: query.toLowerCase().includes('detailed')
+    };
+  }
+
+  /**
+   * Format MCP tool result for AI consumption
+   * @param {Object} result - MCP tool result
+   * @param {string} toolName - Name of the MCP tool
+   * @returns {string} Formatted result string
+   */
+  formatMCPResultForAI(result, toolName) {
+    try {
+      switch (toolName) {
+        case 'free_web_search':
+          return this.formatWebSearchResult(result);
+        
+        case 'discord_permission_calculator':
+          return this.formatPermissionCalculatorResult(result);
+        
+        case 'discord_bot_token_validator':
+          return this.formatTokenValidatorResult(result);
+        
+        case 'discord_webhook_tester':
+          return this.formatWebhookTesterResult(result);
+        
+        case 'discord_status_checker':
+          return this.formatStatusCheckerResult(result);
+        
+        case 'discord_role_hierarchy_checker':
+          return this.formatRoleHierarchyResult(result);
+        
+        default:
+          return JSON.stringify(result, null, 2);
+      }
+    } catch (error) {
+      console.error(`Error formatting MCP result for ${toolName}:`, error.message);
+      return `MCP tool result: ${JSON.stringify(result, null, 2)}`;
+    }
+  }
+
+  /**
+   * Format web search result
+   * @param {Object} result - Web search result
+   * @returns {string} Formatted result
+   */
+  formatWebSearchResult(result) {
+    if (!result.results || result.results.length === 0) {
+      return 'No web search results found.';
+    }
+
+    let formatted = `Found ${result.totalResults} search results:\n`;
+    result.results.slice(0, 3).forEach((item, index) => {
+      formatted += `${index + 1}. ${item.title}\n`;
+      formatted += `   URL: ${item.url}\n`;
+      formatted += `   Description: ${item.description}\n\n`;
+    });
+
+    return formatted;
+  }
+
+  /**
+   * Format permission calculator result
+   * @param {Object} result - Permission calculator result
+   * @returns {string} Formatted result
+   */
+  formatPermissionCalculatorResult(result) {
+    if (!result.success) {
+      return `Permission calculation failed: ${result.error}`;
+    }
+
+    let formatted = `Permission Calculation Result:\n`;
+    formatted += `Bitfield: ${result.bitfield}\n`;
+    formatted += `Permissions: ${result.permissions.map(p => p.name).join(', ')}\n`;
+    
+    if (result.warnings && result.warnings.length > 0) {
+      formatted += `Warnings: ${result.warnings.map(w => w.message).join('; ')}\n`;
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Format token validator result
+   * @param {Object} result - Token validator result
+   * @returns {string} Formatted result
+   */
+  formatTokenValidatorResult(result) {
+    if (!result.success) {
+      return `Token validation failed: ${result.error}`;
+    }
+
+    let formatted = `Token Validation Result:\n`;
+    formatted += `Valid: ${result.valid ? 'Yes' : 'No'}\n`;
+    
+    if (result.botInfo) {
+      formatted += `Bot Username: ${result.botInfo.username}\n`;
+      formatted += `Bot ID: ${result.botInfo.id}\n`;
+      formatted += `Verified: ${result.botInfo.verified ? 'Yes' : 'No'}\n`;
+    }
+
+    if (result.warnings && result.warnings.length > 0) {
+      formatted += `Warnings: ${result.warnings.map(w => w.message).join('; ')}\n`;
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Format webhook tester result
+   * @param {Object} result - Webhook tester result
+   * @returns {string} Formatted result
+   */
+  formatWebhookTesterResult(result) {
+    if (!result.success) {
+      return `Webhook test failed: ${result.error}`;
+    }
+
+    let formatted = `Webhook Test Result:\n`;
+    formatted += `Valid: ${result.valid ? 'Yes' : 'No'}\n`;
+    
+    if (result.testResults) {
+      formatted += `Tests Performed: ${result.testResults.tests.length}\n`;
+      formatted += `Response Time: ${result.testResults.responseTime}ms\n`;
+      
+      const successfulTests = result.testResults.tests.filter(t => t.success);
+      formatted += `Successful Tests: ${successfulTests.length}/${result.testResults.tests.length}\n`;
+    }
+
+    if (result.recommendations && result.recommendations.length > 0) {
+      formatted += `Recommendations: ${result.recommendations.map(r => r.message).join('; ')}\n`;
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Format status checker result
+   * @param {Object} result - Status checker result
+   * @returns {string} Formatted result
+   */
+  formatStatusCheckerResult(result) {
+    if (!result.success) {
+      return `Status check failed: ${result.error}`;
+    }
+
+    const results = result.results;
+    let formatted = `Discord Status Check Result:\n`;
+    formatted += `Overall Status: ${results.overallStatus}\n`;
+    
+    if (results.summary && results.summary.overall) {
+      formatted += `Health: ${results.summary.overall.health}\n`;
+      formatted += `Message: ${results.summary.overall.message}\n`;
+      
+      if (results.summary.overall.alerts && results.summary.overall.alerts.length > 0) {
+        formatted += `Alerts: ${results.summary.overall.alerts.map(a => a.message).join('; ')}\n`;
+      }
+    }
+
+    if (results.components && results.components.length > 0) {
+      formatted += `Components Status:\n`;
+      results.components.slice(0, 5).forEach(component => {
+        formatted += `- ${component.name}: ${component.status}\n`;
+      });
+    }
+
+    if (results.incidents && results.incidents.length > 0) {
+      formatted += `Active Incidents: ${results.incidents.length}\n`;
+      results.incidents.slice(0, 2).forEach(incident => {
+        formatted += `- ${incident.name}: ${incident.status}\n`;
+      });
+    }
+
+    return formatted;
+  }
+
+  /**
+   * Format role hierarchy result
+   * @param {Object} result - Role hierarchy result
+   * @returns {string} Formatted result
+   */
+  formatRoleHierarchyResult(result) {
+    if (!result.success) {
+      return `Role hierarchy check failed: ${result.error}`;
+    }
+
+    const results = result.results;
+    let formatted = `Role Hierarchy Check Result:\n`;
+    formatted += `Valid: ${results.valid ? 'Yes' : 'No'}\n`;
+    formatted += `Total Roles: ${results.roles.length}\n`;
+    
+    if (results.hierarchy) {
+      formatted += `Highest Position: ${results.hierarchy.highestPosition}\n`;
+      formatted += `Issues Found: ${results.hierarchy.issues.length}\n`;
+    }
+
+    if (results.conflicts && results.conflicts.length > 0) {
+      formatted += `Conflicts: ${results.conflicts.map(c => c.message).join('; ')}\n`;
+    }
+
+    if (results.recommendations && results.recommendations.length > 0) {
+      formatted += `Recommendations: ${results.recommendations.map(r => r.message).join('; ')}\n`;
+    }
+
+    return formatted;
   }
 
   /**

@@ -58,8 +58,11 @@ const ChatInterface = () => {
           query: inputMessage, 
           sessionId: user?.id || 'anonymous',
           serverContext: serverContext,
-          useHybridSearch: true,
-          enableReranking: true
+          searchOptions: {
+            method: 'hybrid',
+            enableReranking: true,
+            limit: 10
+          }
         }),
       });
       

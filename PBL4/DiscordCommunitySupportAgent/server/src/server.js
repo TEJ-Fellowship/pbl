@@ -52,7 +52,8 @@ app.get('/api/health', (req, res) => {
       hybridSearch: searchServiceReady,
       reranking: true,
       semanticSearch: true,
-      conversationMemory: conversationServiceReady
+      conversationMemory: conversationServiceReady,
+      mcpTools: conversationServiceReady
     },
     searchMethods: searchService.getStatus()
   });
