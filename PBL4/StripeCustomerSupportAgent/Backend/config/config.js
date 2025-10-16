@@ -34,6 +34,7 @@ const config = {
   CHUNK_SIZE: process.env.CHUNK_SIZE,
   CHUNK_OVERLAP: process.env.CHUNK_OVERLAP,
   MAX_CHUNKS: process.env.MAX_CHUNKS,
+  MAX_SOURCES: process.env.MAX_SOURCES,
   BATCH_SIZE: process.env.BATCH_SIZE,
 
   // Rate Limiting

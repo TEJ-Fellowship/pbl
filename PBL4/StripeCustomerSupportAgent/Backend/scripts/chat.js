@@ -212,8 +212,12 @@ async function generateResponse(query, chunks, geminiClient) {
   try {
     console.log("🤖 Generating response...");
 
-    // Prepare context from retrieved chunks with meaningful source titles
-    const context = chunks
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
       .map((chunk, index) => {
         const title =
           chunk.metadata?.title ||
@@ -226,11 +230,29 @@ async function generateResponse(query, chunks, geminiClient) {
       })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => {
-      const title =
-        chunk.metadata?.title ||
-        chunk.metadata?.doc_title ||
-        "Stripe Documentation";
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Stripe Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
       const category = chunk.metadata?.category || "documentation";
       const url =
         chunk.metadata?.source ||
@@ -274,16 +296,17 @@ FORMAT YOUR RESPONSE:
 - Mention any prerequisites or setup requirements
 - End with a formatted source list using this EXACT format:
 
-📚 **Sources Used:**
-🔗 [Source 1: Title (Category)] - URL
-🔗 [Source 2: Title (Category)] - URL
-🔗 [Source 3: Title (Category)] - URL
+📚 **Sources:**
+🔗 [Title] - URL
+🔗 [Title] - URL
+🔗 [Title] - URL
 
 IMPORTANT: 
-- Use the EXACT source titles and categories from the context
+- Use clean, readable titles (remove markdown formatting, truncate if too long)
 - Include the actual URLs from the source metadata
 - Format sources as clickable links with emojis for visual separation
-- Do NOT use generic formats like [Source 1] or [Source 2]
+- Keep titles concise and descriptive (max 60 characters)
+- Only show the most relevant sources (top 3)
 
 Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
@@ -314,8 +337,12 @@ async function generateResponseWithMemory(
   try {
     console.log("\n🤖 Generating response with memory context...");
 
-    // Prepare context from retrieved chunks with meaningful source titles
-    const context = chunks
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
       .map((chunk, index) => {
         const title =
           chunk.metadata?.title ||
@@ -328,11 +355,29 @@ async function generateResponseWithMemory(
       })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => {
-      const title =
-        chunk.metadata?.title ||
-        chunk.metadata?.doc_title ||
-        "Stripe Documentation";
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Stripe Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
       const category = chunk.metadata?.category || "documentation";
       const url =
         chunk.metadata?.source ||
@@ -404,16 +449,17 @@ async function generateResponseWithMemory(
       - Mention any prerequisites or setup requirements
       - End with a formatted source list using this EXACT format:
 
-      📚 **Sources Used:**
-      🔗 [Source 1: Title (Category)] - URL
-      🔗 [Source 2: Title (Category)] - URL
-      🔗 [Source 3: Title (Category)] - URL
+      📚 **Sources:**
+      🔗 [Title] - URL
+      🔗 [Title] - URL
+      🔗 [Title] - URL
 
       IMPORTANT: 
-      - Use the EXACT source titles and categories from the context
+      - Use clean, readable titles (remove markdown formatting, truncate if too long)
       - Include the actual URLs from the source metadata
       - Format sources as clickable links with emojis for visual separation
-      - Do NOT use generic formats like [Source 1] or [Source 2]
+      - Keep titles concise and descriptive (max 60 characters)
+      - Only show the most relevant sources (top 3)
 
       Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
@@ -588,8 +634,36 @@ async function startChat() {
           console.log(result.answer);
           console.log("-".repeat(40));
 
-          // Show sources
-          if (result.sources && result.sources.length > 0) {
+          // Show sources only for Stripe-related queries
+          const isStripeQuery = query.toLowerCase().includes('stripe') || 
+                                query.toLowerCase().includes('payment') ||
+                                query.toLowerCase().includes('webhook') ||
+                                query.toLowerCase().includes('api') ||
+                                query.toLowerCase().includes('charge') ||
+                                query.toLowerCase().includes('customer') ||
+                                query.toLowerCase().includes('subscription') ||
+                                query.toLowerCase().includes('billing') ||
+                                query.toLowerCase().includes('invoice') ||
+                                query.toLowerCase().includes('refund') ||
+                                query.toLowerCase().includes('dispute') ||
+                                query.toLowerCase().includes('connect') ||
+                                query.toLowerCase().includes('radar') ||
+                                query.toLowerCase().includes('terminal') ||
+                                query.toLowerCase().includes('checkout') ||
+                                query.toLowerCase().includes('payment intent') ||
+                                query.toLowerCase().includes('payment method') ||
+                                query.toLowerCase().includes('card') ||
+                                query.toLowerCase().includes('bank') ||
+                                query.toLowerCase().includes('ach') ||
+                                query.toLowerCase().includes('payout') ||
+                                query.toLowerCase().includes('balance') ||
+                                query.toLowerCase().includes('fee') ||
+                                query.toLowerCase().includes('tax') ||
+                                query.toLowerCase().includes('shipping') ||
+                                query.toLowerCase().includes('address') ||
+                                query.toLowerCase().includes('verification');
+
+          if (isStripeQuery && result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
             // console.log("\n📚First Source:", result.sources[0]);
             result.sources.forEach((source) => {

@@ -97,7 +97,10 @@ class ChatService {
         }`
       );
       console.log(
-        `      • DATABASE_URL: ${config.DATABASE_URL ? "✅ Set" : "❌ Missing"}`
+        `      • DB_HOST: ${config.DB_HOST ? "✅ Set" : "❌ Missing"}`
+      );
+      console.log(
+        `      • DB_NAME: ${config.DB_NAME ? "✅ Set" : "❌ Missing"}`
       );
 
       // Initialize Gemini client
@@ -275,8 +278,12 @@ class ChatService {
     try {
       console.log("🤖 Generating response with memory context...");
 
-      // Prepare context from retrieved chunks with meaningful source titles
-      const context = chunks
+      // Limit sources to most relevant ones (configurable)
+      const maxSources = parseInt(config.MAX_SOURCES) || 3;
+      const limitedChunks = chunks.slice(0, maxSources);
+
+      // Prepare context from limited chunks with meaningful source titles
+      const context = limitedChunks
         .map((chunk, index) => {
           const title =
             chunk.metadata?.title ||
@@ -289,11 +296,29 @@ class ChatService {
         })
         .join("\n\n");
 
-      const sources = chunks.map((chunk, index) => {
-        const title =
-          chunk.metadata?.title ||
-          chunk.metadata?.doc_title ||
-          "Stripe Documentation";
+      const sources = limitedChunks.map((chunk, index) => {
+        // Generate clean, ChatGPT-style titles
+        let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+        // If no title, generate one from content
+        if (!title || title.trim() === "") {
+          const contentLines = chunk.content
+            .split("\n")
+            .filter((line) => line.trim() !== "");
+          const firstLine = contentLines[0] || "";
+          title =
+            firstLine.length > 60
+              ? firstLine.substring(0, 60) + "..."
+              : firstLine;
+          if (!title) title = "Stripe Documentation";
+        }
+
+        // Clean up title formatting
+        title = title
+          .replace(/^#+\s*/, "")
+          .replace(/\n.*$/, "")
+          .trim();
+
         const category = chunk.metadata?.category || "documentation";
         const url =
           chunk.metadata?.source ||
@@ -357,7 +382,7 @@ RESPONSE GUIDELINES:
 6. **Step-by-Step**: Break down complex processes into clear, actionable steps
 7. **Error Handling**: Mention common errors and how to handle them
 8. **Best Practices**: Include security considerations and best practices
-9. **Source Citations**: ALWAYS reference sources using the EXACT format shown in the context: [Source X: Title (Category)]. For example, if you see "[Source 1: Stripe Webhooks Documentation (webhooks)]" in the context, use exactly that format in your response.
+9. **Context Awareness**: Use the provided Stripe documentation context to inform your response
 10. **If Uncertain**: Clearly state when information isn't available in the context
 
 FORMAT YOUR RESPONSE:
@@ -366,18 +391,8 @@ FORMAT YOUR RESPONSE:
 - Provide detailed explanation with code examples
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
-- End with a formatted source list using this EXACT format:
-
-📚 **Sources Used:**
-🔗 [Source 1: Title (Category)] - URL
-🔗 [Source 2: Title (Category)] - URL
-🔗 [Source 3: Title (Category)] - URL
-
-IMPORTANT: 
-- Use the EXACT source titles and categories from the context
-- Include the actual URLs from the source metadata
-- Format sources as clickable links with emojis for visual separation
-- Do NOT use generic formats like [Source 1] or [Source 2]
+- Focus on being helpful and practical
+- Do NOT include source citations in your response - they will be added automatically
 
 Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
@@ -389,7 +404,7 @@ Remember: You're helping developers build payment solutions with full awareness 
       const text = response.text();
 
       // Post-process the response to add formatted sources
-      const formattedResponse = this.addFormattedSources(text, sources);
+      const formattedResponse = this.addFormattedSources(text, sources, query);
 
       return {
         answer: formattedResponse,
@@ -420,9 +435,52 @@ Remember: You're helping developers build payment solutions with full awareness 
   }
 
   /**
-   * Add formatted sources to the end of the response
+   * Check if query is Stripe-related
    */
-  addFormattedSources(text, sources) {
+  isStripeRelatedQuery(query) {
+    const stripeKeywords = [
+      "stripe",
+      "payment",
+      "webhook",
+      "api",
+      "charge",
+      "customer",
+      "subscription",
+      "billing",
+      "invoice",
+      "refund",
+      "dispute",
+      "connect",
+      "radar",
+      "terminal",
+      "checkout",
+      "payment intent",
+      "payment method",
+      "card",
+      "bank",
+      "ach",
+      "payout",
+      "balance",
+      "fee",
+      "tax",
+      "shipping",
+      "address",
+      "verification",
+    ];
+
+    const queryLower = query.toLowerCase();
+    return stripeKeywords.some((keyword) => queryLower.includes(keyword));
+  }
+
+  /**
+   * Add formatted sources to the end of the response (only for Stripe-related queries)
+   */
+  addFormattedSources(text, sources, query) {
+    // Only show sources for Stripe-related queries
+    if (!this.isStripeRelatedQuery(query)) {
+      return text;
+    }
+
     if (!sources || sources.length === 0) {
       return text;
     }

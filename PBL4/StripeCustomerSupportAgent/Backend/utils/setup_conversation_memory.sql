@@ -175,27 +175,27 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_session_token_usage(p_session_id VARCHAR(255))
 RETURNS VOID AS $$
 DECLARE
-    total_tokens INTEGER;
-    max_tokens INTEGER;
+    session_total_tokens INTEGER;
+    session_max_tokens INTEGER;
     usage_percentage DECIMAL(5,2);
 BEGIN
     -- Get total tokens for the session
-    SELECT COALESCE(SUM(token_count), 0) INTO total_tokens
+    SELECT COALESCE(SUM(token_count), 0) INTO session_total_tokens
     FROM conversation_messages 
     WHERE session_id = p_session_id;
     
     -- Get max tokens for the session
-    SELECT COALESCE(max_tokens, 4000) INTO max_tokens
-    FROM conversation_sessions 
-    WHERE session_id = p_session_id;
+    SELECT COALESCE(cs.max_tokens, 4000) INTO session_max_tokens
+    FROM conversation_sessions cs
+    WHERE cs.session_id = p_session_id;
     
     -- Calculate usage percentage
-    usage_percentage := (total_tokens::DECIMAL / max_tokens::DECIMAL) * 100;
+    usage_percentage := (session_total_tokens::DECIMAL / session_max_tokens::DECIMAL) * 100;
     
     -- Update session with new token counts
     UPDATE conversation_sessions 
     SET 
-        total_tokens = total_tokens,
+        total_tokens = session_total_tokens,
         token_usage_percentage = usage_percentage,
         updated_at = NOW()
     WHERE session_id = p_session_id;
