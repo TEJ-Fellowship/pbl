@@ -11,10 +11,10 @@ const TOP_K = 3;
 
 // PostgreSQL connection pool
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'paypalAgent',
-  password: process.env.POSTGRES_PASSWORD || 'your_password_here',
+  user: "postgres",
+  host: "localhost",
+  database: "paypalAgent",
+  password: process.env.POSTGRES_PASSWORD || "your_password_here",
   port: 5433,
 });
 
@@ -33,7 +33,15 @@ function isPolicyLikeSource(sourceName) {
 function containsProfanity(text) {
   if (!text) return false;
   const blacklist = [
-    "dumb", "stupid", "idiot", "shut up", "suck", "wtf", "hell", "crap", "damn",
+    "dumb",
+    "stupid",
+    "idiot",
+    "shut up",
+    "suck",
+    "wtf",
+    "hell",
+    "crap",
+    "damn",
   ];
   const lower = String(text).toLowerCase();
   return blacklist.some((w) => {
@@ -50,24 +58,34 @@ async function detectSentiment(text, genAI) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = [
-      "Classify the user's tone strictly as one of: frustrated, concerned, neutral.",
+      "Classify the user's tone as one of: frustrated, concerned, neutral.",
       "Rules:",
       "- If there is profanity, insults, or harsh words (e.g., 'dumb', 'stupid', 'idiot'), classify as frustrated.",
-      "- If the user expresses worry/uncertainty without rudeness, classify as concerned.",
-      "- Otherwise, neutral.",
+      "- If the user expresses worry, uncertainty, panic, or uses emotional language (e.g., 'forgot', 'lost', 'help', 'urgent', '😭', '!!!'), classify as concerned.",
+      "- If the user is asking a simple question without emotion, classify as neutral.",
       "Return ONLY strict JSON with keys sentiment and confidence (high/medium/low).",
-      "Example: {\"sentiment\":\"frustrated\",\"confidence\":\"high\"}",
-      `Text: ${text}`
+      'Example: {"sentiment":"concerned","confidence":"high"}',
+      `Text: ${text}`,
     ].join("\n");
     const result = await model.generateContent(prompt);
     const resp = await result.response;
     const raw = resp.text().trim();
-    const parsed = JSON.parse(raw);
+
+    // Handle markdown-wrapped JSON response
+    let jsonText = raw;
+    if (raw.includes("```json")) {
+      jsonText = raw.split("```json")[1].split("```")[0].trim();
+    } else if (raw.includes("```")) {
+      jsonText = raw.split("```")[1].split("```")[0].trim();
+    }
+
+    const parsed = JSON.parse(jsonText);
     if (parsed && typeof parsed.sentiment === "string") {
       return parsed;
     }
-  } catch (_) {
-    // fallthrough to default
+  } catch (error) {
+    console.error("❌ Sentiment detection failed:", error.message);
+    console.log("📝 Raw response:", error);
   }
   if (containsProfanity(text)) {
     return { sentiment: "frustrated", confidence: "high" };
@@ -92,8 +110,10 @@ function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
     rawAnswer,
-    disclaimer && `Disclaimer: ${disclaimer}`
-  ].filter(Boolean).join("\n\n");
+    disclaimer && `Disclaimer: ${disclaimer}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 // Function to resize 768-dim vector to 1024-dim
@@ -111,21 +131,23 @@ function resizeVector768to1024(vector768) {
 // ===== HYBRID SEARCH =====
 async function hybridSearch(query, embedder, pineconeIndex, dbClient) {
   console.log("🔍 Running hybrid search...");
-  
+
   // 1. Semantic Search (Pinecone)
   console.log("   📊 Semantic search (Pinecone)...");
   const output = await embedder(query, { pooling: "mean", normalize: true });
   const queryEmbedding = Array.from(output.data);
-  
+
   // Resize to 1024 dimensions for Pinecone
   const queryEmbedding1024 = resizeVector768to1024(queryEmbedding);
-  
-  const semanticResults = await pineconeIndex.namespace(PINECONE_NAMESPACE).query({
-    vector: queryEmbedding1024,
-    topK: TOP_K,
-    includeMetadata: true
-  });
-  
+
+  const semanticResults = await pineconeIndex
+    .namespace(PINECONE_NAMESPACE)
+    .query({
+      vector: queryEmbedding1024,
+      topK: TOP_K,
+      includeMetadata: true,
+    });
+
   // 2. Lexical Search (PostgreSQL BM25)
   console.log("   🔤 Lexical search (PostgreSQL BM25)...");
   const lexicalQuery = `
@@ -137,20 +159,23 @@ async function hybridSearch(query, embedder, pineconeIndex, dbClient) {
     ORDER BY rank DESC
     LIMIT $2
   `;
-  
+
   const lexicalResults = await dbClient.query(lexicalQuery, [query, TOP_K]);
-  
+
   // 3. Combine and score results
   console.log("   🔄 Combining results...");
-  const combinedResults = combineSearchResults(semanticResults.matches, lexicalResults.rows);
-  
+  const combinedResults = combineSearchResults(
+    semanticResults.matches,
+    lexicalResults.rows
+  );
+
   return combinedResults;
 }
 
 // Combine semantic and lexical results
 function combineSearchResults(semanticResults, lexicalResults) {
   const combined = new Map();
-  
+
   // Add semantic results (weight: 0.7)
   semanticResults.forEach((result, index) => {
     const id = result.id;
@@ -159,21 +184,22 @@ function combineSearchResults(semanticResults, lexicalResults) {
       semanticScore: result.score,
       lexicalScore: 0,
       combinedScore: result.score * 0.7,
-      source: 'semantic'
+      source: "semantic",
     });
   });
-  
+
   // Add lexical results (weight: 0.3)
   lexicalResults.forEach((result, index) => {
     const id = `${result.source_file}:${result.original_index}:${result.chunk_index}`;
     const lexicalScore = result.rank;
-    
+
     if (combined.has(id)) {
       // Update existing result
       const existing = combined.get(id);
       existing.lexicalScore = lexicalScore;
-      existing.combinedScore = (existing.semanticScore * 0.7) + (lexicalScore * 0.3);
-      existing.source = 'hybrid';
+      existing.combinedScore =
+        existing.semanticScore * 0.7 + lexicalScore * 0.3;
+      existing.source = "hybrid";
     } else {
       // Add new result
       combined.set(id, {
@@ -187,13 +213,13 @@ function combineSearchResults(semanticResults, lexicalResults) {
           original_index: result.original_index,
           chunk_index: result.chunk_index,
           text: result.text,
-          preview: result.text.slice(0, 200) + '...'
+          preview: result.text.slice(0, 200) + "...",
         },
-        source: 'lexical'
+        source: "lexical",
       });
     }
   });
-  
+
   // Sort by combined score and return top results
   return Array.from(combined.values())
     .sort((a, b) => b.combinedScore - a.combinedScore)
@@ -210,7 +236,7 @@ async function saveChatMessage(sessionId, role, content, metadata = {}) {
       [sessionId, role, content, JSON.stringify(metadata)]
     );
   } catch (error) {
-    console.error('Error saving chat message:', error);
+    console.error("Error saving chat message:", error);
   } finally {
     client.release();
   }
@@ -229,7 +255,7 @@ async function getChatHistory(sessionId, limit = 10) {
     );
     return result.rows.reverse(); // Return in chronological order
   } catch (error) {
-    console.error('Error getting chat history:', error);
+    console.error("Error getting chat history:", error);
     return [];
   } finally {
     client.release();
@@ -245,7 +271,10 @@ async function handleQuery(query, sessionId) {
   const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
   const index = pinecone.index(PINECONE_INDEX);
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-  const embedder = await pipeline("feature-extraction", "Xenova/all-mpnet-base-v2");
+  const embedder = await pipeline(
+    "feature-extraction",
+    "Xenova/all-mpnet-base-v2"
+  );
 
   // Connect to PostgreSQL
   const dbClient = await pool.connect();
@@ -253,38 +282,56 @@ async function handleQuery(query, sessionId) {
   try {
     const sentiment = await detectSentiment(query, genAI);
     const issueType = classifyIssueType(query);
-    
+
+    // Debug logging
+    console.log("🎭 Sentiment detected:", sentiment);
+    console.log("🏷️ Issue type:", issueType);
+
     // Save user message to chat history
     if (sessionId) {
-      await saveChatMessage(sessionId, 'user', query, { sentiment, issueType });
+      await saveChatMessage(sessionId, "user", query, { sentiment, issueType });
     }
 
     // Run hybrid search
     const searchResults = await hybridSearch(query, embedder, index, dbClient);
 
     if (searchResults.length === 0) {
-      return { answer: "No relevant info found. Please contact PayPal support.", sentiment };
+      return {
+        answer: "No relevant info found. Please contact PayPal support.",
+        sentiment,
+      };
     }
 
     // Get chat history for context
     const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
-    
+
     // Prepare context from retrieved chunks
-    const context = searchResults.map((chunk, idx) => {
-      const content = chunk.metadata?.text || chunk.metadata?.preview || 'No content available';
-      return `[Source ${idx + 1} - ${chunk.source}]: ${content}`;
-    }).join("\n\n");
+    const context = searchResults
+      .map((chunk, idx) => {
+        const content =
+          chunk.metadata?.text ||
+          chunk.metadata?.preview ||
+          "No content available";
+        return `[Source ${idx + 1} - ${chunk.source}]: ${content}`;
+      })
+      .join("\n\n");
 
     // Build conversation context
-    const conversationContext = chatHistory.length > 0 
-      ? `\n\nPrevious conversation:\n${chatHistory.map(msg => `${msg.role}: ${msg.content}`).join('\n')}`
-      : '';
+    const conversationContext =
+      chatHistory.length > 0
+        ? `\n\nPrevious conversation:\n${chatHistory
+            .map((msg) => `${msg.role}: ${msg.content}`)
+            .join("\n")}`
+        : "";
 
     // Decide whether to introduce based on user's message
     const lowerQ = String(query || "").toLowerCase();
     const introduceTriggers = [
-      /what\s+is\s+your\s+name/, /who\s+are\s+you/, /your\s+name\??/,
-      /hello|hi|hey[,!\s]*\s*(agent|assistant)?/, /agent[,!\s]*\b/,
+      /what\s+is\s+your\s+name/,
+      /who\s+are\s+you/,
+      /your\s+name\??/,
+      /hello|hi|hey[,!\s]*\s*(agent|assistant)?/,
+      /agent[,!\s]*\b/,
     ];
     const shouldIntroduce = introduceTriggers.some((re) => re.test(lowerQ));
     const sawProfanity = containsProfanity(query);
@@ -313,16 +360,22 @@ Customer: ${query}`;
     const response = await result.response;
     const modelAnswer = response.text();
 
-    const includeDisclaimer = (searchResults[0]?.combinedScore || 0) < 0.5 || /account|legal|attorney|law|court|subpoena/i.test(query);
-    const finalAnswer = formatStructuredResponse(issueType, includeDisclaimer, modelAnswer);
+    const includeDisclaimer =
+      (searchResults[0]?.combinedScore || 0) < 0.5 ||
+      /account|legal|attorney|law|court|subpoena/i.test(query);
+    const finalAnswer = formatStructuredResponse(
+      issueType,
+      includeDisclaimer,
+      modelAnswer
+    );
 
     // Save assistant response to chat history
     if (sessionId) {
-      await saveChatMessage(sessionId, 'assistant', finalAnswer, { 
-        sentiment, 
-        issueType, 
+      await saveChatMessage(sessionId, "assistant", finalAnswer, {
+        sentiment,
+        issueType,
         confidence: searchResults[0]?.combinedScore || 0,
-        searchType: searchResults[0]?.source || 'unknown'
+        searchType: searchResults[0]?.source || "unknown",
       });
     }
 
@@ -332,18 +385,21 @@ Customer: ${query}`;
       query,
       issueType,
       sentiment,
-      topCitations: searchResults.map((c) => ({ 
-        source: c.metadata?.source || 'Unknown', 
-        channel: c.source, 
-        isPolicy: isPolicyLikeSource(c.metadata?.source), 
-        score: c.combinedScore 
+      topCitations: searchResults.map((c) => ({
+        source: c.metadata?.source || "Unknown",
+        channel: c.source,
+        isPolicy: isPolicyLikeSource(c.metadata?.source),
+        score: c.combinedScore,
       })),
     });
 
     return {
       answer: finalAnswer,
       sentiment,
-      confidence: Math.min(100, Math.max(0, Math.round((searchResults[0]?.combinedScore || 0) * 100))),
+      confidence: Math.min(
+        100,
+        Math.max(0, Math.round((searchResults[0]?.combinedScore || 0) * 100))
+      ),
       citations: searchResults.map((c, idx) => ({
         label: `Source ${idx + 1}`,
         source: c.metadata?.source || "docs",
@@ -352,14 +408,14 @@ Customer: ${query}`;
       })),
       issueType,
       disclaimer: includeDisclaimer,
-      searchType: searchResults[0]?.source || 'unknown'
+      searchType: searchResults[0]?.source || "unknown",
     };
-
   } catch (error) {
-    console.error('Error in handleQuery:', error);
-    return { 
-      answer: "I'm sorry, I encountered an error processing your request. Please try again or contact PayPal support.", 
-      sentiment: { sentiment: "neutral", confidence: "low" } 
+    console.error("Error in handleQuery:", error);
+    return {
+      answer:
+        "I'm sorry, I encountered an error processing your request. Please try again or contact PayPal support.",
+      sentiment: { sentiment: "neutral", confidence: "low" },
     };
   } finally {
     dbClient.release();

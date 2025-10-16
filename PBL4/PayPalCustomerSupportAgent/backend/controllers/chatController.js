@@ -1,5 +1,5 @@
 const express = require("express");
-const { handleQuery } = require("../services/queryService");
+const { handleQuery } = require("../services/queryServiceHybrid");
 
 const router = express.Router();
 
@@ -18,4 +18,3 @@ router.post("/query", async (req, res) => {
 });
 
 module.exports = router;
-
