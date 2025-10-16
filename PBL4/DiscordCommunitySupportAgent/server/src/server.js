@@ -301,6 +301,95 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
+// Authentication endpoints
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, email, serverType, serverSize, purpose } = req.body;
+    
+    // Validate inputs
+    if (!username || !email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username and email are required'
+      });
+    }
+    
+    // In a real app, you would validate credentials against a database
+    // For now, we'll just create a mock user session
+    const user = {
+      id: Date.now().toString(),
+      username,
+      email,
+      serverContext: {
+        type: serverType || 'general',
+        size: serverSize || 'unknown',
+        purpose: purpose || 'community'
+      },
+      loginTime: new Date().toISOString()
+    };
+    
+    console.log(`🔐 User login: ${username} (${email}) - ${serverType} server`);
+    
+    res.json({
+      success: true,
+      user,
+      message: 'Login successful'
+    });
+    
+  } catch (error) {
+    console.error('Login error:', error.message);
+    res.status(500).json({ 
+      error: 'Login failed', 
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { username, email, serverType, serverSize, purpose } = req.body;
+    
+    // Validate inputs
+    if (!username || !email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Username and email are required'
+      });
+    }
+    
+    // In a real app, you would create a new user account
+    // For now, we'll just create a mock user
+    const user = {
+      id: Date.now().toString(),
+      username,
+      email,
+      serverContext: {
+        type: serverType || 'general',
+        size: serverSize || 'unknown',
+        purpose: purpose || 'community'
+      },
+      signupTime: new Date().toISOString()
+    };
+    
+    console.log(`📝 User signup: ${username} (${email}) - ${serverType} server`);
+    
+    res.json({
+      success: true,
+      user,
+      message: 'Account created successfully'
+    });
+    
+  } catch (error) {
+    console.error('Signup error:', error.message);
+    res.status(500).json({ 
+      error: 'Signup failed', 
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('❌ Unhandled error:', error);
@@ -334,6 +423,8 @@ app.listen(PORT, async () => {
   console.log('  GET  /api/health - Health check');
   console.log('  POST /api/search - RAG search with hybrid search');
   console.log('  POST /api/server-context - Update server context');
+  console.log('  POST /api/auth/login - User login');
+  console.log('  POST /api/auth/signup - User registration');
   console.log('  GET  /api/conversations/:sessionId - Get conversation history');
   console.log('  GET  /api/user/:sessionId - Get user profile');
   console.log('  POST /api/user/:sessionId - Update user profile');

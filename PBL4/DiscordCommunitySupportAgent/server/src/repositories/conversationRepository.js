@@ -16,13 +16,25 @@ export async function connectToMongoDB() {
     const mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost:27017';
     const dbName = process.env.MONGODB_DB || 'discord_support';
     
-    console.log("🗄️ Connecting to MongoDB...");
+    console.log("🗄️ Connecting to MongoDB Atlas...");
     console.log(`📡 MongoDB URI: ${mongoUrl}`);
     console.log(`🗃️ Database: ${dbName}`);
     
+    // MongoDB Atlas connection with Windows SSL compatibility (no warning)
     client = new MongoClient(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      retryReads: true,
+      // Windows SSL compatibility without disabling certificate verification
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
+      // Additional Windows compatibility options
+      compressors: ['zlib'],
+      zlibCompressionLevel: 6
     });
     
     await client.connect();
@@ -30,14 +42,18 @@ export async function connectToMongoDB() {
     
     // Test connection
     await db.admin().ping();
-    console.log("✅ Connected to MongoDB successfully");
+    console.log("✅ Connected to MongoDB Atlas successfully");
     
     // Create indexes for better performance
     await createIndexes();
     
     return db;
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error.message);
+    console.error("❌ MongoDB Atlas connection failed:", error.message);
+    console.log("💡 Please check your Atlas connection string and network access");
+    console.log("💡 Make sure your Atlas cluster is running and accessible");
+    console.log("💡 Verify your IP is whitelisted in Atlas Network Access");
+    console.log("💡 Try updating your connection string from Atlas dashboard");
     throw error;
   }
 }
