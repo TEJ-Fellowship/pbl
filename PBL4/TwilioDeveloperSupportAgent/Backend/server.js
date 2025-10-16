@@ -261,31 +261,31 @@ app.post("/api/mcp/tools", async (req, res) => {
     }
 
     // Import the tool methods directly
-    const { default: TwilioMCPServer } = await import("./src/mcpServer.js");
-    const mcpServerInstance = new TwilioMCPServer();
+    const { default: TwilioTools } = await import("./src/tools.js");
+    const toolsInstance = new TwilioTools();
     
     let toolResult;
     switch (tool) {
       case "enhance_chat_context":
-        toolResult = mcpServerInstance.analyzeQuery(args.query || "", args.context || "");
+        toolResult = toolsInstance.analyzeQuery(args.query || "", args.context || "");
         break;
       case "validate_twilio_code":
-        toolResult = mcpServerInstance.validateTwilioCode(args.code || "", args.language || "javascript");
+        toolResult = toolsInstance.validateTwilioCode(args.code || "", args.language || "javascript");
         break;
       case "lookup_error_code":
-        toolResult = mcpServerInstance.lookupErrorCode(args.errorCode || "");
+        toolResult = toolsInstance.lookupErrorCode(args.errorCode || "");
         break;
       case "detect_programming_language":
-        toolResult = mcpServerInstance.detectLanguage(args.text || "");
+        toolResult = toolsInstance.detectLanguage(args.text || "");
         break;
       case "web_search":
-        toolResult = await mcpServerInstance.performWebSearch(args.query || "", args.maxResults || 5);
+        toolResult = await toolsInstance.performWebSearch(args.query || "", args.maxResults || 5);
         break;
       case "check_twilio_status":
-        toolResult = await mcpServerInstance.checkTwilioStatus(args.service || null);
+        toolResult = await toolsInstance.checkTwilioStatus(args.service || null);
         break;
       case "validate_webhook_signature":
-        toolResult = mcpServerInstance.validateWebhookSignature(
+        toolResult = toolsInstance.validateWebhookSignature(
           args.signature || "",
           args.url || "",
           args.payload || "",
@@ -293,7 +293,7 @@ app.post("/api/mcp/tools", async (req, res) => {
         );
         break;
       case "calculate_rate_limits":
-        toolResult = mcpServerInstance.calculateRateLimits(
+        toolResult = toolsInstance.calculateRateLimits(
           args.apiType || "sms",
           args.requestsPerSecond || 1,
           args.requestsPerMinute || 100,
@@ -301,7 +301,7 @@ app.post("/api/mcp/tools", async (req, res) => {
         );
         break;
       case "execute_twilio_code":
-        toolResult = await mcpServerInstance.executeTwilioCode(
+        toolResult = await toolsInstance.executeTwilioCode(
           args.code || "",
           args.language || "nodejs",
           args.testMode !== false
