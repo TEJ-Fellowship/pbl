@@ -506,3 +506,43 @@ export async function getConversationHistory(sessionId) {
     throw error;
   }
 }
+
+// Get chat history list (last 8 conversations)
+export async function getChatHistoryList() {
+  try {
+    await connectDB();
+
+    // Get the last 8 conversations ordered by updatedAt (most recent first)
+    const conversations = await Conversation.find({ isActive: true })
+      .sort({ updatedAt: -1 })
+      .limit(8)
+      .select("sessionId title createdAt updatedAt messages")
+      .populate({
+        path: "messages",
+        options: { sort: { timestamp: -1 }, limit: 1 }, // Get only the last message for preview
+        select: "content timestamp role",
+      });
+
+    const historyList = conversations.map((conv) => ({
+      id: conv._id,
+      sessionId: conv.sessionId,
+      title: conv.title,
+      createdAt: conv.createdAt,
+      updatedAt: conv.updatedAt,
+      lastMessage:
+        conv.messages && conv.messages.length > 0
+          ? {
+              content: conv.messages[0].content,
+              timestamp: conv.messages[0].timestamp,
+              role: conv.messages[0].role,
+            }
+          : null,
+      messageCount: conv.messages ? conv.messages.length : 0,
+    }));
+
+    return { conversations: historyList };
+  } catch (error) {
+    console.error("Error getting chat history list:", error);
+    throw error;
+  }
+}

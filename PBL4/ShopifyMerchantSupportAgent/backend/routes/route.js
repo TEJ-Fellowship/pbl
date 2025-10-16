@@ -2,6 +2,7 @@ import express from "express";
 import {
   processChatMessage,
   getConversationHistory,
+  getChatHistoryList,
 } from "../controllers/chatController.js";
 
 const router = express.Router();
@@ -11,7 +12,7 @@ router.get("/", (req, res) => {
   res.json({
     message: "Shopify Merchant Support Agent API",
     status: "running",
-    endpoints: ["/chat", "/history/:sessionId"],
+    endpoints: ["/chat", "/history/:sessionId", "/history"],
   });
 });
 
@@ -44,6 +45,20 @@ router.get("/history/:sessionId", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("History API error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+// Get chat history list (last 8 conversations)
+router.get("/history", async (req, res) => {
+  try {
+    const result = await getChatHistoryList();
+    res.json(result);
+  } catch (error) {
+    console.error("Chat history list API error:", error);
     res.status(500).json({
       error: "Internal server error",
       message: error.message,

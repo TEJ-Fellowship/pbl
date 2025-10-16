@@ -9,11 +9,13 @@ import {
   ThumbsDown,
   ChevronDown,
   ChevronUp,
+  Menu,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import axios from "axios";
 import { parseMarkdown } from "./utils/markdown.js";
+import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
 import "./App.css";
 
 const API_BASE_URL = "http://localhost:3001/api";
@@ -22,12 +24,13 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(
+  const [sessionId, setSessionId] = useState(
     () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
   const [expandedSources, setExpandedSources] = useState({});
   const [copiedCode, setCopiedCode] = useState({});
   const [feedback, setFeedback] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -52,6 +55,32 @@ function App() {
     } catch (error) {
       console.error("Error loading conversation history:", error);
     }
+  };
+
+  const handleSessionChange = async (newSessionId) => {
+    setSessionId(newSessionId);
+    setMessages([]); // Clear current messages
+    setSidebarOpen(false); // Close sidebar
+    // Load the new conversation history
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/history/${newSessionId}`
+      );
+      if (response.data.messages) {
+        setMessages(response.data.messages);
+      }
+    } catch (error) {
+      console.error("Error loading conversation history:", error);
+    }
+  };
+
+  const handleNewChat = () => {
+    const newSessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    setSessionId(newSessionId);
+    setMessages([]);
+    setSidebarOpen(false);
   };
 
   const sendMessage = async () => {
@@ -204,6 +233,12 @@ function App() {
       <div className="chat-container">
         <div className="chat-header">
           <div className="header-content">
+            <button
+              className="menu-button"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
             <Bot className="header-icon" />
             <div>
               <h1>Shopify Merchant Support</h1>
@@ -794,6 +829,15 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Chat History Sidebar */}
+      <ChatHistorySidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        currentSessionId={sessionId}
+        onSessionChange={handleSessionChange}
+        onNewChat={handleNewChat}
+      />
     </div>
   );
 }
