@@ -28,6 +28,7 @@ function App() {
   const [expandedSources, setExpandedSources] = useState({});
   const [copiedCode, setCopiedCode] = useState({});
   const [feedback, setFeedback] = useState({});
+  const [pendingClarification, setPendingClarification] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -65,14 +66,27 @@ function App() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage("");
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/chat`, {
-        message: inputMessage,
-        sessionId: sessionId,
-      });
+      let response;
+
+      // Check if this is a clarification response
+      if (pendingClarification) {
+        response = await axios.post(`${API_BASE_URL}/clarify`, {
+          clarificationResponse: currentInput,
+          originalQuestion: pendingClarification.originalQuestion,
+          sessionId: sessionId,
+        });
+        setPendingClarification(null); // Clear pending clarification
+      } else {
+        response = await axios.post(`${API_BASE_URL}/chat`, {
+          message: currentInput,
+          sessionId: sessionId,
+        });
+      }
 
       const assistantMessage = {
         id: `assistant_${Date.now()}`,
@@ -84,9 +98,19 @@ function App() {
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
         mcpTools: response.data.mcpTools || {},
+        needsClarification: response.data.needsClarification || false,
+        multiTurnContext: response.data.multiTurnContext || {},
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // If clarification is needed, store the pending clarification
+      if (response.data.needsClarification) {
+        setPendingClarification({
+          originalQuestion: currentInput,
+          clarificationQuestion: response.data.answer,
+        });
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -234,6 +258,13 @@ function App() {
                 )}
               </div>
               <div className="message-content">
+                {message.needsClarification && (
+                  <div className="clarification-indicator">
+                    <span className="clarification-badge">
+                      💡 Clarification Request
+                    </span>
+                  </div>
+                )}
                 <div className="message-text">
                   {renderMessageContent(message.content)}
                 </div>
@@ -653,12 +684,29 @@ function App() {
         </div>
 
         <div className="input-container">
+          {pendingClarification && (
+            <div className="clarification-hint">
+              <div className="clarification-icon">💡</div>
+              <div className="clarification-text">
+                <strong>Please clarify:</strong>{" "}
+                {pendingClarification.clarificationQuestion}
+                <br />
+                <small>
+                  Your response will help me provide a more specific answer.
+                </small>
+              </div>
+            </div>
+          )}
           <div className="input-wrapper">
             <textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask a question about Shopify..."
+              placeholder={
+                pendingClarification
+                  ? "Please provide clarification..."
+                  : "Ask a question about Shopify..."
+              }
               rows={1}
               disabled={isLoading}
             />
