@@ -17,7 +17,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Initialize all MCP tools
+   * 1. Initialize all MCP tools
    */
   initializeTools() {
     console.log("🔧 Initializing MCP Tools...");
@@ -33,7 +33,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Decide which tools to use based on query and confidence
+   * 2. Decide which tools to use based on query and confidence
    * @param {string} query - User query
    * @param {number} confidence - Document retrieval confidence (0-1)
    * @param {Array} enabledTools - Array of enabled tool names
@@ -85,7 +85,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Fallback rule-based tool selection (original implementation)
+   *3. Fallback rule-based tool selection (original implementation)
    * @param {string} query - User query
    * @param {number} confidence - Document confidence
    * @param {Array} enabledTools - Enabled tools
@@ -162,7 +162,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Get available tools configuration for AI selection
+   * 3.1 Get available tools configuration for AI selection
    * @param {Array} enabledTools - Enabled tools
    * @returns {Array} - Tools configuration
    */
@@ -190,7 +190,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Get API keys required for a tool
+   * 3.2 Get API keys required for a tool
    * @param {string} toolName - Tool name
    * @returns {Array} - Required API keys
    */
@@ -207,7 +207,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Get dependencies for a tool
+   * 3.3 Get dependencies for a tool
    * @param {string} toolName - Tool name
    * @returns {Array} - Tool dependencies
    */
@@ -224,7 +224,7 @@ class AgentOrchestrator {
   }
 
   /**
-   * Execute selected tools
+   * 4. Execute selected tools
    * @param {Array} toolNames - Array of tool names to execute
    * @param {string} query - User query
    * @returns {Object} - Combined tool results
@@ -243,7 +243,7 @@ class AgentOrchestrator {
           throw new Error(`Tool ${toolName} not found`);
         }
 
-        console.log(`⚙️ Executing ${toolName}...`);
+        console.log(`⚙️  Executing ${toolName}...`);
         const result = await tool.execute(query);
 
         return {
@@ -273,8 +273,8 @@ class AgentOrchestrator {
       }
     });
 
-    // Generate combined response
-    const combinedResponse = this.generateCombinedResponse(results, query);
+    // Generate combined response using the better formatToolResults method
+    const combinedResponse = this.formatToolResults(results, errors);
     const overallConfidence = this.calculateOverallConfidence(results);
 
     return {
@@ -284,7 +284,7 @@ class AgentOrchestrator {
       combinedResponse,
       overallConfidence,
       toolsUsed: toolNames,
-      message: this.formatToolResults(results, errors),
+      message: combinedResponse, // Use the same formatted response
     };
   }
 
@@ -292,6 +292,7 @@ class AgentOrchestrator {
    * Check for mathematical patterns in query
    * @param {string} query - User query
    * @returns {boolean} - Whether query has math patterns
+   * @note Could be optimized by consolidating with other pattern functions, but kept separate for clarity
    */
   hasMathPatterns(query) {
     const mathPatterns = [
@@ -363,32 +364,12 @@ class AgentOrchestrator {
    * @param {Object} results - Tool results
    * @param {string} query - Original query
    * @returns {string} - Combined response
+   * @deprecated Use formatToolResults() instead for better error handling
    */
   generateCombinedResponse(results, query) {
-    let response = "";
-
-    // Add tool-specific responses
-    if (results.calculator) {
-      response += `🧮 **Fee Calculation:**\n${results.calculator.message}\n\n`;
-    }
-
-    if (results.status_checker) {
-      response += `⚠️ **Stripe Status:**\n${results.status_checker.message}\n\n`;
-    }
-
-    if (results.web_search) {
-      response += `🔍 **Recent Documentation:**\n${results.web_search.message}\n\n`;
-    }
-
-    if (results.code_validator) {
-      response += `🔍 **Code Validation:**\n${results.code_validator.message}\n\n`;
-    }
-
-    if (results.datetime) {
-      response += `⏰ **Time Context:**\n${results.datetime.message}\n\n`;
-    }
-
-    return response.trim();
+    // This function is redundant with formatToolResults()
+    // Keeping for backward compatibility but should use formatToolResults() instead
+    return this.formatToolResults(results, []);
   }
 
   /**

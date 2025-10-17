@@ -111,9 +111,8 @@ class MCPIntegrationService {
 
     try {
       console.log(
-        `\n🔧 MCP Integration: Processing query with confidence ${confidence}`
+        `🔧 MCP Integration: Processing query with confidence ${confidence}`
       );
-      console.log("-".repeat(40));
 
       // Get enabled tools from tool configuration
       const enabledTools = this.getEnabledTools();

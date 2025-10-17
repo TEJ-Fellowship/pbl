@@ -239,47 +239,68 @@ async function generateResponseWithMCP(
   chunks,
   geminiClient,
   mcpService,
-  confidence
+  confidence,
+  precomputedMcpEnhancement = null,
+  precomputedMcpToolsUsed = null,
+  precomputedMcpConfidence = null
 ) {
   try {
     console.log("\n🤖 Generating response with MCP integration...");
 
-    // Process query with MCP tools only
+    // Process query with MCP tools (use pre-computed results if available)
     let mcpResult = null;
     let mcpToolsUsed = [];
     let mcpConfidence = 0;
 
-    try {
-      console.log("🔧 Processing with MCP tools...");
-      mcpResult = await mcpService.processQueryWithMCP(query, confidence);
+    if (precomputedMcpEnhancement !== null) {
+      // Use pre-computed MCP results
+      mcpResult = {
+        success: true,
+        enhancedResponse: precomputedMcpEnhancement,
+        toolsUsed: precomputedMcpToolsUsed || [],
+        confidence: precomputedMcpConfidence || 0,
+      };
+      mcpToolsUsed = precomputedMcpToolsUsed || [];
+      mcpConfidence = precomputedMcpConfidence || 0;
+      console.log("🔧 Using pre-computed MCP results...");
+      console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+      console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
+    } else {
+      // Process MCP tools if not pre-computed
+      try {
+        console.log("🔧 Processing with MCP tools...");
+        mcpResult = await mcpService.processQueryWithMCP(query, confidence);
 
-      if (mcpResult.success && mcpResult.enhancedResponse) {
-        mcpToolsUsed = mcpResult.toolsUsed || [];
-        mcpConfidence = mcpResult.confidence || 0;
+        if (mcpResult.success && mcpResult.enhancedResponse) {
+          mcpToolsUsed = mcpResult.toolsUsed || [];
+          mcpConfidence = mcpResult.confidence || 0;
 
-        console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
-        console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
-      } else {
-        console.log("ℹ️ No MCP tools needed for this query");
+          console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+          console.log(
+            `📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`
+          );
+        } else {
+          console.log("ℹ️ No MCP tools needed for this query");
+        }
+      } catch (error) {
+        console.warn("⚠️ MCP processing failed:", error.message);
+        console.log("   Continuing with standard response generation...");
       }
-    } catch (error) {
-      console.warn("⚠️ MCP processing failed:", error.message);
-      console.log("   Continuing with standard response generation...");
     }
 
     // Use MCP tool results only with simple prompt
     let prompt = `You are a helpful assistant. Answer the user's question based on the provided information.
 
-USER QUESTION: ${query}
+        USER QUESTION: ${query}
 
-INFORMATION:
-${
-  mcpResult && mcpResult.enhancedResponse
-    ? mcpResult.enhancedResponse
-    : "No specific information available."
-}
+        INFORMATION:
+        ${
+          mcpResult && mcpResult.enhancedResponse
+            ? mcpResult.enhancedResponse
+            : "No specific information available."
+        }
 
-Please provide a simple, direct answer to the user's question.`;
+        Please provide a simple, direct answer to the user's question.`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -690,19 +711,24 @@ async function startIntegratedChat() {
 
           // Step 2: Route based on classification
           if (classification.approach === "MCP_TOOLS_ONLY") {
+            console.log("\n");
+            console.log("-".repeat(60));
             console.log("🔧 Using MCP tools only approach");
 
             // Try MCP tools first
             const mcpResult = await mcpService.processQueryWithMCP(query, 0.5);
 
             if (mcpResult.success && mcpResult.enhancedResponse) {
-              // Generate response using MCP tools only
+              // Generate response using MCP tools only (pass pre-computed results)
               result = await generateResponseWithMCP(
                 query,
                 [], // No chunks needed for MCP-only
                 geminiClient,
                 mcpService,
-                0.8 // High confidence for MCP tools
+                0.8, // High confidence for MCP tools
+                mcpResult.enhancedResponse,
+                mcpResult.toolsUsed || [],
+                mcpResult.confidence || 0
               );
             } else {
               // Fallback to hybrid search if MCP fails
