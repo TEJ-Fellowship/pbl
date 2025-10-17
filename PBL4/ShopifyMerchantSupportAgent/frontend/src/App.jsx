@@ -540,6 +540,128 @@ function App() {
                                         </div>
                                       )}
 
+                                      {/* Date/Time Results */}
+                                      {result.operations &&
+                                        result.operations.length > 0 && (
+                                          <div className="datetime-operations">
+                                            <h4 className="datetime-section-title">
+                                              🕒 Time Operations
+                                            </h4>
+                                            {result.operations.map(
+                                              (operation, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="datetime-operation"
+                                                >
+                                                  <div className="operation-type">
+                                                    {operation.type
+                                                      .replace(/_/g, " ")
+                                                      .toUpperCase()}
+                                                  </div>
+                                                  <div className="operation-value">
+                                                    {operation.formatted}
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+
+                                      {result.calculations &&
+                                        result.calculations.length > 0 && (
+                                          <div className="datetime-calculations">
+                                            <h4 className="datetime-section-title">
+                                              📅 Time Calculations
+                                            </h4>
+                                            {result.calculations.map(
+                                              (calculation, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="datetime-calculation"
+                                                >
+                                                  <div className="calculation-dates">
+                                                    {calculation.date1} →{" "}
+                                                    {calculation.date2}
+                                                  </div>
+                                                  <div className="calculation-result">
+                                                    {calculation.formatted}
+                                                  </div>
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+
+                                      {/* Code Validator Results */}
+                                      {result.validations &&
+                                        result.validations.length > 0 && (
+                                          <div className="code-validator-results">
+                                            <h4 className="validator-section-title">
+                                              🔍 Validation Results
+                                            </h4>
+                                            {result.validations.map(
+                                              (validation, index) => (
+                                                <div
+                                                  key={index}
+                                                  className="validation-item"
+                                                >
+                                                  <div className="validation-header">
+                                                    <span className="validation-type">
+                                                      {validation.type.toUpperCase()}
+                                                    </span>
+                                                    <span className="validation-value">
+                                                      {validation.value}
+                                                    </span>
+                                                  </div>
+
+                                                  {validation.validation
+                                                    .errors &&
+                                                    validation.validation.errors
+                                                      .length > 0 && (
+                                                      <div className="validation-errors">
+                                                        <span className="error-label">
+                                                          Errors:
+                                                        </span>
+                                                        {validation.validation.errors.join(
+                                                          ", "
+                                                        )}
+                                                      </div>
+                                                    )}
+
+                                                  {validation.validation
+                                                    .warnings &&
+                                                    validation.validation
+                                                      .warnings.length > 0 && (
+                                                      <div className="validation-warnings">
+                                                        <span className="warning-label">
+                                                          Warnings:
+                                                        </span>
+                                                        {validation.validation.warnings.join(
+                                                          ", "
+                                                        )}
+                                                      </div>
+                                                    )}
+
+                                                  {validation.validation
+                                                    .suggestions &&
+                                                    validation.validation
+                                                      .suggestions.length >
+                                                      0 && (
+                                                      <div className="validation-suggestions">
+                                                        <span className="suggestion-label">
+                                                          Suggestions:
+                                                        </span>
+                                                        {validation.validation.suggestions.join(
+                                                          ", "
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                </div>
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+
                                       {/* Web Search Results */}
                                       {result.results &&
                                         result.results.length > 0 && (

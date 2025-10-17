@@ -1,6 +1,8 @@
 import CalculatorTool from "./calculatorTool.js";
 import WebSearchTool from "./webSearchTool.js";
 import ShopifyStatusTool from "./shopifyStatusTool.js";
+import DateTimeTool from "./dateTimeTool.js";
+import CodeValidatorTool from "./codeValidatorTool.js";
 
 /**
  * MCP Client Orchestrator for Shopify Merchant Support Agent
@@ -28,6 +30,14 @@ export class MCPOrchestrator {
     const shopifyStatusTool = new ShopifyStatusTool();
     this.tools.set("shopify_status", shopifyStatusTool);
 
+    // Register Date/Time Tool
+    const dateTimeTool = new DateTimeTool();
+    this.tools.set("date_time", dateTimeTool);
+
+    // Register Code Validator Tool
+    const codeValidatorTool = new CodeValidatorTool();
+    this.tools.set("code_validator", codeValidatorTool);
+
     console.log("🔧 MCP Tools initialized:", Array.from(this.tools.keys()));
   }
 
@@ -48,6 +58,16 @@ export class MCPOrchestrator {
     // Check for mathematical expressions that require calculator
     if (this.shouldUseCalculator(query)) {
       toolsToUse.push("calculator");
+    }
+
+    // Check for date/time operations
+    if (this.shouldUseDateTimeTool(query)) {
+      toolsToUse.push("date_time");
+    }
+
+    // Check for code validation needs
+    if (this.shouldUseCodeValidator(query)) {
+      toolsToUse.push("code_validator");
     }
 
     // Check for web search fallback when confidence is low or recent info needed
@@ -95,6 +115,30 @@ export class MCPOrchestrator {
   }
 
   /**
+   * Determine if date/time tool should be used
+   * @param {string} query - User query
+   * @returns {boolean} Whether to use date/time tool
+   */
+  shouldUseDateTimeTool(query) {
+    const dateTimeTool = this.tools.get("date_time");
+    if (!dateTimeTool) return false;
+
+    return dateTimeTool.shouldUseDateTimeTool(query);
+  }
+
+  /**
+   * Determine if code validator tool should be used
+   * @param {string} query - User query
+   * @returns {boolean} Whether to use code validator
+   */
+  shouldUseCodeValidator(query) {
+    const codeValidatorTool = this.tools.get("code_validator");
+    if (!codeValidatorTool) return false;
+
+    return codeValidatorTool.shouldUseCodeValidator(query);
+  }
+
+  /**
    * Determine if web search tool should be used
    * @param {string} query - User query
    * @param {number} confidence - RAG confidence score
@@ -127,6 +171,10 @@ export class MCPOrchestrator {
             results[toolName] = await tool.search(query, confidence);
           } else if (toolName === "shopify_status") {
             results[toolName] = await tool.checkStatus(query);
+          } else if (toolName === "date_time") {
+            results[toolName] = await tool.processDateTime(query);
+          } else if (toolName === "code_validator") {
+            results[toolName] = await tool.validateCode(query);
           } else {
             results[toolName] = await tool.calculate(query);
           }
@@ -134,7 +182,9 @@ export class MCPOrchestrator {
           console.error(`Error executing tool ${toolName}:`, error);
           results[toolName] = {
             error: `Tool execution failed: ${error.message}`,
+            operations: [],
             calculations: [],
+            validations: [],
             summary: null,
           };
         }
@@ -142,7 +192,9 @@ export class MCPOrchestrator {
         console.warn(`Tool ${toolName} not found`);
         results[toolName] = {
           error: `Tool ${toolName} not available`,
+          operations: [],
           calculations: [],
+          validations: [],
           summary: null,
         };
       }
@@ -221,6 +273,83 @@ export class MCPOrchestrator {
 
       if (statusResults.summary) {
         enhancedAnswer += `\n\n${statusResults.summary}`;
+      }
+    }
+
+    // Add date/time results if available
+    if (toolResults.date_time && !toolResults.date_time.error) {
+      const dateTimeResults = toolResults.date_time;
+
+      if (dateTimeResults.summary) {
+        enhancedAnswer += `\n\n## 🕒 **Date/Time Information**\n\n${dateTimeResults.summary}`;
+
+        if (
+          dateTimeResults.operations &&
+          dateTimeResults.operations.length > 0
+        ) {
+          enhancedAnswer += "\n\n**Time Operations:**\n";
+          dateTimeResults.operations.forEach((op, index) => {
+            enhancedAnswer += `${index + 1}. ${op.formatted}\n`;
+          });
+        }
+
+        if (
+          dateTimeResults.calculations &&
+          dateTimeResults.calculations.length > 0
+        ) {
+          enhancedAnswer += "\n\n**Time Calculations:**\n";
+          dateTimeResults.calculations.forEach((calc, index) => {
+            enhancedAnswer += `${index + 1}. ${calc.date1} to ${calc.date2}: ${
+              calc.formatted
+            }\n`;
+          });
+        }
+      }
+    }
+
+    // Add code validator results if available
+    if (toolResults.code_validator && !toolResults.code_validator.error) {
+      const validatorResults = toolResults.code_validator;
+
+      if (validatorResults.summary) {
+        enhancedAnswer += `\n\n## 🔍 **Code Validation Results**\n\n${validatorResults.summary}`;
+
+        if (
+          validatorResults.validations &&
+          validatorResults.validations.length > 0
+        ) {
+          enhancedAnswer += "\n\n**Validation Details:**\n";
+          validatorResults.validations.forEach((validation, index) => {
+            enhancedAnswer += `${index + 1}. **${validation.type}**: ${
+              validation.value
+            }\n`;
+
+            if (
+              validation.validation.errors &&
+              validation.validation.errors.length > 0
+            ) {
+              enhancedAnswer += `   - Errors: ${validation.validation.errors.join(
+                ", "
+              )}\n`;
+            }
+            if (
+              validation.validation.warnings &&
+              validation.validation.warnings.length > 0
+            ) {
+              enhancedAnswer += `   - Warnings: ${validation.validation.warnings.join(
+                ", "
+              )}\n`;
+            }
+            if (
+              validation.validation.suggestions &&
+              validation.validation.suggestions.length > 0
+            ) {
+              enhancedAnswer += `   - Suggestions: ${validation.validation.suggestions.join(
+                ", "
+              )}\n`;
+            }
+          });
+        }
       }
     }
 
