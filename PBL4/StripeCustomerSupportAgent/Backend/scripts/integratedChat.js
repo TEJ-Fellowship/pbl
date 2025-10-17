@@ -81,7 +81,9 @@ async function retrieveChunksWithHybridSearch(
   hybridSearch
 ) {
   try {
-    console.log("🔍 Searching for relevant information using hybrid search...");
+    console.log(
+      "\n🔍 Searching for relevant information using hybrid search..."
+    );
 
     // Ensure hybrid search is initialized
     if (!hybridSearch.isInitialized) {
@@ -307,7 +309,10 @@ async function generateResponseWithMemoryAndMCP(
   geminiClient,
   memoryContext,
   mcpService,
-  confidence
+  confidence,
+  precomputedMcpEnhancement = null,
+  precomputedMcpToolsUsed = null,
+  precomputedMcpConfidence = null
 ) {
   try {
     console.log(
@@ -341,28 +346,44 @@ async function generateResponseWithMemoryAndMCP(
       memoryContextString += `\n\nRELEVANT HISTORICAL CONTEXT:\n${memoryContext.longTermContext.contextString}`;
     }
 
-    // Process query with MCP tools
+    // Process query with MCP tools (use pre-computed results if available)
     let mcpEnhancement = "";
     let mcpToolsUsed = [];
     let mcpConfidence = 0;
 
-    try {
-      console.log("🔧 Processing with MCP tools...");
-      const mcpResult = await mcpService.processQueryWithMCP(query, confidence);
+    if (precomputedMcpEnhancement !== null) {
+      // Use pre-computed MCP results
+      mcpEnhancement = precomputedMcpEnhancement;
+      mcpToolsUsed = precomputedMcpToolsUsed || [];
+      mcpConfidence = precomputedMcpConfidence || 0;
+      console.log("🔧 Using pre-computed MCP results...");
+      console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+      console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
+    } else {
+      // Process MCP tools if not pre-computed
+      try {
+        console.log("🔧 Processing with MCP tools...");
+        const mcpResult = await mcpService.processQueryWithMCP(
+          query,
+          confidence
+        );
 
-      if (mcpResult.success && mcpResult.enhancedResponse) {
-        mcpEnhancement = mcpResult.enhancedResponse;
-        mcpToolsUsed = mcpResult.toolsUsed || [];
-        mcpConfidence = mcpResult.confidence || 0;
+        if (mcpResult.success && mcpResult.enhancedResponse) {
+          mcpEnhancement = mcpResult.enhancedResponse;
+          mcpToolsUsed = mcpResult.toolsUsed || [];
+          mcpConfidence = mcpResult.confidence || 0;
 
-        console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
-        console.log(`📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`);
-      } else {
-        console.log("ℹ️ No MCP tools needed for this query");
+          console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+          console.log(
+            `📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`
+          );
+        } else {
+          console.log("ℹ️ No MCP tools needed for this query");
+        }
+      } catch (error) {
+        console.warn("⚠️ MCP processing failed:", error.message);
+        console.log("   Continuing with standard response generation...");
       }
-    } catch (error) {
-      console.warn("⚠️ MCP processing failed:", error.message);
-      console.log("   Continuing with standard response generation...");
     }
 
     // Build enhanced prompt with memory and MCP integration
@@ -765,7 +786,8 @@ async function startIntegratedChat() {
               confidence
             );
           } else if (classification.approach === "COMBINED") {
-            console.log("🔧🔍 Using combined approach (MCP + Hybrid search)");
+            console.log("\n🔧🔍 Using combined approach (MCP + Hybrid search)");
+            console.log("-".repeat(40));
 
             // Get complete memory context for query reformulation
             const memoryContext =
@@ -777,13 +799,15 @@ async function startIntegratedChat() {
                 memoryContext.longTermContext?.relevantQAs?.length || 0
               } relevant Q&As`
             );
-
+            console.log("-".repeat(40));
             // Use reformulated query for retrieval (for MCP and hybrid search)
             searchQuery = memoryContext.reformulatedQuery || query;
+            console.log("\n");
+            console.log("-".repeat(40));
             console.log(
-              `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+              `🔍 Searching with reformulated query (MCP and hybrid search): "${searchQuery.substring(
                 0,
-                60
+                30
               )}..."`
             );
 
@@ -797,6 +821,21 @@ async function startIntegratedChat() {
                 hybridSearch
               ),
             ]);
+
+            // Extract MCP results if successful
+            let mcpEnhancement = "";
+            let mcpToolsUsed = [];
+            let mcpConfidence = 0;
+
+            if (mcpResult.status === "fulfilled" && mcpResult.value.success) {
+              mcpEnhancement = mcpResult.value.enhancedResponse || "";
+              mcpToolsUsed = mcpResult.value.toolsUsed || [];
+              mcpConfidence = mcpResult.value.confidence || 0;
+              console.log(`✅ MCP tools used: ${mcpToolsUsed.join(", ")}`);
+              console.log(
+                `📊 MCP confidence: ${(mcpConfidence * 100).toFixed(1)}%`
+              );
+            }
 
             // Use hybrid search results if available
             if (
@@ -827,7 +866,10 @@ async function startIntegratedChat() {
               geminiClient,
               memoryContext,
               mcpService,
-              confidence
+              confidence,
+              mcpEnhancement,
+              mcpToolsUsed,
+              mcpConfidence
             );
           } else {
             throw new Error(
