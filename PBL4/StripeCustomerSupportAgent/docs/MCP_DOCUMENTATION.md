@@ -6,292 +6,311 @@ The **Model Context Protocol (MCP)** tool integration for the Stripe Customer Su
 
 ## 🏗️ MCP System Architecture
 
-The MCP integration follows a sophisticated architecture that seamlessly integrates with the existing Stripe Customer Support Agent system, providing intelligent tool selection and execution capabilities with AI-powered decision making.
-
-### **Comprehensive System Architecture Overview**
-
 The MCP system is built on a multi-layered architecture that provides intelligent tool orchestration, AI-powered selection, and seamless integration with the core Stripe support system. The architecture emphasizes modularity, scalability, and intelligent decision-making.
 
 ```mermaid
+flowchart TD
+    USER["User Query"] --> CHAT["Chat Service"]
+    CHAT --> CLASSIFIER["Query Classifier"]
+
+    CLASSIFIER -->|"MCP tools needed"| MCP["MCP Tools Only"]
+    CLASSIFIER -->|"Documentation needed"| SEARCH["Hybrid Search Only"]
+    CLASSIFIER -->|"Both needed"| COMBINED["Combined Approach"]
+
+    MCP --> TOOLS["Execute MCP Tools"]
+    SEARCH --> DOCS["Retrieve Documents"]
+    COMBINED --> TOOLS
+    COMBINED --> DOCS
+
+    TOOLS --> RESPONSE["Generate Response"]
+    DOCS --> RESPONSE
+    RESPONSE --> USER
+```
+
+#### **1. User Interface Layer**
+
+The user interface layer provides multiple entry points for interacting with the MCP system.
+
+```mermaid
 graph TB
-    subgraph "🌐 User Interface Layer"
-        CLI["💻 CLI Chat Interface<br/>Interactive command-line chat"]
-        API["🔌 REST API Endpoints<br/>HTTP API for web integration"]
-        WEB["🌍 Web Interface<br/>Browser-based chat interface"]
-        TOOL_MGR["⚙️ Tool Manager CLI<br/>Dynamic tool control & management"]
+    subgraph "User Interface Layer"
+        CLI["CLI Chat Interface<br/>Interactive command-line chat<br/>Real-time conversation"]
+        API["REST API Endpoints<br/>HTTP API for web integration<br/>Programmatic access"]
+        WEB["Web Interface<br/>Browser-based chat interface<br/>User-friendly UI"]
+        TOOL_MGR["Tool Manager CLI<br/>Dynamic tool control & management<br/>Runtime configuration"]
     end
 
-    subgraph "🧠 MCP Integration Layer"
-        MCP_SERVICE["🎯 MCP Integration Service<br/>Main orchestrator & coordinator<br/>Query processing & tool coordination"]
-        AGENT_ORCH["🤖 Agent Orchestrator<br/>Tool coordination & execution<br/>Multi-tool workflow management"]
-        AI_SELECTOR["🧠 AI Tool Selection Service<br/>Gemini AI-powered tool selection<br/>Intelligent decision making"]
-        TOOL_CONFIG["⚙️ Tool Config Manager<br/>Dynamic tool management<br/>Persistent configuration"]
+    subgraph "User Interactions"
+        USER["User"]
+        DEVELOPER["Developer"]
+        ADMIN["Administrator"]
     end
 
-    subgraph "🛠️ MCP Tools Layer (mcp-tools/)"
-        CALC["🧮 Calculator Tool<br/>Stripe fee calculations<br/>Mathematical expressions<br/>Natural language math"]
-        STATUS["⚠️ Status Checker Tool<br/>Stripe API status monitoring<br/>Real-time health checks<br/>Service availability"]
-        WEB_SEARCH["🔍 Web Search Tool<br/>Google Custom Search<br/>Current information<br/>Real-time data access"]
-        CODE_VAL["✅ Code Validator Tool<br/>Syntax validation<br/>API endpoint verification<br/>Best practice suggestions"]
-        DATETIME["📅 DateTime Tool<br/>Date/time operations<br/>Business hours<br/>Time zone conversions"]
-        CURRENCY["💱 Currency Converter Tool<br/>Real-time exchange rates<br/>Multi-currency support<br/>Cross-currency calculations"]
-    end
-
-    subgraph "🏗️ MCP Server Layer (mcp-server/)"
-        AI_SERVICE["🧠 AI Tool Selection Service<br/>Gemini AI integration<br/>Context-aware selection"]
-        CONFIG_MGR["⚙️ Tool Config Manager<br/>Persistent configuration<br/>Runtime tool management"]
-        ORCHESTRATOR["🤖 Agent Orchestrator<br/>Tool execution engine<br/>Workflow coordination"]
-    end
-
-    subgraph "🌍 External Services"
-        STRIPE_API["💳 Stripe API<br/>Status endpoints<br/>Service health monitoring<br/>Real-time status data"]
-        GOOGLE_SEARCH["🔍 Google Custom Search<br/>Web search API<br/>Current information<br/>Real-time web data"]
-        GEMINI_AI["🧠 Gemini AI<br/>Tool selection intelligence<br/>Context-aware decisions<br/>Natural language processing"]
-        MATH_ENGINE["🧮 Math.js Engine<br/>Mathematical calculations<br/>Expression parsing<br/>Advanced math operations"]
-        EXCHANGE_API["💱 Exchange Rate APIs<br/>Real-time currency data<br/>Multi-source rates<br/>Historical data"]
-    end
-
-    subgraph "🔗 Core System Integration"
-        CHAT_SERVICE["💬 Chat Service<br/>Query processing<br/>Response generation<br/>Context management"]
-        MEMORY_SYSTEM["🧠 Memory System<br/>Conversation context<br/>Long-term memory<br/>Context persistence"]
-        HYBRID_SEARCH["🔍 Hybrid Search<br/>BM25 + Semantic search<br/>Document retrieval<br/>Knowledge base access"]
-        GEMINI_RESPONSE["🧠 Gemini AI<br/>Response generation<br/>Natural language processing<br/>Context-aware responses"]
-    end
-
-    subgraph "💾 Data Storage Layer"
-        POSTGRES[("🐘 PostgreSQL<br/>Memory & Documents<br/>Conversation history<br/>Knowledge base")]
-        PINECONE[("🌲 Pinecone<br/>Vector embeddings<br/>Semantic search<br/>Similarity matching")]
-        CACHE[("⚡ Tool Cache<br/>Response caching<br/>Performance optimization<br/>Reduced API calls")]
-        CONFIG_FILE[("📄 mcp-tools.json<br/>Tool configuration<br/>Persistent settings<br/>Tool management")]
-    end
-
-    %% User interaction flow
-    CLI -->|"User query"| MCP_SERVICE
-    API -->|"HTTP request"| MCP_SERVICE
-    WEB -->|"Web query"| MCP_SERVICE
-    TOOL_MGR -->|"Tool management"| TOOL_CONFIG
-
-    %% MCP orchestration flow
-    MCP_SERVICE -->|"Query analysis"| AI_SELECTOR
-    AI_SELECTOR -->|"AI tool selection"| AGENT_ORCH
-    AGENT_ORCH -->|"Execute tools"| CALC
-    AGENT_ORCH -->|"Execute tools"| STATUS
-    AGENT_ORCH -->|"Execute tools"| WEB_SEARCH
-    AGENT_ORCH -->|"Execute tools"| CODE_VAL
-    AGENT_ORCH -->|"Execute tools"| DATETIME
-    AGENT_ORCH -->|"Execute tools"| CURRENCY
-
-    %% AI-powered selection
-    AI_SELECTOR -->|"Gemini AI calls"| GEMINI_AI
-    AI_SELECTOR -->|"Fallback rules"| AI_SELECTOR
-
-    %% Tool configuration management
-    TOOL_CONFIG -->|"Load/save config"| CONFIG_FILE
-    MCP_SERVICE -->|"Check tool status"| TOOL_CONFIG
-
-    %% Tool execution flow
-    CALC -->|"Math operations"| MATH_ENGINE
-    STATUS -->|"API calls"| STRIPE_API
-    WEB_SEARCH -->|"Search queries"| GOOGLE_SEARCH
-    CODE_VAL -->|"Validation logic"| CODE_VAL
-    DATETIME -->|"Time operations"| DATETIME
-    CURRENCY -->|"Exchange rates"| EXCHANGE_API
-
-    %% Integration with core system
-    MCP_SERVICE -->|"Enhanced response"| CHAT_SERVICE
-    CHAT_SERVICE -->|"Context integration"| MEMORY_SYSTEM
-    CHAT_SERVICE -->|"Search enhancement"| HYBRID_SEARCH
-    CHAT_SERVICE -->|"AI response"| GEMINI_RESPONSE
-
-    %% Data flow
-    MCP_SERVICE -->|"Cache results"| CACHE
-    MEMORY_SYSTEM -->|"Store context"| POSTGRES
-    HYBRID_SEARCH -->|"Vector search"| PINECONE
-    HYBRID_SEARCH -->|"Document search"| POSTGRES
-
-    %% Tool results flow
-    CALC -->|"Calculation results"| AGENT_ORCH
-    STATUS -->|"Status information"| AGENT_ORCH
-    WEB_SEARCH -->|"Search results"| AGENT_ORCH
-    CODE_VAL -->|"Validation results"| AGENT_ORCH
-    DATETIME -->|"Time information"| AGENT_ORCH
-    CURRENCY -->|"Conversion results"| AGENT_ORCH
-
-    %% Final response flow
-    AGENT_ORCH -->|"Tool results"| MCP_SERVICE
-    MCP_SERVICE -->|"Enhanced response"| CLI
-    MCP_SERVICE -->|"API response"| API
-    MCP_SERVICE -->|"Web response"| WEB
-
-    %% Styling
-    classDef userLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef mcpLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef toolsLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef serverLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef externalLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef coreLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    classDef storageLayer fill:#e0f2f1,stroke:#004d40,stroke-width:2px
-
-    class CLI,API,WEB,TOOL_MGR userLayer
-    class MCP_SERVICE,AGENT_ORCH,AI_SELECTOR,TOOL_CONFIG mcpLayer
-    class CALC,STATUS,WEB_SEARCH,CODE_VAL,DATETIME,CURRENCY toolsLayer
-    class AI_SERVICE,CONFIG_MGR,ORCHESTRATOR serverLayer
-    class STRIPE_API,GOOGLE_SEARCH,GEMINI_AI,MATH_ENGINE,EXCHANGE_API externalLayer
-    class CHAT_SERVICE,MEMORY_SYSTEM,HYBRID_SEARCH,GEMINI_RESPONSE coreLayer
-    class POSTGRES,PINECONE,CACHE,CONFIG_FILE storageLayer
+    USER -->|"Chat queries"| CLI
+    USER -->|"Web interface"| WEB
+    DEVELOPER -->|"API calls"| API
+    ADMIN -->|"Tool management"| TOOL_MGR
 ```
 
-### **Enhanced MCP Tool Selection Logic**
+#### **2. Query Classification & Routing Layer**
 
-The system now features an advanced, multi-layered tool selection process that combines AI intelligence with robust fallback mechanisms.
+The query classifier determines the processing approach based on user intent.
 
 ```mermaid
-flowchart TD
-    START([User Query]) --> CONFIDENCE[Document Confidence Score]
-    CONFIDENCE --> AI_SELECTION{AI Tool Selection}
+graph TB
+    subgraph "Query Classification & Routing"
+        QUERY_CLASSIFIER["Query Classifier<br/>Analyzes user intent<br/>Determines processing approach"]
+        MCP_SERVICE["MCP Integration Service<br/>Tool orchestration & execution"]
+        HYBRID_SEARCH["Hybrid Search Service<br/>Document retrieval & search"]
+        COMBINED_PROCESSOR["Combined Processor<br/>MCP + Hybrid search coordination"]
+         MCP_ONLY["MCP_TOOLS_ONLY<br/>Direct tool responses<br/>(calculations, status checks)"]
+        HYBRID_ONLY["HYBRID_SEARCH<br/>Documentation-based responses<br/>(API guides, tutorials)"]
+        COMBINED["COMBINED<br/>Both tools and documentation<br/>(complex queries)"]
+    end
 
-    AI_SELECTION -->|Gemini AI Available| GEMINI_ANALYSIS[Gemini AI Analysis]
-    AI_SELECTION -->|AI Unavailable| RULE_BASED[Rule-Based Selection]
 
-    GEMINI_ANALYSIS --> GEMINI_PARSE[Parse AI Response]
-    GEMINI_PARSE --> GEMINI_VALIDATE{Valid Selection?}
-    GEMINI_VALIDATE -->|Yes| SELECTED_TOOLS[Selected Tools]
-    GEMINI_VALIDATE -->|No| RULE_BASED
 
-    RULE_BASED --> PATTERN_MATCH{Pattern Matching}
-    PATTERN_MATCH -->|Contains: $, %, calculate, fee| CALC_TRIGGER[Calculator Tool]
-    PATTERN_MATCH -->|Contains: status, down, outage| STATUS_TRIGGER[Status Checker Tool]
-    PATTERN_MATCH -->|Contains: search, find, latest| WEB_TRIGGER[Web Search Tool]
-    PATTERN_MATCH -->|Contains: validate, check, code| CODE_TRIGGER[Code Validator Tool]
-    PATTERN_MATCH -->|Contains: date, time, schedule| TIME_TRIGGER[DateTime Tool]
-    PATTERN_MATCH -->|Contains: convert, currency, exchange| CURRENCY_TRIGGER[Currency Converter Tool]
+    QUERY_CLASSIFIER -->|"MCP tools needed"| MCP_ONLY
+    QUERY_CLASSIFIER -->|"Documentation needed"| HYBRID_ONLY
+    QUERY_CLASSIFIER -->|"Both needed"| COMBINED
 
-    CALC_TRIGGER --> TOOL_ENABLED{Is Tool Enabled?}
-    STATUS_TRIGGER --> TOOL_ENABLED
-    WEB_TRIGGER --> TOOL_ENABLED
-    CODE_TRIGGER --> TOOL_ENABLED
-    TIME_TRIGGER --> TOOL_ENABLED
-    CURRENCY_TRIGGER --> TOOL_ENABLED
-
-    TOOL_ENABLED -->|Yes| SELECTED_TOOLS
-    TOOL_ENABLED -->|No| SKIP_TOOL[Skip Disabled Tool]
-
-    SELECTED_TOOLS --> CONFIDENCE_CHECK{Confidence > 0.5?}
-    SKIP_TOOL --> CONFIDENCE_CHECK
-
-    CONFIDENCE_CHECK -->|Yes| EXECUTE[Execute Selected Tools]
-    CONFIDENCE_CHECK -->|No| FALLBACK[Use Core Chat System]
-
-    EXECUTE --> PARALLEL_EXEC[Parallel Tool Execution]
-    PARALLEL_EXEC --> COMBINE[Combine Tool Results]
-    FALLBACK --> COMBINE
-
-    COMBINE --> ENHANCE[Enhance with AI Response]
-    ENHANCE --> RESPONSE[Return Enhanced Response]
-
-    RESPONSE --> END([User Receives Response])
-
-    Note over GEMINI_ANALYSIS, GEMINI_VALIDATE: AI-powered intelligent selection
-    Note over RULE_BASED, PATTERN_MATCH: Fallback rule-based selection
-    Note over TOOL_ENABLED, SKIP_TOOL: Dynamic tool management
+    MCP_ONLY -->|"Route to MCP"| MCP_SERVICE
+    HYBRID_ONLY -->|"Route to search"| HYBRID_SEARCH
+    COMBINED -->|"Route to combined"| COMBINED_PROCESSOR
 ```
 
-### MCP Tool Selection Logic
+#### **3. MCP Integration Layer**
+
+The MCP integration layer handles tool orchestration and execution when MCP tools are selected.
 
 ```mermaid
-flowchart TD
-    START([User Query]) --> CONFIDENCE[Document Confidence Score]
-    CONFIDENCE --> AI_SELECTION{AI Tool Selection}
+graph TB
+    subgraph "MCP Integration Layer"
+        MCP_SERVICE["MCP Integration Service<br/>Main orchestrator & coordinator<br/>Query processing & tool coordination"]
+        AGENT_ORCH["Agent Orchestrator<br/>Tool coordination & execution<br/>Contains AI Tool Selection Service"]
+        TOOL_CONFIG["Tool Config Manager<br/>Dynamic tool management<br/>Persistent configuration"]
+    end
 
-    AI_SELECTION -->|Gemini AI Available| GEMINI_ANALYSIS[Gemini AI Analysis]
-    AI_SELECTION -->|AI Unavailable| RULE_BASED[Rule-Based Selection]
+    subgraph "Agent Orchestrator Components"
+        AI_SELECTOR["AI Tool Selection Service<br/>Gemini AI-powered tool selection<br/>Intelligent decision making"]
+        TOOL_MANAGER["Tool Manager<br/>Individual tool execution<br/>Result coordination"]
+    end
 
-    GEMINI_ANALYSIS --> GEMINI_PARSE[Parse AI Response]
-    GEMINI_PARSE --> GEMINI_VALIDATE{Valid Selection?}
-    GEMINI_VALIDATE -->|Yes| SELECTED_TOOLS[Selected Tools]
-    GEMINI_VALIDATE -->|No| RULE_BASED
+    subgraph "MCP Processing Flow"
+        QUERY_IN["MCP Query Input"]
+        TOOL_SELECTION["AI Tool Selection"]
+        TOOL_EXECUTION["Parallel Tool Execution"]
+        RESULT_COMBINE["Combine Results"]
+        RESPONSE_OUT["MCP Response Output"]
+    end
 
-    RULE_BASED --> PATTERN_MATCH{Pattern Matching}
-    PATTERN_MATCH -->|Contains: $, %, calculate, fee| CALC_TRIGGER[Calculator Tool]
-    PATTERN_MATCH -->|Contains: status, down, outage| STATUS_TRIGGER[Status Checker Tool]
-    PATTERN_MATCH -->|Contains: search, find, latest| WEB_TRIGGER[Web Search Tool]
-    PATTERN_MATCH -->|Contains: validate, check, code| CODE_TRIGGER[Code Validator Tool]
-    PATTERN_MATCH -->|Contains: date, time, schedule| TIME_TRIGGER[DateTime Tool]
+    QUERY_IN -->|"From classifier"| MCP_SERVICE
+    MCP_SERVICE -->|"Query analysis"| AGENT_ORCH
+    AGENT_ORCH -->|"Contains"| AI_SELECTOR
+    AI_SELECTOR -->|"Selected tools"| TOOL_SELECTION
+    TOOL_SELECTION -->|"Tool list"| TOOL_MANAGER
+    TOOL_MANAGER -->|"Execute tools"| TOOL_EXECUTION
+    TOOL_EXECUTION -->|"Tool results"| RESULT_COMBINE
+    RESULT_COMBINE -->|"Enhanced response"| RESPONSE_OUT
 
-    CALC_TRIGGER --> TOOL_ENABLED{Is Tool Enabled?}
-    STATUS_TRIGGER --> TOOL_ENABLED
-    WEB_TRIGGER --> TOOL_ENABLED
-    CODE_TRIGGER --> TOOL_ENABLED
-    TIME_TRIGGER --> TOOL_ENABLED
-
-    TOOL_ENABLED -->|Yes| SELECTED_TOOLS
-    TOOL_ENABLED -->|No| SKIP_TOOL[Skip Disabled Tool]
-
-    SELECTED_TOOLS --> CONFIDENCE_CHECK{Confidence > 0.5?}
-    SKIP_TOOL --> CONFIDENCE_CHECK
-
-    CONFIDENCE_CHECK -->|Yes| EXECUTE[Execute Selected Tools]
-    CONFIDENCE_CHECK -->|No| FALLBACK[Use Core Chat System]
-
-    EXECUTE --> PARALLEL_EXEC[Parallel Tool Execution]
-    PARALLEL_EXEC --> COMBINE[Combine Tool Results]
-    FALLBACK --> COMBINE
-
-    COMBINE --> ENHANCE[Enhance with AI Response]
-    ENHANCE --> RESPONSE[Return Enhanced Response]
-
-    RESPONSE --> END([User Receives Response])
-
-    Note over GEMINI_ANALYSIS, GEMINI_VALIDATE: AI-powered intelligent selection
-    Note over RULE_BASED, PATTERN_MATCH: Fallback rule-based selection
-    Note over TOOL_ENABLED, SKIP_TOOL: Dynamic tool management
+    TOOL_CONFIG -->|"Tool status"| MCP_SERVICE
+    MCP_SERVICE -->|"Check availability"| TOOL_CONFIG
 ```
 
-### MCP Integration with Core System
+#### **4. MCP Tools Layer**
+
+Individual tool implementations providing specialized functionality.
 
 ```mermaid
-graph LR
-    subgraph "MCP Integration Points"
-        MCP_INPUT["MCP Input<br/>Query + Context + Confidence"]
-        MCP_PROCESS["MCP Processing<br/>AI Tool Selection & Execution"]
-        MCP_OUTPUT["MCP Output<br/>Enhanced Results + Confidence"]
+graph TB
+    subgraph "MCP Tools Layer (mcp-tools/)"
+        CALC["Calculator Tool<br/>Stripe fee calculations<br/>Mathematical expressions<br/>Natural language math"]
+        STATUS["Status Checker Tool<br/>Stripe API status monitoring<br/>Real-time health checks<br/>Service availability"]
+        WEB_SEARCH["Web Search Tool<br/>Google Custom Search<br/>Current information<br/>Real-time data access"]
+        CODE_VAL["Code Validator Tool<br/>Syntax validation<br/>API endpoint verification<br/>Best practice suggestions"]
+        DATETIME["DateTime Tool<br/>Date/time operations<br/>Business hours<br/>Time zone conversions"]
+        CURRENCY["Currency Converter Tool<br/>Real-time exchange rates<br/>Multi-currency support<br/>Cross-currency calculations"]
     end
 
-    subgraph "Core System Components"
-        MEMORY["Memory System<br/>Conversation Context"]
-        SEARCH["Hybrid Search<br/>Document Retrieval"]
-        AI_RESPONSE["Gemini AI<br/>Response Generation"]
-        AI_SELECTION["Gemini AI<br/>Tool Selection"]
+    subgraph "Tool Categories"
+        MATH_TOOLS["Mathematical Tools"]
+        API_TOOLS["API Tools"]
+        UTILITY_TOOLS["Utility Tools"]
     end
 
-    subgraph "Data Flow"
-        CONTEXT["Context Integration<br/>Recent + Long-term Memory"]
-        ENHANCEMENT["Response Enhancement<br/>Tool Results + AI + Confidence"]
-        FINAL["Final Response<br/>Combined Intelligence"]
+    MATH_TOOLS --> CALC
+    MATH_TOOLS --> CURRENCY
+    API_TOOLS --> STATUS
+    API_TOOLS --> WEB_SEARCH
+    UTILITY_TOOLS --> CODE_VAL
+    UTILITY_TOOLS --> DATETIME
+```
+
+#### **5. MCP Server Layer**
+
+Server-side components managing tool orchestration and configuration.
+
+```mermaid
+graph TB
+    subgraph "MCP Server Layer (mcp-server/)"
+        ORCHESTRATOR["Agent Orchestrator<br/>Tool execution engine<br/>Workflow coordination<br/>Contains AI Tool Selection Service"]
+        CONFIG_MGR["Tool Config Manager<br/>Persistent configuration<br/>Runtime tool management"]
     end
 
-    subgraph "Tool Management"
-        CONFIG["Tool Configuration<br/>Enable/Disable Tools"]
-        PERSISTENCE["Configuration Persistence<br/>mcp-tools.json"]
+    subgraph "Agent Orchestrator Internal Components"
+        AI_SERVICE["AI Tool Selection Service<br/>Gemini AI integration<br/>Context-aware selection"]
+        TOOL_EXECUTOR["Tool Executor<br/>Individual tool execution<br/>Result coordination"]
     end
 
-    MCP_INPUT --> MEMORY
-    MEMORY --> CONTEXT
-    CONTEXT --> MCP_PROCESS
+    subgraph "Server Operations"
+        AI_DECISION["AI Decision Making"]
+        CONFIG_PERSISTENCE["Configuration Persistence"]
+        WORKFLOW_COORD["Workflow Coordination"]
+    end
 
-    MCP_PROCESS --> AI_SELECTION
-    AI_SELECTION --> MCP_PROCESS
-    MCP_PROCESS --> SEARCH
-    SEARCH --> MCP_OUTPUT
+    ORCHESTRATOR -->|"Contains"| AI_SERVICE
+    ORCHESTRATOR -->|"Contains"| TOOL_EXECUTOR
+    AI_SERVICE -->|"Tool selection"| AI_DECISION
+    CONFIG_MGR -->|"Save/load config"| CONFIG_PERSISTENCE
+    ORCHESTRATOR -->|"Execute workflows"| WORKFLOW_COORD
+```
 
-    MCP_OUTPUT --> AI_RESPONSE
-    AI_RESPONSE --> ENHANCEMENT
-    ENHANCEMENT --> FINAL
+#### **6. External Services Layer**
 
-    CONFIG --> MCP_PROCESS
-    MCP_PROCESS --> PERSISTENCE
+External APIs and services that provide data and functionality.
 
-    FINAL --> MCP_INPUT
+```mermaid
+graph TB
+    subgraph "External Services"
+        STRIPE_API["Stripe API<br/>Status endpoints<br/>Service health monitoring<br/>Real-time status data"]
+        GOOGLE_SEARCH["Google Custom Search<br/>Web search API<br/>Current information<br/>Real-time web data"]
+        GEMINI_AI["Gemini AI<br/>Tool selection intelligence<br/>Context-aware decisions<br/>Natural language processing"]
+        MATH_ENGINE["Math.js Engine<br/>Mathematical calculations<br/>Expression parsing<br/>Advanced math operations"]
+        EXCHANGE_API["Exchange Rate APIs<br/>Real-time currency data<br/>Multi-source rates<br/>Historical data"]
+    end
+
+    subgraph "Service Categories"
+        AI_SERVICES["AI Services"]
+        DATA_SERVICES["Data Services"]
+        COMPUTE_SERVICES["Compute Services"]
+    end
+
+    AI_SERVICES --> GEMINI_AI
+    DATA_SERVICES --> STRIPE_API
+    DATA_SERVICES --> GOOGLE_SEARCH
+    DATA_SERVICES --> EXCHANGE_API
+    COMPUTE_SERVICES --> MATH_ENGINE
+```
+
+#### **7. Core System Integration Layer**
+
+Integration with the existing Stripe support system components.
+
+```mermaid
+graph TB
+    subgraph "Core System Integration"
+        CHAT_SERVICE["Chat Service<br/>Query processing<br/>Response generation<br/>Context management"]
+        MEMORY_SYSTEM["Memory System<br/>Conversation context<br/>Long-term memory<br/>Context persistence"]
+        HYBRID_SEARCH["Hybrid Search<br/>BM25 + Semantic search<br/>Document retrieval<br/>Knowledge base access"]
+        GEMINI_RESPONSE["Gemini AI<br/>Response generation<br/>Natural language processing<br/>Context-aware responses"]
+    end
+
+    subgraph "Integration Flow"
+        QUERY_PROCESSING["Query Processing"]
+        CONTEXT_INTEGRATION["Context Integration"]
+        RESPONSE_GENERATION["Response Generation"]
+        MEMORY_STORAGE["Memory Storage"]
+    end
+
+    CHAT_SERVICE -->|"Process queries"| QUERY_PROCESSING
+    MEMORY_SYSTEM -->|"Provide context"| CONTEXT_INTEGRATION
+    HYBRID_SEARCH -->|"Retrieve docs"| RESPONSE_GENERATION
+    GEMINI_RESPONSE -->|"Generate responses"| RESPONSE_GENERATION
+    MEMORY_SYSTEM -->|"Store context"| MEMORY_STORAGE
+```
+
+#### **8. Data Storage Layer**
+
+Persistent storage and caching systems.
+
+```mermaid
+graph TB
+    subgraph "Data Storage Layer"
+        POSTGRES[("PostgreSQL<br/>Memory & Documents<br/>Conversation history<br/>Knowledge base")]
+        PINECONE[("Pinecone<br/>Vector embeddings<br/>Semantic search<br/>Similarity matching")]
+        CACHE[("Tool Cache<br/>Response caching<br/>Performance optimization<br/>Reduced API calls")]
+        CONFIG_FILE[("mcp-tools.json<br/>Tool configuration<br/>Persistent settings<br/>Tool management")]
+    end
+
+    subgraph "Storage Types"
+        RELATIONAL_DB["Relational Database"]
+        VECTOR_DB["Vector Database"]
+        CACHE_STORAGE["Cache Storage"]
+        CONFIG_STORAGE["Configuration Storage"]
+    end
+
+    RELATIONAL_DB --> POSTGRES
+    VECTOR_DB --> PINECONE
+    CACHE_STORAGE --> CACHE
+    CONFIG_STORAGE --> CONFIG_FILE
+```
+
+#### **9. Complete System Flow**
+
+How all layers work together in the complete system, starting with query classification.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as User Interface
+    participant Chat as Chat Service
+    participant Classifier as Query Classifier
+    participant MCP as MCP Service
+    participant Tools as MCP Tools
+    participant Search as Hybrid Search
+    participant Memory as Memory System
+    participant AI as Gemini AI
+    participant Storage as Data Storage
+
+    User->>UI: Submit query
+    UI->>Chat: Process user query
+    Chat->>Classifier: Classify query intent
+
+    alt MCP_TOOLS_ONLY
+        Classifier->>MCP: Route to MCP tools
+        MCP->>Tools: Execute relevant tools
+        Tools->>AI: Tool selection (if needed)
+        AI->>Tools: Tool decision
+        Tools->>MCP: Tool results
+        MCP->>Chat: Enhanced response
+    else HYBRID_SEARCH
+        Classifier->>Search: Route to hybrid search
+        Search->>Storage: Retrieve documents
+        Storage->>Search: Relevant chunks
+        Search->>Memory: Get context
+        Memory->>Search: Context data
+        Search->>AI: Generate response
+        AI->>Search: AI response
+        Search->>Chat: Documentation response
+    else COMBINED
+        Classifier->>MCP: Execute MCP tools
+        Classifier->>Search: Execute hybrid search
+        par MCP Processing
+            MCP->>Tools: Execute tools
+            Tools->>MCP: Tool results
+        and Search Processing
+            Search->>Storage: Retrieve documents
+            Storage->>Search: Relevant chunks
+        end
+        MCP->>AI: Combine results
+        Search->>AI: Combine results
+        AI->>Chat: Combined response
+    end
+
+    Chat->>Memory: Store conversation
+    Memory->>Storage: Persist context
+    Chat->>UI: Final response
+    UI->>User: Display answer
 ```
 
 ## 🛠️ Available MCP Tools
