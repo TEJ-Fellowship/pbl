@@ -665,6 +665,7 @@ async function startIntegratedChat() {
 
           let result;
           let chunks = [];
+          let searchQuery = query; // Initialize searchQuery with original query
 
           // Step 2: Route based on classification
           if (classification.approach === "MCP_TOOLS_ONLY") {
@@ -724,8 +725,8 @@ async function startIntegratedChat() {
               } relevant Q&As`
             );
 
-            // Use reformulated query for retrieval (not for mcp tools)
-            const searchQuery = memoryContext.reformulatedQuery || query;
+            // Use reformulated query for retrieval (for hybridSearch)
+            searchQuery = memoryContext.reformulatedQuery || query;
             console.log(
               `\n🔍 Searching with reformulated query: "${searchQuery.substring(
                 0,
@@ -754,7 +755,7 @@ async function startIntegratedChat() {
               `📊 Document confidence: ${(confidence * 100).toFixed(1)}%`
             );
 
-            // Generate response with memory context (no MCP tools)
+            // Generate response with memory context (mcp enhanced)
             result = await generateResponseWithMemoryAndMCP(
               query,
               chunks,
@@ -777,8 +778,8 @@ async function startIntegratedChat() {
               } relevant Q&As`
             );
 
-            // Use reformulated query for retrieval (not for mcp tools)
-            const searchQuery = memoryContext.reformulatedQuery || query;
+            // Use reformulated query for retrieval (for MCP and hybrid search)
+            searchQuery = memoryContext.reformulatedQuery || query;
             console.log(
               `\n🔍 Searching with reformulated query: "${searchQuery.substring(
                 0,
