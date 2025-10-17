@@ -36,47 +36,81 @@ The Stripe Customer Support Agent uses a hybrid search approach combining keywor
 
 ```mermaid
 graph TB
-    subgraph "User Interface Layer"
+direction TB
+   subgraph "User Interface Layer"
         CLI["CLI Chat Interface"]
         API["REST API Endpoints"]
     end
-
+  subgraph "1"
+  direction LR
     subgraph "Application Layer"
         CHAT["Chat Service<br/>Query processing"]
+        CLASSIFIER["Query Classifier<br/>Route to <br/>MCP/Hybrid/Combined"]
         SEARCH["Hybrid Search Engine<br/>BM25 + Semantic fusion"]
         SERVER["Express Server<br/>Request routing"]
-    end
+        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
 
+    end
     subgraph "Memory System"
         BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
         AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
-        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
         QnA_ANALYSIS["Analysis of <br/>User Query <br/>&<br/>Response"]
+        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
     end
 
+  end
+
+  subgraph "2"
+  direction LR
     subgraph "Search Processing"
+        EMBEDDINGS["Text Embeddings<br/>Vector generation"]
         BM25["PostgreSQL BM25<br/>Keyword matching"]
         VECTOR["Pinecone Vector Search<br/>Semantic similarity"]
         FUSION["Result Fusion Engine<br/>Weighted scoring"]
-    end
-
-    subgraph "AI Services"
-        GEMINI["Gemini 2.0-flash<br/>Response generation"]
-        EMBEDDINGS["Text Embeddings<br/>Vector generation"]
-    end
-
-    subgraph "Data Storage Layer"
-        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
         POSTGRES[("PostgreSQL<br/>Document chunks<br/> & <br/>Memory")]
         PINECONE[("Pinecone<br/>Vector embeddings")]
+         GEMINI["Response generation<br/>From Hybrid Search"]
     end
+
+    subgraph "MCP System"
+        MCP_SERVICE["MCP Integration Service<br/>Tool orchestration"]
+        AGENT_ORCH["Agent Orchestrator<br/>Contains AI Tool <br/>Selection"]
+        MCP_TOOLS["MCP Tools<br/>Calculator, <br/>Status Checker, <br/>Web Search<br/>Code Validator, <br/>DateTime, <br/>Currency Converter"]
+        TOOL_CONFIG["Tool Config Manager<br/>Dynamic tool management"]
+        MCP_RESPONSE["MCP Response<br/>Generator"]
+         MCP_CONFIG[("mcp-tools.json<br/>Tool configuration")]
+    end
+   COMBINED["Response generation<br/>From Both"]
+  end
+
+
+
+    1 --> _ --> 2
+
+
 
     %% User interaction flow
     CLI -->|"User query input"| CHAT
     API -->|"HTTP requests"| SERVER
     SERVER -->|"Route to chat service"| CHAT
     CHAT -->|"Formatted response"| CLI
+
+    %% Query classification and routing
+    CHAT -->|"User query"| CLASSIFIER
+    CLASSIFIER -->|"Query Classified <br/>MCP tools <br/>only needed"| MCP_SERVICE
+    CLASSIFIER -->|"Query Classified <br/>Documentation needed"| SEARCH
+    CLASSIFIER -->|"Query Classified <br/>Both needed"| MCP_SERVICE
+    CLASSIFIER -->|"Query Classified <br/>Both needed"| SEARCH
+
+    %% MCP system flow
+    MCP_SERVICE -->|"Tool selection"| AGENT_ORCH
+    AGENT_ORCH -->|"Execute tools"| MCP_TOOLS
+    MCP_SERVICE -->|"Tool status"| TOOL_CONFIG
+    TOOL_CONFIG -->|"Configuration"| MCP_CONFIG
+    MCP_RESPONSE -->|"MCP Response"| CHAT
+    MCP_TOOLS -->|"MCP results"| MCP_RESPONSE
+    MCP_TOOLS -->|"MCP results"| COMBINED
 
     %% Memory processing flow
     CHAT -->|"User message"| MEMORY_CTRL
@@ -86,7 +120,6 @@ graph TB
     BUFFER -->|"Recent context"| MEMORY_CTRL
     MEMORY_DB -->|"Relevant Q&A pairs<br/>SessionContext"| MEMORY_CTRL
     MEMORY_CTRL -->|"User Query<br/>Relevant Q&A pairs<br/>SessionContext<br/>RecentContext"| QUERY_REFORM
-
 
     %% Search orchestration with memory
     CHAT -->|"Process reformulated query"| SEARCH
@@ -100,9 +133,11 @@ graph TB
     VECTOR -->|"Vector results"| FUSION
     FUSION -->|"Ranked results"| CHAT
     FUSION -->|"Context + sources"| GEMINI
+    FUSION -->|"Context + sources"| COMBINED
 
     %% AI response generation with memory
-    GEMINI -->|"AI-generated response"| CHAT
+    GEMINI -->|"Hybrid Search response"| CHAT
+    COMBINED -->|"Combined response"| CHAT
     CHAT -->|"Assistant response"| MEMORY_CTRL
     QnA_ANALYSIS -->|"Processed Q&A pairs"| MEMORY_DB
     MEMORY_CTRL -->|"Memory Context"| GEMINI
@@ -110,7 +145,6 @@ graph TB
     %% Conversation Summarization with AI
     MEMORY_CTRL -->|"Conversation history<br/>with SessionID"| AI_SUMMARY
     AI_SUMMARY -->|"AI-generated summary"| MEMORY_DB
-
 
     %% Search and embeddings flow
     SEARCH -->|"Search query"| EMBEDDINGS
@@ -151,6 +185,25 @@ graph TB
 ## 🔧 MCP Tool Integration
 
 The Stripe Customer Support Agent includes **Model Context Protocol (MCP)** tool integration, providing specialized tools for enhanced query processing and intelligent responses.
+
+```mermaid
+flowchart TD
+    USER["User Query"] --> CHAT["Chat Service"]
+    CHAT --> CLASSIFIER["Query Classifier"]
+
+    CLASSIFIER -->|"MCP tools needed"| MCP["MCP Tools Only"]
+    CLASSIFIER -->|"Documentation needed"| SEARCH["Hybrid Search Only"]
+    CLASSIFIER -->|"Both needed"| COMBINED["Combined Approach"]
+
+    MCP --> TOOLS["Execute MCP Tools"]
+    SEARCH --> DOCS["Retrieve Documents"]
+    COMBINED --> TOOLS
+    COMBINED --> DOCS
+
+    TOOLS --> RESPONSE["Generate Response"]
+    DOCS --> RESPONSE
+    RESPONSE --> USER
+```
 
 ### 🛠️ Available MCP Tools
 
