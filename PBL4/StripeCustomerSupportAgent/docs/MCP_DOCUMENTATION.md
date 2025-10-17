@@ -8,57 +8,61 @@ The **Model Context Protocol (MCP)** tool integration for the Stripe Customer Su
 
 The MCP integration follows a sophisticated architecture that seamlessly integrates with the existing Stripe Customer Support Agent system, providing intelligent tool selection and execution capabilities with AI-powered decision making.
 
-### MCP System Design
+### **Comprehensive System Architecture Overview**
+
+The MCP system is built on a multi-layered architecture that provides intelligent tool orchestration, AI-powered selection, and seamless integration with the core Stripe support system. The architecture emphasizes modularity, scalability, and intelligent decision-making.
 
 ```mermaid
 graph TB
-    subgraph "User Interface Layer"
-        CLI["CLI Chat Interface"]
-        API["REST API Endpoints"]
-        WEB["Web Interface"]
-        TOOL_MGR["Tool Manager CLI<br/>Dynamic tool control"]
+    subgraph "🌐 User Interface Layer"
+        CLI["💻 CLI Chat Interface<br/>Interactive command-line chat"]
+        API["🔌 REST API Endpoints<br/>HTTP API for web integration"]
+        WEB["🌍 Web Interface<br/>Browser-based chat interface"]
+        TOOL_MGR["⚙️ Tool Manager CLI<br/>Dynamic tool control & management"]
     end
 
-    subgraph "MCP Integration Layer"
-        MCP_SERVICE["MCP Integration Service<br/>Main orchestrator & coordinator"]
-        AGENT_ORCH["Agent Orchestrator<br/>Tool coordination & execution"]
-        AI_SELECTOR["AI Tool Selection Service<br/>Gemini-powered tool selection"]
-        TOOL_CONFIG["Tool Config Manager<br/>Dynamic tool management"]
+    subgraph "🧠 MCP Integration Layer"
+        MCP_SERVICE["🎯 MCP Integration Service<br/>Main orchestrator & coordinator<br/>Query processing & tool coordination"]
+        AGENT_ORCH["🤖 Agent Orchestrator<br/>Tool coordination & execution<br/>Multi-tool workflow management"]
+        AI_SELECTOR["🧠 AI Tool Selection Service<br/>Gemini AI-powered tool selection<br/>Intelligent decision making"]
+        TOOL_CONFIG["⚙️ Tool Config Manager<br/>Dynamic tool management<br/>Persistent configuration"]
     end
 
-    subgraph "MCP Tools Layer (mcp-tools/)"
-        CALC["🧮 Calculator Tool<br/>Stripe fee calculations<br/>Mathematical expressions"]
-        STATUS["⚠️ Status Checker Tool<br/>Stripe API status monitoring<br/>Real-time health checks"]
-        WEB_SEARCH["🔍 Web Search Tool<br/>Google Custom Search<br/>Current information"]
-        CODE_VAL["✅ Code Validator Tool<br/>Syntax validation<br/>API endpoint verification"]
-        DATETIME["📅 DateTime Tool<br/>Date/time operations<br/>Business hours"]
+    subgraph "🛠️ MCP Tools Layer (mcp-tools/)"
+        CALC["🧮 Calculator Tool<br/>Stripe fee calculations<br/>Mathematical expressions<br/>Natural language math"]
+        STATUS["⚠️ Status Checker Tool<br/>Stripe API status monitoring<br/>Real-time health checks<br/>Service availability"]
+        WEB_SEARCH["🔍 Web Search Tool<br/>Google Custom Search<br/>Current information<br/>Real-time data access"]
+        CODE_VAL["✅ Code Validator Tool<br/>Syntax validation<br/>API endpoint verification<br/>Best practice suggestions"]
+        DATETIME["📅 DateTime Tool<br/>Date/time operations<br/>Business hours<br/>Time zone conversions"]
+        CURRENCY["💱 Currency Converter Tool<br/>Real-time exchange rates<br/>Multi-currency support<br/>Cross-currency calculations"]
     end
 
-    subgraph "MCP Server Layer (mcp-server/)"
-        AI_SERVICE["AI Tool Selection Service<br/>Gemini AI integration"]
-        CONFIG_MGR["Tool Config Manager<br/>Persistent configuration"]
-        ORCHESTRATOR["Agent Orchestrator<br/>Tool execution engine"]
+    subgraph "🏗️ MCP Server Layer (mcp-server/)"
+        AI_SERVICE["🧠 AI Tool Selection Service<br/>Gemini AI integration<br/>Context-aware selection"]
+        CONFIG_MGR["⚙️ Tool Config Manager<br/>Persistent configuration<br/>Runtime tool management"]
+        ORCHESTRATOR["🤖 Agent Orchestrator<br/>Tool execution engine<br/>Workflow coordination"]
     end
 
-    subgraph "External Services"
-        STRIPE_API["Stripe API<br/>Status endpoints<br/>Service health"]
-        GOOGLE_SEARCH["Google Custom Search<br/>Web search API<br/>Current information"]
-        GEMINI_AI["Gemini AI<br/>Tool selection intelligence"]
-        MATH_ENGINE["Math.js Engine<br/>Mathematical calculations<br/>Expression parsing"]
+    subgraph "🌍 External Services"
+        STRIPE_API["💳 Stripe API<br/>Status endpoints<br/>Service health monitoring<br/>Real-time status data"]
+        GOOGLE_SEARCH["🔍 Google Custom Search<br/>Web search API<br/>Current information<br/>Real-time web data"]
+        GEMINI_AI["🧠 Gemini AI<br/>Tool selection intelligence<br/>Context-aware decisions<br/>Natural language processing"]
+        MATH_ENGINE["🧮 Math.js Engine<br/>Mathematical calculations<br/>Expression parsing<br/>Advanced math operations"]
+        EXCHANGE_API["💱 Exchange Rate APIs<br/>Real-time currency data<br/>Multi-source rates<br/>Historical data"]
     end
 
-    subgraph "Core System Integration"
-        CHAT_SERVICE["Chat Service<br/>Query processing"]
-        MEMORY_SYSTEM["Memory System<br/>Conversation context"]
-        HYBRID_SEARCH["Hybrid Search<br/>BM25 + Semantic"]
-        GEMINI_RESPONSE["Gemini AI<br/>Response generation"]
+    subgraph "🔗 Core System Integration"
+        CHAT_SERVICE["💬 Chat Service<br/>Query processing<br/>Response generation<br/>Context management"]
+        MEMORY_SYSTEM["🧠 Memory System<br/>Conversation context<br/>Long-term memory<br/>Context persistence"]
+        HYBRID_SEARCH["🔍 Hybrid Search<br/>BM25 + Semantic search<br/>Document retrieval<br/>Knowledge base access"]
+        GEMINI_RESPONSE["🧠 Gemini AI<br/>Response generation<br/>Natural language processing<br/>Context-aware responses"]
     end
 
-    subgraph "Data Storage"
-        POSTGRES[("PostgreSQL<br/>Memory & Documents")]
-        PINECONE[("Pinecone<br/>Vector embeddings")]
-        CACHE[("Tool Cache<br/>Response caching")]
-        CONFIG_FILE[("mcp-tools.json<br/>Tool configuration")]
+    subgraph "💾 Data Storage Layer"
+        POSTGRES[("🐘 PostgreSQL<br/>Memory & Documents<br/>Conversation history<br/>Knowledge base")]
+        PINECONE[("🌲 Pinecone<br/>Vector embeddings<br/>Semantic search<br/>Similarity matching")]
+        CACHE[("⚡ Tool Cache<br/>Response caching<br/>Performance optimization<br/>Reduced API calls")]
+        CONFIG_FILE[("📄 mcp-tools.json<br/>Tool configuration<br/>Persistent settings<br/>Tool management")]
     end
 
     %% User interaction flow
@@ -75,6 +79,7 @@ graph TB
     AGENT_ORCH -->|"Execute tools"| WEB_SEARCH
     AGENT_ORCH -->|"Execute tools"| CODE_VAL
     AGENT_ORCH -->|"Execute tools"| DATETIME
+    AGENT_ORCH -->|"Execute tools"| CURRENCY
 
     %% AI-powered selection
     AI_SELECTOR -->|"Gemini AI calls"| GEMINI_AI
@@ -90,6 +95,7 @@ graph TB
     WEB_SEARCH -->|"Search queries"| GOOGLE_SEARCH
     CODE_VAL -->|"Validation logic"| CODE_VAL
     DATETIME -->|"Time operations"| DATETIME
+    CURRENCY -->|"Exchange rates"| EXCHANGE_API
 
     %% Integration with core system
     MCP_SERVICE -->|"Enhanced response"| CHAT_SERVICE
@@ -109,50 +115,85 @@ graph TB
     WEB_SEARCH -->|"Search results"| AGENT_ORCH
     CODE_VAL -->|"Validation results"| AGENT_ORCH
     DATETIME -->|"Time information"| AGENT_ORCH
+    CURRENCY -->|"Conversion results"| AGENT_ORCH
 
     %% Final response flow
     AGENT_ORCH -->|"Tool results"| MCP_SERVICE
     MCP_SERVICE -->|"Enhanced response"| CLI
     MCP_SERVICE -->|"API response"| API
     MCP_SERVICE -->|"Web response"| WEB
+
+    %% Styling
+    classDef userLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef mcpLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef toolsLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef serverLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef externalLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef coreLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef storageLayer fill:#e0f2f1,stroke:#004d40,stroke-width:2px
+
+    class CLI,API,WEB,TOOL_MGR userLayer
+    class MCP_SERVICE,AGENT_ORCH,AI_SELECTOR,TOOL_CONFIG mcpLayer
+    class CALC,STATUS,WEB_SEARCH,CODE_VAL,DATETIME,CURRENCY toolsLayer
+    class AI_SERVICE,CONFIG_MGR,ORCHESTRATOR serverLayer
+    class STRIPE_API,GOOGLE_SEARCH,GEMINI_AI,MATH_ENGINE,EXCHANGE_API externalLayer
+    class CHAT_SERVICE,MEMORY_SYSTEM,HYBRID_SEARCH,GEMINI_RESPONSE coreLayer
+    class POSTGRES,PINECONE,CACHE,CONFIG_FILE storageLayer
 ```
 
-### MCP Tool Execution Flow
+### **Enhanced MCP Tool Selection Logic**
+
+The system now features an advanced, multi-layered tool selection process that combines AI intelligence with robust fallback mechanisms.
 
 ```mermaid
-sequenceDiagram
-    participant User
-    participant MCP_Service
-    participant AI_Selector
-    participant Gemini_AI
-    participant Agent_Orchestrator
-    participant MCP_Tools
-    participant External_APIs
-    participant Chat_Service
+flowchart TD
+    START([User Query]) --> CONFIDENCE[Document Confidence Score]
+    CONFIDENCE --> AI_SELECTION{AI Tool Selection}
 
-    User->>MCP_Service: "What's Stripe's fee for $1000?"
-    MCP_Service->>AI_Selector: Analyze query with confidence score
-    AI_Selector->>Gemini_AI: Send query for AI tool selection
-    Gemini_AI->>AI_Selector: Return tool selection decision
-    AI_Selector->>AI_Selector: Parse AI response & validate
-    AI_Selector->>Agent_Orchestrator: Selected tools: [calculator, status_checker]
+    AI_SELECTION -->|Gemini AI Available| GEMINI_ANALYSIS[Gemini AI Analysis]
+    AI_SELECTION -->|AI Unavailable| RULE_BASED[Rule-Based Selection]
 
-    Agent_Orchestrator->>MCP_Tools: Execute calculator tool
-    MCP_Tools->>MCP_Tools: Calculate 2.9% + $0.30 of $1000
-    MCP_Tools->>Agent_Orchestrator: Result: $29.30 fee (confidence: 0.9)
+    GEMINI_ANALYSIS --> GEMINI_PARSE[Parse AI Response]
+    GEMINI_PARSE --> GEMINI_VALIDATE{Valid Selection?}
+    GEMINI_VALIDATE -->|Yes| SELECTED_TOOLS[Selected Tools]
+    GEMINI_VALIDATE -->|No| RULE_BASED
 
-    Agent_Orchestrator->>MCP_Tools: Execute status_checker tool
-    MCP_Tools->>External_APIs: Check Stripe API status
-    External_APIs->>MCP_Tools: Status: operational
-    MCP_Tools->>Agent_Orchestrator: Result: All systems operational (confidence: 0.8)
+    RULE_BASED --> PATTERN_MATCH{Pattern Matching}
+    PATTERN_MATCH -->|Contains: $, %, calculate, fee| CALC_TRIGGER[Calculator Tool]
+    PATTERN_MATCH -->|Contains: status, down, outage| STATUS_TRIGGER[Status Checker Tool]
+    PATTERN_MATCH -->|Contains: search, find, latest| WEB_TRIGGER[Web Search Tool]
+    PATTERN_MATCH -->|Contains: validate, check, code| CODE_TRIGGER[Code Validator Tool]
+    PATTERN_MATCH -->|Contains: date, time, schedule| TIME_TRIGGER[DateTime Tool]
+    PATTERN_MATCH -->|Contains: convert, currency, exchange| CURRENCY_TRIGGER[Currency Converter Tool]
 
-    Agent_Orchestrator->>MCP_Service: Combined tool results with confidence
-    MCP_Service->>Chat_Service: Enhanced response with tool data
-    Chat_Service->>MCP_Service: Final AI-generated response
-    MCP_Service->>User: "Stripe's fee for $1000 is $29.30 (2.9% + $0.30). All Stripe services are currently operational."
+    CALC_TRIGGER --> TOOL_ENABLED{Is Tool Enabled?}
+    STATUS_TRIGGER --> TOOL_ENABLED
+    WEB_TRIGGER --> TOOL_ENABLED
+    CODE_TRIGGER --> TOOL_ENABLED
+    TIME_TRIGGER --> TOOL_ENABLED
+    CURRENCY_TRIGGER --> TOOL_ENABLED
 
-    Note over AI_Selector, Gemini_AI: AI-powered tool selection with fallback to rule-based selection
-    Note over MCP_Service, Chat_Service: Confidence-driven response enhancement
+    TOOL_ENABLED -->|Yes| SELECTED_TOOLS
+    TOOL_ENABLED -->|No| SKIP_TOOL[Skip Disabled Tool]
+
+    SELECTED_TOOLS --> CONFIDENCE_CHECK{Confidence > 0.5?}
+    SKIP_TOOL --> CONFIDENCE_CHECK
+
+    CONFIDENCE_CHECK -->|Yes| EXECUTE[Execute Selected Tools]
+    CONFIDENCE_CHECK -->|No| FALLBACK[Use Core Chat System]
+
+    EXECUTE --> PARALLEL_EXEC[Parallel Tool Execution]
+    PARALLEL_EXEC --> COMBINE[Combine Tool Results]
+    FALLBACK --> COMBINE
+
+    COMBINE --> ENHANCE[Enhance with AI Response]
+    ENHANCE --> RESPONSE[Return Enhanced Response]
+
+    RESPONSE --> END([User Receives Response])
+
+    Note over GEMINI_ANALYSIS, GEMINI_VALIDATE: AI-powered intelligent selection
+    Note over RULE_BASED, PATTERN_MATCH: Fallback rule-based selection
+    Note over TOOL_ENABLED, SKIP_TOOL: Dynamic tool management
 ```
 
 ### MCP Tool Selection Logic
@@ -354,6 +395,28 @@ graph LR
 - Time zone conversions
 - Date arithmetic operations
 
+### 6. **Currency Converter Tool** 💱
+
+**Purpose**: Convert currencies with real-time exchange rates
+
+**Triggers**: Queries containing `convert`, `currency`, `exchange`, `rate`, `USD`, `EUR`, `INR`, `GBP`, `NPR`
+
+**Examples**:
+
+- "Convert $100 to INR"
+- "What's the exchange rate from USD to EUR?"
+- "Convert 5000 INR to USD"
+- "How much is 100 EUR in GBP?"
+
+**Features**:
+
+- Real-time exchange rate data
+- Multi-currency support (USD, EUR, INR, GBP, NPR)
+- Fallback exchange rates for offline operation
+- Historical rate tracking
+- Cross-currency calculations
+- Confidence scoring based on data freshness
+
 ## 🎯 MCP Integration Features
 
 ### **🤖 AI-Powered Tool Selection** 🆕
@@ -363,6 +426,15 @@ graph LR
 - **Fallback Mechanism**: Rule-based selection when AI is unavailable
 - **Confidence-Driven**: AI considers document confidence scores for better decisions
 - **Multi-Tool Coordination**: AI can select multiple tools for complex queries
+
+### **💱 Advanced Currency Support** 🆕
+
+- **Real-time Exchange Rates**: Live currency conversion with up-to-date rates
+- **Multi-Currency Support**: USD, EUR, INR, GBP, NPR with extensible architecture
+- **Fallback Rates**: Offline operation with cached exchange rates
+- **Cross-Currency Calculations**: Complex multi-currency operations
+- **Historical Rate Tracking**: Rate history for trend analysis
+- **Confidence Scoring**: Data freshness indicators for conversion accuracy
 
 ### **📁 Organized Folder Structure** 🆕
 
@@ -409,6 +481,17 @@ graph LR
 - **Comprehensive Error Reporting**: Detailed error tracking and reporting
 - **Graceful Degradation**: System continues to function even with partial failures
 
+### **🚀 Advanced System Capabilities**
+
+- **Multi-Layer Architecture**: Sophisticated system design with clear separation of concerns
+- **Intelligent Orchestration**: AI-powered tool coordination with context awareness
+- **Dynamic Configuration**: Runtime tool management without system restart
+- **Comprehensive Monitoring**: Real-time system health and performance tracking
+- **Scalable Design**: Easy addition of new tools and capabilities
+- **Production Ready**: Robust error handling and fallback mechanisms
+- **Performance Optimized**: Intelligent caching and parallel execution
+- **Security Focused**: Secure API key management and input validation
+
 ## 🚀 Current Implementation Status
 
 ### **✅ Fully Implemented & Tested**
@@ -418,6 +501,7 @@ graph LR
 - **Web Search Tool**: Google Custom Search integration with Stripe-focused filtering
 - **DateTime Tool**: Date/time operations and business hours calculations
 - **Code Validator Tool**: Code syntax validation and API endpoint verification
+- **Currency Converter Tool**: Real-time currency conversion with multi-currency support
 - **AI Tool Selection Service**: Gemini AI-powered intelligent tool selection
 - **Dynamic Tool Management**: Runtime tool enable/disable with persistent configuration
 - **Organized Folder Structure**: Clean separation between server and tool components
@@ -429,11 +513,14 @@ graph LR
 - **🔧 Dynamic Tool Management**: Added runtime tool configuration with persistent storage
 - **📊 Enhanced Analytics**: AI selection statistics and comprehensive monitoring
 - **🛡️ Robust Fallback**: AI selection with rule-based fallback mechanism
+- **💱 Currency Converter Tool**: Added real-time currency conversion with multi-currency support
 - **Google Custom Search Migration**: Migrated from Brave Search to Google Custom Search API (free tier)
 - **Stripe API Integration**: Status checker now uses direct Stripe API calls with your secret key
 - **Enhanced Testing**: Comprehensive test suite with individual tool testing
 - **Improved Caching**: Better performance with intelligent response caching
 - **Updated Configuration**: Streamlined environment variable setup
+- **Advanced Architecture**: Multi-layered system with comprehensive error handling
+- **Enhanced Documentation**: Updated with latest system architecture and features
 
 ### **📊 Test Results**
 
@@ -776,7 +863,8 @@ Backend/
 │   │   ├── statusCheckerTool.js      # Stripe API status monitoring
 │   │   ├── webSearchTool.js          # Google Custom Search
 │   │   ├── codeValidatorTool.js      # Code validation
-│   │   └── dateTimeTool.js           # Date/time operations
+│   │   ├── dateTimeTool.js           # Date/time operations
+│   │   └── currencyConverterTool.js  # Currency conversion
 │   └── mcpIntegrationService.js      # Main MCP coordinator
 ├── config/
 │   └── mcp-tools.json        # Persistent tool configuration
