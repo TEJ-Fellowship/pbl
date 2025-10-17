@@ -49,6 +49,13 @@ class ToolConfigManager {
           dependencies: ["date-fns"],
           apiKeys: [],
         },
+        currency_converter: {
+          enabled: true,
+          name: "Currency Converter Tool",
+          description: "Convert currencies with real-time exchange rates",
+          dependencies: ["axios"],
+          apiKeys: [],
+        },
       },
       lastUpdated: new Date().toISOString(),
       version: "1.0.0",

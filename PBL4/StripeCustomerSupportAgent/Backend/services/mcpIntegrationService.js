@@ -521,6 +521,10 @@ class MCPIntegrationService {
     const configs = this.getAllToolConfigs();
     const aiStats = this.orchestrator.aiToolSelection.getStats();
 
+    // Get tool information from orchestrator (includes all available tools)
+    const orchestratorToolInfo = this.orchestrator.getToolInfo();
+    const availableTools = this.orchestrator.getAvailableTools();
+
     return {
       status: statusSummary,
       usage: usageStats,
@@ -528,6 +532,8 @@ class MCPIntegrationService {
       integrationEnabled: this.isEnabled,
       configFile: this.toolConfigManager.getConfigFilePath(),
       aiSelection: aiStats,
+      orchestratorTools: orchestratorToolInfo,
+      availableTools: availableTools,
     };
   }
 }

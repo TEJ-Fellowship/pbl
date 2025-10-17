@@ -556,7 +556,11 @@ async function startIntegratedChat() {
             console.log(`   Integration: ${integrationStatus}`);
 
             // Check tools status with null safety
-            console.log(`   Tools Available: ${mcpStatus.status?.total || 0}`);
+            console.log(
+              `   Tools Available: ${
+                mcpStatus.availableTools?.length || mcpStatus.status?.total || 0
+              }`
+            );
             console.log(`   Tools Enabled: ${mcpStatus.status?.enabled || 0}`);
             console.log(
               `   Tools Disabled: ${mcpStatus.status?.disabled || 0}`
@@ -575,6 +579,23 @@ async function startIntegratedChat() {
               );
             } else {
               console.log("\n🛠️ Tool Details: Not available");
+            }
+
+            // Show orchestrator tools (all available tools)
+            if (
+              mcpStatus.orchestratorTools &&
+              Object.keys(mcpStatus.orchestratorTools).length > 0
+            ) {
+              console.log("\n🔧 Orchestrator Tools:");
+              Object.entries(mcpStatus.orchestratorTools).forEach(
+                ([toolName, toolInfo]) => {
+                  console.log(
+                    `   ✅ ${toolName}: ${
+                      toolInfo.description || toolInfo.name
+                    }`
+                  );
+                }
+              );
             }
 
             // Show AI selection status if available
@@ -733,6 +754,27 @@ async function startIntegratedChat() {
             } else {
               // Fallback to hybrid search if MCP fails
               console.log("⚠️ MCP tools failed, falling back to hybrid search");
+
+              // Get complete memory context for query reformulation
+              const memoryContext =
+                await memoryController.getCompleteMemoryContext(query);
+              console.log(
+                `🧠 Memory context: ${
+                  memoryContext.recentContext?.messageCount || 0
+                } recent messages, ${
+                  memoryContext.longTermContext?.relevantQAs?.length || 0
+                } relevant Q&As`
+              );
+
+              // Use reformulated query for retrieval
+              searchQuery = memoryContext.reformulatedQuery || query;
+              console.log(
+                `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+                  0,
+                  60
+                )}..."`
+              );
+
               chunks = await retrieveChunksWithHybridSearch(
                 searchQuery,
                 vectorStore,

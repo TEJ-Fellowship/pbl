@@ -78,7 +78,8 @@ ${toolList}
 Context: This is a Stripe Customer Support Agent. Users ask questions about Stripe API, payments, webhooks, billing, disputes, etc.
 
 Tool Selection Guidelines:
-- calculator: Use for fee calculations, math operations, pricing questions
+- calculator: Use for fee calculations, math operations, pricing questions, percentage calculations, mathematical expressions
+- currency_converter: Use for currency conversions, exchange rates, "convert X to Y" queries
 - status_checker: Use for system status, downtime, "is Stripe down" questions
 - web_search: Use for recent updates, latest information, "what's new" questions
 - code_validator: Use for code validation, API endpoint verification, syntax checking

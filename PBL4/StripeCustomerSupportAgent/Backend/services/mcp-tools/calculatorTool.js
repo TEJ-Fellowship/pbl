@@ -67,12 +67,17 @@ class CalculatorTool {
       const avgConfidence =
         results.length > 0 ? totalConfidence / results.length : 0;
 
-      return {
+      const response = {
         success: true,
         results,
         confidence: avgConfidence,
         message: this.generateResponse(results, query),
       };
+
+      // Clear last conversion after use
+      this.lastConversion = null;
+
+      return response;
     } catch (error) {
       console.error("❌ Calculator Tool Error:", error);
       return {
@@ -91,6 +96,13 @@ class CalculatorTool {
    */
   extractMathExpressions(query) {
     const expressions = [];
+
+    // Check for currency conversion first
+    const currencyConversion = this.extractCurrencyConversion(query);
+    if (currencyConversion) {
+      expressions.push(currencyConversion);
+      return expressions;
+    }
 
     // Pattern 1: Direct mathematical expressions
     const directMath = query.match(/[\d\.\+\-\*\/\(\)%]+/g);
@@ -128,6 +140,84 @@ class CalculatorTool {
   }
 
   /**
+   * Extract currency conversion from query
+   * @param {string} query - User query
+   * @returns {string|null} - Currency conversion expression or null
+   */
+  extractCurrencyConversion(query) {
+    const lowerQuery = query.toLowerCase();
+
+    // Check for currency conversion patterns (more flexible to handle typos)
+    const currencyPatterns = [
+      // Handle "ot" typo for "to"
+      /convert\s+(\d+(?:\.\d+)?)\s*(rupee|rupees|rs|inr)\s*ot\s*(dollar|dollars|usd|us)/i,
+      /convert\s+(\d+(?:\.\d+)?)\s*(dollar|dollars|usd|us)\s*ot\s*(rupee|rupees|rs|inr)/i,
+      /(\d+(?:\.\d+)?)\s*(rupee|rupees|rs|inr)\s*ot\s*(dollar|dollars|usd|us)/i,
+      /(\d+(?:\.\d+)?)\s*(dollar|dollars|usd|us)\s*ot\s*(rupee|rupees|rs|inr)/i,
+      // Standard patterns
+      /convert\s+(\d+(?:\.\d+)?)\s*(rupee|rupees|rs|inr)\s*to\s*(dollar|dollars|usd|us)/i,
+      /convert\s+(\d+(?:\.\d+)?)\s*(dollar|dollars|usd|us)\s*to\s*(rupee|rupees|rs|inr)/i,
+      /(\d+(?:\.\d+)?)\s*(rupee|rupees|rs|inr)\s*to\s*(dollar|dollars|usd|us)/i,
+      /(\d+(?:\.\d+)?)\s*(dollar|dollars|usd|us)\s*to\s*(rupee|rupees|rs|inr)/i,
+      // More flexible patterns
+      /(\d+(?:\.\d+)?)\s*(rupee|rupees|rs|inr)\s*in\s*(dollar|dollars|usd|us)/i,
+      /(\d+(?:\.\d+)?)\s*(dollar|dollars|usd|us)\s*in\s*(rupee|rupees|rs|inr)/i,
+    ];
+
+    for (const pattern of currencyPatterns) {
+      const match = query.match(pattern);
+      if (match) {
+        const amount = parseFloat(match[1]);
+        const fromCurrency = match[2].toLowerCase();
+        const toCurrency = match[3]
+          ? match[3].toLowerCase()
+          : match[4].toLowerCase();
+
+        // Use approximate exchange rates (these should be updated with real-time rates)
+        let rate = 1;
+        if (
+          fromCurrency.includes("rupee") ||
+          fromCurrency.includes("rs") ||
+          fromCurrency.includes("inr")
+        ) {
+          if (
+            toCurrency.includes("dollar") ||
+            toCurrency.includes("usd") ||
+            toCurrency.includes("us")
+          ) {
+            rate = 0.012; // Approximate INR to USD rate
+          }
+        } else if (
+          fromCurrency.includes("dollar") ||
+          fromCurrency.includes("usd") ||
+          fromCurrency.includes("us")
+        ) {
+          if (
+            toCurrency.includes("rupee") ||
+            toCurrency.includes("rs") ||
+            toCurrency.includes("inr")
+          ) {
+            rate = 83.0; // Approximate USD to INR rate
+          }
+        }
+
+        // Store conversion details for better formatting
+        this.lastConversion = {
+          amount,
+          fromCurrency,
+          toCurrency,
+          rate,
+          result: amount * rate,
+        };
+
+        return `${amount} * ${rate}`;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Calculate confidence score for a mathematical expression
    * @param {string} expression - Mathematical expression
    * @param {number} result - Calculated result
@@ -156,6 +246,35 @@ class CalculatorTool {
    */
   formatResult(result, expression) {
     if (typeof result === "number") {
+      // Check if this is a currency conversion
+      if (this.lastConversion) {
+        const { fromCurrency, toCurrency, amount } = this.lastConversion;
+
+        // Format based on target currency
+        if (
+          toCurrency.includes("dollar") ||
+          toCurrency.includes("usd") ||
+          toCurrency.includes("us")
+        ) {
+          if (result % 1 === 0) {
+            return `$${result.toFixed(0)}`;
+          } else {
+            return `$${result.toFixed(2)}`;
+          }
+        } else if (
+          toCurrency.includes("rupee") ||
+          toCurrency.includes("rs") ||
+          toCurrency.includes("inr")
+        ) {
+          if (result % 1 === 0) {
+            return `₹${result.toFixed(0)}`;
+          } else {
+            return `₹${result.toFixed(2)}`;
+          }
+        }
+      }
+
+      // Default formatting
       if (result % 1 === 0) {
         return `$${result.toFixed(0)}`;
       } else {
@@ -180,6 +299,15 @@ class CalculatorTool {
 
     if (successfulResults.length === 1) {
       const result = successfulResults[0];
+
+      // Check if this is a currency conversion for better messaging
+      if (this.lastConversion) {
+        const { amount, fromCurrency, toCurrency } = this.lastConversion;
+        return `${amount} ${fromCurrency.toUpperCase()} = ${
+          result.formatted
+        } (${toCurrency.toUpperCase()})`;
+      }
+
       return `The result is ${result.formatted} (${result.expression})`;
     }
 
@@ -204,6 +332,8 @@ class CalculatorTool {
       /fee|cost|price/, // Financial terms
       /[\+\-\*\/]/, // Math operators
       /percent|percentage/, // Percentage keywords
+      /convert.*to|currency|rupee|dollar|euro|pound/, // Currency conversion
+      /\d+\s*(rupee|dollar|euro|pound|rs|usd|eur|gbp)/i, // Currency amounts
     ];
 
     return mathIndicators.some((pattern) => pattern.test(query.toLowerCase()));

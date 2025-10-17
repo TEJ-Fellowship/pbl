@@ -34,8 +34,15 @@
       "description": "Date/time operations and business hours",
       "dependencies": ["date-fns"],
       "apiKeys": []
+    },
+    "currency_converter": {
+      "enabled": true,
+      "name": "Currency Converter Tool",
+      "description": "Convert currencies with real-time exchange rates",
+      "dependencies": ["axios"],
+      "apiKeys": []
     }
   },
-  "lastUpdated": "2025-10-15T01:57:35.798Z",
+  "lastUpdated": "2025-01-17T11:45:00.000Z",
   "version": "1.0.0"
 }

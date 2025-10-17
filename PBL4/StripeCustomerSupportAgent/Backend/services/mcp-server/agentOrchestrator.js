@@ -3,6 +3,7 @@ import StatusCheckerTool from "../mcp-tools/statusCheckerTool.js";
 import WebSearchTool from "../mcp-tools/webSearchTool.js";
 import CodeValidatorTool from "../mcp-tools/codeValidatorTool.js";
 import DateTimeTool from "../mcp-tools/dateTimeTool.js";
+import CurrencyConverterTool from "../mcp-tools/currencyConverterTool.js";
 import AIToolSelectionService from "./aiToolSelectionService.js";
 
 /**
@@ -28,6 +29,7 @@ class AgentOrchestrator {
     this.tools.set("web_search", new WebSearchTool());
     this.tools.set("code_validator", new CodeValidatorTool());
     this.tools.set("datetime", new DateTimeTool());
+    this.tools.set("currency_converter", new CurrencyConverterTool());
 
     console.log(`✅ Initialized ${this.tools.size} MCP tools`);
   }
