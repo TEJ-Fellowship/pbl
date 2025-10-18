@@ -24,6 +24,7 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
   - **🔍 Web Search**: Enhanced web search capabilities for current information
   - **✅ Code Validator**: Code validation and syntax checking
   - **📅 DateTime Tool**: Date and time operations and formatting
+  - **💱 Currency Converter**: Currency conversion for global payments and multi-currency queries
 
   <em>MCP Tool Integration can be enabled/disabled via environment/configuration.</em>
   </details>
@@ -212,6 +213,7 @@ flowchart TD
 - **🔍 Web Search**: Enhanced web search capabilities for current information using google custom engine
 - **✅ Code Validator**: Code validation and syntax checking
 - **📅 DateTime Tool**: Date and time operations and formatting
+- **💱 Currency Converter**: Currency conversion for global payments and multi-currency queries
 
 ### 🎯 Key Features
 
@@ -233,7 +235,12 @@ npm run demo:mcp
 node examples/mcpChatExample.js
 ```
 
-> 📖 **For detailed MCP documentation, see [MCP_DOCUMENTATION.md](../docs/MCP_DOCUMENTATION.md)**
+> 📖 **For detailed MCP documentation, see [MCP_DOCUMENTATION.md](../docs/mcp/MCP_DOCUMENTATION.md)**
+
+> 📖 **For detailed Agent Orchestrator documentation, see [AGENT_ORCHESTRATOR_ANALYSIS.md](../docs/mcp/AGENT_ORCHESTRATOR_ANALYSIS.md)**
+
+> 📖 **For detailed Query Classifier documentation, see [QUERY_CLASSIFIER_INTEGRATION.md](../docs/mcp/QUERY_CLASSIFIER_INTEGRATION.md)**
+
 > 📖 **For detailed Google Search Setup documentation, see [GOOGLE_SEARCH_SETUP.md](../docs/GOOGLE_SEARCH_SETUP.md)**
 
 ## 🧠 Conversational Memory System
