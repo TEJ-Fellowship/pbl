@@ -806,7 +806,7 @@ async function startIntegratedChat() {
               );
             }
           } else if (classification.approach === "HYBRID_SEARCH") {
-            console.log("🔍 Using hybrid search only approach");
+            console.log("🔍 Using hybrid search approach");
 
             // Get complete memory context for query reformulation
             const memoryContext =

@@ -1,4 +1,4 @@
-# Stripe Customer Support Agent - Backend
+# Stripe Customer Support Agent -( Backend )
 
 A comprehensive Node.js backend for the Stripe Customer Support Agent featuring AI-powered chat capabilities, intelligent conversational memory system, hybrid search (BM25 + semantic), and documentation ingestion using PineCone and PostgreSQL.
 
