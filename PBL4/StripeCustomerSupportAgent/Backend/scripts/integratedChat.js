@@ -479,7 +479,7 @@ async function startIntegratedChat() {
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
     const mcpService = new MCPIntegrationService();
-    const queryClassifier = new QueryClassifier();
+    const queryClassifier = new QueryClassifier(mcpService.orchestrator);
 
     // Initialize PostgreSQL BM25 service for hybrid search
     const postgresBM25Service = new PostgreSQLBM25Service();
@@ -674,6 +674,9 @@ async function startIntegratedChat() {
           console.log(
             "  • Validate this endpoint: /v1/charges (Code Validator Tool)"
           );
+          console.log(
+            "  • Convert $50 USD to Nepali rupee (Currency Converter Tool)"
+          );
 
           console.log("\n📚 HYBRID_SEARCH Examples:");
           console.log("  • How do I create a payment intent with Stripe?");
@@ -718,9 +721,11 @@ async function startIntegratedChat() {
           });
 
           // Step 1: Classify the original query to decide approach
+          const enabledTools = mcpService.getEnabledTools();
           const classification = await queryClassifier.classifyQuery(
             query,
-            0.5
+            0.5,
+            enabledTools
           );
           console.log(
             `📊 Classification: ${classification.approach} - ${classification.reasoning}`

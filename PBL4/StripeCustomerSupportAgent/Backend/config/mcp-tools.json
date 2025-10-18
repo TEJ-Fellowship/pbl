@@ -4,22 +4,33 @@
       "enabled": true,
       "name": "Calculator Tool",
       "description": "Mathematical calculations and Stripe fee computations",
-      "dependencies": ["mathjs"],
+      "dependencies": [
+        "mathjs"
+      ],
       "apiKeys": []
     },
     "status_checker": {
       "enabled": true,
       "name": "Status Checker Tool",
       "description": "Real-time Stripe API status monitoring",
-      "dependencies": ["axios"],
-      "apiKeys": ["STRIPE_SECRET_KEY"]
+      "dependencies": [
+        "axios"
+      ],
+      "apiKeys": [
+        "STRIPE_SECRET_KEY"
+      ]
     },
     "web_search": {
-      "enabled": false,
+      "enabled": true,
       "name": "Web Search Tool",
       "description": "Google Custom Search for current information",
-      "dependencies": ["axios"],
-      "apiKeys": ["GOOGLE_SEARCH_API_KEY", "GOOGLE_SEARCH_ENGINE_ID"]
+      "dependencies": [
+        "axios"
+      ],
+      "apiKeys": [
+        "GOOGLE_SEARCH_API_KEY",
+        "GOOGLE_SEARCH_ENGINE_ID"
+      ]
     },
     "code_validator": {
       "enabled": true,
@@ -32,17 +43,21 @@
       "enabled": true,
       "name": "DateTime Tool",
       "description": "Date/time operations and business hours",
-      "dependencies": ["date-fns"],
+      "dependencies": [
+        "date-fns"
+      ],
       "apiKeys": []
     },
     "currency_converter": {
       "enabled": true,
       "name": "Currency Converter Tool",
       "description": "Convert currencies with real-time exchange rates",
-      "dependencies": ["axios"],
+      "dependencies": [
+        "axios"
+      ],
       "apiKeys": []
     }
   },
-  "lastUpdated": "2025-01-17T11:45:00.000Z",
+  "lastUpdated": "2025-10-18T02:29:45.385Z",
   "version": "1.0.0"
 }
