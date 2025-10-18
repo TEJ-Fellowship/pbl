@@ -8,11 +8,6 @@ const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
-  // Database
-  MONGODB_URL: process.env.MONGODB_URL,
-  MONGODB_DB: process.env.MONGODB_DB,
-  MONGODB_URI: process.env.MONGODB_URI,
-
   // PostgreSQL Configuration
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,
@@ -39,6 +34,7 @@ const config = {
   CHUNK_SIZE: process.env.CHUNK_SIZE,
   CHUNK_OVERLAP: process.env.CHUNK_OVERLAP,
   MAX_CHUNKS: process.env.MAX_CHUNKS,
+  MAX_SOURCES: process.env.MAX_SOURCES,
   BATCH_SIZE: process.env.BATCH_SIZE,
 
   // Rate Limiting

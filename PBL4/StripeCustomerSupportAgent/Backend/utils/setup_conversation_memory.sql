@@ -8,7 +8,10 @@ CREATE TABLE IF NOT EXISTS conversation_sessions (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     is_active BOOLEAN DEFAULT true,
-    metadata JSONB DEFAULT '{}'::jsonb
+    metadata JSONB DEFAULT '{}'::jsonb,
+    total_tokens INTEGER DEFAULT 0,
+    max_tokens INTEGER DEFAULT 4000,
+    token_usage_percentage DECIMAL(5,2) DEFAULT 0.00
 );
 
 -- Individual messages within conversations
@@ -19,6 +22,7 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     metadata JSONB DEFAULT '{}'::jsonb,
+    token_count INTEGER DEFAULT 0,
     FOREIGN KEY (session_id) REFERENCES conversation_sessions(session_id) ON DELETE CASCADE
 );
 
@@ -155,6 +159,46 @@ BEGIN
         qa.relevance_score DESC,
         ts_rank(to_tsvector('english', qa.question), plainto_tsquery('english', p_query)) DESC
     LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to estimate token count for text
+CREATE OR REPLACE FUNCTION estimate_token_count(text_content TEXT)
+RETURNS INTEGER AS $$
+BEGIN
+    -- Rough estimation: 1 token ≈ 4 characters for English text
+    RETURN GREATEST(1, CEIL(LENGTH(text_content) / 4.0));
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to update session token usage
+CREATE OR REPLACE FUNCTION update_session_token_usage(p_session_id VARCHAR(255))
+RETURNS VOID AS $$
+DECLARE
+    session_total_tokens INTEGER;
+    session_max_tokens INTEGER;
+    usage_percentage DECIMAL(5,2);
+BEGIN
+    -- Get total tokens for the session
+    SELECT COALESCE(SUM(token_count), 0) INTO session_total_tokens
+    FROM conversation_messages 
+    WHERE session_id = p_session_id;
+    
+    -- Get max tokens for the session
+    SELECT COALESCE(cs.max_tokens, 4000) INTO session_max_tokens
+    FROM conversation_sessions cs
+    WHERE cs.session_id = p_session_id;
+    
+    -- Calculate usage percentage
+    usage_percentage := (session_total_tokens::DECIMAL / session_max_tokens::DECIMAL) * 100;
+    
+    -- Update session with new token counts
+    UPDATE conversation_sessions 
+    SET 
+        total_tokens = session_total_tokens,
+        token_usage_percentage = usage_percentage,
+        updated_at = NOW()
+    WHERE session_id = p_session_id;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -453,7 +453,7 @@ class MemoryController {
 
       // Get Gemini model
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         generationConfig: {
           temperature: 0.3,
           topK: 40,

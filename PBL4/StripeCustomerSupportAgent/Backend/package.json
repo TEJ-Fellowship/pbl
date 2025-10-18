@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "dev": "nodemon index.js",
     "scrape": "node scripts/scraper.js",
     "scrape:latest": "node tests/getLatestScraped.js",
     "ingest": "node scripts/ingest.js",
@@ -26,6 +27,7 @@
     "test:integrated-chat": "node scripts/testIntegratedChat.js",
     "demo:mcp": "node scripts/mcpDemo.js",
     "tool-manager": "node scripts/toolManager.js",
+    "test:api": "node tests/testAPI.js",
     "migrate:postgres": "node utils/migrate-to-postgres.js",
     "setup:memory": "node utils/setup_memory_schema.js",
     "setup": "npm run scrape && npm run ingest && npm run setup:memory",

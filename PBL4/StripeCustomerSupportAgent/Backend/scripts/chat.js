@@ -212,18 +212,64 @@ async function generateResponse(query, chunks, geminiClient) {
   try {
     console.log("🤖 Generating response...");
 
-    // Prepare context from retrieved chunks
-    const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Stripe Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://stripe.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
 
     // Generate response using Gemini
     const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
@@ -240,7 +286,7 @@ RESPONSE GUIDELINES:
 4. **Step-by-Step**: Break down complex processes into clear, actionable steps
 5. **Error Handling**: Mention common errors and how to handle them
 6. **Best Practices**: Include security considerations and best practices
-7. **Source Citations**: Reference specific sources using [Source X] format
+7. **Source Citations**: ALWAYS reference sources using the EXACT format shown in the context: [Source X: Title (Category)]. For example, if you see "[Source 1: Stripe Webhooks Documentation (webhooks)]" in the context, use exactly that format in your response.
 8. **If Uncertain**: Clearly state when information isn't available in the context
 
 FORMAT YOUR RESPONSE:
@@ -248,12 +294,24 @@ FORMAT YOUR RESPONSE:
 - Provide detailed explanation with code examples
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
-- End with source citations
+- End with a formatted source list using this EXACT format:
+
+📚 **Sources:**
+🔗 [Title] - URL
+🔗 [Title] - URL
+🔗 [Title] - URL
+
+IMPORTANT: 
+- Use clean, readable titles (remove markdown formatting, truncate if too long)
+- Include the actual URLs from the source metadata
+- Format sources as clickable links with emojis for visual separation
+- Keep titles concise and descriptive (max 60 characters)
+- Only show the most relevant sources (top 3)
 
 Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -279,18 +337,64 @@ async function generateResponseWithMemory(
   try {
     console.log("\n🤖 Generating response with memory context...");
 
-    // Prepare context from retrieved chunks
-    const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Stripe Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://stripe.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
 
     // Build memory context string
     let memoryContextString = "";
@@ -334,7 +438,7 @@ async function generateResponseWithMemory(
       6. **Step-by-Step**: Break down complex processes into clear, actionable steps
       7. **Error Handling**: Mention common errors and how to handle them
       8. **Best Practices**: Include security considerations and best practices
-      9. **Source Citations**: Reference specific sources using [Source X] format
+      9. **Source Citations**: ALWAYS reference sources using the EXACT format shown in the context: [Source X: Title (Category)]. For example, if you see "[Source 1: Stripe Webhooks Documentation (webhooks)]" in the context, use exactly that format in your response.
       10. **If Uncertain**: Clearly state when information isn't available in the context
 
       FORMAT YOUR RESPONSE:
@@ -343,12 +447,24 @@ async function generateResponseWithMemory(
       - Provide detailed explanation with code examples
       - Include relevant API endpoints and parameters
       - Mention any prerequisites or setup requirements
-      - End with source citations
+      - End with a formatted source list using this EXACT format:
+
+      📚 **Sources:**
+      🔗 [Title] - URL
+      🔗 [Title] - URL
+      🔗 [Title] - URL
+
+      IMPORTANT: 
+      - Use clean, readable titles (remove markdown formatting, truncate if too long)
+      - Include the actual URLs from the source metadata
+      - Format sources as clickable links with emojis for visual separation
+      - Keep titles concise and descriptive (max 60 characters)
+      - Only show the most relevant sources (top 3)
 
       Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -518,8 +634,36 @@ async function startChat() {
           console.log(result.answer);
           console.log("-".repeat(40));
 
-          // Show sources
-          if (result.sources && result.sources.length > 0) {
+          // Show sources only for Stripe-related queries
+          const isStripeQuery = query.toLowerCase().includes('stripe') || 
+                                query.toLowerCase().includes('payment') ||
+                                query.toLowerCase().includes('webhook') ||
+                                query.toLowerCase().includes('api') ||
+                                query.toLowerCase().includes('charge') ||
+                                query.toLowerCase().includes('customer') ||
+                                query.toLowerCase().includes('subscription') ||
+                                query.toLowerCase().includes('billing') ||
+                                query.toLowerCase().includes('invoice') ||
+                                query.toLowerCase().includes('refund') ||
+                                query.toLowerCase().includes('dispute') ||
+                                query.toLowerCase().includes('connect') ||
+                                query.toLowerCase().includes('radar') ||
+                                query.toLowerCase().includes('terminal') ||
+                                query.toLowerCase().includes('checkout') ||
+                                query.toLowerCase().includes('payment intent') ||
+                                query.toLowerCase().includes('payment method') ||
+                                query.toLowerCase().includes('card') ||
+                                query.toLowerCase().includes('bank') ||
+                                query.toLowerCase().includes('ach') ||
+                                query.toLowerCase().includes('payout') ||
+                                query.toLowerCase().includes('balance') ||
+                                query.toLowerCase().includes('fee') ||
+                                query.toLowerCase().includes('tax') ||
+                                query.toLowerCase().includes('shipping') ||
+                                query.toLowerCase().includes('address') ||
+                                query.toLowerCase().includes('verification');
+
+          if (isStripeQuery && result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
             // console.log("\n📚First Source:", result.sources[0]);
             result.sources.forEach((source) => {
