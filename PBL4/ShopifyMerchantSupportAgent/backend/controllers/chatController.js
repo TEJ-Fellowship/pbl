@@ -8,6 +8,7 @@ import MarkdownIt from "markdown-it";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import MCPOrchestrator from "../src/mcp/mcpOrchestrator.js";
+import { multiTurnManager } from "../src/multi-turn-conversation.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -242,28 +243,56 @@ export async function processChatMessage(message, sessionId) {
     // Add message to conversation
     await conversation.addMessage(userMessage._id);
 
-    // Initialize memory for this session
-    const memory = new BufferWindowMemory({
-      windowSize: 8,
-      sessionId: sessionId,
-      maxTokens: 6000,
-      modelName: "gemini-2.5-flash",
-      prioritizeRecent: true,
-      prioritizeRelevance: true,
-    });
+    // Get conversation history for multi-turn processing
+    const conversationHistory = await getConversationHistory(sessionId);
+    const messages = conversationHistory.messages || [];
 
-    await memory.initializeConversation();
+    // Use multi-turn conversation manager for enhanced context
+    const enhancedContext = await multiTurnManager.buildEnhancedContext(
+      message,
+      sessionId,
+      messages,
+      [] // Will be populated after search
+    );
 
-    // Get conversation context
-    const conversationContext = await memory.getConversationContext();
-    const contextualQuery = conversationContext
-      ? `${conversationContext}Current question: ${message}`
-      : message;
-    const queryEmbedding = await embedSingle(contextualQuery);
+    // Check if clarification is needed
+    if (enhancedContext.needsClarification) {
+      const clarificationMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: enhancedContext.clarificationQuestion,
+        metadata: {
+          searchResults: [],
+          modelUsed: "multi-turn-clarification",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          clarificationRequest: true,
+        },
+      });
+      await clarificationMessage.save();
+      await conversation.addMessage(clarificationMessage._id);
 
-    // Perform hybrid search
+      return {
+        answer: enhancedContext.clarificationQuestion,
+        confidence: {
+          score: 100,
+          level: "High",
+          factors: ["Clarification request"],
+        },
+        sources: [],
+        needsClarification: true,
+        conversationState: enhancedContext.conversationState,
+        followUpDetection: enhancedContext.followUpDetection,
+        ambiguityDetection: enhancedContext.ambiguityDetection,
+      };
+    }
+
+    // Use enhanced contextual query for search
+    const queryEmbedding = await embedSingle(enhancedContext.contextualQuery);
+
+    // Perform hybrid search with enhanced contextual query
     const results = await retriever.search({
-      query: contextualQuery,
+      query: enhancedContext.contextualQuery,
       queryEmbedding,
       k: 8, // Increased for more comprehensive results
     });
@@ -307,96 +336,18 @@ export async function processChatMessage(message, sessionId) {
       };
     }
 
-    // Get token-aware context window
-    const systemPrompt = `You are a helpful Shopify merchant support agent. Use the provided context to answer questions accurately and helpfully.`;
-    const tokenAwareContext = await memory.getTokenAwareContext(
-      results,
-      systemPrompt
+    // Use multi-turn conversation manager for enhanced response generation
+    const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
+      message,
+      sessionId,
+      messages,
+      results
     );
 
-    const context = tokenAwareContext.documents
-      .map(
-        (r, i) =>
-          `[Source ${i + 1}] ${r.metadata?.title || "Unknown"} (${
-            r.metadata?.source_url || "N/A"
-          })\n${r.doc}`
-      )
-      .join("\n\n---\n\n");
-
-    // Build conversation history
-    const conversationHistory =
-      tokenAwareContext.messages.length > 0
-        ? tokenAwareContext.messages
-            .map((msg) => `${msg.role}: ${msg.content}`)
-            .join("\n")
-        : "";
-
-    const prompt = `You are an expert Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
-
-CONTEXT: You have access to comprehensive Shopify documentation including:
-- Shopify platform overview and getting started guides
-- Product and inventory management
-- Order fulfillment and shipping
-- Theme development and customization
-- API documentation (REST Admin API, GraphQL Admin API, Storefront API)
-- App development and integrations
-- Community discussions and solutions
-
-INSTRUCTIONS:
-1. **Answer comprehensively**: Use the provided documentation context to give detailed, actionable answers
-2. **Be specific**: Include specific steps, API endpoints, code examples, or configuration details when relevant
-3. **Provide context**: Explain not just what to do, but why and when to use different approaches
-4. **Use examples**: Include practical examples, code snippets, or step-by-step instructions
-5. **Cite sources**: Reference specific sources using "According to [Source X]..." format
-6. **Be helpful**: If the context doesn't fully answer the question, provide the best available information and suggest next steps
-7. **Format clearly**: Use markdown formatting (bold, lists, code blocks, etc.) for better readability
-8. **Maintain continuity**: Reference previous conversation context when relevant
-
-RESPONSE GUIDELINES:
-- For API questions: Include endpoint details, parameters, and example requests/responses
-- For setup questions: Provide step-by-step instructions with specific settings
-- For troubleshooting: Offer multiple solutions and explain when to use each
-- For general questions: Give comprehensive overviews with practical applications
-
-${conversationHistory ? `CONVERSATION HISTORY:\n${conversationHistory}\n` : ""}
-
-RETRIEVED DOCUMENTATION:
-${context}
-
-USER QUESTION: ${message}
-
-EXPERT ANSWER:`;
-
-    // Generate response
-    let result;
-    try {
-      result = await model.generateContent({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-      });
-    } catch (err) {
-      const msg = (err && err.message) || "";
-      const unavailable =
-        msg.includes("not available") ||
-        msg.includes("404") ||
-        msg.toLowerCase().includes("not found") ||
-        msg.toLowerCase().includes("model not found");
-
-      if (unavailable) {
-        result = { response: { text: () => "No response generated." } };
-      } else {
-        throw err;
-      }
-    }
-
-    const answer = result.response?.text() || "No response generated.";
+    const answer = enhancedResponse.answer;
 
     // Calculate confidence score
-    const confidence = calculateConfidence(tokenAwareContext.documents, answer);
+    const confidence = calculateConfidence(results, answer);
 
     // Process with MCP tools if needed
     let enhancedAnswer = answer;
@@ -419,25 +370,31 @@ EXPERT ANSWER:`;
       }
     }
 
-    // Create assistant message
+    // Create assistant message with multi-turn metadata
     const assistantMessage = new Message({
       conversationId: conversation._id,
       role: "assistant",
       content: enhancedAnswer,
       metadata: {
-        searchResults: tokenAwareContext.documents.map((r) => ({
+        searchResults: results.map((r) => ({
           title: r.metadata?.title || "Unknown",
           source_url: r.metadata?.source_url || "N/A",
           category: r.metadata?.category || "unknown",
           score: r.score,
           searchType: r.searchType,
         })),
-        modelUsed: "gemini-2.5-flash",
+        modelUsed: "gemini-1.5-flash-multi-turn",
         processingTime: Date.now() - startTime,
-        tokensUsed: tokenAwareContext.tokenUsage.totalTokens,
+        tokensUsed: 0, // Will be updated if token counting is implemented
         mcpTools: {
           toolsUsed: toolsUsed,
           toolResults: toolResults,
+        },
+        multiTurnContext: {
+          turnCount: enhancedResponse.conversationState.turnCount,
+          isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
+          userPreferences: enhancedResponse.conversationState.userPreferences,
+          contextualQuery: enhancedResponse.contextualQuery,
         },
       },
     });
@@ -447,7 +404,7 @@ EXPERT ANSWER:`;
     return {
       answer: enhancedAnswer,
       confidence,
-      sources: tokenAwareContext.documents.map((r, i) => ({
+      sources: results.map((r, i) => ({
         id: i + 1,
         title: r.metadata?.title || "Unknown",
         url: r.metadata?.source_url || "N/A",
@@ -456,8 +413,14 @@ EXPERT ANSWER:`;
         searchType: r.searchType,
         content: r.doc,
       })),
-      tokenUsage: tokenAwareContext.tokenUsage,
-      truncated: tokenAwareContext.truncated,
+      multiTurnContext: {
+        turnCount: enhancedResponse.conversationState.turnCount,
+        isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
+        followUpConfidence: enhancedResponse.followUpDetection.confidence,
+        userPreferences: enhancedResponse.conversationState.userPreferences,
+        contextualQuery: enhancedResponse.contextualQuery,
+        conversationStats: multiTurnManager.getConversationStats(sessionId),
+      },
       mcpTools: {
         toolsUsed: toolsUsed,
         toolResults: toolResults,
@@ -503,6 +466,202 @@ export async function getConversationHistory(sessionId) {
     };
   } catch (error) {
     console.error("Error getting conversation history:", error);
+    throw error;
+  }
+}
+
+// Handle clarification responses
+export async function processClarificationResponse(
+  clarificationResponse,
+  originalQuestion,
+  sessionId
+) {
+  try {
+    await initializeAI();
+
+    const startTime = Date.now();
+
+    // Get conversation
+    const conversation = await Conversation.findOne({ sessionId });
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    // Process clarification with multi-turn manager
+    const clarificationResult =
+      await multiTurnManager.processClarificationResponse(
+        clarificationResponse,
+        originalQuestion,
+        sessionId
+      );
+
+    // Create user clarification message
+    const clarificationMessage = new Message({
+      conversationId: conversation._id,
+      role: "user",
+      content: clarificationResponse,
+      metadata: {
+        clarificationResponse: true,
+        originalQuestion: originalQuestion,
+      },
+    });
+    await clarificationMessage.save();
+    await conversation.addMessage(clarificationMessage._id);
+
+    // Get conversation history
+    const conversationHistory = await getConversationHistory(sessionId);
+    const messages = conversationHistory.messages || [];
+
+    // Perform search with clarified query
+    const queryEmbedding = await embedSingle(
+      clarificationResult.clarifiedQuery
+    );
+    const results = await retriever.search({
+      query: clarificationResult.clarifiedQuery,
+      queryEmbedding,
+      k: 8,
+    });
+
+    // Generate enhanced response
+    const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
+      clarificationResult.clarifiedQuery,
+      sessionId,
+      messages,
+      results
+    );
+
+    const answer = enhancedResponse.answer;
+    const confidence = calculateConfidence(results, answer);
+
+    // Process with MCP tools if needed
+    let enhancedAnswer = answer;
+    let toolResults = {};
+    let toolsUsed = [];
+
+    if (mcpOrchestrator) {
+      try {
+        const mcpResult = await mcpOrchestrator.processWithTools(
+          clarificationResult.clarifiedQuery,
+          confidence.score / 100,
+          answer
+        );
+        enhancedAnswer = mcpResult.enhancedAnswer;
+        toolResults = mcpResult.toolResults;
+        toolsUsed = mcpResult.toolsUsed;
+      } catch (error) {
+        console.error("MCP processing error:", error);
+      }
+    }
+
+    // Create assistant message
+    const assistantMessage = new Message({
+      conversationId: conversation._id,
+      role: "assistant",
+      content: enhancedAnswer,
+      metadata: {
+        searchResults: results.map((r) => ({
+          title: r.metadata?.title || "Unknown",
+          source_url: r.metadata?.source_url || "N/A",
+          category: r.metadata?.category || "unknown",
+          score: r.score,
+          searchType: r.searchType,
+        })),
+        modelUsed: "gemini-1.5-flash-clarification",
+        processingTime: Date.now() - startTime,
+        tokensUsed: 0,
+        clarificationProcessed: true,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
+        multiTurnContext: {
+          turnCount: enhancedResponse.conversationState.turnCount,
+          isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
+          userPreferences: enhancedResponse.conversationState.userPreferences,
+          contextualQuery: enhancedResponse.contextualQuery,
+        },
+      },
+    });
+    await assistantMessage.save();
+    await conversation.addMessage(assistantMessage._id);
+
+    return {
+      answer: enhancedAnswer,
+      confidence,
+      sources: results.map((r, i) => ({
+        id: i + 1,
+        title: r.metadata?.title || "Unknown",
+        url: r.metadata?.source_url || "N/A",
+        category: r.metadata?.category || "unknown",
+        score: r.score,
+        searchType: r.searchType,
+        content: r.doc,
+      })),
+      multiTurnContext: {
+        turnCount: enhancedResponse.conversationState.turnCount,
+        isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
+        followUpConfidence: enhancedResponse.followUpDetection.confidence,
+        userPreferences: enhancedResponse.conversationState.userPreferences,
+        contextualQuery: enhancedResponse.contextualQuery,
+        conversationStats: multiTurnManager.getConversationStats(sessionId),
+        clarificationProcessed: true,
+      },
+      mcpTools: {
+        toolsUsed: toolsUsed,
+        toolResults: toolResults,
+      },
+    };
+  } catch (error) {
+    console.error("Error processing clarification response:", error);
+    throw error;
+  }
+}
+
+// Get conversation statistics and multi-turn context
+export async function getConversationStats(sessionId) {
+  try {
+    await connectDB();
+
+    const conversation = await Conversation.findOne({ sessionId }).populate({
+      path: "messages",
+      options: { sort: { timestamp: 1 } },
+    });
+
+    if (!conversation) {
+      return {
+        conversation: null,
+        multiTurnStats: null,
+        messageCount: 0,
+      };
+    }
+
+    const multiTurnStats = multiTurnManager.getConversationStats(sessionId);
+
+    return {
+      conversation: {
+        id: conversation._id,
+        sessionId: conversation.sessionId,
+        title: conversation.title,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+        messageCount: conversation.messages.length,
+      },
+      multiTurnStats,
+      messageCount: conversation.messages.length,
+    };
+  } catch (error) {
+    console.error("Error getting conversation stats:", error);
+    throw error;
+  }
+}
+
+// Clean up conversation state (for memory management)
+export async function cleanupConversationState(sessionId) {
+  try {
+    multiTurnManager.cleanupConversationState(sessionId);
+    return { success: true, message: "Conversation state cleaned up" };
+  } catch (error) {
+    console.error("Error cleaning up conversation state:", error);
     throw error;
   }
 }

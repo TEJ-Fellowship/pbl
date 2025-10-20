@@ -574,4 +574,3 @@ EXPERT ANSWER:`;
 
 // Export singleton instance
 export const multiTurnManager = new MultiTurnConversationManager();
-
