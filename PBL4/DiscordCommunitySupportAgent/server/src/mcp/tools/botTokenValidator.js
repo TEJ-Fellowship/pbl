@@ -12,6 +12,31 @@ export class BotTokenValidatorTool {
   }
 
   /**
+   * Execute bot token validator tool
+   * @param {Object} options - Tool options
+   * @returns {Promise<Object>} Execution result
+   */
+  async execute(options = {}) {
+    try {
+      const { token } = options;
+
+      if (!token) {
+        return {
+          success: false,
+          error: 'Token is required for bot token validation'
+        };
+      }
+
+      return await this.validateToken(token);
+    } catch (error) {
+      return {
+        success: false,
+        error: `Bot token validator execution failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Validate bot token
    * @param {string} token - Discord bot token
    * @returns {Promise<Object>} Validation result

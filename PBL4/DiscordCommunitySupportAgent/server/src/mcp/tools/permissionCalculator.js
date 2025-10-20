@@ -89,6 +89,64 @@ export class PermissionCalculatorTool {
   }
 
   /**
+   * Execute permission calculator tool
+   * @param {Object} options - Tool options
+   * @returns {Promise<Object>} Execution result
+   */
+  async execute(options = {}) {
+    try {
+      const { action, permissions, bitfield } = options;
+
+      if (!action) {
+        return {
+          success: false,
+          error: 'Action is required. Available actions: calculate, parse, validate'
+        };
+      }
+
+      switch (action) {
+        case 'calculate':
+          if (!permissions || !Array.isArray(permissions)) {
+            return {
+              success: false,
+              error: 'Permissions array is required for calculate action'
+            };
+          }
+          return await this.calculatePermissions(permissions);
+
+        case 'parse':
+          if (!bitfield) {
+            return {
+              success: false,
+              error: 'Bitfield is required for parse action'
+            };
+          }
+          return await this.parseBitfield(bitfield);
+
+        case 'validate':
+          if (!permissions || !Array.isArray(permissions)) {
+            return {
+              success: false,
+              error: 'Permissions array is required for validate action'
+            };
+          }
+          return await this.validatePermissions(permissions);
+
+        default:
+          return {
+            success: false,
+            error: `Unknown action: ${action}. Available actions: calculate, parse, validate`
+          };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: `Permission calculator execution failed: ${error.message}`
+      };
+    }
+  }
+
+  /**
    * Calculate permission bitfield from permission names
    * @param {Array<string>} permissionNames - Array of permission names
    * @returns {Object} Calculation result

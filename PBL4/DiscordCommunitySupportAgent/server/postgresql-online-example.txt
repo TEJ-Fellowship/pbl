@@ -1,0 +1,16 @@
+# Example for online PostgreSQL (Neon/Supabase)
+# Replace these with your actual online PostgreSQL credentials
+
+# For Neon:
+# POSTGRES_HOST=ep-cool-name-123456.us-east-1.aws.neon.tech
+# POSTGRES_PORT=5432
+# POSTGRES_DB=neondb
+# POSTGRES_USER=your_username
+# POSTGRES_PASSWORD=your_password
+
+# For Supabase:
+# POSTGRES_HOST=db.your-project.supabase.co
+# POSTGRES_PORT=5432
+# POSTGRES_DB=postgres
+# POSTGRES_USER=postgres
+# POSTGRES_PASSWORD=your_password

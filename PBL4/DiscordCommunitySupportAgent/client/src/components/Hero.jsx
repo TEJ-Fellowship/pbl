@@ -1,5 +1,5 @@
 import { MdLogin } from "react-icons/md";
-import { Search, ChevronDown, ChevronRight, Code, FileText, Zap } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Code, FileText, Zap, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useState } from "react";
 
 const Hero = () => {
@@ -13,6 +13,7 @@ const Hero = () => {
     size: 'unknown',
     purpose: 'community'
   });
+  const [feedbackState, setFeedbackState] = useState(null); // 'positive' | 'negative'
 
   const handleSearch = async () => {
     if (!query.trim()) return;
@@ -40,9 +41,11 @@ const Hero = () => {
       if (data.success) {
         setAiAnswer(data.answer); // AI-generated answer
         setResults(data.results || []); // Source documents
+        setFeedbackState(null);
       } else {
         setAiAnswer("Sorry, I couldn't find relevant information for your query.");
         setResults([]);
+        setFeedbackState(null);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -73,6 +76,27 @@ const Hero = () => {
       .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-blue-500 pl-4 italic text-gray-300">$1</blockquote>')
       .replace(/^• (.*$)/gm, '<li class="ml-4">• $1</li>')
       .replace(/\n/g, '<br>');
+  };
+
+  const sendFeedback = async (type) => {
+    if (!aiAnswer || feedbackState) return;
+    // Optimistic highlight
+    setFeedbackState(type);
+    try {
+      await fetch('http://localhost:3001/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: 'user123',
+          query,
+          responseId: 'hero-answer',
+          feedbackType: type
+        })
+      });
+    } catch (e) {
+      console.error('Feedback error:', e);
+      setFeedbackState(null);
+    }
   };
 
   return (
@@ -120,6 +144,26 @@ const Hero = () => {
                 className="text-gray-200 leading-relaxed prose prose-invert max-w-none"
                 dangerouslySetInnerHTML={{ __html: formatMarkdown(aiAnswer) }}
               />
+              {/* Feedback controls */}
+              <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
+                <span>Was this helpful?</span>
+                <button
+                  onClick={() => sendFeedback('positive')}
+                  disabled={!!feedbackState}
+                  className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors ${feedbackState === 'positive' ? 'border-green-500 text-green-400 font-semibold' : 'border-gray-600 hover:bg-gray-700'}`}
+                >
+                  <ThumbsUp size={14} />
+                  <span>Yes</span>
+                </button>
+                <button
+                  onClick={() => sendFeedback('negative')}
+                  disabled={!!feedbackState}
+                  className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors ${feedbackState === 'negative' ? 'border-red-500 text-red-400 font-semibold' : 'border-gray-600 hover:bg-gray-700'}`}
+                >
+                  <ThumbsDown size={14} />
+                  <span>No</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
