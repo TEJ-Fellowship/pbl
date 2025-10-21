@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Send, Copy, Check, ThumbsUp, ThumbsDown, Menu, X } from "lucide-react";
 import { renderMarkdown } from "./utils/markdown.js";
 import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL = "http://localhost:3003/api";
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -15,7 +15,6 @@ function App() {
     () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
   const [expandedSources, setExpandedSources] = useState({});
-  const [copiedCode, setCopiedCode] = useState({});
   const [feedback, setFeedback] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingClarification, setPendingClarification] = useState(null);
@@ -32,9 +31,9 @@ function App() {
   useEffect(() => {
     // Load conversation history on mount
     loadConversationHistory();
-  }, []);
+  }, [loadConversationHistory]);
 
-  const loadConversationHistory = async () => {
+  const loadConversationHistory = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/history/${sessionId}`);
       if (response.data.messages) {
@@ -43,7 +42,7 @@ function App() {
     } catch (error) {
       console.error("Error loading conversation history:", error);
     }
-  };
+  }, [sessionId]);
 
   const handleSessionChange = async (newSessionId) => {
     setSessionId(newSessionId);
@@ -115,6 +114,7 @@ function App() {
         timestamp: new Date(),
         confidence: response.data.confidence,
         sources: response.data.sources || [],
+        sourceAttribution: response.data.sourceAttribution || {},
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
         mcpTools: response.data.mcpTools || {},
@@ -154,14 +154,6 @@ function App() {
     }
   };
 
-  const copyCode = (code, messageId) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode((prev) => ({ ...prev, [messageId]: true }));
-    setTimeout(() => {
-      setCopiedCode((prev) => ({ ...prev, [messageId]: false }));
-    }, 2000);
-  };
-
   const handleFeedback = (messageId, isPositive) => {
     setFeedback((prev) => ({ ...prev, [messageId]: isPositive }));
     // Here you could send feedback to backend if needed
@@ -193,12 +185,13 @@ function App() {
             </div>
           )}
 
-          <div
-            className="message-text"
-            dangerouslySetInnerHTML={{
-              __html: renderMarkdown(message.content),
-            }}
-          />
+          <div className="message-text">
+            <div
+              dangerouslySetInnerHTML={{
+                __html: renderMarkdown(message.content),
+              }}
+            />
+          </div>
 
           {/* Multi-turn context indicators */}
           {message.multiTurnContext && (
@@ -234,38 +227,151 @@ function App() {
 
               {message.sources && message.sources.length > 0 && (
                 <div className="sources">
-                  <button
-                    className="sources-toggle"
-                    onClick={() => toggleSources(message.id)}
-                  >
-                    {expandedSources[message.id]
-                      ? "Hide Sources"
-                      : `Show Sources (${message.sources.length})`}
-                  </button>
+                  <div className="sources-summary">
+                    <span className="sources-count">
+                      Answer synthesized from {message.sources.length} sources:
+                    </span>
+                    <button
+                      className="sources-toggle"
+                      onClick={() => toggleSources(message.id)}
+                    >
+                      {expandedSources[message.id]
+                        ? "Hide Details"
+                        : "Show Details"}
+                    </button>
+                  </div>
+
+                  {/* Attribution Summary */}
+                  {message.sourceAttribution &&
+                    message.sourceAttribution.attributionSummary && (
+                      <div className="attribution-summary">
+                        <div className="attribution-stats">
+                          <span className="attribution-rate">
+                            {
+                              message.sourceAttribution.attributionSummary
+                                .attributionRate
+                            }
+                            % Attribution Rate
+                          </span>
+                          <span className="attribution-breakdown">
+                            {
+                              message.sourceAttribution.attributionSummary
+                                .attributedSentences
+                            }{" "}
+                            of{" "}
+                            {
+                              message.sourceAttribution.attributionSummary
+                                .totalSentences
+                            }{" "}
+                            sentences attributed
+                          </span>
+                        </div>
+                        {message.sourceAttribution.attributionSummary
+                          .hasSourceMarkers === false && (
+                          <div className="attribution-note">
+                            <span className="note-icon">ℹ️</span>
+                            <span className="note-text">
+                              Attribution markers generated automatically for
+                              demonstration
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {expandedSources[message.id] && (
                     <div className="sources-list">
                       {message.sources.map((source, index) => (
-                        <div key={index} className="source-item">
-                          <div className="source-header">
-                            <span className="source-title">{source.title}</span>
-                            <span className="source-score">
-                              {(source.score * 100).toFixed(1)}%
-                            </span>
+                        <div
+                          key={index}
+                          id={`source-${message.id}-${source.id}`}
+                          className="source-card"
+                        >
+                          <div className="source-card-header">
+                            <div className="source-title-section">
+                              <h4 className="source-title">{source.title}</h4>
+                              <span
+                                className="source-contribution"
+                                data-strength={source.contributionStrength}
+                              >
+                                {source.contributionStrength} Contribution
+                              </span>
+                            </div>
+                            <div className="source-score-section">
+                              <div className="relevance-score">
+                                <span className="score-label">Relevance</span>
+                                <div className="score-bar-container">
+                                  <div
+                                    className="score-bar"
+                                    style={{
+                                      width: `${source.relevanceScore}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <span className="score-value">
+                                  {source.relevanceScore}%
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="source-category">
-                            {source.category} • {source.searchType}
+
+                          <div className="source-card-body">
+                            <div className="source-meta">
+                              <span className="source-category">
+                                {source.category}
+                              </span>
+                              <span className="source-type">
+                                {source.searchType}
+                              </span>
+                            </div>
+
+                            {source.content && (
+                              <div className="source-content-preview">
+                                {source.content.substring(0, 200)}
+                                {source.content.length > 200 && "..."}
+                              </div>
+                            )}
+
+                            <div className="source-actions">
+                              {source.anchorTag && (
+                                <a
+                                  href={source.anchorTag}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="source-link-anchor"
+                                  title={`Jump to specific section: ${source.title}`}
+                                >
+                                  📖 Jump to Section
+                                </a>
+                              )}
+                              {source.url &&
+                                source.url !== "N/A" &&
+                                !source.anchorTag && (
+                                  <a
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="source-link"
+                                    title={`View full document: ${source.title}`}
+                                  >
+                                    🔗 View Full Document
+                                  </a>
+                                )}
+                              {source.url &&
+                                source.url !== "N/A" &&
+                                source.anchorTag && (
+                                  <a
+                                    href={source.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="source-link"
+                                    title={`View full document: ${source.title}`}
+                                  >
+                                    📄 View Full Document
+                                  </a>
+                                )}
+                            </div>
                           </div>
-                          {source.url && source.url !== "N/A" && (
-                            <a
-                              href={source.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="source-link"
-                            >
-                              View Source
-                            </a>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -403,4 +509,3 @@ function App() {
 }
 
 export default App;
-

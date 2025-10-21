@@ -493,7 +493,16 @@ RESPONSE GUIDELINES:
 - For follow-up questions: Acknowledge the connection to previous topics
 - For API questions: Include examples using the user's preferred API when known
 - For technical questions: Match the user's technical level
-- For new topics: Provide comprehensive overviews with practical applications`;
+- For new topics: Provide comprehensive overviews with practical applications
+
+SOURCE ATTRIBUTION REQUIREMENTS:
+- Track which sources contributed to each sentence in your response
+- Use [Source X] markers at the end of sentences that reference specific sources
+- Example: "To create a product, you need to use the Admin API [Source 1]."
+- Only mark sentences that directly reference or are based on specific sources
+- Use [Source X, Y] for sentences based on multiple sources
+- CRITICAL: You MUST include source markers in your response for proper attribution
+- Every sentence that draws from the provided sources should have appropriate markers`;
 
     const context = searchResults
       .map(

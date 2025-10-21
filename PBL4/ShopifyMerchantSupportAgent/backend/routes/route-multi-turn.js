@@ -2,10 +2,11 @@ import express from "express";
 import {
   processChatMessage,
   getConversationHistory,
+  getChatHistoryList,
   processClarificationResponse,
   getConversationStats,
   cleanupConversationState,
-} from "../controllers/chatController.js";
+} from "../controllers/chatController-multi-turn.js";
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.get("/", (req, res) => {
     endpoints: [
       "/chat",
       "/history/:sessionId",
+      "/history",
       "/clarify",
       "/stats/:sessionId",
       "/cleanup/:sessionId",
@@ -60,6 +62,20 @@ router.get("/history/:sessionId", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("History API error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
+  }
+});
+
+// Get chat history list (last 8 conversations)
+router.get("/history", async (req, res) => {
+  try {
+    const result = await getChatHistoryList();
+    res.json(result);
+  } catch (error) {
+    console.error("Chat history list API error:", error);
     res.status(500).json({
       error: "Internal server error",
       message: error.message,
@@ -125,4 +141,3 @@ router.delete("/cleanup/:sessionId", async (req, res) => {
 });
 
 export default router;
-

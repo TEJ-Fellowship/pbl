@@ -18,7 +18,7 @@ import { parseMarkdown } from "./utils/markdown.js";
 import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:3004/api";
+const API_BASE_URL = "http://localhost:3003/api";
 
 function App() {
   const [messages, setMessages] = useState([]);
