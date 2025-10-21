@@ -51,6 +51,8 @@ import {
   Loader,
 } from "lucide-react";
 
+import TrackOrderFlashcard from "./components/TrackOrderFlashcard.jsx";
+
 export default function FoodmanduSupportAgent() {
   // CHANGED: Added useTranslation hook to replace manual language management
   const { t, i18n } = useTranslation();
@@ -67,7 +69,9 @@ export default function FoodmanduSupportAgent() {
   // REMOVED: const [language, setLanguage] = useState("en"); - Now using i18n.language
   const [showOrderTracking, setShowOrderTracking] = useState(false);
   const [orderId, setOrderId] = useState("");
+  const [trackingOrderId, setTrackingOrderId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [availableOrders, setAvailableOrders] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -85,6 +89,57 @@ export default function FoodmanduSupportAgent() {
     scrollToBottom();
   }, [messages]);
 
+  // Load available orders on component mount
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/orders");
+        const data = await response.json();
+        if (data.success) {
+          setAvailableOrders(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  // Function to detect tracking intent
+  const detectTrackingIntent = (message) => {
+    const trackingKeywords = [
+      "track",
+      "tracking",
+      "order",
+      "delivery",
+      "where",
+      "status",
+      "location",
+      "eta",
+      "arrival",
+      "driver",
+      "delivery person",
+    ];
+    const lowerMessage = message.toLowerCase();
+    return trackingKeywords.some((keyword) => lowerMessage.includes(keyword));
+  };
+
+  // Function to extract order details from message
+  const extractOrderDetails = (message) => {
+    // Simple regex patterns to extract order ID and location
+    const orderIdMatch = message.match(
+      /(?:order\s*id|order\s*number|id)\s*:?\s*([a-zA-Z0-9-]+)/i
+    );
+    const locationMatch = message.match(
+      /(?:location|restaurant|from)\s*:?\s*([^,.\n]+)/i
+    );
+
+    return {
+      orderId: orderIdMatch ? orderIdMatch[1].trim() : null,
+      location: locationMatch ? locationMatch[1].trim() : null,
+    };
+  };
+
   const handleSendMessage = async () => {
     if (!input.trim()) return;
 
@@ -99,6 +154,38 @@ export default function FoodmanduSupportAgent() {
     const currentInput = input;
     setInput("");
     setLoading(true);
+
+    // Check for tracking intent
+    if (detectTrackingIntent(currentInput)) {
+      const orderDetails = extractOrderDetails(currentInput);
+
+      if (orderDetails.orderId) {
+        // User provided order ID, show tracking
+        setTrackingOrderId(orderDetails.orderId);
+        setShowOrderTracking(true);
+
+        const trackingResponse = {
+          id: messages.length + 2,
+          type: "bot",
+          text: t("trackOrderPrompt"),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, trackingResponse]);
+        setLoading(false);
+        return;
+      } else {
+        // User wants to track but didn't provide order ID
+        const promptResponse = {
+          id: messages.length + 2,
+          type: "bot",
+          text: t("trackOrderPrompt"),
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, promptResponse]);
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       // Call backend API
@@ -140,19 +227,35 @@ export default function FoodmanduSupportAgent() {
     }
   };
 
+  // Function to handle quick action clicks
+  const handleQuickAction = (actionLabel) => {
+    if (actionLabel === t("trackOrder")) {
+      const promptResponse = {
+        id: messages.length + 1,
+        type: "bot",
+        text: t("trackOrderPrompt"),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, promptResponse]);
+    }
+  };
+
   // CHANGED: Now using translation keys instead of ternary operators
   const quickActions = [
     {
       label: t("trackOrder"),
       icon: Clock,
+      action: () => handleQuickAction(t("trackOrder")),
     },
     {
       label: t("requestRefund"),
       icon: MapPin,
+      action: () => handleQuickAction(t("requestRefund")),
     },
     {
       label: t("contactRestaurant"),
       icon: Phone,
+      action: () => handleQuickAction(t("contactRestaurant")),
     },
   ];
 
@@ -210,14 +313,30 @@ export default function FoodmanduSupportAgent() {
             {t("quickTracking")}
           </p>
           <div className="space-y-2">
-            <input
-              type="text"
-              placeholder={t("enterOrderId")}
+            <select
               value={orderId}
               onChange={(e) => setOrderId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            />
-            <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all">
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white"
+            >
+              <option value="">
+                {t("selectOrder") || "Select an order..."}
+              </option>
+              {availableOrders.map((order) => (
+                <option key={order.orderId} value={order.orderId}>
+                  {order.orderNumber} - {order.restaurant.name} ({order.status})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                if (orderId.trim()) {
+                  setTrackingOrderId(orderId.trim());
+                  setShowOrderTracking(true);
+                }
+              }}
+              disabled={!orderId.trim()}
+              className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
               {t("track")}
             </button>
           </div>
@@ -291,6 +410,15 @@ export default function FoodmanduSupportAgent() {
               </div>
             </div>
           )}
+
+          {/* Order Tracking Flashcard */}
+          {showOrderTracking && (
+            <TrackOrderFlashcard
+              orderId={trackingOrderId}
+              onClose={() => setShowOrderTracking(false)}
+            />
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -305,7 +433,8 @@ export default function FoodmanduSupportAgent() {
               return (
                 <button
                   key={idx}
-                  className="flex items-center gap-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 text-yellow-700 rounded-lg text-xs font-medium transition-all"
+                  onClick={action.action}
+                  className="flex items-center gap-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 text-yellow-700 rounded-lg text-xs font-medium transition-all cursor-pointer"
                 >
                   <Icon className="w-4 h-4" />
                   {action.label}
