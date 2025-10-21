@@ -16,6 +16,7 @@ import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import axios from "axios";
 import { parseMarkdown } from "./utils/markdown.js";
 import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
+import ClarifyingQuestion from "./components/ClarifyingQuestion.jsx";
 import "./App.css";
 
 const API_BASE_URL = "http://localhost:3001/api";
@@ -31,6 +32,7 @@ function App() {
   const [copiedCode, setCopiedCode] = useState({});
   const [feedback, setFeedback] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingClarification, setPendingClarification] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -61,6 +63,7 @@ function App() {
     setSessionId(newSessionId);
     setMessages([]); // Clear current messages
     setSidebarOpen(false); // Close sidebar
+    setPendingClarification(null); // Clear pending clarification
     // Load the new conversation history
     try {
       const response = await axios.get(
@@ -81,6 +84,52 @@ function App() {
     setSessionId(newSessionId);
     setMessages([]);
     setSidebarOpen(false);
+    setPendingClarification(null);
+  };
+
+  const handleApiSelection = async (selectedApi) => {
+    if (!pendingClarification) return;
+
+    setIsLoading(true);
+
+    try {
+      // Send the API selection as a clarifying response
+      const clarifyingResponse = `${pendingClarification.originalQuery} using ${selectedApi}`;
+
+      const response = await axios.post(`${API_BASE_URL}/chat`, {
+        message: clarifyingResponse,
+        sessionId: sessionId,
+      });
+
+      const assistantMessage = {
+        id: `assistant_${Date.now()}`,
+        role: "assistant",
+        content: response.data.answer,
+        timestamp: new Date(),
+        confidence: response.data.confidence,
+        sources: response.data.sources || [],
+        tokenUsage: response.data.tokenUsage,
+        truncated: response.data.truncated,
+        mcpTools: response.data.mcpTools || {},
+        selectedApi: selectedApi,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setPendingClarification(null);
+    } catch (error) {
+      console.error("Error processing API selection:", error);
+      const errorMessage = {
+        id: `error_${Date.now()}`,
+        role: "assistant",
+        content:
+          "Sorry, I encountered an error while processing your API selection. Please try again.",
+        timestamp: new Date(),
+        isError: true,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -113,9 +162,24 @@ function App() {
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
         mcpTools: response.data.mcpTools || {},
+        isClarifyingQuestion: response.data.isClarifyingQuestion || false,
+        suggestedApis: response.data.suggestedApis || [],
+        originalQuery: response.data.originalQuery || null,
+        clarificationData: response.data.clarificationData || null,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // If this is a clarifying question, set it as pending
+      if (response.data.isClarifyingQuestion) {
+        setPendingClarification({
+          originalQuery: response.data.originalQuery,
+          suggestedApis: response.data.suggestedApis,
+          clarificationData: response.data.clarificationData,
+        });
+      } else {
+        setPendingClarification(null);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -272,6 +336,17 @@ function App() {
                 <div className="message-text">
                   {renderMessageContent(message.content)}
                 </div>
+
+                {/* Render clarifying question if this is one */}
+                {message.isClarifyingQuestion && (
+                  <ClarifyingQuestion
+                    question={message.content}
+                    suggestedApis={message.suggestedApis}
+                    originalQuery={message.originalQuery}
+                    onApiSelect={handleApiSelection}
+                    isLoading={isLoading}
+                  />
+                )}
 
                 {message.confidence && (
                   <div className="confidence-indicator">

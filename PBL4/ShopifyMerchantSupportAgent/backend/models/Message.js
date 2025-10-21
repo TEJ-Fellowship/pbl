@@ -36,6 +36,15 @@ const messageSchema = new mongoose.Schema(
       modelUsed: String,
       processingTime: Number,
       tokensUsed: Number,
+      // New fields for API clarification
+      isClarifyingQuestion: Boolean,
+      suggestedApis: [String],
+      originalQuery: String,
+      detectedApi: String,
+      mcpTools: {
+        toolsUsed: [String],
+        toolResults: Object,
+      },
     },
   },
   {

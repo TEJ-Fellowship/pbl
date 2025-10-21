@@ -8,6 +8,7 @@ import MarkdownIt from "markdown-it";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import MCPOrchestrator from "../src/mcp/mcpOrchestrator.js";
+import apiClarificationService from "../src/services/apiClarificationService.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -254,11 +255,70 @@ export async function processChatMessage(message, sessionId) {
 
     await memory.initializeConversation();
 
+    // Get conversation history for API clarification
+    const conversationHistory = await memory.getRecentMessages();
+
+    // Check if API clarification is needed
+    const clarificationResult =
+      await apiClarificationService.detectApiClarification(
+        message,
+        conversationHistory
+      );
+
+    // If clarification is needed, return clarifying question
+    if (clarificationResult.needsClarification) {
+      const clarifyingMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: clarificationResult.clarificationQuestion,
+        metadata: {
+          isClarifyingQuestion: true,
+          suggestedApis: clarificationResult.suggestedApis,
+          originalQuery: message,
+          confidence: clarificationResult.confidence,
+          searchResults: [],
+          modelUsed: "api-clarification-service",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+        },
+      });
+      await clarifyingMessage.save();
+      await conversation.addMessage(clarifyingMessage._id);
+
+      return {
+        answer: clarificationResult.clarificationQuestion,
+        confidence: {
+          score: 100,
+          level: "High",
+          factors: ["API clarification needed"],
+        },
+        sources: [],
+        isClarifyingQuestion: true,
+        suggestedApis: clarificationResult.suggestedApis,
+        originalQuery: message,
+        clarificationData: {
+          needsClarification: true,
+          suggestedApis: clarificationResult.suggestedApis,
+          confidence: clarificationResult.confidence,
+        },
+      };
+    }
+
     // Get conversation context
     const conversationContext = await memory.getConversationContext();
+
+    // Enhance query with API context if available
+    let enhancedQuery = message;
+    if (clarificationResult.detectedApi) {
+      const apiContext = apiClarificationService.getApiSpecificContext(
+        clarificationResult.detectedApi
+      );
+      enhancedQuery = `API Context: ${apiContext}\n\nUser Query: ${message}`;
+    }
+
     const contextualQuery = conversationContext
-      ? `${conversationContext}Current question: ${message}`
-      : message;
+      ? `${conversationContext}Current question: ${enhancedQuery}`
+      : enhancedQuery;
     const queryEmbedding = await embedSingle(contextualQuery);
 
     // Perform hybrid search
@@ -323,8 +383,8 @@ export async function processChatMessage(message, sessionId) {
       )
       .join("\n\n---\n\n");
 
-    // Build conversation history
-    const conversationHistory =
+    // Build conversation history for prompt
+    const conversationHistoryForPrompt =
       tokenAwareContext.messages.length > 0
         ? tokenAwareContext.messages
             .map((msg) => `${msg.role}: ${msg.content}`)
@@ -358,7 +418,11 @@ RESPONSE GUIDELINES:
 - For troubleshooting: Offer multiple solutions and explain when to use each
 - For general questions: Give comprehensive overviews with practical applications
 
-${conversationHistory ? `CONVERSATION HISTORY:\n${conversationHistory}\n` : ""}
+${
+  conversationHistoryForPrompt
+    ? `CONVERSATION HISTORY:\n${conversationHistoryForPrompt}\n`
+    : ""
+}
 
 RETRIEVED DOCUMENTATION:
 ${context}
