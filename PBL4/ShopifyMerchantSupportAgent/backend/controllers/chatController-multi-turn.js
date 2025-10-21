@@ -7,7 +7,7 @@ import BufferWindowMemory from "../src/memory/BufferWindowMemory.js";
 import MarkdownIt from "markdown-it";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
-import MCPOrchestrator from "../src/mcp/mcpOrchestrator.js";
+import { multiTurnManager } from "../src/multi-turn-conversation.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -173,10 +173,9 @@ function handleEdgeCases(results, question) {
 let retriever = null;
 let model = null;
 let genAI = null;
-let mcpOrchestrator = null;
 
 async function initializeAI() {
-  if (retriever && model && mcpOrchestrator) return; // Already initialized
+  if (retriever && model) return; // Already initialized
 
   try {
     await connectDB();
@@ -204,17 +203,13 @@ async function initializeAI() {
         throw err;
       }
     }
-
-    // Initialize MCP Orchestrator
-    mcpOrchestrator = new MCPOrchestrator();
-    console.log("🔧 MCP Orchestrator initialized successfully");
   } catch (error) {
     console.error("Failed to initialize AI components:", error);
     throw error;
   }
 }
 
-// Main chat function
+// Main chat function with multi-turn conversation support
 export async function processChatMessage(message, sessionId) {
   try {
     await initializeAI();
@@ -231,6 +226,10 @@ export async function processChatMessage(message, sessionId) {
       await conversation.save();
     }
 
+    // Get conversation history for multi-turn processing
+    const conversationHistory = await getConversationHistory(sessionId);
+    const messages = conversationHistory.messages || [];
+
     // Create user message
     const userMessage = new Message({
       conversationId: conversation._id,
@@ -242,24 +241,48 @@ export async function processChatMessage(message, sessionId) {
     // Add message to conversation
     await conversation.addMessage(userMessage._id);
 
-    // Initialize memory for this session
-    const memory = new BufferWindowMemory({
-      windowSize: 8,
-      sessionId: sessionId,
-      maxTokens: 6000,
-      modelName: "gemini-2.5-flash",
-      prioritizeRecent: true,
-      prioritizeRelevance: true,
-    });
+    // Use multi-turn conversation manager for enhanced context
+    const enhancedContext = await multiTurnManager.buildEnhancedContext(
+      message,
+      sessionId,
+      messages,
+      [] // Will be populated after search
+    );
 
-    await memory.initializeConversation();
+    // Check if clarification is needed
+    if (enhancedContext.needsClarification) {
+      const clarificationMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: enhancedContext.clarificationQuestion,
+        metadata: {
+          searchResults: [],
+          modelUsed: "multi-turn-clarification",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          clarificationRequest: true,
+        },
+      });
+      await clarificationMessage.save();
+      await conversation.addMessage(clarificationMessage._id);
 
-    // Get conversation context
-    const conversationContext = await memory.getConversationContext();
-    const contextualQuery = conversationContext
-      ? `${conversationContext}Current question: ${message}`
-      : message;
-    const queryEmbedding = await embedSingle(contextualQuery);
+      return {
+        answer: enhancedContext.clarificationQuestion,
+        confidence: {
+          score: 100,
+          level: "High",
+          factors: ["Clarification request"],
+        },
+        sources: [],
+        needsClarification: true,
+        conversationState: enhancedContext.conversationState,
+        followUpDetection: enhancedContext.followUpDetection,
+        ambiguityDetection: enhancedContext.ambiguityDetection,
+      };
+    }
+
+    // Use enhanced contextual query for search
+    const queryEmbedding = await embedSingle(enhancedContext.contextualQuery);
 
     // Perform hybrid search with enhanced contextual query
     const results = await retriever.search({
@@ -307,123 +330,24 @@ export async function processChatMessage(message, sessionId) {
       };
     }
 
-    // Get token-aware context window
-    const systemPrompt = `You are a helpful Shopify merchant support agent. Use the provided context to answer questions accurately and helpfully.`;
-    const tokenAwareContext = await memory.getTokenAwareContext(
-      results,
-      systemPrompt
+    // Use multi-turn conversation manager for enhanced response generation
+    const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
+      message,
+      sessionId,
+      messages,
+      results
     );
 
-    const context = tokenAwareContext.documents
-      .map(
-        (r, i) =>
-          `[Source ${i + 1}] ${r.metadata?.title || "Unknown"} (${
-            r.metadata?.source_url || "N/A"
-          })\n${r.doc}`
-      )
-      .join("\n\n---\n\n");
-
-    // Build conversation history
-    const conversationHistory =
-      tokenAwareContext.messages.length > 0
-        ? tokenAwareContext.messages
-            .map((msg) => `${msg.role}: ${msg.content}`)
-            .join("\n")
-        : "";
-
-    const prompt = `You are an expert Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
-
-CONTEXT: You have access to comprehensive Shopify documentation including:
-- Shopify platform overview and getting started guides
-- Product and inventory management
-- Order fulfillment and shipping
-- Theme development and customization
-- API documentation (REST Admin API, GraphQL Admin API, Storefront API)
-- App development and integrations
-- Community discussions and solutions
-
-INSTRUCTIONS:
-1. **Answer comprehensively**: Use the provided documentation context to give detailed, actionable answers
-2. **Be specific**: Include specific steps, API endpoints, code examples, or configuration details when relevant
-3. **Provide context**: Explain not just what to do, but why and when to use different approaches
-4. **Use examples**: Include practical examples, code snippets, or step-by-step instructions
-5. **Cite sources**: Reference specific sources using "According to [Source X]..." format
-6. **Be helpful**: If the context doesn't fully answer the question, provide the best available information and suggest next steps
-7. **Format clearly**: Use markdown formatting (bold, lists, code blocks, etc.) for better readability
-8. **Maintain continuity**: Reference previous conversation context when relevant
-
-RESPONSE GUIDELINES:
-- For API questions: Include endpoint details, parameters, and example requests/responses
-- For setup questions: Provide step-by-step instructions with specific settings
-- For troubleshooting: Offer multiple solutions and explain when to use each
-- For general questions: Give comprehensive overviews with practical applications
-
-${conversationHistory ? `CONVERSATION HISTORY:\n${conversationHistory}\n` : ""}
-
-RETRIEVED DOCUMENTATION:
-${context}
-
-USER QUESTION: ${message}
-
-EXPERT ANSWER:`;
-
-    // Generate response
-    let result;
-    try {
-      result = await model.generateContent({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-      });
-    } catch (err) {
-      const msg = (err && err.message) || "";
-      const unavailable =
-        msg.includes("not available") ||
-        msg.includes("404") ||
-        msg.toLowerCase().includes("not found") ||
-        msg.toLowerCase().includes("model not found");
-
-      if (unavailable) {
-        result = { response: { text: () => "No response generated." } };
-      } else {
-        throw err;
-      }
-    }
-
-    const answer = result.response?.text() || "No response generated.";
+    const answer = enhancedResponse.answer;
 
     // Calculate confidence score
     const confidence = calculateConfidence(results, answer);
-
-    // Process with MCP tools if needed
-    let enhancedAnswer = answer;
-    let toolResults = {};
-    let toolsUsed = [];
-
-    if (mcpOrchestrator) {
-      try {
-        const mcpResult = await mcpOrchestrator.processWithTools(
-          message,
-          confidence.score / 100, // Convert to 0-1 scale
-          answer
-        );
-        enhancedAnswer = mcpResult.enhancedAnswer;
-        toolResults = mcpResult.toolResults;
-        toolsUsed = mcpResult.toolsUsed;
-      } catch (error) {
-        console.error("MCP processing error:", error);
-        // Continue with original answer if MCP fails
-      }
-    }
 
     // Create assistant message with multi-turn metadata
     const assistantMessage = new Message({
       conversationId: conversation._id,
       role: "assistant",
-      content: enhancedAnswer,
+      content: answer,
       metadata: {
         searchResults: results.map((r) => ({
           title: r.metadata?.title || "Unknown",
@@ -435,10 +359,6 @@ EXPERT ANSWER:`;
         modelUsed: "gemini-1.5-flash-multi-turn",
         processingTime: Date.now() - startTime,
         tokensUsed: 0, // Will be updated if token counting is implemented
-        mcpTools: {
-          toolsUsed: toolsUsed,
-          toolResults: toolResults,
-        },
         multiTurnContext: {
           turnCount: enhancedResponse.conversationState.turnCount,
           isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
@@ -451,7 +371,7 @@ EXPERT ANSWER:`;
     await conversation.addMessage(assistantMessage._id);
 
     return {
-      answer: enhancedAnswer,
+      answer,
       confidence,
       sources: results.map((r, i) => ({
         id: i + 1,
@@ -470,51 +390,9 @@ EXPERT ANSWER:`;
         contextualQuery: enhancedResponse.contextualQuery,
         conversationStats: multiTurnManager.getConversationStats(sessionId),
       },
-      mcpTools: {
-        toolsUsed: toolsUsed,
-        toolResults: toolResults,
-      },
     };
   } catch (error) {
     console.error("Error processing chat message:", error);
-    throw error;
-  }
-}
-
-// Get conversation history
-export async function getConversationHistory(sessionId) {
-  try {
-    await connectDB();
-
-    const conversation = await Conversation.findOne({ sessionId }).populate({
-      path: "messages",
-      options: { sort: { timestamp: 1 } },
-    });
-
-    if (!conversation) {
-      return { messages: [], conversation: null };
-    }
-
-    const messages = conversation.messages.map((msg) => ({
-      id: msg._id,
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp,
-      metadata: msg.metadata,
-    }));
-
-    return {
-      messages,
-      conversation: {
-        id: conversation._id,
-        sessionId: conversation.sessionId,
-        title: conversation.title,
-        createdAt: conversation.createdAt,
-        updatedAt: conversation.updatedAt,
-      },
-    };
-  } catch (error) {
-    console.error("Error getting conversation history:", error);
     throw error;
   }
 }
@@ -582,31 +460,11 @@ export async function processClarificationResponse(
     const answer = enhancedResponse.answer;
     const confidence = calculateConfidence(results, answer);
 
-    // Process with MCP tools if needed
-    let enhancedAnswer = answer;
-    let toolResults = {};
-    let toolsUsed = [];
-
-    if (mcpOrchestrator) {
-      try {
-        const mcpResult = await mcpOrchestrator.processWithTools(
-          clarificationResult.clarifiedQuery,
-          confidence.score / 100,
-          answer
-        );
-        enhancedAnswer = mcpResult.enhancedAnswer;
-        toolResults = mcpResult.toolResults;
-        toolsUsed = mcpResult.toolsUsed;
-      } catch (error) {
-        console.error("MCP processing error:", error);
-      }
-    }
-
     // Create assistant message
     const assistantMessage = new Message({
       conversationId: conversation._id,
       role: "assistant",
-      content: enhancedAnswer,
+      content: answer,
       metadata: {
         searchResults: results.map((r) => ({
           title: r.metadata?.title || "Unknown",
@@ -619,10 +477,6 @@ export async function processClarificationResponse(
         processingTime: Date.now() - startTime,
         tokensUsed: 0,
         clarificationProcessed: true,
-        mcpTools: {
-          toolsUsed: toolsUsed,
-          toolResults: toolResults,
-        },
         multiTurnContext: {
           turnCount: enhancedResponse.conversationState.turnCount,
           isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
@@ -635,7 +489,7 @@ export async function processClarificationResponse(
     await conversation.addMessage(assistantMessage._id);
 
     return {
-      answer: enhancedAnswer,
+      answer,
       confidence,
       sources: results.map((r, i) => ({
         id: i + 1,
@@ -655,13 +509,47 @@ export async function processClarificationResponse(
         conversationStats: multiTurnManager.getConversationStats(sessionId),
         clarificationProcessed: true,
       },
-      mcpTools: {
-        toolsUsed: toolsUsed,
-        toolResults: toolResults,
-      },
     };
   } catch (error) {
     console.error("Error processing clarification response:", error);
+    throw error;
+  }
+}
+
+// Get conversation history
+export async function getConversationHistory(sessionId) {
+  try {
+    await connectDB();
+
+    const conversation = await Conversation.findOne({ sessionId }).populate({
+      path: "messages",
+      options: { sort: { timestamp: 1 } },
+    });
+
+    if (!conversation) {
+      return { messages: [], conversation: null };
+    }
+
+    const messages = conversation.messages.map((msg) => ({
+      id: msg._id,
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp,
+      metadata: msg.metadata,
+    }));
+
+    return {
+      messages,
+      conversation: {
+        id: conversation._id,
+        sessionId: conversation.sessionId,
+        title: conversation.title,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      },
+    };
+  } catch (error) {
+    console.error("Error getting conversation history:", error);
     throw error;
   }
 }
@@ -711,46 +599,6 @@ export async function cleanupConversationState(sessionId) {
     return { success: true, message: "Conversation state cleaned up" };
   } catch (error) {
     console.error("Error cleaning up conversation state:", error);
-    throw error;
-  }
-}
-
-// Get chat history list (last 8 conversations)
-export async function getChatHistoryList() {
-  try {
-    await connectDB();
-
-    // Get the last 8 conversations ordered by updatedAt (most recent first)
-    const conversations = await Conversation.find({ isActive: true })
-      .sort({ updatedAt: -1 })
-      .limit(8)
-      .select("sessionId title createdAt updatedAt messages")
-      .populate({
-        path: "messages",
-        options: { sort: { timestamp: -1 }, limit: 1 }, // Get only the last message for preview
-        select: "content timestamp role",
-      });
-
-    const historyList = conversations.map((conv) => ({
-      id: conv._id,
-      sessionId: conv.sessionId,
-      title: conv.title,
-      createdAt: conv.createdAt,
-      updatedAt: conv.updatedAt,
-      lastMessage:
-        conv.messages && conv.messages.length > 0
-          ? {
-              content: conv.messages[0].content,
-              timestamp: conv.messages[0].timestamp,
-              role: conv.messages[0].role,
-            }
-          : null,
-      messageCount: conv.messages ? conv.messages.length : 0,
-    }));
-
-    return { conversations: historyList };
-  } catch (error) {
-    console.error("Error getting chat history list:", error);
     throw error;
   }
 }
