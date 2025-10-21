@@ -20,3 +20,6 @@ export function parseMarkdown(text) {
       .replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>")
   );
 }
+
+// Alias for compatibility
+export const renderMarkdown = parseMarkdown;

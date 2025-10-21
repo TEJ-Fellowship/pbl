@@ -7,14 +7,8 @@
   "scripts": {
     "prepare": "node -e \"require('fs').mkdirSync('data/shopify_docs', { recursive: true })\"",
     "scrape": "node ./src/scraper.js",
-    "ingest": "node ./src/ingest.js",
     "enhanced-ingest": "node ./src/enhanced-ingest.js",
-    "chat": "node ./src/chat.js",
-    "optchat": "node ./src/optimized-chat.js",
-    "test-enhanced": "node -e \"const { processChatMessage } = require('./controllers/chatController.js'); processChatMessage('What is Shopify?', 'test-session').then(r => console.log('Answer:', r.answer.substring(0, 200))).catch(console.error)\"",
     "start": "npm run enhanced-ingest && npm run api",
-    "start-chat": "npm run enhanced-ingest && npm run chat",
-    "start-optimized": "npm run enhanced-ingest && npm run optchat",
     "api": "node --watch server.js",
     "dev": "npm run enhanced-ingest && npm run api"
   },

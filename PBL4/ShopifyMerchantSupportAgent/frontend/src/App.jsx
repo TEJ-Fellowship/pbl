@@ -14,12 +14,12 @@ import {
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import axios from "axios";
-import { parseMarkdown } from "./utils/markdown.js";
+import { parseMarkdown, renderMarkdown } from "./utils/markdown.js";
 import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
 import ClarifyingQuestion from "./components/ClarifyingQuestion.jsx";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:3004/api";
+const API_BASE_URL = "/api";
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -175,37 +175,30 @@ function App() {
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
         mcpTools: response.data.mcpTools || {},
-<<<<<<< HEAD
         isClarifyingQuestion: response.data.isClarifyingQuestion || false,
         suggestedApis: response.data.suggestedApis || [],
         originalQuery: response.data.originalQuery || null,
         clarificationData: response.data.clarificationData || null,
-=======
         needsClarification: response.data.needsClarification || false,
         multiTurnContext: response.data.multiTurnContext || {},
->>>>>>> 2c8b4745112c58d5a82a3de8942dc1b286799850
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-<<<<<<< HEAD
-      // If this is a clarifying question, set it as pending
+      // Handle clarification logic
       if (response.data.isClarifyingQuestion) {
         setPendingClarification({
           originalQuery: response.data.originalQuery,
           suggestedApis: response.data.suggestedApis,
           clarificationData: response.data.clarificationData,
         });
-      } else {
-        setPendingClarification(null);
-=======
-      // If clarification is needed, store the pending clarification
-      if (response.data.needsClarification) {
+      } else if (response.data.needsClarification) {
         setPendingClarification({
           originalQuestion: currentInput,
           clarificationQuestion: response.data.answer,
         });
->>>>>>> 2c8b4745112c58d5a82a3de8942dc1b286799850
+      } else {
+        setPendingClarification(null);
       }
     } catch (error) {
       console.error("Error sending message:", error);
