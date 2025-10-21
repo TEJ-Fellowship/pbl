@@ -362,6 +362,24 @@ function App() {
                 )}
                 <div className="message-text">
                   {renderMessageContent(message.content)}
+
+                  {/* Multi-turn conversation indicator */}
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.isFollowUp && (
+                      <div className="multi-turn-indicator follow-up-indicator">
+                        🔗 Follow-up question (Turn{" "}
+                        {message.multiTurnContext.turnCount})
+                      </div>
+                    )}
+
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.turnCount > 1 &&
+                    !message.multiTurnContext.isFollowUp && (
+                      <div className="multi-turn-indicator">
+                        💬 Conversation turn{" "}
+                        {message.multiTurnContext.turnCount}
+                      </div>
+                    )}
                 </div>
 
                 {/* Render clarifying question if this is one */}
@@ -448,7 +466,19 @@ function App() {
                     <div className="mcp-tools-section">
                       <div className="mcp-tools-header">
                         <span className="mcp-tools-title">
-                          🔧 Tools Used: {message.mcpTools.toolsUsed.join(", ")}
+                          🔧 AI Tools Used:{" "}
+                          {message.mcpTools.toolsUsed
+                            .map((tool) => {
+                              const toolNames = {
+                                calculator: "Calculator",
+                                web_search: "Web Search",
+                                shopify_status: "Shopify Status",
+                                date_time: "Date/Time",
+                                code_validator: "Code Validator",
+                              };
+                              return toolNames[tool] || tool;
+                            })
+                            .join(", ")}
                         </span>
                       </div>
                       {message.mcpTools.toolResults &&
