@@ -1,373 +1,336 @@
-# Shopify Merchant Support Agent - Web Chat Interface
+# Shopify Merchant Support Agent
 
-A professional AI-powered chat interface for Shopify merchant support, featuring hybrid RAG (Retrieval-Augmented Generation) with conversation history and source citations.
+A sophisticated AI-powered support system for Shopify merchants, featuring multi-turn conversations, MCP tools integration, and hybrid RAG (Retrieval-Augmented Generation) capabilities.
+
+## 🚀 Features
+
+### Core Capabilities
+
+- **Multi-turn Conversations**: Maintains context across conversation turns
+- **Hybrid RAG**: Combines semantic search (Pinecone) with keyword search (FlexSearch)
+- **MCP Tools Integration**: Calculator, Shopify Status Checker, Date/Time operations, Code Validator, Web Search
+- **API Clarification**: Intelligent detection of ambiguous API questions
+- **Context Compression**: Efficient memory management for long conversations
+- **Real-time Status Monitoring**: Check Shopify service status and outages
+
+### Frontend Features
+
+- Modern React-based chat interface
+- Real-time message streaming
+- Chat history management
+- Source citations and confidence scoring
+- MCP tool results visualization
+- Responsive design with Tailwind CSS
+
+### Backend Features
+
+- Express.js API server
+- MongoDB for conversation storage
+- Pinecone vector database for semantic search
+- Google Gemini AI integration
+- Comprehensive error handling
+- CORS configuration for development
+
+## 🛠️ Technology Stack
+
+### Backend
+
+- **Node.js** (18.17.0+)
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Pinecone** - Vector database
+- **Google Gemini AI** - Language model
+- **FlexSearch** - Keyword search
+- **Mongoose** - MongoDB ODM
+
+### Frontend
+
+- **React 18** - UI framework
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **Axios** - HTTP client
+- **Lucide React** - Icons
+- **React Syntax Highlighter** - Code display
+
+## 📋 Prerequisites
+
+- Node.js 18.17.0 or higher
+- MongoDB (local or cloud)
+- Google Gemini API key
+- Pinecone API key
+- Git
 
 ## 🚀 Quick Start
 
-### Automated Setup
+### 1. Clone the Repository
 
 ```bash
-# Run the setup script
+git clone <repository-url>
+cd ShopifyMerchantSupportAgent
+```
+
+### 2. Run Setup Script
+
+```bash
+chmod +x setup.sh
 ./setup.sh
 ```
 
-### Manual Setup
+### 3. Configure Environment Variables
 
-1. **Backend Setup**
+Edit `backend/.env` with your API keys:
 
-```bash
-cd backend
-npm install
-# Update .env with your API keys
-npm run api
-```
-
-2. **Frontend Setup**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-3. **Access the Interface**
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
-
-## ✨ Features
-
-### 🤖 AI Chat Interface
-
-- **Hybrid RAG**: Combines semantic and keyword search for better results
-- **Conversation History**: Persistent chat sessions with MongoDB storage
-- **Token-Aware Context**: Smart context windowing to optimize performance
-- **Confidence Scoring**: AI confidence levels with detailed factors
-
-### 📚 Source Citations
-
-- **Expandable Sources**: Click to view all referenced documentation
-- **Relevance Scores**: See how relevant each source is to your query
-- **Search Types**: Understand whether semantic or keyword search found each source
-- **Direct Links**: Click through to original documentation
-
-### 💻 Code Support
-
-- **Syntax Highlighting**: Beautiful code blocks with language detection
-- **Copy Buttons**: One-click copy for all code snippets
-- **Inline Code**: Properly formatted inline code with highlighting
-- **Multiple Languages**: Support for JavaScript, Python, JSON, and more
-
-### 👍 Feedback System
-
-- **Thumbs Up/Down**: Rate response quality
-- **Visual Feedback**: Clear indication of your feedback
-- **Persistent State**: Feedback remembered during session
-
-### 🎨 Modern UI
-
-- **Responsive Design**: Works perfectly on mobile and desktop
-- **Professional Styling**: Clean, modern interface with Tailwind CSS
-- **Smooth Animations**: Polished user experience
-- **Accessibility**: Keyboard navigation and screen reader support
-
-## 🏗️ Architecture
-
-### Backend (Express.js + MongoDB)
-
-```
-backend/
-├── src/
-│   ├── chat.js              # Terminal chat (original)
-│   ├── hybrid-retriever.js  # Hybrid search implementation
-│   ├── memory/              # Conversation memory management
-│   └── utils/               # Embeddings and utilities
-├── controllers/
-│   └── chatController.js    # API endpoints for web interface
-├── models/                  # MongoDB schemas
-├── routes/                  # Express routes
-└── server.js               # API server
-```
-
-### Frontend (React + Vite)
-
-```
-frontend/
-├── src/
-│   ├── App.jsx             # Main chat component
-│   ├── App.css             # Chat interface styles
-│   └── utils/
-│       └── markdown.js     # Markdown parsing
-└── public/                 # Static assets
-```
-
-## 🔧 Configuration
-
-### Environment Variables (.env)
-
-```bash
-# Required API Keys
+```env
+# Required
 GEMINI_API_KEY=your_gemini_api_key_here
 PINECONE_API_KEY=your_pinecone_api_key_here
-PINECONE_INDEX_NAME=shopify-merchant-support
+MONGODB_URI=mongodb://localhost:27017/shopify-support-agent
 
-# Optional Configuration
+# Optional
 GEMINI_MODEL=gemini-1.5-flash
-MONGODB_URI=mongodb://localhost:27017/shopify-support
+PINECONE_INDEX_NAME=shopify-merchant-support
 PORT=3000
 FRONTEND_URL=http://localhost:5173
 ```
 
-### API Keys Setup
+### 4. Start the Services
 
-1. **Gemini API**: Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. **Pinecone API**: Get from [Pinecone Console](https://app.pinecone.io/)
-3. **MongoDB**: Use local MongoDB or MongoDB Atlas
-
-## 📡 API Endpoints
-
-### Chat API
-
-```http
-POST /api/chat
-Content-Type: application/json
-
-{
-  "message": "How do I create a product in Shopify?",
-  "sessionId": "session_1234567890_abc123"
-}
-```
-
-**Response:**
-
-```json
-{
-  "answer": "To create a product in Shopify...",
-  "confidence": {
-    "score": 85,
-    "level": "High",
-    "factors": ["Multiple relevant sources found", "High relevance scores"]
-  },
-  "sources": [
-    {
-      "id": 1,
-      "title": "Products API Documentation",
-      "url": "https://shopify.dev/api/admin-rest/products",
-      "category": "api",
-      "score": 0.9234,
-      "searchType": "semantic",
-      "content": "Product creation content..."
-    }
-  ],
-  "tokenUsage": {
-    "totalTokens": 4500,
-    "messageTokens": 2000,
-    "documentTokens": 2500
-  },
-  "truncated": false
-}
-```
-
-### History API
-
-```http
-GET /api/history/:sessionId
-```
-
-**Response:**
-
-```json
-{
-  "messages": [
-    {
-      "id": "msg_123",
-      "role": "user",
-      "content": "How do I create a product?",
-      "timestamp": "2024-01-15T10:30:00Z"
-    },
-    {
-      "id": "msg_124",
-      "role": "assistant",
-      "content": "To create a product in Shopify...",
-      "timestamp": "2024-01-15T10:30:05Z",
-      "confidence": {...},
-      "sources": [...]
-    }
-  ],
-  "conversation": {
-    "id": "conv_123",
-    "sessionId": "session_1234567890_abc123",
-    "title": "Product Creation Help",
-    "createdAt": "2024-01-15T10:30:00Z",
-    "updatedAt": "2024-01-15T10:30:05Z"
-  }
-}
-```
-
-## 🚀 Deployment
-
-### Development
+#### Backend (Terminal 1)
 
 ```bash
-# Terminal 1: Backend
 cd backend
-npm run api
+npm run dev
+```
 
-# Terminal 2: Frontend
+#### Frontend (Terminal 2)
+
+```bash
 cd frontend
 npm run dev
 ```
 
-### Production
+### 5. Access the Application
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+## 🔧 Manual Setup
+
+If you prefer manual setup:
+
+### Backend Setup
 
 ```bash
-# Build frontend
-cd frontend
-npm run build
-
-# Serve with backend
 cd backend
-# Serve static files from frontend/dist
-npm run api
+npm install
+npm run enhanced-ingest  # Ingest Shopify documentation
+npm run api              # Start the API server
 ```
 
-### Docker Deployment
-
-```dockerfile
-# Backend Dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY backend/package*.json ./
-RUN npm install
-COPY backend/ .
-EXPOSE 3000
-CMD ["npm", "run", "api"]
-```
-
-## 🔍 How It Works
-
-### 1. Query Processing
-
-- User sends message via React frontend
-- Backend processes query with hybrid search
-- Retrieves relevant documentation from Pinecone
-- Applies token-aware context windowing
-
-### 2. AI Generation
-
-- Context + conversation history sent to Gemini
-- AI generates response with source citations
-- Confidence score calculated based on multiple factors
-- Response stored in MongoDB with metadata
-
-### 3. Frontend Display
-
-- Response rendered with syntax highlighting
-- Source citations displayed in expandable panel
-- Code blocks get copy buttons
-- Feedback buttons for user rating
-
-## 🛠️ Development
-
-### Adding New Features
-
-1. **Backend API Changes**
-
-   - Update `controllers/chatController.js`
-   - Add new routes in `routes/route.js`
-   - Update MongoDB models if needed
-
-2. **Frontend UI Changes**
-   - Modify `src/App.jsx` for new components
-   - Update `src/App.css` for styling
-   - Add new utilities in `src/utils/`
-
-### Testing
+### Frontend Setup
 
 ```bash
-# Test backend API
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"test","sessionId":"test123"}'
-
-# Test frontend
+cd frontend
+npm install
 npm run dev
-# Open http://localhost:5173
 ```
 
-## 📊 Performance
+## 📚 API Endpoints
 
-### Optimizations
+### Chat Endpoints
 
-- **Token Window Management**: Prevents context overflow
-- **Hybrid Search**: Better relevance than single search method
-- **Caching**: MongoDB conversation caching
-- **Lazy Loading**: Frontend components load on demand
+- `POST /api/chat` - Send a message
+- `POST /api/clarify` - Handle clarification responses
+- `GET /api/history/:sessionId` - Get conversation history
+- `GET /api/history` - Get chat history list
+- `GET /api/stats/:sessionId` - Get conversation statistics
+- `DELETE /api/cleanup/:sessionId` - Clean up conversation state
 
-### Metrics
+### Health Check
 
-- **Response Time**: ~2-5 seconds per query
-- **Token Usage**: Optimized to stay under limits
-- **Memory Usage**: Efficient conversation management
-- **Search Quality**: High relevance scores with hybrid approach
+- `GET /health` - Server health status
+
+## 🛠️ MCP Tools
+
+The system includes several MCP (Model Context Protocol) tools:
+
+### Calculator Tool
+
+- Mathematical expressions
+- Shopify fee calculations
+- Currency and percentage operations
+
+### Shopify Status Tool
+
+- Real-time service status monitoring
+- Incident detection and reporting
+- Maintenance notifications
+
+### Date/Time Tool
+
+- Time zone conversions
+- Date calculations
+- Business day operations
+
+### Code Validator Tool
+
+- JavaScript/TypeScript validation
+- Liquid template validation
+- Syntax checking
+
+### Web Search Tool
+
+- Real-time web search
+- Source verification
+- Recent information retrieval
+
+## 🔍 Multi-Turn Conversation Features
+
+### Context Management
+
+- **Follow-up Detection**: Automatically detects follow-up questions
+- **User Preference Tracking**: Remembers API preferences and technical level
+- **Context Compression**: Efficiently manages long conversations
+- **Ambiguity Detection**: Identifies questions needing clarification
+
+### Conversation Flow
+
+1. **Initial Query**: User asks a question
+2. **Context Analysis**: System analyzes conversation history
+3. **Search & Retrieval**: Hybrid search finds relevant information
+4. **AI Processing**: Gemini generates contextual response
+5. **Tool Integration**: MCP tools enhance the response
+6. **Response Delivery**: Enhanced answer sent to frontend
+
+## 🎯 Usage Examples
+
+### Basic Questions
+
+```
+"How do I create a product in Shopify?"
+"What are the different Shopify APIs available?"
+"How do I set up payment processing?"
+```
+
+### Multi-turn Conversations
+
+```
+User: "How do I create a product?"
+AI: [Provides detailed product creation steps]
+User: "What about variants?"
+AI: [Builds on previous context, explains variants]
+User: "And inventory management?"
+AI: [Continues conversation with inventory context]
+```
+
+### MCP Tool Integration
+
+```
+User: "Calculate 2.9% + $0.30 on $100"
+AI: [Uses calculator tool to compute: $3.20]
+
+User: "Is Shopify down right now?"
+AI: [Uses status tool to check current service status]
+
+User: "What's the current time in PST?"
+AI: [Uses date/time tool to provide current time]
+```
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **API Connection Failed**
+#### Backend Won't Start
 
-   - Check backend server is running on port 3000
-   - Verify CORS settings in backend
-   - Check API keys in .env file
+- Check if MongoDB is running
+- Verify API keys in `.env` file
+- Ensure all dependencies are installed
 
-2. **No Response from AI**
+#### Frontend Connection Issues
 
-   - Verify Gemini API key is valid
-   - Check Pinecone index has data
-   - Run `npm run ingest` to populate data
+- Verify backend is running on port 3000
+- Check CORS configuration
+- Ensure proxy settings in `vite.config.js`
 
-3. **Frontend Not Loading**
+#### Search Not Working
 
-   - Check Node.js version (18+ required)
-   - Clear browser cache
-   - Verify all dependencies installed
+- Verify Pinecone API key and index name
+- Check if data ingestion completed successfully
+- Ensure embeddings are properly configured
 
-4. **Database Connection Issues**
-   - Check MongoDB is running
-   - Verify MONGODB_URI in .env
-   - Check network connectivity
+#### MCP Tools Not Responding
+
+- Check tool initialization logs
+- Verify tool-specific API keys (if required)
+- Review error messages in console
 
 ### Debug Mode
 
-```bash
-# Enable debug logging
-DEBUG=* npm run api
+Enable debug logging by setting:
+
+```env
+NODE_ENV=development
 ```
 
-## 📚 Documentation
+## 📊 Performance Optimization
 
-- [Backend README](backend/README.md)
-- [Frontend README](frontend/README.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
+### Backend Optimization
+
+- Connection pooling for MongoDB
+- Caching for frequent queries
+- Compression for large responses
+- Rate limiting for API endpoints
+
+### Frontend Optimization
+
+- Lazy loading for components
+- Virtual scrolling for long conversations
+- Debounced input handling
+- Optimized re-renders
+
+## 🔒 Security Considerations
+
+- Environment variables for sensitive data
+- CORS configuration for cross-origin requests
+- Input validation and sanitization
+- Rate limiting for API endpoints
+- Secure MongoDB connections
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Add tests if applicable
 5. Submit a pull request
 
 ## 📄 License
 
-This project is part of the Shopify Merchant Support Agent system.
+This project is licensed under the MIT License.
 
-## 🙏 Acknowledgments
+## 🆘 Support
 
-- Built with React, Express.js, and MongoDB
-- Powered by Google Gemini AI
-- Vector search by Pinecone
-- Styled with Tailwind CSS
-- Icons by Lucide React
+For issues and questions:
+
+1. Check the troubleshooting section
+2. Review the logs for error messages
+3. Create an issue with detailed information
+4. Include environment details and steps to reproduce
+
+## 🔄 Updates and Maintenance
+
+### Regular Maintenance
+
+- Update dependencies regularly
+- Monitor API rate limits
+- Review and optimize performance
+- Update documentation
+
+### Data Updates
+
+- Re-run ingestion for updated Shopify docs
+- Update Pinecone index with new data
+- Refresh embeddings if needed
+
+---
+
+**Happy coding! 🎉**
