@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "mailchimp-agent": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["src/mcpServer/mcpServer.js"]
+    }
+  },
+  "inputs": []
+}
