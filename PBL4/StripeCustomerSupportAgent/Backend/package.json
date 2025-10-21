@@ -7,13 +7,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
     "dev": "nodemon index.js",
     "scrape": "node scripts/scraper.js",
     "scrape:latest": "node tests/getLatestScraped.js",
     "ingest": "node scripts/ingest.js",
-    "chat": "node scripts/chat.js",
-    "chat:mcp": "node scripts/integratedChat.js",
+    "chat": "node scripts/integratedChat.js",
     "test:hybrid": "node tests/testHybridSearch.js",
     "test:chat": "node tests/testChatIntegration.js",
     "test:postgres": "node tests/testPostgreSQL.js",
@@ -31,7 +30,6 @@
     "migrate:postgres": "node utils/migrate-to-postgres.js",
     "setup:memory": "node utils/setup_memory_schema.js",
     "setup": "npm run scrape && npm run ingest && npm run setup:memory",
-    "dev": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
     "test": "npm run test:documents && npm run test:hybrid && npm run test:chat && npm run test:postgres && npm run test:memory && npm run test:gemini-reformulation && npm run test:mcp && npm run test:google-search && npm run test:status-checker && npm run test:ai-tool-selection"
   },
   "dependencies": {
@@ -45,7 +43,7 @@
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "cors": "^2.8.5",
-    "date-fns": "^3.3.1",
+    "date-fns": "^3.6.0",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "mathjs": "^12.3.2",

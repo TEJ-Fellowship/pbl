@@ -129,6 +129,47 @@ class ApiService {
       body: JSON.stringify({ maxTokens }),
     });
   }
+
+  // ===== INTEGRATED CHAT METHODS =====
+
+  /**
+   * Send a message using the integrated chat system (full backend functionality)
+   */
+  async sendIntegratedMessage(
+    message,
+    sessionId,
+    userId = DEFAULT_VALUES.USER_ID
+  ) {
+    return this.request(API_ENDPOINTS.INTEGRATED_CHAT, {
+      method: "POST",
+      body: JSON.stringify({
+        message,
+        sessionId,
+        userId,
+      }),
+    });
+  }
+
+  /**
+   * Get MCP system status
+   */
+  async getMCPStatus() {
+    return this.request(API_ENDPOINTS.MCP_STATUS);
+  }
+
+  /**
+   * Get query classifier status
+   */
+  async getClassifierStatus() {
+    return this.request(API_ENDPOINTS.CLASSIFIER_STATUS);
+  }
+
+  /**
+   * Get integrated system health
+   */
+  async getIntegratedHealth() {
+    return this.request(API_ENDPOINTS.INTEGRATED_HEALTH);
+  }
 }
 
 // Export singleton instance

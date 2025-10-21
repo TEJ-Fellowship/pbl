@@ -7,6 +7,7 @@ import { dirname, join } from "path";
 // Import routes
 import chatRoutes from "./routes/chat.js";
 import healthRoutes from "./routes/health.js";
+import integratedChatRoutes from "./routes/integratedChat.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -27,7 +28,7 @@ app.use(
   cors({
     origin: [
       config.FRONTEND_URL || "http://localhost:5173",
-      "http://localhost:3000",
+      "http://localhost:5174",
       "http://localhost:5173",
     ],
     credentials: true,
@@ -43,6 +44,7 @@ app.use(requestLogger);
 // Routes
 app.use("/api/health", healthRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/integrated-chat", integratedChatRoutes);
 
 // Root endpoint
 app.get("/", (req, res) => {
@@ -53,6 +55,7 @@ app.get("/", (req, res) => {
     endpoints: {
       health: "/api/health",
       chat: "/api/chat",
+      integratedChat: "/api/integrated-chat",
     },
   });
 });

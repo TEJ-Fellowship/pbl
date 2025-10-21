@@ -2,18 +2,11 @@ import React from "react";
 import { motion } from "framer-motion";
 
 const ChatInput = ({
-  inputValue,
+  inputValue = "",
   setInputValue,
   handleSendMessage,
   handleKeyPress,
 }) => {
-  const suggestions = [
-    "How to integrate Stripe payments?",
-    "Explain webhook handling",
-    "Subscription billing setup",
-    "Error handling best practices",
-  ];
-
   return (
     <div className="p-6 border-t border-gray-800/50">
       <div className="relative bg-black/20 rounded-xl p-2 flex items-center space-x-2">
@@ -21,7 +14,7 @@ const ChatInput = ({
           <span className="material-symbols-outlined">add_circle</span>
         </button>
         <input
-          value={inputValue}
+          value={inputValue || ""}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Type your message here..."
@@ -34,7 +27,7 @@ const ChatInput = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleSendMessage}
-          disabled={!inputValue.trim()}
+          disabled={!inputValue || !inputValue.trim()}
           className="bg-primary text-white rounded-lg px-6 py-3 font-semibold hover:bg-primary/90 transition-colors flex items-center space-x-2 disabled:bg-gray-700 disabled:text-subtle-dark disabled:cursor-not-allowed"
         >
           <span>Send</span>

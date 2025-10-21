@@ -309,9 +309,27 @@ async function generateResponseWithMCP(
     const response = await result.response;
     const text = response.text();
 
+    // For MCP-only responses, create sources from MCP tools used
+    console.log("🔍 generateResponseWithMCP - mcpToolsUsed:", mcpToolsUsed);
+    console.log("🔍 generateResponseWithMCP - mcpConfidence:", mcpConfidence);
+
+    const sources = mcpToolsUsed.map((tool, index) => ({
+      content: `MCP Tool: ${tool}`,
+      metadata: {
+        title: `MCP Tool: ${tool}`,
+        category: "mcp_tool",
+        source: "MCP Integration Service",
+      },
+      similarity: mcpConfidence || 0.9,
+      score: mcpConfidence || 0.9,
+      index: index + 1,
+    }));
+
+    console.log("🔍 generateResponseWithMCP - sources created:", sources);
+
     return {
       answer: text,
-      sources: [],
+      sources: sources,
       mcpEnhancement: mcpResult?.enhancedResponse || "",
       mcpToolsUsed: mcpToolsUsed,
       mcpConfidence: mcpConfidence,
