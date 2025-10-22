@@ -5,7 +5,7 @@ export const useIntegratedChat = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!",
+      text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!\n\n💡 **Quick Commands:**\n• Type `sample` to see example questions\n• Type `mcp` to check system status\n• Ask me anything about Stripe!",
       sender: "ai",
       timestamp: new Date(),
     },
@@ -198,6 +198,21 @@ export const useIntegratedChat = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isTyping) return;
 
+    const messageText = inputValue.trim();
+
+    // Check for special commands
+    if (messageText.toLowerCase() === "sample") {
+      handleSampleCommand();
+      setInputValue("");
+      return;
+    }
+
+    if (messageText.toLowerCase() === "mcp") {
+      handleMCPCommand();
+      setInputValue("");
+      return;
+    }
+
     const userMessage = {
       id: Date.now(),
       text: inputValue,
@@ -206,7 +221,6 @@ export const useIntegratedChat = () => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageText = inputValue;
     setInputValue("");
     setIsTyping(true);
     setError(null);
@@ -590,6 +604,153 @@ export const useIntegratedChat = () => {
     }
   };
 
+  /**
+   * Handle sample command - show example questions
+   */
+  const handleSampleCommand = () => {
+    const sampleMessage = {
+      id: Date.now(),
+      text: `💡 **Example Questions by Classification:**
+
+**🔧 MCP_TOOLS_ONLY Examples:**
+• What's Stripe's fee for $1000? (Calculator Tool)
+• Is Stripe down right now? (Status Checker Tool)
+• What time is it now? (DateTime Tool)
+• Search for latest Stripe API updates (Web Search Tool)
+• Validate this endpoint: /v1/charges (Code Validator Tool)
+• Convert $50 USD to Nepali rupee (Currency Converter Tool)
+
+**📚 HYBRID_SEARCH Examples:**
+• How do I create a payment intent with Stripe?
+• How to handle Stripe API errors and exceptions?
+• What are webhook signatures and how do I verify them?
+• How do I set up subscription billing with Stripe?
+• How to handle refunds and disputes?
+• How to implement multi-party payments?
+
+**🔧📚 COMBINED Examples:**
+• Calculate Stripe fees for $500 and show me the API implementation
+• Is Stripe working and how do I implement webhooks?
+• What's the current status and how do I handle disputes?
+• Calculate fees and show me how to set up billing
+
+**💡 Commands:**
+• Type 'mcp' to check MCP system status
+• Type 'sample' to see this help again`,
+      sender: "ai",
+      timestamp: new Date(),
+      isCommand: true,
+    };
+
+    setMessages((prev) => [...prev, sampleMessage]);
+  };
+
+  /**
+   * Handle MCP command - show MCP system status
+   */
+  const handleMCPCommand = async () => {
+    try {
+      setIsTyping(true);
+
+      // Fetch MCP status
+      const mcpStatus = await apiService.getMCPStatus();
+      const classifierStatus = await apiService.getClassifierStatus();
+
+      let mcpInfo = "🔧 **MCP System Status:**\n\n";
+
+      if (mcpStatus.success && mcpStatus.data) {
+        const status = mcpStatus.data;
+        mcpInfo += `**Integration:** ${
+          status.integrationEnabled ? "✅ Enabled" : "❌ Disabled"
+        }\n`;
+        mcpInfo += `**Tools Available:** ${
+          status.availableTools?.length || status.status?.total || 0
+        }\n`;
+        mcpInfo += `**Tools Enabled:** ${status.status?.enabled || 0}\n`;
+        mcpInfo += `**Tools Disabled:** ${status.status?.disabled || 0}\n\n`;
+
+        if (status.status?.details) {
+          mcpInfo += "**🛠️ Tool Details:**\n";
+          Object.entries(status.status.details).forEach(
+            ([toolName, details]) => {
+              const statusIcon = details.enabled ? "✅" : "❌";
+              mcpInfo += `${statusIcon} ${toolName}: ${details.description}\n`;
+            }
+          );
+          mcpInfo += "\n";
+        }
+
+        if (
+          status.orchestratorTools &&
+          Object.keys(status.orchestratorTools).length > 0
+        ) {
+          mcpInfo += "**🔧 Orchestrator Tools:**\n";
+          Object.entries(status.orchestratorTools).forEach(
+            ([toolName, toolInfo]) => {
+              mcpInfo += `✅ ${toolName}: ${
+                toolInfo.description || toolInfo.name
+              }\n`;
+            }
+          );
+          mcpInfo += "\n";
+        }
+
+        if (status.aiSelection && status.aiSelection.available) {
+          mcpInfo += "**🤖 AI Selection:**\n";
+          mcpInfo += `Status: ${
+            status.aiSelection.available ? "✅ Available" : "❌ Unavailable"
+          }\n`;
+          mcpInfo += `AI Decisions: ${status.aiSelection.aiDecisions || 0}\n`;
+          mcpInfo += `Fallback Decisions: ${
+            status.aiSelection.fallbackDecisions || 0
+          }\n\n`;
+        }
+      } else {
+        mcpInfo += "❌ Unable to fetch MCP status\n\n";
+      }
+
+      if (classifierStatus.success && classifierStatus.data) {
+        const classifier = classifierStatus.data;
+        mcpInfo += "**🤖 Query Classifier Status:**\n";
+        mcpInfo += `Gemini AI: ${
+          classifier.geminiAvailable ? "✅ Available" : "❌ Unavailable"
+        }\n`;
+        mcpInfo += `Model: ${classifier.model}\n\n`;
+
+        mcpInfo += "**📊 Classification Approaches:**\n";
+        mcpInfo +=
+          "• MCP_TOOLS_ONLY - Direct tool responses (calculations, status checks)\n";
+        mcpInfo +=
+          "• HYBRID_SEARCH - Documentation-based responses (API guides, tutorials)\n";
+        mcpInfo +=
+          "• COMBINED - Both tools and documentation (complex queries)\n";
+      }
+
+      const mcpMessage = {
+        id: Date.now(),
+        text: mcpInfo,
+        sender: "ai",
+        timestamp: new Date(),
+        isCommand: true,
+      };
+
+      setMessages((prev) => [...prev, mcpMessage]);
+    } catch (error) {
+      console.error("❌ Failed to fetch MCP status:", error);
+      const errorMessage = {
+        id: Date.now(),
+        text: "❌ Failed to fetch MCP system status. Please try again.",
+        sender: "ai",
+        timestamp: new Date(),
+        isCommand: true,
+        isError: true,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
   return {
     messages,
     inputValue,
@@ -616,5 +777,7 @@ export const useIntegratedChat = () => {
     clearError,
     clearAllData,
     fetchSystemStatus,
+    handleSampleCommand,
+    handleMCPCommand,
   };
 };

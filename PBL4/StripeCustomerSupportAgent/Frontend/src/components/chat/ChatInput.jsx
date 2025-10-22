@@ -36,6 +36,12 @@ const ChatInput = ({
       </div>
       <p className="text-xs text-subtle-dark text-center mt-3">
         Stitch.AI can make mistakes. Consider checking important information.
+        <br />
+        <span className="text-gray-500">
+          Try typing <span className="text-blue-400 font-mono">sample</span> for
+          example questions or{" "}
+          <span className="text-blue-400 font-mono">mcp</span> for system status
+        </span>
       </p>
     </div>
   );
