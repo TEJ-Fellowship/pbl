@@ -41,30 +41,55 @@ const SourcePanel = ({ sources, isOpen, onToggle }) => {
       >
         <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700">
           <div className="space-y-2">
-            {sources.map((source, index) => (
-              <div key={index} className="text-xs text-gray-400">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">
+            {sources.slice(0, 5).map((source, index) => (
+              <div
+                key={index}
+                className="text-xs text-gray-400 border-b border-gray-700/50 pb-2 last:border-b-0 last:pb-0"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-gray-300">
                     {source.title ||
                       source.metadata?.title ||
                       `Source ${index + 1}`}
                   </span>
-                  <span className="text-gray-500">
+                  <span className="text-gray-500 bg-gray-700/50 px-2 py-1 rounded text-xs">
                     {(source.similarity || source.score || 0).toFixed(3)}
                   </span>
                 </div>
                 {(source.source || source.metadata?.source) && (
-                  <div className="text-gray-500 truncate">
-                    {source.source || source.metadata?.source}
+                  <div className="mb-1">
+                    <a
+                      href={source.source || source.metadata?.source}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 hover:underline transition-colors break-all"
+                      title="Open source link in new tab"
+                    >
+                      <span className="material-symbols-outlined text-sm mr-1 align-middle">
+                        open_in_new
+                      </span>
+                      {source.source || source.metadata?.source}
+                    </a>
                   </div>
                 )}
                 {source.category && (
                   <div className="text-gray-600 text-xs">
-                    Category: {source.category}
+                    <span className="material-symbols-outlined text-xs mr-1 align-middle">
+                      category
+                    </span>
+                    {source.category}
                   </div>
                 )}
               </div>
             ))}
+            {sources.length > 5 && (
+              <div className="text-xs text-gray-500 text-center pt-2 border-t border-gray-700/50">
+                <span className="material-symbols-outlined text-sm mr-1 align-middle">
+                  info
+                </span>
+                Showing top 5 of {sources.length} sources
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
