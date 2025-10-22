@@ -458,6 +458,25 @@ class PostgreSQLMemoryService {
   }
 
   /**
+   * Update session token usage based on stored messages
+   */
+  async updateSessionTokenUsage(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      // Use the database function to update token usage
+      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+
+      console.log(`📊 Updated token usage for session ${sessionId}`);
+    } catch (error) {
+      console.error("❌ Failed to update session token usage:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get sessions approaching token limit
    */
   async getSessionsNearTokenLimit(threshold = 80) {

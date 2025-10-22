@@ -330,6 +330,14 @@ router.post("/", async (req, res) => {
       mcpConfidence: result.mcpConfidence || 0,
     });
 
+    // Update session token usage after processing messages
+    try {
+      await memoryController.postgresMemory.updateSessionTokenUsage(sessionId);
+      console.log("✅ Session token usage updated");
+    } catch (tokenError) {
+      console.error("❌ Failed to update token usage:", tokenError);
+    }
+
     // Prepare response
     const response = {
       success: true,
