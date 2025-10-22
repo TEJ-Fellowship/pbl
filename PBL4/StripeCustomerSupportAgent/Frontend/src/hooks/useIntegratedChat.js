@@ -12,15 +12,8 @@ export const useIntegratedChat = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [chatHistory, setChatHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem("stripe_integrated_chat_history");
-      return saved ? JSON.parse(saved) : [];
-    } catch (error) {
-      console.error("Failed to load integrated chat history:", error);
-      return [];
-    }
-  });
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [currentSessionId, setCurrentSessionId] = useState(() => {
     try {
       return localStorage.getItem("stripe_integrated_current_session") || null;
@@ -53,19 +46,7 @@ export const useIntegratedChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Save integrated chat history to localStorage
-  const saveChatHistory = (history) => {
-    try {
-      localStorage.setItem(
-        "stripe_integrated_chat_history",
-        JSON.stringify(history)
-      );
-    } catch (error) {
-      console.error("Failed to save integrated chat history:", error);
-    }
-  };
-
-  // Save current integrated session to localStorage
+  // Save current integrated session to localStorage (for persistence across page reloads)
   const saveCurrentSession = (sessionId) => {
     try {
       localStorage.setItem("stripe_integrated_current_session", sessionId);
@@ -78,11 +59,6 @@ export const useIntegratedChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Save chat history whenever it changes
-  useEffect(() => {
-    saveChatHistory(chatHistory);
-  }, [chatHistory]);
-
   // Save current session whenever it changes
   useEffect(() => {
     if (currentSessionId) {
@@ -92,6 +68,7 @@ export const useIntegratedChat = () => {
 
   // Initialize integrated chat session on component mount
   useEffect(() => {
+    loadSessionsFromDatabase();
     loadExistingSession();
     fetchSystemStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -102,6 +79,53 @@ export const useIntegratedChat = () => {
       fetchTokenUsage(currentSessionId);
     }
   }, [currentSessionId]);
+
+  const loadSessionsFromDatabase = async () => {
+    try {
+      console.log("🔄 Loading sessions from database...");
+      setIsLoadingSessions(true);
+      const response = await apiService.getAllSessions("web_user", 50, 0);
+
+      if (response.success && response.data.sessions) {
+        const formattedSessions = response.data.sessions.map(
+          (session, index) => ({
+            id: session.id || index + 1,
+            sessionId: session.sessionId,
+            title:
+              session.title || `Session ${session.sessionId.substring(0, 8)}`,
+            lastMessage: session.lastMessage || "No messages yet",
+            timestamp: new Date(session.timestamp),
+            messageCount: session.messageCount || 0,
+            type: "integrated",
+            createdAt: new Date(session.createdAt),
+            updatedAt: new Date(session.updatedAt),
+            isActive: session.isActive,
+            hasSummary: session.hasSummary,
+          })
+        );
+
+        setChatHistory(formattedSessions);
+        console.log(
+          "✅ Sessions loaded from database:",
+          formattedSessions.length
+        );
+      }
+    } catch (error) {
+      console.error("❌ Failed to load sessions from database:", error.message);
+      // Fallback to localStorage if database fails
+      try {
+        const saved = localStorage.getItem("stripe_integrated_chat_history");
+        if (saved) {
+          setChatHistory(JSON.parse(saved));
+          console.log("📱 Fallback to localStorage sessions");
+        }
+      } catch (localError) {
+        console.error("❌ Failed to load from localStorage:", localError);
+      }
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  };
 
   const loadExistingSession = async () => {
     try {
@@ -245,7 +269,7 @@ export const useIntegratedChat = () => {
       console.log("🔍 Sources Details:", response.data.sources);
 
       // Update chat history
-      updateChatHistory(messageText);
+      await updateChatHistory(messageText);
 
       // Fetch updated token usage after message
       setTimeout(() => {
@@ -268,38 +292,46 @@ export const useIntegratedChat = () => {
     }
   };
 
-  const updateChatHistory = (userMessage) => {
-    const currentChat = chatHistory.find(
-      (chat) => chat.sessionId === currentSessionId
-    );
-
-    if (currentChat) {
-      setChatHistory((prev) =>
-        prev.map((chat) =>
-          chat.sessionId === currentSessionId
-            ? {
-                ...chat,
-                lastMessage: userMessage,
-                timestamp: new Date(),
-                messageCount: chat.messageCount + 1,
-              }
-            : chat
-        )
+  const updateChatHistory = async (userMessage) => {
+    try {
+      // Update local state immediately for UI responsiveness
+      const currentChat = chatHistory.find(
+        (chat) => chat.sessionId === currentSessionId
       );
-    } else {
-      const newChat = {
-        id: Date.now(),
-        sessionId: currentSessionId,
-        title:
-          userMessage.length > 30
-            ? userMessage.substring(0, 30) + "..."
-            : userMessage,
-        lastMessage: userMessage,
-        timestamp: new Date(),
-        messageCount: 1,
-        type: "integrated",
-      };
-      setChatHistory((prev) => [newChat, ...prev]);
+
+      if (currentChat) {
+        setChatHistory((prev) =>
+          prev.map((chat) =>
+            chat.sessionId === currentSessionId
+              ? {
+                  ...chat,
+                  lastMessage: userMessage,
+                  timestamp: new Date(),
+                  messageCount: chat.messageCount + 1,
+                }
+              : chat
+          )
+        );
+      } else {
+        const newChat = {
+          id: Date.now(),
+          sessionId: currentSessionId,
+          title:
+            userMessage.length > 30
+              ? userMessage.substring(0, 30) + "..."
+              : userMessage,
+          lastMessage: userMessage,
+          timestamp: new Date(),
+          messageCount: 1,
+          type: "integrated",
+        };
+        setChatHistory((prev) => [newChat, ...prev]);
+      }
+
+      // Sync with database by reloading sessions
+      await loadSessionsFromDatabase();
+    } catch (error) {
+      console.error("❌ Failed to update chat history:", error);
     }
   };
 
@@ -326,6 +358,10 @@ export const useIntegratedChat = () => {
       setMcpConfidence(null);
       setClassification(null);
       setError(null);
+
+      // Reload sessions from database to include the new session
+      await loadSessionsFromDatabase();
+
       console.log(
         "✅ New integrated session created:",
         response.data.sessionId
@@ -406,12 +442,15 @@ export const useIntegratedChat = () => {
     setError(null);
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     try {
       console.log("🗑️ Clearing all integrated data...");
+
+      // Clear localStorage
       localStorage.removeItem("stripe_integrated_chat_history");
       localStorage.removeItem("stripe_integrated_current_session");
 
+      // Clear local state
       setChatHistory([]);
       setCurrentSessionId(null);
       setMessages([
@@ -428,6 +467,10 @@ export const useIntegratedChat = () => {
       setMcpConfidence(null);
       setClassification(null);
       setError(null);
+
+      // Reload sessions from database to get fresh state
+      await loadSessionsFromDatabase();
+
       console.log("✅ All integrated data cleared");
     } catch (error) {
       console.error("❌ Failed to clear integrated data:", error);
@@ -444,9 +487,9 @@ export const useIntegratedChat = () => {
       }
 
       await apiService.deleteSession(chatToDelete.sessionId);
-      const updatedHistory = chatHistory.filter((chat) => chat.id !== chatId);
-      setChatHistory(updatedHistory);
-      saveChatHistory(updatedHistory);
+
+      // Reload sessions from database to reflect the deletion
+      await loadSessionsFromDatabase();
 
       if (currentSessionId === chatToDelete.sessionId) {
         setMessages([]);
@@ -457,13 +500,16 @@ export const useIntegratedChat = () => {
         setClassification(null);
         setError(null);
 
-        if (updatedHistory.length === 0) {
+        // Check if there are any sessions left after deletion
+        const remainingSessions = chatHistory.filter(
+          (chat) => chat.id !== chatId
+        );
+        if (remainingSessions.length === 0) {
           console.log(
             "🆕 Last integrated chat deleted, starting fresh session"
           );
+          await initializeSession(true);
         }
-
-        await initializeSession(true);
       }
 
       console.log("✅ Integrated chat deleted successfully:", chatId);
@@ -543,6 +589,7 @@ export const useIntegratedChat = () => {
     setInputValue,
     isTyping,
     chatHistory,
+    isLoadingSessions,
     currentSessionId,
     messagesEndRef,
     error,

@@ -13,6 +13,8 @@ export const API_ENDPOINTS = {
   CHAT: "/api/chat",
   SESSION: "/api/chat/session",
   HISTORY: "/api/chat/history",
+  SESSIONS: "/api/chat/sessions",
+  SESSION_DETAILS: "/api/chat/sessions",
   INTEGRATED_CHAT: "/api/integrated-chat",
   MCP_STATUS: "/api/integrated-chat/mcp-status",
   CLASSIFIER_STATUS: "/api/integrated-chat/classifier-status",

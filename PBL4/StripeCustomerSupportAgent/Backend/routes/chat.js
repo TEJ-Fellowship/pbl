@@ -14,4 +14,8 @@ router.delete("/session/:sessionId", chatController.deleteSession);
 router.get("/tokens/:sessionId", chatController.getTokenUsage);
 router.put("/tokens/:sessionId", chatController.updateTokenLimit);
 
+// Session management endpoints
+router.get("/sessions", chatController.getAllSessions);
+router.get("/sessions/:sessionId", chatController.getSessionDetails);
+
 export default router;

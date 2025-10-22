@@ -1,7 +1,7 @@
 import React from "react";
-import { useChat } from "../hooks/useChat";
+import { useIntegratedChat } from "../hooks/useIntegratedChat";
 import ChatHeader from "../components/chat/ChatHeader";
-import ChatMessages from "../components/chat/ChatMessages";
+import IntegratedChatMessages from "../components/chat/IntegratedChatMessages";
 import ChatInput from "../components/chat/ChatInput";
 import ChatHistory from "../components/chat/ChatHistory";
 import TokenUsageIndicator from "../components/chat/TokenUsageIndicator";
@@ -13,6 +13,7 @@ const Chat = () => {
     setInputValue,
     isTyping,
     chatHistory,
+    isLoadingSessions,
     currentSessionId,
     messagesEndRef,
     error,
@@ -24,7 +25,7 @@ const Chat = () => {
     handleTokenLimitReached,
     handleKeyPress,
     clearError,
-  } = useChat();
+  } = useIntegratedChat();
 
   return (
     <div className="fixed left-[15%] right-0 h-screen flex">
@@ -61,7 +62,7 @@ const Chat = () => {
           />
         </div>
 
-        <ChatMessages
+        <IntegratedChatMessages
           messages={messages}
           isTyping={isTyping}
           messagesEndRef={messagesEndRef}
@@ -77,6 +78,7 @@ const Chat = () => {
       {/* Chat History Sidebar */}
       <ChatHistory
         chatHistory={chatHistory}
+        isLoadingSessions={isLoadingSessions}
         currentSessionId={currentSessionId}
         handleNewChat={handleNewChat}
         handleChatSelect={handleChatSelect}

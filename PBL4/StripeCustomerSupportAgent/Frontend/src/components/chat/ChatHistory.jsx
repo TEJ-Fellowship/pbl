@@ -4,6 +4,7 @@ import DeleteConfirmModal from "./DeleteConfirmModal";
 
 const ChatHistory = ({
   chatHistory,
+  isLoadingSessions,
   currentSessionId,
   handleNewChat,
   handleChatSelect,
@@ -85,49 +86,66 @@ const ChatHistory = ({
       {!isCollapsed && (
         <div className="flex-1 overflow-y-auto chat-container">
           <div className="p-4 space-y-2">
-            {chatHistory.map((chat) => {
-              // Debug: Log chat object to see its structure
-              console.log("Chat object:", chat);
-              return (
-                <motion.div
-                  key={chat.id}
-                  whileHover={{ scale: 1.02 }}
-                  className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
-                    currentSessionId === chat.sessionId
-                      ? "bg-surface-dark-secondary border border-primary/50"
-                      : "hover:bg-surface-dark-secondary/50"
-                  }`}
-                >
-                  {/* Chat Content */}
-                  <div onClick={() => handleChatSelect(chat.id)}>
-                    <p className="font-semibold text-sm truncate pr-8">
-                      {chat.title}
-                    </p>
-                    <p className="text-xs text-subtle-dark truncate">
-                      {chat.lastMessage}
-                    </p>
-                    <span className="text-xs text-gray-500 mt-1 block">
-                      {chat.timestamp
-                        ? new Date(chat.timestamp).toLocaleDateString()
-                        : "Unknown date"}
-                    </span>
-                  </div>
-
-                  {/* Delete Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => handleDeleteClick(e, chat.id, chat.title)}
-                    className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-red-400 hover:text-red-300"
-                    title="Delete chat"
+            {isLoadingSessions ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-gray-400 text-sm">Loading sessions...</p>
+              </div>
+            ) : chatHistory.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="material-symbols-outlined text-4xl text-gray-500 mb-2">
+                  chat_bubble_outline
+                </span>
+                <p className="text-gray-400 text-sm">No chat history yet</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Start a new conversation
+                </p>
+              </div>
+            ) : (
+              chatHistory.map((chat) => {
+                // Debug: Log chat object to see its structure
+                console.log("Chat object:", chat);
+                return (
+                  <motion.div
+                    key={chat.id}
+                    whileHover={{ scale: 1.02 }}
+                    className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
+                      currentSessionId === chat.sessionId
+                        ? "bg-surface-dark-secondary border border-primary/50"
+                        : "hover:bg-surface-dark-secondary/50"
+                    }`}
                   >
-                    <span className="material-symbols-outlined text-sm">
-                      delete
-                    </span>
-                  </motion.button>
-                </motion.div>
-              );
-            })}
+                    {/* Chat Content */}
+                    <div onClick={() => handleChatSelect(chat.id)}>
+                      <p className="font-semibold text-sm truncate pr-8">
+                        {chat.title}
+                      </p>
+                      <p className="text-xs text-subtle-dark truncate">
+                        {chat.lastMessage}
+                      </p>
+                      <span className="text-xs text-gray-500 mt-1 block">
+                        {chat.timestamp
+                          ? new Date(chat.timestamp).toLocaleDateString()
+                          : "Unknown date"}
+                      </span>
+                    </div>
+
+                    {/* Delete Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => handleDeleteClick(e, chat.id, chat.title)}
+                      className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                      title="Delete chat"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        delete
+                      </span>
+                    </motion.button>
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

@@ -170,6 +170,28 @@ class ApiService {
   async getIntegratedHealth() {
     return this.request(API_ENDPOINTS.INTEGRATED_HEALTH);
   }
+
+  // ===== SESSION MANAGEMENT METHODS =====
+
+  /**
+   * Get all conversation sessions for a user
+   */
+  async getAllSessions(
+    userId = DEFAULT_VALUES.USER_ID,
+    limit = 50,
+    offset = 0
+  ) {
+    return this.request(
+      `${API_ENDPOINTS.SESSIONS}?userId=${userId}&limit=${limit}&offset=${offset}`
+    );
+  }
+
+  /**
+   * Get detailed information about a specific session
+   */
+  async getSessionDetails(sessionId) {
+    return this.request(`${API_ENDPOINTS.SESSION_DETAILS}/${sessionId}`);
+  }
 }
 
 // Export singleton instance
