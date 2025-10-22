@@ -219,19 +219,46 @@ class MemoryService {
         );
 
       // Format sessions for frontend
-      const formattedSessions = sessions.map((session, index) => ({
-        id: session.id || index + 1,
-        sessionId: session.session_id,
-        title: session.title || `Session ${session.session_id.substring(0, 8)}`,
-        lastMessage: session.last_message || "No messages yet",
-        timestamp: new Date(session.updated_at || session.created_at),
-        messageCount: session.message_count || 0,
-        type: "integrated",
-        createdAt: new Date(session.created_at),
-        updatedAt: new Date(session.updated_at || session.created_at),
-        isActive: session.is_active,
-        hasSummary: !!session.conversation_summary,
-      }));
+      const formattedSessions = sessions.map((session, index) => {
+        // Generate a better title from the first user message
+        let title = "New Conversation";
+        if (session.first_user_message) {
+          // Clean and truncate the first user message for title
+          const cleanMessage = session.first_user_message
+            .replace(/[^\w\s]/g, "") // Remove special characters
+            .trim();
+
+          if (cleanMessage.length > 0) {
+            title =
+              cleanMessage.length > 50
+                ? cleanMessage.substring(0, 50) + "..."
+                : cleanMessage;
+          }
+        }
+
+        // Fallback to timestamp-based title if no user message
+        if (title === "New Conversation" && session.created_at) {
+          const date = new Date(session.created_at);
+          title = `Chat ${date.toLocaleDateString()} ${date.toLocaleTimeString(
+            [],
+            { hour: "2-digit", minute: "2-digit" }
+          )}`;
+        }
+
+        return {
+          id: session.id || index + 1,
+          sessionId: session.session_id,
+          title: title,
+          lastMessage: session.last_message || "No messages yet",
+          timestamp: new Date(session.updated_at || session.created_at),
+          messageCount: session.message_count || 0,
+          type: "integrated",
+          createdAt: new Date(session.created_at),
+          updatedAt: new Date(session.updated_at || session.created_at),
+          isActive: session.is_active,
+          hasSummary: !!session.conversation_summary,
+        };
+      });
 
       console.log(
         `📊 Found ${formattedSessions.length} sessions for user: ${userId}`

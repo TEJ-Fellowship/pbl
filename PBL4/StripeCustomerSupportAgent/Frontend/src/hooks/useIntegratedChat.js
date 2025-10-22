@@ -313,13 +313,20 @@ export const useIntegratedChat = () => {
           )
         );
       } else {
+        // Generate a better title from the user message
+        const cleanMessage = userMessage
+          .replace(/[^\w\s]/g, "") // Remove special characters
+          .trim();
+
+        const title =
+          cleanMessage.length > 50
+            ? cleanMessage.substring(0, 50) + "..."
+            : cleanMessage || "New Conversation";
+
         const newChat = {
           id: Date.now(),
           sessionId: currentSessionId,
-          title:
-            userMessage.length > 30
-              ? userMessage.substring(0, 30) + "..."
-              : userMessage,
+          title: title,
           lastMessage: userMessage,
           timestamp: new Date(),
           messageCount: 1,

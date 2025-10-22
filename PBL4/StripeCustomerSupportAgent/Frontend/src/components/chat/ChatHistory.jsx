@@ -16,6 +16,10 @@ const ChatHistory = ({
     chatId: null,
     chatTitle: "",
   });
+  const [editingTitle, setEditingTitle] = useState({
+    chatId: null,
+    newTitle: "",
+  });
 
   const handleDeleteClick = (e, chatId, chatTitle) => {
     e.stopPropagation(); // Prevent chat selection
@@ -42,6 +46,42 @@ const ChatHistory = ({
       isOpen: false,
       chatId: null,
       chatTitle: "",
+    });
+  };
+
+  const handleEditTitle = (e, chatId, currentTitle) => {
+    e.stopPropagation(); // Prevent chat selection
+    setEditingTitle({
+      chatId,
+      newTitle: currentTitle,
+    });
+  };
+
+  const handleTitleChange = (e) => {
+    setEditingTitle((prev) => ({
+      ...prev,
+      newTitle: e.target.value,
+    }));
+  };
+
+  const handleTitleSave = () => {
+    if (editingTitle.newTitle.trim()) {
+      // Here you would typically call an API to update the title
+      // For now, we'll just close the edit mode
+      console.log(
+        `Updating title for chat ${editingTitle.chatId} to: ${editingTitle.newTitle}`
+      );
+    }
+    setEditingTitle({
+      chatId: null,
+      newTitle: "",
+    });
+  };
+
+  const handleTitleCancel = () => {
+    setEditingTitle({
+      chatId: null,
+      newTitle: "",
     });
   };
 
@@ -117,9 +157,46 @@ const ChatHistory = ({
                   >
                     {/* Chat Content */}
                     <div onClick={() => handleChatSelect(chat.id)}>
-                      <p className="font-semibold text-sm truncate pr-8">
-                        {chat.title}
-                      </p>
+                      {editingTitle.chatId === chat.id ? (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editingTitle.newTitle}
+                            onChange={handleTitleChange}
+                            className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50"
+                            placeholder="Enter chat title..."
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleTitleSave();
+                              if (e.key === "Escape") handleTitleCancel();
+                            }}
+                          />
+                          <div className="flex space-x-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTitleSave();
+                              }}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTitleCancel();
+                              }}
+                              className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="font-semibold text-sm truncate pr-16">
+                          {chat.title}
+                        </p>
+                      )}
                       <p className="text-xs text-subtle-dark truncate">
                         {chat.lastMessage}
                       </p>
@@ -130,18 +207,33 @@ const ChatHistory = ({
                       </span>
                     </div>
 
-                    {/* Delete Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={(e) => handleDeleteClick(e, chat.id, chat.title)}
-                      className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20 text-red-400 hover:text-red-300"
-                      title="Delete chat"
-                    >
-                      <span className="material-symbols-outlined text-sm">
-                        delete
-                      </span>
-                    </motion.button>
+                    {/* Action Buttons */}
+                    <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => handleEditTitle(e, chat.id, chat.title)}
+                        className="p-1 rounded-md hover:bg-blue-500/20 text-blue-400 hover:text-blue-300"
+                        title="Edit title"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          edit
+                        </span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) =>
+                          handleDeleteClick(e, chat.id, chat.title)
+                        }
+                        className="p-1 rounded-md hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                        title="Delete chat"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          delete
+                        </span>
+                      </motion.button>
+                    </div>
                   </motion.div>
                 );
               })

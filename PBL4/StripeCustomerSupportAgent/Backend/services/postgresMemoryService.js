@@ -593,6 +593,14 @@ class PostgreSQLMemoryService {
             LIMIT 1
           ) as last_message,
           (
+            SELECT content 
+            FROM conversation_messages 
+            WHERE session_id = cs.session_id 
+            AND role = 'user'
+            ORDER BY created_at ASC 
+            LIMIT 1
+          ) as first_user_message,
+          (
             SELECT summary_text 
             FROM conversation_summaries 
             WHERE session_id = cs.session_id 
