@@ -546,6 +546,8 @@ function classifyQueryType(query) {
     isCodeQuery,
     isCurrencyQuery,
     shouldUseWebSearch: isGeneralKnowledgeQuery && isNotShopifyRelated,
+    shouldUseMCPTools:
+      isMathQuery || isDateTimeQuery || isCodeQuery || isCurrencyQuery,
     shouldUseRAG: !isGeneralKnowledgeQuery || !isNotShopifyRelated,
     queryType:
       isGeneralKnowledgeQuery && isNotShopifyRelated
@@ -738,6 +740,9 @@ export async function processChatMessage(message, sessionId) {
     console.log(
       `🔧 Should use web search: ${queryClassification.shouldUseWebSearch}`
     );
+    console.log(
+      `🔧 Should use MCP tools: ${queryClassification.shouldUseMCPTools}`
+    );
     console.log(`🔧 Should use RAG: ${queryClassification.shouldUseRAG}`);
 
     // Smart routing: Handle general knowledge queries directly with MCP tools
@@ -802,6 +807,71 @@ export async function processChatMessage(message, sessionId) {
           toolResults: toolResults,
         },
         isWebSearch: true,
+      };
+    }
+
+    // Smart routing: Handle MCP tool queries (mathematical, date/time, code validation, currency conversion)
+    if (queryClassification.shouldUseMCPTools) {
+      console.log(
+        `🔧 Routing ${queryClassification.queryType} query to MCP tools: "${message}"`
+      );
+
+      // Process directly with MCP tools
+      let finalAnswer = "I'll process that for you.";
+      let toolResults = {};
+      let toolsUsed = [];
+
+      if (mcpOrchestrator) {
+        try {
+          const mcpResult = await mcpOrchestrator.processWithTools(
+            message,
+            0.9, // High confidence for MCP tool queries
+            ""
+          );
+          finalAnswer = mcpResult.enhancedAnswer;
+          toolResults = mcpResult.toolResults;
+          toolsUsed = mcpResult.toolsUsed;
+        } catch (error) {
+          console.error("MCP processing error:", error);
+          finalAnswer =
+            "I encountered an error while processing that request. Please try again or contact support.";
+        }
+      }
+
+      // Create assistant message for MCP tool result
+      const assistantMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: finalAnswer,
+        metadata: {
+          searchResults: [],
+          modelUsed: "mcp-tools",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          queryClassification: queryClassification,
+          mcpTools: {
+            toolsUsed: toolsUsed,
+            toolResults: toolResults,
+          },
+        },
+      });
+      await assistantMessage.save();
+      await conversation.addMessage(assistantMessage._id);
+
+      return {
+        answer: finalAnswer,
+        confidence: {
+          score: 90,
+          level: "High",
+          factors: ["MCP tool results"],
+        },
+        sources: [],
+        queryClassification: queryClassification,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
+        isMCPTools: true,
       };
     }
 

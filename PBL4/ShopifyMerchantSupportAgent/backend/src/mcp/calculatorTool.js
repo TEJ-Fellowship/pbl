@@ -18,7 +18,21 @@ export class CalculatorTool {
   extractMathExpressions(query) {
     const expressions = [];
 
-    // Handle natural language percentage calculations first
+    // First, try to handle universal mathematical expressions
+    const universalExpression = this.extractUniversalMathExpression(query);
+    if (universalExpression) {
+      expressions.push(universalExpression);
+      return expressions;
+    }
+
+    // Then try to handle complex expressions with multiple operations
+    const complexExpression = this.extractComplexExpression(query);
+    if (complexExpression) {
+      expressions.push(complexExpression);
+      return expressions;
+    }
+
+    // Handle natural language percentage calculations
     const percentageMatch = this.extractPercentageCalculation(query);
     if (percentageMatch) {
       expressions.push(percentageMatch);
@@ -66,6 +80,163 @@ export class CalculatorTool {
   }
 
   /**
+   * Extract universal mathematical expressions that can handle any mathematical expression
+   * @param {string} query - The user query
+   * @returns {string|null} Formatted calculation or null if not found
+   */
+  extractUniversalMathExpression(query) {
+    // Remove common words like "calculate", "compute", "solve", "what is", etc.
+    let cleanQuery = query
+      .replace(
+        /^(calculate|compute|solve|what is|how much is|evaluate)\s+/i,
+        ""
+      )
+      .trim();
+
+    // Check if the query contains mathematical content
+    if (!this.hasMathematicalContent(cleanQuery)) {
+      return null;
+    }
+
+    try {
+      // Convert natural language to mathematical expression
+      let mathExpression = this.convertNaturalLanguageToMath(cleanQuery);
+
+      // Evaluate the mathematical expression
+      const result = this.evaluateMathExpression(mathExpression);
+
+      if (result !== null) {
+        return `${cleanQuery} = ${result}`;
+      }
+    } catch (error) {
+      console.log("Universal math expression parsing failed:", error.message);
+    }
+
+    return null;
+  }
+
+  /**
+   * Convert natural language to mathematical expression
+   * @param {string} query - Natural language query
+   * @returns {string} Mathematical expression
+   */
+  convertNaturalLanguageToMath(query) {
+    let expression = query;
+
+    // Handle percentage expressions: "15% of $200" -> "(15/100) * 200"
+    expression = expression.replace(
+      /(\d+(?:\.\d+)?)%\s+of\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)/gi,
+      (match, percentage, amount) => {
+        const cleanAmount = amount.replace(/,/g, "");
+        return `(${percentage}/100) * ${cleanAmount}`;
+      }
+    );
+
+    // Handle currency symbols
+    expression = expression.replace(/\$/g, "");
+
+    // Handle commas in numbers
+    expression = expression.replace(/(\d+),(\d+)/g, "$1$2");
+
+    // Convert natural language operators to mathematical symbols
+    expression = expression.replace(/\bplus\b/gi, "+");
+    expression = expression.replace(/\bminus\b/gi, "-");
+    expression = expression.replace(/\btimes\b/gi, "*");
+    expression = expression.replace(/\bmultiply\b/gi, "*");
+    expression = expression.replace(/\bdivided by\b/gi, "/");
+    expression = expression.replace(/\bdivide\b/gi, "/");
+    expression = expression.replace(/\badd\b/gi, "+");
+    expression = expression.replace(/\bsubtract\b/gi, "-");
+
+    // Clean up spaces around operators
+    expression = expression.replace(/\s*([\+\-\*\/])\s*/g, " $1 ");
+
+    return expression.trim();
+  }
+
+  /**
+   * Evaluate mathematical expression safely
+   * @param {string} expression - Mathematical expression
+   * @returns {number|null} Result or null if invalid
+   */
+  evaluateMathExpression(expression) {
+    try {
+      // Use the already imported evaluate function from mathjs
+      return evaluate(expression);
+    } catch (error) {
+      console.log("Math evaluation error:", error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Extract complex mathematical expressions with multiple operations
+   * @param {string} query - The user query
+   * @returns {string|null} Formatted calculation or null if not found
+   */
+  extractComplexExpression(query) {
+    const lowerQuery = query.toLowerCase();
+
+    // Pattern for complex expressions like "15% of $200 plus $20", "10% of 100 minus 5"
+    const complexPatterns = [
+      // "X% of $Y plus $Z", "X% of Y plus Z"
+      /(\d+(?:\.\d+)?)%\s+of\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)\s+(?:plus|add|\+)\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i,
+      // "X% of $Y minus $Z", "X% of Y minus Z"
+      /(\d+(?:\.\d+)?)%\s+of\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)\s+(?:minus|subtract|\-)\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i,
+      // "X% of $Y times $Z", "X% of Y times Z"
+      /(\d+(?:\.\d+)?)%\s+of\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)\s+(?:times|multiply|\*)\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i,
+      // "X% of $Y divided by $Z", "X% of Y divided by Z"
+      /(\d+(?:\.\d+)?)%\s+of\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)\s+(?:divided by|divide|\/)\s+\$?(\d+(?:,\d{3})*(?:\.\d+)?)/i,
+    ];
+
+    for (const pattern of complexPatterns) {
+      const match = query.match(pattern);
+      if (match) {
+        const percentage = parseFloat(match[1]);
+        const amount1 = parseFloat(match[2].replace(/,/g, ""));
+        const amount2 = parseFloat(match[3].replace(/,/g, ""));
+
+        // Calculate the percentage first
+        const percentageResult = (percentage / 100) * amount1;
+
+        // Determine the operation
+        let operation, result;
+        if (match[0].toLowerCase().includes("plus") || match[0].includes("+")) {
+          operation = "+";
+          result = percentageResult + amount2;
+        } else if (
+          match[0].toLowerCase().includes("minus") ||
+          match[0].includes("-")
+        ) {
+          operation = "-";
+          result = percentageResult - amount2;
+        } else if (
+          match[0].toLowerCase().includes("times") ||
+          match[0].includes("*")
+        ) {
+          operation = "*";
+          result = percentageResult * amount2;
+        } else if (
+          match[0].toLowerCase().includes("divided") ||
+          match[0].includes("/")
+        ) {
+          operation = "/";
+          result = percentageResult / amount2;
+        }
+
+        // Format the result
+        const hasDollarSign = match[0].includes("$");
+        const formattedAmount1 = hasDollarSign ? `$${match[2]}` : match[2];
+        const formattedAmount2 = hasDollarSign ? `$${match[3]}` : match[3];
+
+        return `${match[1]}% of ${formattedAmount1} ${operation} ${formattedAmount2} = ${result}`;
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * Extract percentage calculation from natural language query
    * @param {string} query - The user query
    * @returns {string|null} Formatted calculation or null if not found
@@ -104,6 +275,12 @@ export class CalculatorTool {
    * @returns {string} Cleaned expression ready for evaluation
    */
   cleanExpression(expression) {
+    // Handle complex expressions that already have results
+    if (expression.includes("=")) {
+      const result = expression.split("=")[1].trim();
+      return result.replace(/\$/g, "").replace(/,/g, "").trim();
+    }
+
     return expression
       .replace(/\$/g, "") // Remove dollar signs
       .replace(/,/g, "") // Remove commas
@@ -387,7 +564,9 @@ export class CalculatorTool {
       /sum.*\d+/i,
     ];
 
-    const hasCalculationPhrases = calculationPhrases.some((pattern) => pattern.test(query));
+    const hasCalculationPhrases = calculationPhrases.some((pattern) =>
+      pattern.test(query)
+    );
 
     // Return true if any mathematical content is detected
     return (
