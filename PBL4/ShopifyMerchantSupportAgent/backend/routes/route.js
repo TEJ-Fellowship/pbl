@@ -7,6 +7,8 @@ import {
   getConversationStats,
   cleanupConversationState,
 } from "../controllers/chatController.js";
+import analyticsRoutes from "./analyticsRoutes.js";
+import feedbackRoutes from "./feedbackRoutes.js";
 
 const router = express.Router();
 
@@ -22,6 +24,18 @@ router.get("/", (req, res) => {
       "/clarify",
       "/stats/:sessionId",
       "/cleanup/:sessionId",
+      "/analytics/dashboard",
+      "/analytics/segment/:segment",
+      "/analytics/questions/:intent",
+      "/analytics/confidence-trends",
+      "/analytics/clear-cache",
+      "/feedback/store",
+      "/feedback/stats",
+      "/feedback/intent/:intent",
+      "/feedback/analyze",
+      "/feedback/retrain-candidates",
+      "/feedback/auto-retrain",
+      "/feedback/clear-cache",
     ],
     features: [
       "Multi-turn conversation handling",
@@ -30,9 +44,21 @@ router.get("/", (req, res) => {
       "Context compression",
       "User preference tracking",
       "MCP tools integration",
+      "Intent classification",
+      "Proactive suggestions",
+      "Analytics dashboard",
+      "Merchant segment insights",
+      "Feedback loop system",
+      "Auto-retrain mechanism",
     ],
   });
 });
+
+// Analytics routes
+router.use("/analytics", analyticsRoutes);
+
+// Feedback routes
+router.use("/feedback", feedbackRoutes);
 
 // Chat API endpoints
 router.post("/chat", async (req, res) => {

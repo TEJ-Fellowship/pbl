@@ -9,6 +9,9 @@ import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import MCPOrchestrator from "../src/mcp/mcpOrchestrator.js";
 import { multiTurnManager } from "../src/multi-turn-conversation.js";
+import IntentClassificationService from "../src/services/intentClassificationService.js";
+import ProactiveSuggestionsService from "../src/services/proactiveSuggestionsService.js";
+import { AnalyticsService } from "../src/services/analyticsService.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -18,105 +21,126 @@ const md = new MarkdownIt({
 });
 
 // Enhanced confidence scoring function
-function calculateConfidence(results, answer) {
+function calculateConfidence(
+  results,
+  answer,
+  query = "",
+  intentClassification = null
+) {
+  if (!results || results.length === 0) {
+    return {
+      score: 10,
+      level: "Very Low",
+      factors: ["No sources found"],
+    };
+  }
+
   let confidence = 0;
   let confidenceFactors = [];
 
-  // Factor 1: Number of relevant sources (0-25 points)
-  const sourceCount = results.length;
-  if (sourceCount >= 6) {
-    confidence += 25;
-    confidenceFactors.push("Multiple comprehensive sources found");
-  } else if (sourceCount >= 4) {
-    confidence += 20;
-    confidenceFactors.push("Several relevant sources found");
-  } else if (sourceCount >= 2) {
-    confidence += 15;
-    confidenceFactors.push("Some relevant sources found");
-  } else if (sourceCount >= 1) {
-    confidence += 10;
-    confidenceFactors.push("Limited sources found");
-  }
-
-  // Factor 2: Average relevance score (0-25 points)
+  // Enhanced Factor 1: Cross-encoder re-ranking simulation (30% weight)
   const avgScore =
     results.reduce((sum, r) => sum + r.score, 0) / results.length;
-  if (avgScore >= 0.8) {
+  const queryAnswerRelevance = calculateQueryAnswerRelevance(query, answer);
+  const crossEncoderScore = avgScore * 0.7 + queryAnswerRelevance * 0.3;
+
+  if (crossEncoderScore >= 0.8) {
+    confidence += 30;
+    confidenceFactors.push("Very high cross-encoder relevance");
+  } else if (crossEncoderScore >= 0.6) {
     confidence += 25;
-    confidenceFactors.push("Very high relevance scores");
-  } else if (avgScore >= 0.6) {
+    confidenceFactors.push("High cross-encoder relevance");
+  } else if (crossEncoderScore >= 0.4) {
     confidence += 20;
-    confidenceFactors.push("High relevance scores");
-  } else if (avgScore >= 0.4) {
+    confidenceFactors.push("Good cross-encoder relevance");
+  } else if (crossEncoderScore >= 0.2) {
     confidence += 15;
-    confidenceFactors.push("Good relevance scores");
-  } else if (avgScore >= 0.2) {
-    confidence += 10;
-    confidenceFactors.push("Moderate relevance scores");
+    confidenceFactors.push("Moderate cross-encoder relevance");
   } else {
-    confidence += 5;
-    confidenceFactors.push("Low relevance scores");
+    confidence += 10;
+    confidenceFactors.push("Low cross-encoder relevance");
   }
 
-  // Factor 3: Answer quality indicators (0-25 points)
+  // Enhanced Factor 2: Exact entity matching bonus (25% weight)
+  const entityMatchBonus = calculateEntityMatchBonus(query, answer, results);
+  confidence += entityMatchBonus * 25;
+  if (entityMatchBonus > 0.5) {
+    confidenceFactors.push("Strong exact entity matches found");
+  } else if (entityMatchBonus > 0.2) {
+    confidenceFactors.push("Some exact entity matches found");
+  }
+
+  // Enhanced Factor 3: Source quality and diversity (20% weight)
+  const sourceQualityBonus = calculateSourceQualityBonus(results);
+  const searchTypes = [...new Set(results.map((r) => r.searchType))];
+  const categories = [
+    ...new Set(results.map((r) => r.metadata?.category || "unknown")),
+  ];
+
+  let sourceScore = 0;
+  if (searchTypes.length >= 3) {
+    sourceScore += 10;
+    confidenceFactors.push("Multiple search methods used");
+  } else if (searchTypes.length >= 2) {
+    sourceScore += 8;
+    confidenceFactors.push("Hybrid search methods used");
+  } else {
+    sourceScore += 5;
+    confidenceFactors.push("Single search method used");
+  }
+
+  if (categories.length >= 4) {
+    sourceScore += 10;
+    confidenceFactors.push("High category diversity");
+  } else if (categories.length >= 2) {
+    sourceScore += 5;
+    confidenceFactors.push("Good category diversity");
+  }
+
+  confidence += sourceScore + sourceQualityBonus * 100;
+
+  // Enhanced Factor 4: Answer completeness and quality (15% weight)
+  const completenessBonus = calculateAnswerCompleteness(query, answer);
   const answerLength = answer.length;
   const hasCodeBlocks = answer.includes("```") || answer.includes("`");
   const hasSpecifics =
     answer.includes("API") ||
     answer.includes("endpoint") ||
-    answer.includes("parameter") ||
-    answer.includes("step");
+    answer.includes("parameter");
   const hasExamples =
-    answer.includes("example") ||
-    answer.includes("for instance") ||
-    answer.includes("such as");
+    answer.includes("example") || answer.includes("for instance");
   const hasSteps =
     answer.includes("1.") || answer.includes("2.") || answer.includes("Step");
 
+  let answerScore = 0;
   if (answerLength > 500 && hasSpecifics && (hasExamples || hasSteps)) {
-    confidence += 25;
-    confidenceFactors.push(
-      "Comprehensive answer with specific details and examples"
-    );
+    answerScore += 15;
+    confidenceFactors.push("Comprehensive answer with details and examples");
   } else if (answerLength > 300 && (hasSpecifics || hasCodeBlocks)) {
-    confidence += 20;
-    confidenceFactors.push("Detailed answer with technical information");
+    answerScore += 12;
+    confidenceFactors.push("Detailed technical answer");
   } else if (answerLength > 200 && (hasExamples || hasSteps)) {
-    confidence += 15;
-    confidenceFactors.push("Good answer with practical guidance");
+    answerScore += 10;
+    confidenceFactors.push("Good practical guidance");
   } else if (answerLength > 100) {
-    confidence += 10;
+    answerScore += 7;
     confidenceFactors.push("Basic answer provided");
   } else {
-    confidence += 5;
+    answerScore += 3;
     confidenceFactors.push("Minimal answer");
   }
 
-  // Factor 4: Search method diversity (0-25 points)
-  const searchTypes = [...new Set(results.map((r) => r.searchType))];
-  if (searchTypes.length >= 3) {
-    confidence += 25;
-    confidenceFactors.push(
-      "Multiple search methods used for comprehensive coverage"
-    );
-  } else if (searchTypes.length >= 2) {
-    confidence += 20;
-    confidenceFactors.push("Hybrid search methods used");
-  } else {
-    confidence += 15;
-    confidenceFactors.push("Single search method used");
-  }
+  confidence += answerScore + completenessBonus * 100;
 
-  // Factor 5: Category diversity bonus (0-10 points)
-  const categories = [
-    ...new Set(results.map((r) => r.metadata?.category || "unknown")),
-  ];
-  if (categories.length >= 4) {
-    confidence += 10;
-    confidenceFactors.push("High category diversity in sources");
-  } else if (categories.length >= 2) {
-    confidence += 5;
-    confidenceFactors.push("Good category diversity");
+  // Enhanced Factor 5: Intent classification confidence (10% weight)
+  if (intentClassification && intentClassification.confidence) {
+    const intentConfidence = intentClassification.confidence * 10;
+    confidence += intentConfidence;
+    if (intentConfidence > 8) {
+      confidenceFactors.push("High intent classification confidence");
+    } else if (intentConfidence > 6) {
+      confidenceFactors.push("Good intent classification confidence");
+    }
   }
 
   // Determine confidence level
@@ -138,6 +162,219 @@ function calculateConfidence(results, answer) {
     level: confidenceLevel,
     factors: confidenceFactors,
   };
+}
+
+/**
+ * Calculate query-answer relevance using keyword matching and semantic similarity
+ * @param {string} query - User query
+ * @param {string} answer - Generated answer
+ * @returns {number} Relevance score (0-1)
+ */
+function calculateQueryAnswerRelevance(query, answer) {
+  if (!query || !answer) return 0;
+
+  const queryLower = query.toLowerCase();
+  const answerLower = answer.toLowerCase();
+
+  // Extract key terms from query
+  const queryTerms = queryLower
+    .split(/\s+/)
+    .filter(
+      (term) =>
+        term.length > 2 &&
+        ![
+          "the",
+          "and",
+          "or",
+          "but",
+          "for",
+          "with",
+          "how",
+          "what",
+          "when",
+          "where",
+          "why",
+        ].includes(term)
+    );
+
+  // Check how many query terms appear in the answer
+  const matchingTerms = queryTerms.filter((term) => answerLower.includes(term));
+  const termMatchRatio =
+    queryTerms.length > 0 ? matchingTerms.length / queryTerms.length : 0;
+
+  // Check for specific Shopify-related terms
+  const shopifyTerms = [
+    "shopify",
+    "store",
+    "product",
+    "order",
+    "payment",
+    "shipping",
+    "theme",
+    "app",
+    "api",
+    "webhook",
+  ];
+  const shopifyMatches = shopifyTerms.filter(
+    (term) => queryLower.includes(term) && answerLower.includes(term)
+  );
+  const shopifyMatchRatio =
+    shopifyTerms.length > 0 ? shopifyMatches.length / shopifyTerms.length : 0;
+
+  // Combine term matching and Shopify-specific matching
+  return termMatchRatio * 0.7 + shopifyMatchRatio * 0.3;
+}
+
+/**
+ * Calculate entity matching bonus for exact matches
+ * @param {string} query - User query
+ * @param {string} answer - Generated answer
+ * @param {Array} results - Search results
+ * @returns {number} Entity match bonus (0-1)
+ */
+function calculateEntityMatchBonus(query, answer, results) {
+  if (!query || !answer) return 0;
+
+  let bonus = 0;
+
+  // Check for exact API method matches
+  const apiMethods = ["GET", "POST", "PUT", "DELETE", "PATCH"];
+  const apiMethodMatches = apiMethods.filter(
+    (method) => query.includes(method) && answer.includes(method)
+  );
+  bonus += apiMethodMatches.length * 0.1;
+
+  // Check for exact error code matches
+  const errorCodePattern = /\b\d{3}\b/g;
+  const queryErrorCodes = query.match(errorCodePattern) || [];
+  const answerErrorCodes = answer.match(errorCodePattern) || [];
+  const errorCodeMatches = queryErrorCodes.filter((code) =>
+    answerErrorCodes.includes(code)
+  );
+  bonus += errorCodeMatches.length * 0.15;
+
+  // Check for exact Shopify entity matches
+  const shopifyEntities = [
+    "product",
+    "order",
+    "customer",
+    "collection",
+    "variant",
+    "inventory",
+    "fulfillment",
+  ];
+  const entityMatches = shopifyEntities.filter(
+    (entity) =>
+      query.toLowerCase().includes(entity) &&
+      answer.toLowerCase().includes(entity)
+  );
+  bonus += entityMatches.length * 0.1;
+
+  // Check for exact URL/endpoint matches
+  const urlPattern = /https?:\/\/[^\s]+/g;
+  const queryUrls = query.match(urlPattern) || [];
+  const answerUrls = answer.match(urlPattern) || [];
+  const urlMatches = queryUrls.filter((url) => answerUrls.includes(url));
+  bonus += urlMatches.length * 0.2;
+
+  // Check for exact code snippet matches
+  const codePattern = /`[^`]+`/g;
+  const queryCode = query.match(codePattern) || [];
+  const answerCode = answer.match(codePattern) || [];
+  const codeMatches = queryCode.filter((code) => answerCode.includes(code));
+  bonus += codeMatches.length * 0.15;
+
+  return Math.min(bonus, 1.0);
+}
+
+/**
+ * Calculate source quality bonus based on result metadata
+ * @param {Array} results - Search results
+ * @returns {number} Source quality bonus (0-1)
+ */
+function calculateSourceQualityBonus(results) {
+  if (!results || results.length === 0) return 0;
+
+  let qualityScore = 0;
+  const totalResults = results.length;
+
+  // Weight different source types
+  const sourceWeights = {
+    api_admin_graphql: 1.0,
+    api_admin_rest: 1.0,
+    api_storefront: 0.9,
+    shopify_dev: 0.9,
+    helpcenter: 0.8,
+    manual_getting_started: 0.8,
+    manual_products: 0.8,
+    manual_orders: 0.8,
+    theme: 0.7,
+    theme_liquid: 0.7,
+    forum: 0.6,
+    getting_started: 0.6,
+  };
+
+  results.forEach((result) => {
+    const sourceType = result.metadata?.category || "unknown";
+    const weight = sourceWeights[sourceType] || 0.5;
+    qualityScore += weight;
+  });
+
+  return (qualityScore / totalResults) * 0.1; // Scale to 0-0.1 range
+}
+
+/**
+ * Calculate answer completeness bonus
+ * @param {string} query - User query
+ * @param {string} answer - Generated answer
+ * @returns {number} Completeness bonus (0-1)
+ */
+function calculateAnswerCompleteness(query, answer) {
+  if (!query || !answer) return 0;
+
+  let completeness = 0;
+
+  // Check if answer addresses the main question
+  const questionWords = ["what", "how", "when", "where", "why", "which", "who"];
+  const hasQuestionWord = questionWords.some((word) =>
+    query.toLowerCase().includes(word)
+  );
+
+  if (hasQuestionWord) {
+    // Check if answer provides a direct response
+    const answerLength = answer.length;
+    if (answerLength > 100) completeness += 0.3;
+    if (answerLength > 300) completeness += 0.2;
+    if (answerLength > 500) completeness += 0.1;
+  }
+
+  // Check for code examples in technical queries
+  if (
+    query.toLowerCase().includes("code") ||
+    query.toLowerCase().includes("example")
+  ) {
+    if (answer.includes("```") || answer.includes("`")) {
+      completeness += 0.2;
+    }
+  }
+
+  // Check for step-by-step instructions
+  if (
+    query.toLowerCase().includes("step") ||
+    query.toLowerCase().includes("how to")
+  ) {
+    const stepPattern = /\d+\.|step \d+|first|second|third|next|then|finally/i;
+    if (stepPattern.test(answer)) {
+      completeness += 0.2;
+    }
+  }
+
+  // Check for links to additional resources
+  if (answer.includes("http") || answer.includes("https")) {
+    completeness += 0.1;
+  }
+
+  return Math.min(completeness, 0.1); // Cap at 0.1
 }
 
 // Handle edge cases with fallback responses
@@ -175,9 +412,20 @@ let retriever = null;
 let model = null;
 let genAI = null;
 let mcpOrchestrator = null;
+let intentClassifier = null;
+let proactiveSuggestions = null;
+let analyticsService = null;
 
 async function initializeAI() {
-  if (retriever && model && mcpOrchestrator) return; // Already initialized
+  if (
+    retriever &&
+    model &&
+    mcpOrchestrator &&
+    intentClassifier &&
+    proactiveSuggestions &&
+    analyticsService
+  )
+    return; // Already initialized
 
   try {
     await connectDB();
@@ -209,6 +457,18 @@ async function initializeAI() {
     // Initialize MCP Orchestrator
     mcpOrchestrator = new MCPOrchestrator();
     console.log("🔧 MCP Orchestrator initialized successfully");
+
+    // Initialize Intent Classification Service
+    intentClassifier = new IntentClassificationService();
+    console.log("🎯 Intent Classification Service initialized successfully");
+
+    // Initialize Proactive Suggestions Service
+    proactiveSuggestions = new ProactiveSuggestionsService();
+    console.log("💡 Proactive Suggestions Service initialized successfully");
+
+    // Initialize Analytics Service
+    analyticsService = new AnalyticsService();
+    console.log("📊 Analytics Service initialized successfully");
   } catch (error) {
     console.error("Failed to initialize AI components:", error);
     throw error;
@@ -290,11 +550,24 @@ export async function processChatMessage(message, sessionId) {
     // Use enhanced contextual query for search
     const queryEmbedding = await embedSingle(enhancedContext.contextualQuery);
 
-    // Perform hybrid search with enhanced contextual query
+    // Classify intent for smart routing
+    const intentClassification = await intentClassifier.classifyIntent(message);
+    console.log(
+      `🎯 Intent classified as: ${intentClassification.intent} (confidence: ${intentClassification.confidence})`
+    );
+
+    // Get routing configuration based on intent
+    const routingConfig = intentClassifier.getRoutingConfig(
+      intentClassification.intent
+    );
+
+    // Perform hybrid search with enhanced contextual query and intent-based routing
     const results = await retriever.search({
       query: enhancedContext.contextualQuery,
       queryEmbedding,
       k: 8, // Increased for more comprehensive results
+      intent: intentClassification.intent,
+      routingConfig: routingConfig,
     });
 
     // Check for edge cases
@@ -336,18 +609,54 @@ export async function processChatMessage(message, sessionId) {
       };
     }
 
-    // Use multi-turn conversation manager for enhanced response generation
+    // Generate intent-specific prompt
+    const intentSpecificPrompt = intentClassifier.generateIntentSpecificPrompt(
+      intentClassification.intent,
+      message,
+      results
+    );
+
+    // Use multi-turn conversation manager for enhanced response generation with intent-specific prompt
     const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
       message,
       sessionId,
       messages,
-      results
+      results,
+      intentSpecificPrompt
     );
 
     const answer = enhancedResponse.answer;
 
     // Calculate confidence score
-    const confidence = calculateConfidence(results, answer);
+    const confidence = calculateConfidence(
+      results,
+      answer,
+      message,
+      intentClassification
+    );
+
+    // Generate proactive suggestions
+    const suggestionsResult =
+      await proactiveSuggestions.getProactiveSuggestions(
+        message,
+        messages,
+        intentClassification.intent,
+        enhancedResponse.conversationState.userPreferences
+      );
+    console.log(
+      `💡 Generated ${suggestionsResult.suggestions.length} proactive suggestions`
+    );
+
+    // Track question for analytics
+    await analyticsService.trackQuestion(
+      message,
+      intentClassification.intent,
+      enhancedResponse.conversationState.userPreferences,
+      sessionId,
+      confidence,
+      results
+    );
+    console.log(`📊 Tracked question for analytics`);
 
     // Process with MCP tools if needed
     let finalAnswer = answer;
@@ -396,6 +705,13 @@ export async function processChatMessage(message, sessionId) {
           userPreferences: enhancedResponse.conversationState.userPreferences,
           contextualQuery: enhancedResponse.contextualQuery,
         },
+        intentClassification: {
+          intent: intentClassification.intent,
+          confidence: intentClassification.confidence,
+          method: intentClassification.method,
+          routingConfig: routingConfig,
+        },
+        proactiveSuggestions: suggestionsResult.suggestions,
       },
     });
     await assistantMessage.save();
@@ -421,10 +737,17 @@ export async function processChatMessage(message, sessionId) {
         contextualQuery: enhancedResponse.contextualQuery,
         conversationStats: multiTurnManager.getConversationStats(sessionId),
       },
+      intentClassification: {
+        intent: intentClassification.intent,
+        confidence: intentClassification.confidence,
+        method: intentClassification.method,
+        routingConfig: routingConfig,
+      },
       mcpTools: {
         toolsUsed: toolsUsed,
         toolResults: toolResults,
       },
+      proactiveSuggestions: suggestionsResult.suggestions,
     };
   } catch (error) {
     console.error("Error processing chat message:", error);
@@ -531,7 +854,12 @@ export async function processClarificationResponse(
     );
 
     const answer = enhancedResponse.answer;
-    const confidence = calculateConfidence(results, answer);
+    const confidence = calculateConfidence(
+      results,
+      answer,
+      clarificationResult.clarifiedQuery,
+      null
+    );
 
     // Process with MCP tools if needed
     let finalAnswer = answer;
