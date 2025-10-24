@@ -716,8 +716,20 @@ Return as JSON array:
         return [];
       }
 
+      // Clean response - remove markdown code blocks if present
+      let cleanedResponse = response.trim();
+      if (cleanedResponse.startsWith("```json")) {
+        cleanedResponse = cleanedResponse
+          .replace(/^```json\s*/, "")
+          .replace(/\s*```$/, "");
+      } else if (cleanedResponse.startsWith("```")) {
+        cleanedResponse = cleanedResponse
+          .replace(/^```\s*/, "")
+          .replace(/\s*```$/, "");
+      }
+
       // Parse JSON response
-      const aiSuggestions = JSON.parse(response);
+      const aiSuggestions = JSON.parse(cleanedResponse);
       return aiSuggestions.map((suggestion) => ({
         ...suggestion,
         source: "ai_generated",

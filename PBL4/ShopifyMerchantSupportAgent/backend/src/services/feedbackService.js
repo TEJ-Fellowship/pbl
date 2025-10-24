@@ -20,7 +20,8 @@ export class FeedbackService {
    */
   async storeFeedback(feedbackData) {
     try {
-      await connectDB();
+      // Remove redundant connectDB call - connection should already be established
+      // await connectDB();
 
       const {
         messageId,

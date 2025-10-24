@@ -377,6 +377,191 @@ function calculateAnswerCompleteness(query, answer) {
   return Math.min(completeness, 0.1); // Cap at 0.1
 }
 
+// Smart query classifier to determine routing strategy
+function classifyQueryType(query) {
+  const queryLower = query.toLowerCase();
+
+  // General knowledge query patterns
+  const generalKnowledgePatterns = [
+    /^(who is|what is|when was|where is|why is|how does|tell me about|explain|describe|define)/i,
+    /^(who are|what are|when are|where are|why are|how are)/i,
+    /^(who was|what was|when was|where was|why was|how was)/i,
+    /^(who were|what were|when were|where were|why were|how were)/i,
+    /^(who will|what will|when will|where will|why will|how will)/i,
+    /^(who can|what can|when can|where can|why can|how can)/i,
+    /^(who should|what should|when should|where should|why should|how should)/i,
+    /^(who would|what would|when would|where would|why would|how would)/i,
+    /^(who could|what could|when could|where could|why could|how could)/i,
+    /^(who might|what might|when might|where might|why might|how might)/i,
+    /^(who may|what may|when may|where may|why may|how may)/i,
+    /^(who must|what must|when must|where must|why must|how must)/i,
+    /^(who shall|what shall|when shall|where shall|why shall|how shall)/i,
+    /^(who ought|what ought|when ought|where ought|why ought|how ought)/i,
+    /^(who need|what need|when need|where need|why need|how need)/i,
+    /^(who dare|what dare|when dare|where dare|why dare|how dare)/i,
+    /^(who used|what used|when used|where used|why used|how used)/i,
+    /^(who used to|what used to|when used to|where used to|why used to|how used to)/i,
+    /^(who going to|what going to|when going to|where going to|why going to|how going to)/i,
+    /^(who about to|what about to|when about to|where about to|why about to|how about to)/i,
+    /^(who supposed to|what supposed to|when supposed to|where supposed to|why supposed to|how supposed to)/i,
+    /^(who meant to|what meant to|when meant to|where meant to|why meant to|how meant to)/i,
+    /^(who intended to|what intended to|when intended to|where intended to|why intended to|how intended to)/i,
+    /^(who planning to|what planning to|when planning to|where planning to|why planning to|how planning to)/i,
+    /^(who trying to|what trying to|when trying to|where trying to|why trying to|how trying to)/i,
+    /^(who attempting to|what attempting to|when attempting to|where attempting to|why attempting to|how attempting to)/i,
+    /^(who working on|what working on|when working on|where working on|why working on|how working on)/i,
+    /^(who developing|what developing|when developing|where developing|why developing|how developing)/i,
+    /^(who building|what building|when building|where building|why building|how building)/i,
+    /^(who creating|what creating|when creating|where creating|why creating|how creating)/i,
+    /^(who making|what making|when making|where making|why making|how making)/i,
+    /^(who designing|what designing|when designing|where designing|why designing|how designing)/i,
+    /^(who constructing|what constructing|when constructing|where constructing|why constructing|how constructing)/i,
+    /^(who assembling|what assembling|when assembling|where assembling|why assembling|how assembling)/i,
+    /^(who putting together|what putting together|when putting together|where putting together|why putting together|how putting together)/i,
+    /^(who setting up|what setting up|when setting up|where setting up|why setting up|how setting up)/i,
+    /^(who installing|what installing|when installing|where installing|why installing|how installing)/i,
+    /^(who configuring|what configuring|when configuring|where configuring|why configuring|how configuring)/i,
+    /^(who customizing|what customizing|when customizing|where customizing|why customizing|how customizing)/i,
+    /^(who personalizing|what personalizing|when personalizing|where personalizing|why personalizing|how personalizing)/i,
+    /^(who tailoring|what tailoring|when tailoring|where tailoring|why tailoring|how tailoring)/i,
+    /^(who adapting|what adapting|when adapting|where adapting|why adapting|how adapting)/i,
+    /^(who modifying|what modifying|when modifying|where modifying|why modifying|how modifying)/i,
+    /^(who adjusting|what adjusting|when adjusting|where adjusting|why adjusting|how adjusting)/i,
+    /^(who tuning|what tuning|when tuning|where tuning|why tuning|how tuning)/i,
+    /^(who optimizing|what optimizing|when optimizing|where optimizing|why optimizing|how optimizing)/i,
+    /^(who improving|what improving|when improving|where improving|why improving|how improving)/i,
+    /^(who enhancing|what enhancing|when enhancing|where enhancing|why enhancing|how enhancing)/i,
+    /^(who upgrading|what upgrading|when upgrading|where upgrading|why upgrading|how upgrading)/i,
+    /^(who updating|what updating|when updating|where updating|why updating|how updating)/i,
+    /^(who refreshing|what refreshing|when refreshing|where refreshing|why refreshing|how refreshing)/i,
+    /^(who renewing|what renewing|when renewing|where renewing|why renewing|how renewing)/i,
+    /^(who restoring|what restoring|when restoring|where restoring|why restoring|how restoring)/i,
+    /^(who resetting|what resetting|when resetting|where resetting|why resetting|how resetting)/i,
+    /^(who rebuilding|what rebuilding|when rebuilding|where rebuilding|why rebuilding|how rebuilding)/i,
+    /^(who reconstructing|what reconstructing|when reconstructing|where reconstructing|why reconstructing|how reconstructing)/i,
+    /^(who reassembling|what reassembling|when reassembling|where reassembling|why reassembling|how reassembling)/i,
+    /^(who reinstalling|what reinstalling|when reinstalling|where reinstalling|why reinstalling|how reinstalling)/i,
+    /^(who reconfiguring|what reconfiguring|when reconfiguring|where reconfiguring|why reconfiguring|how reconfiguring)/i,
+    /^(who recustomizing|what recustomizing|when recustomizing|where recustomizing|why recustomizing|how recustomizing)/i,
+    /^(who repersonalizing|what repersonalizing|when repersonalizing|where repersonalizing|why repersonalizing|how repersonalizing)/i,
+    /^(who retailoring|what retailoring|when retailoring|where retailoring|why retailoring|how retailoring)/i,
+    /^(who readapting|what readapting|when readapting|where readapting|why readapting|how readapting)/i,
+    /^(who remodifying|what remodifying|when remodifying|where remodifying|why remodifying|how remodifying)/i,
+    /^(who readjusting|what readjusting|when readjusting|where readjusting|why readjusting|how readjusting)/i,
+    /^(who retuning|what retuning|when retuning|where retuning|why retuning|how retuning)/i,
+    /^(who reoptimizing|what reoptimizing|when reoptimizing|where reoptimizing|why reoptimizing|how reoptimizing)/i,
+    /^(who reimproving|what reimproving|when reimproving|where reimproving|why reimproving|how reimproving)/i,
+    /^(who reenhancing|what reenhancing|when reenhancing|where reenhancing|why reenhancing|how reenhancing)/i,
+    /^(who reupgrading|what reupgrading|when reupgrading|where reupgrading|why reupgrading|how reupgrading)/i,
+    /^(who reupdating|what reupdating|when reupdating|where reupdating|why reupdating|how reupdating)/i,
+    /^(who refreshing|what refreshing|when refreshing|where refreshing|why refreshing|how refreshing)/i,
+    /^(who renewing|what renewing|when renewing|where renewing|why renewing|how renewing)/i,
+    /^(who restoring|what restoring|when restoring|where restoring|why restoring|how restoring)/i,
+    /^(who resetting|what resetting|when resetting|where resetting|why resetting|how resetting)/i,
+  ];
+
+  // Check if it's a general knowledge query
+  const isGeneralKnowledgeQuery = generalKnowledgePatterns.some((pattern) =>
+    pattern.test(query)
+  );
+
+  // Check if it's NOT Shopify-related
+  const shopifyKeywords = [
+    "shopify",
+    "store",
+    "ecommerce",
+    "merchant",
+    "product",
+    "order",
+    "customer",
+    "payment",
+    "shipping",
+    "theme",
+    "app",
+    "api",
+    "webhook",
+    "checkout",
+    "cart",
+    "inventory",
+    "fulfillment",
+    "collection",
+    "variant",
+    "admin",
+    "dashboard",
+    "analytics",
+    "reports",
+    "settings",
+    "configuration",
+    "customization",
+    "liquid",
+    "template",
+    "layout",
+    "section",
+    "block",
+    "component",
+  ];
+
+  const isNotShopifyRelated = !shopifyKeywords.some((keyword) =>
+    queryLower.includes(keyword)
+  );
+
+  // Mathematical query patterns
+  const mathPatterns = [
+    /\d+\s*[\+\-\*\/]\s*\d+/,
+    /calculate|computation|math|arithmetic|equation|formula|solve/,
+    /plus|minus|times|divided|multiply|add|subtract|sum|total|equals/,
+  ];
+  const isMathQuery = mathPatterns.some((pattern) => pattern.test(queryLower));
+
+  // Date/time query patterns
+  const dateTimePatterns = [
+    /what time|current time|now|today|yesterday|tomorrow|date|calendar/,
+    /timezone|clock|schedule|appointment|meeting|event/,
+  ];
+  const isDateTimeQuery = dateTimePatterns.some((pattern) =>
+    pattern.test(queryLower)
+  );
+
+  // Code validation query patterns
+  const codePatterns = [
+    /validate|check|syntax|error|bug|debug|code|javascript|html|css|liquid/,
+    /function|variable|class|method|api|endpoint/,
+  ];
+  const isCodeQuery = codePatterns.some((pattern) => pattern.test(queryLower));
+
+  // Currency conversion query patterns
+  const currencyPatterns = [
+    /convert|exchange|currency|dollar|euro|pound|yen|rupee|peso|franc/,
+    /usd|eur|gbp|jpy|inr|mxn|chf|cad|aud/,
+  ];
+  const isCurrencyQuery = currencyPatterns.some((pattern) =>
+    pattern.test(queryLower)
+  );
+
+  return {
+    isGeneralKnowledgeQuery,
+    isNotShopifyRelated,
+    isMathQuery,
+    isDateTimeQuery,
+    isCodeQuery,
+    isCurrencyQuery,
+    shouldUseWebSearch: isGeneralKnowledgeQuery && isNotShopifyRelated,
+    shouldUseRAG: !isGeneralKnowledgeQuery || !isNotShopifyRelated,
+    queryType:
+      isGeneralKnowledgeQuery && isNotShopifyRelated
+        ? "general_knowledge"
+        : isMathQuery
+        ? "mathematical"
+        : isDateTimeQuery
+        ? "date_time"
+        : isCodeQuery
+        ? "code_validation"
+        : isCurrencyQuery
+        ? "currency_conversion"
+        : "shopify_related",
+  };
+}
+
 // Handle edge cases with fallback responses
 function handleEdgeCases(results, question) {
   if (results.length === 0) {
@@ -547,7 +732,80 @@ export async function processChatMessage(message, sessionId) {
       };
     }
 
-    // Use enhanced contextual query for search
+    // Smart query classification for routing
+    const queryClassification = classifyQueryType(message);
+    console.log(`🎯 Query classified as: ${queryClassification.queryType}`);
+    console.log(
+      `🔧 Should use web search: ${queryClassification.shouldUseWebSearch}`
+    );
+    console.log(`🔧 Should use RAG: ${queryClassification.shouldUseRAG}`);
+
+    // Smart routing: Handle general knowledge queries directly with MCP tools
+    if (queryClassification.shouldUseWebSearch) {
+      console.log(
+        `🌐 Routing general knowledge query to web search: "${message}"`
+      );
+
+      // Process directly with MCP tools (web search)
+      let finalAnswer = "I'll search for information about that for you.";
+      let toolResults = {};
+      let toolsUsed = [];
+
+      if (mcpOrchestrator) {
+        try {
+          const mcpResult = await mcpOrchestrator.processWithTools(
+            message,
+            0.1, // Low confidence triggers web search
+            ""
+          );
+          finalAnswer = mcpResult.enhancedAnswer;
+          toolResults = mcpResult.toolResults;
+          toolsUsed = mcpResult.toolsUsed;
+        } catch (error) {
+          console.error("MCP processing error:", error);
+          finalAnswer =
+            "I encountered an error while searching for that information. Please try again or contact support.";
+        }
+      }
+
+      // Create assistant message for web search result
+      const assistantMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: finalAnswer,
+        metadata: {
+          searchResults: [],
+          modelUsed: "mcp-web-search",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          queryClassification: queryClassification,
+          mcpTools: {
+            toolsUsed: toolsUsed,
+            toolResults: toolResults,
+          },
+        },
+      });
+      await assistantMessage.save();
+      await conversation.addMessage(assistantMessage._id);
+
+      return {
+        answer: finalAnswer,
+        confidence: {
+          score: 85,
+          level: "High",
+          factors: ["Web search results"],
+        },
+        sources: [],
+        queryClassification: queryClassification,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
+        isWebSearch: true,
+      };
+    }
+
+    // Continue with RAG search for Shopify-related queries
     const queryEmbedding = await embedSingle(enhancedContext.contextualQuery);
 
     // Classify intent for smart routing
@@ -588,6 +846,7 @@ export async function processChatMessage(message, sessionId) {
           modelUsed: "gemini-2.5-flash",
           processingTime: Date.now() - startTime,
           tokensUsed: 0,
+          queryClassification: queryClassification,
         },
       });
       await assistantMessage.save();
@@ -605,6 +864,7 @@ export async function processChatMessage(message, sessionId) {
           searchType: r.searchType,
           content: r.doc,
         })),
+        queryClassification: queryClassification,
         isEdgeCase: true,
       };
     }
@@ -743,6 +1003,7 @@ export async function processChatMessage(message, sessionId) {
         method: intentClassification.method,
         routingConfig: routingConfig,
       },
+      queryClassification: queryClassification,
       mcpTools: {
         toolsUsed: toolsUsed,
         toolResults: toolResults,
@@ -835,7 +1096,82 @@ export async function processClarificationResponse(
     const conversationHistory = await getConversationHistory(sessionId);
     const messages = conversationHistory.messages || [];
 
-    // Perform search with clarified query
+    // Smart query classification for clarified query
+    const queryClassification = classifyQueryType(
+      clarificationResult.clarifiedQuery
+    );
+    console.log(
+      `🎯 Clarified query classified as: ${queryClassification.queryType}`
+    );
+
+    // Smart routing: Handle general knowledge queries directly with MCP tools
+    if (queryClassification.shouldUseWebSearch) {
+      console.log(
+        `🌐 Routing clarified general knowledge query to web search: "${clarificationResult.clarifiedQuery}"`
+      );
+
+      // Process directly with MCP tools (web search)
+      let finalAnswer = "I'll search for information about that for you.";
+      let toolResults = {};
+      let toolsUsed = [];
+
+      if (mcpOrchestrator) {
+        try {
+          const mcpResult = await mcpOrchestrator.processWithTools(
+            clarificationResult.clarifiedQuery,
+            0.1, // Low confidence triggers web search
+            ""
+          );
+          finalAnswer = mcpResult.enhancedAnswer;
+          toolResults = mcpResult.toolResults;
+          toolsUsed = mcpResult.toolsUsed;
+        } catch (error) {
+          console.error("MCP processing error:", error);
+          finalAnswer =
+            "I encountered an error while searching for that information. Please try again or contact support.";
+        }
+      }
+
+      // Create assistant message for web search result
+      const assistantMessage = new Message({
+        conversationId: conversation._id,
+        role: "assistant",
+        content: finalAnswer,
+        metadata: {
+          searchResults: [],
+          modelUsed: "mcp-web-search-clarification",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          clarificationProcessed: true,
+          queryClassification: queryClassification,
+          mcpTools: {
+            toolsUsed: toolsUsed,
+            toolResults: toolResults,
+          },
+        },
+      });
+      await assistantMessage.save();
+      await conversation.addMessage(assistantMessage._id);
+
+      return {
+        answer: finalAnswer,
+        confidence: {
+          score: 85,
+          level: "High",
+          factors: ["Web search results"],
+        },
+        sources: [],
+        queryClassification: queryClassification,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
+        isWebSearch: true,
+        clarificationProcessed: true,
+      };
+    }
+
+    // Continue with RAG search for Shopify-related queries
     const queryEmbedding = await embedSingle(
       clarificationResult.clarifiedQuery
     );
@@ -934,6 +1270,7 @@ export async function processClarificationResponse(
         conversationStats: multiTurnManager.getConversationStats(sessionId),
         clarificationProcessed: true,
       },
+      queryClassification: queryClassification,
       mcpTools: {
         toolsUsed: toolsUsed,
         toolResults: toolResults,

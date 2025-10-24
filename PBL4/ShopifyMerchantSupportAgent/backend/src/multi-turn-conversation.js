@@ -269,19 +269,127 @@ export class MultiTurnConversationManager {
       pattern.test(message)
     );
 
+    // Enhanced context-aware follow-up detection
+    let contextBasedFollowUp = false;
+    let contextConfidence = 0;
+
+    if (conversationHistory.length > 0) {
+      const lastMessage = conversationHistory[conversationHistory.length - 1];
+      const lastContent = lastMessage.content.toLowerCase();
+
+      // Check if current message is asking about a different aspect of the same topic
+      const topicKeywords = this.extractTopicKeywords(lastContent);
+      const currentKeywords = this.extractTopicKeywords(message);
+
+      // If there's overlap in keywords but the question is different, it's likely a follow-up
+      const keywordOverlap = topicKeywords.filter((keyword) =>
+        currentKeywords.includes(keyword)
+      ).length;
+
+      if (
+        keywordOverlap > 0 &&
+        keywordOverlap /
+          Math.max(topicKeywords.length, currentKeywords.length) >
+          0.3
+      ) {
+        contextBasedFollowUp = true;
+        contextConfidence = Math.min(
+          keywordOverlap /
+            Math.max(topicKeywords.length, currentKeywords.length),
+          0.9
+        );
+      }
+
+      // Check for API-related follow-ups (e.g., "GraphQL admin api" after "storefront api")
+      const apiKeywords = ["api", "rest", "graphql", "storefront", "admin"];
+      const hasApiKeywords = apiKeywords.some((keyword) =>
+        message.includes(keyword)
+      );
+      const lastHasApiKeywords = apiKeywords.some((keyword) =>
+        lastContent.includes(keyword)
+      );
+
+      if (
+        hasApiKeywords &&
+        lastHasApiKeywords &&
+        !message.includes("clarification")
+      ) {
+        contextBasedFollowUp = true;
+        contextConfidence = Math.max(contextConfidence, 0.8);
+      }
+    }
+
     return {
       isFollowUp:
-        hasFollowUpIndicator || hasPronounReference || hasContinuationPattern,
-      confidence:
+        hasFollowUpIndicator ||
+        hasPronounReference ||
+        hasContinuationPattern ||
+        contextBasedFollowUp,
+      confidence: Math.max(
         (hasFollowUpIndicator ? 0.8 : 0) +
-        (hasPronounReference ? 0.6 : 0) +
-        (hasContinuationPattern ? 0.7 : 0),
+          (hasPronounReference ? 0.6 : 0) +
+          (hasContinuationPattern ? 0.7 : 0),
+        contextConfidence
+      ),
       indicators: {
         followUpWords: hasFollowUpIndicator,
         pronounReference: hasPronounReference,
         continuationPattern: hasContinuationPattern,
+        contextBased: contextBasedFollowUp,
       },
     };
+  }
+
+  /**
+   * Extract topic keywords from a message
+   */
+  extractTopicKeywords(message) {
+    const stopWords = [
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "could",
+      "should",
+      "may",
+      "might",
+      "can",
+      "this",
+      "that",
+      "these",
+      "those",
+    ];
+
+    return message
+      .toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !stopWords.includes(word))
+      .slice(0, 10); // Limit to most relevant keywords
   }
 
   /**

@@ -31,7 +31,8 @@ export class AnalyticsService {
     sources
   ) {
     try {
-      await connectDB();
+      // Remove redundant connectDB call - connection should already be established
+      // await connectDB();
 
       // Create analytics document
       const analyticsDoc = {
@@ -84,7 +85,8 @@ export class AnalyticsService {
    */
   async getAnalyticsData(filters = {}) {
     try {
-      await connectDB();
+      // Remove redundant connectDB call - connection should already be established
+      // await connectDB();
 
       // Check cache first
       const cacheKey = JSON.stringify(filters);

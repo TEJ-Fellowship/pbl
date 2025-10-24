@@ -61,7 +61,42 @@ export class MCPOrchestrator {
     const toolsToUse = [];
     const queryLower = query.toLowerCase();
 
-    // Priority-based tool selection for better performance
+    // Check for general knowledge queries first (highest priority for non-Shopify queries)
+    const webSearchTool = this.tools.get("web_search");
+    const shouldUseWeb = webSearchTool
+      ? webSearchTool.shouldUseWebSearch(query, confidence)
+      : false;
+
+    console.log(
+      `🔧 Web search check: shouldUseWeb=${shouldUseWeb}, confidence=${confidence}`
+    );
+
+    // If this is a general knowledge query that needs web search, prioritize it
+    if (shouldUseWeb) {
+      const isGeneralKnowledgeQuery =
+        /^(who is|what is|when was|where is|why is|how does|tell me about|explain|describe|define)/i.test(
+          query
+        );
+      const isNotShopifyRelated =
+        !queryLower.includes("shopify") &&
+        !queryLower.includes("ecommerce") &&
+        !queryLower.includes("store");
+
+      console.log(
+        `🔧 General knowledge check: isGeneralKnowledgeQuery=${isGeneralKnowledgeQuery}, isNotShopifyRelated=${isNotShopifyRelated}`
+      );
+
+      if (isGeneralKnowledgeQuery && isNotShopifyRelated) {
+        // For general knowledge queries, prioritize web search
+        console.log(
+          `🔧 Prioritizing web search for general knowledge query: "${query}"`
+        );
+        toolsToUse.push("web_search");
+        return toolsToUse; // Return early for general knowledge queries
+      }
+    }
+
+    // Priority-based tool selection for Shopify-related queries
     // 1. High priority: Calculator (fast, local calculation)
     if (this.shouldUseCalculator(query)) {
       toolsToUse.push("calculator");
@@ -92,14 +127,13 @@ export class MCPOrchestrator {
       toolsToUse.push("date_time");
     }
 
-    // 7. Low priority: Web Search (fallback, slower, use sparingly)
-    // Use web search if confidence is low OR when explicitly needed
-    if (this.shouldUseWebSearch(query, confidence)) {
+    // 7. Web Search for other cases (Shopify-related external info, low confidence, etc.)
+    if (shouldUseWeb && !toolsToUse.includes("web_search")) {
       toolsToUse.push("web_search");
     }
 
-    // Limit to 3 tools maximum for better performance
-    return toolsToUse.slice(0, 3);
+    // Limit to 2 tools maximum for better performance and reduced latency
+    return toolsToUse.slice(0, 2);
   }
 
   /**
@@ -282,7 +316,13 @@ export class MCPOrchestrator {
   async processWithTools(query, confidence, originalAnswer) {
     const toolsToUse = this.decideToolUse(query, confidence);
 
+    console.log(
+      `🔧 MCP Decision for query: "${query}" (confidence: ${confidence})`
+    );
+    console.log(`🔧 Tools selected: [${toolsToUse.join(", ")}]`);
+
     if (toolsToUse.length === 0) {
+      console.log(`🔧 No tools selected for query: "${query}"`);
       return {
         enhancedAnswer: originalAnswer,
         toolResults: {},
@@ -423,7 +463,10 @@ export class MCPOrchestrator {
     }
 
     // Add currency converter results if available
-    if (toolResults.currency_converter && !toolResults.currency_converter.error) {
+    if (
+      toolResults.currency_converter &&
+      !toolResults.currency_converter.error
+    ) {
       const currencyResults = toolResults.currency_converter;
 
       if (currencyResults.summary) {
@@ -432,7 +475,10 @@ export class MCPOrchestrator {
     }
 
     // Add theme compatibility results if available
-    if (toolResults.theme_compatibility && !toolResults.theme_compatibility.error) {
+    if (
+      toolResults.theme_compatibility &&
+      !toolResults.theme_compatibility.error
+    ) {
       const themeResults = toolResults.theme_compatibility;
 
       if (themeResults.summary) {
