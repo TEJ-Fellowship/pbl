@@ -223,6 +223,15 @@ function App() {
         proactiveSuggestions: response.data.proactiveSuggestions || [],
       };
 
+      console.log(
+        "📨 Received proactive suggestions:",
+        response.data.proactiveSuggestions
+      );
+      console.log(
+        "📨 Suggestions count:",
+        response.data.proactiveSuggestions?.suggestions?.length || 0
+      );
+      console.log("📨 Full response data:", response.data);
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Handle clarification logic
@@ -1010,6 +1019,109 @@ function App() {
                             )}
                           </div>
                         )}
+                    </div>
+                  )}
+
+                {/* Proactive Suggestions */}
+                {message.proactiveSuggestions &&
+                  message.proactiveSuggestions.suggestions &&
+                  message.proactiveSuggestions.suggestions.length > 0 && (
+                    <div className="proactive-suggestions">
+                      <div className="suggestions-header">
+                        <span className="suggestions-icon">💡</span>
+                        <span className="suggestions-title">
+                          Proactive Suggestions
+                        </span>
+                        <span className="suggestions-count">
+                          {message.proactiveSuggestions.suggestions.length}{" "}
+                          suggestion
+                          {message.proactiveSuggestions.suggestions.length !== 1
+                            ? "s"
+                            : ""}
+                        </span>
+                      </div>
+                      <div className="suggestions-list">
+                        {message.proactiveSuggestions.suggestions.map(
+                          (suggestion, index) => (
+                            <div key={index} className="suggestion-item">
+                              <div className="suggestion-content">
+                                <div className="suggestion-text">
+                                  {suggestion.suggestion}
+                                </div>
+                                {suggestion.reasoning && (
+                                  <div className="suggestion-reasoning">
+                                    <em>Why: {suggestion.reasoning}</em>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="suggestion-actions">
+                                {suggestion.link && (
+                                  <a
+                                    href={suggestion.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="suggestion-link"
+                                  >
+                                    <span className="link-icon">🔗</span>
+                                    Learn More
+                                  </a>
+                                )}
+                                <button
+                                  className="suggestion-action-btn"
+                                  onClick={() => {
+                                    // Copy suggestion to clipboard
+                                    navigator.clipboard.writeText(
+                                      suggestion.suggestion
+                                    );
+                                    // You could add a toast notification here
+                                  }}
+                                  title="Copy suggestion"
+                                >
+                                  📋 Copy
+                                </button>
+                              </div>
+                              <div className="suggestion-meta">
+                                <div className="suggestion-tags">
+                                  <span className="suggestion-category">
+                                    {suggestion.category
+                                      ?.replace(/_/g, " ")
+                                      .toUpperCase()}
+                                  </span>
+                                  <span
+                                    className={`suggestion-priority priority-${suggestion.priority}`}
+                                  >
+                                    <span className="priority-icon">
+                                      {suggestion.priority === "high"
+                                        ? "🔴"
+                                        : suggestion.priority === "medium"
+                                        ? "🟡"
+                                        : "🟢"}
+                                    </span>
+                                    {suggestion.priority.toUpperCase()} PRIORITY
+                                  </span>
+                                </div>
+                                {suggestion.source && (
+                                  <div className="suggestion-source">
+                                    <span className="source-badge">
+                                      {suggestion.source === "ai_generated"
+                                        ? "🤖 AI Generated"
+                                        : suggestion.source === "fallback"
+                                        ? "💡 General Tips"
+                                        : "📋 Rule Based"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                      <div className="suggestions-footer">
+                        <small>
+                          💡 These suggestions are tailored to your current
+                          context and merchant profile
+                        </small>
+                      </div>
                     </div>
                   )}
 

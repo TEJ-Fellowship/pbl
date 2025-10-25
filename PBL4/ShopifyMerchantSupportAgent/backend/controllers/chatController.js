@@ -1078,7 +1078,7 @@ export async function processChatMessage(message, sessionId) {
         toolsUsed: toolsUsed,
         toolResults: toolResults,
       },
-      proactiveSuggestions: suggestionsResult.suggestions,
+      proactiveSuggestions: suggestionsResult,
     };
   } catch (error) {
     console.error("Error processing chat message:", error);

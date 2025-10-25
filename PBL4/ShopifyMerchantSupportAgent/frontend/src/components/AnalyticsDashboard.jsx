@@ -27,10 +27,19 @@ const AnalyticsDashboard = () => {
         queryParams.append("merchantSegment", filters.merchantSegment);
       if (filters.intent) queryParams.append("intent", filters.intent);
 
-      const response = await fetch(
-        `http://localhost:3000/api/analytics/dashboard?${queryParams}`
-      );
+      console.log("Fetching analytics with filters:", filters);
+      console.log("Query params:", queryParams.toString());
+
+      const response = await fetch(`/api/analytics/dashboard?${queryParams}`);
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
+      console.log("Analytics data received:", data);
 
       if (data.success) {
         setAnalyticsData(data.data);
@@ -39,7 +48,7 @@ const AnalyticsDashboard = () => {
         setError(data.error || "Failed to fetch analytics data");
       }
     } catch (err) {
-      setError("Failed to fetch analytics data");
+      setError(`Failed to fetch analytics data: ${err.message}`);
       console.error("Analytics fetch error:", err);
     } finally {
       setLoading(false);

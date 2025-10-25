@@ -436,7 +436,7 @@ export class ProactiveSuggestionsService {
               message,
               trigger,
               intent,
-              preferences
+              userPreferences
             ),
           });
         }
@@ -681,6 +681,11 @@ export class ProactiveSuggestionsService {
     userPreferences
   ) {
     try {
+      console.log(
+        "🤖 Generating AI suggestions for:",
+        message.substring(0, 100) + "..."
+      );
+
       const prompt = `Based on this Shopify merchant conversation, suggest 2-3 proactive recommendations:
 
 Current Message: "${message}"
@@ -712,7 +717,10 @@ Return as JSON array:
       });
 
       const response = result.response?.text();
+      console.log("🤖 AI response:", response?.substring(0, 200) + "...");
+
       if (!response) {
+        console.log("🤖 No AI response received");
         return [];
       }
 
@@ -728,8 +736,15 @@ Return as JSON array:
           .replace(/\s*```$/, "");
       }
 
+      console.log(
+        "🤖 Cleaned response:",
+        cleanedResponse.substring(0, 200) + "..."
+      );
+
       // Parse JSON response
       const aiSuggestions = JSON.parse(cleanedResponse);
+      console.log("🤖 Parsed AI suggestions:", aiSuggestions.length);
+
       return aiSuggestions.map((suggestion) => ({
         ...suggestion,
         source: "ai_generated",
@@ -739,6 +754,63 @@ Return as JSON array:
       console.error("AI suggestion generation error:", error);
       return [];
     }
+  }
+
+  /**
+   * Get fallback suggestions when no context-specific suggestions are found
+   * @param {string} intent - Classified intent
+   * @param {Object} userPreferences - User preferences
+   * @returns {Array} Fallback suggestions
+   */
+  getFallbackSuggestions(intent, userPreferences) {
+    const fallbackSuggestions = [
+      {
+        suggestion:
+          "Consider setting up Google Analytics to track your store's performance and customer behavior.",
+        category: "analytics",
+        priority: "medium",
+        reasoning:
+          "Analytics help you understand your customers better and optimize your store.",
+        source: "fallback",
+        relevanceScore: 0.6,
+      },
+      {
+        suggestion:
+          "Enable customer reviews and testimonials to build trust and increase conversions.",
+        category: "conversion",
+        priority: "high",
+        reasoning:
+          "Social proof is crucial for e-commerce success and can significantly boost sales.",
+        source: "fallback",
+        relevanceScore: 0.7,
+      },
+      {
+        suggestion:
+          "Set up email marketing campaigns to nurture leads and retain customers.",
+        category: "marketing",
+        priority: "medium",
+        reasoning:
+          "Email marketing has one of the highest ROI of all marketing channels.",
+        source: "fallback",
+        relevanceScore: 0.6,
+      },
+    ];
+
+    // Customize based on merchant plan
+    if (userPreferences.merchantPlanTier === "basic") {
+      fallbackSuggestions.push({
+        suggestion:
+          "Consider upgrading to Shopify Plus for advanced features and better support.",
+        category: "growth",
+        priority: "low",
+        reasoning:
+          "Advanced features can help scale your business as you grow.",
+        source: "fallback",
+        relevanceScore: 0.5,
+      });
+    }
+
+    return fallbackSuggestions.slice(0, 2); // Return top 2 fallback suggestions
   }
 
   /**
@@ -756,6 +828,8 @@ Return as JSON array:
     userPreferences
   ) {
     try {
+      console.log("💡 Getting proactive suggestions for intent:", intent);
+
       // Get rule-based suggestions
       const ruleBasedSuggestions = await this.analyzeContextForSuggestions(
         message,
@@ -763,6 +837,7 @@ Return as JSON array:
         intent,
         userPreferences
       );
+      console.log("💡 Rule-based suggestions:", ruleBasedSuggestions.length);
 
       // Get AI-generated suggestions
       const aiSuggestions = await this.generateAISuggestions(
@@ -771,10 +846,22 @@ Return as JSON array:
         intent,
         userPreferences
       );
+      console.log("💡 AI-generated suggestions:", aiSuggestions.length);
 
       // Combine and deduplicate suggestions
       const allSuggestions = [...ruleBasedSuggestions, ...aiSuggestions];
       const uniqueSuggestions = this.removeDuplicateSuggestions(allSuggestions);
+      console.log("💡 Total unique suggestions:", uniqueSuggestions.length);
+
+      // If no suggestions found, provide fallback suggestions
+      if (uniqueSuggestions.length === 0) {
+        console.log("💡 No suggestions found, providing fallback suggestions");
+        const fallbackSuggestions = this.getFallbackSuggestions(
+          intent,
+          userPreferences
+        );
+        uniqueSuggestions.push(...fallbackSuggestions);
+      }
 
       // Sort by relevance and priority
       uniqueSuggestions.sort((a, b) => {
@@ -784,8 +871,11 @@ Return as JSON array:
         return bScore - aScore;
       });
 
+      const finalSuggestions = uniqueSuggestions.slice(0, 3);
+      console.log("💡 Final suggestions to return:", finalSuggestions.length);
+
       return {
-        suggestions: uniqueSuggestions.slice(0, 3),
+        suggestions: finalSuggestions,
         totalFound: uniqueSuggestions.length,
         intent: intent,
         context: {

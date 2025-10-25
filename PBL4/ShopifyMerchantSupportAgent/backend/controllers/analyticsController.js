@@ -17,6 +17,8 @@ export const getAnalyticsDashboard = async (req, res) => {
       intent: req.query.intent,
     };
 
+    console.log("Analytics dashboard request with filters:", filters);
+
     // Remove undefined filters
     Object.keys(filters).forEach((key) => {
       if (filters[key] === undefined) {
@@ -24,7 +26,16 @@ export const getAnalyticsDashboard = async (req, res) => {
       }
     });
 
+    console.log("Processed filters:", filters);
+
     const analyticsData = await analyticsService.getAnalyticsData(filters);
+
+    console.log("Analytics data generated:", {
+      totalQuestions: analyticsData.totalQuestions,
+      topQuestionsCount: analyticsData.topQuestions.length,
+      intentDistributionKeys: Object.keys(analyticsData.intentDistribution)
+        .length,
+    });
 
     res.json({
       success: true,
