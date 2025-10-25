@@ -16,7 +16,7 @@ import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import axios from "axios";
 import { parseMarkdown, renderMarkdown } from "./utils/markdown.js";
 import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
-import ClarifyingQuestion from "./components/ClarifyingQuestion.jsx";
+import AnalyticsDashboard from "./components/AnalyticsDashboard.jsx";
 import "./App.css";
 
 const API_BASE_URL = "/api";
@@ -33,6 +33,7 @@ function App() {
   const [feedback, setFeedback] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingClarification, setPendingClarification] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -85,6 +86,43 @@ function App() {
     setMessages([]);
     setSidebarOpen(false);
     setPendingClarification(null);
+  };
+
+  const handleFeedback = async (
+    messageId,
+    feedbackType,
+    rating = null,
+    comment = ""
+  ) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/feedback/store`, {
+        messageId,
+        sessionId,
+        conversationId: messages.find((m) => m.id === messageId)
+          ?.conversationId,
+        feedback: feedbackType,
+        rating,
+        comment,
+      });
+
+      if (response.data.success) {
+        setFeedback((prev) => ({
+          ...prev,
+          [messageId]: {
+            type: feedbackType,
+            rating,
+            comment,
+            timestamp: new Date(),
+          },
+        }));
+
+        console.log(
+          `Feedback submitted: ${feedbackType} for message ${messageId}`
+        );
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+    }
   };
 
   const handleApiSelection = async (selectedApi) => {
@@ -181,8 +219,19 @@ function App() {
         clarificationData: response.data.clarificationData || null,
         needsClarification: response.data.needsClarification || false,
         multiTurnContext: response.data.multiTurnContext || {},
+        intentClassification: response.data.intentClassification || {},
+        proactiveSuggestions: response.data.proactiveSuggestions || [],
       };
 
+      console.log(
+        "📨 Received proactive suggestions:",
+        response.data.proactiveSuggestions
+      );
+      console.log(
+        "📨 Suggestions count:",
+        response.data.proactiveSuggestions?.suggestions?.length || 0
+      );
+      console.log("📨 Full response data:", response.data);
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Handle clarification logic
@@ -229,11 +278,6 @@ function App() {
     setTimeout(() => {
       setCopiedCode((prev) => ({ ...prev, [messageId]: false }));
     }, 2000);
-  };
-
-  const handleFeedback = (messageId, isPositive) => {
-    setFeedback((prev) => ({ ...prev, [messageId]: isPositive }));
-    // Here you could send feedback to backend if needed
   };
 
   const toggleSources = (messageId) => {
@@ -328,6 +372,15 @@ function App() {
               <h1>Shopify Merchant Support</h1>
               <p>AI-powered assistance for your Shopify store</p>
             </div>
+            <div className="header-actions">
+              <button
+                className="analytics-btn"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                title="Analytics Dashboard"
+              >
+                📊 Analytics
+              </button>
+            </div>
           </div>
         </div>
 
@@ -378,6 +431,96 @@ function App() {
                       <div className="multi-turn-indicator">
                         💬 Conversation turn{" "}
                         {message.multiTurnContext.turnCount}
+                      </div>
+                    )}
+
+                  {/* Intent classification indicator */}
+                  {message.intentClassification &&
+                    message.intentClassification.intent && (
+                      <div className="intent-classification-indicator">
+                        <span className="intent-badge">
+                          🎯{" "}
+                          {message.intentClassification.intent
+                            .charAt(0)
+                            .toUpperCase() +
+                            message.intentClassification.intent.slice(1)}{" "}
+                          Intent
+                        </span>
+                        <span className="intent-confidence">
+                          (
+                          {Math.round(
+                            message.intentClassification.confidence * 100
+                          )}
+                          % confidence)
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Merchant Information Display */}
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.userPreferences && (
+                      <div className="merchant-info-display">
+                        <div className="merchant-info-header">
+                          🏪 Merchant Profile
+                        </div>
+                        <div className="merchant-info-grid">
+                          {message.multiTurnContext.userPreferences
+                            .merchantPlanTier && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Plan:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.merchantPlanTier
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.merchantPlanTier.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .storeType && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Store Type:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.storeType
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.storeType.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .industry && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Industry:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.industry
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.industry.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .experienceLevel && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Experience:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.experienceLevel
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.experienceLevel.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                 </div>
@@ -879,6 +1022,109 @@ function App() {
                     </div>
                   )}
 
+                {/* Proactive Suggestions */}
+                {message.proactiveSuggestions &&
+                  message.proactiveSuggestions.suggestions &&
+                  message.proactiveSuggestions.suggestions.length > 0 && (
+                    <div className="proactive-suggestions">
+                      <div className="suggestions-header">
+                        <span className="suggestions-icon">💡</span>
+                        <span className="suggestions-title">
+                          Proactive Suggestions
+                        </span>
+                        <span className="suggestions-count">
+                          {message.proactiveSuggestions.suggestions.length}{" "}
+                          suggestion
+                          {message.proactiveSuggestions.suggestions.length !== 1
+                            ? "s"
+                            : ""}
+                        </span>
+                      </div>
+                      <div className="suggestions-list">
+                        {message.proactiveSuggestions.suggestions.map(
+                          (suggestion, index) => (
+                            <div key={index} className="suggestion-item">
+                              <div className="suggestion-content">
+                                <div className="suggestion-text">
+                                  {suggestion.suggestion}
+                                </div>
+                                {suggestion.reasoning && (
+                                  <div className="suggestion-reasoning">
+                                    <em>Why: {suggestion.reasoning}</em>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="suggestion-actions">
+                                {suggestion.link && (
+                                  <a
+                                    href={suggestion.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="suggestion-link"
+                                  >
+                                    <span className="link-icon">🔗</span>
+                                    Learn More
+                                  </a>
+                                )}
+                                <button
+                                  className="suggestion-action-btn"
+                                  onClick={() => {
+                                    // Copy suggestion to clipboard
+                                    navigator.clipboard.writeText(
+                                      suggestion.suggestion
+                                    );
+                                    // You could add a toast notification here
+                                  }}
+                                  title="Copy suggestion"
+                                >
+                                  📋 Copy
+                                </button>
+                              </div>
+                              <div className="suggestion-meta">
+                                <div className="suggestion-tags">
+                                  <span className="suggestion-category">
+                                    {suggestion.category
+                                      ?.replace(/_/g, " ")
+                                      .toUpperCase()}
+                                  </span>
+                                  <span
+                                    className={`suggestion-priority priority-${suggestion.priority}`}
+                                  >
+                                    <span className="priority-icon">
+                                      {suggestion.priority === "high"
+                                        ? "🔴"
+                                        : suggestion.priority === "medium"
+                                        ? "🟡"
+                                        : "🟢"}
+                                    </span>
+                                    {suggestion.priority.toUpperCase()} PRIORITY
+                                  </span>
+                                </div>
+                                {suggestion.source && (
+                                  <div className="suggestion-source">
+                                    <span className="source-badge">
+                                      {suggestion.source === "ai_generated"
+                                        ? "🤖 AI Generated"
+                                        : suggestion.source === "fallback"
+                                        ? "💡 General Tips"
+                                        : "📋 Rule Based"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                      <div className="suggestions-footer">
+                        <small>
+                          💡 These suggestions are tailored to your current
+                          context and merchant profile
+                        </small>
+                      </div>
+                    </div>
+                  )}
+
                 {message.tokenUsage && (
                   <div className="token-usage">
                     <small>
@@ -978,6 +1224,24 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Analytics Dashboard */}
+      {showAnalytics && (
+        <div className="analytics-overlay">
+          <div className="analytics-modal">
+            <div className="analytics-header">
+              <h2>Analytics Dashboard</h2>
+              <button
+                className="close-btn"
+                onClick={() => setShowAnalytics(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <AnalyticsDashboard />
+          </div>
+        </div>
+      )}
 
       {/* Chat History Sidebar */}
       <ChatHistorySidebar

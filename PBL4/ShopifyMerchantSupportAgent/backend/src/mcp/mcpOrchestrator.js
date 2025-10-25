@@ -3,6 +3,8 @@ import WebSearchTool from "./webSearchTool.js";
 import ShopifyStatusTool from "./shopifyStatusTool.js";
 import DateTimeTool from "./dateTimeTool.js";
 import CodeValidatorTool from "./codeValidatorTool.js";
+import CurrencyConverterTool from "./currencyConverterTool.js";
+import ThemeCompatibilityTool from "./themeCompatibilityTool.js";
 
 /**
  * MCP Client Orchestrator for Shopify Merchant Support Agent
@@ -38,6 +40,14 @@ export class MCPOrchestrator {
     const codeValidatorTool = new CodeValidatorTool();
     this.tools.set("code_validator", codeValidatorTool);
 
+    // Register Currency Converter Tool
+    const currencyConverterTool = new CurrencyConverterTool();
+    this.tools.set("currency_converter", currencyConverterTool);
+
+    // Register Theme Compatibility Tool
+    const themeCompatibilityTool = new ThemeCompatibilityTool();
+    this.tools.set("theme_compatibility", themeCompatibilityTool);
+
     console.log("🔧 MCP Tools initialized:", Array.from(this.tools.keys()));
   }
 
@@ -49,33 +59,81 @@ export class MCPOrchestrator {
    */
   decideToolUse(query, confidence) {
     const toolsToUse = [];
+    const queryLower = query.toLowerCase();
 
-    // Check for Shopify status issues
-    if (this.shouldUseStatusChecker(query)) {
-      toolsToUse.push("shopify_status");
+    // Check for general knowledge queries first (highest priority for non-Shopify queries)
+    const webSearchTool = this.tools.get("web_search");
+    const shouldUseWeb = webSearchTool
+      ? webSearchTool.shouldUseWebSearch(query, confidence)
+      : false;
+
+    console.log(
+      `🔧 Web search check: shouldUseWeb=${shouldUseWeb}, confidence=${confidence}`
+    );
+
+    // If this is a general knowledge query that needs web search, prioritize it
+    if (shouldUseWeb) {
+      const isGeneralKnowledgeQuery =
+        /^(who is|what is|when was|where is|why is|how does|tell me about|explain|describe|define)/i.test(
+          query
+        );
+      const isNotShopifyRelated =
+        !queryLower.includes("shopify") &&
+        !queryLower.includes("ecommerce") &&
+        !queryLower.includes("store");
+
+      console.log(
+        `🔧 General knowledge check: isGeneralKnowledgeQuery=${isGeneralKnowledgeQuery}, isNotShopifyRelated=${isNotShopifyRelated}`
+      );
+
+      if (isGeneralKnowledgeQuery && isNotShopifyRelated) {
+        // For general knowledge queries, prioritize web search
+        console.log(
+          `🔧 Prioritizing web search for general knowledge query: "${query}"`
+        );
+        toolsToUse.push("web_search");
+        return toolsToUse; // Return early for general knowledge queries
+      }
     }
 
-    // Check for mathematical expressions that require calculator
+    // Priority-based tool selection for Shopify-related queries
+    // 1. High priority: Calculator (fast, local calculation)
     if (this.shouldUseCalculator(query)) {
       toolsToUse.push("calculator");
     }
 
-    // Check for date/time operations
-    if (this.shouldUseDateTimeTool(query)) {
-      toolsToUse.push("date_time");
+    // 2. High priority: Shopify Status (critical for service issues)
+    if (this.shouldUseStatusChecker(query)) {
+      toolsToUse.push("shopify_status");
     }
 
-    // Check for code validation needs
+    // 3. Medium priority: Code Validator (important for development queries)
     if (this.shouldUseCodeValidator(query)) {
       toolsToUse.push("code_validator");
     }
 
-    // Check for web search fallback when confidence is low or recent info needed
-    if (this.shouldUseWebSearch(query, confidence)) {
+    // 4. Medium priority: Currency Converter (for international merchants)
+    if (this.shouldUseCurrencyConverter(query)) {
+      toolsToUse.push("currency_converter");
+    }
+
+    // 5. Medium priority: Theme Compatibility (for app compatibility checks)
+    if (this.shouldUseThemeCompatibility(query)) {
+      toolsToUse.push("theme_compatibility");
+    }
+
+    // 6. Medium priority: Date/Time (useful for scheduling queries)
+    if (this.shouldUseDateTimeTool(query)) {
+      toolsToUse.push("date_time");
+    }
+
+    // 7. Web Search for other cases (Shopify-related external info, low confidence, etc.)
+    if (shouldUseWeb && !toolsToUse.includes("web_search")) {
       toolsToUse.push("web_search");
     }
 
-    return toolsToUse;
+    // Limit to 2 tools maximum for better performance and reduced latency
+    return toolsToUse.slice(0, 2);
   }
 
   /**
@@ -96,22 +154,11 @@ export class MCPOrchestrator {
    * @returns {boolean} Whether to use calculator
    */
   shouldUseCalculator(query) {
-    const mathPatterns = [
-      // Percentage calculations
-      /[\d\.]+%\s*[\+\-\*\/]/,
-      // Currency calculations
-      /\$?[\d,]+\.?\d*\s*[\+\-\*\/]/,
-      // Basic math expressions
-      /[\d\.]+\s*[\+\-\*\/]\s*[\d\.]+/,
-      // Complex expressions with parentheses
-      /\([\d\.\s\+\-\*\/]+\)/,
-      // Shopify fee patterns
-      /[\d\.]+%\s*\+\s*[\d\.]+¢/,
-      // Words that suggest calculation
-      /calculate|compute|what is|how much|fee|charge|cost|price|total|sum|add|multiply|divide|subtract/i,
-    ];
+    const calculatorTool = this.tools.get("calculator");
+    if (!calculatorTool) return false;
 
-    return mathPatterns.some((pattern) => pattern.test(query));
+    // Use the enhanced detection from the calculator tool itself
+    return calculatorTool.hasMathematicalContent(query);
   }
 
   /**
@@ -139,6 +186,30 @@ export class MCPOrchestrator {
   }
 
   /**
+   * Determine if currency converter tool should be used
+   * @param {string} query - User query
+   * @returns {boolean} Whether to use currency converter
+   */
+  shouldUseCurrencyConverter(query) {
+    const currencyConverterTool = this.tools.get("currency_converter");
+    if (!currencyConverterTool) return false;
+
+    return currencyConverterTool.shouldUseCurrencyConverter(query);
+  }
+
+  /**
+   * Determine if theme compatibility tool should be used
+   * @param {string} query - User query
+   * @returns {boolean} Whether to use theme compatibility checker
+   */
+  shouldUseThemeCompatibility(query) {
+    const themeCompatibilityTool = this.tools.get("theme_compatibility");
+    if (!themeCompatibilityTool) return false;
+
+    return themeCompatibilityTool.shouldUseThemeCompatibilityChecker(query);
+  }
+
+  /**
    * Determine if web search tool should be used
    * @param {string} query - User query
    * @param {number} confidence - RAG confidence score
@@ -161,44 +232,76 @@ export class MCPOrchestrator {
   async executeTools(toolNames, query, confidence = 0.5) {
     const results = {};
 
-    for (const toolName of toolNames) {
-      if (this.tools.has(toolName)) {
-        try {
-          const tool = this.tools.get(toolName);
+    // Execute tools in parallel for better performance
+    const toolPromises = toolNames.map(async (toolName) => {
+      if (!this.tools.has(toolName)) {
+        console.warn(`Tool ${toolName} not found`);
+        return {
+          toolName,
+          result: {
+            error: `Tool ${toolName} not available`,
+            operations: [],
+            calculations: [],
+            validations: [],
+            summary: null,
+          },
+        };
+      }
 
-          // Pass confidence to web search tool, handle different tool methods
-          if (toolName === "web_search") {
-            results[toolName] = await tool.search(query, confidence);
-          } else if (toolName === "shopify_status") {
-            results[toolName] = await tool.checkStatus(query);
-          } else if (toolName === "date_time") {
-            results[toolName] = await tool.processDateTime(query);
-          } else if (toolName === "code_validator") {
-            results[toolName] = await tool.validateCode(query);
-          } else {
-            results[toolName] = await tool.calculate(query);
-          }
-        } catch (error) {
-          console.error(`Error executing tool ${toolName}:`, error);
-          results[toolName] = {
+      try {
+        const tool = this.tools.get(toolName);
+        let toolResult;
+
+        // Execute tool based on its type
+        switch (toolName) {
+          case "web_search":
+            toolResult = await tool.search(query, confidence);
+            break;
+          case "shopify_status":
+            toolResult = await tool.checkStatus(query);
+            break;
+          case "date_time":
+            toolResult = await tool.processDateTime(query);
+            break;
+          case "code_validator":
+            toolResult = await tool.validateCode(query);
+            break;
+          case "calculator":
+            toolResult = await tool.calculate(query);
+            break;
+          case "currency_converter":
+            toolResult = await tool.convert(query);
+            break;
+          case "theme_compatibility":
+            toolResult = await tool.checkCompatibility(query);
+            break;
+          default:
+            toolResult = await tool.calculate(query);
+        }
+
+        return { toolName, result: toolResult };
+      } catch (error) {
+        console.error(`Error executing tool ${toolName}:`, error);
+        return {
+          toolName,
+          result: {
             error: `Tool execution failed: ${error.message}`,
             operations: [],
             calculations: [],
             validations: [],
             summary: null,
-          };
-        }
-      } else {
-        console.warn(`Tool ${toolName} not found`);
-        results[toolName] = {
-          error: `Tool ${toolName} not available`,
-          operations: [],
-          calculations: [],
-          validations: [],
-          summary: null,
+          },
         };
       }
-    }
+    });
+
+    // Wait for all tools to complete
+    const toolResults = await Promise.all(toolPromises);
+
+    // Organize results by tool name
+    toolResults.forEach(({ toolName, result }) => {
+      results[toolName] = result;
+    });
 
     return results;
   }
@@ -213,7 +316,13 @@ export class MCPOrchestrator {
   async processWithTools(query, confidence, originalAnswer) {
     const toolsToUse = this.decideToolUse(query, confidence);
 
+    console.log(
+      `🔧 MCP Decision for query: "${query}" (confidence: ${confidence})`
+    );
+    console.log(`🔧 Tools selected: [${toolsToUse.join(", ")}]`);
+
     if (toolsToUse.length === 0) {
+      console.log(`🔧 No tools selected for query: "${query}"`);
       return {
         enhancedAnswer: originalAnswer,
         toolResults: {},
@@ -350,6 +459,30 @@ export class MCPOrchestrator {
             }
           });
         }
+      }
+    }
+
+    // Add currency converter results if available
+    if (
+      toolResults.currency_converter &&
+      !toolResults.currency_converter.error
+    ) {
+      const currencyResults = toolResults.currency_converter;
+
+      if (currencyResults.summary) {
+        enhancedAnswer += `\n\n${currencyResults.summary}`;
+      }
+    }
+
+    // Add theme compatibility results if available
+    if (
+      toolResults.theme_compatibility &&
+      !toolResults.theme_compatibility.error
+    ) {
+      const themeResults = toolResults.theme_compatibility;
+
+      if (themeResults.summary) {
+        enhancedAnswer += `\n\n${themeResults.summary}`;
       }
     }
 

@@ -24,8 +24,142 @@ export class MultiTurnConversationManager {
   }
 
   /**
-   * Initialize conversation state for a session
+   * Extract merchant information from conversation history
+   * @param {Array} conversationHistory - Array of message objects
+   * @returns {Object} Extracted merchant information
    */
+  extractMerchantInfo(conversationHistory) {
+    const merchantInfo = {
+      planTier: null,
+      storeType: null,
+      industry: null,
+      location: null,
+      storeSize: null,
+      experienceLevel: null,
+    };
+
+    // Keywords to detect merchant plan tiers
+    const planTierKeywords = {
+      basic: ["basic plan", "basic tier", "basic subscription", "starter plan"],
+      shopify: ["shopify plan", "standard plan", "regular plan"],
+      advanced: ["advanced plan", "advanced tier", "professional plan"],
+      plus: ["shopify plus", "plus plan", "enterprise plan"],
+      enterprise: ["enterprise", "custom plan", "white label"],
+    };
+
+    // Keywords to detect store types
+    const storeTypeKeywords = {
+      physical: [
+        "physical store",
+        "brick and mortar",
+        "retail store",
+        "in-person",
+      ],
+      online: ["online store", "ecommerce", "digital store", "web store"],
+      both: ["omnichannel", "both online and physical", "multi-channel"],
+    };
+
+    // Keywords to detect industries
+    const industryKeywords = {
+      fashion: ["fashion", "clothing", "apparel", "style", "fashion store"],
+      electronics: ["electronics", "tech", "gadgets", "electronics store"],
+      food: ["food", "restaurant", "cafe", "bakery", "food store"],
+      beauty: ["beauty", "cosmetics", "skincare", "makeup", "beauty store"],
+      home: ["home", "furniture", "decor", "home goods"],
+      sports: ["sports", "fitness", "athletic", "sports store"],
+      books: ["books", "bookstore", "publishing", "literature"],
+      jewelry: ["jewelry", "watches", "accessories", "jewelry store"],
+    };
+
+    // Keywords to detect store sizes
+    const storeSizeKeywords = {
+      small: ["small business", "startup", "small store", "local business"],
+      medium: ["medium business", "growing business", "mid-size"],
+      large: ["large business", "big store", "major retailer"],
+      enterprise: ["enterprise", "corporation", "large corporation"],
+    };
+
+    // Keywords to detect experience levels
+    const experienceKeywords = {
+      new: [
+        "new to shopify",
+        "just started",
+        "beginner",
+        "new merchant",
+        "first time",
+      ],
+      experienced: [
+        "experienced",
+        "been using",
+        "familiar with",
+        "know shopify",
+      ],
+      expert: ["expert", "advanced user", "power user", "developer"],
+    };
+
+    // Analyze conversation history
+    const allText = conversationHistory
+      .map((msg) => msg.content.toLowerCase())
+      .join(" ");
+
+    // Detect plan tier
+    for (const [tier, keywords] of Object.entries(planTierKeywords)) {
+      if (keywords.some((keyword) => allText.includes(keyword))) {
+        merchantInfo.planTier = tier;
+        break;
+      }
+    }
+
+    // Detect store type
+    for (const [type, keywords] of Object.entries(storeTypeKeywords)) {
+      if (keywords.some((keyword) => allText.includes(keyword))) {
+        merchantInfo.storeType = type;
+        break;
+      }
+    }
+
+    // Detect industry
+    for (const [industry, keywords] of Object.entries(industryKeywords)) {
+      if (keywords.some((keyword) => allText.includes(keyword))) {
+        merchantInfo.industry = industry;
+        break;
+      }
+    }
+
+    // Detect store size
+    for (const [size, keywords] of Object.entries(storeSizeKeywords)) {
+      if (keywords.some((keyword) => allText.includes(keyword))) {
+        merchantInfo.storeSize = size;
+        break;
+      }
+    }
+
+    // Detect experience level
+    for (const [level, keywords] of Object.entries(experienceKeywords)) {
+      if (keywords.some((keyword) => allText.includes(keyword))) {
+        merchantInfo.experienceLevel = level;
+        break;
+      }
+    }
+
+    // Detect location (simple pattern matching)
+    const locationPatterns = [
+      /(?:in|from|based in|located in)\s+([a-zA-Z\s]+?)(?:\s|$|,|\.)/g,
+      /(?:country|region)\s+([a-zA-Z\s]+?)(?:\s|$|,|\.)/g,
+    ];
+
+    for (const pattern of locationPatterns) {
+      const matches = allText.match(pattern);
+      if (matches && matches.length > 0) {
+        merchantInfo.location = matches[0]
+          .replace(/(?:in|from|based in|located in|country|region)\s+/i, "")
+          .trim();
+        break;
+      }
+    }
+
+    return merchantInfo;
+  }
   async initializeConversationState(sessionId) {
     const state = {
       sessionId,
@@ -36,6 +170,15 @@ export class MultiTurnConversationManager {
         preferredAPI: null, // 'rest', 'graphql', 'node-sdk'
         technicalLevel: "intermediate", // 'beginner', 'intermediate', 'advanced'
         topics: new Set(), // Track discussed topics
+        merchantPlanTier: null, // 'basic', 'shopify', 'advanced', 'plus', 'enterprise'
+        storeType: null, // 'physical', 'online', 'both'
+        industry: null, // 'fashion', 'electronics', 'food', 'beauty', etc.
+        location: null, // Country/region for localized suggestions
+        preferredLanguage: "en", // Language preference
+        timezone: null, // User's timezone
+        storeSize: null, // 'small', 'medium', 'large', 'enterprise'
+        experienceLevel: null, // 'new', 'experienced', 'expert'
+        goals: new Set(), // Track merchant goals like 'increase_sales', 'optimize_seo', etc.
       },
       conversationFlow: {
         currentTopic: null,
@@ -126,19 +269,127 @@ export class MultiTurnConversationManager {
       pattern.test(message)
     );
 
+    // Enhanced context-aware follow-up detection
+    let contextBasedFollowUp = false;
+    let contextConfidence = 0;
+
+    if (conversationHistory.length > 0) {
+      const lastMessage = conversationHistory[conversationHistory.length - 1];
+      const lastContent = lastMessage.content.toLowerCase();
+
+      // Check if current message is asking about a different aspect of the same topic
+      const topicKeywords = this.extractTopicKeywords(lastContent);
+      const currentKeywords = this.extractTopicKeywords(message);
+
+      // If there's overlap in keywords but the question is different, it's likely a follow-up
+      const keywordOverlap = topicKeywords.filter((keyword) =>
+        currentKeywords.includes(keyword)
+      ).length;
+
+      if (
+        keywordOverlap > 0 &&
+        keywordOverlap /
+          Math.max(topicKeywords.length, currentKeywords.length) >
+          0.3
+      ) {
+        contextBasedFollowUp = true;
+        contextConfidence = Math.min(
+          keywordOverlap /
+            Math.max(topicKeywords.length, currentKeywords.length),
+          0.9
+        );
+      }
+
+      // Check for API-related follow-ups (e.g., "GraphQL admin api" after "storefront api")
+      const apiKeywords = ["api", "rest", "graphql", "storefront", "admin"];
+      const hasApiKeywords = apiKeywords.some((keyword) =>
+        message.includes(keyword)
+      );
+      const lastHasApiKeywords = apiKeywords.some((keyword) =>
+        lastContent.includes(keyword)
+      );
+
+      if (
+        hasApiKeywords &&
+        lastHasApiKeywords &&
+        !message.includes("clarification")
+      ) {
+        contextBasedFollowUp = true;
+        contextConfidence = Math.max(contextConfidence, 0.8);
+      }
+    }
+
     return {
       isFollowUp:
-        hasFollowUpIndicator || hasPronounReference || hasContinuationPattern,
-      confidence:
+        hasFollowUpIndicator ||
+        hasPronounReference ||
+        hasContinuationPattern ||
+        contextBasedFollowUp,
+      confidence: Math.max(
         (hasFollowUpIndicator ? 0.8 : 0) +
-        (hasPronounReference ? 0.6 : 0) +
-        (hasContinuationPattern ? 0.7 : 0),
+          (hasPronounReference ? 0.6 : 0) +
+          (hasContinuationPattern ? 0.7 : 0),
+        contextConfidence
+      ),
       indicators: {
         followUpWords: hasFollowUpIndicator,
         pronounReference: hasPronounReference,
         continuationPattern: hasContinuationPattern,
+        contextBased: contextBasedFollowUp,
       },
     };
+  }
+
+  /**
+   * Extract topic keywords from a message
+   */
+  extractTopicKeywords(message) {
+    const stopWords = [
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "could",
+      "should",
+      "may",
+      "might",
+      "can",
+      "this",
+      "that",
+      "these",
+      "those",
+    ];
+
+    return message
+      .toLowerCase()
+      .replace(/[^\w\s]/g, " ")
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !stopWords.includes(word))
+      .slice(0, 10); // Limit to most relevant keywords
   }
 
   /**
@@ -344,6 +595,9 @@ Provide a concise summary (max 200 words) that maintains context for future ques
       conversationHistory
     );
 
+    // Extract merchant information from conversation history
+    const merchantInfo = this.extractMerchantInfo(conversationHistory);
+
     // Update user preferences
     if (newPreferences.preferredAPI) {
       state.userPreferences.preferredAPI = newPreferences.preferredAPI;
@@ -354,6 +608,26 @@ Provide a concise summary (max 200 words) that maintains context for future ques
     newPreferences.topics.forEach((topic) =>
       state.userPreferences.topics.add(topic)
     );
+
+    // Update merchant information
+    if (merchantInfo.planTier) {
+      state.userPreferences.merchantPlanTier = merchantInfo.planTier;
+    }
+    if (merchantInfo.storeType) {
+      state.userPreferences.storeType = merchantInfo.storeType;
+    }
+    if (merchantInfo.industry) {
+      state.userPreferences.industry = merchantInfo.industry;
+    }
+    if (merchantInfo.location) {
+      state.userPreferences.location = merchantInfo.location;
+    }
+    if (merchantInfo.storeSize) {
+      state.userPreferences.storeSize = merchantInfo.storeSize;
+    }
+    if (merchantInfo.experienceLevel) {
+      state.userPreferences.experienceLevel = merchantInfo.experienceLevel;
+    }
 
     // Check if compression is needed
     const turnsSinceCompression = state.turnCount - state.lastCompressionTurn;
@@ -438,7 +712,8 @@ Provide a concise summary (max 200 words) that maintains context for future ques
     message,
     sessionId,
     conversationHistory,
-    searchResults
+    searchResults,
+    intentSpecificPrompt = null
   ) {
     const enhancedContext = await this.buildEnhancedContext(
       message,
@@ -467,18 +742,21 @@ Provide a concise summary (max 200 words) that maintains context for future ques
       };
     }
 
-    // Build enhanced prompt with multi-turn context
-    const systemPrompt = `You are an expert Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
+    // Build enhanced prompt with multi-turn context and intent-specific guidance
+    const systemPrompt =
+      intentSpecificPrompt ||
+      `You are an expert Shopify Merchant Support Assistant with deep knowledge of Shopify's platform, APIs, and best practices.
 
 CONVERSATION CONTEXT:
 - Turn Count: ${conversationState.turnCount}
 - User's Preferred API: ${
-      conversationState.userPreferences.preferredAPI || "Not specified"
-    }
+        conversationState.userPreferences.preferredAPI || "Not specified"
+      }
 - User's Technical Level: ${conversationState.userPreferences.technicalLevel}
 - Topics Discussed: ${
-      Array.from(conversationState.userPreferences.topics).join(", ") || "None"
-    }
+        Array.from(conversationState.userPreferences.topics).join(", ") ||
+        "None"
+      }
 - Is Follow-up Question: ${followUpDetection.isFollowUp ? "Yes" : "No"}
 
 INSTRUCTIONS:

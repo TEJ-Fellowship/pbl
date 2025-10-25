@@ -5,13 +5,15 @@ const messageSchema = new mongoose.Schema(
     conversationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
-      required: true,
+      required: function () {
+        return this.role !== "analytics";
+      },
       index: true,
     },
     role: {
       type: String,
       required: true,
-      enum: ["user", "assistant"],
+      enum: ["user", "assistant", "analytics"],
       index: true,
     },
     content: {

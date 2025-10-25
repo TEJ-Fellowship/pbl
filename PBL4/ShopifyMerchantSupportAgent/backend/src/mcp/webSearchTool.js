@@ -9,8 +9,8 @@ export class WebSearchTool {
     this.name = "web_search";
     this.description =
       "Search the web for recent information and Shopify-related content";
-    this.maxResults = 3;
-    this.timeout = 5000; // 5 seconds timeout
+    this.maxResults = 2; // Reduced for faster response
+    this.timeout = 3000; // Reduced timeout for better performance
   }
 
   /**
@@ -20,7 +20,13 @@ export class WebSearchTool {
    */
   async searchDuckDuckGo(query) {
     try {
-      const searchQuery = `Shopify ${query}`;
+      // Only prefix with Shopify for Shopify-related queries
+      const isShopifyRelated =
+        query.toLowerCase().includes("shopify") ||
+        query.toLowerCase().includes("ecommerce") ||
+        query.toLowerCase().includes("store");
+      const searchQuery = isShopifyRelated ? `Shopify ${query}` : query;
+
       const response = await axios.get(`https://api.duckduckgo.com/`, {
         params: {
           q: searchQuery,
@@ -75,13 +81,20 @@ export class WebSearchTool {
   async searchWikipedia(query) {
     try {
       // First, search for articles
+      // Only prefix with Shopify for Shopify-related queries
+      const isShopifyRelated =
+        query.toLowerCase().includes("shopify") ||
+        query.toLowerCase().includes("ecommerce") ||
+        query.toLowerCase().includes("store");
+      const searchQuery = isShopifyRelated ? `Shopify ${query}` : query;
+
       const searchResponse = await axios.get(
         `https://en.wikipedia.org/w/api.php`,
         {
           params: {
             action: "query",
             list: "search",
-            srsearch: `Shopify ${query}`,
+            srsearch: searchQuery,
             format: "json",
             srlimit: 2,
           },
@@ -200,9 +213,12 @@ export class WebSearchTool {
    * @returns {boolean} Whether to use web search
    */
   shouldUseWebSearch(query, confidence) {
-    // Use web search if confidence is low or query suggests recent information
-    const lowConfidence = confidence < 0.6;
+    const queryLower = query.toLowerCase();
 
+    // Use web search when internal sources are insufficient
+    const lowConfidence = confidence < 0.7; // Lowered threshold for better coverage
+
+    // Keywords that indicate need for recent/external information
     const recentInfoKeywords = [
       "recent",
       "latest",
@@ -217,15 +233,246 @@ export class WebSearchTool {
       "update",
       "change",
       "deprecated",
+      "status",
+      "outage",
+      "issue",
+      "problem",
+      "error",
+      "bug",
+      "fix",
+      "tutorial",
+      "guide",
+      "how to",
+      "step by step",
+      "example",
+      "breaking",
+      "urgent",
+      "critical",
+      "important",
+      "notice",
+      "alert",
+      "warning",
+      "maintenance",
+      "downtime",
+      "slow",
+      "unavailable",
+      "offline",
+      "broken",
+      "failing",
     ];
 
     const hasRecentKeywords = recentInfoKeywords.some((keyword) =>
-      query.toLowerCase().includes(keyword)
+      queryLower.includes(keyword)
     );
 
-    const hasQuestionWords = /what is|how to|when|where|why|who/i.test(query);
+    // Keywords that indicate external information is needed
+    const externalInfoKeywords = [
+      "what is",
+      "how to",
+      "when",
+      "where",
+      "why",
+      "who",
+      "which",
+      "compare",
+      "difference",
+      "alternative",
+      "best practice",
+      "recommendation",
+      "suggestion",
+      "help",
+      "support",
+      "explain",
+      "describe",
+      "define",
+      "meaning",
+      "purpose",
+      "benefit",
+      "advantage",
+      "disadvantage",
+      "pros",
+      "cons",
+      "vs",
+      "versus",
+      "against",
+      "better",
+      "worse",
+      "best",
+      "worst",
+      "top",
+      "popular",
+      "trending",
+      "reviews",
+      "ratings",
+      "feedback",
+      "opinions",
+      "experiences",
+      "stories",
+      "case studies",
+      "examples",
+      "templates",
+      "samples",
+      "demos",
+      "showcases",
+    ];
 
-    return lowConfidence || hasRecentKeywords || hasQuestionWords;
+    const hasExternalKeywords = externalInfoKeywords.some((keyword) =>
+      queryLower.includes(keyword)
+    );
+
+    // Specific Shopify-related queries that need web search
+    const shopifySpecificQueries = [
+      "shopify vs",
+      "shopify alternative",
+      "shopify competitor",
+      "shopify pricing",
+      "shopify plan",
+      "shopify features",
+      "shopify limitations",
+      "shopify problems",
+      "shopify issues",
+      "shopify complaints",
+      "shopify reviews",
+      "shopify ratings",
+      "shopify feedback",
+      "shopify experiences",
+      "shopify success stories",
+      "shopify case studies",
+      "shopify examples",
+      "shopify templates",
+      "shopify themes",
+      "shopify apps",
+      "shopify integrations",
+      "shopify partners",
+      "shopify developers",
+      "shopify community",
+      "shopify forum",
+      "shopify support",
+      "shopify help",
+      "shopify documentation",
+      "shopify api",
+      "shopify sdk",
+      "shopify webhooks",
+      "shopify payments",
+      "shopify checkout",
+      "shopify shipping",
+      "shopify inventory",
+      "shopify orders",
+      "shopify customers",
+      "shopify analytics",
+      "shopify reports",
+      "shopify dashboard",
+      "shopify admin",
+      "shopify storefront",
+      "shopify mobile",
+      "shopify pos",
+      "shopify plus",
+      "shopify enterprise",
+      "shopify advanced",
+      "shopify basic",
+      "shopify starter",
+      "shopify lite",
+    ];
+
+    const hasShopifySpecificQuery = shopifySpecificQueries.some((keyword) =>
+      queryLower.includes(keyword)
+    );
+
+    // Check for questions that require external knowledge
+    const questionPatterns = [
+      /^what is/i,
+      /^how to/i,
+      /^when does/i,
+      /^where can/i,
+      /^why does/i,
+      /^who can/i,
+      /^which is/i,
+      /^can you/i,
+      /^could you/i,
+      /^would you/i,
+      /^should i/i,
+      /^do you/i,
+      /^are there/i,
+      /^is there/i,
+      /^does shopify/i,
+      /^will shopify/i,
+      /^has shopify/i,
+      /^have you/i,
+    ];
+
+    const hasQuestionPattern = questionPatterns.some((pattern) =>
+      pattern.test(query)
+    );
+
+    // Check for comparison or evaluation requests
+    const comparisonPatterns = [
+      /compare/i,
+      /vs\.?/i,
+      /versus/i,
+      /better than/i,
+      /worse than/i,
+      /best/i,
+      /worst/i,
+      /top \d+/i,
+      /ranking/i,
+      /rate/i,
+      /review/i,
+      /opinion/i,
+      /experience/i,
+      /recommend/i,
+      /suggest/i,
+      /prefer/i,
+      /choose/i,
+      /select/i,
+      /pick/i,
+      /decide/i,
+    ];
+
+    const hasComparisonPattern = comparisonPatterns.some((pattern) =>
+      pattern.test(query)
+    );
+
+    // Check for general knowledge queries (not Shopify-specific)
+    const generalKnowledgePatterns = [
+      /^who is/i,
+      /^what is/i,
+      /^when was/i,
+      /^where is/i,
+      /^why is/i,
+      /^how does/i,
+      /^tell me about/i,
+      /^explain/i,
+      /^describe/i,
+      /^define/i,
+    ];
+
+    const isGeneralKnowledgeQuery = generalKnowledgePatterns.some((pattern) =>
+      pattern.test(query)
+    );
+    const isNotShopifyRelated =
+      !queryLower.includes("shopify") &&
+      !queryLower.includes("ecommerce") &&
+      !queryLower.includes("store");
+
+    // Use web search if:
+    // 1. Confidence is low (internal sources insufficient)
+    // 2. Query asks for recent information
+    // 3. Query asks for external information
+    // 4. Query contains specific Shopify external info keywords
+    // 5. Query is a question that might need external knowledge
+    // 6. Query involves comparisons or evaluations
+    // 7. Query is general knowledge (not Shopify-related)
+    return (
+      lowConfidence ||
+      hasRecentKeywords ||
+      hasExternalKeywords ||
+      hasShopifySpecificQuery ||
+      hasQuestionPattern ||
+      hasComparisonPattern ||
+      (queryLower.includes("shopify") &&
+        (lowConfidence || hasQuestionPattern)) ||
+      (isGeneralKnowledgeQuery && isNotShopifyRelated)
+    );
   }
 
   /**
@@ -243,24 +490,45 @@ export class WebSearchTool {
       };
     }
 
-    if (!this.shouldUseWebSearch(query, confidence)) {
-      return {
-        error: "Web search not needed for this query",
-        results: [],
-        summary: null,
-      };
-    }
-
+    // Always proceed with search if called - the orchestrator handles the decision
     try {
-      console.log(`🔍 Performing web search for: ${query}`);
+      console.log(
+        `🔍 Performing web search for: ${query} (confidence: ${confidence})`
+      );
 
-      // Perform searches in parallel
-      const [duckDuckGoResults, wikipediaResults, shopifyResults] =
-        await Promise.all([
-          this.searchDuckDuckGo(query),
-          this.searchWikipedia(query),
-          this.searchShopifySpecific(query),
-        ]);
+      // Check if this is a general knowledge query (not Shopify-related)
+      const isGeneralKnowledgeQuery =
+        /^(who is|what is|when was|where is|why is|how does|tell me about|explain|describe|define)/i.test(
+          query
+        );
+      const isNotShopifyRelated =
+        !query.toLowerCase().includes("shopify") &&
+        !query.toLowerCase().includes("ecommerce") &&
+        !query.toLowerCase().includes("store");
+
+      let shopifyResults = [];
+
+      // Only search Shopify-specific sources for Shopify-related queries
+      if (!isGeneralKnowledgeQuery || !isNotShopifyRelated) {
+        shopifyResults = await this.searchShopifySpecific(query);
+
+        // If we have good Shopify results, skip other searches to reduce latency
+        if (shopifyResults.length >= 2) {
+          const summary = this.generateSummary(shopifyResults, query);
+          return {
+            results: shopifyResults.slice(0, this.maxResults),
+            summary: summary,
+            sources: shopifyResults.map((r) => r.source),
+            totalFound: shopifyResults.length,
+          };
+        }
+      }
+
+      // Perform parallel searches for general knowledge or when Shopify results are insufficient
+      const [duckDuckGoResults, wikipediaResults] = await Promise.all([
+        this.searchDuckDuckGo(query),
+        this.searchWikipedia(query),
+      ]);
 
       // Combine and deduplicate results
       const allResults = [
