@@ -200,11 +200,125 @@ export class MultiTurnConversationManager {
    * Get or create conversation state
    */
   async getConversationState(sessionId) {
+    // First check in-memory cache
     let state = this.conversationStates.get(sessionId);
+
     if (!state) {
-      state = await this.initializeConversationState(sessionId);
+      // Try to load from database
+      try {
+        const conversation = await Conversation.findOne({ sessionId });
+        if (conversation && conversation.conversationState) {
+          // Convert from MongoDB document to plain object and restore Set objects
+          state = this.restoreStateFromDB(conversation.conversationState);
+          // Cache in memory for performance
+          this.conversationStates.set(sessionId, state);
+          console.log(
+            `✅ Loaded conversation state from database for session: ${sessionId}`
+          );
+        } else {
+          // No state exists, create new one
+          state = await this.initializeConversationState(sessionId);
+        }
+      } catch (error) {
+        console.error("Error loading conversation state from DB:", error);
+        // Fallback to creating new state
+        state = await this.initializeConversationState(sessionId);
+      }
     }
+
     return state;
+  }
+
+  /**
+   * Restore state from database document
+   * Converts arrays back to Sets and restores nested structure
+   */
+  restoreStateFromDB(dbState) {
+    const state = JSON.parse(JSON.stringify(dbState));
+
+    // Convert arrays to Sets where needed
+    if (state.userPreferences) {
+      // Ensure topics is always a Set
+      if (Array.isArray(state.userPreferences.topics)) {
+        state.userPreferences.topics = new Set(state.userPreferences.topics);
+      } else if (!(state.userPreferences.topics instanceof Set)) {
+        state.userPreferences.topics = new Set();
+      }
+
+      // Ensure goals is always a Set
+      if (Array.isArray(state.userPreferences.goals)) {
+        state.userPreferences.goals = new Set(state.userPreferences.goals);
+      } else if (!(state.userPreferences.goals instanceof Set)) {
+        state.userPreferences.goals = new Set();
+      }
+    }
+
+    return state;
+  }
+
+  /**
+   * Save conversation state to database
+   */
+  async saveConversationState(sessionId, state) {
+    try {
+      // Convert Sets to arrays for database storage
+      const dbState = this.prepareStateForDB(state);
+
+      await Conversation.updateOne(
+        { sessionId },
+        {
+          $set: {
+            conversationState: dbState,
+          },
+        }
+      );
+
+      console.log(
+        `💾 Saved conversation state to database for session: ${sessionId}`
+      );
+    } catch (error) {
+      console.error("Error saving conversation state to DB:", error);
+      // Don't throw - in-memory state still works
+    }
+  }
+
+  /**
+   * Prepare state for database storage
+   * Converts Sets to arrays for MongoDB
+   */
+  prepareStateForDB(state) {
+    const dbState = JSON.parse(JSON.stringify(state));
+
+    // Convert Sets to arrays
+    if (dbState.userPreferences) {
+      // Handle topics - ensure it's an array of strings
+      if (dbState.userPreferences.topics instanceof Set) {
+        dbState.userPreferences.topics = Array.from(
+          dbState.userPreferences.topics
+        );
+      } else if (!Array.isArray(dbState.userPreferences.topics)) {
+        dbState.userPreferences.topics = [];
+      }
+
+      // Handle goals - ensure it's an array of strings
+      if (dbState.userPreferences.goals instanceof Set) {
+        dbState.userPreferences.goals = Array.from(
+          dbState.userPreferences.goals
+        );
+      } else if (!Array.isArray(dbState.userPreferences.goals)) {
+        dbState.userPreferences.goals = [];
+      }
+
+      // Ensure all array items are strings, not objects
+      dbState.userPreferences.topics = dbState.userPreferences.topics
+        .map((item) => (typeof item === "string" ? item : String(item)))
+        .filter(Boolean);
+      dbState.userPreferences.goals = dbState.userPreferences.goals
+        .map((item) => (typeof item === "string" ? item : String(item)))
+        .filter(Boolean);
+    }
+
+    return dbState;
   }
 
   /**
@@ -671,6 +785,9 @@ Provide a concise summary (max 200 words) that maintains context for future ques
       contextualQuery += `\n\nUser prefers: ${state.userPreferences.preferredAPI} API`;
     }
 
+    // Save state to database after updates
+    await this.saveConversationState(sessionId, state);
+
     return {
       contextualQuery,
       conversationState: state,
@@ -698,6 +815,9 @@ Provide a concise summary (max 200 words) that maintains context for future ques
 
     // Build clarified query
     const clarifiedQuery = `${originalQuestion} (Clarification: ${clarificationResponse})`;
+
+    // Save updated state to database
+    await this.saveConversationState(sessionId, state);
 
     return {
       clarifiedQuery,

@@ -505,13 +505,22 @@ function classifyQueryType(query) {
     queryLower.includes(keyword)
   );
 
-  // Mathematical query patterns
+  // Mathematical query patterns - check context to avoid false positives
   const mathPatterns = [
-    /\d+\s*[\+\-\*\/]\s*\d+/,
-    /calculate|computation|math|arithmetic|equation|formula|solve/,
-    /plus|minus|times|divided|multiply|add|subtract|sum|total|equals/,
+    /\d+\s*[\+\-\*\/]\s*\d+/, // e.g., "5 + 3"
+    /calculate|computation|math|arithmetic|equation|formula|solve\b/,
+    /\b(plus|minus|times|divided|multiply|subtract|sum|equals)\s+\d+/, // Math operations with numbers
+    /\bsolve\s+(for|the\s+)?\w+/, // e.g., "solve for x"
   ];
-  const isMathQuery = mathPatterns.some((pattern) => pattern.test(queryLower));
+
+  // Only classify as math if it contains actual math expressions or math keywords
+  // and NOT shopify-related terms
+  const isMathQuery =
+    mathPatterns.some((pattern) => pattern.test(queryLower)) &&
+    !queryLower.includes("api") &&
+    !queryLower.includes("add product") &&
+    !queryLower.includes("product") &&
+    !queryLower.includes("store");
 
   // Date/time query patterns
   const dateTimePatterns = [
@@ -538,6 +547,44 @@ function classifyQueryType(query) {
     pattern.test(queryLower)
   );
 
+  // Determine query type with priority
+  let queryType;
+
+  // Priority 1: Check if Shopify-related (highest priority for this app)
+  if (!isNotShopifyRelated) {
+    queryType = "shopify_related";
+  }
+  // Priority 2: Check if mathematical
+  else if (isMathQuery) {
+    queryType = "mathematical";
+  }
+  // Priority 3: Check if date/time related
+  else if (isDateTimeQuery) {
+    queryType = "date_time";
+  }
+  // Priority 4: Check if code validation
+  else if (isCodeQuery) {
+    queryType = "code_validation";
+  }
+  // Priority 5: Check if currency conversion
+  else if (isCurrencyQuery) {
+    queryType = "currency_conversion";
+  }
+  // Priority 6: Check if general knowledge
+  else if (isGeneralKnowledgeQuery && isNotShopifyRelated) {
+    queryType = "general_knowledge";
+  }
+  // Default: shopify_related if no other classification
+  else {
+    queryType = "shopify_related";
+  }
+
+  // Refined shouldUseMCPTools - exclude Shopify-related queries from MCP routing
+  // Even if they match code/currency patterns, Shopify queries should use RAG
+  const shouldUseMCPToolsRefined =
+    queryType !== "shopify_related" &&
+    (isMathQuery || isDateTimeQuery || isCodeQuery || isCurrencyQuery);
+
   return {
     isGeneralKnowledgeQuery,
     isNotShopifyRelated,
@@ -546,21 +593,9 @@ function classifyQueryType(query) {
     isCodeQuery,
     isCurrencyQuery,
     shouldUseWebSearch: isGeneralKnowledgeQuery && isNotShopifyRelated,
-    shouldUseMCPTools:
-      isMathQuery || isDateTimeQuery || isCodeQuery || isCurrencyQuery,
+    shouldUseMCPTools: shouldUseMCPToolsRefined,
     shouldUseRAG: !isGeneralKnowledgeQuery || !isNotShopifyRelated,
-    queryType:
-      isGeneralKnowledgeQuery && isNotShopifyRelated
-        ? "general_knowledge"
-        : isMathQuery
-        ? "mathematical"
-        : isDateTimeQuery
-        ? "date_time"
-        : isCodeQuery
-        ? "code_validation"
-        : isCurrencyQuery
-        ? "currency_conversion"
-        : "shopify_related",
+    queryType,
   };
 }
 
