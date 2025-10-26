@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCP Architecture with AI & RAG Integration</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: 'Courier New', monospace;
+    background: #0a0e27;
+    color: #e0e0e0;
+    padding: 30px;
+    min-height: 100vh;
+  }
+  
+  .container {
+    max-width: 1800px;
+    margin: 0 auto;
+    background: #1a1f3a;
+    border: 2px solid #00ff88;
+    border-radius: 10px;
+    padding: 40px;
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+  }
+  
+  h1 {
+    text-align: center;
+    color: #00ff88;
+    margin-bottom: 10px;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+  
+  .subtitle {
+    text-align: center;
+    color: #7dd3fc;
+    margin-bottom: 40px;
+    font-size: 14px;
+  }
+  
+  .ascii-diagram {
+    background: #0f1419;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #2d3748;
+    margin-bottom: 30px;
+    overflow-x: auto;
+  }
+  
+  .ascii-art {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #00ff88;
+    white-space: pre;
+  }
+  
+  .flow-section {
+    margin-bottom: 40px;
+  }
+  
+  .flow-title {
+    color: #00ff88;
+    font-size: 22px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .step-container {
+    background: #0f1419;
+    border-left: 4px solid #7dd3fc;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+  }
+  
+  .step-header {
+    color: #7dd3fc;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .step-number {
+    background: #7dd3fc;
+    color: #0a0e27;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .step-content {
+    color: #b4b4b4;
+    line-height: 1.8;
+    padding-left: 45px;
+  }
+  
+  .code-snippet {
+    background: #000;
+    color: #00ff88;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+    border-left: 3px solid #00ff88;
+    font-size: 12px;
+    overflow-x: auto;
+  }
+  
+  .highlight {
+    color: #fbbf24;
+    font-weight: bold;
+  }
+  
+  .component-box {
+    border: 2px solid #00ff88;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+    background: rgba(0, 255, 136, 0.05);
+  }
+  
+  .component-title {
+    color: #00ff88;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  
+  .note {
+    background: rgba(251, 191, 36, 0.1);
+    border-left: 4px solid #fbbf24;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 5px;
+  }
+  
+  .note-title {
+    color: #fbbf24;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  
+  ul {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  li {
+    padding: 5px 0 5px 25px;
+    position: relative;
+    color: #b4b4b4;
+  }
+  
+  li::before {
+    content: '▸';
+    position: absolute;
+    left: 5px;
+    color: #00ff88;
+  }
+  
+  .arrow-line {
+    color: #7dd3fc;
+    text-align: center;
+    font-size: 20px;
+    margin: 10px 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ MCP Architecture Flow</h1>
+  <p class="subtitle">Model Context Protocol with Gemini LLM, RAG Pipeline & Multiple MCP Servers</p>
+  
+  <!-- ASCII Architecture Diagram -->
+  <div class="ascii-diagram">
+    <div class="ascii-art">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        MCP HOST (e.g., VS Code, IDE)                        │
+│                     Contains: Gemini LLM + MCP Clients                      │
+└────────────────┬────────────────┬───────────────┬──────────────────────────┘
+                 │                │               │
+         ┌───────┴───────┐ ┌─────┴─────┐ ┌───────┴────────┐
+         │               │ │           │ │                │
+         ▼               ▼ ▼           ▼ ▼                ▼
+    ┌─────────┐     ┌─────────┐   ┌─────────┐      ┌──────────┐
+    │ Client 1│     │ Client 2│   │ Client 3│      │ Client N │
+    └────┬────┘     └────┬────┘   └────┬────┘      └────┬─────┘
+         │               │             │                │
+    JSON-RPC        JSON-RPC       JSON-RPC         JSON-RPC
+    stdio/HTTP      stdio/HTTP     stdio/HTTP       stdio/HTTP
+         │               │             │                │
+         ▼               ▼             ▼                ▼
+    ┌─────────┐     ┌─────────┐   ┌─────────┐      ┌──────────┐
+    │Server 1 │     │Server 2 │   │Server 3 │      │ Server N │
+    │(GitHub) │     │(RAG     │   │(Postgres│      │ (Gmail)  │
+    │         │     │Pipeline)│   │  FS)    │      │          │
+    └────┬────┘     └────┬────┘   └────┬────┘      └────┬─────┘
+         │               │             │                │
+         ▼               ▼             ▼                ▼
+   GitHub API      PostgreSQL +    File System     Gmail API
+                   Pinecone DB
+
+Note: Each Client connects to EXACTLY ONE MCP Server
+      The Host coordinates all Clients and contains the LLM
+</div>
+  </div>
+
+  <!-- Correct Flow Steps -->
+  <div class="flow-section">
+    <div class="flow-title">📋 Correct MCP Flow (Step-by-Step)</div>
+    
+    <!-- Step 1 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span>MCP HOST INITIALIZATION</span>
+      </div>
+      <div class="step-content">
+        <strong>What happens:</strong>
+        <ul>
+          <li>MCP Host (VS Code/IDE) starts up</li>
+          <li>Host initializes Gemini LLM</li>
+          <li>Host spawns multiple MCP Clients (one per server)</li>
+          <li>Each Client connects to its designated MCP Server</li>
+        </ul>
+        <div class="code-snippet">Host → Spawn Client1, Client2, Client3...
+Client1 → Connect to Server1 (GitHub)
+Client2 → Connect to Server2 (RAG Pipeline)  
+Client3 → Connect to Server3 (PostgreSQL/FS)</div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span>TOOL DISCOVERY (Client → Server)</span>
+      </div>
+      <div class="step-content">
+        <strong>Each Client requests available tools from its Server:</strong>
+        <div class="code-snippet">Client1 → Server1: { "jsonrpc": "2.0", "method": "tools/list" }
+Server1 → Client1: { "tools": ["create_issue", "list_repos", "create_pr"] }
+
+Client2 → Server2: { "jsonrpc": "2.0", "method": "tools/list" }
+Server2 → Client2: { "tools": ["rag_search", "embed_query", "hybrid_search"] }
+
+Client3 → Server3: { "jsonrpc": "2.0", "method": "tools/list" }
+Server3 → Client3: { "tools": ["read_file", "write_file", "query_db"] }</div>
+        
+        <strong>Result:</strong> Each Client now knows what tools its Server provides
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span>CLIENT REPORTS TO LLM (Client → Gemini LLM)</span>
+      </div>
+      <div class="step-content">
+        <strong>All Clients send their discovered tools to Gemini LLM:</strong>
+        <div class="code-snippet">Client1 → Gemini: "I can: create_issue, list_repos, create_pr"
+Client2 → Gemini: "I can: rag_search, embed_query, hybrid_search"
+Client3 → Gemini: "I can: read_file, write_file, query_db"
+
+Gemini now has complete tool registry:
+{
+  "github_tools": ["create_issue", "list_repos", "create_pr"],
+  "rag_tools": ["rag_search", "embed_query", "hybrid_search"],
+  "filesystem_tools": ["read_file", "write_file", "query_db"]
+}</div>
+        <strong>Critical:</strong> <span class="highlight">LLM NOW KNOWS ALL AVAILABLE TOOLS</span>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">4</span>
+        <span>USER SENDS QUERY</span>
+      </div>
+      <div class="step-content">
+        <strong>User interacts with chat interface:</strong>
+        <div class="code-snippet">User: "I'm frustrated! Find React hooks documentation and create a GitHub issue"
+
+↓ Query sent to Gemini LLM</div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">5</span>
+        <span>LLM ANALYZES & DECIDES TOOLS (Gemini LLM Processing)</span>
+      </div>
+      <div class="step-content">
+        <strong>Gemini LLM processes the query:</strong>
+        <ul>
+          <li>Detects emotion: <span class="highlight">frustration/anger</span></li>
+          <li>Identifies required actions:
+            <ul style="margin-left: 20px;">
+              <li>Search for React hooks docs → needs <span class="highlight">rag_search</span></li>
+              <li>Create GitHub issue → needs <span class="highlight">create_issue</span></li>
+            </ul>
+          </li>
+          <li>Generates function calls for required tools</li>
+        </ul>
+        <div class="code-snippet">Gemini decides:
+1. Call rag_search(query="React hooks documentation", emotion="frustrated")
+2. Call create_issue(title="React hooks help", tone="sympathetic")</div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">6</span>
+        <span>LLM REQUESTS TOOLS (Gemini → Clients)</span>
+      </div>
+      <div class="step-content">
+        <strong>Gemini sends tool execution requests to appropriate Clients:</strong>
+        <div class="code-snippet">Gemini → Client2: "Execute rag_search with params {query: 'React hooks', emotion: 'frustrated'}"
+Gemini → Client1: "Execute create_issue with params {title: '...', body: '...'}"</div>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">7</span>
+        <span>CLIENTS MAKE JSON-RPC CALLS (Client → Server)</span>
+      </div>
+      <div class="step-content">
+        <strong>Each Client forwards request to its Server via JSON-RPC:</strong>
+        
+        <div class="component-box">
+          <div class="component-title">Client2 → Server2 (RAG Pipeline):</div>
+          <div class="code-snippet">{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "rag_search",
+    "arguments": {
+      "query": "React hooks documentation",
+      "emotion": "frustrated"
+    }
+  }
+}</div>
+        </div>
+
+        <div class="component-box">
+          <div class="component-title">Client1 → Server1 (GitHub):</div>
+          <div class="code-snippet">{
+  "jsonrpc": "2.0", 
+  "method": "tools/call",
+  "params": {
+    "name": "create_issue",
+    "arguments": {
+      "title": "Need React hooks documentation",
+      "body": "User needs help with React hooks",
+      "tone": "sympathetic"
+    }
+  }
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 8 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">8</span>
+        <span>SERVERS EXECUTE TOOLS (Server Processing)</span>
+      </div>
+      <div class="step-content">
+        
+        <div class="component-box">
+          <div class="component-title">🧠 Server2 (RAG Pipeline) Execution:</div>
+          <strong>Sub-steps:</strong>
+          <ol style="list-style: decimal; margin-left: 20px; color: #b4b4b4;">
+            <li style="padding: 8px 0;">
+              <strong>Query Vectorization:</strong>
+              <div class="code-snippet">query_text = "React hooks documentation"
+query_vector = embedding_model.embed(query_text)
+# Returns: [0.234, 0.891, -0.432, ...]</div>
+            </li>
+            
+            <li style="padding: 8px 0;">
+              <strong>Semantic Analysis:</strong>
+              <div class="code-snippet">emotion = "frustrated"
+semantic_weight = calculate_semantic_value(emotion)
+# frustrated → HIGH_PRIORITY → weight = 1.5
+# Adjust search: prioritize recent, highly-rated docs</div>
+            </li>
+            
+            <li style="padding: 8px 0;">
+              <strong>Parallel Hybrid Search:</strong>
+              <div class="code-snippet"># Vector Search (Pinecone)
+pinecone_results = pinecone.query(
+    vector=query_vector,
+    top_k=10,
+    filter={"category": "react"}
+)
+
+# Semantic Search (PostgreSQL)
+postgres_results = db.execute("""
+    SELECT id, content, ts_rank(
+        to_tsvector('english', content),
+        to_tsquery('english', 'React & hooks & documentation')
+    ) AS rank
+    FROM documents
+    WHERE to_tsvector('english', content) @@ 
+          to_tsquery('english', 'React & hooks & documentation')
+    ORDER BY rank DESC
+    LIMIT 10
+""")</div>
+            </li>
+            
+            <li style="padding: 8px 0;">
+              <strong>Result Fusion (Hybrid Binary Search):</strong>
+              <div class="code-snippet"># Merge results with weighted scoring
+combined_results = []
+for doc in pinecone_results:
+    score = doc.similarity * 0.6 * semantic_weight
+    combined_results.append({doc_id: doc.id, score: score})
+
+for doc in postgres_results:
+    score = doc.rank * 0.4 * semantic_weight
+    # Check if doc already exists, merge scores
+    existing = find(combined_results, doc.id)
+    if existing:
+        existing.score += score
+    else:
+        combined_results.append({doc_id: doc.id, score: score})
+
+# Binary search on sorted results
+combined_results.sort(key=lambda x: x.score, reverse=True)
+top_results = combined_results[:5]</div>
+            </li>
+            
+            <li style="padding: 8px 0;">
+              <strong>Return Results:</strong>
+              <div class="code-snippet">return {
+    "results": [
+        {"title": "React Hooks Guide", "url": "...", "snippet": "..."},
+        {"title": "useState Hook", "url": "...", "snippet": "..."},
+        ...
+    ],
+    "metadata": {
+        "semantic_weight": 1.5,
+        "emotion_detected": "frustrated",
+        "total_sources": 5
+    }
+}</div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="component-box">
+          <div class="component-title">📝 Server1 (GitHub) Execution:</div>
+          <div class="code-snippet"># Authenticate with OAuth
+github_api.authenticate(oauth_token)
+
+# Create issue with sympathetic tone
+issue = github_api.create_issue(
+    repo="user/react-project",
+    title="Need React hooks documentation",
+    body="I understand you're having trouble. Here are some resources...",
+    labels=["documentation", "help-wanted"]
+)
+
+return {
+    "issue_url": issue.html_url,
+    "issue_number": issue.number
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 9 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">9</span>
+        <span>SERVERS RESPOND (Server → Client)</span>
+      </div>
+      <div class="step-content">
+        <strong>Each Server sends JSON-RPC response back to its Client:</strong>
+        <div class="code-snippet">Server2 → Client2:
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "results": [...documents...],
+    "metadata": {...}
+  }
+}
+
+Server1 → Client1:
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "issue_url": "https://github.com/user/repo/issues/42",
+    "issue_number": 42
+  }
+}</div>
+      </div>
+    </div>
+
+    <!-- Step 10 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">10</span>
+        <span>CLIENTS FORWARD TO LLM (Client → Gemini)</span>
+      </div>
+      <div class="step-content">
+        <strong>Clients send results back to Gemini LLM:</strong>
+        <div class="code-snippet">Client2 → Gemini: {
+    "tool": "rag_search",
+    "results": [...React hooks documentation...]
+}
+
+Client1 → Gemini: {
+    "tool": "create_issue", 
+    "result": {
+        "issue_url": "https://github.com/user/repo/issues/42"
+    }
+}</div>
+      </div>
+    </div>
+
+    <!-- Step 11 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">11</span>
+        <span>LLM SYNTHESIZES RESPONSE (Gemini Processing)</span>
+      </div>
+      <div class="step-content">
+        <strong>Gemini LLM combines all results into natural language:</strong>
+        <div class="code-snippet">Input to Gemini:
+- User query: "I'm frustrated! Find React hooks docs and create issue"
+- RAG results: [5 documentation articles]
+- GitHub result: {issue_url: "..."}
+- Detected emotion: frustrated
+
+Gemini generates:
+"I understand your frustration! Here's what I found:
+
+📚 React Hooks Documentation:
+1. Official React Hooks Guide: [link]
+2. useState Hook Reference: [link]
+3. useEffect Complete Guide: [link]
+
+I've also created a GitHub issue to track this: 
+🔗 Issue #42: https://github.com/user/repo/issues/42
+
+Let me know if you need more specific examples or have questions!"</div>
+      </div>
+    </div>
+
+    <!-- Step 12 -->
+    <div class="step-container">
+      <div class="step-header">
+        <span class="step-number">12</span>
+        <span>RESPONSE TO USER (Gemini → User Interface)</span>
+      </div>
+      <div class="step-content">
+        <strong>Final response displayed in chat interface to user</strong>
+        <div class="code-snippet">Chat Interface displays Gemini's natural language response
+User sees: Documentation links + GitHub issue + sympathetic tone</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Key Points -->
+  <div class="note">
+    <div class="note-title">⚠️ KEY CORRECTIONS FROM PREVIOUS VERSION:</div>
+    <ul>
+      <li><strong>Architecture:</strong> Host contains LLM + multiple Clients. Each Client connects to ONE Server.</li>
+      <li><strong>Flow Order:</strong> Client connects → Client requests tools/list → Client gives list to LLM → LLM knows tools → User queries → LLM decides tools → Client makes JSON-RPC call → Server executes → Response to Client → Client to LLM → LLM generates natural response → User sees response</li>
+      <li><strong>Tool Discovery:</strong> Happens BEFORE any user query (initialization phase)</li>
+      <li><strong>LLM Role:</strong> LLM doesn't directly call servers. LLM tells Clients which tools to execute, Clients handle JSON-RPC.</li>
+      <li><strong>One-to-One:</strong> Each MCP Client connects to exactly ONE MCP Server</li>
+    </ul>
+  </div>
+
+  <!-- Technology Details -->
+  <div class="flow-section">
+    <div class="flow-title">🔧 Technology Stack in This Architecture</div>
+    
+    <div class="component-box">
+      <div class="component-title">MCP Host (Container)</div>
+      <ul>
+        <li><strong>Example:</strong> VS Code, Custom IDE, Cline Editor</li>
+        <li><strong>Contains:</strong> Gemini LLM + Multiple MCP Clients</li>
+        <li><strong>Responsibilities:</strong> Coordinate Clients, manage LLM, handle UI</li>
+      </ul>
+    </div>
+
+    <div class="component-box">
+      <div class="component-title">LLM: Gemini Pro/Ultra</div>
+      <ul>
+        <li><strong>Model:</strong> gemini-pro, gemini-1.5-pro, gemini-ultra</li>
+        <li><strong>Function Calling:</strong> Native support for tool execution</li>
+        <li><strong>Context Window:</strong> Large enough for RAG results + conversation history</li>
+      </ul>
+    </div>
+
+    <div class="component-box">
+      <div class="component-title">MCP Servers (Examples)</div>
+      <ul>
+        <li><strong>Server 1:</strong> GitHub (create issues, PRs, list repos)</li>
+        <li><strong>Server 2:</strong> RAG Pipeline (hybrid search, embeddings)</li>
+        <li><strong>Server 3:</strong> PostgreSQL/Filesystem (read/write files, query DB)</li>
+        <li><strong>Server N:</strong> Gmail, Slack, Sentry, etc.</li>
+      </ul>
+    </div>
+
+    <div class="component-box">
+      <div class="component-title">RAG Pipeline Components</div>
+      <ul>
+        <li><strong>PostgreSQL:</strong> Full-text search with ts_vector, stores scraped data</li>
+        <li><strong>Pinecone:</strong> Vector database for similarity search</li>
+        <li><strong>Embedding Model:</strong> text-embedding-004 or similar</li>
+        <li><strong>Semantic Analysis:</strong> Emotion detection + query weighting</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
