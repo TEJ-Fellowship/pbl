@@ -1,0 +1,113 @@
+cd PBL4/ShopifyMerchantSupportAgent/backend/ && npm run api
+
+> shopify-merchant-support-agent-tier2@2.0.0 api
+> node --watch server.js
+
+🚀 API Server is running on port http://localhost:3000
+📡 Health check: http://localhost:3000/health
+💬 Chat API: http://localhost:3000/api/chat
+✅ MongoDB connected successfully
+✅ MongoDB connected successfully
+✅ MongoDB connected successfully
+Analytics dashboard request with filters: {
+  dateFrom: undefined,
+  dateTo: undefined,
+  merchantSegment: undefined,
+  intent: undefined
+}
+Processed filters: {}
+Analytics data generated: { totalQuestions: 0, topQuestionsCount: 0, intentDistributionKeys: 0 }
+Analytics dashboard request with filters: {
+  dateFrom: undefined,
+  dateTo: undefined,
+  merchantSegment: undefined,
+  intent: undefined
+}
+Processed filters: {}
+Analytics data generated: { totalQuestions: 0, topQuestionsCount: 0, intentDistributionKeys: 0 }
+✅ MongoDB connected successfully
+🔍 Initializing hybrid retriever...
+📁 Found 16 chunk files to process
+📄 Processing chunks_api.json: 29 chunks
+📄 Processing chunks_api_admin_graphql.json: 121 chunks
+📄 Processing chunks_api_admin_rest.json: 175 chunks
+📄 Processing chunks_api_orders.json: 114 chunks
+📄 Processing chunks_api_products.json: 112 chunks
+📄 Processing chunks_api_storefront.json: 197 chunks
+📄 Processing chunks_forum.json: 0 chunks
+📄 Processing chunks_getting_started.json: 1 chunks
+📄 Processing chunks_helpcenter.json: 1 chunks
+📄 Processing chunks_manual_getting_started.json: 1 chunks
+📄 Processing chunks_manual_orders.json: 1 chunks
+📄 Processing chunks_manual_products.json: 1 chunks
+📄 Processing chunks_orders.json: 1 chunks
+📄 Processing chunks_products.json: 1 chunks
+📄 Processing chunks_theme.json: 23 chunks
+📄 Processing chunks_theme_liquid.json: 4 chunks
+✅ Hybrid retriever initialized with 782 documents
+🔍 Keyword index built with FlexSearch
+📊 Semantic search ready with Pinecone
+🔧 MCP Tools initialized: [
+  'calculator',
+  'web_search',
+  'shopify_status',
+  'date_time',
+  'code_validator',
+  'currency_converter',
+  'theme_compatibility'
+]
+🔧 MCP Orchestrator initialized successfully
+🎯 Intent Classification Service initialized successfully
+💡 Proactive Suggestions Service initialized successfully
+📊 Analytics Service initialized successfully
+✅ MongoDB connected successfully
+🎯 Query classified as: shopify_related
+🔧 Should use web search: false
+🔧 Should use MCP tools: false
+🔧 Should use RAG: true
+🎯 Intent classified as: general (confidence: 0.7)
+🔍 Processed query: "what is shopify ecommerce platform store?"
+🔍 Performing semantic search...
+🔍 Performing keyword search...
+📊 Keyword search found 72 results
+🔍 Top keyword result: doc-1760246618679-551
+🔄 Applying fusion ranking...
+✅ Hybrid search completed: 8 results
+📊 Semantic weight: 0.7, Keyword weight: 0.3
+💡 Getting proactive suggestions for intent: general
+💡 Rule-based suggestions: 0
+🤖 Generating AI suggestions for: what is shopify?...
+🤖 AI response: ```json
+[
+  {
+    "suggestion": "Start a free trial to experience how easy it is to set up an online store. You can quickly add your first products, choose a professional theme, and understand the bas...
+🤖 Cleaned response: [
+  {
+    "suggestion": "Start a free trial to experience how easy it is to set up an online store. You can quickly add your first products, choose a professional theme, and understand the basic flow ...
+🤖 Parsed AI suggestions: 3
+💡 AI-generated suggestions: 3
+💡 Total unique suggestions: 3
+💡 Final suggestions to return: 3
+💡 Generated 3 proactive suggestions
+📊 Tracked question: what is shopify? (general)
+📊 Tracked question for analytics
+🔧 Web search check: shouldUseWeb=true, confidence=0.72375
+🔧 General knowledge check: isGeneralKnowledgeQuery=true, isNotShopifyRelated=false
+🔧 MCP Decision for query: "what is shopify?" (confidence: 0.72375)
+🔧 Tools selected: [web_search]
+🔧 Using MCP tools: web_search
+🔍 Performing web search for: what is shopify? (confidence: 0.72375)
+✅ MongoDB connected successfully
+✅ MongoDB connected successfully
+🎯 Query classified as: mathematical
+🔧 Should use web search: false
+🔧 Should use MCP tools: true
+🔧 Should use RAG: true
+🔧 Routing mathematical query to MCP tools: "how to add products using api?"
+🔧 Web search check: shouldUseWeb=true, confidence=0.9
+🔧 General knowledge check: isGeneralKnowledgeQuery=false, isNotShopifyRelated=true
+🔧 MCP Decision for query: "how to add products using api?" (confidence: 0.9)
+🔧 Tools selected: [code_validator, currency_converter]
+🔧 Using MCP tools: code_validator, currency_converter
+🔍 Validating code/API elements: how to add products using api?
+💱 Performing currency conversion for: how to add products using api?
