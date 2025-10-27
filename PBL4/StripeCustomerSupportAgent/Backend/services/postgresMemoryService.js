@@ -458,6 +458,25 @@ class PostgreSQLMemoryService {
   }
 
   /**
+   * Update session token usage based on stored messages
+   */
+  async updateSessionTokenUsage(sessionId) {
+    const client = await this.pool.connect();
+
+    try {
+      // Use the database function to update token usage
+      await client.query(`SELECT update_session_token_usage($1)`, [sessionId]);
+
+      console.log(`📊 Updated token usage for session ${sessionId}`);
+    } catch (error) {
+      console.error("❌ Failed to update session token usage:", error);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Get sessions approaching token limit
    */
   async getSessionsNearTokenLimit(threshold = 80) {
@@ -562,6 +581,61 @@ class PostgreSQLMemoryService {
       `);
 
       return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get all sessions for a user
+   */
+  async getAllSessions(userId, limit = 50, offset = 0) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `
+        SELECT 
+          cs.session_id,
+          cs.user_id,
+          cs.metadata,
+          cs.created_at,
+          cs.updated_at,
+          cs.is_active,
+          COUNT(cm.message_id) as message_count,
+          MAX(cm.created_at) as last_message_time,
+          (
+            SELECT content 
+            FROM conversation_messages 
+            WHERE session_id = cs.session_id 
+            ORDER BY created_at DESC 
+            LIMIT 1
+          ) as last_message,
+          (
+            SELECT content 
+            FROM conversation_messages 
+            WHERE session_id = cs.session_id 
+            AND role = 'user'
+            ORDER BY created_at ASC 
+            LIMIT 1
+          ) as first_user_message,
+          (
+            SELECT summary_text 
+            FROM conversation_summaries 
+            WHERE session_id = cs.session_id 
+            LIMIT 1
+          ) as conversation_summary
+        FROM conversation_sessions cs
+        LEFT JOIN conversation_messages cm ON cs.session_id = cm.session_id
+        WHERE cs.user_id = $1
+        GROUP BY cs.session_id, cs.user_id, cs.metadata, cs.created_at, cs.updated_at, cs.is_active
+        ORDER BY cs.updated_at DESC
+        LIMIT $2 OFFSET $3
+      `,
+        [userId, limit, offset]
+      );
+
+      return result.rows;
     } finally {
       client.release();
     }

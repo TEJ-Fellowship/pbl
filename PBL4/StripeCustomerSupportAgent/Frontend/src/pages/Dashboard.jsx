@@ -209,7 +209,7 @@ const Dashboard = () => {
                   icon: "analytics",
                   color: "bg-orange-500/20 text-orange-400",
                 },
-              ].map((action, index) => (
+              ].map((action) => (
                 <motion.button
                   key={action.name}
                   whileHover={{ scale: 1.05 }}
@@ -253,7 +253,7 @@ const Dashboard = () => {
                   status: "Processing",
                   color: "text-yellow-400",
                 },
-              ].map((item, index) => (
+              ].map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center justify-between"

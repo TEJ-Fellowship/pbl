@@ -245,4 +245,81 @@ export const chatController = {
       });
     }
   },
+
+  /**
+   * Get all conversation sessions for a user
+   */
+  async getAllSessions(req, res) {
+    try {
+      const { userId = "web_user", limit = 50, offset = 0 } = req.query;
+
+      console.log(`📚 Getting all sessions for user: ${userId}`);
+      console.log(`📋 Request params: limit=${limit}, offset=${offset}`);
+
+      const sessions = await memoryService.getAllSessions(
+        userId,
+        parseInt(limit),
+        parseInt(offset)
+      );
+
+      console.log(`📊 Sessions result:`, {
+        sessionCount: sessions.length,
+        userId,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          sessions,
+          userId,
+          totalCount: sessions.length,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Get all sessions error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve sessions",
+        message: error.message,
+      });
+    }
+  },
+
+  /**
+   * Get detailed information about a specific session
+   */
+  async getSessionDetails(req, res) {
+    try {
+      const { sessionId } = req.params;
+
+      console.log(`📋 Getting session details for: ${sessionId}`);
+
+      const sessionDetails = await memoryService.getSessionDetails(sessionId);
+
+      if (!sessionDetails) {
+        return res.status(404).json({
+          success: false,
+          error: "Session not found",
+        });
+      }
+
+      console.log(`📊 Session details:`, {
+        sessionId: sessionDetails.sessionId,
+        messageCount: sessionDetails.messageCount,
+        hasSummary: !!sessionDetails.conversationSummary,
+      });
+
+      res.json({
+        success: true,
+        data: sessionDetails,
+      });
+    } catch (error) {
+      console.error("❌ Get session details error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to retrieve session details",
+        message: error.message,
+      });
+    }
+  },
 };

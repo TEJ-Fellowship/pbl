@@ -1,4 +1,4 @@
-# Stripe Customer Support Agent - Backend
+# Stripe Customer Support Agent -( Backend )
 
 A comprehensive Node.js backend for the Stripe Customer Support Agent featuring AI-powered chat capabilities, intelligent conversational memory system, hybrid search (BM25 + semantic), and documentation ingestion using PineCone and PostgreSQL.
 
@@ -12,10 +12,22 @@ A comprehensive Node.js backend for the Stripe Customer Support Agent featuring 
 - **📝 AI Conversation Summarization**: Intelligent conversation summaries using Gemini AI for better context retention
 - **🔍 Hybrid Search**: Combines PostgreSQL BM25 keyword search with Pinecone semantic search
 - **📚 Scraping and Ingestion**: Web scraping and ingestion of Stripe documentation
-- **🗄️ PostgreSQL & PineCone Integration**: Scalable document storage with hybrid search capabilities
+- **🗄️ PostgreSQL & Pinecone Integration**: Scalable document storage with hybrid search capabilities
 - **🔗 Vector Embeddings**: Semantic search using Google's text-embedding-004 model
 - **📊 Advanced Chunking**: Intelligent document chunking with code detection
 - **🎯 Weighted Fusion**: Combines BM25 and semantic search results for optimal relevance
+- <details>
+    <summary><strong>🛠️ MCP Tool Integration (Toggleable)</strong>: Model Context Protocol tools for enhanced query processing</summary>
+
+  - **🧮 Calculator Tool**: Mathematical calculations and Stripe fee computations
+  - **⚠️ Status Checker**: Real-time Stripe system status monitoring
+  - **🔍 Web Search**: Enhanced web search capabilities for current information
+  - **✅ Code Validator**: Code validation and syntax checking
+  - **📅 DateTime Tool**: Date and time operations and formatting
+  - **💱 Currency Converter**: Currency conversion for global payments and multi-currency queries
+
+  <em>MCP Tool Integration can be enabled/disabled via environment/configuration.</em>
+  </details>
 
 ## 🏗️ System Architecture
 
@@ -25,47 +37,81 @@ The Stripe Customer Support Agent uses a hybrid search approach combining keywor
 
 ```mermaid
 graph TB
-    subgraph "User Interface Layer"
+direction TB
+   subgraph "User Interface Layer"
         CLI["CLI Chat Interface"]
         API["REST API Endpoints"]
     end
-
+  subgraph "1"
+  direction LR
     subgraph "Application Layer"
         CHAT["Chat Service<br/>Query processing"]
+        CLASSIFIER["Query Classifier<br/>Route to <br/>MCP/Hybrid/Combined"]
         SEARCH["Hybrid Search Engine<br/>BM25 + Semantic fusion"]
         SERVER["Express Server<br/>Request routing"]
-    end
+        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
 
+    end
     subgraph "Memory System"
         BUFFER["BufferWindowMemory<br/>Recent context (8 messages)"]
         MEMORY_CTRL["MemoryController<br/>Orchestrates memory"]
         AI_SUMMARY["Conversation <br/>Summarization <br/>with AI"]
-        QUERY_REFORM["Query Reformulation<br/>AI-powered <br/>context integration"]
         QnA_ANALYSIS["Analysis of <br/>User Query <br/>&<br/>Response"]
+        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
     end
 
+  end
+
+  subgraph "2"
+  direction LR
     subgraph "Search Processing"
+        EMBEDDINGS["Text Embeddings<br/>Vector generation"]
         BM25["PostgreSQL BM25<br/>Keyword matching"]
         VECTOR["Pinecone Vector Search<br/>Semantic similarity"]
         FUSION["Result Fusion Engine<br/>Weighted scoring"]
-    end
-
-    subgraph "AI Services"
-        GEMINI["Gemini 2.0-flash<br/>Response generation"]
-        EMBEDDINGS["Text Embeddings<br/>Vector generation"]
-    end
-
-    subgraph "Data Storage Layer"
-        MEMORY_DB[("PostgreSQL Memory<br/>Sessions <br/>Q&A pairs <br/>Summaries <br/>Conversation")]
         POSTGRES[("PostgreSQL<br/>Document chunks<br/> & <br/>Memory")]
         PINECONE[("Pinecone<br/>Vector embeddings")]
+         GEMINI["Response generation<br/>From Hybrid Search"]
     end
+
+    subgraph "MCP System"
+        MCP_SERVICE["MCP Integration Service<br/>Tool orchestration"]
+        AGENT_ORCH["Agent Orchestrator<br/>Contains AI Tool <br/>Selection"]
+        MCP_TOOLS["MCP Tools<br/>Calculator, <br/>Status Checker, <br/>Web Search<br/>Code Validator, <br/>DateTime, <br/>Currency Converter"]
+        TOOL_CONFIG["Tool Config Manager<br/>Dynamic tool management"]
+        MCP_RESPONSE["MCP Response<br/>Generator"]
+         MCP_CONFIG[("mcp-tools.json<br/>Tool configuration")]
+    end
+   COMBINED["Response generation<br/>From Both"]
+  end
+
+
+
+    1 --> _ --> 2
+
+
 
     %% User interaction flow
     CLI -->|"User query input"| CHAT
     API -->|"HTTP requests"| SERVER
     SERVER -->|"Route to chat service"| CHAT
     CHAT -->|"Formatted response"| CLI
+
+    %% Query classification and routing
+    CHAT -->|"User query"| CLASSIFIER
+    CLASSIFIER -->|"Query Classified <br/>MCP tools <br/>only needed"| MCP_SERVICE
+    CLASSIFIER -->|"Query Classified <br/>Documentation needed"| SEARCH
+    CLASSIFIER -->|"Query Classified <br/>Both needed"| MCP_SERVICE
+    CLASSIFIER -->|"Query Classified <br/>Both needed"| SEARCH
+
+    %% MCP system flow
+    MCP_SERVICE -->|"Tool selection"| AGENT_ORCH
+    AGENT_ORCH -->|"Execute tools"| MCP_TOOLS
+    MCP_SERVICE -->|"Tool status"| TOOL_CONFIG
+    TOOL_CONFIG -->|"Configuration"| MCP_CONFIG
+    MCP_RESPONSE -->|"MCP Response"| CHAT
+    MCP_TOOLS -->|"MCP results"| MCP_RESPONSE
+    MCP_TOOLS -->|"MCP results"| COMBINED
 
     %% Memory processing flow
     CHAT -->|"User message"| MEMORY_CTRL
@@ -75,7 +121,6 @@ graph TB
     BUFFER -->|"Recent context"| MEMORY_CTRL
     MEMORY_DB -->|"Relevant Q&A pairs<br/>SessionContext"| MEMORY_CTRL
     MEMORY_CTRL -->|"User Query<br/>Relevant Q&A pairs<br/>SessionContext<br/>RecentContext"| QUERY_REFORM
-
 
     %% Search orchestration with memory
     CHAT -->|"Process reformulated query"| SEARCH
@@ -89,9 +134,11 @@ graph TB
     VECTOR -->|"Vector results"| FUSION
     FUSION -->|"Ranked results"| CHAT
     FUSION -->|"Context + sources"| GEMINI
+    FUSION -->|"Context + sources"| COMBINED
 
     %% AI response generation with memory
-    GEMINI -->|"AI-generated response"| CHAT
+    GEMINI -->|"Hybrid Search response"| CHAT
+    COMBINED -->|"Combined response"| CHAT
     CHAT -->|"Assistant response"| MEMORY_CTRL
     QnA_ANALYSIS -->|"Processed Q&A pairs"| MEMORY_DB
     MEMORY_CTRL -->|"Memory Context"| GEMINI
@@ -100,13 +147,19 @@ graph TB
     MEMORY_CTRL -->|"Conversation history<br/>with SessionID"| AI_SUMMARY
     AI_SUMMARY -->|"AI-generated summary"| MEMORY_DB
 
-
     %% Search and embeddings flow
     SEARCH -->|"Search query"| EMBEDDINGS
     EMBEDDINGS -->|"Semantic Search</br>with</br>vector query"| VECTOR
 ```
 
 ### Data Scraping & Ingestion Architecture
+
+1. **Web Scraping**: Scrape Stripe documentation content
+2. **Raw Storage**: Store raw documents in PostgreSQL
+3. **Document Processing**: Chunk documents using advanced chunking with code detection
+4. **Processed Storage**: Store processed chunks in PostgreSQL
+5. **Vector Generation**: Generate embeddings using Google's text-embedding-004 model
+6. **Vector Storage**: Store embeddings in Pinecone for semantic search
 
 ```mermaid
 graph TB
@@ -136,6 +189,66 @@ graph TB
     CHUNKER -->|"Generate embeddings"| EMBEDDINGS
     EMBEDDINGS -->|"Vector embeddings"| PINECONE
 ```
+
+## 🔧 MCP Tool Integration
+
+The Stripe Customer Support Agent includes **Model Context Protocol (MCP)** tool integration, providing specialized tools for enhanced query processing and intelligent responses.
+
+```mermaid
+flowchart TD
+    USER["User Query"] --> CHAT["Chat Service"]
+    CHAT --> CLASSIFIER["Query Classifier"]
+
+    CLASSIFIER -->|"MCP tools needed"| MCP["MCP Tools Only"]
+    CLASSIFIER -->|"Documentation needed"| SEARCH["Hybrid Search Only"]
+    CLASSIFIER -->|"Both needed"| COMBINED["Combined Approach"]
+
+    MCP --> TOOLS["Execute MCP Tools"]
+    SEARCH --> DOCS["Retrieve Documents"]
+    COMBINED --> TOOLS
+    COMBINED --> DOCS
+
+    TOOLS --> RESPONSE["Generate Response"]
+    DOCS --> RESPONSE
+    RESPONSE --> USER
+```
+
+### 🛠️ Available MCP Tools
+
+- **🧮 Calculator Tool**: Mathematical calculations and Stripe fee computations
+- **⚠️ Status Checker**: Real-time Stripe system status monitoring
+- **🔍 Web Search**: Enhanced web search capabilities for current information using google custom engine
+- **✅ Code Validator**: Code validation and syntax checking
+- **📅 DateTime Tool**: Date and time operations and formatting
+- **💱 Currency Converter**: Currency conversion for global payments and multi-currency queries
+
+### 🎯 Key Features
+
+- **🤖 Intelligent Tool Selection**: AI automatically selects appropriate tools based on query context
+- **🔄 Seamless Integration**: Tools work seamlessly with existing chat and memory systems
+- **📊 Confidence Scoring**: Each tool response includes confidence levels for better decision making
+- **🛡️ Error Handling**: Robust error handling with fallback mechanisms
+
+### 🚀 Quick Start
+
+```bash
+# Test MCP integration
+npm run test:mcp
+
+# Run interactive MCP demo
+npm run demo:mcp
+
+# Start MCP-enhanced chat
+node examples/mcpChatExample.js
+```
+
+> 📖 **For detailed MCP documentation, see [MCP_DOCUMENTATION.md](../docs/mcp/MCP_DOCUMENTATION.md)**
+
+> 📖 **For detailed Agent Orchestrator documentation, see [AGENT_ORCHESTRATOR_ANALYSIS.md](../docs/mcp/AGENT_ORCHESTRATOR_ANALYSIS.md)**
+
+> 📖 **For detailed Query Classifier documentation, see [QUERY_CLASSIFIER_INTEGRATION.md](../docs/mcp/QUERY_CLASSIFIER_INTEGRATION.md)**
+
+> 📖 **For detailed Google Search Setup documentation, see [GOOGLE_SEARCH_SETUP.md](../docs/GOOGLE_SEARCH_SETUP.md)**
 
 ## 🧠 Conversational Memory System
 
@@ -187,74 +300,109 @@ graph TB
 
 ### Memory Features
 
-#### **1. Short-term Memory (BufferWindowMemory)**
+<details>
+  <summary><strong>1. Short-term Memory (<code>BufferWindowMemory</code>) <em>(Toggle details)</em></strong></summary>
 
-- **Sliding Window**: Maintains last 8 messages (4 conversation turns)
-- **Real-time Context**: Provides immediate conversation context
-- **Automatic Management**: Handles message overflow automatically
+- <strong>Togglable:</strong> Enable or disable via configuration/environment settings.
+- <strong>Sliding Window</strong>: Maintains last 8 messages (4 conversation turns)
+- <strong>Real-time Context</strong>: Provides immediate conversation context
+- <strong>Automatic Management</strong>: Handles message overflow automatically
 
-#### **2. Long-term Memory (PostgreSQL)**
+</details>
 
-- **Persistent Storage**: Stores conversation history across sessions
-- **Q&A Pairs**: AI-extracted question-answer pairs with relevance scoring
-- **Session Summaries**: Intelligent conversation summaries with key topics
-- **Cross-session Continuity**: Enables conversation flow across multiple sessions
+<details>
+  <summary><strong>2. Long-term Memory (<code>PostgreSQL</code>) <em>(Toggle details)</em></strong></summary>
 
-#### **3. AI-Powered Query Reformulation**
+- <strong>Togglable:</strong> Enable or disable persistent storage of conversation history
+- <strong>Persistent Storage</strong>: Stores conversation history across sessions
+- <strong>Q&A Pairs</strong>: AI-extracted question-answer pairs with relevance scoring
+- <strong>Session Summaries</strong>: Intelligent conversation summaries with key topics
+- <strong>Cross-session Continuity</strong>: Enables conversation flow across multiple sessions
 
-- **Gemini Integration**: Uses Google's Gemini 2.0-flash for intelligent query enhancement
-- **Context Integration**: Incorporates recent conversation and relevant Q&A pairs
-- **Technical Enhancement**: Adds Stripe-specific terminology and concepts
-- **Fallback System**: Graceful fallback to rule-based reformulation if AI fails
+</details>
 
-#### **4. AI-Powered Conversation Summarization**
+<details>
+  <summary><strong>3. AI-Powered Query Reformulation <em>(Toggle details)</em></strong></summary>
 
-- **Gemini AI Integration**: Uses Google's Gemini 2.0-flash for intelligent conversation analysis
-- **Comprehensive Analysis**: Identifies main issues, solutions, outcomes, and technical details
-- **Context-Aware Summaries**: Incorporates key topics and conversation themes
-- **Intelligent Fallback**: Graceful degradation to rule-based summarization if AI unavailable
-- **Optimized Configuration**: Uses appropriate temperature and token limits for consistent summaries
+- <strong>Togglable:</strong> Enable or disable AI reformulation (Gemini)
+- <strong>Gemini Integration</strong>: Uses Google's Gemini 2.0-flash for intelligent query enhancement
+- <strong>Context Integration</strong>: Incorporates recent conversation and relevant Q&A pairs
+- <strong>Technical Enhancement</strong>: Adds Stripe-specific terminology and concepts
+- <strong>Fallback System</strong>: Graceful fallback to rule-based reformulation if AI fails
 
-#### **5. PostgreSQL Search Capabilities**
+</details>
 
-- **Full-text Search**: Uses PostgreSQL's `to_tsvector` and `plainto_tsquery` for English language processing
-- **Multi-field Search**: Searches across questions, answers, and context fields
-- **Relevance Ranking**: Combines AI-calculated scores with PostgreSQL text ranking
-- **Session Filtering**: Context-aware filtering by session and user
+<details>
+  <summary><strong>4. AI-Powered Conversation Summarization <em>(Toggle details)</em></strong></summary>
+
+- <strong>Togglable:</strong> Enable or disable Gemini-powered summarization
+- <strong>Gemini AI Integration</strong>: Uses Google's Gemini 2.0-flash for intelligent conversation analysis
+- <strong>Comprehensive Analysis</strong>: Identifies main issues, solutions, outcomes, and technical details
+- <strong>Context-Aware Summaries</strong>: Incorporates key topics and conversation themes
+- <strong>Intelligent Fallback</strong>: Graceful degradation to rule-based summarization if AI unavailable
+- <strong>Optimized Configuration</strong>: Uses appropriate temperature and token limits for consistent summaries
+
+</details>
+
+<details>
+  <summary><strong>5. PostgreSQL Search Capabilities <em>(Toggle details)</em></strong></summary>
+
+- <strong>Togglable:</strong> Enable or disable enhanced PostgreSQL-based search
+- <strong>Full-text Search</strong>: Uses PostgreSQL's <code>to_tsvector</code> and <code>plainto_tsquery</code> for English language processing
+- <strong>Multi-field Search</strong>: Searches across questions, answers, and context fields
+- <strong>Relevance Ranking</strong>: Combines AI-calculated scores with PostgreSQL text ranking
+- <strong>Session Filtering</strong>: Context-aware filtering by session and user
+
+</details>
 
 ### Memory Database Schema
 
 #### **Core Tables**
 
-**`conversation_sessions`**
+<details>
+  <summary><strong><code>conversation_sessions</code></strong> <em>(Toggle details)</em></summary>
 
 - Stores conversation sessions with metadata
 - Tracks active sessions and user associations
 - Includes session statistics and timestamps
 
-**`conversation_messages`**
+</details>
+
+<details>
+  <summary><strong><code>conversation_messages</code></strong> <em>(Toggle details)</em></summary>
 
 - Individual messages within conversations
 - Supports user, assistant, and system roles
 - Includes metadata for message context
 
-**`conversation_qa_pairs`**
+</details>
+
+<details>
+  <summary><strong><code>conversation_qa_pairs</code></strong> <em>(Toggle details)</em></summary>
 
 - AI-extracted Q&A pairs for long-term memory
 - Includes relevance scoring and importance flags
 - Supports tagging and context information
 
-**`conversation_summaries`**
+</details>
+
+<details>
+  <summary><strong><code>conversation_summaries</code></strong> <em>(Toggle details)</em></summary>
 
 - Session-level summaries for context
 - Tracks key topics and conversation themes
 - Enables quick session overview
 
-**`memory_retrieval_cache`**
+</details>
+
+<details>
+  <summary><strong><code>memory_retrieval_cache</code></strong> <em>(Toggle details)</em></summary>
 
 - Performance cache for memory retrieval
 - Reduces database load for frequent queries
 - Includes expiration and cleanup mechanisms
+
+</details>
 
 ### Memory Search Implementation
 
@@ -339,30 +487,42 @@ console.log(reformulation.method); // "gemini_ai" or "rule_based_fallback"
 
 ### Memory System Benefits
 
-#### **1. Context-Aware Responses**
+<details>
+  <summary><strong>1. Context-Aware Responses <em>(toggleable)</em></strong></summary>
 
-- Maintains conversation flow across multiple turns
-- References previous discussions when relevant
-- Provides personalized responses based on conversation history
+- Maintains conversation flow across multiple turns _(can be enabled/disabled)_
+- References previous discussions when relevant _(toggleable)_
+- Provides personalized responses based on conversation history _(toggleable)_
 
-#### **2. Enhanced Search Quality**
+</details>
 
-- AI-powered query reformulation improves search relevance by 3-5x
-- Context integration ensures relevant results from conversation history
-- Technical enhancement adds Stripe-specific terminology
+<details>
+  <summary><strong>2. Enhanced Search Quality <em>(toggleable)</em></strong></summary>
 
-#### **3. Cross-Session Continuity**
+- AI-powered query reformulation to improve search relevance by 3-5x _(toggleable: AI reformulation)_
+- Context integration to ensure relevant results from conversation history _(toggleable: context injection)_
+- Technical enhancement to add Stripe-specific terminology _(toggleable: terminology enrichment)_
 
-- Enables seamless conversation flow across multiple sessions
-- Maintains user context and preferences
-- Provides consistent experience across interactions
+</details>
 
-#### **4. Performance Optimization**
+<details>
+  <summary><strong>3. Cross-Session Continuity <em>(toggleable)</em></strong></summary>
 
-- Efficient memory management with sliding windows
-- Cached retrieval for improved performance
-- Automatic cleanup of old data
-- AI-powered optimization for better memory utilization
+- Seamless conversation flow across multiple sessions _(toggleable: memory persistence)_
+- Maintains user context and preferences _(toggleable)_
+- Consistent experience across interactions _(toggleable)_
+
+</details>
+
+<details>
+  <summary><strong>4. Performance Optimization <em>(toggleable)</em></strong></summary>
+
+- Efficient memory management with sliding windows _(toggleable: sliding window size/activation)_
+- Cached retrieval for improved performance _(toggleable: cache on/off)_
+- Automatic cleanup of old data _(toggleable: retention policy)_
+- AI-powered optimization for better memory utilization _(toggleable: AI memory optimization)_
+
+</details>
 
 ### AI Conversation Summarization
 
@@ -413,23 +573,6 @@ Next steps: The user should implement the provided signature verification middle
 4. **AI Response**: Gemini generates a contextual response with source citations
 5. **User Answer**: Final answer delivered with references to Stripe documentation
 
-### Data Ingestion Process
-
-1. **Web Scraping**: Scrape Stripe documentation content
-2. **Raw Storage**: Store raw documents in PostgreSQL
-3. **Document Processing**: Chunk documents using advanced chunking with code detection
-4. **Processed Storage**: Store processed chunks in PostgreSQL
-5. **Vector Generation**: Generate embeddings using Google's text-embedding-004 model
-6. **Vector Storage**: Store embeddings in Pinecone for semantic search
-
-### Key Components
-
-- **Chat Service**: Handles user interactions and AI responses
-- **Hybrid Search**: Combines BM25 keyword search with vector semantic search
-- **PostgreSQL**: Stores document chunks with full-text search capabilities
-- **Pinecone**: Vector database for semantic similarity search
-- **Gemini API**: Powers AI responses and text embeddings
-
 ## 📁 Project Structure
 
 ```
@@ -443,19 +586,34 @@ Backend/
 ├── routes/                     # API route definitions
 ├── services/
 │   ├── documentStorageService.js    # Document storage operations
-│   └── postgresBM25Service.js       # PostgreSQL BM25 search
+│   ├── postgresBM25Service.js       # PostgreSQL BM25 search
+│   ├── mcpIntegrationService.js     # MCP integration service
+│   ├── mcp-server/                  # MCP server components
+│   │   ├── agentOrchestrator.js    # MCP tool coordinator
+│   │   ├── aiToolSelectionService.js # AI-powered tool selection
+│   │   └── toolConfigManager.js    # Tool configuration manager
+│   └── mcp-tools/                  # MCP tool implementations
+│       ├── calculatorTool.js       # Mathematical calculations
+│       ├── statusCheckerTool.js     # System status checking
+│       ├── webSearchTool.js         # Web search functionality
+│       ├── codeValidatorTool.js     # Code validation
+│       └── dateTimeTool.js          # Date/time operations
 ├── scripts/
 │   ├── chat.js                # AI-powered chat interface
+│   ├── mcpDemo.js             # MCP integration demo
 │   ├── scraper.js              # Web scraper for Stripe docs
 │   ├── ingest.js               # Document ingestion pipeline
 │   ├── migrate-to-postgres.js  # Database migration script
 │   ├── setup_database.sql      # Database schema
 │   └── setup_raw_documents.sql # Raw documents schema
+├── examples/
+│   └── mcpChatExample.js       # MCP-enhanced chat example
 ├── tests/                      # Test suite
 │   ├── testChatIntegration.js
 │   ├── testHybridSearch.js
 │   ├── testPostgreSQL.js
-│   └── testDocumentLoading.js
+│   ├── testDocumentLoading.js
+│   └── testMCPIntegration.js   # MCP integration tests
 ├── utils/
 │   ├── advancedChunker.js      # Intelligent document chunking
 │   └── codeDetector.js         # Code detection utilities
@@ -717,32 +875,6 @@ npm run test:chat         # Chat integration
 npm run test:postgres     # PostgreSQL operations
 ```
 
-### Configuration Management
-
-#### Environment Variables
-
-```env
-# AI Configuration
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=stripe_support
-DB_USER=your_username
-DB_PASSWORD=your_password
-
-# Vector Database
-PINECONE_API_KEY=your_pinecone_api_key_here
-PINECONE_INDEX_NAME=stripe-docs
-
-# Processing Configuration
-CHUNK_SIZE=800
-CHUNK_OVERLAP=100
-MAX_CHUNKS=10
-BATCH_SIZE=5
-```
-
 #### Database Schema
 
 ```sql
@@ -777,6 +909,7 @@ npm run test:chat         # Chat integration tests
 npm run test:postgres     # PostgreSQL tests
 npm run test:memory       # Memory system tests
 npm run test:gemini-reformulation  # Gemini AI query reformulation tests
+npm run test:mcp          # MCP integration tests
 ```
 
 ## 🔧 Development
@@ -793,6 +926,11 @@ npm run setup:memory   # Setup memory system schema
 npm run setup          # Full setup (scrape + ingest + memory)
 npm run dev            # Development mode
 npm test               # Run test suite
+
+# MCP Integration Scripts
+npm run test:mcp       # Test MCP integration
+npm run demo:mcp       # Run MCP interactive demo
+node examples/mcpChatExample.js  # Start MCP-enhanced chat
 ```
 
 ### Development Workflow
@@ -871,288 +1009,3 @@ npm run ingest
 # Verify data ingestion
 npm run test:postgres
 ```
-
-#### 4. Application Deployment
-
-```bash
-# Install production dependencies
-npm ci --only=production
-
-# Start the application
-npm start
-```
-
-### Docker Deployment
-
-#### Dockerfile
-
-```dockerfile
-FROM node:18-alpine
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy application code
-COPY . .
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
-
-# Change ownership
-RUN chown -R nodejs:nodejs /app
-USER nodejs
-
-# Expose port
-EXPOSE 5000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/ || exit 1
-
-# Start application
-CMD ["npm", "start"]
-```
-
-#### Docker Compose
-
-```yaml
-version: "3.8"
-
-services:
-  app:
-    build: .
-    ports:
-      - "5000:5000"
-    environment:
-      - NODE_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=stripe_support
-      - DB_USER=stripe_user
-      - DB_PASSWORD=stripe_password
-    depends_on:
-      - postgres
-    volumes:
-      - ./data:/app/data
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=stripe_support
-      - POSTGRES_USER=stripe_user
-      - POSTGRES_PASSWORD=stripe_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/setup_database.sql:/docker-entrypoint-initdb.d/setup.sql
-
-volumes:
-  postgres_data:
-```
-
-### Cloud Deployment
-
-#### AWS Deployment
-
-```bash
-# Using AWS CLI
-aws ec2 run-instances \
-  --image-id ami-0c02fb55956c7d316 \
-  --instance-type t3.medium \
-  --key-name your-key-pair \
-  --security-groups your-security-group \
-  --user-data file://user-data.sh
-```
-
-#### Heroku Deployment
-
-```bash
-# Create Heroku app
-heroku create stripe-support-agent
-
-# Set environment variables
-heroku config:set GEMINI_API_KEY=your_key
-heroku config:set PINECONE_API_KEY=your_key
-heroku config:set DB_HOST=your_db_host
-
-# Deploy
-git push heroku main
-```
-
-#### Render Deployment
-
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: stripe-support-agent
-    env: node
-    buildCommand: npm install
-    startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: GEMINI_API_KEY
-        fromDatabase:
-          name: stripe-support-db
-          property: gemini_api_key
-```
-
-### Performance Optimization
-
-#### Database Optimization
-
-```sql
--- Create indexes for better performance
-CREATE INDEX CONCURRENTLY idx_document_chunks_category
-ON document_chunks(category);
-
-CREATE INDEX CONCURRENTLY idx_document_chunks_source
-ON document_chunks(source);
-
--- Analyze tables for query optimization
-ANALYZE document_chunks;
-```
-
-#### Application Optimization
-
-```javascript
-// Enable compression
-app.use(compression());
-
-// Set up caching
-app.use(cache("5 minutes"));
-
-// Rate limiting
-const rateLimit = require("express-rate-limit");
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-});
-app.use(limiter);
-```
-
-### Monitoring & Logging
-
-#### Health Checks
-
-```javascript
-// Health check endpoint
-app.get("/health", async (req, res) => {
-  try {
-    // Check database connection
-    await pool.query("SELECT 1");
-
-    // Check Pinecone connection
-    await pinecone.describeIndexStats();
-
-    res.json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      services: {
-        database: "connected",
-        pinecone: "connected",
-        gemini: "configured",
-      },
-    });
-  } catch (error) {
-    res.status(503).json({
-      status: "unhealthy",
-      error: error.message,
-    });
-  }
-});
-```
-
-#### Logging Configuration
-
-```javascript
-// Winston logging setup
-const winston = require("winston");
-
-const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: "error.log", level: "error" }),
-    new winston.transports.File({ filename: "combined.log" }),
-    new winston.transports.Console({
-      format: winston.format.simple(),
-    }),
-  ],
-});
-```
-
-### Security Considerations
-
-#### Environment Security
-
-```bash
-# Use environment-specific configs
-cp env.example .env.production
-
-# Secure API keys
-export GEMINI_API_KEY="$(vault kv get -field=api_key secret/gemini)"
-export PINECONE_API_KEY="$(vault kv get -field=api_key secret/pinecone)"
-```
-
-#### Database Security
-
-```sql
--- Create restricted user
-CREATE USER stripe_app WITH PASSWORD 'secure_password';
-GRANT SELECT, INSERT, UPDATE ON document_chunks TO stripe_app;
-GRANT USAGE ON SEQUENCE document_chunks_id_seq TO stripe_app;
-```
-
-### Backup & Recovery
-
-#### Database Backup
-
-```bash
-# Create backup
-pg_dump -h localhost -U stripe_user stripe_support > backup_$(date +%Y%m%d).sql
-
-# Restore from backup
-psql -h localhost -U stripe_user stripe_support < backup_20231201.sql
-```
-
-#### Automated Backups
-
-```bash
-#!/bin/bash
-# backup.sh
-DATE=$(date +%Y%m%d_%H%M%S)
-pg_dump -h $DB_HOST -U $DB_USER $DB_NAME > "backup_$DATE.sql"
-aws s3 cp "backup_$DATE.sql" s3://your-backup-bucket/
-```
-
-## 📊 Performance
-
-- **Hybrid Search**: Combines BM25 and semantic search for optimal results
-- **Intelligent Chunking**: Advanced chunking with code detection
-- **Rate Limiting**: Built-in rate limiting for API stability
-- **Caching**: Efficient caching of search results
-- **Scalability**: PostgreSQL-based storage for large document collections
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `npm test`
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the ISC License.

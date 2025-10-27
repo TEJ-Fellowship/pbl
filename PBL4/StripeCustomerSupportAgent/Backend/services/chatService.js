@@ -4,6 +4,8 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "./postgresBM25Service.js";
 import MemoryController from "../controllers/memoryController.js";
+import QueryClassifier from "./queryClassifier.js";
+import MCPIntegrationService from "./mcpIntegrationService.js";
 import config from "../config/config.js";
 
 class ChatService {
@@ -13,6 +15,8 @@ class ChatService {
     this.vectorStore = null;
     this.hybridSearch = null;
     this.memoryController = null;
+    this.queryClassifier = null;
+    this.mcpService = null;
     this.isInitialized = false;
     this.sessionTokenCounts = new Map(); // Track tokens per session
   }
@@ -145,6 +149,17 @@ class ChatService {
       this.memoryController = new MemoryController();
       console.log("      ✅ Memory controller initialized");
 
+      // Initialize MCP service
+      console.log("   🔧 Initializing MCP service...");
+      this.mcpService = new MCPIntegrationService();
+      await this.mcpService.initialize();
+      console.log("      ✅ MCP service initialized");
+
+      // Initialize query classifier
+      console.log("   🤖 Initializing query classifier...");
+      this.queryClassifier = new QueryClassifier(this.mcpService.orchestrator);
+      console.log("      ✅ Query classifier initialized");
+
       this.isInitialized = true;
       console.log("🎉 Chat service fully initialized and ready!");
     } catch (error) {
@@ -220,28 +235,80 @@ class ChatService {
         } recent messages`
       );
 
-      // Use reformulated query for retrieval
-      const searchQuery = memoryContext.reformulatedQuery || message;
-      console.log(`🔍 Searching with: "${searchQuery.substring(0, 100)}..."`);
-
-      // Retrieve relevant chunks using hybrid search
-      const chunks = await this.hybridSearch.hybridSearch(
-        searchQuery,
-        parseInt(config.MAX_CHUNKS) || 5
-      );
-
-      if (chunks.length === 0) {
-        throw new Error(
-          "No relevant information found. Try rephrasing your question."
-        );
-      }
-
-      // Generate response with memory context
-      const response = await this.generateResponseWithMemory(
+      // Step 1: Classify the query to decide approach
+      const enabledTools = this.mcpService.getEnabledTools();
+      const classification = await this.queryClassifier.classifyQuery(
         message,
-        chunks,
-        memoryContext
+        0.5,
+        enabledTools
       );
+      console.log(
+        `📊 Classification: ${classification.approach} - ${classification.reasoning}`
+      );
+
+      let response;
+      let searchQuery = memoryContext.reformulatedQuery || message;
+
+      // Step 2: Route based on classification
+      if (classification.approach === "MCP_TOOLS_ONLY") {
+        console.log("🔧 Using MCP tools only approach");
+
+        // Try MCP tools first
+        const mcpResult = await this.mcpService.processQueryWithMCP(
+          message,
+          0.5
+        );
+
+        if (mcpResult.success && mcpResult.enhancedResponse) {
+          // Generate response using MCP tools only
+          response = await this.generateResponseWithMCP(
+            message,
+            [], // No chunks needed for MCP-only
+            mcpResult.enhancedResponse,
+            mcpResult.toolsUsed || [],
+            mcpResult.confidence || 0
+          );
+        } else {
+          // Fallback to hybrid search if MCP fails
+          console.log("⚠️ MCP tools failed, falling back to hybrid search");
+          response = await this.fallbackToHybridSearch(message, memoryContext);
+        }
+      } else if (classification.approach === "HYBRID_SEARCH") {
+        console.log("🔍 Using hybrid search approach");
+        response = await this.fallbackToHybridSearch(message, memoryContext);
+      } else if (classification.approach === "COMBINED") {
+        console.log("🔧 Using combined MCP + hybrid search approach");
+
+        // Get hybrid search results first
+        const chunks = await this.hybridSearch.hybridSearch(
+          searchQuery,
+          parseInt(config.MAX_CHUNKS) || 5
+        );
+
+        if (chunks.length === 0) {
+          throw new Error(
+            "No relevant information found. Try rephrasing your question."
+          );
+        }
+
+        // Try MCP tools for enhancement
+        const mcpResult = await this.mcpService.processQueryWithMCP(
+          message,
+          0.5
+        );
+
+        // Generate response with both hybrid search and MCP
+        response = await this.generateResponseWithMemoryAndMCP(
+          message,
+          chunks,
+          memoryContext,
+          mcpResult
+        );
+      } else {
+        // Default to hybrid search
+        console.log("🔍 Using default hybrid search approach");
+        response = await this.fallbackToHybridSearch(message, memoryContext);
+      }
 
       // Count tokens for AI response (fallback if database fails)
       const aiResponseTokens = this.estimateTokenCount(response.answer);
@@ -254,8 +321,8 @@ class ChatService {
         searchQuery: searchQuery,
       });
 
-      // Calculate confidence score
-      const confidence = this.calculateConfidence(chunks, response.sources);
+      // Calculate confidence score (use empty array for MCP-only responses)
+      const confidence = this.calculateConfidence([], response.sources);
 
       return {
         answer: response.answer,
@@ -267,6 +334,229 @@ class ChatService {
       };
     } catch (error) {
       console.error("❌ Chat service error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fallback to hybrid search when MCP tools fail or for hybrid-only approach
+   */
+  async fallbackToHybridSearch(message, memoryContext) {
+    const searchQuery = memoryContext.reformulatedQuery || message;
+    console.log(`🔍 Searching with: "${searchQuery.substring(0, 100)}..."`);
+
+    // Retrieve relevant chunks using hybrid search
+    const chunks = await this.hybridSearch.hybridSearch(
+      searchQuery,
+      parseInt(config.MAX_CHUNKS) || 5
+    );
+
+    if (chunks.length === 0) {
+      throw new Error(
+        "No relevant information found. Try rephrasing your question."
+      );
+    }
+
+    // Generate response with memory context
+    return await this.generateResponseWithMemory(
+      message,
+      chunks,
+      memoryContext
+    );
+  }
+
+  /**
+   * Generate response using MCP tools only
+   */
+  async generateResponseWithMCP(
+    query,
+    chunks,
+    mcpEnhancement,
+    toolsUsed,
+    mcpConfidence
+  ) {
+    try {
+      console.log("🤖 Generating response with MCP tools only...");
+
+      // Use MCP tool results with simple prompt
+      const prompt = `You are a helpful assistant. Answer the user's question based on the provided information.
+
+      USER QUESTION: ${query}
+
+      MCP TOOL ENHANCEMENT:
+      ${mcpEnhancement}
+
+      TOOLS USED: ${toolsUsed.join(", ")}
+      MCP CONFIDENCE: ${(mcpConfidence * 100).toFixed(1)}%
+
+      Provide a clear, helpful response based on the MCP tool results.`;
+
+      const model = this.geminiClient.getGenerativeModel({
+        model: "gemini-2.5-flash",
+      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      return {
+        answer: text,
+        sources: [], // No sources for MCP-only responses
+      };
+    } catch (error) {
+      console.error("❌ MCP response generation failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate response with both memory context and MCP tools
+   */
+  async generateResponseWithMemoryAndMCP(
+    query,
+    chunks,
+    memoryContext,
+    mcpResult
+  ) {
+    try {
+      console.log("🤖 Generating response with memory and MCP integration...");
+
+      // Limit sources to most relevant ones
+      const maxSources = parseInt(config.MAX_SOURCES) || 3;
+      const limitedChunks = chunks.slice(0, maxSources);
+
+      // Prepare context from chunks
+      const context = limitedChunks
+        .map((chunk, index) => {
+          const title =
+            chunk.metadata?.title ||
+            chunk.metadata?.doc_title ||
+            `Document ${index + 1}`;
+          const category = chunk.metadata?.category || "documentation";
+          return `[Source ${index + 1}: ${title} (${category})]\n${
+            chunk.content
+          }`;
+        })
+        .join("\n\n");
+
+      const sources = limitedChunks.map((chunk, index) => {
+        let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+        if (!title || title.trim() === "") {
+          const contentLines = chunk.content
+            .split("\n")
+            .filter((line) => line.trim() !== "");
+          const firstLine = contentLines[0] || "";
+          title =
+            firstLine.length > 60
+              ? firstLine.substring(0, 60) + "..."
+              : firstLine;
+          if (!title) title = "Stripe Documentation";
+        }
+
+        title = title
+          .replace(/^#+\s*/, "")
+          .replace(/\n.*$/, "")
+          .trim();
+
+        const category = chunk.metadata?.category || "documentation";
+        const url =
+          chunk.metadata?.source ||
+          chunk.metadata?.source_url ||
+          "https://stripe.com/docs";
+
+        return {
+          content: chunk.content,
+          metadata: chunk.metadata,
+          title: title,
+          category: category,
+          url: url,
+          similarity: chunk.similarity || chunk.finalScore,
+          score: chunk.finalScore || 0,
+          index: index + 1,
+        };
+      });
+
+      // Build memory context string
+      let memoryContextString = "";
+      if (
+        memoryContext.recentContext &&
+        memoryContext.recentContext.hasContext
+      ) {
+        memoryContextString += `\n\nRECENT CONVERSATION CONTEXT:\n${memoryContext.recentContext.contextString}`;
+      }
+
+      if (
+        memoryContext.longTermContext &&
+        memoryContext.longTermContext.hasLongTermContext
+      ) {
+        const relevantQAs = memoryContext.longTermContext.relevantQAs;
+        if (relevantQAs && relevantQAs.length > 0) {
+          memoryContextString += `\n\nRELEVANT PREVIOUS DISCUSSIONS:\n`;
+          relevantQAs.forEach((qa, index) => {
+            memoryContextString += `[Previous Q&A ${index + 1}] Q: ${
+              qa.question
+            }\nA: ${qa.answer.substring(0, 200)}...\n\n`;
+          });
+        }
+      }
+
+      // Build MCP enhancement string
+      let mcpEnhancementString = "";
+      if (mcpResult && mcpResult.success && mcpResult.enhancedResponse) {
+        mcpEnhancementString = `\n\nMCP TOOL ENHANCEMENT:\n${
+          mcpResult.enhancedResponse
+        }\nTools Used: ${(mcpResult.toolsUsed || []).join(", ")}`;
+      }
+
+      // Generate response using Gemini
+      const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+
+          You have access to both current Stripe documentation and previous conversation context to provide contextually aware responses.
+
+          CURRENT STRIPE DOCUMENTATION:
+          ${context}
+
+          CURRENT USER QUESTION: ${query}
+          ${memoryContextString}${mcpEnhancementString}
+
+          RESPONSE GUIDELINES:
+          1. **Context Awareness**: Use previous conversation context to provide more relevant and personalized responses
+          2. **Accuracy First**: Base your answer strictly on the provided Stripe documentation context
+          3. **MCP Integration**: Incorporate MCP tool results when available to enhance your response
+          4. **Continuity**: Reference previous discussions when relevant to maintain conversation flow
+          5. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
+          6. **Include Code**: Always include practical code examples in the appropriate programming language
+          7. **Step-by-Step**: Break down complex processes into clear, actionable steps
+          8. **Error Handling**: Mention common errors and how to handle them
+          9. **Best Practices**: Include security considerations and best practices
+          10. **If Uncertain**: Clearly state when information isn't available in the context
+
+          FORMAT YOUR RESPONSE:
+          - Start with a direct answer to the question
+          - Reference previous context when relevant (e.g., "Building on our previous discussion about...")
+          - Provide detailed explanation with code examples
+          - Include relevant API endpoints and parameters
+          - Mention any prerequisites or setup requirements
+          - Focus on being helpful and practical
+          - Do NOT include source citations in your response - they will be added automatically
+
+          Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
+
+      const model = this.geminiClient.getGenerativeModel({
+        model: "gemini-2.5-flash",
+      });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Post-process the response to add formatted sources
+      const formattedResponse = this.addFormattedSources(text, sources, query);
+
+      return {
+        answer: formattedResponse,
+        sources: sources,
+      };
+    } catch (error) {
+      console.error("❌ Combined response generation failed:", error);
       throw error;
     }
   }
@@ -514,6 +804,8 @@ Remember: You're helping developers build payment solutions with full awareness 
         vectorStore: !!this.vectorStore,
         hybridSearch: !!this.hybridSearch,
         memoryController: !!this.memoryController,
+        queryClassifier: !!this.queryClassifier,
+        mcpService: !!this.mcpService,
       },
     };
   }

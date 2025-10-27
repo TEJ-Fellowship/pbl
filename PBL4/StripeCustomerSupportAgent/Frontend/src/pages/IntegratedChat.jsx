@@ -1,19 +1,18 @@
 import React from "react";
 import { useIntegratedChat } from "../hooks/useIntegratedChat";
-import ChatHeader from "../components/chat/ChatHeader";
 import IntegratedChatMessages from "../components/chat/IntegratedChatMessages";
 import ChatInput from "../components/chat/ChatInput";
+import ChatHeader from "../components/chat/ChatHeader";
 import ChatHistory from "../components/chat/ChatHistory";
 import TokenUsageIndicator from "../components/chat/TokenUsageIndicator";
 
-const Chat = () => {
+const IntegratedChat = () => {
   const {
     messages,
     inputValue,
     setInputValue,
     isTyping,
     chatHistory,
-    isLoadingSessions,
     currentSessionId,
     messagesEndRef,
     error,
@@ -78,7 +77,6 @@ const Chat = () => {
       {/* Chat History Sidebar */}
       <ChatHistory
         chatHistory={chatHistory}
-        isLoadingSessions={isLoadingSessions}
         currentSessionId={currentSessionId}
         handleNewChat={handleNewChat}
         handleChatSelect={handleChatSelect}
@@ -88,4 +86,4 @@ const Chat = () => {
   );
 };
 
-export default Chat;
+export default IntegratedChat;

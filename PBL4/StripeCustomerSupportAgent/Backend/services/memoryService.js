@@ -202,6 +202,111 @@ class MemoryService {
       throw error;
     }
   }
+
+  /**
+   * Get all sessions for a user
+   */
+  async getAllSessions(userId, limit = 50, offset = 0) {
+    try {
+      console.log(`📚 Getting all sessions for user: ${userId}`);
+
+      // Get sessions from PostgreSQL through memory controller
+      const sessions =
+        await this.memoryController.postgresMemory.getAllSessions(
+          userId,
+          limit,
+          offset
+        );
+
+      // Format sessions for frontend
+      const formattedSessions = sessions.map((session, index) => {
+        // Generate a better title from the first user message
+        let title = "New Conversation";
+        if (session.first_user_message) {
+          // Clean and truncate the first user message for title
+          const cleanMessage = session.first_user_message
+            .replace(/[^\w\s]/g, "") // Remove special characters
+            .trim();
+
+          if (cleanMessage.length > 0) {
+            title =
+              cleanMessage.length > 50
+                ? cleanMessage.substring(0, 50) + "..."
+                : cleanMessage;
+          }
+        }
+
+        // Fallback to timestamp-based title if no user message
+        if (title === "New Conversation" && session.created_at) {
+          const date = new Date(session.created_at);
+          title = `Chat ${date.toLocaleDateString()} ${date.toLocaleTimeString(
+            [],
+            { hour: "2-digit", minute: "2-digit" }
+          )}`;
+        }
+
+        return {
+          id: session.id || index + 1,
+          sessionId: session.session_id,
+          title: title,
+          lastMessage: session.last_message || "No messages yet",
+          timestamp: new Date(session.updated_at || session.created_at),
+          messageCount: session.message_count || 0,
+          type: "integrated",
+          createdAt: new Date(session.created_at),
+          updatedAt: new Date(session.updated_at || session.created_at),
+          isActive: session.is_active,
+          hasSummary: !!session.conversation_summary,
+        };
+      });
+
+      console.log(
+        `📊 Found ${formattedSessions.length} sessions for user: ${userId}`
+      );
+      return formattedSessions;
+    } catch (error) {
+      console.error("❌ Memory service - get all sessions error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed information about a specific session
+   */
+  async getSessionDetails(sessionId) {
+    try {
+      console.log(`📋 Getting session details for: ${sessionId}`);
+
+      // Initialize session in memory controller
+      await this.memoryController.initializeSession(sessionId, "web_user", {
+        project: "stripe_support",
+        context: "customer_support_with_mcp",
+      });
+
+      // Get session context and stats
+      const sessionContext = await this.memoryController.getSessionContext();
+      const sessionStats = await this.memoryController.getSessionStats();
+
+      // Get conversation history
+      const history = await this.getConversationHistory(sessionId, 50, 0);
+
+      return {
+        sessionId,
+        userId: "web_user",
+        messageCount: history.totalCount || 0,
+        messages: history.messages || [],
+        conversationSummary: sessionContext?.conversationSummary,
+        stats: sessionStats,
+        isActive: sessionContext?.isActive || true,
+        createdAt:
+          sessionContext?.metadata?.startTime || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("❌ Memory service - get session details error:", error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
