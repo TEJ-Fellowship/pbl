@@ -12,6 +12,7 @@ import { multiTurnManager } from "../src/multi-turn-conversation.js";
 import IntentClassificationService from "../src/services/intentClassificationService.js";
 import ProactiveSuggestionsService from "../src/services/proactiveSuggestionsService.js";
 import { AnalyticsService } from "../src/services/analyticsService.js";
+import { responseCache } from "../src/utils/responseCache.js";
 
 // Initialize markdown renderer
 const md = new MarkdownIt({
@@ -700,6 +701,13 @@ async function initializeAI() {
 // Main chat function with multi-turn conversation support
 export async function processChatMessage(message, sessionId) {
   try {
+    // Check cache first for duplicate queries (now with semantic matching)
+    const cachedResponse = await responseCache.get(message, sessionId);
+    if (cachedResponse) {
+      console.log("[Response Cache] Returning cached response in ~5ms");
+      return cachedResponse;
+    }
+
     await initializeAI();
 
     const startTime = Date.now();
@@ -828,7 +836,7 @@ export async function processChatMessage(message, sessionId) {
       await assistantMessage.save();
       await conversation.addMessage(assistantMessage._id);
 
-      return {
+      const response = {
         answer: finalAnswer,
         confidence: {
           score: 85,
@@ -843,6 +851,10 @@ export async function processChatMessage(message, sessionId) {
         },
         isWebSearch: true,
       };
+
+      // Cache web search responses (now with semantic matching)
+      await responseCache.set(message, sessionId, response);
+      return response;
     }
 
     // Smart routing: Handle MCP tool queries (mathematical, date/time, code validation, currency conversion)
@@ -1082,7 +1094,7 @@ export async function processChatMessage(message, sessionId) {
     await assistantMessage.save();
     await conversation.addMessage(assistantMessage._id);
 
-    return {
+    const response = {
       answer: finalAnswer,
       confidence,
       sources: results.map((r, i) => ({
@@ -1115,6 +1127,12 @@ export async function processChatMessage(message, sessionId) {
       },
       proactiveSuggestions: suggestionsResult,
     };
+
+    // Cache the response for duplicate queries (now with semantic matching)
+    // Cache regardless of follow-up status to handle repeated identical queries
+    await responseCache.set(message, sessionId, response);
+
+    return response;
   } catch (error) {
     console.error("Error processing chat message:", error);
     throw error;

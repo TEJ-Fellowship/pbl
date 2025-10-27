@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { connectDB } from "../config/db.js";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
+import { ConversationStateManager } from "./memory/ConversationStateManager.js";
 
 /**
  * Enhanced Multi-Turn Conversation Manager
@@ -19,8 +20,12 @@ export class MultiTurnConversationManager {
     this.COMPRESSION_INTERVAL = 10; // Compress every 10 turns
     this.MAX_CONTEXT_TURNS = 20; // Maximum turns before forced compression
 
-    // Conversation state tracking
-    this.conversationStates = new Map(); // sessionId -> state
+    // Conversation state tracking with TTL and LRU eviction
+    this.conversationStates = new ConversationStateManager({
+      maxSize: 1000, // Max 1000 active sessions
+      maxAge: 3600000, // 1 hour TTL
+      cleanupInterval: 60000, // Cleanup every minute
+    });
   }
 
   /**
@@ -951,6 +956,7 @@ EXPERT ANSWER:`;
    */
   cleanupConversationState(sessionId) {
     this.conversationStates.delete(sessionId);
+    console.log(`[Memory Cleanup] Manually cleaned up session: ${sessionId}`);
   }
 
   /**

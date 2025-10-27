@@ -54,8 +54,11 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for efficient querying
-messageSchema.index({ conversationId: 1, timestamp: -1 });
+// Strategic indexes for performance optimization (Tier 3)
+// Compound indexes for efficient querying
+messageSchema.index({ conversationId: 1, timestamp: -1 }); // Already exists
+messageSchema.index({ role: 1, timestamp: -1 }); // For role-based queries
+messageSchema.index({ timestamp: -1 }); // For global message retrieval
 
 // Method to get formatted message for context
 messageSchema.methods.getFormattedMessage = function () {
