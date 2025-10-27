@@ -47,6 +47,32 @@ const messageSchema = new mongoose.Schema(
         toolsUsed: [String],
         toolResults: Object,
       },
+      // Multi-turn conversation context
+      multiTurnContext: {
+        turnCount: Number,
+        isFollowUp: Boolean,
+        userPreferences: {
+          merchantPlanTier: String,
+          storeType: String,
+          industry: String,
+          experienceLevel: String,
+          location: String,
+        },
+        contextualQuery: String,
+      },
+      // Intent classification
+      intentClassification: {
+        intent: String,
+        confidence: Number,
+        method: String,
+        routingConfig: Object,
+      },
+      // Proactive suggestions
+      proactiveSuggestions: [Object],
+      // Query classification
+      queryClassification: Object,
+      // Clarification processed flag
+      clarificationProcessed: Boolean,
     },
   },
   {
