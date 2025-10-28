@@ -1756,7 +1756,7 @@
 }
 
 .clarifying-question::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -1768,8 +1768,12 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .clarifying-header {
@@ -1924,24 +1928,24 @@
   .sidebar-header {
     padding: 0.75rem 1rem;
   }
-  
+
   .clarifying-question {
     margin: 0.75rem 0;
     padding: 1rem;
   }
-  
+
   .apis-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .api-option {
     padding: 0.875rem;
   }
-  
+
   .clarifying-title {
     font-size: 1rem;
   }
-  
+
   .clarifying-question-text {
     font-size: 0.95rem;
   }
@@ -2072,7 +2076,7 @@
 }
 
 .proactive-suggestions::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -2128,7 +2132,7 @@
 }
 
 .suggestion-item::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -2389,6 +2393,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 95vw;
+  height: 95vh;
 }
 
 .analytics-header {
@@ -2399,6 +2405,11 @@
   border-bottom: 1px solid #e1e5e9;
   background: linear-gradient(135deg, #2d5016 0%, #20b2aa 50%, #4caf50 100%);
   color: white;
+}
+
+.analytics-header + * {
+  overflow-y: auto;
+  flex: 1;
 }
 
 .analytics-header h2 {
@@ -2433,7 +2444,6 @@
   gap: 10px;
   align-items: center;
 }
-
 
 .context-compressed-indicator {
   background: rgba(255, 152, 0, 0.1);

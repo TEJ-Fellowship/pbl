@@ -918,6 +918,10 @@ export async function processChatMessage(message, sessionId) {
     console.log(
       `🎯 Intent classified as: ${intentClassification.intent} (confidence: ${intentClassification.confidence})`
     );
+    console.log(
+      `🎯 Full intent classification object:`,
+      JSON.stringify(intentClassification, null, 2)
+    );
 
     // Get routing configuration based on intent
     const routingConfig = intentClassifier.getRoutingConfig(
@@ -936,6 +940,11 @@ export async function processChatMessage(message, sessionId) {
     // Check for edge cases
     const edgeCase = handleEdgeCases(results, message);
     if (edgeCase) {
+      // Classify intent even for edge cases
+      const edgeIntentClassification = await intentClassifier.classifyIntent(
+        message
+      );
+
       const assistantMessage = new Message({
         conversationId: conversation._id,
         role: "assistant",
@@ -952,6 +961,11 @@ export async function processChatMessage(message, sessionId) {
           processingTime: Date.now() - startTime,
           tokensUsed: 0,
           queryClassification: queryClassification,
+          intentClassification: {
+            intent: edgeIntentClassification.intent,
+            confidence: edgeIntentClassification.confidence,
+            method: edgeIntentClassification.method,
+          },
         },
       });
       await assistantMessage.save();
@@ -970,6 +984,7 @@ export async function processChatMessage(message, sessionId) {
           content: r.doc,
         })),
         queryClassification: queryClassification,
+        intentClassification: edgeIntentClassification,
         isEdgeCase: true,
       };
     }
@@ -1013,15 +1028,10 @@ export async function processChatMessage(message, sessionId) {
     );
 
     // Track question for analytics
-    await analyticsService.trackQuestion(
-      message,
-      intentClassification.intent,
-      enhancedResponse.conversationState.userPreferences,
-      sessionId,
-      confidence,
-      results
-    );
-    console.log(`📊 Tracked question for analytics`);
+    // Note: We don't need to track here anymore as analytics now queries all user messages directly
+    // The trackQuestion method is kept for backward compatibility but is not needed
+    // await analyticsService.trackQuestion(...);
+    console.log(`📊 Analytics will be calculated from all user messages`);
 
     // Process with MCP tools if needed
     let finalAnswer = answer;
@@ -1080,6 +1090,20 @@ export async function processChatMessage(message, sessionId) {
       },
     });
     await assistantMessage.save();
+    console.log(`✅ SAVING ASSISTANT MESSAGE:`);
+    console.log(`   - User question: "${message}"`);
+    console.log(`   - Classified intent: "${intentClassification.intent}"`);
+    console.log(
+      `   - Stored intentClassification.intent: "${assistantMessage.metadata.intentClassification?.intent}"`
+    );
+    console.log(
+      `   - Has intentClassification: ${!!assistantMessage.metadata
+        .intentClassification}`
+    );
+    console.log(
+      `   - Intent object:`,
+      JSON.stringify(assistantMessage.metadata.intentClassification, null, 2)
+    );
     await conversation.addMessage(assistantMessage._id);
 
     return {
@@ -1352,6 +1376,11 @@ export async function processClarificationResponse(
       },
     });
     await assistantMessage.save();
+    console.log(`✅ Saved assistant message with intentClassification:`, {
+      intent: assistantMessage.metadata.intentClassification?.intent,
+      confidence: assistantMessage.metadata.intentClassification?.confidence,
+      hasIntentData: !!assistantMessage.metadata.intentClassification,
+    });
     await conversation.addMessage(assistantMessage._id);
 
     return {

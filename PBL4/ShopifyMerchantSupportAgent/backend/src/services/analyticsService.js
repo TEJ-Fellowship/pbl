@@ -10,7 +10,16 @@ import Conversation from "../../models/Conversation.js";
 export class AnalyticsService {
   constructor() {
     this.analyticsCache = new Map();
-    this.cacheExpiry = 5 * 60 * 1000; // 5 minutes cache
+    this.cacheExpiry = 30 * 1000; // 30 seconds cache for more real-time updates
+  }
+
+  /**
+   * Clear the analytics cache (useful when new messages are added)
+   */
+  clearCache() {
+    const size = this.analyticsCache.size;
+    this.analyticsCache.clear();
+    console.log(`🗑️ Cleared analytics cache (${size} entries)`);
   }
 
   /**
@@ -90,15 +99,25 @@ export class AnalyticsService {
 
       // Check cache first
       const cacheKey = JSON.stringify(filters);
+      console.log(`📊 Cache key for request: ${cacheKey}`);
       if (this.analyticsCache.has(cacheKey)) {
         const cached = this.analyticsCache.get(cacheKey);
-        if (Date.now() - cached.timestamp < this.cacheExpiry) {
+        const age = Date.now() - cached.timestamp;
+        console.log(
+          `📊 Cache hit! Age: ${age}ms (expiry: ${this.cacheExpiry}ms)`
+        );
+        if (age < this.cacheExpiry) {
+          console.log(`📊 Returning cached data`);
           return cached.data;
+        } else {
+          console.log(`📊 Cache expired, fetching fresh data`);
         }
+      } else {
+        console.log(`📊 Cache miss, fetching fresh data`);
       }
 
-      // Build query
-      const query = { "metadata.type": "analytics_tracking" };
+      // Build query for user messages - these are the actual questions
+      const query = { role: "user" };
 
       if (filters.dateFrom || filters.dateTo) {
         query.timestamp = {};
@@ -110,19 +129,278 @@ export class AnalyticsService {
         }
       }
 
+      // Get all user messages (questions)
+      const userMessages = await Message.find(query)
+        .sort({ timestamp: -1 })
+        .populate("conversationId");
+
+      console.log(
+        `📊 Found ${userMessages.length} user messages for analytics`
+      );
+
+      // Log the most recent user message to see timing
+      if (userMessages.length > 0) {
+        const mostRecent = userMessages[0];
+        console.log(`📊 Most recent user message:`, {
+          content: mostRecent.content?.substring(0, 80),
+          timestamp: mostRecent.timestamp,
+          ageSeconds:
+            (Date.now() - new Date(mostRecent.timestamp).getTime()) / 1000,
+        });
+      }
+
+      // Now get corresponding assistant messages to extract intent and merchant info
+      const processedMessages = await Promise.all(
+        userMessages.map(async (userMsg, index) => {
+          // Find the next assistant message in the same conversation
+          // Use limit(1) to ensure we only get ONE assistant message
+          const assistantMsg = await Message.findOne({
+            conversationId: userMsg.conversationId,
+            role: "assistant",
+            timestamp: { $gte: userMsg.timestamp },
+          })
+            .sort({ timestamp: 1 })
+            .limit(1)
+            .lean();
+
+          // Log first message to see if assistant message is found
+          if (index === 0) {
+            console.log(
+              `📊 Looking for assistant message for user message: "${userMsg.content.substring(
+                0,
+                50
+              )}..."`
+            );
+            console.log(`📊 Assistant message found: ${!!assistantMsg}`);
+            if (assistantMsg) {
+              console.log(
+                `📊 Assistant message timestamp: ${assistantMsg.timestamp}`
+              );
+              console.log(
+                `📊 Time difference: ${
+                  new Date(assistantMsg.timestamp).getTime() -
+                  new Date(userMsg.timestamp).getTime()
+                }ms`
+              );
+            }
+          }
+
+          // Extract data from assistant message if available
+          let rawIntent = assistantMsg?.metadata?.intentClassification?.intent;
+
+          // Debug: Log the full metadata structure for first message
+          if (index === 0) {
+            console.log(
+              `📊 First message metadata keys:`,
+              Object.keys(assistantMsg?.metadata || {})
+            );
+            console.log(
+              `📊 First message intentClassification:`,
+              assistantMsg?.metadata?.intentClassification
+            );
+          }
+
+          // Fallback to "general" if not found
+          if (!rawIntent) {
+            rawIntent = "general";
+          }
+
+          // Log intent for first few messages to understand what we're getting
+          if (index < 3) {
+            console.log(`📊 Message ${index}: Raw intent="${rawIntent}"`);
+          }
+
+          // Normalize intent to match frontend expectations
+          // The intent classification service returns: setup, troubleshooting, optimization, billing, general
+          // But we might also have "general_inquiry" from older data
+          let intent = rawIntent;
+
+          // Handle legacy or variant intent names
+          if (rawIntent === "general_inquiry") {
+            intent = "general";
+          } else if (
+            rawIntent &&
+            ![
+              "setup",
+              "troubleshooting",
+              "optimization",
+              "billing",
+              "general",
+            ].includes(rawIntent.toLowerCase())
+          ) {
+            // If the intent doesn't match any expected value, log it and default to general
+            console.log(
+              `⚠️ Unexpected intent value: "${rawIntent}", defaulting to "general"`
+            );
+            intent = "general";
+          }
+
+          // Normalize to lowercase for consistency
+          intent = intent.toLowerCase();
+
+          if (index < 3) {
+            console.log(`📊 Message ${index}: Final intent="${intent}"`);
+          }
+          // Extract merchant info from multiTurnContext
+          const rawMerchantInfo =
+            assistantMsg?.metadata?.multiTurnContext?.userPreferences;
+          const merchantInfo = rawMerchantInfo || {
+            merchantPlanTier: "unknown",
+            storeType: "unknown",
+            industry: "unknown",
+            experienceLevel: "unknown",
+            location: "unknown",
+          };
+
+          // Debug merchant info - log first message to understand structure
+          if (index === 0) {
+            console.log("📊 Extracting merchant info from assistant message");
+            console.log(
+              "Raw merchant info:",
+              JSON.stringify(rawMerchantInfo, null, 2)
+            );
+          }
+
+          const confidence =
+            assistantMsg?.metadata?.intentClassification?.confidence || 0;
+
+          return {
+            question: userMsg.content,
+            intent: intent,
+            merchantInfo: merchantInfo,
+            confidence: confidence,
+            timestamp: userMsg.timestamp,
+            sources: assistantMsg?.metadata?.searchResults || [],
+          };
+        })
+      );
+
+      // Apply merchant segment and intent filters
+      let filteredData = processedMessages;
+
+      console.log(
+        `📊 Filtering ${processedMessages.length} processed messages`
+      );
+      console.log(`📊 Filters applied:`, filters);
+
+      // Debug: Show what intents we actually have in the data
+      const uniqueIntents = [
+        ...new Set(processedMessages.map((m) => m.intent)),
+      ];
+      console.log(`📊 Unique intents found in data:`, uniqueIntents);
+
+      // Show distribution of intents
+      const intentDistribution = {};
+      processedMessages.forEach((m) => {
+        const intent = m.intent || "general";
+        intentDistribution[intent] = (intentDistribution[intent] || 0) + 1;
+      });
+      console.log(`📊 Intent distribution in data:`, intentDistribution);
+
+      // Show sample of messages with their intents for debugging
+      if (processedMessages.length > 0) {
+        console.log(
+          `📊 Sample processed messages (first 3):`,
+          processedMessages.slice(0, 3).map((m) => ({
+            question: m.question?.substring(0, 50) || "none",
+            intent: m.intent,
+            hasMerchantInfo: !!m.merchantInfo,
+          }))
+        );
+      }
+
       if (filters.merchantSegment) {
-        query["metadata.merchantInfo.planTier"] = filters.merchantSegment;
+        const beforeCount = filteredData.length;
+        filteredData = filteredData.filter((item) => {
+          const merchantPlanTier =
+            item.merchantInfo?.merchantPlanTier || "unknown";
+          const matches =
+            merchantPlanTier.toLowerCase() ===
+            filters.merchantSegment.toLowerCase();
+          console.log(
+            `📊 Checking merchantPlanTier: ${merchantPlanTier.toLowerCase()} vs ${filters.merchantSegment.toLowerCase()} - ${matches}`
+          );
+          return matches;
+        });
+        console.log(
+          `📊 Filtered by merchantSegment: ${beforeCount} -> ${filteredData.length}`
+        );
       }
 
       if (filters.intent) {
-        query["metadata.intent"] = filters.intent;
+        const beforeCount = filteredData.length;
+        const filterIntent = filters.intent.toLowerCase();
+        console.log(`📊 Filtering by intent: "${filterIntent}"`);
+
+        // Debug: Show what intents we have before filtering
+        const intentCountsBefore = {};
+        filteredData.forEach((item) => {
+          const intent = (item.intent || "general").toLowerCase();
+          intentCountsBefore[intent] = (intentCountsBefore[intent] || 0) + 1;
+        });
+        console.log(
+          `📊 Intent distribution before filtering:`,
+          intentCountsBefore
+        );
+
+        let matchCount = 0;
+        filteredData = filteredData.filter((item) => {
+          const intent = item.intent || "general";
+          const itemIntent = intent.toLowerCase();
+          const matches = itemIntent === filterIntent;
+
+          // Log sample matches for debugging
+          if (matches && matchCount < 3) {
+            console.log(
+              `📊 ✅ Match ${
+                matchCount + 1
+              }: "${itemIntent}" === "${filterIntent}" (question: "${
+                item.question?.substring(0, 50) || item.question
+              }...")`
+            );
+            matchCount++;
+          }
+
+          return matches;
+        });
+        console.log(
+          `📊 Filtered by intent: ${beforeCount} -> ${filteredData.length} messages (looking for "${filterIntent}")`
+        );
       }
 
-      // Get analytics data
-      const analyticsData = await Message.find(query).sort({ timestamp: -1 });
+      console.log(`📊 Final filtered count: ${filteredData.length}`);
+
+      // Debug: Log some sample data
+      if (filteredData.length > 0) {
+        console.log(
+          "📊 Sample filtered data:",
+          JSON.stringify(filteredData[0], null, 2)
+        );
+      }
 
       // Process data
-      const processedData = this.processAnalyticsData(analyticsData);
+      const processedData = this.processAnalyticsData(filteredData);
+
+      console.log("📊 Processed data summary:", {
+        totalQuestions: processedData.totalQuestions,
+        topQuestionsCount: processedData.topQuestions.length,
+        intentDistribution: processedData.intentDistribution,
+        merchantSegmentInsights: processedData.merchantSegmentInsights
+          ? Object.keys(processedData.merchantSegmentInsights.byPlanTier || {})
+              .length
+          : 0,
+        sampleTopQuestion: processedData.topQuestions[0] || "none",
+        sampleIntentEntry:
+          Object.entries(processedData.intentDistribution || {})[0] || "none",
+      });
+
+      // Log detailed debug info
+      if (processedData.topQuestions.length > 0) {
+        console.log(
+          "📊 Sample top questions:",
+          processedData.topQuestions.slice(0, 3)
+        );
+      }
 
       // Cache the result
       this.analyticsCache.set(cacheKey, {
@@ -143,6 +421,8 @@ export class AnalyticsService {
    * @returns {Object} Processed analytics data
    */
   processAnalyticsData(rawData) {
+    console.log(`📊 Processing analytics data with ${rawData.length} items`);
+
     const insights = {
       totalQuestions: rawData.length,
       topQuestions: this.getTopQuestions(rawData),
@@ -153,6 +433,12 @@ export class AnalyticsService {
       timeBasedInsights: this.getTimeBasedInsights(rawData),
     };
 
+    console.log(`📊 Processed insights:`, {
+      totalQuestions: insights.totalQuestions,
+      topQuestionsCount: insights.topQuestions.length,
+      intentCount: Object.keys(insights.intentDistribution).length,
+    });
+
     return insights;
   }
 
@@ -162,17 +448,59 @@ export class AnalyticsService {
    * @returns {Array} Top questions with frequency
    */
   getTopQuestions(data) {
+    console.log(`📊 getTopQuestions called with ${data.length} items`);
     const questionCounts = {};
 
     data.forEach((item) => {
-      const question = item.metadata.question.toLowerCase().trim();
-      questionCounts[question] = (questionCounts[question] || 0) + 1;
+      const question = (item.question || "").trim();
+      if (question && question.length > 3) {
+        // Only count meaningful questions
+        // Normalize to lowercase and remove extra whitespace
+        const normalizedQuestion = question
+          .toLowerCase()
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (normalizedQuestion) {
+          questionCounts[normalizedQuestion] =
+            (questionCounts[normalizedQuestion] || 0) + 1;
+        }
+      }
     });
 
-    return Object.entries(questionCounts)
+    console.log(`📊 Unique questions: ${Object.keys(questionCounts).length}`);
+
+    const result = Object.entries(questionCounts)
       .map(([question, count]) => ({ question, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
+
+    console.log(`📊 Top questions found: ${result.length}`);
+    if (result.length > 0) {
+      console.log(
+        `📊 Top question: "${result[0].question}" (${result[0].count} times)`
+      );
+      console.log(
+        `📊 Top questions summary:`,
+        result.map((q) => `${q.count}x: "${q.question.substring(0, 60)}..."`)
+      );
+    } else {
+      console.log("⚠️ No top questions found - checking data...");
+      if (data.length > 0) {
+        console.log(
+          "Sample data items:",
+          data.slice(0, 5).map((item) => ({
+            hasQuestion: !!item.question,
+            questionLength: item.question?.length || 0,
+            question: item.question?.substring(0, 80) || "none",
+          }))
+        );
+      } else {
+        console.log("⚠️ No data to process for top questions");
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -181,13 +509,15 @@ export class AnalyticsService {
    * @returns {Object} Intent distribution
    */
   getIntentDistribution(data) {
+    console.log(`📊 getIntentDistribution called with ${data.length} items`);
     const intentCounts = {};
 
     data.forEach((item) => {
-      const intent = item.metadata.intent;
+      const intent = item.intent || "general";
       intentCounts[intent] = (intentCounts[intent] || 0) + 1;
     });
 
+    console.log(`📊 Intent distribution:`, intentCounts);
     return intentCounts;
   }
 
@@ -205,40 +535,38 @@ export class AnalyticsService {
     };
 
     data.forEach((item) => {
-      const merchantInfo = item.metadata.merchantInfo;
+      const merchantInfo = item.merchantInfo || {};
 
       // By plan tier
-      const planTier = merchantInfo.planTier;
+      const planTier = merchantInfo.merchantPlanTier || "unknown";
       if (!segmentInsights.byPlanTier[planTier]) {
         segmentInsights.byPlanTier[planTier] = { count: 0, intents: {} };
       }
       segmentInsights.byPlanTier[planTier].count++;
-      segmentInsights.byPlanTier[planTier].intents[item.metadata.intent] =
-        (segmentInsights.byPlanTier[planTier].intents[item.metadata.intent] ||
-          0) + 1;
+      const intent = item.intent || "general_inquiry";
+      segmentInsights.byPlanTier[planTier].intents[intent] =
+        (segmentInsights.byPlanTier[planTier].intents[intent] || 0) + 1;
 
       // By store type
-      const storeType = merchantInfo.storeType;
+      const storeType = merchantInfo.storeType || "unknown";
       if (!segmentInsights.byStoreType[storeType]) {
         segmentInsights.byStoreType[storeType] = { count: 0, intents: {} };
       }
       segmentInsights.byStoreType[storeType].count++;
-      segmentInsights.byStoreType[storeType].intents[item.metadata.intent] =
-        (segmentInsights.byStoreType[storeType].intents[item.metadata.intent] ||
-          0) + 1;
+      segmentInsights.byStoreType[storeType].intents[intent] =
+        (segmentInsights.byStoreType[storeType].intents[intent] || 0) + 1;
 
       // By industry
-      const industry = merchantInfo.industry;
+      const industry = merchantInfo.industry || "unknown";
       if (!segmentInsights.byIndustry[industry]) {
         segmentInsights.byIndustry[industry] = { count: 0, intents: {} };
       }
       segmentInsights.byIndustry[industry].count++;
-      segmentInsights.byIndustry[industry].intents[item.metadata.intent] =
-        (segmentInsights.byIndustry[industry].intents[item.metadata.intent] ||
-          0) + 1;
+      segmentInsights.byIndustry[industry].intents[intent] =
+        (segmentInsights.byIndustry[industry].intents[intent] || 0) + 1;
 
       // By experience level
-      const experienceLevel = merchantInfo.experienceLevel;
+      const experienceLevel = merchantInfo.experienceLevel || "unknown";
       if (!segmentInsights.byExperienceLevel[experienceLevel]) {
         segmentInsights.byExperienceLevel[experienceLevel] = {
           count: 0,
@@ -246,12 +574,9 @@ export class AnalyticsService {
         };
       }
       segmentInsights.byExperienceLevel[experienceLevel].count++;
-      segmentInsights.byExperienceLevel[experienceLevel].intents[
-        item.metadata.intent
-      ] =
-        (segmentInsights.byExperienceLevel[experienceLevel].intents[
-          item.metadata.intent
-        ] || 0) + 1;
+      segmentInsights.byExperienceLevel[experienceLevel].intents[intent] =
+        (segmentInsights.byExperienceLevel[experienceLevel].intents[intent] ||
+          0) + 1;
     });
 
     return segmentInsights;
@@ -276,7 +601,7 @@ export class AnalyticsService {
     let totalConfidence = 0;
 
     data.forEach((item) => {
-      const confidence = item.metadata.confidence || 0;
+      const confidence = item.confidence || 0;
       totalConfidence += confidence;
 
       // Distribution
@@ -289,7 +614,7 @@ export class AnalyticsService {
       }
 
       // By intent
-      const intent = item.metadata.intent;
+      const intent = item.intent || "general_inquiry";
       if (!trends.confidenceByIntent[intent]) {
         trends.confidenceByIntent[intent] = { total: 0, count: 0 };
       }
@@ -318,7 +643,7 @@ export class AnalyticsService {
     const sourceStats = {};
 
     data.forEach((item) => {
-      const sources = item.metadata.sources || [];
+      const sources = item.sources || [];
       sources.forEach((source) => {
         const sourceKey = `${source.category}_${source.title}`;
         if (!sourceStats[sourceKey]) {
@@ -331,7 +656,8 @@ export class AnalyticsService {
           };
         }
         sourceStats[sourceKey].usageCount++;
-        sourceStats[sourceKey].totalScore += source.score;
+        const score = source.score || 0;
+        sourceStats[sourceKey].totalScore += score;
         sourceStats[sourceKey].averageScore =
           sourceStats[sourceKey].totalScore / sourceStats[sourceKey].usageCount;
       });

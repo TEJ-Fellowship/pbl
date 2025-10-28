@@ -3,7 +3,7 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .dashboard-header {
@@ -357,43 +357,43 @@
   .analytics-dashboard {
     padding: 10px;
   }
-  
+
   .dashboard-header h1 {
     font-size: 2rem;
   }
-  
+
   .filters-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .overview-cards {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
-  
+
   .segment-insights {
     grid-template-columns: 1fr;
   }
-  
+
   .source-effectiveness {
     grid-template-columns: 1fr;
   }
-  
+
   .question-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .intent-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .intent-name {
     min-width: auto;
   }
-  
+
   .intent-count {
     min-width: auto;
     text-align: left;
