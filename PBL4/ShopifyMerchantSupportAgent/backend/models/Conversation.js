@@ -129,6 +129,10 @@ conversationSchema.pre("save", function (next) {
   next();
 });
 
+// Strategic indexes for performance optimization (Tier 3)
+conversationSchema.index({ updatedAt: -1, isActive: 1 }); // For history queries
+conversationSchema.index({ sessionId: 1, updatedAt: -1 }); // Composite for session lookups
+
 // Method to get recent messages (last 8 messages for sliding window)
 conversationSchema.methods.getRecentMessages = function (limit = 8) {
   return this.messages.slice(-limit);
