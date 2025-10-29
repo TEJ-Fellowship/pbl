@@ -28,6 +28,62 @@ class ConversationService {
   }
 
   /**
+   * Check if query is clearly out of Discord context
+   * @param {string} query - User query
+   * @returns {boolean} True if query is NOT about Discord
+   */
+  isQueryOutOfDiscordContext(query) {
+    const queryLower = query.toLowerCase();
+    
+    // Discord-related keywords that indicate a Discord question
+    const discordKeywords = [
+      'discord', 'bot', 'webhook', 'channel', 'server', 'role', 'permission',
+      'moderator', 'admin', 'guild', 'member', 'message', 'embed', 'slash command',
+      'discord api', 'discord.js', 'discord.py', 'discord support', 'discord help'
+    ];
+    
+    // Check if query contains Discord keywords
+    const hasDiscordKeyword = discordKeywords.some(keyword => queryLower.includes(keyword));
+    
+    // Patterns indicating non-Discord queries
+    const nonDiscordPatterns = [
+      /^what is \d+ \+\s*\d+.*\??$/i,  // Math: "what is 2 + 2?"
+      /^what is \d+ \-\s*\d+.*\??$/i,  // Math: "what is 5 - 3?"
+      /^what is \d+ \*\s*\d+.*\??$/i,  // Math: "what is 3 * 4?"
+      /^what is \d+ \/\s*\d+.*\??$/i,  // Math: "what is 10 / 2?"
+      /^calculate/i,  // Math calculations
+      /\d+\s*\+\s*\d+/i,  // Contains math operations
+      /\d+\s*-\s*\d+/i,
+      /\d+\s*\*\s*\d+/i,
+      /\d+\s*\/\s*\d+/i,
+      /(fellowship|program|university|college|school|course|degree|institute|academy)/i,  // Education/Programs
+      /^who is .*(president|prime minister|leader)/i,  // General knowledge
+      /^when (did|was|is) .*(happen|occur|begin)/i,  // Historical/general
+      /^where (is|are|was|were) .*(located|found)/i,  // Geography
+      /^how (many|much|long|far|old|tall)/i  // General how questions (unless Discord-related)
+    ];
+    
+    // If query doesn't have Discord keywords AND matches non-Discord patterns, it's out of context
+    if (!hasDiscordKeyword) {
+      // Check for explicit non-Discord patterns
+      for (const pattern of nonDiscordPatterns) {
+        if (pattern.test(query)) {
+          return true;
+        }
+      }
+      
+      // Additional heuristics: queries starting with "what is" without Discord keywords
+      // This catches queries like "what is tej fellowship??"
+      if (/^what (is|are) .+$/i.test(query) && query.length < 100) {
+        // Simple "what is X?" questions are likely out of context if no Discord keywords
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
    * Extract user information from query
    * @param {string} query - User query
    * @returns {Object} Extracted user information
@@ -71,26 +127,70 @@ class ConversationService {
    */
   async generateRAGAnswer(query, retrievedDocs, serverContext = {}, userProfile = {}) {
     try {
-      // Check if MCP tools should be used for this query
-      const mcpSuggestions = this.mcpTools.suggestToolsForQuery(query);
-      let mcpResults = '';
+      // First, check if query is clearly NOT Discord-related
+      const isOutOfContext = this.isQueryOutOfDiscordContext(query);
+      const topSimilarity = Array.isArray(retrievedDocs) && retrievedDocs.length > 0
+        ? (retrievedDocs[0].similarity ?? 0)
+        : 0;
+      const hasLowRelevance = !retrievedDocs || retrievedDocs.length === 0 || topSimilarity < 0.3;
       
-      if (mcpSuggestions.length > 0) {
-        console.log(`🔧 MCP tools suggested for query: ${mcpSuggestions.map(s => s.tool).join(', ')}`);
+      let mcpResults = '';
+      let isUsingWebSearch = false;
+
+      // If query is out of Discord context OR has low relevance, force web search
+      if (isOutOfContext || hasLowRelevance) {
+        console.log(`🌐 Query appears out of Discord context or has low relevance.`);
+        console.log(`   - Out of context: ${isOutOfContext}`);
+        console.log(`   - Low relevance: ${hasLowRelevance} (similarity: ${topSimilarity})`);
+        console.log(`   - Triggering web search for: "${query}"`);
         
-        // Execute suggested MCP tools
-        for (const suggestion of mcpSuggestions.slice(0, 2)) { // Limit to 2 tools per query
-          try {
-            const mcpResult = await this.executeMCPToolForQuery(suggestion.tool, query);
-            if (mcpResult && mcpResult.success) {
-              const formattedResult = this.formatMCPResultForAI(mcpResult.result, suggestion.tool);
-              mcpResults += `\n\nMCP Tool Result (${suggestion.tool}):\n${formattedResult}\n`;
+        try {
+          const webSearchResult = await this.executeMCPToolForQuery('free_web_search', query);
+          if (webSearchResult && webSearchResult.success && webSearchResult.result) {
+            const formatted = this.formatMCPResultForAI(webSearchResult.result, 'free_web_search');
+            if (formatted && formatted !== 'No web search results found.') {
+              mcpResults += `\n\nMCP Tool Result (free_web_search):\n${formatted}\n`;
+              isUsingWebSearch = true;
+              console.log('✅ Web search completed successfully with results');
+              console.log(`   - Found ${webSearchResult.result.totalResults || 0} results`);
             } else {
-              console.log(`MCP tool ${suggestion.tool} returned unsuccessful result:`, mcpResult?.error || 'Unknown error');
+              console.log('⚠️ Web search returned no results');
             }
-          } catch (error) {
-            console.error(`MCP tool ${suggestion.tool} failed:`, error.message);
-            // Continue with other tools even if one fails
+          } else {
+            console.log('⚠️ Web search returned unsuccessful result:', webSearchResult?.error || 'Unknown error');
+            console.log('   - Web search result object:', JSON.stringify(webSearchResult, null, 2));
+          }
+        } catch (e) {
+          console.error('❌ Web search failed:', e.message);
+          console.error('   - Error stack:', e.stack);
+        }
+      }
+
+      // Check if other MCP tools should be used for this query
+      if (!isUsingWebSearch) {
+        const mcpSuggestions = this.mcpTools.suggestToolsForQuery(query);
+        
+        if (mcpSuggestions.length > 0) {
+          console.log(`🔧 MCP tools suggested for query: ${mcpSuggestions.map(s => s.tool).join(', ')}`);
+          
+          // Execute suggested MCP tools (but skip web search if already done)
+          for (const suggestion of mcpSuggestions.slice(0, 2)) {
+            if (suggestion.tool === 'free_web_search' && isUsingWebSearch) {
+              continue; // Skip if web search already executed
+            }
+            
+            try {
+              const mcpResult = await this.executeMCPToolForQuery(suggestion.tool, query);
+              if (mcpResult && mcpResult.success) {
+                const formattedResult = this.formatMCPResultForAI(mcpResult.result, suggestion.tool);
+                mcpResults += `\n\nMCP Tool Result (${suggestion.tool}):\n${formattedResult}\n`;
+              } else {
+                console.log(`MCP tool ${suggestion.tool} returned unsuccessful result:`, mcpResult?.error || 'Unknown error');
+              }
+            } catch (error) {
+              console.error(`MCP tool ${suggestion.tool} failed:`, error.message);
+              // Continue with other tools even if one fails
+            }
           }
         }
       }
@@ -103,7 +203,45 @@ class ConversationService {
       const serverSize = serverContext.size || 'unknown';
       const userName = userProfile.name || 'there';
 
-      const prompt = `You are a Discord Community Support Agent. Answer this question based on the Discord documentation provided.
+      // Determine if this is a Discord-related query
+      const isDiscordQuery = !isOutOfContext && !hasLowRelevance && context.trim().length > 0;
+      
+      let prompt;
+      if (isUsingWebSearch || isOutOfContext) {
+        // For out-of-context queries, use web search results to answer
+        prompt = `You are a helpful AI assistant. The user has asked a question that is NOT about Discord. Answer their question DIRECTLY using the web search results provided below.
+
+**IMPORTANT**: Do NOT mention Discord. Do NOT try to relate this to Discord features. Just answer the question as a helpful assistant would.
+
+User Question: ${query}
+${userName ? `User Context: The user's name is ${userName}` : ''}
+
+Web Search Results:
+${mcpResults}
+
+${context.trim().length > 0 ? `\nNote: Discord documentation is also available but is NOT relevant to this query. Ignore it.\n` : ''}
+
+Your task:
+1. Read the web search results carefully
+2. Extract the most relevant information to answer the user's question
+3. Provide a clear, direct answer based on the web search results
+4. If the web search results contain multiple pieces of information, synthesize them into a coherent answer
+5. If you need to do calculations (like math), show your work or explain the answer clearly
+
+Formatting requirements:
+- Use **bold** for important terms
+- Use \`code blocks\` for technical terms, code, or calculations  
+- Use > blockquotes for important notes
+- Use bullet points for lists
+- Use numbered lists for sequential steps
+- Include relevant emojis: 📚 for educational content, 💡 for tips, ✅ for completion, 🔍 for search
+
+Be friendly, helpful, and provide a comprehensive answer (100-300 words). End with an offer to help with follow-up questions.
+
+Now answer the user's question:`;
+      } else {
+        // For Discord-related queries, use the existing Discord-focused prompt
+        prompt = `You are a Discord Community Support Agent. Answer this question based on the Discord documentation provided.
 
 User Question: ${query}
 User Context: ${userName ? `The user's name is ${userName}` : 'No user name provided'}
@@ -145,6 +283,7 @@ Instructions:
 11. If MCP tool results are provided, integrate them naturally into your response
 
 Answer:`;
+      }
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
