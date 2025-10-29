@@ -37,6 +37,7 @@
     "express": "^4.21.2",
     "flexsearch": "^0.8.212",
     "openai": "^4.28.0",
+    "pg": "^8.11.3",
     "tiktoken": "^1.0.22"
   },
   "devDependencies": {

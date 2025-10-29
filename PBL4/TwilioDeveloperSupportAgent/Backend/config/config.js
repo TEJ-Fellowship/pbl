@@ -9,10 +9,13 @@ const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
-  // Database
-  //   MONGODB_URL: process.env.MONGODB_URL,
-  //   MONGODB_DB: process.env.MONGODB_DB,
-  //   MONGODB_URI: process.env.MONGODB_URI,
+  // Database - PostgreSQL
+  POSTGRES_HOST: process.env.POSTGRES_HOST || "localhost",
+  POSTGRES_PORT: process.env.POSTGRES_PORT || 5432,
+  POSTGRES_DB: process.env.POSTGRES_DB || "postgres",
+  POSTGRES_USER: process.env.POSTGRES_USER || "postgres",
+  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || "",
+  POSTGRES_SSL: process.env.POSTGRES_SSL === "true" || false,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
