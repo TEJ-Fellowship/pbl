@@ -1,0 +1,659 @@
+[
+  {
+    "description": "Table 1",
+    "headers": [
+      "Tariff"
+    ],
+    "rows": [
+      {
+        "Tariff": "No Fee (when no currency conversion is involved)"
+      }
+    ]
+  },
+  {
+    "description": "Table 2",
+    "headers": [
+      "Purchase, sale, or conversion amount",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Purchase, sale, or conversion amount": "1.00 - 74.99 USD",
+        "Fee": "2.20%"
+      },
+      {
+        "Purchase, sale, or conversion amount": "75.00 – 200.00 USD",
+        "Fee": "2.00%"
+      },
+      {
+        "Purchase, sale, or conversion amount": "200.01 – 1000.00 USD",
+        "Fee": "1.80%"
+      },
+      {
+        "Purchase, sale, or conversion amount": "1000.01 USD +",
+        "Fee": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 3",
+    "headers": [
+      "Transfer Type",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Transfer Type": "Receiving a crypto transfer",
+        "Fee": "No fee"
+      },
+      {
+        "Transfer Type": "Transferring crypto to another PayPal or Venmo account",
+        "Fee": "No fee"
+      },
+      {
+        "Transfer Type": "Transferring crypto to an address outside of PayPal or Venmo",
+        "Fee": "You will be charged a cryptocurrency network fee, payable in the crypto you transfer, which varies. For details on the network fee, see the PayPal Cryptocurrency Terms and Conditions. We will display such network fee right before you transfer any crypto."
+      },
+      {
+        "Transfer Type": "Using PayPal as a funding source to buy and transfer crypto in one step to external cryptocurrency wallet providers who support this feature",
+        "Fee": "When you buy crypto to be transferred in one step, you will also be charged a cryptocurrency network fee, payable in the crypto you transfer. The crypto amount to be transferred in one step to an external wallet plus the crypto amount you will be charged to cover the cryptocurrency network fee is the “combined cryptocurrency purchase amount.” We will display the network fee right before you transfer any crypto.\n‎\nFor crypto other than PYUSD, you will pay (1) the transaction fee listed in the “Buying or selling a cryptocurrency” table above on the USD value of the combined cryptocurrency purchase amount and (2) 1% only on the USD value of the crypto that you transfer to your external wallet.\n‎\nFor PYUSD, you will pay 1.5% on the USD value of the PYUSD that you transfer to your external wallet. You will not pay a transaction fee on the combined cryptocurrency purchase amount."
+      },
+      {
+        "Transfer Type": "Using PayPal to transfer and sell crypto out of supported external cryptocurrency wallets in one step",
+        "Fee": "When you transfer and sell crypto out of a supported external cryptocurrency wallet in one step, you will pay a transaction fee on the USD value of the crypto you are selling.\n‎\n‎For crypto other than PYUSD, you will pay (1) the transaction fee listed in the “Buying or selling a cryptocurrency” table above and (2) 1% only on the USD value of the crypto that you receive from your external wallet.\n‎\n‎For PYUSD, you will pay 1.5% on the USD value of the PYUSD that you receive from your external wallet. You will not pay a transaction fee listed in the “Buying or selling a cryptocurrency” table above."
+      }
+    ]
+  },
+  {
+    "description": "Table 4",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donate Button",
+        "Rate": "2.89% + fixed fee"
+      },
+      {
+        "Payment Type": "PayPal Checkout for Donations",
+        "Rate": "2.89% + fixed fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 5",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "All Donations",
+        "Rate": "1.50%"
+      }
+    ]
+  },
+  {
+    "description": "Table 6",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.59 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "2.90 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.59 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "9.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.90 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.39 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "3.79 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "149.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.60 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "49.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "9.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 7",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "14.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.69 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "3.90 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "25.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.89 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "39.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.69 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "4.09 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.49 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "15.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.39 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.49 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 8",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donations",
+        "Rate": "No Fee"
+      }
+    ]
+  },
+  {
+    "description": "Table 9",
+    "headers": [
+      "Payment Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Payment Type": "Donations",
+        "Rate": "No Fee (when no currency conversion is needed)"
+      }
+    ]
+  },
+  {
+    "description": "Table 10",
+    "headers": [
+      "Payment method",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Payment method": "PayPal balance or a bank account",
+        "Fee": "No fee"
+      },
+      {
+        "Payment method": "Cards",
+        "Fee": "2.90% + fixed fee"
+      },
+      {
+        "Payment method": "Amex Send™ Account",
+        "Fee": "No fee"
+      },
+      {
+        "Payment method": "Visa+ transaction to Venmo Visa+-enabled digital wallets",
+        "Fee": "No Fee"
+      },
+      {
+        "Payment method": "Visa+ transaction to non-Venmo Visa+-enabled digital wallets",
+        "Fee": "1.75%\nA minimum fee of 0.25 USDA maximum fee of 25.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 11",
+    "headers": [
+      "Payment method",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Payment method": "PayPal balance or a bank account",
+        "Fee": "5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD"
+      },
+      {
+        "Payment method": "Cards",
+        "Fee": "5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD"
+      },
+      {
+        "Payment method": "Amex Send™ Account",
+        "Fee": "5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 12",
+    "headers": [
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Rate": "No fee (when no currency conversion is involved)"
+      }
+    ]
+  },
+  {
+    "description": "Table 13",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Fee": "0.30 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Fee": "0.60 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Fee": "0.30 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Fee": "10.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Fee": "2.60 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Fee": "0.35 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Fee": "2.35 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Fee": "90.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Fee": "1.20 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Fee": "40.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Fee": "2.00 MYR"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Fee": "4.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 14",
+    "headers": [
+      "Currency",
+      "Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Fee": "10.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Fee": "0.45 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Fee": "2.80 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Fee": "15.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Fee": "1.35 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Fee": "10.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Fee": "0.50 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Fee": "3.25 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Fee": "0.55 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Fee": "11.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Fee": "0.20 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Fee": "0.30 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 15",
+    "headers": [
+      "Type of Transaction",
+      "Currency Conversion Spread"
+    ],
+    "rows": [
+      {
+        "Type of Transaction": "Paying for goods or services in a currency other than the currency the goods or services are listed in.Sending money to a friend or family member such that they receive a different currency from the currency in which you pay.Sending money using PayPal Payouts such that your recipients receive a different currency from the currency in which you pay.",
+        "Currency Conversion Spread": "4.00%, or such other amount as may be disclosed to you during the transaction."
+      },
+      {
+        "Type of Transaction": "All other transactions",
+        "Currency Conversion Spread": "3.00%, or such other amount as may be disclosed to you during the transaction."
+      }
+    ]
+  },
+  {
+    "description": "Table 16",
+    "headers": [
+      "Withdrawal/Transfer to",
+      "Withdrawal/Transfer Type",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Withdrawal/Transfer to": "Bank account",
+        "Withdrawal/Transfer Type": "Standard\nWith eligible linked bank account",
+        "Rate": "No Fee (when no currency conversion is involved)"
+      },
+      {
+        "Withdrawal/Transfer to": "Instant\nWithdrawal limits apply",
+        "Withdrawal/Transfer Type": "1.75% of amount transferred\nMinimum and Maximum fees apply based on the card withdrawal currency, in the table below"
+      },
+      {
+        "Withdrawal/Transfer to": "Cards",
+        "Withdrawal/Transfer Type": "Standard\nWith eligible linked debit cardWithdrawal limits apply",
+        "Rate": "No Fee (when no currency conversion is involved)"
+      },
+      {
+        "Withdrawal/Transfer to": "Instant\nWith eligible linked debit cardWithdrawal limits apply",
+        "Withdrawal/Transfer Type": "1.75% of amount transferred\nMinimum and Maximum fees apply based on the card withdrawal currency, in the table below"
+      },
+      {
+        "Withdrawal/Transfer to": "Checks",
+        "Withdrawal/Transfer Type": "Have a paper check mailed to you",
+        "Rate": "1.50 USD (Fee only applies to PayPal personal accounts without a linked PayPal Balance account)"
+      }
+    ]
+  },
+  {
+    "description": "Table 17",
+    "headers": [
+      "Frequency",
+      "Maximum (up to)"
+    ],
+    "rows": [
+      {
+        "Frequency": "Per transaction",
+        "Maximum (up to)": "25,000.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 18",
+    "headers": [
+      "Frequency",
+      "Maximum (up to)"
+    ],
+    "rows": [
+      {
+        "Frequency": "Per transaction",
+        "Maximum (up to)": "5000.00 USD"
+      },
+      {
+        "Frequency": "Per day",
+        "Maximum (up to)": "5000.00 USD"
+      },
+      {
+        "Frequency": "Per week",
+        "Maximum (up to)": "5000.00 USD"
+      },
+      {
+        "Frequency": "Per month",
+        "Maximum (up to)": "15,000.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 19",
+    "headers": [
+      "Currency",
+      "Minimum Fee",
+      "Maximum Fee"
+    ],
+    "rows": [
+      {
+        "Currency": "US dollar",
+        "Minimum Fee": "0.25 USD",
+        "Maximum Fee": "25.00 USD"
+      }
+    ]
+  },
+  {
+    "description": "Table 20",
+    "headers": [
+      "Activity",
+      "Description",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Activity": "Bank Return on Withdrawal/Transfer out of PayPal",
+        "Description": "This fee is charged when a withdrawal/transfer out of PayPal is attempted by a user and it fails because incorrect bank account information or delivery information is provided.",
+        "Rate": "No Fee"
+      },
+      {
+        "Activity": "Credit Card and Debit Card Confirmation(s)",
+        "Description": "Some users, in order to increase their sending limit or as PayPal may determine, may be charged a credit card and debit card link and confirmation fee. This amount will be refunded when you successfully complete the credit card or debit card verification process.",
+        "Rate": "See Credit Card and Debit Card Link and Confirmation Table below."
+      },
+      {
+        "Activity": "PayPal Business Debit MasterCard",
+        "Description": "Use of the PayPal Business Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms.",
+        "Rate": "Please see our PayPal Business Debit MasterCard Cardholder Agreement and Privacy Notice"
+      },
+      {
+        "Activity": "PayPal Debit MasterCard",
+        "Description": "Use of the PayPal Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms.",
+        "Rate": "Please see our PayPal Debit MasterCard Cardholder Agreement"
+      }
+    ]
+  },
+  {
+    "description": "Table 21",
+    "headers": [
+      "Currency",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Currency": "Australian dollar",
+        "Rate": "2.00 AUD"
+      },
+      {
+        "Currency": "Brazilian real",
+        "Rate": "4.00 BRL"
+      },
+      {
+        "Currency": "Canadian dollar",
+        "Rate": "2.45 CAD"
+      },
+      {
+        "Currency": "Czech koruna",
+        "Rate": "50.00 CZK"
+      },
+      {
+        "Currency": "Danish krone",
+        "Rate": "12.50 DKK"
+      },
+      {
+        "Currency": "Euro",
+        "Rate": "1.50 EUR"
+      },
+      {
+        "Currency": "Hong Kong dollar",
+        "Rate": "15.00 HKD"
+      },
+      {
+        "Currency": "Hungarian forint",
+        "Rate": "400.00 HUF"
+      },
+      {
+        "Currency": "Israeli new shekel",
+        "Rate": "8.00 ILS"
+      },
+      {
+        "Currency": "Japanese yen",
+        "Rate": "200.00 JPY"
+      },
+      {
+        "Currency": "Malaysian ringgit",
+        "Rate": "Not Applicable"
+      },
+      {
+        "Currency": "Mexican peso",
+        "Rate": "20.00 MXN"
+      }
+    ]
+  },
+  {
+    "description": "Table 22",
+    "headers": [
+      "Currency",
+      "Rate"
+    ],
+    "rows": [
+      {
+        "Currency": "New Taiwan dollar",
+        "Rate": "70.00 TWD"
+      },
+      {
+        "Currency": "New Zealand dollar",
+        "Rate": "3.00 NZD"
+      },
+      {
+        "Currency": "Norwegian krone",
+        "Rate": "15.00 NOK"
+      },
+      {
+        "Currency": "Philippine peso",
+        "Rate": "100.00 PHP"
+      },
+      {
+        "Currency": "Polish zloty",
+        "Rate": "6.50 PLN"
+      },
+      {
+        "Currency": "Russian ruble",
+        "Rate": "60.00 RUB"
+      },
+      {
+        "Currency": "Singapore dollar",
+        "Rate": "3.00 SGD"
+      },
+      {
+        "Currency": "Swedish krona",
+        "Rate": "15.00 SEK"
+      },
+      {
+        "Currency": "Swiss franc",
+        "Rate": "3.00 CHF"
+      },
+      {
+        "Currency": "Thai baht",
+        "Rate": "70.00 THB"
+      },
+      {
+        "Currency": "UK pounds sterling",
+        "Rate": "1.00 GBP"
+      },
+      {
+        "Currency": "US dollar",
+        "Rate": "1.95 USD"
+      }
+    ]
+  }
+]
