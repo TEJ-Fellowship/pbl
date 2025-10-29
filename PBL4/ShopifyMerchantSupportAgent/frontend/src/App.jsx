@@ -34,6 +34,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingClarification, setPendingClarification] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [connectedShop, setConnectedShop] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -47,6 +48,14 @@ function App() {
   useEffect(() => {
     // Load conversation history on mount
     loadConversationHistory();
+    // Detect OAuth return
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("shopify_connected") === "true") {
+      const shop = params.get("shop");
+      setConnectedShop(shop);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const loadConversationHistory = async () => {
@@ -194,12 +203,14 @@ function App() {
           clarificationResponse: currentInput,
           originalQuestion: pendingClarification.originalQuestion,
           sessionId: sessionId,
+          shop: connectedShop || null,
         });
         setPendingClarification(null); // Clear pending clarification
       } else {
         response = await axios.post(`${API_BASE_URL}/chat`, {
           message: currentInput,
           sessionId: sessionId,
+          shop: connectedShop || null,
         });
       }
 
@@ -343,6 +354,17 @@ function App() {
     });
   };
 
+  const connectToMerchantData = async () => {
+    const shop = window.prompt(
+      "Enter your shop domain (e.g., my-test-store.myshopify.com):",
+      connectedShop || ""
+    );
+    if (!shop) return;
+    window.location.href = `${API_BASE_URL}/shopify/auth?shop=${encodeURIComponent(
+      shop
+    )}`;
+  };
+
   const getConfidenceColor = (level) => {
     switch (level) {
       case "High":
@@ -373,6 +395,15 @@ function App() {
               <p>AI-powered assistance for your Shopify store</p>
             </div>
             <div className="header-actions">
+              <button
+                className="analytics-btn"
+                onClick={connectToMerchantData}
+                title="Connect Shopify Store"
+              >
+                {connectedShop
+                  ? `✅ Connected: ${connectedShop}`
+                  : "🔗 Connect to Merchant Data"}
+              </button>
               <button
                 className="analytics-btn"
                 onClick={() => setShowAnalytics(!showAnalytics)}
