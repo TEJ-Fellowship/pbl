@@ -206,11 +206,17 @@ function assessSearchQuality(query, chunks) {
 
   // Check chunk count
   if (chunks.length < config.SEARCH_QUALITY_THRESHOLDS.MIN_CHUNKS) {
-    totalScore -= 20;
+    totalScore -= 40; // Only when truly empty
     reasons.push("Very few results found");
   } else if (chunks.length >= 5) {
-    totalScore += 10;
+    totalScore += 15; // Increased bonus for many results
     reasons.push("Good number of results");
+  } else if (chunks.length >= 3) {
+    totalScore += 8; // Increased bonus
+    reasons.push("Adequate number of results");
+  } else if (chunks.length >= 2) {
+    totalScore += 5; // Good bonus for 2+ results
+    reasons.push("Sufficient number of results");
   }
 
   // Check similarity scores
@@ -218,16 +224,26 @@ function assessSearchQuality(query, chunks) {
     chunks.reduce((sum, chunk) => sum + (chunk.similarity || 0), 0) /
     chunks.length;
   if (avgSimilarity < config.SEARCH_QUALITY_THRESHOLDS.MIN_SIMILARITY) {
-    totalScore -= 30;
+    totalScore -= 20; // Reduced penalty, only when truly low
     reasons.push("Low similarity scores");
   } else if (avgSimilarity > 0.7) {
-    totalScore += 20;
+    totalScore += 25; // Increased bonus for high similarity
     reasons.push("High similarity scores");
+  } else if (avgSimilarity > 0.5) {
+    totalScore += 12; // Good bonus for decent similarity
+    reasons.push("Good similarity scores");
+  } else if (avgSimilarity >= 0.3) {
+    totalScore += 5; // Bonus for acceptable similarity
+    reasons.push("Acceptable similarity scores");
   }
 
   // Check for keyword matches
   let keywordMatches = 0;
   chunks.forEach((chunk) => {
+    // Skip chunks without content
+    if (!chunk.content) {
+      return;
+    }
     const contentLower = chunk.content.toLowerCase();
     queryKeywords.forEach((keyword) => {
       if (contentLower.includes(keyword)) {
@@ -239,23 +255,30 @@ function assessSearchQuality(query, chunks) {
   const keywordMatchRatio =
     keywordMatches / (queryKeywords.length * chunks.length);
   if (keywordMatchRatio < config.SEARCH_QUALITY_THRESHOLDS.MIN_KEYWORD_RATIO) {
-    totalScore -= 25;
+    totalScore -= 15; // Reduced penalty
     reasons.push("Poor keyword matching");
   } else if (keywordMatchRatio > 0.7) {
-    totalScore += 15;
+    totalScore += 18; // Increased bonus
     reasons.push("Good keyword matching");
+  } else if (keywordMatchRatio > 0.5) {
+    totalScore += 10; // Increased bonus
+    reasons.push("Good keyword matching");
+  } else if (keywordMatchRatio >= 0.3) {
+    totalScore += 5; // Bonus for moderate keyword matching
+    reasons.push("Moderate keyword matching");
   }
 
   // Check for error codes in query
   const errorCodes = detectErrorCodes(query);
+  let hasErrorCodeMatch = false;
   if (errorCodes.length > 0) {
-    const hasErrorCodeMatch = chunks.some(
+    hasErrorCodeMatch = chunks.some(
       (chunk) =>
         chunk.metadata?.error_codes &&
         errorCodes.some((code) => chunk.metadata.error_codes.includes(code))
     );
     if (!hasErrorCodeMatch) {
-      totalScore -= 40;
+      totalScore -= 40; // Increased penalty for missing error codes
       reasons.push("No error code matches found");
     } else {
       totalScore += 20;
@@ -275,17 +298,25 @@ function assessSearchQuality(query, chunks) {
         )
     );
     if (!hasAPIMatch) {
-      totalScore -= 20;
+      totalScore -= 15; // Reduced penalty
       reasons.push("No API-specific content found");
     } else {
-      totalScore += 10;
+      totalScore += 15; // Increased bonus
       reasons.push("API-specific content found");
     }
   }
 
   // Determine quality level using config thresholds
   let quality, shouldWebSearch;
-  if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.EXCELLENT_SCORE) {
+
+  // Special case: If error codes detected but not found, always web search
+  if (errorCodes.length > 0 && !hasErrorCodeMatch) {
+    quality = "poor";
+    shouldWebSearch = true;
+    reasons.push(
+      "Error codes detected but not in local data - triggering web search"
+    );
+  } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.EXCELLENT_SCORE) {
     quality = "excellent";
     shouldWebSearch = false;
   } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.GOOD_SCORE) {
