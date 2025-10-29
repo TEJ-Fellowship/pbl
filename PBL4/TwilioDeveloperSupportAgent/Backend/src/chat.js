@@ -12,6 +12,10 @@ import ConversationMemory from "./conversationMemory.js";
 import HybridSearch from "./hybridSearch.js";
 import APIDetector from "./apiDetector.js";
 import { TwilioMCPClient } from "./mcpClient.js";
+import QueryEnhancer from "./queryEnhancer.js";
+import QueryClassifier from "./queryClassifier.js";
+import QueryRouter from "./queryRouter.js";
+import TwilioMCPServer from "./mcpServer.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -588,115 +592,152 @@ async function retrieveChunksWithEmbeddings(
   }
 }
 
-// Generate memory-aware response using Gemini with MCP tools
-async function generateMemoryAwareResponse(
+/**
+ * Process query with classifier routing
+ * Orchestrates: Enhance → Classify → Route → Execute
+ */
+async function processQueryWithClassifier(
   query,
-  chunks,
+  vectorStore,
+  embeddings,
   geminiClient,
   memory,
   apiDetector,
-  mcpServer = null
+  mcpServer
 ) {
   try {
+    console.log(chalk.blue("\n🔍 Processing query with classifier..."));
+    console.log("=".repeat(60));
+
+    // Step 1: Enhance query (preprocessing)
+    const enhancer = new QueryEnhancer();
+    const enhancements = enhancer.analyzeQuery(query);
+    console.log(chalk.cyan("📊 Query Enhancements:"));
     console.log(
-      chalk.green("🤖 Generating memory-aware response with MCP tools...")
+      chalk.gray(`   Language: ${enhancements.detectedLanguage || "none"}`)
     );
-
-    // Detect API and language from query
-    const context = memory.getConversationContext();
-    const apiDetection = apiDetector.detectAPI(query, context);
-    const detectedLanguage = detectQueryLanguage(query);
-
-    // Assess quality of local search results
-    const searchQuality = assessSearchQuality(query, chunks);
-    console.log(chalk.cyan(`📊 Search Quality Assessment:`));
+    console.log(chalk.gray(`   API: ${enhancements.detectedAPI || "none"}`));
     console.log(
-      chalk.cyan(
-        `   Quality: ${searchQuality.quality} (score: ${searchQuality.score})`
+      chalk.gray(
+        `   Error Codes: ${enhancements.errorCodes.join(", ") || "none"}`
       )
     );
-    console.log(chalk.cyan(`   Reasons: ${searchQuality.reasons.join(", ")}`));
+
+    // Step 2: Classify query
+    const classifier = new QueryClassifier();
+    const classification = await classifier.classify(query, enhancements);
+
+    console.log(chalk.green(`\n✅ Classification Result:`));
     console.log(
-      chalk.cyan(`   Should web search: ${searchQuality.shouldWebSearch}`)
+      chalk.yellow(`   Route: ${classification.route.toUpperCase()}`)
+    );
+    console.log(
+      chalk.yellow(
+        `   Confidence: ${(classification.confidence * 100).toFixed(1)}%`
+      )
+    );
+    if (classification.mcpTool) {
+      console.log(chalk.yellow(`   MCP Tool: ${classification.mcpTool}`));
+    }
+    console.log(chalk.gray(`   Reasoning: ${classification.reasoning}`));
+
+    // Step 3: Route and execute
+    const router = new QueryRouter(vectorStore, embeddings, mcpServer);
+    const routeResults = await router.route(
+      classification,
+      query,
+      enhancements
     );
 
-    // Use MCP tools for enhanced analysis if available
-    let mcpEnhancements = null;
+    return {
+      classification,
+      enhancements,
+      chunks: routeResults.chunks,
+      mcpResult: routeResults.mcpResult,
+      generalSearchResults: routeResults.generalSearchResults,
+      toolsUsed: routeResults.toolsUsed,
+    };
+  } catch (error) {
+    console.error(chalk.red(`❌ Query processing failed: ${error.message}`));
+    throw error;
+  }
+}
+
+// Generate memory-aware response using Gemini - Updated for classifier flow
+async function generateMemoryAwareResponse(
+  query,
+  processedData, // Contains: chunks, mcpResult, generalSearchResults, toolsUsed, classification, enhancements
+  geminiClient,
+  memory,
+  apiDetector
+) {
+  try {
+    console.log(chalk.green("🤖 Generating memory-aware response..."));
+
+    const {
+      chunks = [],
+      mcpResult,
+      generalSearchResults,
+      toolsUsed = [],
+      classification,
+      enhancements,
+    } = processedData;
+
+    // Detect API and language from query/enhancements
+    const context = memory.getConversationContext();
+    const apiDetection = apiDetector.detectAPI(query, context);
+    const detectedLanguage =
+      enhancements?.detectedLanguage || detectQueryLanguage(query);
+
+    // Show tools used if any
+    if (toolsUsed.length > 0) {
+      console.log(chalk.cyan(`\n🔧 Tools Used: ${toolsUsed.join(", ")}`));
+    }
+
+    // Extract MCP tool results
     let errorCodeInfo = null;
     let codeValidation = null;
-    let webSearchResults = null;
-    let webSearchTriggered = false;
+    let statusInfo = null;
+    let webhookValidation = null;
+    let rateLimitInfo = null;
+    let executionResult = null;
+    let timeInfo = null;
 
-    if (mcpServer) {
-      try {
-        // Enhance context with MCP tools
-        const contextResult = await mcpServer.handleEnhanceChatContext({
-          query,
-          context,
-        });
-        if (contextResult.content) {
-          mcpEnhancements = JSON.parse(contextResult.content[0].text);
-        }
-
-        // Look up error codes if detected
-        const errorCodes = detectErrorCodes(query);
-        if (errorCodes.length > 0) {
-          const errorResult = await mcpServer.handleLookupErrorCode({
-            errorCode: errorCodes[0],
-          });
-          if (errorResult.content) {
-            errorCodeInfo = JSON.parse(errorResult.content[0].text);
-          }
-        }
-
-        // Validate any code snippets in the query
-        const codeMatch = query.match(/```[\s\S]*?```/g);
-        if (codeMatch) {
-          const codeResult = await mcpServer.handleValidateTwilioCode({
-            code: codeMatch[0],
-            language: detectedLanguage || "javascript",
-          });
-          if (codeResult.content) {
-            codeValidation = JSON.parse(codeResult.content[0].text);
-          }
-        }
-
-        // Perform web search ONLY if local search quality is insufficient
-        if (searchQuality.shouldWebSearch) {
-          console.log(
-            chalk.yellow(
-              `⚠️ Local search quality is ${searchQuality.quality}. Triggering web search...`
-            )
-          );
-          console.log(
-            chalk.yellow(`   Reasons: ${searchQuality.reasons.join(", ")}`)
-          );
-
-          try {
-            const searchResults = await mcpServer.performWebSearch(query, 3);
-            webSearchResults = searchResults;
-            webSearchTriggered = true;
-            console.log(
-              chalk.green(
-                `✅ Web search found ${
-                  webSearchResults.results?.length || 0
-                } results`
-              )
-            );
-          } catch (webError) {
-            console.log(chalk.red("❌ Web search failed:", webError.message));
-          }
-        } else {
-          console.log(
-            chalk.green(
-              `✅ Local search quality is ${searchQuality.quality}. Skipping web search.`
-            )
-          );
-        }
-      } catch (mcpError) {
-        console.log(
-          chalk.yellow("⚠️ MCP tools unavailable, using fallback analysis")
-        );
+    if (mcpResult) {
+      // Parse MCP result based on tool type
+      if (mcpResult.tool === "lookup_error_code" || mcpResult.errorInfo) {
+        errorCodeInfo = mcpResult.errorInfo || mcpResult;
+      } else if (
+        mcpResult.tool === "validate_twilio_code" ||
+        mcpResult.validation
+      ) {
+        codeValidation = mcpResult.validation || mcpResult;
+      } else if (mcpResult.tool === "check_twilio_status" || mcpResult.status) {
+        statusInfo = mcpResult.status || mcpResult;
+      } else if (
+        mcpResult.tool === "validate_webhook_signature" ||
+        mcpResult.validation
+      ) {
+        webhookValidation = mcpResult;
+      } else if (
+        mcpResult.tool === "calculate_rate_limits" ||
+        mcpResult.rateLimitInfo
+      ) {
+        rateLimitInfo = mcpResult.rateLimitInfo || mcpResult;
+      } else if (
+        mcpResult.tool === "execute_twilio_code" ||
+        mcpResult.executionResult
+      ) {
+        executionResult = mcpResult.executionResult || mcpResult;
+      } else if (mcpResult.tool === "get_current_time" || mcpResult.timeInfo) {
+        timeInfo = mcpResult.timeInfo || mcpResult;
+      } else {
+        // Generic MCP result
+        errorCodeInfo = mcpResult;
+        codeValidation = mcpResult;
+        statusInfo = mcpResult;
+        rateLimitInfo = mcpResult;
+        executionResult = mcpResult;
       }
     }
 
@@ -718,9 +759,12 @@ async function generateMemoryAwareResponse(
     });
 
     // Prepare context from retrieved chunks
-    const contextChunks = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
-      .join("\n\n");
+    const contextChunks =
+      chunks.length > 0
+        ? chunks
+            .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+            .join("\n\n")
+        : "No documentation chunks retrieved.";
 
     // Generate context-aware prompt
     const contextPrompt = memory.generateContextPrompt(query);
@@ -744,78 +788,159 @@ async function generateMemoryAwareResponse(
       }
     }
 
-    // Add MCP tool insights
+    // Build MCP tool context
     let mcpContext = "";
-    if (mcpEnhancements) {
-      mcpContext += `\nMCP ANALYSIS: `;
-      if (mcpEnhancements.enhancements.detectedLanguage) {
-        mcpContext += `Detected language: ${mcpEnhancements.enhancements.detectedLanguage}. `;
+
+    // Add enhancement info
+    if (enhancements) {
+      if (enhancements.detectedLanguage) {
+        mcpContext += `\nDetected Language: ${enhancements.detectedLanguage}. `;
       }
-      if (mcpEnhancements.enhancements.detectedAPI) {
-        mcpContext += `Detected API: ${mcpEnhancements.enhancements.detectedAPI}. `;
+      if (enhancements.detectedAPI) {
+        mcpContext += `Detected API: ${enhancements.detectedAPI}. `;
       }
-      if (mcpEnhancements.enhancements.suggestedFocus) {
-        mcpContext += `Suggested focus: ${mcpEnhancements.enhancements.suggestedFocus}. `;
+      if (enhancements.suggestedFocus) {
+        mcpContext += `Query Focus: ${enhancements.suggestedFocus}. `;
       }
     }
 
+    // Add MCP tool results
     if (errorCodeInfo && errorCodeInfo.found) {
-      mcpContext += `\nERROR CODE ANALYSIS: ${errorCodeInfo.message} - ${errorCodeInfo.description}. Solution: ${errorCodeInfo.solution}`;
+      mcpContext += `\n\n🔍 ERROR CODE ANALYSIS (via MCP tool): ${
+        errorCodeInfo.message ||
+        errorCodeInfo.errorInfo?.message ||
+        "Error information"
+      }. `;
+      if (errorCodeInfo.description || errorCodeInfo.errorInfo?.description) {
+        mcpContext += `${
+          errorCodeInfo.description || errorCodeInfo.errorInfo.description
+        }. `;
+      }
+      if (errorCodeInfo.solution || errorCodeInfo.errorInfo?.solution) {
+        mcpContext += `Solution: ${
+          errorCodeInfo.solution || errorCodeInfo.errorInfo.solution
+        }.`;
+      }
     }
 
     if (codeValidation) {
-      mcpContext += `\nCODE VALIDATION: `;
-      if (codeValidation.isValid) {
-        mcpContext += `Code appears valid. `;
-      } else {
-        mcpContext += `Issues found: ${codeValidation.issues.join(
-          ", "
-        )}. Suggestions: ${codeValidation.suggestions.join(", ")}. `;
+      mcpContext += `\n\n✅ CODE VALIDATION (via MCP tool): `;
+      if (codeValidation.isValid || codeValidation.validation?.isValid) {
+        const valid =
+          codeValidation.isValid ?? codeValidation.validation?.isValid;
+        if (valid) {
+          mcpContext += `Code appears valid. `;
+        } else {
+          const issues =
+            codeValidation.issues || codeValidation.validation?.issues || [];
+          const suggestions =
+            codeValidation.suggestions ||
+            codeValidation.validation?.suggestions ||
+            [];
+          mcpContext += `Issues found: ${issues.join(
+            ", "
+          )}. Suggestions: ${suggestions.join(", ")}. `;
+        }
       }
     }
 
-    // Add web search results to context with clear labeling
+    if (statusInfo) {
+      mcpContext += `\n\n📊 STATUS CHECK (via MCP tool): ${
+        statusInfo.status || statusInfo.message || "Status information"
+      }.`;
+    }
+
+    if (rateLimitInfo) {
+      mcpContext += `\n\n⚡ RATE LIMIT ANALYSIS (via MCP tool): `;
+      if (rateLimitInfo.willExceedLimits) {
+        mcpContext += `Your usage will exceed limits. `;
+      } else {
+        mcpContext += `Your usage is within limits. `;
+      }
+      if (rateLimitInfo.warnings?.length > 0) {
+        mcpContext += `Warnings: ${rateLimitInfo.warnings.join(", ")}. `;
+      }
+    }
+
+    if (executionResult) {
+      mcpContext += `\n\n🔧 CODE EXECUTION (via MCP tool): ${
+        executionResult.output || "Execution completed"
+      }.`;
+    }
+
+    if (timeInfo) {
+      mcpContext += `\n\n🕐 CURRENT TIME (via MCP tool): ${
+        timeInfo.humanReadable ||
+        timeInfo.formatted?.Local ||
+        "Current time retrieved"
+      }. `;
+      if (timeInfo.formatted) {
+        mcpContext += `UTC: ${timeInfo.formatted.UTC || "N/A"}, ISO: ${
+          timeInfo.formatted.ISO || "N/A"
+        }. `;
+      }
+      if (timeInfo.components) {
+        mcpContext += `Date: ${timeInfo.components.weekday}, ${
+          timeInfo.components.year
+        }-${String(timeInfo.components.month).padStart(2, "0")}-${String(
+          timeInfo.components.day
+        ).padStart(2, "0")} ${String(timeInfo.components.hour).padStart(
+          2,
+          "0"
+        )}:${String(timeInfo.components.minute).padStart(2, "0")}:${String(
+          timeInfo.components.second
+        ).padStart(2, "0")} (${timeInfo.components.timezone || "Local"}).`;
+      }
+    }
+
+    // Add General Search results if available
     if (
-      webSearchResults &&
-      webSearchResults.found &&
-      webSearchResults.results
+      generalSearchResults &&
+      generalSearchResults.found &&
+      generalSearchResults.results
     ) {
-      mcpContext += `\n\n🌐 WEB SEARCH RESULTS (Latest Twilio Information from Internet): `;
-      mcpContext += `\n⚠️ Note: Local search quality was ${
-        searchQuality.quality
-      } (${searchQuality.reasons.join(
-        ", "
-      )}), so I searched the web for additional information.`;
-      webSearchResults.results.forEach((result, index) => {
+      mcpContext += `\n\n🌐 GENERAL SEARCH RESULTS (Latest Twilio Information from Internet): `;
+      mcpContext += `\nI searched the web because the query requires latest/outside information.`;
+      generalSearchResults.results.forEach((result, index) => {
         mcpContext += `\n[WEB-${index + 1}] ${result.title} (${result.link}): ${
           result.snippet
         } `;
       });
-      mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search and may contain the most up-to-date information.`;
-    } else if (
-      webSearchTriggered === false &&
-      searchQuality.shouldWebSearch === false
-    ) {
-      mcpContext += `\n\n✅ Using local documentation only (search quality: ${searchQuality.quality})`;
+      mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search.`;
     }
 
+    // Add routing information
+    if (classification) {
+      mcpContext += `\n\n📍 ROUTING INFO: Query was classified as "${classification.route}" route`;
+      if (classification.mcpTool) {
+        mcpContext += ` using MCP tool: ${classification.mcpTool}`;
+      }
+      mcpContext += ` (confidence: ${(classification.confidence * 100).toFixed(
+        1
+      )}%).`;
+    }
+
+    // Build sources array
     const sources = chunks.map((chunk, index) => ({
       content: chunk.content,
       metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
+      similarity: chunk.similarity || chunk.score || 0,
+      score: chunk.score || chunk.similarity || 0,
       index: index + 1,
-      sourceType: "hybrid_search", // Mark as hybrid search
-      searchType: chunk.searchType || "unknown", // semantic, bm25, or fused
+      sourceType:
+        classification?.route === "general"
+          ? "general_search"
+          : "hybrid_search",
+      searchType: chunk.searchType || "hybrid",
     }));
 
-    // Add web search results to sources if available
+    // Add General Search results to sources if available
     if (
-      webSearchResults &&
-      webSearchResults.found &&
-      webSearchResults.results
+      generalSearchResults &&
+      generalSearchResults.found &&
+      generalSearchResults.results
     ) {
-      webSearchResults.results.forEach((result, index) => {
+      generalSearchResults.results.forEach((result, index) => {
         sources.push({
           content: result.snippet,
           metadata: {
@@ -823,10 +948,10 @@ async function generateMemoryAwareResponse(
             title: result.title,
             displayLink: result.displayLink,
           },
-          similarity: 1.0, // Web search results are considered highly relevant
+          similarity: 1.0,
           score: 1.0,
           index: sources.length + 1,
-          sourceType: "web_search",
+          sourceType: "general_search",
           searchType: "web",
         });
       });
@@ -842,12 +967,27 @@ ${contextChunks}
 
 USER QUESTION: ${query}
 
-SEARCH QUALITY INFO:
-- Local search quality: ${searchQuality.quality} (score: ${searchQuality.score})
-- Web search triggered: ${webSearchTriggered ? "Yes" : "No"}
-- Reasons for web search: ${
-      webSearchTriggered ? searchQuality.reasons.join(", ") : "N/A"
+ROUTING INFORMATION:
+- Route: ${classification?.route || "unknown"}
+${classification?.mcpTool ? `- MCP Tool Used: ${classification.mcpTool}` : ""}
+- Classification Confidence: ${
+      classification
+        ? (classification.confidence * 100).toFixed(1) + "%"
+        : "N/A"
     }
+${toolsUsed.length > 0 ? `- Tools Used: ${toolsUsed.join(", ")}` : ""}
+${
+  chunks.length > 0
+    ? `- Documentation Chunks Retrieved: ${chunks.length}`
+    : "- No documentation chunks"
+}
+${
+  generalSearchResults?.found
+    ? `- General Search Results: ${
+        generalSearchResults.results?.length || 0
+      } results`
+    : ""
+}
 
 RESPONSE GUIDELINES:
 1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
@@ -860,20 +1000,27 @@ RESPONSE GUIDELINES:
 8. **If Uncertain**: Clearly state when information isn't available in the context
 9. **Memory Awareness**: Reference previous conversation context when relevant
 10. **API Focus**: Prioritize information relevant to the detected API
-11. **Search Transparency**: If web search was used, mention it in your response
+11. **Tool Usage Transparency**: If MCP tools were used, mention which tools in your response
+12. **Source Attribution**: Clearly distinguish between:
+    * MCP tool results (for direct answers like error codes, validation)
+    * Documentation from Hybrid Search ([Source X])
+    * Web search results from General Search ([WEB-X])
 
 FORMAT YOUR RESPONSE:
 - Start with a direct answer to the question
-- Provide detailed explanation with code examples
+- If MCP tool results are available, use them as the primary source for structured data
+- If documentation chunks are available, use them to provide comprehensive explanations
+- If web search results are available, incorporate them for latest information
+- Provide detailed explanation with code examples when relevant
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
 - Reference conversation context when helpful
 - CLEARLY distinguish between information sources:
-  * Use [Source X] for hybrid search results (documentation)
-  * Use [WEB-X] for web search results (latest information)
-- If web search was triggered, mention: "I searched the web for additional information because [reason]"
-- If only local search was used, mention: "Based on our comprehensive documentation"
-- End with source citations
+  * MCP tool results: "Based on [tool name] analysis..."
+  * Use [Source X] for documentation chunks
+  * Use [WEB-X] for general web search results
+- If tools were used, mention: "I used [tool names] to analyze your query"
+- End with source citations and tool acknowledgments
 
 `;
 
@@ -911,12 +1058,15 @@ FORMAT YOUR RESPONSE:
 
     return {
       answer: cleanText,
-      sources: chunks,
+      sources: sources,
       metadata: {
         language: detectedLanguage,
         api: apiDetection.primary?.api,
         confidence: apiDetection.primary?.confidence,
         reasoning: apiDetection.reasoning,
+        route: classification?.route,
+        toolsUsed: toolsUsed,
+        classification: classification,
       },
     };
   } catch (error) {
@@ -1119,16 +1269,30 @@ async function startChat() {
         try {
           const startTime = Date.now();
 
-          // Retrieve relevant chunks using hybrid search
-          const chunks = await retrieveChunksWithHybridSearch(
+          // Initialize MCP Server for tool access
+          const mcpServer = new TwilioMCPServer();
+
+          // Process query with classifier (routes to MCP/Hybrid/Combined/General)
+          const processedData = await processQueryWithClassifier(
             query,
             vectorStore,
-            embeddings
+            embeddings,
+            geminiClient,
+            memory,
+            apiDetector,
+            mcpServer
           );
 
-          if (chunks.length === 0) {
+          // Check if we have any data to work with
+          if (
+            processedData.chunks.length === 0 &&
+            !processedData.mcpResult &&
+            !processedData.generalSearchResults?.found
+          ) {
             console.log(
-              "❌ No relevant information found. Try rephrasing your question."
+              chalk.red(
+                "❌ No relevant information found. Try rephrasing your question."
+              )
             );
             askQuestion();
             return;
@@ -1137,7 +1301,7 @@ async function startChat() {
           // Generate memory-aware response
           const result = await generateMemoryAwareResponse(
             query,
-            chunks,
+            processedData,
             geminiClient,
             memory,
             apiDetector
@@ -1150,12 +1314,32 @@ async function startChat() {
             language: result.metadata?.language,
             api: result.metadata?.api,
             errorCodes: detectErrorCodes(query),
-            chunkCount: chunks.length,
+            chunkCount: processedData.chunks.length,
             responseTime: responseTime,
+            route: result.metadata?.route,
+            toolsUsed: result.metadata?.toolsUsed || [],
           });
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
+
+          // Show routing and tool info
+          if (result.metadata?.route) {
+            console.log(
+              chalk.cyan(`📍 Route: ${result.metadata.route.toUpperCase()}`)
+            );
+          }
+
+          if (
+            result.metadata?.toolsUsed &&
+            result.metadata.toolsUsed.length > 0
+          ) {
+            console.log(
+              chalk.cyan(
+                `🔧 Tools Used: ${result.metadata.toolsUsed.join(", ")}`
+              )
+            );
+          }
 
           // Show detection info if available
           if (result.metadata?.api) {
@@ -1164,15 +1348,6 @@ async function startChat() {
                 `🔍 Detected API: ${result.metadata.api.toUpperCase()}`
               )
             );
-            if (result.metadata.confidence) {
-              console.log(
-                chalk.gray(
-                  `   Confidence: ${(result.metadata.confidence * 100).toFixed(
-                    1
-                  )}%`
-                )
-              );
-            }
           }
 
           if (result.metadata?.language) {
