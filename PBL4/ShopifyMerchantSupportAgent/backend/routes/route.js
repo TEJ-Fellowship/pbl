@@ -9,6 +9,7 @@ import {
 } from "../controllers/chatController.js";
 import analyticsRoutes from "./analyticsRoutes.js";
 import feedbackRoutes from "./feedbackRoutes.js";
+import shopifyRoutes from "./shopifyRoutes.js";
 
 const router = express.Router();
 
@@ -60,10 +61,13 @@ router.use("/analytics", analyticsRoutes);
 // Feedback routes
 router.use("/feedback", feedbackRoutes);
 
+// Shopify OAuth + data routes
+router.use("/shopify", shopifyRoutes);
+
 // Chat API endpoints
 router.post("/chat", async (req, res) => {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, shop } = req.body;
 
     if (!message || !sessionId) {
       return res.status(400).json({
@@ -71,7 +75,7 @@ router.post("/chat", async (req, res) => {
       });
     }
 
-    const result = await processChatMessage(message, sessionId);
+    const result = await processChatMessage(message, sessionId, shop);
     res.json(result);
   } catch (error) {
     console.error("Chat API error:", error);
@@ -113,7 +117,8 @@ router.get("/history", async (req, res) => {
 // Clarification response endpoint
 router.post("/clarify", async (req, res) => {
   try {
-    const { clarificationResponse, originalQuestion, sessionId } = req.body;
+    const { clarificationResponse, originalQuestion, sessionId, shop } =
+      req.body;
 
     if (!clarificationResponse || !originalQuestion || !sessionId) {
       return res.status(400).json({
@@ -125,7 +130,8 @@ router.post("/clarify", async (req, res) => {
     const result = await processClarificationResponse(
       clarificationResponse,
       originalQuestion,
-      sessionId
+      sessionId,
+      shop
     );
     res.json(result);
   } catch (error) {

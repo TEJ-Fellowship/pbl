@@ -699,7 +699,7 @@ async function initializeAI() {
 }
 
 // Main chat function with multi-turn conversation support
-export async function processChatMessage(message, sessionId) {
+export async function processChatMessage(message, sessionId, shop = null) {
   try {
     // Check cache first for duplicate queries (now with semantic matching)
     const cachedResponse = await responseCache.get(message, sessionId);
@@ -787,6 +787,30 @@ export async function processChatMessage(message, sessionId) {
       `🔧 Should use MCP tools: ${queryClassification.shouldUseMCPTools}`
     );
     console.log(`🔧 Should use RAG: ${queryClassification.shouldUseRAG}`);
+
+    // If a shop is provided and connected, fetch merchant context
+    let merchantProfile = null;
+    if (shop) {
+      try {
+        const { getAccessToken, getShop, getProductsCount, getOrdersCount } =
+          await import("../src/services/shopifyOAuth.js");
+        if (getAccessToken(shop)) {
+          const [shopInfo, productsCount, ordersCount] = await Promise.all([
+            getShop(shop),
+            getProductsCount(shop),
+            getOrdersCount(shop),
+          ]);
+          merchantProfile = {
+            shop: shopInfo?.shop || shopInfo || null,
+            productsCount: productsCount?.count ?? null,
+            ordersCount: ordersCount?.count ?? null,
+            shopDomain: shop,
+          };
+        }
+      } catch (e) {
+        console.warn("Merchant context fetch failed:", e?.message || e);
+      }
+    }
 
     // Smart routing: Handle general knowledge queries directly with MCP tools
     if (queryClassification.shouldUseWebSearch) {
@@ -1002,11 +1026,25 @@ export async function processChatMessage(message, sessionId) {
     }
 
     // Generate intent-specific prompt
-    const intentSpecificPrompt = intentClassifier.generateIntentSpecificPrompt(
+    let intentSpecificPrompt = intentClassifier.generateIntentSpecificPrompt(
       intentClassification.intent,
       message,
       results
     );
+
+    if (merchantProfile) {
+      const shopName =
+        merchantProfile.shop?.name ||
+        merchantProfile.shop?.shop_owner ||
+        "your store";
+      const domain =
+        merchantProfile.shop?.primary_domain?.host ||
+        merchantProfile.shopDomain;
+      const productsCount = merchantProfile.productsCount ?? "unknown";
+      const ordersCount = merchantProfile.ordersCount ?? "unknown";
+      const merchantContextNote = `\n\nMerchant context (authoritative, use when relevant):\n- Store name: ${shopName}\n- Primary domain: ${domain}\n- Products count: ${productsCount}\n- Orders count: ${ordersCount}\n- Shop domain: ${merchantProfile.shopDomain}\n`;
+      intentSpecificPrompt = merchantContextNote + intentSpecificPrompt;
+    }
 
     // Use multi-turn conversation manager for enhanced response generation with intent-specific prompt
     const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
@@ -1091,6 +1129,7 @@ export async function processChatMessage(message, sessionId) {
           isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
           userPreferences: enhancedResponse.conversationState.userPreferences,
           contextualQuery: enhancedResponse.contextualQuery,
+          merchantProfile: merchantProfile,
         },
         intentClassification: {
           intent: intentClassification.intent,
@@ -1137,6 +1176,7 @@ export async function processChatMessage(message, sessionId) {
         userPreferences: enhancedResponse.conversationState.userPreferences,
         contextualQuery: enhancedResponse.contextualQuery,
         conversationStats: multiTurnManager.getConversationStats(sessionId),
+        merchantProfile: merchantProfile,
       },
       intentClassification: {
         intent: intentClassification.intent,
@@ -1205,7 +1245,8 @@ export async function getConversationHistory(sessionId) {
 export async function processClarificationResponse(
   clarificationResponse,
   originalQuestion,
-  sessionId
+  sessionId,
+  shop = null
 ) {
   try {
     await initializeAI();
@@ -1238,6 +1279,33 @@ export async function processClarificationResponse(
     });
     await clarificationMessage.save();
     await conversation.addMessage(clarificationMessage._id);
+
+    // If a shop is provided and connected, fetch merchant context
+    let merchantProfile = null;
+    if (shop) {
+      try {
+        const { getAccessToken, getShop, getProductsCount, getOrdersCount } =
+          await import("../src/services/shopifyOAuth.js");
+        if (getAccessToken(shop)) {
+          const [shopInfo, productsCount, ordersCount] = await Promise.all([
+            getShop(shop),
+            getProductsCount(shop),
+            getOrdersCount(shop),
+          ]);
+          merchantProfile = {
+            shop: shopInfo?.shop || shopInfo || null,
+            productsCount: productsCount?.count ?? null,
+            ordersCount: ordersCount?.count ?? null,
+            shopDomain: shop,
+          };
+        }
+      } catch (e) {
+        console.warn(
+          "Merchant context fetch failed (clarify):",
+          e?.message || e
+        );
+      }
+    }
 
     // Get conversation history
     const conversationHistory = await getConversationHistory(sessionId);
@@ -1390,6 +1458,7 @@ export async function processClarificationResponse(
           isFollowUp: enhancedResponse.followUpDetection.isFollowUp,
           userPreferences: enhancedResponse.conversationState.userPreferences,
           contextualQuery: enhancedResponse.contextualQuery,
+          merchantProfile: merchantProfile,
         },
       },
     });
@@ -1421,6 +1490,7 @@ export async function processClarificationResponse(
         contextualQuery: enhancedResponse.contextualQuery,
         conversationStats: multiTurnManager.getConversationStats(sessionId),
         clarificationProcessed: true,
+        merchantProfile: merchantProfile,
       },
       queryClassification: queryClassification,
       mcpTools: {
