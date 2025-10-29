@@ -42,6 +42,16 @@ const config = {
   // Google Custom Search API
   GOOGLE_CUSTOM_SEARCH_API_KEY: process.env.GOOGLE_CUSTOM_SEARCH_API_KEY,
   GOOGLE_CUSTOM_SEARCH_ENGINE_ID: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
+
+  // Search Quality Thresholds
+  SEARCH_QUALITY_THRESHOLDS: {
+    EXCELLENT_SCORE: 30, // Above this: no web search needed
+    GOOD_SCORE: 10, // Above this: no web search needed
+    FAIR_SCORE: -10, // Below this: web search needed
+    MIN_CHUNKS: 2, // Minimum chunks for good quality
+    MIN_SIMILARITY: 0.3, // Minimum average similarity score
+    MIN_KEYWORD_RATIO: 0.3, // Minimum keyword match ratio
+  },
 };
 
 export default config;

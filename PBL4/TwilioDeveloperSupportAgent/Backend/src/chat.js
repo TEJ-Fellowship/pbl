@@ -184,6 +184,132 @@ function detectErrorCodes(query) {
   return [...new Set(errorCodeMatches)];
 }
 
+// Assess quality of local search results
+function assessSearchQuality(query, chunks) {
+  const queryLower = query.toLowerCase();
+  const queryKeywords = queryLower
+    .split(/\s+/)
+    .filter((word) => word.length > 2);
+
+  // If no chunks found, quality is poor
+  if (!chunks || chunks.length === 0) {
+    return {
+      quality: "poor",
+      score: 0,
+      reasons: ["No local results found"],
+      shouldWebSearch: true,
+    };
+  }
+
+  let totalScore = 0;
+  let reasons = [];
+
+  // Check chunk count
+  if (chunks.length < config.SEARCH_QUALITY_THRESHOLDS.MIN_CHUNKS) {
+    totalScore -= 20;
+    reasons.push("Very few results found");
+  } else if (chunks.length >= 5) {
+    totalScore += 10;
+    reasons.push("Good number of results");
+  }
+
+  // Check similarity scores
+  const avgSimilarity =
+    chunks.reduce((sum, chunk) => sum + (chunk.similarity || 0), 0) /
+    chunks.length;
+  if (avgSimilarity < config.SEARCH_QUALITY_THRESHOLDS.MIN_SIMILARITY) {
+    totalScore -= 30;
+    reasons.push("Low similarity scores");
+  } else if (avgSimilarity > 0.7) {
+    totalScore += 20;
+    reasons.push("High similarity scores");
+  }
+
+  // Check for keyword matches
+  let keywordMatches = 0;
+  chunks.forEach((chunk) => {
+    const contentLower = chunk.content.toLowerCase();
+    queryKeywords.forEach((keyword) => {
+      if (contentLower.includes(keyword)) {
+        keywordMatches++;
+      }
+    });
+  });
+
+  const keywordMatchRatio =
+    keywordMatches / (queryKeywords.length * chunks.length);
+  if (keywordMatchRatio < config.SEARCH_QUALITY_THRESHOLDS.MIN_KEYWORD_RATIO) {
+    totalScore -= 25;
+    reasons.push("Poor keyword matching");
+  } else if (keywordMatchRatio > 0.7) {
+    totalScore += 15;
+    reasons.push("Good keyword matching");
+  }
+
+  // Check for error codes in query
+  const errorCodes = detectErrorCodes(query);
+  if (errorCodes.length > 0) {
+    const hasErrorCodeMatch = chunks.some(
+      (chunk) =>
+        chunk.metadata?.error_codes &&
+        errorCodes.some((code) => chunk.metadata.error_codes.includes(code))
+    );
+    if (!hasErrorCodeMatch) {
+      totalScore -= 40;
+      reasons.push("No error code matches found");
+    } else {
+      totalScore += 20;
+      reasons.push("Error code match found");
+    }
+  }
+
+  // Check for API-specific content
+  const apiKeywords = ["sms", "voice", "video", "webhook", "whatsapp"];
+  const queryHasAPI = apiKeywords.some((api) => queryLower.includes(api));
+  if (queryHasAPI) {
+    const hasAPIMatch = chunks.some(
+      (chunk) =>
+        chunk.metadata?.api &&
+        apiKeywords.some((api) =>
+          chunk.metadata.api.toLowerCase().includes(api)
+        )
+    );
+    if (!hasAPIMatch) {
+      totalScore -= 20;
+      reasons.push("No API-specific content found");
+    } else {
+      totalScore += 10;
+      reasons.push("API-specific content found");
+    }
+  }
+
+  // Determine quality level using config thresholds
+  let quality, shouldWebSearch;
+  if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.EXCELLENT_SCORE) {
+    quality = "excellent";
+    shouldWebSearch = false;
+  } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.GOOD_SCORE) {
+    quality = "good";
+    shouldWebSearch = false;
+  } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.FAIR_SCORE) {
+    quality = "fair";
+    shouldWebSearch = true;
+  } else {
+    quality = "poor";
+    shouldWebSearch = true;
+  }
+
+  return {
+    quality,
+    score: totalScore,
+    reasons,
+    shouldWebSearch,
+    avgSimilarity,
+    keywordMatchRatio,
+    chunkCount: chunks.length,
+  };
+}
+
 // Detect programming language from query
 function detectQueryLanguage(query) {
   const q = query.toLowerCase();
@@ -450,11 +576,25 @@ async function generateMemoryAwareResponse(
     const apiDetection = apiDetector.detectAPI(query, context);
     const detectedLanguage = detectQueryLanguage(query);
 
+    // Assess quality of local search results
+    const searchQuality = assessSearchQuality(query, chunks);
+    console.log(chalk.cyan(`📊 Search Quality Assessment:`));
+    console.log(
+      chalk.cyan(
+        `   Quality: ${searchQuality.quality} (score: ${searchQuality.score})`
+      )
+    );
+    console.log(chalk.cyan(`   Reasons: ${searchQuality.reasons.join(", ")}`));
+    console.log(
+      chalk.cyan(`   Should web search: ${searchQuality.shouldWebSearch}`)
+    );
+
     // Use MCP tools for enhanced analysis if available
     let mcpEnhancements = null;
     let errorCodeInfo = null;
     let codeValidation = null;
     let webSearchResults = null;
+    let webSearchTriggered = false;
 
     if (mcpServer) {
       try {
@@ -490,22 +630,37 @@ async function generateMemoryAwareResponse(
           }
         }
 
-        // Perform web search for additional context
-        console.log(
-          chalk.blue("🔍 Performing web search for additional context...")
-        );
-        try {
-          const searchResults = await mcpServer.performWebSearch(query, 3);
-          webSearchResults = searchResults;
+        // Perform web search ONLY if local search quality is insufficient
+        if (searchQuality.shouldWebSearch) {
           console.log(
-            chalk.green(
-              `✅ Web search found ${
-                webSearchResults.results?.length || 0
-              } results`
+            chalk.yellow(
+              `⚠️ Local search quality is ${searchQuality.quality}. Triggering web search...`
             )
           );
-        } catch (webError) {
-          console.log(chalk.red("❌ Web search failed:", webError.message));
+          console.log(
+            chalk.yellow(`   Reasons: ${searchQuality.reasons.join(", ")}`)
+          );
+
+          try {
+            const searchResults = await mcpServer.performWebSearch(query, 3);
+            webSearchResults = searchResults;
+            webSearchTriggered = true;
+            console.log(
+              chalk.green(
+                `✅ Web search found ${
+                  webSearchResults.results?.length || 0
+                } results`
+              )
+            );
+          } catch (webError) {
+            console.log(chalk.red("❌ Web search failed:", webError.message));
+          }
+        } else {
+          console.log(
+            chalk.green(
+              `✅ Local search quality is ${searchQuality.quality}. Skipping web search.`
+            )
+          );
         }
       } catch (mcpError) {
         console.log(
@@ -595,12 +750,22 @@ async function generateMemoryAwareResponse(
       webSearchResults.results
     ) {
       mcpContext += `\n\n🌐 WEB SEARCH RESULTS (Latest Twilio Information from Internet): `;
+      mcpContext += `\n⚠️ Note: Local search quality was ${
+        searchQuality.quality
+      } (${searchQuality.reasons.join(
+        ", "
+      )}), so I searched the web for additional information.`;
       webSearchResults.results.forEach((result, index) => {
         mcpContext += `\n[WEB-${index + 1}] ${result.title} (${result.link}): ${
           result.snippet
         } `;
       });
       mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search and may contain the most up-to-date information.`;
+    } else if (
+      webSearchTriggered === false &&
+      searchQuality.shouldWebSearch === false
+    ) {
+      mcpContext += `\n\n✅ Using local documentation only (search quality: ${searchQuality.quality})`;
     }
 
     const sources = chunks.map((chunk, index) => ({
@@ -646,6 +811,13 @@ ${contextChunks}
 
 USER QUESTION: ${query}
 
+SEARCH QUALITY INFO:
+- Local search quality: ${searchQuality.quality} (score: ${searchQuality.score})
+- Web search triggered: ${webSearchTriggered ? "Yes" : "No"}
+- Reasons for web search: ${
+      webSearchTriggered ? searchQuality.reasons.join(", ") : "N/A"
+    }
+
 RESPONSE GUIDELINES:
 1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
 2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
@@ -657,6 +829,7 @@ RESPONSE GUIDELINES:
 8. **If Uncertain**: Clearly state when information isn't available in the context
 9. **Memory Awareness**: Reference previous conversation context when relevant
 10. **API Focus**: Prioritize information relevant to the detected API
+11. **Search Transparency**: If web search was used, mention it in your response
 
 FORMAT YOUR RESPONSE:
 - Start with a direct answer to the question
@@ -667,6 +840,8 @@ FORMAT YOUR RESPONSE:
 - CLEARLY distinguish between information sources:
   * Use [Source X] for hybrid search results (documentation)
   * Use [WEB-X] for web search results (latest information)
+- If web search was triggered, mention: "I searched the web for additional information because [reason]"
+- If only local search was used, mention: "Based on our comprehensive documentation"
 - End with source citations
 
 `;
