@@ -11,12 +11,14 @@ import {
   initGeminiEmbeddings,
   initPinecone,
   loadVectorStore,
-  retrieveChunksWithEmbeddings,
-  retrieveChunksWithHybridSearch,
   generateMemoryAwareResponse,
   detectQueryLanguage,
   detectErrorCodes,
 } from "./src/chat.js";
+// Import new routing modules
+import QueryEnhancer from "./src/queryEnhancer.js";
+import QueryClassifier from "./src/queryClassifier.js";
+import QueryRouter from "./src/queryRouter.js";
 import ConversationMemory from "./src/conversationMemory.js";
 import APIDetector from "./src/apiDetector.js";
 import TwilioMCPServer from "./src/mcpServer.js";
@@ -39,8 +41,8 @@ app.use(
       "http://localhost:3000", // Common React dev server port
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json({ limit: "10mb" }));
@@ -53,7 +55,6 @@ let geminiClient,
   vectorStore,
   memory,
   apiDetector,
-  separateChunks,
   mcpServer;
 
 // Initialize services
@@ -68,34 +69,13 @@ async function initializeServices() {
     memory = new ConversationMemory();
     apiDetector = new APIDetector();
 
-    // Load separate chunks for hybrid search
-    const { loadSeparateChunks } = await import("./src/chat.js");
-    separateChunks = await loadSeparateChunks();
-
-    // Initialize MCP server (create instance for web search only)
+    // Initialize MCP Server for tool access
     try {
-      // Create a minimal instance with web search and stub methods
-      mcpServer = {
-        performWebSearch: async (query, maxResults = 5) => {
-          const { default: TwilioMCPServer } = await import(
-            "./src/mcpServer.js"
-          );
-          const tempServer = Object.create(TwilioMCPServer.prototype);
-          return await TwilioMCPServer.prototype.performWebSearch.call(
-            tempServer,
-            query,
-            maxResults
-          );
-        },
-        // Stub methods to prevent errors
-        handleEnhanceChatContext: async () => ({ content: null }),
-        handleLookupErrorCode: async () => ({ content: null }),
-        handleValidateTwilioCode: async () => ({ content: null }),
-      };
-      console.log("✅ MCP web search initialized successfully");
+      mcpServer = new TwilioMCPServer();
+      console.log("✅ MCP Server initialized successfully");
     } catch (mcpError) {
       console.log(
-        "⚠️ MCP web search failed to initialize, using enhanced prompt system"
+        "⚠️ MCP Server failed to initialize, some tools may not be available"
       );
       console.log(`   Error: ${mcpError.message}`);
       mcpServer = null;
@@ -138,31 +118,64 @@ app.post("/api/chat", async (req, res) => {
     console.log(`📝 Processing query: "${query}"`);
     const startTime = Date.now();
 
-    // Retrieve relevant chunks using hybrid search
-    const chunks = await retrieveChunksWithHybridSearch(
+    // Step 1: Enhance query (preprocessing)
+    const enhancer = new QueryEnhancer();
+    const enhancements = enhancer.analyzeQuery(query);
+    console.log("📊 Query Enhancements:", {
+      language: enhancements.detectedLanguage,
+      api: enhancements.detectedAPI,
+      errorCodes: enhancements.errorCodes,
+    });
+
+    // Step 2: Classify query
+    const classifier = new QueryClassifier();
+    const classification = await classifier.classify(query, enhancements);
+    console.log("✅ Classification:", {
+      route: classification.route,
+      mcpTool: classification.mcpTool,
+      confidence: classification.confidence,
+    });
+
+    // Step 3: Route and execute
+    const router = new QueryRouter(vectorStore, embeddings, mcpServer);
+    const processedData = await router.route(
+      classification,
       query,
-      vectorStore,
-      embeddings
+      enhancements
     );
 
-    if (chunks.length === 0) {
+    // Check if we have any data to work with
+    if (
+      processedData.chunks.length === 0 &&
+      !processedData.mcpResult &&
+      !processedData.generalSearchResults?.found
+    ) {
       return res.json({
         answer:
           "❌ No relevant information found. Try rephrasing your question.",
         sources: [],
-        metadata: {},
+        metadata: {
+          route: classification.route,
+          toolsUsed: processedData.toolsUsed,
+        },
         responseTime: Date.now() - startTime,
       });
     }
 
-    // Generate memory-aware response
+    // Generate memory-aware response with processed data
     const result = await generateMemoryAwareResponse(
       query,
-      chunks,
+      {
+        chunks: processedData.chunks,
+        mcpResult: processedData.mcpResult,
+        generalSearchResults: processedData.generalSearchResults,
+        toolsUsed: processedData.toolsUsed,
+        classification,
+        enhancements,
+      },
       geminiClient,
       memory,
-      apiDetector,
-      mcpServer
+      apiDetector
     );
 
     const responseTime = Date.now() - startTime;
@@ -172,20 +185,24 @@ app.post("/api/chat", async (req, res) => {
       language: result.metadata?.language,
       api: result.metadata?.api,
       errorCodes: detectErrorCodes(query),
-      chunkCount: chunks.length,
+      chunkCount: processedData.chunks.length,
       responseTime: responseTime,
+      route: classification.route,
+      toolsUsed: processedData.toolsUsed,
     });
 
     // Format response for frontend
     const formattedResponse = {
       answer: result.answer,
       sources: result.sources || [],
-      webSearchResults: result.webSearchResults || null,
       metadata: {
         ...result.metadata,
         responseTime,
-        chunkCount: chunks.length,
+        chunkCount: processedData.chunks.length,
         sessionId: sessionId || "default",
+        route: classification.route,
+        toolsUsed: processedData.toolsUsed,
+        classification: classification,
       },
       timestamp: new Date().toISOString(),
     };
@@ -253,7 +270,7 @@ app.get("/api/preferences/:sessionId", async (req, res) => {
 app.post("/api/mcp/tools", async (req, res) => {
   try {
     const { tool, args } = req.body;
-    
+
     if (!tool) {
       return res.status(400).json({
         error: "Tool name is required",
@@ -263,14 +280,20 @@ app.post("/api/mcp/tools", async (req, res) => {
     // Import the tool methods directly
     const { default: TwilioTools } = await import("./src/tools.js");
     const toolsInstance = new TwilioTools();
-    
+
     let toolResult;
     switch (tool) {
       case "enhance_chat_context":
-        toolResult = toolsInstance.analyzeQuery(args.query || "", args.context || "");
+        toolResult = toolsInstance.analyzeQuery(
+          args.query || "",
+          args.context || ""
+        );
         break;
       case "validate_twilio_code":
-        toolResult = toolsInstance.validateTwilioCode(args.code || "", args.language || "javascript");
+        toolResult = toolsInstance.validateTwilioCode(
+          args.code || "",
+          args.language || "javascript"
+        );
         break;
       case "lookup_error_code":
         toolResult = toolsInstance.lookupErrorCode(args.errorCode || "");
@@ -279,10 +302,15 @@ app.post("/api/mcp/tools", async (req, res) => {
         toolResult = toolsInstance.detectLanguage(args.text || "");
         break;
       case "web_search":
-        toolResult = await toolsInstance.performWebSearch(args.query || "", args.maxResults || 5);
+        toolResult = await toolsInstance.performWebSearch(
+          args.query || "",
+          args.maxResults || 5
+        );
         break;
       case "check_twilio_status":
-        toolResult = await toolsInstance.checkTwilioStatus(args.service || null);
+        toolResult = await toolsInstance.checkTwilioStatus(
+          args.service || null
+        );
         break;
       case "validate_webhook_signature":
         toolResult = toolsInstance.validateWebhookSignature(
@@ -312,30 +340,30 @@ app.post("/api/mcp/tools", async (req, res) => {
           error: `Unknown tool: ${tool}`,
           availableTools: [
             "enhance_chat_context",
-            "validate_twilio_code", 
+            "validate_twilio_code",
             "lookup_error_code",
             "detect_programming_language",
             "web_search",
             "check_twilio_status",
             "validate_webhook_signature",
             "calculate_rate_limits",
-            "execute_twilio_code"
-          ]
+            "execute_twilio_code",
+          ],
         });
     }
-    
+
     res.json({
       success: true,
       tool,
       result: toolResult,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error("❌ MCP tool execution error:", error);
     res.status(500).json({
       error: "MCP tool execution failed",
       message: error.message,
-      tool: req.body.tool
+      tool: req.body.tool,
     });
   }
 });
@@ -348,83 +376,159 @@ app.get("/api/mcp/tools", async (req, res) => {
         name: "enhance_chat_context",
         description: "Analyze queries for language/API detection",
         parameters: {
-          query: { type: "string", required: true, description: "User query to analyze" },
-          context: { type: "string", required: false, description: "Additional context" }
-        }
+          query: {
+            type: "string",
+            required: true,
+            description: "User query to analyze",
+          },
+          context: {
+            type: "string",
+            required: false,
+            description: "Additional context",
+          },
+        },
       },
       {
         name: "validate_twilio_code",
         description: "Validate Twilio code snippets",
         parameters: {
-          code: { type: "string", required: true, description: "Code to validate" },
-          language: { type: "string", required: false, description: "Programming language" }
-        }
+          code: {
+            type: "string",
+            required: true,
+            description: "Code to validate",
+          },
+          language: {
+            type: "string",
+            required: false,
+            description: "Programming language",
+          },
+        },
       },
       {
         name: "lookup_error_code",
         description: "Look up Twilio error codes",
         parameters: {
-          errorCode: { type: "string", required: true, description: "Error code to look up" }
-        }
+          errorCode: {
+            type: "string",
+            required: true,
+            description: "Error code to look up",
+          },
+        },
       },
       {
         name: "detect_programming_language",
         description: "Auto-detect programming language",
         parameters: {
-          text: { type: "string", required: true, description: "Text to analyze" }
-        }
+          text: {
+            type: "string",
+            required: true,
+            description: "Text to analyze",
+          },
+        },
       },
       {
         name: "web_search",
         description: "Search Twilio documentation",
         parameters: {
-          query: { type: "string", required: true, description: "Search query" },
-          maxResults: { type: "number", required: false, description: "Max results (default: 5)" }
-        }
+          query: {
+            type: "string",
+            required: true,
+            description: "Search query",
+          },
+          maxResults: {
+            type: "number",
+            required: false,
+            description: "Max results (default: 5)",
+          },
+        },
       },
       {
         name: "check_twilio_status",
         description: "Check Twilio service status",
         parameters: {
-          service: { type: "string", required: false, description: "Service to check (sms, voice, etc.)" }
-        }
+          service: {
+            type: "string",
+            required: false,
+            description: "Service to check (sms, voice, etc.)",
+          },
+        },
       },
       {
         name: "validate_webhook_signature",
         description: "Validate webhook signatures",
         parameters: {
-          signature: { type: "string", required: true, description: "X-Twilio-Signature header" },
+          signature: {
+            type: "string",
+            required: true,
+            description: "X-Twilio-Signature header",
+          },
           url: { type: "string", required: true, description: "Webhook URL" },
-          payload: { type: "string", required: true, description: "Webhook payload" },
-          authToken: { type: "string", required: true, description: "Twilio Auth Token" }
-        }
+          payload: {
+            type: "string",
+            required: true,
+            description: "Webhook payload",
+          },
+          authToken: {
+            type: "string",
+            required: true,
+            description: "Twilio Auth Token",
+          },
+        },
       },
       {
         name: "calculate_rate_limits",
         description: "Calculate rate limit compliance",
         parameters: {
-          apiType: { type: "string", required: true, description: "API type (sms, voice, etc.)" },
-          requestsPerSecond: { type: "number", required: true, description: "Requests per second" },
-          requestsPerMinute: { type: "number", required: true, description: "Requests per minute" },
-          accountTier: { type: "string", required: false, description: "Account tier (default: pay-as-you-go)" }
-        }
+          apiType: {
+            type: "string",
+            required: true,
+            description: "API type (sms, voice, etc.)",
+          },
+          requestsPerSecond: {
+            type: "number",
+            required: true,
+            description: "Requests per second",
+          },
+          requestsPerMinute: {
+            type: "number",
+            required: true,
+            description: "Requests per minute",
+          },
+          accountTier: {
+            type: "string",
+            required: false,
+            description: "Account tier (default: pay-as-you-go)",
+          },
+        },
       },
       {
         name: "execute_twilio_code",
         description: "Execute code in sandbox",
         parameters: {
-          code: { type: "string", required: true, description: "Code to execute" },
-          language: { type: "string", required: false, description: "Programming language" },
-          testMode: { type: "boolean", required: false, description: "Run in test mode (default: true)" }
-        }
-      }
+          code: {
+            type: "string",
+            required: true,
+            description: "Code to execute",
+          },
+          language: {
+            type: "string",
+            required: false,
+            description: "Programming language",
+          },
+          testMode: {
+            type: "boolean",
+            required: false,
+            description: "Run in test mode (default: true)",
+          },
+        },
+      },
     ];
 
     res.json({
       success: true,
       tools,
       count: tools.length,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error("❌ Get MCP tools error:", error);
