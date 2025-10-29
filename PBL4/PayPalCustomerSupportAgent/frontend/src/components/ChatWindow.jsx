@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Zap, Shield, MessageSquare, Star } from "lucide-react";
+import {
+  Send,
+  Bot,
+  User,
+  Sparkles,
+  Zap,
+  Shield,
+  MessageSquare,
+  Star,
+} from "lucide-react";
 
 export default function PayPalChat() {
   const [messages, setMessages] = useState([
@@ -53,7 +62,10 @@ export default function PayPalChat() {
       const botMessage = {
         id: messages.length + 2,
         sender: "bot",
-        text: data.answer || data.response || "I'm having trouble responding right now. Please try again.",
+        text:
+          data.answer ||
+          data.response ||
+          "I'm having trouble responding right now. Please try again.",
         timestamp: new Date(),
         sentiment: data.sentiment?.sentiment,
         citations: data.citations,
@@ -79,21 +91,31 @@ export default function PayPalChat() {
 
   const formatText = (text) => {
     if (!text || typeof text !== "string") return "No content available";
-    
+
     return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/`(.*?)`/g, "<code class='bg-slate-800/50 px-2 py-0.5 rounded text-cyan-300'>$1</code>")
+      .replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong class='text-white font-semibold'>$1</strong>"
+      )
+      .replace(/\*(.*?)\*/g, "<em class='text-gray-200'>$1</em>")
+      .replace(
+        /`(.*?)`/g,
+        "<code class='bg-slate-900/80 px-2 py-0.5 rounded text-cyan-300 font-mono border border-cyan-500/30'>$1</code>"
+      )
       .replace(/\n\n/g, "<br><br>")
       .replace(/\n/g, "<br>");
   };
 
   const getSentimentEmoji = (sentiment) => {
     switch (sentiment?.toLowerCase()) {
-      case "positive": return "😊";
-      case "negative": return "😟";
-      case "neutral": return "😐";
-      default: return "💭";
+      case "positive":
+        return "😊";
+      case "negative":
+        return "😟";
+      case "neutral":
+        return "😐";
+      default:
+        return "💭";
     }
   };
 
@@ -104,7 +126,7 @@ export default function PayPalChat() {
         <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/30 rounded-full blur-3xl animate-float"></div>
         <div className="absolute top-40 right-32 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl animate-float-delayed"></div>
         <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-pink-500/30 rounded-full blur-3xl animate-float-slow"></div>
-        
+
         {/* Grid pattern overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
       </div>
@@ -124,7 +146,9 @@ export default function PayPalChat() {
               <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 PayPal AI
               </h1>
-              <p className="text-xs text-purple-300 font-semibold">Your Smart Assistant</p>
+              <p className="text-xs text-purple-300 font-semibold">
+                Your Smart Assistant
+              </p>
             </div>
           </div>
         </div>
@@ -152,18 +176,26 @@ export default function PayPalChat() {
                   <div className="flex items-center gap-3 mt-1">
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-400/30">
                       <Zap className="w-3 h-3 text-green-400" />
-                      <span className="text-[10px] text-green-300 font-bold">Fast</span>
+                      <span className="text-[10px] text-green-300 font-bold">
+                        Fast
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30">
                       <Shield className="w-3 h-3 text-blue-400" />
-                      <span className="text-[10px] text-blue-300 font-bold">Secure</span>
+                      <span className="text-[10px] text-blue-300 font-bold">
+                        Secure
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="text-right hidden sm:block">
-                <div className="text-xs text-purple-300 font-mono">{messages.length} messages</div>
-                <div className="text-[10px] text-gray-400">Session: {sessionId.slice(0, 6)}</div>
+                <div className="text-xs text-purple-300 font-mono">
+                  {messages.length} messages
+                </div>
+                <div className="text-[10px] text-gray-400">
+                  Session: {sessionId.slice(0, 6)}
+                </div>
               </div>
             </div>
           </div>
@@ -173,7 +205,9 @@ export default function PayPalChat() {
             {messages.map((msg, idx) => (
               <div
                 key={msg.id}
-                className={`flex gap-3 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} animate-messageSlide`}
+                className={`flex gap-3 ${
+                  msg.sender === "user" ? "flex-row-reverse" : "flex-row"
+                } animate-messageSlide`}
                 style={{ animationDelay: `${idx * 0.05}s` }}
               >
                 {/* Avatar */}
@@ -184,11 +218,19 @@ export default function PayPalChat() {
                       : "bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 shadow-cyan-500/50 animate-wiggle"
                   }`}
                 >
-                  {msg.sender === "user" ? <User className="w-5 h-5" /> : <Bot className="w-6 h-6" />}
+                  {msg.sender === "user" ? (
+                    <User className="w-5 h-5" />
+                  ) : (
+                    <Bot className="w-6 h-6" />
+                  )}
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`flex flex-col max-w-xl ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+                <div
+                  className={`flex flex-col max-w-xl ${
+                    msg.sender === "user" ? "items-end" : "items-start"
+                  }`}
+                >
                   <div
                     className={`group px-5 py-4 rounded-3xl shadow-2xl backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] ${
                       msg.sender === "user"
@@ -200,7 +242,7 @@ export default function PayPalChat() {
                   >
                     {/* Message text with typing effect placeholder */}
                     <div
-                      className="text-base leading-relaxed"
+                      className="text-base leading-relaxed text-white"
                       dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}
                     />
 
@@ -208,8 +250,12 @@ export default function PayPalChat() {
                     {msg.sentiment && msg.confidence && (
                       <div className="mt-4 flex items-center gap-3 pt-3 border-t border-white/10">
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-600/50">
-                          <span className="text-lg">{getSentimentEmoji(msg.sentiment)}</span>
-                          <span className="text-xs font-bold text-purple-300 uppercase">{msg.sentiment}</span>
+                          <span className="text-lg">
+                            {getSentimentEmoji(msg.sentiment)}
+                          </span>
+                          <span className="text-xs font-bold text-purple-300 uppercase">
+                            {msg.sentiment}
+                          </span>
                         </div>
                         <div className="flex-1 flex items-center gap-2">
                           <div className="flex-1 h-2 bg-slate-900/50 rounded-full overflow-hidden border border-slate-600/30">
@@ -218,7 +264,7 @@ export default function PayPalChat() {
                               style={{ width: `${msg.confidence}%` }}
                             ></div>
                           </div>
-                          <span className="text-xs font-black text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
+                          <span className="text-xs font-black text-white">
                             {msg.confidence}%
                           </span>
                         </div>
@@ -239,8 +285,12 @@ export default function PayPalChat() {
                               className="flex items-center gap-2 text-xs text-cyan-400 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-600/30 hover:border-cyan-500/50 transition-colors"
                             >
                               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                              <span className="font-mono flex-1">
-                                {typeof citation === "string" ? citation : citation.source || citation.label || `Source ${i + 1}`}
+                              <span className="font-mono flex-1 text-cyan-300">
+                                {typeof citation === "string"
+                                  ? citation
+                                  : citation.source ||
+                                    citation.label ||
+                                    `Source ${i + 1}`}
                               </span>
                             </div>
                           ))}
@@ -250,14 +300,19 @@ export default function PayPalChat() {
 
                     {/* Disclaimer */}
                     {msg.disclaimer && msg.confidence < 40 && (
-                      <div className="mt-3 pt-3 border-t border-white/10 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-                        💡 {msg.disclaimer}
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <div className="text-xs text-amber-200 bg-amber-500/20 border border-amber-500/30 rounded-xl px-3 py-2 font-medium">
+                          💡 {msg.disclaimer}
+                        </div>
                       </div>
                     )}
                   </div>
 
                   <span className="text-xs text-gray-500 mt-2 font-medium">
-                    {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {msg.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
               </div>
@@ -272,8 +327,14 @@ export default function PayPalChat() {
                 <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 px-6 py-4 rounded-3xl rounded-tl-md border border-slate-600/50 shadow-2xl">
                   <div className="flex gap-2">
                     <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce shadow-lg shadow-blue-400/50"></div>
-                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce shadow-lg shadow-purple-400/50" style={{ animationDelay: "0.15s" }}></div>
-                    <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce shadow-lg shadow-pink-400/50" style={{ animationDelay: "0.3s" }}></div>
+                    <div
+                      className="w-3 h-3 bg-purple-400 rounded-full animate-bounce shadow-lg shadow-purple-400/50"
+                      style={{ animationDelay: "0.15s" }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 bg-pink-400 rounded-full animate-bounce shadow-lg shadow-pink-400/50"
+                      style={{ animationDelay: "0.3s" }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -290,7 +351,9 @@ export default function PayPalChat() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && !e.shiftKey && handleSend()
+                  }
                   placeholder="Type your message..."
                   className="w-full bg-slate-800/80 border-2 border-slate-600/50 rounded-2xl px-6 py-4 pr-14 focus:outline-none focus:border-purple-500/60 focus:ring-4 focus:ring-purple-500/20 transition-all placeholder-slate-500 shadow-xl group-hover:border-slate-500/60 text-white"
                 />
@@ -308,7 +371,7 @@ export default function PayPalChat() {
               </button>
             </div>
             <div className="flex items-center justify-center mt-3 text-xs text-purple-400/70 font-medium">
-              <span>Crafted with ❤️ by Abu</span>
+              <span>Crafted with ❤️ by AskPal11</span>
             </div>
           </div>
         </div>
