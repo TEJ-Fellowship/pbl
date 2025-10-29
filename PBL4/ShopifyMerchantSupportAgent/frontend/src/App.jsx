@@ -9,25 +9,31 @@ import {
   ThumbsDown,
   ChevronDown,
   ChevronUp,
+  Menu,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 import axios from "axios";
-import { parseMarkdown } from "./utils/markdown.js";
+import { parseMarkdown, renderMarkdown } from "./utils/markdown.js";
+import ChatHistorySidebar from "./components/ChatHistorySidebar.jsx";
+import AnalyticsDashboard from "./components/AnalyticsDashboard.jsx";
 import "./App.css";
 
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL = "/api";
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId] = useState(
+  const [sessionId, setSessionId] = useState(
     () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   );
   const [expandedSources, setExpandedSources] = useState({});
   const [copiedCode, setCopiedCode] = useState({});
   const [feedback, setFeedback] = useState({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingClarification, setPendingClarification] = useState(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -54,23 +60,82 @@ function App() {
     }
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+  const handleSessionChange = async (newSessionId) => {
+    setSessionId(newSessionId);
+    setMessages([]); // Clear current messages
+    setSidebarOpen(false); // Close sidebar
+    setPendingClarification(null); // Clear pending clarification
+    // Load the new conversation history
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/history/${newSessionId}`
+      );
+      if (response.data.messages) {
+        setMessages(response.data.messages);
+      }
+    } catch (error) {
+      console.error("Error loading conversation history:", error);
+    }
+  };
 
-    const userMessage = {
-      id: `user_${Date.now()}`,
-      role: "user",
-      content: inputMessage,
-      timestamp: new Date(),
-    };
+  const handleNewChat = () => {
+    const newSessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    setSessionId(newSessionId);
+    setMessages([]);
+    setSidebarOpen(false);
+    setPendingClarification(null);
+  };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage("");
+  const handleFeedback = async (
+    messageId,
+    feedbackType,
+    rating = null,
+    comment = ""
+  ) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/feedback/store`, {
+        messageId,
+        sessionId,
+        conversationId: messages.find((m) => m.id === messageId)
+          ?.conversationId,
+        feedback: feedbackType,
+        rating,
+        comment,
+      });
+
+      if (response.data.success) {
+        setFeedback((prev) => ({
+          ...prev,
+          [messageId]: {
+            type: feedbackType,
+            rating,
+            comment,
+            timestamp: new Date(),
+          },
+        }));
+
+        console.log(
+          `Feedback submitted: ${feedbackType} for message ${messageId}`
+        );
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+    }
+  };
+
+  const handleApiSelection = async (selectedApi) => {
+    if (!pendingClarification) return;
+
     setIsLoading(true);
 
     try {
+      // Send the API selection as a clarifying response
+      const clarifyingResponse = `${pendingClarification.originalQuery} using ${selectedApi}`;
+
       const response = await axios.post(`${API_BASE_URL}/chat`, {
-        message: inputMessage,
+        message: clarifyingResponse,
         sessionId: sessionId,
       });
 
@@ -84,9 +149,106 @@ function App() {
         tokenUsage: response.data.tokenUsage,
         truncated: response.data.truncated,
         mcpTools: response.data.mcpTools || {},
+        selectedApi: selectedApi,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
+      setPendingClarification(null);
+    } catch (error) {
+      console.error("Error processing API selection:", error);
+      const errorMessage = {
+        id: `error_${Date.now()}`,
+        role: "assistant",
+        content:
+          "Sorry, I encountered an error while processing your API selection. Please try again.",
+        timestamp: new Date(),
+        isError: true,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+
+    const userMessage = {
+      id: `user_${Date.now()}`,
+      role: "user",
+      content: inputMessage,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = inputMessage;
+    setInputMessage("");
+    setIsLoading(true);
+
+    try {
+      let response;
+
+      // Check if this is a clarification response
+      if (pendingClarification) {
+        response = await axios.post(`${API_BASE_URL}/clarify`, {
+          clarificationResponse: currentInput,
+          originalQuestion: pendingClarification.originalQuestion,
+          sessionId: sessionId,
+        });
+        setPendingClarification(null); // Clear pending clarification
+      } else {
+        response = await axios.post(`${API_BASE_URL}/chat`, {
+          message: currentInput,
+          sessionId: sessionId,
+        });
+      }
+
+      const assistantMessage = {
+        id: `assistant_${Date.now()}`,
+        role: "assistant",
+        content: response.data.answer,
+        timestamp: new Date(),
+        confidence: response.data.confidence,
+        sources: response.data.sources || [],
+        tokenUsage: response.data.tokenUsage,
+        truncated: response.data.truncated,
+        mcpTools: response.data.mcpTools || {},
+        isClarifyingQuestion: response.data.isClarifyingQuestion || false,
+        suggestedApis: response.data.suggestedApis || [],
+        originalQuery: response.data.originalQuery || null,
+        clarificationData: response.data.clarificationData || null,
+        needsClarification: response.data.needsClarification || false,
+        multiTurnContext: response.data.multiTurnContext || {},
+        intentClassification: response.data.intentClassification || {},
+        proactiveSuggestions: response.data.proactiveSuggestions || [],
+      };
+
+      console.log(
+        "📨 Received proactive suggestions:",
+        response.data.proactiveSuggestions
+      );
+      console.log(
+        "📨 Suggestions count:",
+        response.data.proactiveSuggestions?.suggestions?.length || 0
+      );
+      console.log("📨 Full response data:", response.data);
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      // Handle clarification logic
+      if (response.data.isClarifyingQuestion) {
+        setPendingClarification({
+          originalQuery: response.data.originalQuery,
+          suggestedApis: response.data.suggestedApis,
+          clarificationData: response.data.clarificationData,
+        });
+      } else if (response.data.needsClarification) {
+        setPendingClarification({
+          originalQuestion: currentInput,
+          clarificationQuestion: response.data.answer,
+        });
+      } else {
+        setPendingClarification(null);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage = {
@@ -116,11 +278,6 @@ function App() {
     setTimeout(() => {
       setCopiedCode((prev) => ({ ...prev, [messageId]: false }));
     }, 2000);
-  };
-
-  const handleFeedback = (messageId, isPositive) => {
-    setFeedback((prev) => ({ ...prev, [messageId]: isPositive }));
-    // Here you could send feedback to backend if needed
   };
 
   const toggleSources = (messageId) => {
@@ -204,10 +361,25 @@ function App() {
       <div className="chat-container">
         <div className="chat-header">
           <div className="header-content">
+            <button
+              className="menu-button"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
             <Bot className="header-icon" />
             <div>
               <h1>Shopify Merchant Support</h1>
               <p>AI-powered assistance for your Shopify store</p>
+            </div>
+            <div className="header-actions">
+              <button
+                className="analytics-btn"
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                title="Analytics Dashboard"
+              >
+                📊 Analytics
+              </button>
             </div>
           </div>
         </div>
@@ -234,9 +406,135 @@ function App() {
                 )}
               </div>
               <div className="message-content">
+                {message.needsClarification && (
+                  <div className="clarification-indicator">
+                    <span className="clarification-badge">
+                      💡 Clarification Request
+                    </span>
+                  </div>
+                )}
                 <div className="message-text">
                   {renderMessageContent(message.content)}
+
+                  {/* Multi-turn conversation indicator */}
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.isFollowUp && (
+                      <div className="multi-turn-indicator follow-up-indicator">
+                        🔗 Follow-up question (Turn{" "}
+                        {message.multiTurnContext.turnCount})
+                      </div>
+                    )}
+
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.turnCount > 1 &&
+                    !message.multiTurnContext.isFollowUp && (
+                      <div className="multi-turn-indicator">
+                        💬 Conversation turn{" "}
+                        {message.multiTurnContext.turnCount}
+                      </div>
+                    )}
+
+                  {/* Intent classification indicator */}
+                  {message.intentClassification &&
+                    message.intentClassification.intent && (
+                      <div className="intent-classification-indicator">
+                        <span className="intent-badge">
+                          🎯{" "}
+                          {message.intentClassification.intent
+                            .charAt(0)
+                            .toUpperCase() +
+                            message.intentClassification.intent.slice(1)}{" "}
+                          Intent
+                        </span>
+                        <span className="intent-confidence">
+                          (
+                          {Math.round(
+                            message.intentClassification.confidence * 100
+                          )}
+                          % confidence)
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Merchant Information Display */}
+                  {message.multiTurnContext &&
+                    message.multiTurnContext.userPreferences && (
+                      <div className="merchant-info-display">
+                        <div className="merchant-info-header">
+                          🏪 Merchant Profile
+                        </div>
+                        <div className="merchant-info-grid">
+                          {message.multiTurnContext.userPreferences
+                            .merchantPlanTier && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Plan:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.merchantPlanTier
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.merchantPlanTier.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .storeType && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Store Type:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.storeType
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.storeType.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .industry && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Industry:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.industry
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.industry.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                          {message.multiTurnContext.userPreferences
+                            .experienceLevel && (
+                            <div className="merchant-info-item">
+                              <span className="info-label">Experience:</span>
+                              <span className="info-value">
+                                {message.multiTurnContext.userPreferences.experienceLevel
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  message.multiTurnContext.userPreferences.experienceLevel.slice(
+                                    1
+                                  )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
+
+                {/* Render clarifying question if this is one */}
+                {message.isClarifyingQuestion && (
+                  <ClarifyingQuestion
+                    question={message.content}
+                    suggestedApis={message.suggestedApis}
+                    originalQuery={message.originalQuery}
+                    onApiSelect={handleApiSelection}
+                    isLoading={isLoading}
+                  />
+                )}
 
                 {message.confidence && (
                   <div className="confidence-indicator">
@@ -311,7 +609,19 @@ function App() {
                     <div className="mcp-tools-section">
                       <div className="mcp-tools-header">
                         <span className="mcp-tools-title">
-                          🔧 Tools Used: {message.mcpTools.toolsUsed.join(", ")}
+                          🔧 AI Tools Used:{" "}
+                          {message.mcpTools.toolsUsed
+                            .map((tool) => {
+                              const toolNames = {
+                                calculator: "Calculator",
+                                web_search: "Web Search",
+                                shopify_status: "Shopify Status",
+                                date_time: "Date/Time",
+                                code_validator: "Code Validator",
+                              };
+                              return toolNames[tool] || tool;
+                            })
+                            .join(", ")}
                         </span>
                       </div>
                       {message.mcpTools.toolResults &&
@@ -712,6 +1022,109 @@ function App() {
                     </div>
                   )}
 
+                {/* Proactive Suggestions */}
+                {message.proactiveSuggestions &&
+                  message.proactiveSuggestions.suggestions &&
+                  message.proactiveSuggestions.suggestions.length > 0 && (
+                    <div className="proactive-suggestions">
+                      <div className="suggestions-header">
+                        <span className="suggestions-icon">💡</span>
+                        <span className="suggestions-title">
+                          Proactive Suggestions
+                        </span>
+                        <span className="suggestions-count">
+                          {message.proactiveSuggestions.suggestions.length}{" "}
+                          suggestion
+                          {message.proactiveSuggestions.suggestions.length !== 1
+                            ? "s"
+                            : ""}
+                        </span>
+                      </div>
+                      <div className="suggestions-list">
+                        {message.proactiveSuggestions.suggestions.map(
+                          (suggestion, index) => (
+                            <div key={index} className="suggestion-item">
+                              <div className="suggestion-content">
+                                <div className="suggestion-text">
+                                  {suggestion.suggestion}
+                                </div>
+                                {suggestion.reasoning && (
+                                  <div className="suggestion-reasoning">
+                                    <em>Why: {suggestion.reasoning}</em>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="suggestion-actions">
+                                {suggestion.link && (
+                                  <a
+                                    href={suggestion.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="suggestion-link"
+                                  >
+                                    <span className="link-icon">🔗</span>
+                                    Learn More
+                                  </a>
+                                )}
+                                <button
+                                  className="suggestion-action-btn"
+                                  onClick={() => {
+                                    // Copy suggestion to clipboard
+                                    navigator.clipboard.writeText(
+                                      suggestion.suggestion
+                                    );
+                                    // You could add a toast notification here
+                                  }}
+                                  title="Copy suggestion"
+                                >
+                                  📋 Copy
+                                </button>
+                              </div>
+                              <div className="suggestion-meta">
+                                <div className="suggestion-tags">
+                                  <span className="suggestion-category">
+                                    {suggestion.category
+                                      ?.replace(/_/g, " ")
+                                      .toUpperCase()}
+                                  </span>
+                                  <span
+                                    className={`suggestion-priority priority-${suggestion.priority}`}
+                                  >
+                                    <span className="priority-icon">
+                                      {suggestion.priority === "high"
+                                        ? "🔴"
+                                        : suggestion.priority === "medium"
+                                        ? "🟡"
+                                        : "🟢"}
+                                    </span>
+                                    {suggestion.priority.toUpperCase()} PRIORITY
+                                  </span>
+                                </div>
+                                {suggestion.source && (
+                                  <div className="suggestion-source">
+                                    <span className="source-badge">
+                                      {suggestion.source === "ai_generated"
+                                        ? "🤖 AI Generated"
+                                        : suggestion.source === "fallback"
+                                        ? "💡 General Tips"
+                                        : "📋 Rule Based"}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                      <div className="suggestions-footer">
+                        <small>
+                          💡 These suggestions are tailored to your current
+                          context and merchant profile
+                        </small>
+                      </div>
+                    </div>
+                  )}
+
                 {message.tokenUsage && (
                   <div className="token-usage">
                     <small>
@@ -775,12 +1188,29 @@ function App() {
         </div>
 
         <div className="input-container">
+          {pendingClarification && (
+            <div className="clarification-hint">
+              <div className="clarification-icon">💡</div>
+              <div className="clarification-text">
+                <strong>Please clarify:</strong>{" "}
+                {pendingClarification.clarificationQuestion}
+                <br />
+                <small>
+                  Your response will help me provide a more specific answer.
+                </small>
+              </div>
+            </div>
+          )}
           <div className="input-wrapper">
             <textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask a question about Shopify..."
+              placeholder={
+                pendingClarification
+                  ? "Please provide clarification..."
+                  : "Ask a question about Shopify..."
+              }
               rows={1}
               disabled={isLoading}
             />
@@ -794,6 +1224,33 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Analytics Dashboard */}
+      {showAnalytics && (
+        <div className="analytics-overlay">
+          <div className="analytics-modal">
+            <div className="analytics-header">
+              <h2>Analytics Dashboard</h2>
+              <button
+                className="close-btn"
+                onClick={() => setShowAnalytics(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <AnalyticsDashboard />
+          </div>
+        </div>
+      )}
+
+      {/* Chat History Sidebar */}
+      <ChatHistorySidebar
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        currentSessionId={sessionId}
+        onSessionChange={handleSessionChange}
+        onNewChat={handleNewChat}
+      />
     </div>
   );
 }

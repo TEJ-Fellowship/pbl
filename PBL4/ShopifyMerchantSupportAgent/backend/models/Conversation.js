@@ -34,6 +34,89 @@ const conversationSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    conversationState: {
+      turnCount: {
+        type: Number,
+        default: 0,
+      },
+      lastCompressionTurn: {
+        type: Number,
+        default: 0,
+      },
+      contextSummary: {
+        type: String,
+        default: null,
+      },
+      userPreferences: {
+        preferredAPI: {
+          type: String,
+          default: null,
+        },
+        technicalLevel: {
+          type: String,
+          default: "intermediate",
+        },
+        topics: [String],
+        merchantPlanTier: {
+          type: String,
+          default: null,
+        },
+        storeType: {
+          type: String,
+          default: null,
+        },
+        industry: {
+          type: String,
+          default: null,
+        },
+        location: {
+          type: String,
+          default: null,
+        },
+        preferredLanguage: {
+          type: String,
+          default: "en",
+        },
+        timezone: {
+          type: String,
+          default: null,
+        },
+        storeSize: {
+          type: String,
+          default: null,
+        },
+        experienceLevel: {
+          type: String,
+          default: null,
+        },
+        goals: [String],
+      },
+      conversationFlow: {
+        currentTopic: {
+          type: String,
+          default: null,
+        },
+        previousTopics: [String],
+        followUpContext: {
+          type: String,
+          default: null,
+        },
+      },
+      ambiguityFlags: {
+        needsClarification: {
+          type: Boolean,
+          default: false,
+        },
+        clarificationQuestion: {
+          type: String,
+          default: null,
+        },
+        pendingClarification: {
+          type: String,
+          default: null,
+        },
+      },
+    },
   },
   {
     timestamps: true,
@@ -45,6 +128,10 @@ conversationSchema.pre("save", function (next) {
   this.updatedAt = new Date();
   next();
 });
+
+// Strategic indexes for performance optimization (Tier 3)
+conversationSchema.index({ updatedAt: -1, isActive: 1 }); // For history queries
+conversationSchema.index({ sessionId: 1, updatedAt: -1 }); // Composite for session lookups
 
 // Method to get recent messages (last 8 messages for sliding window)
 conversationSchema.methods.getRecentMessages = function (limit = 8) {

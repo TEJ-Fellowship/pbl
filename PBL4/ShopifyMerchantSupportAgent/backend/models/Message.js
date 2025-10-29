@@ -5,13 +5,15 @@ const messageSchema = new mongoose.Schema(
     conversationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Conversation",
-      required: true,
+      required: function () {
+        return this.role !== "analytics";
+      },
       index: true,
     },
     role: {
       type: String,
       required: true,
-      enum: ["user", "assistant"],
+      enum: ["user", "assistant", "analytics"],
       index: true,
     },
     content: {
@@ -36,6 +38,41 @@ const messageSchema = new mongoose.Schema(
       modelUsed: String,
       processingTime: Number,
       tokensUsed: Number,
+      // New fields for API clarification
+      isClarifyingQuestion: Boolean,
+      suggestedApis: [String],
+      originalQuery: String,
+      detectedApi: String,
+      mcpTools: {
+        toolsUsed: [String],
+        toolResults: Object,
+      },
+      // Multi-turn conversation context
+      multiTurnContext: {
+        turnCount: Number,
+        isFollowUp: Boolean,
+        userPreferences: {
+          merchantPlanTier: String,
+          storeType: String,
+          industry: String,
+          experienceLevel: String,
+          location: String,
+        },
+        contextualQuery: String,
+      },
+      // Intent classification
+      intentClassification: {
+        intent: String,
+        confidence: Number,
+        method: String,
+        routingConfig: Object,
+      },
+      // Proactive suggestions
+      proactiveSuggestions: [Object],
+      // Query classification
+      queryClassification: Object,
+      // Clarification processed flag
+      clarificationProcessed: Boolean,
     },
   },
   {
@@ -43,8 +80,11 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-// Compound index for efficient querying
-messageSchema.index({ conversationId: 1, timestamp: -1 });
+// Strategic indexes for performance optimization (Tier 3)
+// Compound indexes for efficient querying
+messageSchema.index({ conversationId: 1, timestamp: -1 }); // Already exists
+messageSchema.index({ role: 1, timestamp: -1 }); // For role-based queries
+messageSchema.index({ timestamp: -1 }); // For global message retrieval
 
 // Method to get formatted message for context
 messageSchema.methods.getFormattedMessage = function () {
