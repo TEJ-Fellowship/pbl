@@ -1,8 +1,6 @@
 const dotenv = require("dotenv");
 const { Pool } = require("pg");
 const { logConversation } = require("../dbHybrid.js");
-const { combineHybridAndWebResults } = require("./webSearchService.js");
-const { getExchangeRate } = require("./currencyExchangeService.js");
 const MCPToolsService = require("../../mcp-server/src/index.js");
 dotenv.config();
 
@@ -98,34 +96,41 @@ async function detectSentiment(text, genAI) {
 
 function classifyIssueType(text) {
   const t = String(text || "").toLowerCase();
-  
+
   // Check for general greetings and identity questions first
-  if (/hello|hi|hey|good morning|good afternoon|good evening|greetings/.test(t)) return "greeting";
-  if (/who are you|what are you|your name|introduce|introduction/.test(t)) return "identity";
+  if (/hello|hi|hey|good morning|good afternoon|good evening|greetings/.test(t))
+    return "greeting";
+  if (/who are you|what are you|your name|introduce|introduction/.test(t))
+    return "identity";
   if (/help|support|assistance|how can you help/.test(t)) return "general_help";
-  
+
   // Check for specific issue types
   if (/chargeback|dispute|case|resolution/.test(t)) return "dispute";
   if (/limit|limitation|restricted|hold/.test(t)) return "account_limitation";
   if (/fee|fees|charge|rate|pricing/.test(t)) return "fees";
   if (/refund|refunds|return/.test(t)) return "refund";
   if (/payment|transfer|send|receive|payout/.test(t)) return "payment_issue";
-  
+
   // Default to general help instead of payment issue
   return "general_help";
 }
 
-function formatStructuredResponse(issueType, includeDisclaimer, rawAnswer) {
+function formatStructuredResponse(
+  issueType,
+  includeDisclaimer,
+  rawAnswer,
+  disclaimer
+) {
   // For greetings and identity questions, don't show "Issue:" prefix
   if (issueType === "greeting" || issueType === "identity") {
     return rawAnswer;
   }
-  
+
   // For other issue types, show the structured format
   return [
     `Issue: ${issueType.replace(/_/g, " ")}`,
     rawAnswer,
-    disclaimer && `Disclaimer: ${disclaimer}`,
+    includeDisclaimer && disclaimer && `Disclaimer: ${disclaimer}`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -241,6 +246,82 @@ function combineSearchResults(semanticResults, lexicalResults) {
     .slice(0, TOP_K);
 }
 
+// ===== COMBINE HYBRID AND WEB RESULTS =====
+function combineHybridAndWebResults(hybridResults, webResults) {
+  console.log(
+    `Combining ${hybridResults.length} hybrid + ${webResults.length} web results`
+  );
+
+  // Balanced combination logic - prioritize hybrid results for accuracy
+  const allResults = [];
+
+  // Add hybrid results with minimal score reduction
+  hybridResults.forEach((result, index) => {
+    allResults.push({
+      ...result,
+      source: "hybrid",
+      adjustedScore: result.combinedScore * 0.9, // Minimal reduction
+      priority: "documentation",
+      originalScore: result.combinedScore,
+    });
+  });
+
+  // Add web results with moderate scoring
+  webResults.forEach((result, index) => {
+    allResults.push({
+      ...result,
+      source: "web_search",
+      adjustedScore: result.combinedScore * 1.1, // Moderate boost
+      priority: "recent_info",
+      isRecent: result.isRecent || false,
+      isOfficial: result.isOfficial || false,
+      originalScore: result.combinedScore,
+    });
+  });
+
+  // Balanced sorting algorithm - prioritize quality over source
+  allResults.sort((a, b) => {
+    // Primary: adjusted score (quality first)
+    if (Math.abs(a.adjustedScore - b.adjustedScore) > 0.1) {
+      return b.adjustedScore - a.adjustedScore;
+    }
+
+    // Secondary: official sources first
+    if (a.isOfficial !== b.isOfficial) {
+      return b.isOfficial - a.isOfficial;
+    }
+
+    // Tertiary: recent content for recent queries
+    if (a.isRecent !== b.isRecent) {
+      return b.isRecent - a.isRecent;
+    }
+
+    // Quaternary: prefer hybrid for general queries, web for status queries
+    const isStatusQuery = /(down|status|outage|maintenance|working)/i.test(
+      hybridResults[0]?.metadata?.text || ""
+    );
+    if (isStatusQuery && a.source !== b.source) {
+      return a.source === "web_search" ? -1 : 1;
+    } else if (!isStatusQuery && a.source !== b.source) {
+      return a.source === "hybrid" ? -1 : 1;
+    }
+
+    // Final: original combined score
+    return b.originalScore - a.originalScore;
+  });
+
+  // Return top 3 results with balanced mix
+  const topResults = allResults.slice(0, 3);
+
+  console.log(
+    `Final combined results: ${topResults.length} (${
+      topResults.filter((r) => r.source === "web_search").length
+    } web + ${topResults.filter((r) => r.source === "hybrid").length} hybrid)`
+  );
+
+  return topResults;
+}
+
 // ===== CHAT HISTORY MANAGEMENT =====
 async function saveChatMessage(sessionId, role, content, metadata = {}) {
   const client = await pool.connect();
@@ -297,11 +378,11 @@ async function handleQuery(query, sessionId) {
   try {
     // Initialize MCP Tools Service
     const mcpTools = new MCPToolsService();
-    
+
     // Get triggered tools and their data
     const triggeredTools = await mcpTools.getTriggeredTools(query);
     const mcpData = {};
-    
+
     // Get data from each triggered tool
     for (const tool of triggeredTools) {
       try {
@@ -328,36 +409,63 @@ async function handleQuery(query, sessionId) {
 
     // Run hybrid search
     const hybridResults = await hybridSearch(query, embedder, index, dbClient);
-    
+
     // Check if we have MCP web search results to combine with hybrid search
     let webResults = [];
     let finalSearchResults = hybridResults;
-    
-    if (mcpData.websearch && mcpData.websearch.success && mcpData.websearch.data) {
+
+    if (
+      mcpData.websearch &&
+      mcpData.websearch.success &&
+      mcpData.websearch.data
+    ) {
       console.log("Using MCP web search results for recent information...");
       console.log(`Hybrid results before web search: ${hybridResults.length}`);
-      console.log(`Hybrid result sources: ${hybridResults.map(r => r.metadata?.source || 'unknown').join(', ')}`);
-      
+      console.log(
+        `Hybrid result sources: ${hybridResults
+          .map((r) => r.metadata?.source || "unknown")
+          .join(", ")}`
+      );
+
       webResults = mcpData.websearch.data;
       console.log(`🌐 MCP Web search returned: ${webResults.length} results`);
-      
+
       if (webResults.length > 0) {
-        console.log(`📊 Web result sources: ${webResults.map(r => r.metadata?.title || r.metadata?.source || 'unknown').join(', ')}`);
-        console.log(`📊 Web result links: ${webResults.map(r => r.metadata?.link || 'no-link').join(', ')}`);
-        
+        console.log(
+          `📊 Web result sources: ${webResults
+            .map((r) => r.metadata?.title || r.metadata?.source || "unknown")
+            .join(", ")}`
+        );
+        console.log(
+          `📊 Web result links: ${webResults
+            .map((r) => r.metadata?.link || "no-link")
+            .join(", ")}`
+        );
+
         // Combine hybrid and web results
-        finalSearchResults = combineHybridAndWebResults(hybridResults, webResults);
-        console.log(`✅ Combined ${hybridResults.length} hybrid + ${webResults.length} web results`);
-        console.log(`📊 Final result sources: ${finalSearchResults.map(r => r.source).join(', ')}`);
+        finalSearchResults = combineHybridAndWebResults(
+          hybridResults,
+          webResults
+        );
+        console.log(
+          `✅ Combined ${hybridResults.length} hybrid + ${webResults.length} web results`
+        );
+        console.log(
+          `📊 Final result sources: ${finalSearchResults
+            .map((r) => r.source)
+            .join(", ")}`
+        );
       } else {
-        console.log("⚠️ No MCP web search results found, using hybrid results only");
+        console.log(
+          "⚠️ No MCP web search results found, using hybrid results only"
+        );
         finalSearchResults = hybridResults;
       }
     } else {
       console.log("📚 Using hybrid search only (no MCP web search results)");
     }
 
-    if (searchResults.length === 0) {
+    if (finalSearchResults.length === 0) {
       return {
         answer: "No relevant info found. Please contact PayPal support.",
         sentiment,
@@ -368,7 +476,7 @@ async function handleQuery(query, sessionId) {
     const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
 
     // Prepare context from retrieved chunks
-    const context = searchResults
+    const context = finalSearchResults
       .map((chunk, idx) => {
         const content =
           chunk.metadata?.text ||
@@ -379,9 +487,9 @@ async function handleQuery(query, sessionId) {
       .join("\n\n");
 
     // Add MCP tool data to context
-    let mcpContext = '';
+    let mcpContext = "";
     if (Object.keys(mcpData).length > 0) {
-      mcpContext = '\n\nAdditional Real-time Information:\n';
+      mcpContext = "\n\nAdditional Real-time Information:\n";
       for (const [tool, data] of Object.entries(mcpData)) {
         if (data.success && data.message) {
           mcpContext += `\n[${tool.toUpperCase()} TOOL]: ${data.message}`;
@@ -420,7 +528,7 @@ async function handleQuery(query, sessionId) {
     } else if (sentiment.sentiment === "concerned") {
       systemInstruction += ` The customer is concerned. Be reassuring and calm.`;
     }
-    
+
     // Add response length constraints
     systemInstruction += `\n\nIMPORTANT RESPONSE GUIDELINES:
     - Keep responses under 150 words
@@ -428,12 +536,16 @@ async function handleQuery(query, sessionId) {
     - Focus on the most important information
     - Use bullet points for multiple items
     - Avoid lengthy explanations unless specifically requested`;
-    
+
     // Enhanced instructions for hybrid + MCP tools integration
-    const hasWebResults = finalSearchResults.some(result => result.source === 'web_search');
-    const hasHybridResults = finalSearchResults.some(result => result.source === 'hybrid');
+    const hasWebResults = finalSearchResults.some(
+      (result) => result.source === "web_search"
+    );
+    const hasHybridResults = finalSearchResults.some(
+      (result) => result.source === "hybrid"
+    );
     const hasMCPTools = Object.keys(mcpData).length > 0;
-    
+
     if (hasMCPTools) {
       systemInstruction += `\n\nIMPORTANT: You have access to real-time tool data in addition to documentation:
       - PRIORITIZE real-time tool data for current status, currency conversions, and live information
@@ -472,20 +584,24 @@ Customer: ${query}`;
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let modelAnswer = response.text();
-    
+
     // Ensure response is under 150 words
-    const words = modelAnswer.split(' ');
+    const words = modelAnswer.split(" ");
     if (words.length > 150) {
-      modelAnswer = words.slice(0, 150).join(' ') + '...';
+      modelAnswer = words.slice(0, 150).join(" ") + "...";
     }
 
     const includeDisclaimer =
-      (searchResults[0]?.combinedScore || 0) < 0.5 ||
+      (finalSearchResults[0]?.combinedScore || 0) < 0.5 ||
       /account|legal|attorney|law|court|subpoena/i.test(query);
+    const disclaimerText = includeDisclaimer
+      ? "This is general information based on available documentation. For specific account issues or legal matters, please contact PayPal support directly."
+      : null;
     const finalAnswer = formatStructuredResponse(
       issueType,
       includeDisclaimer,
-      modelAnswer
+      modelAnswer,
+      disclaimerText
     );
 
     // Save assistant response to chat history
@@ -493,8 +609,8 @@ Customer: ${query}`;
       await saveChatMessage(sessionId, "assistant", finalAnswer, {
         sentiment,
         issueType,
-        confidence: searchResults[0]?.combinedScore || 0,
-        searchType: searchResults[0]?.source || "unknown",
+        confidence: finalSearchResults[0]?.combinedScore || 0,
+        searchType: finalSearchResults[0]?.source || "unknown",
       });
     }
 
@@ -504,33 +620,36 @@ Customer: ${query}`;
       query,
       issueType,
       sentiment,
-      topCitations: searchResults.map((c) => ({
+      topCitations: finalSearchResults.map((c) => ({
         source: c.metadata?.source || "Unknown",
         channel: c.source,
         isPolicy: isPolicyLikeSource(c.metadata?.source),
         score: c.combinedScore,
       })),
     });
-    
+
     return {
       answer: finalAnswer,
       sentiment,
       confidence: Math.min(
         100,
-        Math.max(0, Math.round((searchResults[0]?.combinedScore || 0) * 100))
+        Math.max(
+          0,
+          Math.round((finalSearchResults[0]?.combinedScore || 0) * 100)
+        )
       ),
-      citations: searchResults.map((c, idx) => ({
+      citations: finalSearchResults.map((c, idx) => ({
         label: `Source ${idx + 1}`,
         source: c.metadata?.source || c.metadata?.title || "docs",
         isPolicy: isPolicyLikeSource(c.metadata?.source),
         channel: c.source,
         isOfficial: c.isOfficial || false,
         isRecent: c.isRecent || false,
-        priority: c.priority || 'unknown'
+        priority: c.priority || "unknown",
       })),
       issueType,
       disclaimer: includeDisclaimer,
-      searchType: searchResults[0]?.source || "unknown",
+      searchType: finalSearchResults[0]?.source || "unknown",
     };
   } catch (error) {
     console.error("Error in handleQuery:", error);
