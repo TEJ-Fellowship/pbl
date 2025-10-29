@@ -4,6 +4,13 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
+import {
+  testConnection,
+  initializeSchema,
+  saveScrapedDoc,
+  saveScrapedDocs,
+  closePool,
+} from "./database.js";
 
 // twilio documentation sources
 const SOURCES = {
@@ -152,9 +159,13 @@ async function main() {
   const limitArg = args
     .find((arg) => arg.startsWith("--limit="))
     ?.split("=")[1];
+  const skipDbArg = args.find((arg) => arg === "--skip-db");
+  const skipJsonArg = args.find((arg) => arg === "--skip-json");
 
   let sourcesToScrape = Object.keys(SOURCES);
   let limit = limitArg ? parseInt(limitArg) : null;
+  const saveToDb = !skipDbArg;
+  const saveToJson = !skipJsonArg;
 
   if (sourcesArg) {
     if (sourcesArg === "all") {
@@ -166,9 +177,29 @@ async function main() {
 
   console.log(`📋 Sources to scrape: ${sourcesToScrape.join(", ")}`);
   if (limit) console.log(`🔢 Limit: ${limit} documents per source`);
+  console.log(`💾 Save to DB: ${saveToDb ? "✅" : "❌"}`);
+  console.log(`💾 Save to JSON: ${saveToJson ? "✅" : "❌"}`);
+
+  // Initialize database if enabled
+  let dbConnected = false;
+  if (saveToDb) {
+    try {
+      dbConnected = await testConnection();
+      if (dbConnected) {
+        await initializeSchema();
+        console.log("✅ Database ready\n");
+      } else {
+        console.log("⚠️ Database connection failed, continuing without DB...\n");
+      }
+    } catch (error) {
+      console.log("⚠️ Database initialization failed, continuing without DB...");
+      console.log(`   Error: ${error.message}\n`);
+    }
+  }
 
   const docs = [];
   let totalWords = 0;
+  let dbSavedCount = 0;
 
   for (const category of sourcesToScrape) {
     if (!SOURCES[category]) {
@@ -181,6 +212,17 @@ async function main() {
       docs.push(doc);
       totalWords += doc.wordCount;
       console.log(`✅ Scraped ${category}: ${doc.wordCount} words`);
+
+      // Save to database immediately if enabled and connected
+      if (saveToDb && dbConnected) {
+        try {
+          await saveScrapedDoc(doc);
+          dbSavedCount++;
+          console.log(`   💾 Saved to database: ${doc.id}`);
+        } catch (error) {
+          console.error(`   ❌ Failed to save to database: ${error.message}`);
+        }
+      }
     }
 
     if (limit && docs.length >= limit) {
@@ -189,18 +231,27 @@ async function main() {
     }
   }
 
-  // Create output directory
-  const outputDir = path.join(process.cwd(), "data", "twilio_docs");
-  await fs.mkdir(outputDir, { recursive: true });
+  // Save to JSON file if enabled
+  if (saveToJson) {
+    const outputDir = path.join(process.cwd(), "data", "twilio_docs");
+    await fs.mkdir(outputDir, { recursive: true });
 
-  // Save scraped data
-  const outputFile = path.join(outputDir, "scraped.json");
-  await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
+    const outputFile = path.join(outputDir, "scraped.json");
+    await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
+    console.log(`\n💾 Saved to JSON: ${outputFile}`);
+  }
+
+  // Close database connection
+  if (dbConnected) {
+    await closePool();
+  }
 
   console.log(`\n🎉 Scraping completed!`);
   console.log(`📊 Total documents: ${docs.length}`);
   console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
-  console.log(`💾 Saved to: ${outputFile}`);
+  if (saveToDb && dbConnected) {
+    console.log(`💾 Documents saved to DB: ${dbSavedCount}`);
+  }
 
   // Display summary
   console.log(`\n📋 Scraped sources:`);
