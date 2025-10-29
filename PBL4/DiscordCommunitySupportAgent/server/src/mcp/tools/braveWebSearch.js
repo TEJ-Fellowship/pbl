@@ -145,9 +145,10 @@ export class FreeWebSearchTool {
       
       // Extract description
       const descMatch = descRegex.exec(html);
-      const description = descMatch ? descMatch[1] : 'Discord-related information';
+      const description = descMatch ? descMatch[1] : 'Web result';
       
-      if (url && title && this.isDiscordRelated(url, title)) {
+      // Accept general web results without forcing Discord-only filtering
+      if (url && title) {
         results.push({
           title: title,
           url: url,
@@ -263,21 +264,10 @@ export class FreeWebSearchTool {
    * @returns {string} Enhanced query
    */
   enhanceDiscordQuery(query) {
-    const discordKeywords = [
-      'discord', 'discord bot', 'discord api', 'discord webhook',
-      'discord status', 'discord outage', 'discord update'
-    ];
-
-    const hasDiscordKeyword = discordKeywords.some(keyword => 
-      query.toLowerCase().includes(keyword.toLowerCase())
-    );
-
-    if (hasDiscordKeyword) {
-      return query;
-    }
-
-    // Add Discord context for general queries
-    return `${query} discord`;
+    // Do not force-add Discord context. If the query is Discord-related,
+    // it will already include those keywords. Otherwise, keep it generic
+    // so we can answer out-of-Discord questions using the web.
+    return query;
   }
 
   /**

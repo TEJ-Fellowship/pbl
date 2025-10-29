@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, LogIn, UserPlus, Settings, ChevronDown } from "lucide-react";
+import { Send, User, Bot, LogIn, UserPlus, Settings, ChevronDown, ThumbsUp, ThumbsDown } from "lucide-react";
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
@@ -18,6 +18,7 @@ const ChatInterface = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [expandedSources, setExpandedSources] = useState({});
+  const [submittedFeedback, setSubmittedFeedback] = useState({}); // messageId -> 'positive' | 'negative'
   const [serverContext, setServerContext] = useState({
     type: 'general',
     size: 'unknown',
@@ -75,7 +76,8 @@ const ChatInterface = () => {
         timestamp: new Date(),
         sources: data.results || [],
         searchMethod: data.searchMethod,
-        features: data.features
+        features: data.features,
+        query: inputMessage // keep original question for feedback payload
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -163,6 +165,32 @@ const ChatInterface = () => {
       ...prev,
       [key]: !prev[key]
     }));
+  };
+
+  const sendFeedback = async (message, type) => {
+    if (submittedFeedback[message.id]) return;
+    // Optimistic UI update for immediate highlight
+    setSubmittedFeedback(prev => ({ ...prev, [message.id]: type }));
+    try {
+      await fetch('http://localhost:3001/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: user?.id || 'anonymous',
+          query: message.query || '',
+          responseId: String(message.id),
+          feedbackType: type
+        })
+      });
+    } catch (e) {
+      console.error('Feedback error:', e);
+      // Rollback highlight on error
+      setSubmittedFeedback(prev => {
+        const copy = { ...prev };
+        delete copy[message.id];
+        return copy;
+      });
+    }
   };
 
   return (
@@ -294,6 +322,31 @@ const ChatInterface = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Feedback controls for bot messages */}
+                {message.type === 'bot' && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-gray-400">
+                    <span>Was this helpful?</span>
+                    <button
+                      onClick={() => sendFeedback(message, 'positive')}
+                      disabled={!!submittedFeedback[message.id]}
+                      className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors ${submittedFeedback[message.id] === 'positive' ? 'border-green-500 text-green-400 font-semibold' : 'border-gray-600 hover:bg-gray-700'}`}
+                      title="Thumbs up"
+                    >
+                      <ThumbsUp size={14} />
+                      <span>Yes</span>
+                    </button>
+                    <button
+                      onClick={() => sendFeedback(message, 'negative')}
+                      disabled={!!submittedFeedback[message.id]}
+                      className={`flex items-center gap-1 px-2 py-1 rounded border transition-colors ${submittedFeedback[message.id] === 'negative' ? 'border-red-500 text-red-400 font-semibold' : 'border-gray-600 hover:bg-gray-700'}`}
+                      title="Thumbs down"
+                    >
+                      <ThumbsDown size={14} />
+                      <span>No</span>
+                    </button>
                   </div>
                 )}
 

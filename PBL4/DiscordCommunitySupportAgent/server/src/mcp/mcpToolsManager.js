@@ -70,7 +70,34 @@ export class MCPToolsManager {
       }
 
       console.log(`🔧 Executing MCP tool: ${toolName}`);
-      const result = await tool.execute(parameters);
+      
+      // Handle different tool signatures
+      let result;
+      if (toolName === 'free_web_search') {
+        // FreeWebSearchTool expects execute(query, options)
+        const { query, ...options } = parameters;
+        if (!query) {
+          throw new Error('Query parameter is required for free_web_search');
+        }
+        result = await tool.execute(query, options);
+      } else if (toolName === 'discord_webhook_tester') {
+        // WebhookTesterTool expects execute(webhookUrl, options)
+        const { webhookUrl, ...options } = parameters;
+        if (!webhookUrl) {
+          throw new Error('WebhookUrl parameter is required for discord_webhook_tester');
+        }
+        result = await tool.execute(webhookUrl, options);
+      } else if (toolName === 'discord_role_hierarchy_checker') {
+        // RoleHierarchyCheckerTool expects execute(roles, options)
+        const { roles, ...options } = parameters;
+        if (!roles) {
+          throw new Error('Roles parameter is required for discord_role_hierarchy_checker');
+        }
+        result = await tool.execute(roles, options);
+      } else {
+        // Other tools expect execute(parameters)
+        result = await tool.execute(parameters);
+      }
       
       return {
         success: true,

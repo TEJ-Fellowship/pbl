@@ -4,12 +4,14 @@ import dotenv from 'dotenv';
 import { config } from './config/index.js';
 import searchService from './services/searchService.js';
 import conversationService from './services/conversationService.js';
+import analyticsService from './services/analyticsService.js';
+import postgresqlConfig from './config/postgresql.js';
 import { validateQuery, validateServerContext, validateSearchOptions, validateSessionId } from './utils/validators.js';
 import { getUserProfile, saveUserProfile } from './repositories/conversationRepository.js';
 import { formatErrorMessage } from './utils/formatters.js';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables (allow later values to override existing)
+dotenv.config({ override: true });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,10 +19,15 @@ const PORT = process.env.PORT || 3001;
 // Initialize services
 let searchServiceReady = false;
 let conversationServiceReady = false;
+let analyticsServiceReady = false;
+let postgresqlReady = false;
 
 async function initializeServices() {
   try {
     console.log('🔧 Initializing services...');
+    
+    // Initialize PostgreSQL first
+    postgresqlReady = await postgresqlConfig.initialize();
     
     // Initialize search service
     searchServiceReady = await searchService.initialize();
@@ -28,8 +35,13 @@ async function initializeServices() {
     // Initialize conversation service
     conversationServiceReady = await conversationService.initialize();
     
+    // Initialize analytics service (depends on PostgreSQL)
+    analyticsServiceReady = await analyticsService.initialize();
+    
+    console.log(`✅ PostgreSQL: ${postgresqlReady ? 'Ready' : 'Failed'}`);
     console.log(`✅ Search Service: ${searchServiceReady ? 'Ready' : 'Failed'}`);
     console.log(`✅ Conversation Service: ${conversationServiceReady ? 'Ready' : 'Failed'}`);
+    console.log(`✅ Analytics Service: ${analyticsServiceReady ? 'Ready' : 'Failed'}`);
     
   } catch (error) {
     console.error('❌ Service initialization failed:', error.message);
@@ -49,13 +61,17 @@ app.get('/api/health', (req, res) => {
     features: {
       searchService: searchServiceReady,
       conversationService: conversationServiceReady,
+      analyticsService: analyticsServiceReady,
+      postgresql: postgresqlReady,
       hybridSearch: searchServiceReady,
       reranking: true,
       semanticSearch: true,
       conversationMemory: conversationServiceReady,
-      mcpTools: conversationServiceReady
+      mcpTools: conversationServiceReady,
+      analytics: analyticsServiceReady
     },
-    searchMethods: searchService.getStatus()
+    searchMethods: searchService.getStatus(),
+    analytics: analyticsService.getStatus()
   });
 });
 
@@ -119,6 +135,20 @@ app.post('/api/search', async (req, res) => {
         enableReranking: sanitizedOptions.enableReranking
       }
     );
+
+    // Track analytics (async, don't wait)
+    if (analyticsServiceReady) {
+      analyticsService.trackQuestion({
+        query: sanitizedQuery,
+        searchResults,
+        confidenceScore: response.confidenceScore || 0.8,
+        searchMethod: sanitizedOptions.method,
+        sessionId: sessionId || 'default',
+        serverContext: sanitizedContext
+      }).catch(error => {
+        console.error('❌ Analytics tracking failed:', error.message);
+      });
+    }
     
     res.json(response);
     
@@ -279,15 +309,19 @@ app.post('/api/user/:sessionId', async (req, res) => {
 app.get('/api/stats', (req, res) => {
   try {
     const searchStatus = searchService.getStatus();
+    const analyticsStatus = analyticsService.getStatus();
     
     res.json({
       success: true,
       search: searchStatus,
+      analytics: analyticsStatus,
       features: {
         hybridSearch: searchServiceReady,
         reranking: true,
         semanticSearch: true,
-        conversationMemory: true
+        conversationMemory: true,
+        analytics: analyticsServiceReady,
+        postgresql: postgresqlReady
       },
       timestamp: new Date().toISOString()
     });
@@ -298,6 +332,179 @@ app.get('/api/stats', (req, res) => {
       error: 'Failed to retrieve statistics',
       success: false,
       message: formatErrorMessage(error, 'statistics')
+    });
+  }
+});
+
+// Analytics endpoints
+app.get('/api/analytics/summary', async (req, res) => {
+  try {
+    const { timeRange = 'week' } = req.query;
+    
+    if (!analyticsServiceReady) {
+      return res.status(503).json({
+        success: false,
+        error: 'Analytics service not available'
+      });
+    }
+
+    const result = await analyticsService.getAnalyticsSummary(timeRange);
+    
+    res.json({
+      success: result.success,
+      summary: result.summary,
+      error: result.error,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Analytics summary error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve analytics summary',
+      success: false,
+      message: formatErrorMessage(error, 'analytics summary')
+    });
+  }
+});
+
+app.get('/api/analytics/top-questions', async (req, res) => {
+  try {
+    const { limit = 10, timeRange = 'week' } = req.query;
+    
+    if (!analyticsServiceReady) {
+      return res.status(503).json({
+        success: false,
+        error: 'Analytics service not available'
+      });
+    }
+
+    const result = await analyticsService.getTopQuestionsByCategory(parseInt(limit), timeRange);
+    
+    res.json({
+      success: result.success,
+      questions: result.questions,
+      error: result.error,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Top questions error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve top questions',
+      success: false,
+      message: formatErrorMessage(error, 'top questions')
+    });
+  }
+});
+
+app.get('/api/analytics/escalation-stats', async (req, res) => {
+  try {
+    const { timeRange = 'week' } = req.query;
+    
+    if (!analyticsServiceReady) {
+      return res.status(503).json({
+        success: false,
+        error: 'Analytics service not available'
+      });
+    }
+
+    const result = await analyticsService.getEscalationStats(timeRange);
+    
+    res.json({
+      success: result.success,
+      stats: result.stats,
+      error: result.error,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Escalation stats error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve escalation statistics',
+      success: false,
+      message: formatErrorMessage(error, 'escalation statistics')
+    });
+  }
+});
+
+app.get('/api/analytics/feedback-stats', async (req, res) => {
+  try {
+    const { timeRange = 'week' } = req.query;
+    
+    if (!analyticsServiceReady) {
+      return res.status(503).json({
+        success: false,
+        error: 'Analytics service not available'
+      });
+    }
+
+    const result = await analyticsService.getFeedbackStats(timeRange);
+    
+    res.json({
+      success: result.success,
+      stats: result.stats,
+      error: result.error,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Feedback stats error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to retrieve feedback statistics',
+      success: false,
+      message: formatErrorMessage(error, 'feedback statistics')
+    });
+  }
+});
+
+// Feedback endpoint
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const { sessionId, query, responseId, feedbackType, feedbackReason } = req.body;
+    
+    // Validate inputs
+    if (!sessionId || !query || !feedbackType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Session ID, query, and feedback type are required'
+      });
+    }
+
+    if (!['positive', 'negative'].includes(feedbackType)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Feedback type must be "positive" or "negative"'
+      });
+    }
+
+    if (!analyticsServiceReady) {
+      return res.status(503).json({
+        success: false,
+        error: 'Analytics service not available'
+      });
+    }
+
+    const result = await analyticsService.trackFeedback({
+      sessionId,
+      query,
+      responseId,
+      feedbackType,
+      feedbackReason
+    });
+    
+    res.json({
+      success: result.success,
+      feedbackId: result.feedbackId,
+      error: result.error,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Feedback error:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to save feedback',
+      success: false,
+      message: formatErrorMessage(error, 'feedback')
     });
   }
 });
@@ -430,6 +637,11 @@ app.listen(PORT, async () => {
   console.log('  GET  /api/user/:sessionId - Get user profile');
   console.log('  POST /api/user/:sessionId - Update user profile');
   console.log('  GET  /api/stats - Get system statistics');
+  console.log('  GET  /api/analytics/summary - Analytics summary');
+  console.log('  GET  /api/analytics/top-questions - Top questions by category');
+  console.log('  GET  /api/analytics/escalation-stats - Escalation statistics');
+  console.log('  GET  /api/analytics/feedback-stats - Feedback statistics');
+  console.log('  POST /api/feedback - Submit feedback');
   console.log('\n✨ Features:');
   console.log('  🔀 Hybrid Search: Semantic + BM25 keyword search');
   console.log('  🤖 AI Answers: Gemini-generated responses');
@@ -437,6 +649,8 @@ app.listen(PORT, async () => {
   console.log('  🎯 Server Context: Gaming/study/community awareness');
   console.log('  💾 Conversation Memory: MongoDB storage');
   console.log('  🔄 Cross-encoder Re-ranking: Optional');
+  console.log('  📊 Analytics: PostgreSQL analytics tracking');
+  console.log('  👍 Feedback: Thumbs up/down system');
 });
 
 export default app;
