@@ -77,8 +77,8 @@ class QueryClassifier {
             * Requests to remember something (e.g., "remember my name is X")
             * Questions like "who am I", "what did I say", "what did you tell me"
           
-          - Use MCP_TOOLS_ONLY for: calculations, status checks, real-time data, specific tool operations
-          - Use HYBRID_SEARCH for: API documentation, implementation guides, general Stripe concepts
+          - Use MCP_TOOLS_ONLY for: calculations, status checks, real-time data, specific tool operations, and ANY non-Stripe general knowledge or current events/news queries (e.g., Israel-Palestine, Russia-Ukraine, weather today). Prefer the web_search tool in these cases.
+          - Use HYBRID_SEARCH for: API documentation, implementation guides, general Stripe concepts ONLY
           - Use COMBINED for: complex queries that need both real-time data and documentation
 
           CRITICAL: If the query is conversational (asking about personal info, previous conversation, etc.), 
