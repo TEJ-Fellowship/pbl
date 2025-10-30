@@ -4,24 +4,20 @@ import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
-import {
-  testConnection,
-  initializeSchema,
-  saveScrapedDoc,
-  saveScrapedDocs,
-  closePool,
-} from "./database.js";
+import DocumentStorageService from '../services/documentStorageService.js'
+import crypto from "crypto";
 
-// twilio documentation sources
+
+// Twilio documentation sources 
 const SOURCES = {
   api: "https://www.twilio.com/docs/usage/api",
-  sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
-  errors: "https://www.twilio.com/docs/api/errors",
   webhooks: "https://www.twilio.com/docs/usage/webhooks",
+  errors: "https://www.twilio.com/docs/api/errors",
+  sms_quickstart: "https://www.twilio.com/docs/sms/quickstart",
   voice_quickstart: "https://www.twilio.com/docs/voice/quickstart",
   whatsapp_api: "https://www.twilio.com/docs/whatsapp",
-  video_api: " https://www.twilio.com/docs/video",
-  node_SDK: "https://www.twilio.com/docs/libraries/node",
+  video_api: "https://www.twilio.com/docs/video",
+  node_sdk: "https://www.twilio.com/docs/libraries/node",
 };
 
 // Rate limiting: 1 request per second
@@ -31,7 +27,6 @@ async function scrapeDoc(url, category) {
   console.log(`🔍 Scraping ${category}: ${url}`);
 
   try {
-    // Rate limiting
     await delay(parseInt(config.RATE_LIMIT_DELAY) || 1000);
 
     const response = await axios.get(url, {
@@ -49,87 +44,63 @@ async function scrapeDoc(url, category) {
       "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style"
     ).remove();
 
-    // Extract code blocks BEFORE removing <pre>/<code>
-    const codeBlocks = [];
+    // Extract title with multiple fallback strategies
+    let title = "";
+    if ($("h1").length > 0) {
+      title = $("h1").first().text().trim();
+    } else if ($("title").length > 0) {
+      title = $("title").text().trim();
+    } else if ($("h2").length > 0) {
+      title = $("h2").first().text().trim();
+    } else if ($(".page-title").length > 0) {
+      title = $(".page-title").first().text().trim();
+    } else if ($("[data-testid='page-title']").length > 0) {
+      title = $("[data-testid='page-title']").first().text().trim();
+    }
 
-    // 1. Extract complete code blocks from <pre> tags (highest priority)
-    $("pre code").each((_, el) => {
-      const t = $(el).text().replace(/\r/g, "").trim();
-      if (t && t.length > 10) {
-        // Only include substantial code blocks
-        codeBlocks.push(t);
-      }
-    });
-
-    // 2. Also capture standalone <pre> (without code wrapper)
-    $("pre").each((_, el) => {
-      // skip ones already captured with pre code (avoid duplicates)
-      if ($(el).find("code").length > 0) return;
-      const t = $(el).text().replace(/\r/g, "").trim();
-      if (t && t.length > 10) {
-        // Only include substantial code blocks
-        codeBlocks.push(t);
-      }
-    });
-
-    // 3. Only capture inline <code> that look like substantial code snippets
-    $("code").each((_, el) => {
-      // avoid capturing from inside <pre>
-      if ($(el).closest("pre").length > 0) return;
-
-      const t = $(el).text().replace(/\r/g, "").trim();
-
-      // Only include if it looks like a substantial code snippet
-      if (
-        t &&
-        t.length > 20 &&
-        // Multi-line code
-        (t.includes("\n") ||
-          // Contains code-like patterns
-          /(function|const|let|var|def |class |import |from |require|npm |pip |composer|curl|wget)/.test(
-            t
-          ) ||
-          // Contains brackets or parentheses (likely code)
-          /[{}();]/.test(t) ||
-          // Looks like a command or path
-          /^[a-z-]+\s+/.test(t) ||
-          // Contains API endpoints or URLs
-          /https?:\/\//.test(t))
-      ) {
-        codeBlocks.push(t);
-      }
-    });
-
-    // Deduplicate code blocks
-    const seenCode = new Set();
-    const uniqueCodeBlocks = codeBlocks.filter((c) => {
-      const k = c.replace(/\s+/g, " ").trim();
-      if (!k || seenCode.has(k)) return false;
-      seenCode.add(k);
-      return true;
-    });
-
-    // Remove code elements from text content to avoid duplication
-    $("pre, code").remove();
-
-    // Extract main content (text only, without code)
-    const content = $("main").text() || $("article").text() || $("body").text();
-    const title = $("h1").first().text() || $("title").text();
-    console.log("content before cleaning", content);
-    // Clean up the content
-    const cleanContent = content
-      .replace(/\s+/g, " ") // Replace multiple whitespace with single space
-      .replace(/sk_test_[A-Za-z0-9]+/g, "sk_test_[REDACTED]") // Remove API keys
-      .replace(/sk_live_[A-Za-z0-9]+/g, "sk_live_[REDACTED]") // Remove live API keys
-      .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]") // Remove webhook secrets
-      .replace(/pk_test_[A-Za-z0-9]+/g, "pk_test_[REDACTED]") // Remove publishable keys
-      .replace(/pk_live_[A-Za-z0-9]+/g, "pk_live_[REDACTED]") // Remove live publishable keys
+    // Clean up title (normalize brand positioning)
+    title = title
+      .replace(/\s+/g, " ")
+      .replace(/^\s*-\s*Twilio\s*$/i, "")
+      .replace(/^\s*Twilio\s*-\s*/i, "")
+      .replace(/-\s*Twilio\s*$/i, "")
       .trim();
 
-    const wordCount = cleanContent.split(/\s+/).length;
+    // Extract main content
+    const rawContent = $("main").text() || $("article").text() || $("body").text();
+
+    // Clean content and redact secrets
+    const cleanContent = (rawContent || "")
+      .replace(/\s+/g, " ")
+      // Redact common secret formats (Twilio SIDs/Keys)
+      .replace(/AC[a-f0-9]{32}/gi, "AC[REDACTED]") // Account SID
+      .replace(/SK[a-f0-9]{32}/gi, "SK[REDACTED]") // API Key Secret
+      .replace(/WK[a-f0-9]{32}/gi, "WK[REDACTED]") // (Occasional) Webhook Key
+      .trim();
+
+    if (!title || title.length === 0) {
+      const categoryTitles = {
+        api: "API Reference",
+        webhooks: "Webhooks",
+        errors: "Error Codes",
+        sms_quickstart: "SMS Quickstart",
+        voice_quickstart: "Voice Quickstart",
+        whatsapp_api: "WhatsApp API",
+        video_api: "Video API",
+        node_sdk: "Node.js SDK",
+      };
+      title = categoryTitles[category] || "Documentation";
+    }
+
+    const wordCount = cleanContent.split(/\s+/).filter(Boolean).length;
+
+    const deterministicId = crypto
+      .createHash("sha256")
+      .update(url)
+      .digest("hex");
 
     return {
-      id: `${category}_${Date.now()}`,
+      id: deterministicId,
       url,
       category,
       title: title.trim(),
@@ -137,7 +108,7 @@ async function scrapeDoc(url, category) {
       wordCount,
       scrapedAt: new Date().toISOString(),
       docType: "api",
-      codeBlocks: uniqueCodeBlocks,
+      // codeBlocks: [],
       metadata: {
         source: "twilio.com",
         contentType: response.headers["content-type"] || "text/html",
@@ -152,20 +123,16 @@ async function scrapeDoc(url, category) {
 async function main() {
   console.log("🚀 Starting Twilio documentation scraper...");
 
-  const args = process.argv.slice(2);
+ const args = process.argv.slice(2);
   const sourcesArg = args
     .find((arg) => arg.startsWith("--sources="))
     ?.split("=")[1];
   const limitArg = args
     .find((arg) => arg.startsWith("--limit="))
     ?.split("=")[1];
-  const skipDbArg = args.find((arg) => arg === "--skip-db");
-  const skipJsonArg = args.find((arg) => arg === "--skip-json");
 
   let sourcesToScrape = Object.keys(SOURCES);
   let limit = limitArg ? parseInt(limitArg) : null;
-  const saveToDb = !skipDbArg;
-  const saveToJson = !skipJsonArg;
 
   if (sourcesArg) {
     if (sourcesArg === "all") {
@@ -177,29 +144,9 @@ async function main() {
 
   console.log(`📋 Sources to scrape: ${sourcesToScrape.join(", ")}`);
   if (limit) console.log(`🔢 Limit: ${limit} documents per source`);
-  console.log(`💾 Save to DB: ${saveToDb ? "✅" : "❌"}`);
-  console.log(`💾 Save to JSON: ${saveToJson ? "✅" : "❌"}`);
-
-  // Initialize database if enabled
-  let dbConnected = false;
-  if (saveToDb) {
-    try {
-      dbConnected = await testConnection();
-      if (dbConnected) {
-        await initializeSchema();
-        console.log("✅ Database ready\n");
-      } else {
-        console.log("⚠️ Database connection failed, continuing without DB...\n");
-      }
-    } catch (error) {
-      console.log("⚠️ Database initialization failed, continuing without DB...");
-      console.log(`   Error: ${error.message}\n`);
-    }
-  }
 
   const docs = [];
   let totalWords = 0;
-  let dbSavedCount = 0;
 
   for (const category of sourcesToScrape) {
     if (!SOURCES[category]) {
@@ -212,17 +159,6 @@ async function main() {
       docs.push(doc);
       totalWords += doc.wordCount;
       console.log(`✅ Scraped ${category}: ${doc.wordCount} words`);
-
-      // Save to database immediately if enabled and connected
-      if (saveToDb && dbConnected) {
-        try {
-          await saveScrapedDoc(doc);
-          dbSavedCount++;
-          console.log(`   💾 Saved to database: ${doc.id}`);
-        } catch (error) {
-          console.error(`   ❌ Failed to save to database: ${error.message}`);
-        }
-      }
     }
 
     if (limit && docs.length >= limit) {
@@ -231,38 +167,72 @@ async function main() {
     }
   }
 
-  // Save to JSON file if enabled
-  if (saveToJson) {
-    const outputDir = path.join(process.cwd(), "data", "twilio_docs");
-    await fs.mkdir(outputDir, { recursive: true });
+  // Store documents in PostgreSQL
+  console.log(`\n💾 Storing ${docs.length} documents in PostgreSQL...`);
+  const documentStorageService = new DocumentStorageService();
 
+  try {
+    await documentStorageService.storeDocuments(docs);
+    console.log(
+      `✅ Successfully stored ${docs.length} documents in PostgreSQL`
+    );
+  } catch (error) {
+    console.error(`❌ Failed to store documents in PostgreSQL:`, error.message);
+
+    // Fallback: Save to JSON file as backup
+    console.log(`🔄 Falling back to JSON file storage...`);
+    const outputDir = path.join(process.cwd(), "data", "stripe_docs");
+    await fs.mkdir(outputDir, { recursive: true });
     const outputFile = path.join(outputDir, "scraped.json");
     await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));
-    console.log(`\n💾 Saved to JSON: ${outputFile}`);
-  }
-
-  // Close database connection
-  if (dbConnected) {
-    await closePool();
+    console.log(`💾 Saved to: ${outputFile}`);
+  } finally {
+    await documentStorageService.close();
   }
 
   console.log(`\n🎉 Scraping completed!`);
   console.log(`📊 Total documents: ${docs.length}`);
   console.log(`📝 Total words: ${totalWords.toLocaleString()}`);
-  if (saveToDb && dbConnected) {
-    console.log(`💾 Documents saved to DB: ${dbSavedCount}`);
-  }
 
   // Display summary
   console.log(`\n📋 Scraped sources:`);
   docs.forEach((doc) => {
     console.log(`  • ${doc.category}: ${doc.wordCount} words`);
   });
+}
 
-  console.log(`\n💡 Next steps:`);
-  console.log(`   Run 'npm run chunk' to process with code-aware chunking`);
-  console.log(`   Run 'npm run ingest' to create embeddings and vector store`);
-  console.log(`   Run 'npm run chat' to start the chat interface`);
+/**
+ * Get latest scraped documents from PostgreSQL
+ */
+async function getLatestScrapedDocuments(limit = 10) {
+  console.log("📂 Getting latest scraped documents from PostgreSQL...");
+
+  const documentStorageService = new DocumentStorageService();
+
+  try {
+    const documents = await documentStorageService.getUnprocessedDocuments(
+      limit
+    );
+    console.log(`📊 Found ${documents.length} unprocessed documents`);
+
+    // Display documents
+    documents.forEach((doc, index) => {
+      console.log(
+        `  ${index + 1}. ${doc.title || "Untitled"} (${doc.category})`
+      );
+      console.log(`     - URL: ${doc.url}`);
+      console.log(`     - Words: ${doc.word_count}`);
+      console.log(`     - Scraped: ${doc.scraped_at}`);
+      console.log("");
+    });
+
+    return documents;
+  } catch (error) {
+    console.error("❌ Failed to get documents from PostgreSQL:", error.message);
+    return [];
+  } finally {
+    await documentStorageService.close();
+  }
 }
 
 // Handle CLI execution
@@ -270,4 +240,4 @@ if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
   main().catch(console.error);
 }
 
-export { scrapeDoc, SOURCES };
+export { scrapeDoc, SOURCES, getLatestScrapedDocuments };

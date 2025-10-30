@@ -10,12 +10,12 @@ const config = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
 
   // Database - PostgreSQL
-  POSTGRES_HOST: process.env.POSTGRES_HOST || "localhost",
-  POSTGRES_PORT: process.env.POSTGRES_PORT || 5432,
-  POSTGRES_DB: process.env.POSTGRES_DB || "postgres",
-  POSTGRES_USER: process.env.POSTGRES_USER || "postgres",
-  POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD || "",
-  POSTGRES_SSL: process.env.POSTGRES_SSL === "true" || false,
+  DB_HOST: process.env.DB_HOST || "localhost",
+  DB_PORT: process.env.DB_PORT || 5432,
+  DB_NAME: process.env.DB_NAME || "twilio_support_db",
+  DB_USER: process.env.DB_USER || "postgres",
+  DB_PASSWORD: process.env.DB_PASSWORD || "",
+  // POSTGRES_SSL: process.env.POSTGRES_SSL === "true" || false,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,

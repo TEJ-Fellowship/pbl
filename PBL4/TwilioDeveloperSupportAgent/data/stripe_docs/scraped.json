@@ -1,0 +1,30 @@
+[
+  {
+    "id": "api_1761803374753",
+    "url": "https://www.twilio.com/docs/usage/api",
+    "category": "api",
+    "title": "Twilio API overview",
+    "content": "Page toolsView as MarkdownCopy as MarkdownLooking for more inspiration?Visit the Developer HubPage ToolsView as MarkdownCopy as MarkdownTwilio API overviewPositive FeedbackNegative FeedbackThe Twilio APIs are organized around REST. Behind these APIs is a software layer connecting and optimizing communications networks around the world. With the Twilio APIs, you can build applications that help your users send messages, make phone calls, look up phone numbers, and more. In Twilio's ecosystem, each product corresponds to an API. For example, Twilio Messaging corresponds to the Messaging API. Although each API has its own unique features, they all share a common set of principles and practices. This consistency allows you to work with different Twilio APIs in a similar way. You can use the APIs directly over HTTPS or through Twilio SDKs available for several programming languages. In this section, you'll learn how to work with the Twilio APIs: Make requests to the Twilio APIs, including authenticating your requests, choosing the right content type, and handling webhooks. Work with Twilio API responses, including specifying response formats, paginating results, and handling errors. Handle mutations and conflicts. Learn about API best practices.",
+    "wordCount": 185,
+    "scrapedAt": "2025-10-30T05:49:34.753Z",
+    "docType": "api",
+    "metadata": {
+      "source": "twilio.com",
+      "contentType": "text/html; charset=utf-8"
+    }
+  },
+  {
+    "id": "webhooks_1761803375911",
+    "url": "https://www.twilio.com/docs/usage/webhooks",
+    "category": "webhooks",
+    "title": "Webhooks: an Introduction",
+    "content": "Page toolsView as MarkdownCopy as MarkdownOn this pageLooking for more inspiration?Visit the Developer HubPage ToolsView as MarkdownCopy as MarkdownWebhooks: an IntroductionPositive FeedbackNegative FeedbackWebhooks are user-defined HTTP(link takes you to an external page) callbacks. They are triggered by some event in a web application and can facilitate integrating different applications or third-party APIs, like Twilio. Twilio uses webhooks to let your application know when events happen, such as receiving an SMS message or getting an incoming phone call. When the event occurs, Twilio makes an HTTP request (usually a POST or a GET(link takes you to an external page)) to the URL you configured for the webhook. Twilio's request will include details of the event such as the incoming phone number or the body of an incoming message. Many other modern web services like GitHub and Slack also make use of webhooks to communicate events. Expand image Some of these webhooks are informational (such as letting you know that a voice call recording is ready for download), and others require your web application to respond (for instance, letting Twilio know what to do when someone calls your Twilio phone number). Getting Started with Webhooksgetting-started-with-webhooks page anchorPositive FeedbackNegative FeedbackReady to start building webhooks for Twilio in your own web application? Listen to the following Twilio Tip, and read this guide to get started with webhooks. Webhooks by Productwebhooks-by-product page anchorPositive FeedbackNegative FeedbackEach Twilio product uses webhooks differently. To learn more about which webhooks each product uses, and how to set them up with your application, visit these pages: Voice Messaging Conversations Sync Twilio Runtime Webhookstwilio-runtime-webhooks page anchorPositive FeedbackNegative FeedbackWebhooks aren't just limited to products. You can also have Twilio send you webhooks when events occur in your application, such as billing levels reaching a certain threshold, or if an error occurs when Twilio calls your web application. You could set up a pipeline that sends your webhooks into Slack, Microsoft Teams, or another chat system. You could also set up a webhook that notifies you via email.Learn more about each of these areas on these pages: Debugging Events Webhook (Beta) REST API: Usage Triggers Want to learn more?want-to-learn-more page anchorPositive FeedbackNegative FeedbackGet an in-depth discussion of webhooks, learn how to validate that inbound webhooks are from Twilio, and read answers to questions from the Twilio developer community. Overview of Webhooks, Callbacks, and Inbound Requests Webhook Security Webhooks FAQ Webhook Tutorialswebhook-tutorials page anchorPositive FeedbackNegative FeedbackReady to start implementing webhooks with your own application? Want to see what capabilities webhooks have? Follow along with these tutorials to learn how to track the delivery status for messages, reply to text messages, or use Azure Functions to create serverless webhooks. Track Delivery Status of Messages Receive and Reply to SMS and MMS Messages Serverless Webhooks with Azure Functions and C# Serverless Webhooks with Azure Functions and Node.js Creating an ASP.NET MVC Webhook Project",
+    "wordCount": 477,
+    "scrapedAt": "2025-10-30T05:49:35.911Z",
+    "docType": "api",
+    "metadata": {
+      "source": "twilio.com",
+      "contentType": "text/html; charset=utf-8"
+    }
+  }
+]
