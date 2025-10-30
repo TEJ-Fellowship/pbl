@@ -33,4 +33,4 @@ CREATE INDEX idx_raw_documents_processed_category ON raw_documents (processed, c
 SELECT 'Raw documents table setup completed successfully!' as status;
 
 -- Command to run the script
--- psql -U postgres -d stripe_support_db -f setup_raw_documents.sql
+-- psql -U postgres -d twilio_support_db -f setup_raw_documents.sql
