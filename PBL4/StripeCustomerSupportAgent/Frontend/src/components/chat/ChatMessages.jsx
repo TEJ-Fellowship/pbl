@@ -110,9 +110,7 @@ const MessageBubble = ({ message }) => {
             : "bg-gray-800/30 border border-gray-700/30 rounded-tl-none w-full"
         }`}
       >
-        {message.sender === "ai" && (
-          <p className="font-semibold text-primary mb-1">Stripe.AI</p>
-        )}
+        {/* removed assistant label */}
         <div className="text-text-dark leading-relaxed overflow-hidden">
           {hasMarkdown(message.text) ? (
             <div
@@ -161,7 +159,6 @@ const TypingIndicator = () => (
       </span>
     </div>
     <div className="bg-gray-800/30 border border-gray-700/30 p-5 rounded-lg rounded-tl-none w-full">
-      <p className="font-semibold text-primary mb-1">Stripe.AI</p>
       <div className="flex space-x-1">
         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
         <div

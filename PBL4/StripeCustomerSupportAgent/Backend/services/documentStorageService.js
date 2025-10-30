@@ -213,9 +213,12 @@ class DocumentStorageService {
 
   /**
    * Close the connection pool
+   * Note: This should only be called when the entire application is shutting down
    */
   async close() {
-    await this.pool.end();
+    // Don't close the shared pool - let the application manage it
+    // await this.pool.end();
+    console.log("📝 DocumentStorageService: Pool close skipped (shared pool)");
   }
 }
 

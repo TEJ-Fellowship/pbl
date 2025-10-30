@@ -51,16 +51,11 @@ const Chat = () => {
 
       {/* Main Chat Container */}
       <div className="flex-1 flex flex-col bg-surface-dark">
-        <ChatHeader />
-
-        {/* Token Usage Indicator */}
-        <div className="px-6 py-2 border-b border-gray-800/50 bg-surface-dark-secondary/30">
-          <TokenUsageIndicator
-            currentTokens={tokenUsage.currentTokens}
-            maxTokens={tokenUsage.maxTokens}
-            onNewSession={handleTokenLimitReached}
-          />
-        </div>
+        <ChatHeader
+          currentTokens={tokenUsage.currentTokens}
+          maxTokens={tokenUsage.maxTokens}
+          onNewSession={handleTokenLimitReached}
+        />
 
         <IntegratedChatMessages
           messages={messages}
