@@ -14,6 +14,22 @@ import QueryClassifier from "../services/queryClassifier.js";
 import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
 import config from "../config/config.js";
+import { generateConversationalResponse as generateConversationalResponseService } from "../scripts/integratedChat.js";
+
+/**
+ * Generate simple conversational response from memory only
+ */
+async function generateConversationalResponse(
+  query,
+  memoryContext,
+  geminiClient
+) {
+  return await generateConversationalResponseService(
+    query,
+    memoryContext,
+    geminiClient
+  );
+}
 
 const router = express.Router();
 
@@ -78,7 +94,8 @@ router.post("/", async (req, res) => {
       });
     }
 
-    console.log(`💬 Processing message: "${message.substring(0, 50)}..."`);
+    console.log("-".repeat(60));
+    console.log("\n💬 Processing message: " + message.substring(0, 50) + "...");
 
     // Initialize services if not already done
     const {
@@ -111,9 +128,10 @@ router.post("/", async (req, res) => {
       source: "web_interface",
     });
 
+    console.log("-".repeat(60));
     // Step 1: Classify the query to decide approach
     const enabledTools = mcpService.getEnabledTools();
-    console.log("🔍 Enabled MCP Tools:", enabledTools);
+    console.log("\n🔍 Enabled MCP Tools:", enabledTools);
 
     const classification = await queryClassifier.classifyQuery(
       message,
@@ -121,9 +139,6 @@ router.post("/", async (req, res) => {
       enabledTools
     );
 
-    console.log(
-      `📊 Classification: ${classification.approach} - ${classification.reasoning}`
-    );
     console.log("🔍 Classification details:", classification);
 
     let result;
@@ -131,7 +146,34 @@ router.post("/", async (req, res) => {
     let searchQuery = message;
 
     // Step 2: Route based on classification
-    if (classification.approach === "MCP_TOOLS_ONLY") {
+    // Handle CONVERSATIONAL approach FIRST (highest priority)
+    if (classification.approach === "CONVERSATIONAL") {
+      console.log("\n Using CONVERSATIONAL approach - memory-only response");
+
+      // Get lightweight memory context WITHOUT reformulation to save Gemini usage
+      const [recentContext, longTermContext, sessionContext] =
+        await Promise.all([
+          Promise.resolve(memoryController.getRecentContext()),
+          memoryController.getLongTermContext(
+            message,
+            Boolean(classification.isConversationQuery)
+          ),
+          memoryController.getSessionContext(),
+        ]);
+
+      const memoryContext = {
+        recentContext,
+        longTermContext,
+        sessionContext,
+        // No reformulation for conversational branch
+      };
+
+      result = await generateConversationalResponse(
+        message,
+        memoryContext,
+        geminiClient
+      );
+    } else if (classification.approach === "MCP_TOOLS_ONLY") {
       console.log("🔧 Using MCP tools only approach");
 
       // Try MCP tools first
@@ -153,47 +195,65 @@ router.post("/", async (req, res) => {
           mcpResult.confidence || 0
         );
       } else {
-        // Fallback to hybrid search if MCP fails
-        console.log("⚠️ MCP tools failed, falling back to hybrid search");
+        // Check if this is a conversation query before falling back to hybrid search
+        if (classification.isConversationQuery) {
+          console.log(
+            "💬 Detected conversation query - using memory-only response"
+          );
 
-        // Get complete memory context for query reformulation
-        const memoryContext = await memoryController.getCompleteMemoryContext(
-          message
-        );
+          // Get memory context for conversational response
+          const memoryContext = await memoryController.getCompleteMemoryContext(
+            message
+          );
 
-        // Use reformulated query for retrieval
-        searchQuery = memoryContext.reformulatedQuery || message;
-        console.log(
-          `🔍 Searching with reformulated query: "${searchQuery.substring(
-            0,
-            60
-          )}..."`
-        );
+          result = await generateConversationalResponse(
+            message,
+            memoryContext,
+            geminiClient
+          );
+        } else {
+          // Fallback to hybrid search if MCP fails and it's not a conversation query
+          console.log("⚠️ MCP tools failed, falling back to hybrid search");
 
-        chunks = await retrieveChunksWithHybridSearch(
-          searchQuery,
-          vectorStore,
-          embeddings,
-          hybridSearch
-        );
+          // Get complete memory context for query reformulation
+          const memoryContext = await memoryController.getCompleteMemoryContext(
+            message
+          );
 
-        if (chunks.length === 0) {
-          return res.status(404).json({
-            success: false,
-            error:
-              "No relevant information found. Try rephrasing your question.",
-          });
+          // Use reformulated query for retrieval
+          searchQuery = memoryContext.reformulatedQuery || message;
+          console.log(
+            `🔍 Searching with reformulated query: "${searchQuery.substring(
+              0,
+              60
+            )}..."`
+          );
+
+          chunks = await retrieveChunksWithHybridSearch(
+            searchQuery,
+            vectorStore,
+            embeddings,
+            hybridSearch
+          );
+
+          if (chunks.length === 0) {
+            return res.status(404).json({
+              success: false,
+              error:
+                "No relevant information found. Try rephrasing your question.",
+            });
+          }
+
+          const confidence = calculateConfidence(chunks);
+          result = await generateResponseWithMemoryAndMCP(
+            message,
+            chunks,
+            geminiClient,
+            memoryContext,
+            mcpService,
+            confidence
+          );
         }
-
-        const confidence = calculateConfidence(chunks);
-        result = await generateResponseWithMemoryAndMCP(
-          message,
-          chunks,
-          geminiClient,
-          memoryContext,
-          mcpService,
-          confidence
-        );
       }
     } else if (classification.approach === "HYBRID_SEARCH") {
       console.log("🔍 Using hybrid search approach");
@@ -368,6 +428,18 @@ router.post("/", async (req, res) => {
     res.json(response);
   } catch (error) {
     console.error("❌ Integrated chat error:", error);
+    if (error?.rateLimit || error?.status === 429) {
+      const retryAfter = Math.max(
+        1,
+        parseInt(error.retryAfterSeconds || 15, 10)
+      );
+      res.setHeader("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        success: false,
+        error: "Rate limit reached. Please retry after a short wait.",
+        retryAfterSeconds: retryAfter,
+      });
+    }
     res.status(500).json({
       success: false,
       error: error.message || "Internal server error",

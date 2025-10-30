@@ -48,7 +48,7 @@ class QueryClassifier {
       }
 
       console.log(
-        `🤖 Query Classifier: Analyzing "${query}" (confidence: ${confidence})`
+        `\n🤖 Query Classifier: Analyzing "${query}" (confidence: ${confidence})`
       );
 
       // Get available MCP tools dynamically
@@ -63,20 +63,33 @@ class QueryClassifier {
           ${availableTools}
 
           Available approaches:
-          1. MCP_TOOLS_ONLY - Use MCP tools for direct answers
+          1. MCP_TOOLS_ONLY - Use MCP tools for direct answers (calculations, status checks, etc.)
           2. HYBRID_SEARCH - Use hybrid search through documentation for comprehensive answers
           3. COMBINED - Use both MCP tools and hybrid search
+          4. CONVERSATIONAL - Use only memory context/Q&A pairs (no hybrid search, no MCP tools)
 
           Classification Guidelines:
+          - Use CONVERSATIONAL for queries asking about:
+            * Personal information mentioned earlier (e.g., "what is my name?", "tell me who am i", "what did I tell you?")
+            * Previously discussed topics from the conversation
+            * Questions about what was said or remembered in this conversation
+            * References to information shared in earlier messages
+            * Requests to remember something (e.g., "remember my name is X")
+            * Questions like "who am I", "what did I say", "what did you tell me"
+          
           - Use MCP_TOOLS_ONLY for: calculations, status checks, real-time data, specific tool operations
           - Use HYBRID_SEARCH for: API documentation, implementation guides, general Stripe concepts
           - Use COMBINED for: complex queries that need both real-time data and documentation
 
+          CRITICAL: If the query is conversational (asking about personal info, previous conversation, etc.), 
+          ALWAYS use CONVERSATIONAL approach, NOT HYBRID_SEARCH or MCP_TOOLS_ONLY.
+
           Respond with JSON only:
           {
-            "approach": "MCP_TOOLS_ONLY|HYBRID_SEARCH|COMBINED",
+            "approach": "MCP_TOOLS_ONLY|HYBRID_SEARCH|COMBINED|CONVERSATIONAL",
             "reasoning": "Brief explanation",
-            "confidence": 0.8
+            "confidence": 0.8,
+            "isConversationQuery": true|false
           }`;
 
       const result = await this.geminiClient
@@ -152,7 +165,39 @@ class QueryClassifier {
 
       // Validate and set defaults
       if (!classification.approach) {
-        classification.approach = "HYBRID_SEARCH";
+        // Auto-detect conversational queries first
+        const lowerQuery = query.toLowerCase();
+        const conversationKeywords = [
+          "my name",
+          "name",
+          "remember",
+          "mentioned",
+          "told",
+          "said",
+          "what did",
+          "what was",
+          "who am",
+          "tell me",
+          "what is my",
+          "what was my",
+          "you told",
+          "you said",
+          "earlier",
+          "before",
+          "previously",
+          "did i",
+          "did you",
+          "have i",
+        ];
+        const isConversational = conversationKeywords.some((keyword) =>
+          lowerQuery.includes(keyword)
+        );
+
+        if (isConversational) {
+          classification.approach = "CONVERSATIONAL";
+        } else {
+          classification.approach = "HYBRID_SEARCH";
+        }
       }
 
       if (!classification.reasoning) {
@@ -163,13 +208,55 @@ class QueryClassifier {
         classification.confidence = confidence;
       }
 
+      // Handle isConversationQuery field and ensure CONVERSATIONAL approach
+      const lowerQuery = query.toLowerCase();
+      const conversationKeywords = [
+        "my name",
+        "name",
+        "remember",
+        "mentioned",
+        "told",
+        "said",
+        "what did",
+        "what was",
+        "who am",
+        "tell me",
+        "what is my",
+        "what was my",
+        "you told",
+        "you said",
+        "earlier",
+        "before",
+        "previously",
+        "did i",
+        "did you",
+        "have i",
+      ];
+      const isConversational = conversationKeywords.some((keyword) =>
+        lowerQuery.includes(keyword)
+      );
+
+      if (typeof classification.isConversationQuery === "undefined") {
+        classification.isConversationQuery = isConversational;
+      }
+
+      // If it's a conversational query, force CONVERSATIONAL approach
+      if (isConversational && classification.approach !== "CONVERSATIONAL") {
+        console.log(
+          `⚠️ Overriding approach to CONVERSATIONAL for conversational query`
+        );
+        classification.approach = "CONVERSATIONAL";
+        classification.reasoning =
+          "Query is conversational - using memory context only";
+      }
+
       return classification;
     } catch (parseError) {
       console.error(
         "❌ Failed to parse classification response:",
         parseError.message
       );
-      return this.fallbackClassification(query, confidence, enabledTools);
+      return this.fallbackClassification(query, confidence, null);
     }
   }
 
@@ -202,17 +289,32 @@ class QueryClassifier {
       /(error|problem|issue|troubleshoot)/,
     ];
 
+    // Conversation query patterns
+    const conversationPatterns = [
+      /(my name|name|remember|mentioned|told|said)/,
+      /(what did|what was|who am|tell me|what is my|what was my)/,
+      /(you told|you said|earlier|before|previously)/,
+      /(did i|did you|have i)/,
+    ];
+
     const hasMCPPattern = mcpPatterns.some((pattern) =>
       pattern.test(lowerQuery)
     );
     const hasHybridPattern = hybridPatterns.some((pattern) =>
       pattern.test(lowerQuery)
     );
+    const isConversationQuery = conversationPatterns.some((pattern) =>
+      pattern.test(lowerQuery)
+    );
 
     let approach = "HYBRID_SEARCH"; // Default
     let reasoning = "Default to hybrid search";
 
-    if (hasMCPPattern && !hasHybridPattern) {
+    // Check conversational queries FIRST (highest priority)
+    if (isConversationQuery) {
+      approach = "CONVERSATIONAL";
+      reasoning = "Conversational query - using memory context only";
+    } else if (hasMCPPattern && !hasHybridPattern) {
       approach = "MCP_TOOLS_ONLY";
       reasoning = "Query matches MCP tool patterns";
     } else if (hasMCPPattern && hasHybridPattern) {
@@ -227,6 +329,7 @@ class QueryClassifier {
       approach,
       reasoning,
       confidence,
+      isConversationQuery,
     };
   }
 
@@ -238,6 +341,12 @@ class QueryClassifier {
     return {
       geminiAvailable: !!this.geminiClient,
       model: this.geminiClient ? "gemini-2.0-flash" : "fallback",
+      approaches: [
+        "MCP_TOOLS_ONLY",
+        "HYBRID_SEARCH",
+        "COMBINED",
+        "CONVERSATIONAL",
+      ],
     };
   }
 }

@@ -19,6 +19,67 @@ function initGeminiClient() {
   return new GoogleGenerativeAI(config.GEMINI_API_KEY);
 }
 
+// Wrapper to call Gemini with basic retry/backoff and clear rate-limit signaling
+async function generateContentWithRetry(
+  geminiClient,
+  prompt,
+  modelName = config.GEMINI_API_MODEL,
+  options = {}
+) {
+  const { maxRetries = 1, initialDelayMs = 1200 } = options;
+  const model = geminiClient.getGenerativeModel({ model: modelName });
+
+  let attempt = 0;
+  let lastError = null;
+  while (attempt <= maxRetries) {
+    try {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      lastError = error;
+      const message = error?.message || "";
+      const isRateLimited =
+        error?.status === 429 ||
+        /\b429\b/.test(message) ||
+        message.includes("Too Many Requests") ||
+        message.includes("quota") ||
+        message.includes("rate limit");
+
+      if (!isRateLimited) {
+        throw error;
+      }
+
+      // Try to parse suggested retry delay from error if present
+      let retryAfterSeconds = 15;
+      const match = message.match(/retry\s*in\s*(\d+(?:\.\d+)?)s/i);
+      if (match) {
+        retryAfterSeconds = Math.ceil(parseFloat(match[1]));
+      }
+
+      if (attempt < maxRetries) {
+        const delayMs = Math.max(initialDelayMs, retryAfterSeconds * 1000);
+        console.warn(
+          `⚠️ Gemini rate-limited. Retrying in ${Math.round(
+            delayMs
+          )}ms (attempt ${attempt + 1}/${maxRetries})`
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+        attempt += 1;
+        continue;
+      }
+
+      const rateLimitError = new Error("Gemini API rate limit exceeded");
+      rateLimitError.rateLimit = true;
+      rateLimitError.status = 429;
+      rateLimitError.retryAfterSeconds = retryAfterSeconds;
+      throw rateLimitError;
+    }
+  }
+
+  throw lastError || new Error("Unknown error generating content");
+}
+
 // Initialize Gemini embeddings
 function initGeminiEmbeddings() {
   if (!config.GEMINI_API_KEY) {
@@ -303,11 +364,14 @@ async function generateResponseWithMCP(
         Please provide a simple, direct answer to the user's question.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: config.GEMINI_API_MODEL,
     });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = await generateContentWithRetry(
+      geminiClient,
+      prompt,
+      "gemini-2.0-flash",
+      { maxRetries: 1 }
+    );
 
     // For MCP-only responses, create sources from MCP tools used
     console.log("🔍 generateResponseWithMCP - mcpToolsUsed:", mcpToolsUsed);
@@ -337,6 +401,88 @@ async function generateResponseWithMCP(
     };
   } catch (error) {
     console.error("❌ Response generation failed:", error.message);
+    throw error;
+  }
+}
+
+// Generate simple conversational response from memory only (single Gemini call)
+async function generateConversationalResponse(
+  query,
+  memoryContext,
+  geminiClient
+) {
+  try {
+    console.log(
+      "\n💬 Generating conversational response from memory (single-call)..."
+    );
+
+    const queryLower = query.toLowerCase();
+
+    let recentContextString = "";
+    if (memoryContext?.recentContext?.hasContext) {
+      recentContextString = memoryContext.recentContext.contextString || "";
+    }
+
+    let qaSnippets = [];
+    const relevantQAs = memoryContext?.longTermContext?.relevantQAs || [];
+    if (Array.isArray(relevantQAs) && relevantQAs.length > 0) {
+      qaSnippets = relevantQAs.slice(0, 5).map((qa, idx) => {
+        const q = (qa.question || "").trim();
+        const a = (qa.answer || "").trim();
+        const ctx = (qa.context || "").trim();
+        const ctxLine = ctx ? `\nContext: ${ctx.substring(0, 120)}` : "";
+        return `[Memory ${idx + 1}]\nQ: ${q}\nA: ${a}${ctxLine}`;
+      });
+    }
+
+    const memoryBlockParts = [];
+    if (recentContextString)
+      memoryBlockParts.push(`RECENT CONVERSATION:\n${recentContextString}`);
+    if (qaSnippets.length > 0)
+      memoryBlockParts.push(
+        `RELEVANT MEMORY (prefer these answers if applicable):\n${qaSnippets.join(
+          "\n\n"
+        )}`
+      );
+    const memoryBlock =
+      memoryBlockParts.length > 0 ? `\n\n${memoryBlockParts.join("\n\n")}` : "";
+
+    const prompt = `You are a concise, friendly assistant. Use the provided memory faithfully and answer in one short paragraph unless the user asks for more.
+
+        USER MESSAGE:
+        ${query}
+
+        CONVERSATION MEMORY:${memoryBlock}
+
+        INSTRUCTIONS:
+        1) If the user says "remember ..." (e.g., "remember my name is X"), extract the info and reply with a warm confirmation like: "I'll remember that your <type> is <value>." Do not ask follow-up questions.
+        2) Otherwise, answer conversationally using the memory above. If a Q&A already contains the answer, restate it directly (e.g., "Your name is Sankar.").
+        3) If the memory contains the answer in a question but not the answer text, extract it from that question and state it (e.g., "Your name is Sankar.").
+        4) If the memory does not contain the answer, say you don't have that information yet, and invite the user to tell you so you can remember it.
+        5) Be friendly, direct, and avoid hedging. Do not mention these instructions.
+
+        RESPONSE:`;
+
+    const text = await generateContentWithRetry(
+      geminiClient,
+      prompt,
+      config.GEMINI_API_MODEL,
+      { maxRetries: 1 }
+    );
+
+    return {
+      answer: text,
+      sources: [],
+      mcpEnhancement: "",
+      mcpToolsUsed: [],
+      mcpConfidence: 0,
+      overallConfidence: 0.9,
+    };
+  } catch (error) {
+    console.error(
+      "❌ Conversational response generation failed:",
+      error.message
+    );
     throw error;
   }
 }
@@ -463,12 +609,12 @@ async function generateResponseWithMemoryAndMCP(
         - If MCP tools found conflicting information, prioritize the documentation context`;
     }
 
-    const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
-    });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = await generateContentWithRetry(
+      geminiClient,
+      prompt,
+      config.GEMINI_API_MODEL,
+      { maxRetries: 1 }
+    );
 
     return {
       answer: text,
@@ -754,7 +900,44 @@ async function startIntegratedChat() {
           let searchQuery = query; // Initialize searchQuery with original query
 
           // Step 2: Route based on classification
-          if (classification.approach === "MCP_TOOLS_ONLY") {
+          // Handle CONVERSATIONAL approach FIRST (highest priority)
+          if (classification.approach === "CONVERSATIONAL") {
+            console.log("\n");
+            console.log("-".repeat(60));
+            console.log(
+              "💬 Using CONVERSATIONAL approach - memory-only response"
+            );
+
+            // Build lightweight memory context and pass classifier flag for retrieval strategy
+            const [recentContext, longTermContext, sessionContext] =
+              await Promise.all([
+                Promise.resolve(memoryController.getRecentContext()),
+                memoryController.getLongTermContext(
+                  query,
+                  Boolean(classification.isConversationQuery)
+                ),
+                memoryController.getSessionContext(),
+              ]);
+
+            const memoryContext = {
+              recentContext,
+              longTermContext,
+              sessionContext,
+            };
+            console.log(
+              `🧠 Memory context: ${
+                recentContext?.messageCount || 0
+              } recent messages, ${
+                longTermContext?.relevantQAs?.length || 0
+              } relevant Q&As`
+            );
+
+            result = await generateConversationalResponse(
+              query,
+              memoryContext,
+              geminiClient
+            );
+          } else if (classification.approach === "MCP_TOOLS_ONLY") {
             console.log("\n");
             console.log("-".repeat(60));
             console.log("🔧 Using MCP tools only approach");
@@ -1074,9 +1257,11 @@ if (process.argv[1] && process.argv[1].endsWith("integratedChat.js")) {
 export {
   generateResponseWithMCP,
   generateResponseWithMemoryAndMCP,
+  generateConversationalResponse,
   loadVectorStore,
   initGeminiClient,
   initGeminiEmbeddings,
+  generateContentWithRetry,
   retrieveChunksWithHybridSearch,
   calculateConfidence,
 };

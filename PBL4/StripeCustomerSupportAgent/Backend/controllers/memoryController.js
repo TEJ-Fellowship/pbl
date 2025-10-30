@@ -145,12 +145,32 @@ class MemoryController {
       );
 
       // Extract Q&A pair for long-term memory
+      // IMPORTANT: Always extract Q&A pairs for BOTH conversational and technical queries
       const lastUserMessage = this.bufferMemory.getLastUserMessage();
       if (lastUserMessage) {
-        await this.queryReformulation.extractQAPairs(
-          this.currentSessionId,
-          lastUserMessage.content,
-          assistantResponse
+        try {
+          console.log(
+            `🧠 Extracting Q&A pair for memory: "${lastUserMessage.content.substring(
+              0,
+              100
+            )}..."`
+          );
+          await this.queryReformulation.extractQAPairs(
+            this.currentSessionId,
+            lastUserMessage.content,
+            assistantResponse
+          );
+          console.log(`✅ Q&A pair extracted and stored successfully`);
+        } catch (error) {
+          console.error(
+            "❌ Failed to extract Q&A pair (non-critical):",
+            error.message
+          );
+          // Don't throw - Q&A extraction failure shouldn't break the flow
+        }
+      } else {
+        console.warn(
+          "⚠️ No last user message found in buffer memory - cannot extract Q&A pair"
         );
       }
 
@@ -211,7 +231,7 @@ class MemoryController {
   /**
    * Get long-term memory context
    */
-  async getLongTermContext(query) {
+  async getLongTermContext(query, isConversationQuery = null) {
     try {
       console.log(
         `\n🔍 Searching for relevant Q&A pairs for query: "${query}"`
@@ -221,7 +241,8 @@ class MemoryController {
       const relevantQAs = await this.postgresMemory.getRelevantQAPairs(
         query,
         this.currentSessionId,
-        5
+        5,
+        isConversationQuery
       );
 
       const conversationSummary =
@@ -328,6 +349,25 @@ class MemoryController {
           longTermContext?.relevantQAs?.length || 0
         } relevant Q&As`
       );
+
+      // Debug: Log detailed context information
+      if (recentContext?.messageCount > 0) {
+        const recentMsgs = this.bufferMemory.getRecentMessages();
+        console.log(
+          `📋 Recent messages sample: ${recentMsgs
+            .slice(-2)
+            .map((m) => `${m.role}: ${m.content.substring(0, 50)}`)
+            .join(" | ")}`
+        );
+      }
+
+      if (longTermContext?.relevantQAs?.length > 0) {
+        console.log(
+          `📋 Relevant Q&A pairs: ${longTermContext.relevantQAs
+            .map((qa) => `Q: ${qa.question.substring(0, 40)}`)
+            .join(" | ")}`
+        );
+      }
 
       // Pass pre-fetched context to reformulation to avoid duplicate queries
       const reformulation =
@@ -453,7 +493,7 @@ class MemoryController {
 
       // Get Gemini model
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: config.GEMINI_API_MODEL,
         generationConfig: {
           temperature: 0.3,
           topK: 40,

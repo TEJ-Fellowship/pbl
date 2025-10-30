@@ -311,7 +311,7 @@ IMPORTANT:
 Remember: You're helping developers build payment solutions, so be practical and solution-oriented.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -464,7 +464,7 @@ async function generateResponseWithMemory(
       Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
     });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -635,33 +635,34 @@ async function startChat() {
           console.log("-".repeat(40));
 
           // Show sources only for Stripe-related queries
-          const isStripeQuery = query.toLowerCase().includes('stripe') || 
-                                query.toLowerCase().includes('payment') ||
-                                query.toLowerCase().includes('webhook') ||
-                                query.toLowerCase().includes('api') ||
-                                query.toLowerCase().includes('charge') ||
-                                query.toLowerCase().includes('customer') ||
-                                query.toLowerCase().includes('subscription') ||
-                                query.toLowerCase().includes('billing') ||
-                                query.toLowerCase().includes('invoice') ||
-                                query.toLowerCase().includes('refund') ||
-                                query.toLowerCase().includes('dispute') ||
-                                query.toLowerCase().includes('connect') ||
-                                query.toLowerCase().includes('radar') ||
-                                query.toLowerCase().includes('terminal') ||
-                                query.toLowerCase().includes('checkout') ||
-                                query.toLowerCase().includes('payment intent') ||
-                                query.toLowerCase().includes('payment method') ||
-                                query.toLowerCase().includes('card') ||
-                                query.toLowerCase().includes('bank') ||
-                                query.toLowerCase().includes('ach') ||
-                                query.toLowerCase().includes('payout') ||
-                                query.toLowerCase().includes('balance') ||
-                                query.toLowerCase().includes('fee') ||
-                                query.toLowerCase().includes('tax') ||
-                                query.toLowerCase().includes('shipping') ||
-                                query.toLowerCase().includes('address') ||
-                                query.toLowerCase().includes('verification');
+          const isStripeQuery =
+            query.toLowerCase().includes("stripe") ||
+            query.toLowerCase().includes("payment") ||
+            query.toLowerCase().includes("webhook") ||
+            query.toLowerCase().includes("api") ||
+            query.toLowerCase().includes("charge") ||
+            query.toLowerCase().includes("customer") ||
+            query.toLowerCase().includes("subscription") ||
+            query.toLowerCase().includes("billing") ||
+            query.toLowerCase().includes("invoice") ||
+            query.toLowerCase().includes("refund") ||
+            query.toLowerCase().includes("dispute") ||
+            query.toLowerCase().includes("connect") ||
+            query.toLowerCase().includes("radar") ||
+            query.toLowerCase().includes("terminal") ||
+            query.toLowerCase().includes("checkout") ||
+            query.toLowerCase().includes("payment intent") ||
+            query.toLowerCase().includes("payment method") ||
+            query.toLowerCase().includes("card") ||
+            query.toLowerCase().includes("bank") ||
+            query.toLowerCase().includes("ach") ||
+            query.toLowerCase().includes("payout") ||
+            query.toLowerCase().includes("balance") ||
+            query.toLowerCase().includes("fee") ||
+            query.toLowerCase().includes("tax") ||
+            query.toLowerCase().includes("shipping") ||
+            query.toLowerCase().includes("address") ||
+            query.toLowerCase().includes("verification");
 
           if (isStripeQuery && result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
