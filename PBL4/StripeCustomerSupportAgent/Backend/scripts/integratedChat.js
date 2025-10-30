@@ -349,8 +349,29 @@ async function generateResponseWithMCP(
       }
     }
 
-    // Use MCP tool results only with simple prompt
-    let prompt = `You are a helpful assistant. Answer the user's question based on the provided information.
+    // Use a richer prompt if web_search was used
+    const usedWebSearch = (mcpToolsUsed || []).includes("web_search");
+    let prompt = usedWebSearch
+      ? `You are an up-to-date assistant. Summarize the latest information from the web search results below.
+
+        USER QUESTION:
+        ${query}
+
+        WEB SEARCH RESULTS (verbatim):
+        ${
+          mcpResult && mcpResult.enhancedResponse
+            ? mcpResult.enhancedResponse
+            : "No specific information available."
+        }
+
+        INSTRUCTIONS:
+        - Produce a concise multi-bullet summary of the most important updates (3-6 bullets).
+        - Each bullet should be a full sentence with concrete facts. Avoid fluff.
+        - Add a short "Sources" section at the end listing 3-5 links as markdown list items. Use the actual URLs shown; keep titles short.
+        - Prefer reputable/official domains where available. Do not invent links.
+        - If results look noisy or off-topic, say so briefly and suggest a clearer query.
+        `
+      : `You are a helpful assistant. Answer the user's question based on the provided information.
 
         USER QUESTION: ${query}
 
@@ -572,7 +593,13 @@ async function generateResponseWithMemoryAndMCP(
     }
 
     // Build enhanced prompt with memory and MCP integration
-    let prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+    const isStripe =
+      /stripe|webhook|payment|checkout|subscription|invoice|dispute|refund/i.test(
+        query
+      );
+
+    let prompt = isStripe
+      ? `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
 
     CONTEXT (Stripe Documentation):
     ${context}${memoryContextString}
@@ -595,7 +622,20 @@ async function generateResponseWithMemoryAndMCP(
     - Provide detailed explanation with code examples
     - Include relevant API endpoints and parameters
     - Mention any prerequisites or setup requirements
-    - End with source citations`;
+    - End with source citations`
+      : `You are a helpful, up-to-date assistant. Answer the user's question directly and concisely using the information provided below. If Stripe documentation context is included but irrelevant to the user's question, ignore it.
+
+    USER QUESTION: ${query}
+    ${memoryContextString}
+
+    INFORMATION:
+    ${context}
+
+    GUIDELINES:
+    - Be factual and current. If MCP tools include web search results, prioritize them.
+    - Keep the answer focused on the user's question; avoid Stripe-specific framing unless the question is about Stripe.
+    - If information is insufficient, say what is missing and suggest a follow-up.
+    - Provide links or brief references when available in the provided information.`;
 
     // Add MCP enhancement if available
     if (mcpEnhancement) {
@@ -900,6 +940,17 @@ async function startIntegratedChat() {
           let searchQuery = query; // Initialize searchQuery with original query
 
           // Step 2: Route based on classification
+          // Force MCP-only for clearly non-Stripe queries to avoid hybrid search
+          const isStripe =
+            /stripe|webhook|payment|checkout|subscription|invoice|dispute|refund/i.test(
+              query
+            );
+          if (!isStripe && classification.approach !== "MCP_TOOLS_ONLY") {
+            classification.approach = "MCP_TOOLS_ONLY";
+            classification.reasoning =
+              (classification.reasoning || "") +
+              " | Forced MCP_TOOLS_ONLY for non-Stripe query";
+          }
           // Handle CONVERSATIONAL approach FIRST (highest priority)
           if (classification.approach === "CONVERSATIONAL") {
             console.log("\n");

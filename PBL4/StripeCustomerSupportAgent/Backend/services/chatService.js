@@ -237,7 +237,7 @@ class ChatService {
 
       // Step 1: Classify the query to decide approach
       const enabledTools = this.mcpService.getEnabledTools();
-      const classification = await this.queryClassifier.classifyQuery(
+      let classification = await this.queryClassifier.classifyQuery(
         message,
         0.5,
         enabledTools
@@ -250,6 +250,13 @@ class ChatService {
       let searchQuery = memoryContext.reformulatedQuery || message;
 
       // Step 2: Route based on classification
+      const isStripe = this.isStripeRelatedQuery(message);
+      // Force MCP-only for non-Stripe queries to avoid hybrid search on Stripe docs
+      if (!isStripe && classification.approach !== "MCP_TOOLS_ONLY") {
+        console.log("🔧 Forcing MCP tools only for non-Stripe query");
+        classification = { ...classification, approach: "MCP_TOOLS_ONLY" };
+      }
+
       if (classification.approach === "MCP_TOOLS_ONLY") {
         console.log("🔧 Using MCP tools only approach");
 
@@ -378,8 +385,26 @@ class ChatService {
     try {
       console.log("🤖 Generating response with MCP tools only...");
 
-      // Use MCP tool results with simple prompt
-      const prompt = `You are a helpful assistant. Answer the user's question based on the provided information.
+      // Build a richer prompt if web_search was used
+      const usedWebSearch = (toolsUsed || []).includes("web_search");
+      const prompt = usedWebSearch
+        ? `You are an up-to-date assistant. Summarize the latest information from the web search results below.
+
+      USER QUESTION:
+      ${query}
+
+      WEB SEARCH RESULTS (verbatim):
+      ${mcpEnhancement}
+
+      INSTRUCTIONS:
+      - Produce a concise multi-bullet summary of the most important updates (3-6 bullets).
+      - Each bullet should be a full sentence with concrete facts. Avoid fluff.
+      - Add a short "Sources" section at the end listing 3-5 links as markdown list items. Use the actual URLs shown; keep titles short.
+      - Prefer reputable/official domains where available. Do not invent links.
+      - If results look noisy or off-topic, say so briefly and suggest a clearer query.
+      - Do not include any Stripe-specific framing.
+      `
+        : `You are a helpful assistant. Answer the user's question based on the provided information.
 
       USER QUESTION: ${query}
 
@@ -507,8 +532,10 @@ class ChatService {
         }\nTools Used: ${(mcpResult.toolsUsed || []).join(", ")}`;
       }
 
-      // Generate response using Gemini
-      const prompt = `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
+      // Choose prompt based on whether query is Stripe-related
+      const isStripe = this.isStripeRelatedQuery(query);
+      const prompt = isStripe
+        ? `You are an expert Stripe API support assistant with deep knowledge of Stripe's payment processing, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Stripe.
 
           You have access to both current Stripe documentation and previous conversation context to provide contextually aware responses.
 
@@ -539,7 +566,20 @@ class ChatService {
           - Focus on being helpful and practical
           - Do NOT include source citations in your response - they will be added automatically
 
-          Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
+          Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`
+        : `You are a helpful, up-to-date assistant. Answer the user's question directly and concisely using the information provided below. If Stripe documentation context is included but irrelevant to the user's question, ignore it.
+
+          USER QUESTION: ${query}
+          ${memoryContextString}${mcpEnhancementString}
+
+          INFORMATION:
+          ${context}
+
+          GUIDELINES:
+          - Be factual and current. If MCP tools include web search results, prioritize them.
+          - Keep the answer focused on the user's question; avoid Stripe-specific framing unless the question is about Stripe.
+          - If information is insufficient, say what is missing and suggest a follow-up.
+          - Provide links or brief references when available in the provided information.`;
 
       const model = this.geminiClient.getGenerativeModel({
         model: "gemini-2.0-flash",

@@ -11,12 +11,14 @@ dotenv.config();
 class WebSearchTool {
   constructor() {
     this.name = "web_search";
-    this.description = "Search for recent Stripe documentation and updates";
+    this.description =
+      "Search the web for recent information and official sources (Stripe and non-Stripe).";
     this.apiKey = process.env.GOOGLE_SEARCH_API_KEY;
     this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
     this.baseUrl = "https://www.googleapis.com/customsearch/v1";
     this.cache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
+    this.currentIsStripeQuery = false;
   }
 
   /**
@@ -38,9 +40,14 @@ class WebSearchTool {
         };
       }
 
-      // Check cache first
+      // Optional cache bypass if user requests redo/refresh
+      const wantsRefresh = /\b(redo|refresh|update now|run again)\b/i.test(
+        query
+      );
+
+      // Check cache first (unless refresh requested)
       const cacheKey = this.generateCacheKey(query);
-      if (this.cache.has(cacheKey)) {
+      if (!wantsRefresh && this.cache.has(cacheKey)) {
         const cached = this.cache.get(cacheKey);
         if (Date.now() - cached.timestamp < this.cacheTimeout) {
           console.log("📋 Using cached search results");
@@ -48,11 +55,14 @@ class WebSearchTool {
         }
       }
 
-      // Perform search
-      const searchQuery = this.buildSearchQuery(query);
-      const results = await this.performSearch(searchQuery);
+      // Determine context and perform search
+      const isStripe = this.isStripeQuery(query);
+      this.currentIsStripeQuery = isStripe;
+      const searchQuery = this.buildSearchQuery(query, isStripe);
+      const extraParams = this.getAdditionalSearchParams(query, isStripe);
+      const results = await this.performSearch(searchQuery, extraParams);
 
-      // Cache results
+      // Cache results (always overwrite if refresh)
       this.cache.set(cacheKey, {
         result: results,
         timestamp: Date.now(),
@@ -75,22 +85,44 @@ class WebSearchTool {
    * @param {string} query - Original user query
    * @returns {string} - Optimized search query
    */
-  buildSearchQuery(query) {
-    // Focus on official Stripe sources with Google Custom Search syntax
-    const siteFilters = [
-      "site:stripe.com",
-      "site:support.stripe.com",
-      "site:docs.stripe.com",
+  buildSearchQuery(query, isStripe = false) {
+    if (isStripe) {
+      // Focus on official Stripe sources with Google Custom Search syntax
+      const siteFilters = [
+        "site:stripe.com",
+        "site:support.stripe.com",
+        "site:docs.stripe.com",
+      ];
+
+      // Add Stripe context to the query
+      let searchQuery = `Stripe ${query}`;
+
+      // Add site filters for Google Custom Search
+      searchQuery += ` (${siteFilters.join(" OR ")})`;
+
+      // Add recent date filter for updates
+      searchQuery += " (2025 OR 2024)";
+
+      return searchQuery;
+    }
+
+    // General web search (non-Stripe)
+    let searchQuery = query.trim();
+
+    // Encourage recent content for users asking for latest/updates
+    const recencyHints = [
+      "latest",
+      "recent",
+      "today",
+      "now",
+      "breaking",
+      "update",
+      "updates",
     ];
-
-    // Add Stripe context to the query
-    let searchQuery = `Stripe ${query}`;
-
-    // Add site filters for Google Custom Search
-    searchQuery += ` (${siteFilters.join(" OR ")})`;
-
-    // Add recent date filter for updates
-    searchQuery += " (2024 OR 2023)";
+    if (recencyHints.some((t) => query.toLowerCase().includes(t))) {
+      // Add recent years as hints; API-level dateRestrict handled separately
+      searchQuery += " (2025 OR 2024)";
+    }
 
     return searchQuery;
   }
@@ -100,7 +132,7 @@ class WebSearchTool {
    * @param {string} searchQuery - Search query
    * @returns {Object} - Search results
    */
-  async performSearch(searchQuery) {
+  async performSearch(searchQuery, extraParams = {}) {
     try {
       const response = await axios.get(this.baseUrl, {
         params: {
@@ -110,6 +142,7 @@ class WebSearchTool {
           num: 10, // Number of results
           safe: "active",
           fields: "items(title,link,snippet,pagemap)",
+          ...extraParams,
         },
         timeout: 10000,
       });
@@ -156,17 +189,19 @@ class WebSearchTool {
     const description =
       (result.snippet || result.description)?.toLowerCase() || "";
 
-    // Must be from official Stripe domains
-    const officialDomains = [
-      "stripe.com",
-      "support.stripe.com",
-      "docs.stripe.com",
-    ];
+    if (this.currentIsStripeQuery) {
+      // Must be from official Stripe domains when searching Stripe
+      const officialDomains = [
+        "stripe.com",
+        "support.stripe.com",
+        "docs.stripe.com",
+      ];
 
-    const isOfficialDomain = officialDomains.some((domain) =>
-      url.includes(domain)
-    );
-    if (!isOfficialDomain) return false;
+      const isOfficialDomain = officialDomains.some((domain) =>
+        url.includes(domain)
+      );
+      if (!isOfficialDomain) return false;
+    }
 
     // Filter out irrelevant pages
     const irrelevantPatterns = [
@@ -184,25 +219,46 @@ class WebSearchTool {
     );
     if (isIrrelevant) return false;
 
-    // Must contain relevant content
-    const relevantKeywords = [
-      "api",
-      "webhook",
-      "payment",
-      "billing",
-      "subscription",
-      "charge",
-      "refund",
-      "dispute",
-      "connect",
-      "documentation",
-    ];
+    // Content relevance: adapt to Stripe vs general web
+    if (this.currentIsStripeQuery) {
+      const relevantKeywords = [
+        "api",
+        "webhook",
+        "payment",
+        "billing",
+        "subscription",
+        "charge",
+        "refund",
+        "dispute",
+        "connect",
+        "documentation",
+      ];
 
-    const hasRelevantContent = relevantKeywords.some(
-      (keyword) => title.includes(keyword) || description.includes(keyword)
+      const hasRelevantContent = relevantKeywords.some(
+        (keyword) => title.includes(keyword) || description.includes(keyword)
+      );
+      return hasRelevantContent;
+    }
+
+    // For general searches, be more permissive but still ensure substance
+    const generalKeywords = [
+      "latest",
+      "update",
+      "breaking",
+      "news",
+      "timeline",
+      "summary",
+      "explained",
+      "report",
+      "analysis",
+      "official",
+    ];
+    const hasGeneralSignal = generalKeywords.some(
+      (k) => title.includes(k) || description.includes(k)
     );
 
-    return hasRelevantContent;
+    // If not matched, still allow if title/description are reasonably descriptive
+    return hasGeneralSignal || description.length > 60 || title.length > 20;
   }
 
   /**
@@ -233,10 +289,35 @@ class WebSearchTool {
     const description = result.snippet?.toLowerCase() || "";
     const url = result.link?.toLowerCase() || "";
 
-    // Higher score for documentation pages
-    if (url.includes("/docs/")) score += 0.2;
-    if (url.includes("/api/")) score += 0.2;
-    if (url.includes("/webhooks/")) score += 0.1;
+    if (this.currentIsStripeQuery) {
+      // Higher score for documentation pages
+      if (url.includes("/docs/")) score += 0.2;
+      if (url.includes("/api/")) score += 0.2;
+      if (url.includes("/webhooks/")) score += 0.1;
+    } else {
+      // For general web, prioritize news/official sources
+      const newsSignals = [
+        "/news",
+        "/articles",
+        "/story",
+        "/world",
+        "/middle-east",
+        "live",
+      ].some((s) => url.includes(s));
+      if (newsSignals) score += 0.2;
+      const officialSignals = [".gov", ".mil", "un.org", "europa.eu"].some(
+        (s) => url.includes(s)
+      );
+      if (officialSignals) score += 0.15;
+      const keywordSignals = [
+        "latest",
+        "breaking",
+        "update",
+        "timeline",
+        "explained",
+      ].some((k) => title.includes(k) || description.includes(k));
+      if (keywordSignals) score += 0.15;
+    }
 
     // Higher score for recent content (Google Custom Search doesn't provide age directly)
     const publishedDate =
@@ -276,9 +357,28 @@ class WebSearchTool {
       results.reduce((sum, r) => sum + r.relevanceScore, 0) / results.length;
     confidence += avgRelevance * 0.2;
 
-    // Higher confidence for official documentation
-    const officialResults = results.filter((r) => r.url.includes("/docs/"));
-    if (officialResults.length > 0) confidence += 0.1;
+    if (this.currentIsStripeQuery) {
+      // Higher confidence for official documentation
+      const officialResults = results.filter((r) => r.url.includes("/docs/"));
+      if (officialResults.length > 0) confidence += 0.1;
+    } else {
+      // For general web, boost if there are news/official domains
+      const newsOrOfficial = results.filter((r) => {
+        const u = (r.url || "").toLowerCase();
+        return (
+          [
+            "bbc.com",
+            "reuters.com",
+            "apnews.com",
+            "aljazeera.com",
+            "nytimes.com",
+            "washingtonpost.com",
+          ].some((d) => u.includes(d)) ||
+          [".gov", "un.org", "europa.eu"].some((d) => u.includes(d))
+        );
+      });
+      if (newsOrOfficial.length > 0) confidence += 0.1;
+    }
 
     return Math.min(1, confidence);
   }
@@ -291,10 +391,10 @@ class WebSearchTool {
    */
   generateResponse(results, query) {
     if (results.length === 0) {
-      return "No recent Stripe documentation found for your query.";
+      return "No recent results found for your query.";
     }
 
-    let response = `Found ${results.length} relevant Stripe resources:\n\n`;
+    let response = `Found ${results.length} relevant resources:\n\n`;
 
     results.forEach((result, index) => {
       response += `${index + 1}. **${result.title}**\n`;
@@ -329,14 +429,69 @@ class WebSearchTool {
   shouldUse(query) {
     // Use web search when confidence is low or for recent updates
     const recentIndicators = [
-      /latest|recent|new|updated/,
-      /2024|2023/,
+      /latest|recent|new|updated|today|breaking|now/,
+      /2025|2024/,
       /recently|just|now/,
     ];
 
     return recentIndicators.some((pattern) =>
       pattern.test(query.toLowerCase())
     );
+  }
+
+  /**
+   * Detect if the query is about Stripe
+   * @param {string} query
+   * @returns {boolean}
+   */
+  isStripeQuery(query) {
+    const q = query.toLowerCase();
+    // Direct mention or strong payment-platform signals
+    const direct = q.includes("stripe");
+    const strongSignals = [
+      "payment intent",
+      "connect platform",
+      "webhook secret",
+      "checkout session",
+      "stripe js",
+      "stripe cli",
+    ];
+    const hasSignals = strongSignals.some((s) => q.includes(s));
+    return direct || hasSignals;
+  }
+
+  /**
+   * Compute additional search params for Google Custom Search API
+   * such as dateRestrict/sort when users ask for the latest updates
+   * @param {string} originalQuery
+   * @param {boolean} isStripe
+   */
+  getAdditionalSearchParams(originalQuery, isStripe) {
+    const q = originalQuery.toLowerCase();
+    const wantsLatest = [
+      "latest",
+      "recent",
+      "today",
+      "now",
+      "breaking",
+      "update",
+      "updates",
+      "new",
+    ].some((t) => q.includes(t));
+    const params = {};
+
+    if (wantsLatest) {
+      // Bias towards the most recent results
+      // d7 = last 7 days, d1 = last day (too strict sometimes)
+      params.dateRestrict =
+        q.includes("today") || q.includes("now") || q.includes("breaking")
+          ? "d1"
+          : "d7";
+      params.sort = "date";
+    }
+
+    // Keep safe search active by default (already set), nothing else for now
+    return params;
   }
 }
 
