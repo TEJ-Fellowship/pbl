@@ -71,7 +71,7 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-10T08:21:25.570Z",
-      "lastActivity": "2025-10-14T13:35:41.051Z",
+      "lastActivity": "2025-10-30T06:46:13.813Z",
       "conversationHistory": [
         {
           "timestamp": "2025-10-10T08:21:36.409Z",
@@ -194,28 +194,66 @@
             "chunkCount": 8,
             "responseTime": 14640
           }
+        },
+        {
+          "timestamp": "2025-10-30T06:44:50.915Z",
+          "query": "What is error 300001?",
+          "response": "Okay, I can help you understand Twilio Error 30001.\n\nBased on the MCP tool `lookup_error_code`, Error 30001 indicates that the message you attempted to send is \"Queue Overflow\". This typically means that Twilio is experiencing high traffic volume and your message could not be processed immediately.\n\nHere's a breakdown of what that means and how to handle it:\n\n**Understanding \"Queue Overflow\" (Error 30001)**\n\nWhen Twilio's SMS infrastructure is under heavy load, messages are placed in a queue for processing. If the queue becomes full, Twilio will return Error 30001, indicating that your message could not be added to the queue at that time.  This is a temporary condition.\n\n**How to Handle Error 30001 in your Node.js application:**\n\nSince this error is related to temporary overload, the best approach is to implement a retry mechanism in your code. Here’s how you can do that:\n\n```javascript\nconst twilio = require('twilio');\n\n// Your Account SID and Auth Token from twilio.com/console\n// Set the environment variables for security\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\n\nconst client = twilio(accountSid, authToken);\n\nasync function sendSMS(to, message) {\n  let retries = 3; // Number of retries\n  let delay = 1000; // Initial delay in milliseconds (1 second)\n\n  while (retries > 0) {\n    try {\n      const messageResponse = await client.messages.create({\n        body: message,\n        to: to,\n        from: '+1234567890', // Your Twilio phone number\n      });\n\n      console.log(`Message sent successfully! SID: ${messageResponse.sid}`);\n      return messageResponse; // Exit the function if successful\n\n    } catch (error) {\n      if (error.code === 30001) {\n        console.log(`Error 30001: Queue Overflow. Retrying in ${delay/1000} seconds...`);\n        retries--;\n        await new Promise(resolve => setTimeout(resolve, delay)); // Wait before retrying\n        delay *= 2; // Exponential backoff: increase the delay for the next retry\n      } else {\n        // Handle other errors (e.g., invalid number, insufficient funds)\n        console.error(\"An unexpected error occurred:\", error);\n        throw error; // Re-throw the error to be handled elsewhere if needed\n      }\n    }\n  }\n\n  console.error(\"Failed to send SMS after multiple retries.\");\n  throw new Error(\"Failed to send SMS after multiple retries due to queue overflow.\");\n}\n\n// Example usage:\nsendSMS('+11234567890', 'Hello from Twilio!');\n```\n\n**Explanation:**\n\n1.  **Retry Logic:** The `sendSMS` function now includes a `while` loop that retries sending the message up to a specified number of times (`retries`).\n2.  **Error Handling:** Inside the `try...catch` block, it specifically checks if the error code is 30001.\n3.  **Exponential Backoff:** If a 30001 error is caught, the code waits for an increasing amount of time (`delay`) before retrying. This is known as exponential backoff, and it helps to avoid overwhelming the Twilio API with repeated requests during periods of high load.  The delay starts at 1 second and doubles with each retry.\n4.  **Other Errors:**  The `else` block in the `catch` statement allows you to handle other potential errors, such as invalid phone numbers or insufficient funds in your Twilio account.  You might want to log these errors or take other appropriate actions.\n5.  **Re-throwing Errors:** If the message fails after all retries are exhausted, the function throws an error, which you can then handle further up the call stack. This ensures that you are aware of the failure and can take appropriate action, such as alerting an administrator.\n6.  **Twilio Number:** Make sure to replace `'+1234567890'` with your actual Twilio phone number.\n7.  **Asynchronous Operation:** The use of `async` and `await` makes the code easier to read and manage, especially when dealing with asynchronous operations like sending SMS messages and introducing delays.\n8.  **Environment Variables**: The code assumes you've set `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` as environment variables, which is a more secure practice than hardcoding them in your script.\n\n**Important Considerations:**\n\n*   **Maximum Retries:**  Don't retry indefinitely. Set a reasonable limit on the number of retries to prevent your application from getting stuck in a loop.\n*   **Delay Strategy:** Experiment with different delay strategies (linear, exponential, etc.) to find what works best for your application.\n*   **Idempotency:**  In rare cases, a message might be successfully sent on a retry, even though you received a 30001 error initially. If message duplication is a concern for your application, you should implement a mechanism to ensure idempotency (i.e., that processing the same message multiple times has the same effect as processing it once). This might involve checking if a message with the same content has already been sent to the recipient within a certain timeframe.\n*   **Monitoring:** Monitor your application for 30001 errors to identify patterns and potential issues with your Twilio integration.\n\nI used the `lookup_error_code` MCP tool to identify the meaning of error code 30001.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 11621
+          }
+        },
+        {
+          "timestamp": "2025-10-30T06:45:42.308Z",
+          "query": "curl -s -X POST http://localhost:3000/api/mcp/tools \\",
+          "response": "The provided context does not contain enough information to directly answer the question about the `curl` command. However, I can provide some general information about using the Twilio API with `curl` and webhooks, which might be helpful.\n\nSince you are using `curl` to interact with what appears to be a local endpoint (`http://localhost:3000/api/mcp/tools`), this is likely a development or testing setup. Twilio APIs are generally accessed over HTTPS [Source 2, 3].\n\nHere's how you might typically use `curl` with the Twilio API for sending an SMS, along with considerations for handling webhooks:\n\n**1. Sending an SMS using Twilio API with `curl`:**\n\n```bash\nACCOUNT_SID=\"ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\nAUTH_TOKEN=\"your_auth_token\"\nTWILIO_NUMBER=\"+1234567890\"\nTARGET_NUMBER=\"+11234567890\"\n\ncurl -X POST \"https://api.twilio.com/2010-04-01/Accounts/$ACCOUNT_SID/Messages.json\" \\\n--data-urlencode \"To=$TARGET_NUMBER\" \\\n--data-urlencode \"From=$TWILIO_NUMBER\" \\\n--data-urlencode \"Body=Hello from Twilio!\" \\\n-u \"$ACCOUNT_SID:$AUTH_TOKEN\"\n```\n\n*   Replace `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` with your actual Account SID.\n*   Replace `your_auth_token` with your Twilio Auth Token.\n*   Replace `+1234567890` with your Twilio phone number.\n*   Replace `+11234567890` with the recipient's phone number.\n\n**2. Handling Webhooks:**\n\nTwilio uses webhooks to notify your application about events like incoming SMS messages or phone calls [Source 5]. When an event occurs, Twilio sends an HTTP request (usually POST or GET) to the URL you've configured for the webhook [Source 5].\n\nTo receive and process webhooks, you need a publicly accessible URL that Twilio can send requests to.  Since you are using `localhost`, this will only work if you are using a tool like `ngrok` to expose your local server to the internet.\n\nHere's a simple example of how you might handle an incoming SMS webhook in a bash script (though a full-fledged application using a framework like Flask or Node.js would be more common):\n\n```bash\n#!/bin/bash\n\n# This script is a placeholder.  A real implementation would\n# need to parse the incoming POST data and take appropriate action.\n\necho \"Content-Type: text/plain\"\necho \"\"\necho \"Received an SMS!\"\n\n# You would typically parse the POST data here to extract information\n# like the incoming phone number and message body.\n```\n\n**3. Error Handling:**\n\nWhen working with the Twilio API, it's important to handle errors gracefully. The context mentions error 30001 which indicates an invalid phone number [Source 1].  Make sure the phone numbers you are using are in a valid format (e.g., E.164 format).  The Twilio API returns HTTP status codes and error messages in the response, which you can inspect in your `curl` command.\n\n**4. Webhook Security:**\n\nIt's crucial to validate that incoming webhook requests are indeed from Twilio [Source 6]. You can do this by verifying the signature of the request. See the Twilio documentation on \"Webhook Security\" for more details [Source 6].\n\nSince the initial query involves a local endpoint, it's difficult to provide more specific guidance without knowing the purpose of the `http://localhost:3000/api/mcp/tools` endpoint. If you can provide more details about what this endpoint is intended to do, I can offer more tailored advice.\n",
+          "metadata": {
+            "detectedLanguage": "bash",
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 14047
+          }
+        },
+        {
+          "timestamp": "2025-10-30T06:46:13.813Z",
+          "query": "What is webhook?",
+          "response": "A webhook is a user-defined HTTP callback that is triggered by an event in a web application and can facilitate integrating different applications or third-party APIs, like Twilio [Source 1]. Twilio uses webhooks to notify your application when events occur, such as receiving an SMS message or getting an incoming phone call [Source 1]. When an event occurs, Twilio makes an HTTP request (usually a POST or a GET) to the URL you configured for the webhook [Source 1]. Twilio's request will include details of the event, such as the incoming phone number or the body of an incoming message [Source 1, 2].\n\nWebhooks are used differently by each Twilio product. To learn more about which webhooks each product uses and how to set them up with your application, you can refer to the documentation for Voice, Messaging, Conversations, Sync, and Twilio Runtime [Source 4].\n\nYou can also set up a pipeline that sends your webhooks into Slack, Microsoft Teams, or another chat system, or set up a webhook that notifies you via email [Source 4].\n\nHere's a basic example of how to handle an incoming SMS message using a webhook in Node.js:\n\n```javascript\nconst express = require('express');\nconst bodyParser = require('body-parser');\nconst twilio = require('twilio');\n\nconst app = express();\napp.use(bodyParser.urlencoded({ extended: false }));\n\napp.post('/sms', (req, res) => {\n  const twiml = new twilio.twiml.MessagingResponse();\n  twiml.message('The Robots are coming! Head for the hills!');\n\n  res.writeHead(200, { 'Content-Type': 'text/xml' });\n  res.end(twiml.toString());\n});\n\napp.listen(3000, () => {\n  console.log('Example app listening on port 3000!');\n});\n```\n\nIn this example, the `/sms` endpoint is configured as the webhook URL in your Twilio account. When Twilio receives an SMS message, it sends a POST request to this URL. The server then responds with a TwiML message that tells Twilio to send an SMS back to the original sender.\n\nYou can find tutorials on how to implement webhooks with your own application for various use cases, such as tracking delivery status for messages or replying to text messages [Source 7].\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 8691
+          }
         }
       ],
       "userPreferences": {
-        "language": "javascript",
+        "language": "bash",
         "api": "sms",
         "context": []
       },
       "currentContext": {
         "topic": "sms",
         "relatedAPIs": [
-          "sms"
+          "sms",
+          "conversations",
+          "functions"
         ],
         "errorCodes": [],
-        "lastQuery": "How do I send an SMS in Node.js?",
-        "lastUpdated": "2025-10-14T13:35:31.956Z"
+        "lastQuery": "What is webhook?",
+        "lastUpdated": "2025-10-30T06:46:09.181Z"
       }
     }
   },
   "globalPreferences": {
     "defaultLanguage": "javascript",
     "preferredAPI": "sms",
-    "lastUsedLanguage": "javascript",
+    "lastUsedLanguage": "bash",
     "lastUsedAPI": "sms"
   }
 }

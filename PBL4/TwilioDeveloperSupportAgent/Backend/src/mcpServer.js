@@ -240,7 +240,10 @@ class TwilioMCPServer {
               success: true,
               tool: "validate_twilio_code",
               validation,
-              code: code.substring(0, 200) + (code.length > 200 ? "..." : ""),
+              codeSnippet:
+                typeof code === "string"
+                  ? code.substring(0, 200) + (code.length > 200 ? "..." : "")
+                  : null,
             }),
           },
         ],
@@ -553,6 +556,19 @@ class TwilioMCPServer {
     const suggestions = [];
     let isValid = true;
 
+    // Guard against missing or non-string code
+    if (typeof code !== "string") {
+      issues.push("No code provided or invalid code type");
+      suggestions.push("Provide a valid code snippet as a string");
+      return {
+        isValid: false,
+        issues,
+        suggestions,
+        language,
+        confidence: 0.1,
+      };
+    }
+
     // Common Twilio validation patterns
     const patterns = {
       javascript: {
@@ -702,66 +718,94 @@ class TwilioMCPServer {
   // Uses GeneralSearch for web-based status checking
   async checkTwilioStatus(service = null, generalSearch = null) {
     try {
-      // Twilio doesn't have a public status API, so we'll use web search
-      if (!generalSearch) {
-        throw new Error("GeneralSearch module required for status checking");
-      }
-
-      const statusQuery = service
-        ? `Twilio ${service} service status outage maintenance`
-        : "Twilio service status outage maintenance";
-
-      const searchResults = await generalSearch.performWebSearch(
-        statusQuery,
-        3
+      // Use Twilio's Statuspage summary API
+      const response = await axios.get(
+        "https://status.twilio.com/api/v2/summary.json",
+        { timeout: 10000 }
       );
 
-      // Analyze search results for status indicators
-      const statusIndicators = {
-        operational: ["operational", "normal", "healthy", "working"],
-        degraded: ["degraded", "slow", "delays", "issues"],
-        outage: ["outage", "down", "offline", "unavailable", "maintenance"],
-        unknown: [],
-      };
+      const summary = response.data || {};
+      const components = Array.isArray(summary.components)
+        ? summary.components
+        : [];
+      const incidents = Array.isArray(summary.incidents)
+        ? summary.incidents
+        : [];
 
+      const normalize = (s) => (s || "").toString().toLowerCase();
+
+      // Optional service filter: loosely match component names that include the service term
+      const serviceFilter = service ? normalize(service) : null;
+      const filteredComponents = serviceFilter
+        ? components.filter((c) => normalize(c.name).includes(serviceFilter))
+        : components;
+
+      const activeIncidents = incidents.filter(
+        (i) => normalize(i.status) !== "resolved"
+      );
+
+      // Compute overall status
       let overallStatus = "operational";
-      let confidence = 0.5;
+      let confidence = 0.9; // Real data → higher confidence
       const issues = [];
 
-      if (searchResults.found && searchResults.results) {
-        const allText = searchResults.results
-          .map((r) => r.snippet)
-          .join(" ")
-          .toLowerCase();
+      // 1) Incidents take precedence
+      if (activeIncidents.length > 0) {
+        // Map Statuspage impact to our categories
+        const hasCritical = activeIncidents.some(
+          (i) =>
+            normalize(i.impact) === "critical" ||
+            normalize(i.impact) === "major"
+        );
+        const hasMinor = activeIncidents.some(
+          (i) => normalize(i.impact) === "minor"
+        );
+        overallStatus = hasCritical
+          ? "outage"
+          : hasMinor
+          ? "degraded"
+          : "degraded";
 
-        for (const [status, keywords] of Object.entries(statusIndicators)) {
-          const matches = keywords.filter((keyword) =>
-            allText.includes(keyword)
-          ).length;
-          if (matches > 0) {
-            if (status === "outage") {
-              overallStatus = "outage";
-              confidence = Math.min(0.9, matches * 0.3);
-            } else if (status === "degraded" && overallStatus !== "outage") {
-              overallStatus = "degraded";
-              confidence = Math.min(0.8, matches * 0.2);
-            }
-          }
+        activeIncidents.slice(0, 3).forEach((i) => {
+          issues.push({
+            title: i.name,
+            description: i.impact || i.status,
+            source: i.shortlink || "https://status.twilio.com/",
+          });
+        });
+      } else {
+        // 2) Fall back to component statuses
+        const comps =
+          filteredComponents.length > 0 ? filteredComponents : components;
+        const hasMajorOutage = comps.some(
+          (c) => normalize(c.status) === "major_outage"
+        );
+        const hasDegraded = comps.some(
+          (c) =>
+            normalize(c.status) === "partial_outage" ||
+            normalize(c.status) === "degraded_performance"
+        );
+
+        if (hasMajorOutage) {
+          overallStatus = "outage";
+        } else if (hasDegraded) {
+          overallStatus = "degraded";
+        } else {
+          overallStatus = "operational";
         }
 
-        // Extract specific issues from search results
-        searchResults.results.forEach((result) => {
-          if (
-            result.snippet.toLowerCase().includes("outage") ||
-            result.snippet.toLowerCase().includes("maintenance")
-          ) {
+        comps
+          .filter(
+            (c) => normalize(c.status) !== "operational" && issues.length < 3
+          )
+          .slice(0, 3)
+          .forEach((c) => {
             issues.push({
-              title: result.title,
-              description: result.snippet,
-              source: result.link,
+              title: c.name,
+              description: c.status,
+              source: "https://status.twilio.com/",
             });
-          }
-        });
+          });
       }
 
       return {
@@ -769,7 +813,7 @@ class TwilioMCPServer {
         confidence,
         service: service || "all",
         lastChecked: new Date().toISOString(),
-        issues: issues.slice(0, 3), // Limit to 3 most relevant issues
+        issues,
         message: this.getStatusMessage(overallStatus, service),
         recommendation: this.getStatusRecommendation(overallStatus),
       };
