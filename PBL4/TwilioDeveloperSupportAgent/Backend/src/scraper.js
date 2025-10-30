@@ -99,8 +99,8 @@ async function scrapeDoc(url, category) {
       .update(url)
       .digest("hex");
 
-    return {
-      id: deterministicId,
+return {
+      id: `${category}_${Date.now()}`,
       url,
       category,
       title: title.trim(),
@@ -108,7 +108,6 @@ async function scrapeDoc(url, category) {
       wordCount,
       scrapedAt: new Date().toISOString(),
       docType: "api",
-      // codeBlocks: [],
       metadata: {
         source: "twilio.com",
         contentType: response.headers["content-type"] || "text/html",
@@ -181,7 +180,7 @@ async function main() {
 
     // Fallback: Save to JSON file as backup
     console.log(`🔄 Falling back to JSON file storage...`);
-    const outputDir = path.join(process.cwd(), "data", "stripe_docs");
+    const outputDir = path.join(process.cwd(), "data", "twilio_docs");
     await fs.mkdir(outputDir, { recursive: true });
     const outputFile = path.join(outputDir, "scraped.json");
     await fs.writeFile(outputFile, JSON.stringify(docs, null, 2));

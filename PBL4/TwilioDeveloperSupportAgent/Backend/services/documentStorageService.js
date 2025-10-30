@@ -7,49 +7,12 @@ import pool from "../config/database.js";
 class DocumentStorageService {
   constructor() {
     this.pool = pool;
-    // Ensure schema exists before first use
-    this.schemaInitialized = this.initializeSchema();
-  }
-
-  /**
-   * Initialize database schema for raw_documents if it doesn't exist
-   */
-  async initializeSchema() {
-    const client = await this.pool.connect();
-    try {
-      const createTableSQL = `
-        CREATE TABLE IF NOT EXISTS raw_documents (
-          id VARCHAR(255) PRIMARY KEY,
-          url TEXT NOT NULL,
-          category VARCHAR(100) NOT NULL,
-          title TEXT,
-          content TEXT,
-          word_count INTEGER,
-          scraped_at TIMESTAMP NOT NULL,
-          doc_type VARCHAR(50) DEFAULT 'document',
-          metadata JSONB DEFAULT '{}'::jsonb,
-          processed BOOLEAN DEFAULT FALSE,
-          created_at TIMESTAMP DEFAULT NOW(),
-          updated_at TIMESTAMP DEFAULT NOW()
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_raw_documents_category ON raw_documents(category);
-        CREATE INDEX IF NOT EXISTS idx_raw_documents_processed ON raw_documents(processed);
-        CREATE INDEX IF NOT EXISTS idx_raw_documents_scraped_at ON raw_documents(scraped_at);
-      `;
-
-      await client.query(createTableSQL);
-    } finally {
-      client.release();
-    }
   }
 
   /**
    * Store scraped documents in PostgreSQL
    */
   async storeDocuments(documents) {
-    // Ensure schema is ready before inserts
-    await this.schemaInitialized;
     const client = await this.pool.connect();
 
     try {
@@ -69,11 +32,6 @@ class DocumentStorageService {
           scraped_at = EXCLUDED.scraped_at,
           doc_type = EXCLUDED.doc_type,
           metadata = EXCLUDED.metadata,
-          -- Reset processed only when content has actually changed
-          processed = CASE 
-            WHEN raw_documents.content IS DISTINCT FROM EXCLUDED.content THEN FALSE 
-            ELSE raw_documents.processed 
-          END,
           updated_at = NOW()
         `;
 
@@ -255,9 +213,12 @@ class DocumentStorageService {
 
   /**
    * Close the connection pool
+   * Note: This should only be called when the entire application is shutting down
    */
   async close() {
-    await this.pool.end();
+    // Don't close the shared pool - let the application manage it
+    // await this.pool.end();
+    console.log("📝 DocumentStorageService: Pool close skipped (shared pool)");
   }
 }
 
