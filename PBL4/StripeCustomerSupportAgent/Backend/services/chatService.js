@@ -392,7 +392,7 @@ class ChatService {
       Provide a clear, helpful response based on the MCP tool results.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -542,7 +542,7 @@ class ChatService {
           Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -687,7 +687,7 @@ FORMAT YOUR RESPONSE:
 Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;

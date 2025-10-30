@@ -194,7 +194,12 @@ class QueryReformulationService {
 
       ORIGINAL USER QUERY: "${originalQuery}"
 
-      INSTRUCTIONS:
+      IMPORTANT RULES:
+      1. If the query asks about personal information (name, previous conversation, things mentioned earlier), return the ORIGINAL query unchanged. Do NOT reformulate personal queries into Stripe API questions.
+      2. If the query is about conversation history or what was said before, return the ORIGINAL query unchanged.
+      3. Only reformulate technical queries about Stripe API, payments, webhooks, integrations, etc.
+
+      INSTRUCTIONS FOR TECHNICAL QUERIES:
       1. Reformulate the query to be more specific and search-friendly
       2. Include relevant context from the conversation history
       3. Add technical terms that might help with document retrieval
@@ -206,7 +211,7 @@ class QueryReformulationService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: config.GEMINI_API_MODEL,
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -314,11 +319,21 @@ class QueryReformulationService {
    */
   async extractQAPairs(sessionId, userMessage, assistantResponse) {
     try {
+      console.log(`\n🧠 Extracting Q&A pair for session ${sessionId}:`);
+      console.log(`   Question: "${userMessage.substring(0, 100)}..."`);
+      console.log(`   Answer: "${assistantResponse.substring(0, 100)}..."`);
+
       // Use Gemini AI for intelligent Q&A extraction and analysis
       const analysis = await this.analyzeQAPairWithGemini(
         userMessage,
         assistantResponse
       );
+
+      console.log(`✅ AI analysis completed:`, {
+        relevanceScore: analysis.relevanceScore,
+        isImportant: analysis.isImportant,
+        tags: analysis.tags,
+      });
 
       // Store Q&A pair with AI-enhanced analysis
       const qaPair = await this.postgresMemory.storeQAPair(
@@ -332,7 +347,7 @@ class QueryReformulationService {
       );
 
       console.log(
-        `🧠 AI-extracted Q&A pair for long-term memory: ${qaPair.qa_id}`
+        `🧠 AI-extracted Q&A pair stored successfully: ${qaPair.qa_id}`
       );
       return qaPair;
     } catch (error) {
@@ -340,11 +355,24 @@ class QueryReformulationService {
       console.log("🔄 Falling back to rule-based extraction...");
 
       // Fallback to rule-based extraction
-      return this.extractQAPairsRuleBased(
-        sessionId,
-        userMessage,
-        assistantResponse
-      );
+      try {
+        const qaPair = await this.extractQAPairsRuleBased(
+          sessionId,
+          userMessage,
+          assistantResponse
+        );
+        console.log(
+          `✅ Rule-based Q&A pair stored: ${qaPair ? qaPair.qa_id : "failed"}`
+        );
+        return qaPair;
+      } catch (fallbackError) {
+        console.error(
+          "❌ Rule-based extraction also failed:",
+          fallbackError.message
+        );
+        // Return null but don't throw - Q&A extraction failure shouldn't break the flow
+        return null;
+      }
     }
   }
 
@@ -368,10 +396,18 @@ class QueryReformulationService {
       2. ANSWER: A clean, well-formatted version of the assistant's response
       3. CONTEXT: A brief context summary of what was discussed
       4. RELEVANCE_SCORE: A score from 0.0 to 1.0 indicating how valuable this Q&A is for future reference
-      5. IS_IMPORTANT: true/false - whether this Q&A contains important technical information
-      6. TAGS: An array of relevant tags (e.g., ["payment", "api", "webhook", "error"])
+         - For conversational queries (names, personal info, conversation history): score 0.7-0.9
+         - For technical queries: score 0.5-0.9 based on technical depth
+      5. IS_IMPORTANT: true/false - whether this Q&A contains important information (includes both technical AND conversational/personal info)
+      6. TAGS: An array of relevant tags:
+         - For conversational queries: ["conversation", "personal", "memory"] or similar
+         - For technical queries: ["payment", "api", "webhook", "error"] or similar
 
-      Focus on Stripe API concepts, payment processing, webhooks, errors, and technical implementation details.
+      IMPORTANT: 
+      - Extract Q&A pairs for BOTH technical Stripe questions AND conversational/personal questions
+      - For conversational queries, use tags like "conversation", "personal", "memory", "name", etc.
+      - For technical queries, use tags like "payment", "api", "webhook", "error", etc.
+      - Always set isImportant=true for both types if they contain useful information
 
       Respond in this exact JSON format:
       {
@@ -385,7 +421,7 @@ class QueryReformulationService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: config.GEMINI_API_MODEL,
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;
