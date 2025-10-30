@@ -15,10 +15,7 @@ const SOURCES = {
   open_and_click_rates:
     "https://mailchimp.com/help/about-open-and-click-rates/",
   api: "https://mailchimp.com/help/about-api-keys/",
-  // automation: "https://mailchimp.com/help/about-classic-automations/",
-  // api: "https://mailchimp.com/developer/",
-  // resources: "https://mailchimp.com/resources/",
-  // analytics: "https://mailchimp.com/features/reports-and-analytics/",
+  automation: "https://mailchimp.com/help/create-customer-journey/",
 };
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -126,7 +123,9 @@ async function main() {
     }
   }
 
-  const dir = path.resolve("/home/immahesh/Documents/pbl/PBL4/MailChimpSupportAgent/backend/src/data/mailerbyte_docs");
+  const dir = path.resolve(
+    "/home/immahesh/Documents/pbl/PBL4/MailChimpSupportAgent/backend/src/data/mailerbyte_docs"
+  );
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(
     path.join(dir, "scraped.json"),

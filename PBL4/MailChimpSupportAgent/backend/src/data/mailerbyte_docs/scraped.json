@@ -1,6 +1,6 @@
 [
   {
-    "id": "helpdocs_1760427998629",
+    "id": "helpdocs_1760501333786",
     "url": "https://mailchimp.com/help/",
     "category": "helpdocs",
     "title": "Know More, Do More with Mailchimp",
@@ -134,10 +134,10 @@
         "content": "If you have a question about something that isn't covered here, check out our additional resources. And if that doesn't do the trick, you can send an inquiry through our contact form. Contact us"
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:38.629Z"
+    "scrapedAt": "2025-10-15T04:08:53.786Z"
   },
   {
-    "id": "gettingstarted_1760428000160",
+    "id": "gettingstarted_1760501335966",
     "url": "https://mailchimp.com/help/getting-started-with-mailchimp/",
     "category": "gettingstarted",
     "title": "Getting Started with Mailchimp",
@@ -199,10 +199,10 @@
         "content": "Marketing API An API is a way for different applications to talk to one another. Advanced users who are familiar with custom coding can use Mailchimp’s Marketing API to pass data from their application to Mailchimp for advanced customization and utility. Mailchimp Developer"
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:40.160Z"
+    "scrapedAt": "2025-10-15T04:08:55.966Z"
   },
   {
-    "id": "accountcreation_1760428001350",
+    "id": "accountcreation_1760501338022",
     "url": "https://mailchimp.com/help/create-an-account/",
     "category": "accountcreation",
     "title": "How to Create an Account",
@@ -232,10 +232,10 @@
         "content": "After you activate your account, your homepage will show a personalized list of recommended next steps. Here are some other resources to get to know Mailchimp's features. Getting Started with Mailchimp Get an overview of Mailchimp basics to get started. Verify your domain Verification makes sure your From email address is hosted at a domain that you can access. If you want to send from a personal or company domain, you'll need to go through the verification process before you can send through Mailchimp. It's best to send email campaigns with a personal or a company domain. Many free email providers have implemented DMARC authentication policies that affect the delivery of email campaigns that use a free provider's domain for the From email address. Add other people to your account If you want multiple logins for your account, you can invite users. Set different levels of permission based on how much access you want each user to have."
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:41.350Z"
+    "scrapedAt": "2025-10-15T04:08:58.022Z"
   },
   {
-    "id": "campaigncreation_1760428002519",
+    "id": "campaigncreation_1760501340181",
     "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
     "category": "campaigncreation",
     "title": "Getting Started with Campaigns",
@@ -289,10 +289,10 @@
         "content": "After you send or publish a campaign, you can monitor its performance in your campaign report. These reports include important metrics such as email opens and clicks, order revenue for connected stores, and social post shares. About Email Reports About Audience Analytics About SMS Reports Landing Page Reports About Social Post Reports"
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:42.519Z"
+    "scrapedAt": "2025-10-15T04:09:00.181Z"
   },
   {
-    "id": "audience_1760428004478",
+    "id": "audience_1760501342229",
     "url": "https://mailchimp.com/help/getting-started-audience/",
     "category": "audience",
     "title": "Getting Started with Your Audience",
@@ -318,6 +318,10 @@
         "content": "When you create a Mailchimp account, we’ll create an audience for you with the details you provide. We’ll also help you follow anti-spam practices for your emails and text messages. We recommend you maintain 1 primary audience in Mailchimp, and use tags, groups, or segments to organize and target your contacts. You can add subscribed contacts one at a time, upload contacts from a file, copy and paste from a spreadsheet, or sync from other apps. We won't allow you to send emails or text messages to purchased, rented, or third-party lists, so be sure to check our audience requirements before you begin. Here are some links to help you add contacts. Add a Single Subscriber to an Audience Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce"
       },
       {
+        "heading": "Create Multi-audience",
+        "content": "Multi-audiences can be added to your account by selecting the __double opt-in option during registration or from your audience dashboard to manage your audience settings. The Double Opt-in option provides access to add multiple audiences__, register a new sending number or sender ID, import contacts and purchase SMS credits to send SMS from multi-countries. If you have previously registered for SMS, your existing business information is prefilled to create new sender numbers or sender IDs. Your business details can be updated to specify a new business location. Do not re-register; validate your information inline and select your original business. You may register multiple EINs; each as a new business in the registration modal by following the initial steps to set up an SMS marketing program for your preferred country. Here are some links to help you add contacts. Add a Single Subscriber to an Audience __Create a new audience group__ Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce"
+      },
+      {
         "heading": "Build signup forms",
         "content": "Each Mailchimp audience comes with a signup form that you can share across your online channels. Use the signup form options in your Mailchimp account to gather contact information from members of your audience. Customers with manager permissions and higher can create interest groups for your signup form and audience. Interest groups can be assigned by you or selected by your contacts, and can be visible or hidden on your forms. Your audience will grow and change as people sign up, unsubscribe, and update their profiles. We recommend keeping an update your preferences link in your emails to encourage contacts to update their own information and interests."
       },
@@ -338,10 +342,10 @@
         "content": "The Stats overview gives you details about your email marketing engagement. View open and click rates, see the change in subscribed contacts, or compare the performance of your last 30 emails."
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:44.478Z"
+    "scrapedAt": "2025-10-15T04:09:02.229Z"
   },
   {
-    "id": "reports_1760428005629",
+    "id": "reports_1760501344414",
     "url": "https://mailchimp.com/help/getting-started-reports/",
     "category": "reports",
     "title": "Getting Started with Reports",
@@ -399,10 +403,10 @@
         "content": "When you integrate Mailchimp with other tools and apps, your data collection can expand. Some integrations include reports that work alongside your Mailchimp data. These reports might be viewed within Mailchimp or within the integrated tool. Check individual integration descriptions for more information about the available data and reports. Here are some common integrations to get you started. View Google Analytics data in Mailchimp View SurveyMonkey survey results"
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:45.629Z"
+    "scrapedAt": "2025-10-15T04:09:04.414Z"
   },
   {
-    "id": "open_and_click_rates_1760428006771",
+    "id": "open_and_click_rates_1760501346465",
     "url": "https://mailchimp.com/help/about-open-and-click-rates/",
     "category": "open_and_click_rates",
     "title": "About Open and Click Rates",
@@ -456,10 +460,10 @@
         "content": "A/B and multivariate tests can help you test many things, including the content in your email or SMS. Mailchimp will send each version to a different group of people and track their responses. The one that performs better is sent to your subscribed contacts who weren't sent the test versions. Open and click rates improve when you provide relevant content to the most interested group of people. Review your reports and test often to get the most out of your emails."
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:46.771Z"
+    "scrapedAt": "2025-10-15T04:09:06.465Z"
   },
   {
-    "id": "api_1760428007884",
+    "id": "api_1760501348510",
     "url": "https://mailchimp.com/help/about-api-keys/",
     "category": "api",
     "title": "About API Keys",
@@ -501,6 +505,51 @@
         "content": "Our Mailchimp Support team isn't trained for in-depth API troubleshooting. If you need a developer to help you configure something using the API, check out our great Experts Directory. This lists third-party Mailchimp experts who can be hired to help out. If you're a developer who wants to build your own integration with Mailchimp, check out our API documentation."
       }
     ],
-    "scrapedAt": "2025-10-14T07:46:47.884Z"
+    "scrapedAt": "2025-10-15T04:09:08.510Z"
+  },
+  {
+    "id": "automation_1760501350630",
+    "url": "https://mailchimp.com/help/create-customer-journey/",
+    "category": "automation",
+    "title": "Create a Marketing Automation Flow",
+    "sections": [
+      {
+        "heading": "Create a Marketing Automation Flow",
+        "content": "Marketing automation flows help you create unique, automated marketing workflows for your contacts. Use automation flows to add tags, send targeted emails, and accomplish other important tasks for you. In this article, you’ll learn how to create a marketing automation flow."
+      },
+      {
+        "heading": "Create a Marketing Automation Flow",
+        "content": "To watch this video, you need to accept Performance and Functionality Cookies. For more info, check our cookie policy. We're sorry. Due to a technical issue, the video is currently unable to load. Please try again later. document.addEventListener(\"DOMContentLoaded\", () => { // Create function to load the KalturaPlayers so we can reuse it const loadPlayer = () => { try { let kalturaPlayer = KalturaPlayer.setup({ targetId: \"kaltura_video_1_n9an72b6\", provider: { partnerId: 5472032, uiConfId: 53047392 }, playback: { muted: false, } }); kalturaPlayer.loadMedia({ entryId: \"1_n9an72b6\" }); document.removeEventListener(\"kalturaPlayerLoaded\", loadPlayer); } catch (e) { console.error(e.message) } } // Check if the KalturaPlayer is already loaded if (window.KalturaPlayer !== undefined) { loadPlayer(); } else { // If not, wait for the event to be fired // then load the player document.addEventListener(\"kalturaPlayerLoaded\", loadPlayer); } });"
+      },
+      {
+        "heading": "Before you start",
+        "content": "Here are some things to know before you begin this process. Depending on your plan, you may not have access to all marketing automation flow tools. To find out what features are included in each plan, check out our pricing page. To learn more about automation flows, how they work, and what features come with your plan, check out About Marketing Automation Flows. Our flow templates use default triggers, along with default rules and actions. To learn more, check out Use Automation Flow Templates. This article shows you how to build a marketing automation flow. To learn more about other email automation tools, check out Create a Classic Automation."
+      },
+      {
+        "heading": "Create an automation flow",
+        "content": "You’ll create and manage your automation flow on the Automation flows homepage. You can build a new flow from scratch, or choose from a variety of flow templates. In this tutorial, you'll learn how to create a new automation flow. To create an automation flow, follow these steps. Click the Automations icon. Click Build from scratch. Enter a Name for your flow, then click the drop-down to choose an Audience. Click Choose a trigger. Good job! Now that you’ve created an automation flow, you can add triggers, actions, and rules that will determine each contact’s path. To do this, you’ll plot these steps on your automation flow map. This map will help you visualize how contacts move along different paths. An automation flow map can be as simple or complex as you want it to be. Review the different options, and choose only the ones that best suit your marketing needs."
+      },
+      {
+        "heading": "Add a trigger",
+        "content": "A trigger is the activity or event that adds a contact to a flow. Each automation flow can have up to 3 triggers. For example, if you have a flow for high-value contacts, you could choose to add people to it based on two different triggers: added tag “VIP” or added tag “top donor.” To add your first trigger, follow these steps. Click Choose a trigger. Choose the trigger you want. To learn more about the different types of triggers, read All the Marketing Automation Flow Triggers. Choose the specific settings for your trigger type. For example, if you choose Signs up for Email, you’ll then choose whether to include imported contacts. Optional: Click Filter who can enter this flow to use segmenting conditions to filter your trigger. Click Save Trigger. Nice job! You chose the first trigger for your workflow. Add up to 3 triggers with a Standard plan or higher. To add another trigger, first Add a step. Then click Add trigger and repeat steps 2-5."
+      },
+      {
+        "heading": "Add steps",
+        "content": "After you add a trigger, choose the rules and actions that make up your flow. These are called steps. Try any combination of rules and actions to create a unique customer workflow that meets your marketing needs. Conditional split Percentage split Wait for trigger Time Delay Send email Send email with a survey Send SMS Webhook Group/Ungroup Tag/Untag Unsubscribe Update contact Archive contact To add a step, click and drag rules and actions from the side panel onto your flow. Or, use the plus icon (+) on the map, then select the rule or action you want to add."
+      },
+      {
+        "heading": "Activate your flow",
+        "content": "To activate your automation flow, follow these steps. When your flow is ready, click Continue. Click Turn flow on. Nice work! Now, contacts will begin the automation flow as they meet the first trigger condition."
+      },
+      {
+        "heading": "View stats and queue",
+        "content": "On the All flows homepage, you’ll see the number of contacts who have started a flow, are in progress in a flow, or have completed a flow. To view stats for a paused flow, click View Report. Key stats will also appear on Tag and Email actions as contacts reach those steps."
+      },
+      {
+        "heading": "Next steps",
+        "content": "After the automation is active, you may want to update or edit your flow. To learn more, check out Edit a Marketing Automation Flow."
+      }
+    ],
+    "scrapedAt": "2025-10-15T04:09:10.630Z"
   }
 ]

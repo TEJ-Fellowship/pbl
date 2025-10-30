@@ -1,11 +1,18 @@
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Load environment variables
-dotenv.config();
+// Get the directory of the current file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from the backend directory
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 // Simple config that just exports process.env variables
 const config = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  TAVILY_API_KEY: process.env.TAVILY_API_KEY,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
