@@ -69,6 +69,11 @@ class DocumentStorageService {
           scraped_at = EXCLUDED.scraped_at,
           doc_type = EXCLUDED.doc_type,
           metadata = EXCLUDED.metadata,
+          -- Reset processed only when content has actually changed
+          processed = CASE 
+            WHEN raw_documents.content IS DISTINCT FROM EXCLUDED.content THEN FALSE 
+            ELSE raw_documents.processed 
+          END,
           updated_at = NOW()
         `;
 
