@@ -36,7 +36,7 @@ export async function initializeHybridSearch() {
   }
 }
 
-export async function hybridSearch(query, limit = 5, semanticWeight = 0.65, keywordWeight = 0.35, enableReranking = true) {
+export async function hybridSearch(query, limit = 5, semanticWeight = 0.65, keywordWeight = 0.35, enableReranking = true, intentClassification = null) {
   if (!isInitialized) {
     console.log("❌ Search not initialized. Run initializeHybridSearch() first.");
     return [];
@@ -72,9 +72,9 @@ export async function hybridSearch(query, limit = 5, semanticWeight = 0.65, keyw
   }
   
   try {
-    // 2. Semantic Search (if embeddings available)
+    // 2. Semantic Search (if embeddings available) - with intent classification
     console.log("🧠 Running semantic search...");
-    const semanticResults = await searchSimilarDocuments(query, limit * 2);
+    const semanticResults = await searchSimilarDocuments(query, limit * 2, intentClassification);
     
     if (semanticResults.documents && semanticResults.documents[0]) {
       const semanticDocs = semanticResults.documents[0];

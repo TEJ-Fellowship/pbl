@@ -98,14 +98,14 @@ app.post('/api/search', async (req, res) => {
     
     console.log(`🔍 Searching for: "${sanitizedQuery}"`);
     
-    // Perform search
+    // Perform search with server context for intent classification
     const searchResults = await searchService.search(sanitizedQuery, {
       method: sanitizedOptions.method,
       limit: sanitizedOptions.limit,
       semanticWeight: sanitizedOptions.semanticWeight,
       keywordWeight: sanitizedOptions.keywordWeight,
       enableReranking: sanitizedOptions.enableReranking
-    });
+    }, sanitizedContext);
     
     if (searchResults.length === 0) {
       return res.json({
