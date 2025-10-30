@@ -154,6 +154,8 @@ export class CurrencyConverterTool {
         RWF: 1000.0,
         MWK: 800.0,
         MGA: 4000.0,
+        // Nepalese Rupee (added)
+        NPR: 133.0,
       },
       EUR: {
         USD: 1.18,
@@ -227,6 +229,8 @@ export class CurrencyConverterTool {
         RWF: 1180.0,
         MWK: 940.0,
         MGA: 4700.0,
+        // Nepalese Rupee (added)
+        NPR: 143.0,
       },
       GBP: {
         USD: 1.37,
@@ -300,6 +304,8 @@ export class CurrencyConverterTool {
         RWF: 1375.0,
         MWK: 1100.0,
         MGA: 5500.0,
+        // Nepalese Rupee (added)
+        NPR: 170.0,
       },
     };
 
@@ -331,10 +337,18 @@ export class CurrencyConverterTool {
       }
 
       const rates = await this.getExchangeRates(fromCurrency);
-      const rate = rates.rates[toCurrency];
+      let rate = rates.rates[toCurrency];
 
+      // Cross-rate fallback: if direct pair missing, try via USD
       if (!rate) {
-        throw new Error(`Currency ${toCurrency} not supported`);
+        const usdRates = await this.getExchangeRates("USD");
+        const usdToTarget = usdRates.rates[toCurrency];
+        const usdToFrom = usdRates.rates[fromCurrency];
+        if (usdToTarget && usdToFrom) {
+          rate = usdToTarget / usdToFrom;
+        } else {
+          throw new Error(`Currency ${toCurrency} not supported`);
+        }
       }
 
       const convertedAmount = amount * rate;
@@ -371,7 +385,7 @@ export class CurrencyConverterTool {
       "SDG", "ETB", "KES", "UGX", "TZS", "ZMW", "BWP", "SZL", "LSL", "NAD",
       "MUR", "SCR", "KMF", "DJF", "SOS", "ERN", "GMD", "GNF", "LRD", "SLL",
       "STD", "XOF", "XAF", "CDF", "AOA", "MZN", "ZWL", "BIF", "RWF", "MWK",
-      "MGA",
+      "MGA", "NPR",
     ];
 
     // Currency symbols and names
@@ -511,6 +525,9 @@ export class CurrencyConverterTool {
       "franc": "RWF",
       "kwacha": "MWK",
       "ariary": "MGA",
+      // Nepalese Rupee (added)
+      "nepalese rupee": "NPR",
+      "nepali rupee": "NPR",
     };
 
     // Extract amounts
@@ -567,11 +584,65 @@ export class CurrencyConverterTool {
       queryLower.includes(keyword)
     );
 
+    // Infer direction when possible:
+    // - Preferred FROM: currency symbol/code next to the first amount (e.g., "$10" => USD)
+    // - Preferred TO: currency mentioned after "to"/"into"/"in" (e.g., "into npr" => NPR)
+    let preferredFrom = null;
+    let preferredTo = null;
+
+    // Preferred FROM via symbols near amount (simple heuristic)
+    if (/\$\s*\d/.test(query)) preferredFrom = "USD";
+    if (/€\s*\d/.test(query)) preferredFrom = "EUR";
+    if (/£\s*\d/.test(query)) preferredFrom = "GBP";
+    if (/¥\s*\d/.test(query)) preferredFrom = "JPY";
+    if (/₹\s*\d/.test(query)) preferredFrom = "INR";
+
+    // Preferred FROM via explicit code before/after the amount
+    if (!preferredFrom) {
+      for (const code of currencyCodes) {
+        const codeLower = code.toLowerCase();
+        if (new RegExp(`${codeLower}\\s*\\d`).test(queryLower) || new RegExp(`\\d\\s*${codeLower}`).test(queryLower)) {
+          preferredFrom = code;
+          break;
+        }
+      }
+    }
+
+    // Preferred TO via "to/into/in" + currency code/name
+    const toKeywords = [" to ", " into ", " in "];
+    for (const kw of toKeywords) {
+      const idx = queryLower.indexOf(kw);
+      if (idx !== -1) {
+        const tail = queryLower.slice(idx + kw.length).trim();
+        // Try codes first
+        for (const code of currencyCodes) {
+          const codeLower = code.toLowerCase();
+          if (tail.startsWith(codeLower) || new RegExp(`(^|\\s)${codeLower}(\n|\\s|$)`).test(tail)) {
+            preferredTo = code;
+            break;
+          }
+        }
+        if (!preferredTo) {
+          // Try names mapping
+          for (const [name, code] of Object.entries(currencyNames)) {
+            const nameLower = name.toLowerCase();
+            if (tail.startsWith(nameLower) || new RegExp(`(^|\\s)${nameLower}(\n|\\s|$)`).test(tail)) {
+              preferredTo = code;
+              break;
+            }
+          }
+        }
+        if (preferredTo) break;
+      }
+    }
+
     return {
       amounts,
       currencies: [...new Set(currencies)], // Remove duplicates
       hasConversionKeywords,
       isCurrencyQuery: amounts.length > 0 && currencies.length > 0,
+      preferredFrom,
+      preferredTo,
     };
   }
 
@@ -618,18 +689,37 @@ export class CurrencyConverterTool {
         const amounts = currencyInfo.amounts;
         const currencies = currencyInfo.currencies;
 
-        // Convert between all currency pairs
-        for (let i = 0; i < currencies.length - 1; i++) {
-          for (let j = i + 1; j < currencies.length; j++) {
-            const fromCurrency = currencies[i];
-            const toCurrency = currencies[j];
+        // If we can infer direction, honor it
+        if (currencyInfo.preferredFrom && currencyInfo.preferredTo) {
+          for (const amount of amounts) {
+            try {
+              const conversion = await this.convertCurrency(
+                amount,
+                currencyInfo.preferredFrom,
+                currencyInfo.preferredTo
+              );
+              conversions.push(conversion);
+            } catch (error) {
+              console.error(
+                `Conversion error ${currencyInfo.preferredFrom} to ${currencyInfo.preferredTo}:`,
+                error
+              );
+            }
+          }
+        } else {
+          // Default behavior: convert between all currency pairs (first to second, etc.)
+          for (let i = 0; i < currencies.length - 1; i++) {
+            for (let j = i + 1; j < currencies.length; j++) {
+              const fromCurrency = currencies[i];
+              const toCurrency = currencies[j];
 
-            for (const amount of amounts) {
-              try {
-                const conversion = await this.convertCurrency(amount, fromCurrency, toCurrency);
-                conversions.push(conversion);
-              } catch (error) {
-                console.error(`Conversion error ${fromCurrency} to ${toCurrency}:`, error);
+              for (const amount of amounts) {
+                try {
+                  const conversion = await this.convertCurrency(amount, fromCurrency, toCurrency);
+                  conversions.push(conversion);
+                } catch (error) {
+                  console.error(`Conversion error ${fromCurrency} to ${toCurrency}:`, error);
+                }
               }
             }
           }
@@ -722,7 +812,7 @@ export class CurrencyConverterTool {
         "SDG", "ETB", "KES", "UGX", "TZS", "ZMW", "BWP", "SZL", "LSL", "NAD",
         "MUR", "SCR", "KMF", "DJF", "SOS", "ERN", "GMD", "GNF", "LRD", "SLL",
         "STD", "XOF", "XAF", "CDF", "AOA", "MZN", "ZWL", "BIF", "RWF", "MWK",
-        "MGA",
+        "MGA", "NPR",
       ],
       api: "ExchangeRate-API (https://api.exchangerate-api.com/v4/latest)",
     };
