@@ -1,8 +1,10 @@
 import pool from "../config/database.js";
+import QueryPreprocessor from "../utils/queryPreprocessor.js";
 
 class PostgreSQLBM25Service {
   constructor() {
     this.pool = pool;
+    this.queryPreprocessor = new QueryPreprocessor();
   }
 
   /**
@@ -59,60 +61,109 @@ class PostgreSQLBM25Service {
   }
 
   /**
-   * Perform BM25 search using PostgreSQL full-text search
+   * Perform BM25 search using PostgreSQL full-text search with query preprocessing
    */
   async searchBM25(query, topK = 10, filters = {}) {
     const client = await this.pool.connect();
 
     try {
-      let whereClause =
-        "to_tsvector('english', content) @@ plainto_tsquery('english', $1)";
-      let queryParams = [query];
-      let paramIndex = 2;
+      // Preprocess the query for better BM25 compatibility
+      const processedQuery = this.queryPreprocessor.preprocessForBM25(query);
 
-      // Add filters
-      if (filters.category) {
-        whereClause += ` AND category = $${paramIndex}`;
-        queryParams.push(filters.category);
-        paramIndex++;
+      if (!processedQuery) {
+        console.log(
+          "⚠️ Query preprocessing resulted in empty query, using original"
+        );
+        return [];
       }
 
-      if (filters.source) {
-        whereClause += ` AND source = $${paramIndex}`;
-        queryParams.push(filters.source);
-        paramIndex++;
+      // Generate query variations for better coverage
+      const queryVariations =
+        this.queryPreprocessor.generateQueryVariations(query);
+
+      let allResults = new Map(); // Use Map to avoid duplicates
+      let paramIndex = 1;
+
+      // Try each query variation
+      for (const variation of queryVariations) {
+        try {
+          let whereClause =
+            "to_tsvector('english', content) @@ plainto_tsquery('english', $1)";
+          let queryParams = [variation];
+          let currentParamIndex = 2;
+
+          // Add filters
+          if (filters.category) {
+            whereClause += ` AND category = $${currentParamIndex}`;
+            queryParams.push(filters.category);
+            currentParamIndex++;
+          }
+
+          if (filters.source) {
+            whereClause += ` AND source = $${currentParamIndex}`;
+            queryParams.push(filters.source);
+            currentParamIndex++;
+          }
+
+          const query_sql = `
+            SELECT 
+              chunk_id,
+              content,
+              metadata,
+              title,
+              category,
+              source,
+              word_count,
+              ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) as bm25_score
+            FROM document_chunks 
+            WHERE ${whereClause}
+            ORDER BY bm25_score DESC 
+            LIMIT $${currentParamIndex}
+          `;
+
+          queryParams.push(Math.min(topK, 20)); // Limit per variation
+
+          const result = await client.query(query_sql, queryParams);
+
+          // Add results to our collection, avoiding duplicates
+          result.rows.forEach((row) => {
+            const key = row.chunk_id;
+            if (
+              !allResults.has(key) ||
+              allResults.get(key).bm25Score < row.bm25_score
+            ) {
+              allResults.set(key, {
+                id: row.chunk_id,
+                content: row.content,
+                metadata: row.metadata,
+                title: row.title,
+                category: row.category,
+                source: row.source,
+                bm25Score: parseFloat(row.bm25_score),
+                searchType: "postgres_bm25",
+              });
+            }
+          });
+        } catch (variationError) {
+          console.warn(
+            `⚠️ Query variation "${variation}" failed:`,
+            variationError.message
+          );
+        }
       }
 
-      const query_sql = `
-        SELECT 
-          chunk_id,
-          content,
-          metadata,
-          title,
-          category,
-          source,
-          word_count,
-          ts_rank(to_tsvector('english', content), plainto_tsquery('english', $1)) as bm25_score
-        FROM document_chunks 
-        WHERE ${whereClause}
-        ORDER BY bm25_score DESC 
-        LIMIT $${paramIndex}
-      `;
+      // Convert Map to array and sort by score
+      const results = Array.from(allResults.values())
+        .sort((a, b) => b.bm25Score - a.bm25Score)
+        .slice(0, topK);
 
-      queryParams.push(topK);
-
-      const result = await client.query(query_sql, queryParams);
-
-      return result.rows.map((row) => ({
-        id: row.chunk_id,
-        content: row.content,
-        metadata: row.metadata,
-        title: row.title,
-        category: row.category,
-        source: row.source,
-        bm25Score: parseFloat(row.bm25_score),
-        searchType: "postgres_bm25",
-      }));
+      console.log(
+        `📊 BM25 search found ${results.length} results from ${queryVariations.length} variations`
+      );
+      return results;
+    } catch (error) {
+      console.error("❌ BM25 search failed:", error.message);
+      return [];
     } finally {
       client.release();
     }
