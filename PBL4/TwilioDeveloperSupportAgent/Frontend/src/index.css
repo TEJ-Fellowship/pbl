@@ -6,89 +6,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for the chat interface */
-@layer components {
-  .prose {
-    @apply text-slate-700;
-  }
-
-  .prose h1,
-  .prose h2,
-  .prose h3,
-  .prose h4,
-  .prose h5,
-  .prose h6 {
-    @apply text-slate-900 font-semibold;
-  }
-
-  .prose code {
-    @apply bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-sm font-mono;
-  }
-
-  .prose pre {
-    @apply bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto;
-  }
-
-  .prose pre code {
-    @apply bg-transparent text-slate-100 p-0;
-  }
-
-  .prose blockquote {
-    @apply border-l-4 border-blue-200 pl-4 py-2 bg-blue-50 text-slate-700 italic;
-  }
-
-  .prose a {
-    @apply text-blue-600 hover:text-blue-800 underline;
-  }
-
-  .prose strong {
-    @apply font-semibold text-slate-900;
-  }
-
-  .prose em {
-    @apply italic text-slate-800;
-  }
-
-  .prose ul,
-  .prose ol {
-    @apply space-y-1;
-  }
-
-  .prose li {
-    @apply ml-4;
-  }
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(55 65 81) rgb(17 24 39);
 }
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(17 24 39);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(55 65 81);
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(75 85 99);
+}
+
+/* Light mode scrollbar */
+.light .scrollbar-thin {
+  scrollbar-color: rgb(148 163 184) rgb(241 245 249);
+}
+
+.light .scrollbar-thin::-webkit-scrollbar-track {
+  background: rgb(241 245 249);
+}
+
+.light .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(148 163 184);
+}
+
+.light .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(100 116 139);
+}
+
+/* Note: Typography styles are now handled directly in components using Tailwind classes */
 
 /* Monaco Editor custom styles */
 .code-editor-container {
-  @apply rounded-lg overflow-hidden border border-slate-200;
+  @apply rounded-lg overflow-hidden border border-gray-700 max-w-full;
 }
 
 .code-editor-container .monaco-editor {
   @apply rounded-lg;
 }
 
-/* Custom scrollbar styles */
-.scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(148 163 184) transparent;
+.code-editor-container .monaco-editor .view-lines {
+  @apply max-w-full;
 }
 
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgb(148 163 184);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(100 116 139);
+.light .code-editor-container {
+  @apply border-slate-200;
 }
 
 /* Animation utilities */
@@ -120,4 +94,9 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-200;
 }

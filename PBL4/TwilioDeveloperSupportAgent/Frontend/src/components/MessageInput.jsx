@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Loader2 } from "lucide-react";
 
-const MessageInput = ({ onSendMessage, isLoading }) => {
+const MessageInput = ({ onSendMessage, isLoading, theme = "dark" }) => {
+  const isDark = theme === "dark";
   const [message, setMessage] = useState("");
   const textareaRef = useRef(null);
 
@@ -22,6 +23,9 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
     if (message.trim() && !isLoading) {
       onSendMessage(message);
       setMessage("");
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   };
 
@@ -36,7 +40,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
   };
 
@@ -45,32 +49,42 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
   }, [message]);
 
   return (
-    <div className="border-t border-slate-200 bg-white p-4">
-      <form onSubmit={handleSubmit} className="flex items-end space-x-3">
+    <div
+      className={`border-t p-4 ${
+        isDark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"
+      }`}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="flex items-end gap-3 max-w-4xl mx-auto"
+      >
         <div className="flex-1 relative">
           <textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about Twilio APIs, SMS, Voice, Video, WhatsApp..."
-            className="w-full px-4 py-3 border border-slate-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 text-sm"
+            placeholder="Message Twilio Support..."
+            className={`w-full px-4 py-3 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 text-sm ${
+              isDark
+                ? "bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500"
+                : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+            } border`}
             rows={1}
             disabled={isLoading}
-            style={{ minHeight: "48px", maxHeight: "120px" }}
+            style={{ minHeight: "52px", maxHeight: "200px" }}
           />
-          <div className="absolute bottom-2 right-2 text-xs text-slate-400">
-            Press Enter to send, Shift+Enter for new line
-          </div>
         </div>
 
         <button
           type="submit"
           disabled={!message.trim() || isLoading}
-          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 ${
+          className={`flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 flex-shrink-0 ${
             message.trim() && !isLoading
-              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
-              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg hover:shadow-emerald-500/20"
+              : isDark
+              ? "bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-300"
           }`}
         >
           {isLoading ? (
@@ -82,7 +96,7 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
       </form>
 
       {/* Quick suggestions */}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2 justify-center max-w-4xl mx-auto">
         {[
           "SMS API",
           "Voice calls",
@@ -95,7 +109,11 @@ const MessageInput = ({ onSendMessage, isLoading }) => {
             key={suggestion}
             onClick={() => setMessage(suggestion)}
             disabled={isLoading}
-            className="px-3 py-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`px-3 py-1.5 text-xs rounded-full transition-colors border disabled:opacity-50 disabled:cursor-not-allowed ${
+              isDark
+                ? "bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700 hover:border-emerald-500/30"
+                : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 hover:border-emerald-400"
+            }`}
           >
             {suggestion}
           </button>
