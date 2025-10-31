@@ -1,8 +1,32 @@
-import React from "react";
-import { User, Bot, AlertCircle, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { User, Bot, AlertCircle } from "lucide-react";
 import ResponseFormatter from "./ResponseFormatter";
+import TypingIndicator from "./TypingIndicator";
 
-const MessageList = ({ messages, isLoading, messagesEndRef }) => {
+const MessageList = ({
+  messages,
+  isLoading,
+  messagesEndRef,
+  theme = "dark",
+}) => {
+  const isDark = theme === "dark";
+  const [streamingContent, setStreamingContent] = useState("");
+  const [streamingMessageId, setStreamingMessageId] = useState(null);
+
+  useEffect(() => {
+    if (isLoading && messages.length > 0) {
+      // Start streaming animation
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.type === "user") {
+        setStreamingMessageId("streaming");
+        setStreamingContent("");
+      }
+    } else {
+      setStreamingMessageId(null);
+      setStreamingContent("");
+    }
+  }, [isLoading, messages]);
+
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], {
       hour: "2-digit",
@@ -17,21 +41,23 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
     return (
       <div
         key={message.id}
-        className={`flex ${isUser ? "justify-end" : "justify-start"} mb-6`}
+        className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4 px-4`}
       >
         <div
-          className={`flex max-w-[80%] ${
+          className={`flex max-w-[85%] lg:max-w-[70%] ${
             isUser ? "flex-row-reverse" : "flex-row"
-          } items-start space-x-3`}
+          } items-start gap-3`}
         >
           {/* Avatar */}
           <div
             className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
               isUser
-                ? "bg-blue-600 text-white"
+                ? isDark
+                  ? "bg-gray-700 text-gray-200"
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                 : isError
-                ? "bg-red-500 text-white"
-                : "bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                : "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/30"
             }`}
           >
             {isUser ? (
@@ -45,32 +71,49 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
 
           {/* Message Content */}
           <div
-            className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
+            className={`flex flex-col ${
+              isUser ? "items-end" : "items-start"
+            } flex-1 min-w-0`}
           >
             <div
-              className={`px-4 py-3 rounded-2xl ${
+              className={`rounded-2xl px-4 py-3 w-full overflow-hidden ${
                 isUser
-                  ? "bg-blue-600 text-white rounded-br-md"
+                  ? isDark
+                    ? "bg-emerald-500/20 text-emerald-100 border border-emerald-500/30"
+                    : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white border border-emerald-600 shadow-sm"
                   : isError
-                  ? "bg-red-50 text-red-800 border border-red-200 rounded-bl-md"
-                  : "bg-slate-50 text-slate-900 border border-slate-200 rounded-bl-md"
+                  ? "bg-red-500/10 text-red-300 border border-red-500/30"
+                  : isDark
+                  ? "bg-gray-800 text-gray-100 border border-gray-700"
+                  : "bg-gray-50 text-gray-900 border border-gray-200"
               }`}
             >
               {isUser ? (
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed break-words overflow-wrap-anywhere">
+                  {message.content}
+                </p>
               ) : isError ? (
-                <p className="text-sm">{message.content}</p>
+                <p className="text-sm break-words overflow-wrap-anywhere">
+                  {message.content}
+                </p>
               ) : (
-                <ResponseFormatter
-                  content={message.content}
-                  sources={message.sources}
-                  metadata={message.metadata}
-                />
+                <div className="w-full min-w-0 overflow-hidden">
+                  <ResponseFormatter
+                    content={message.content}
+                    sources={message.sources}
+                    metadata={message.metadata}
+                    theme={theme}
+                  />
+                </div>
               )}
             </div>
 
             {/* Timestamp */}
-            <span className="text-xs text-slate-500 mt-1 px-1">
+            <span
+              className={`text-xs mt-1.5 px-1 ${
+                isDark ? "text-gray-500" : "text-gray-400"
+              }`}
+            >
               {formatTime(message.timestamp)}
             </span>
           </div>
@@ -80,32 +123,53 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto scrollbar-thin">
       {messages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mb-4">
-            <Bot className="w-8 h-8 text-white" />
+        <div className="flex flex-col items-center justify-center h-full text-center px-4 py-12">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 border ${
+              isDark
+                ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30"
+                : "bg-gradient-to-r from-emerald-400 to-cyan-400 border-emerald-400/50"
+            }`}
+          >
+            <Bot
+              className={`w-8 h-8 ${
+                isDark ? "text-emerald-400" : "text-white"
+              }`}
+            />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+          <h3
+            className={`text-xl font-semibold mb-2 ${
+              isDark ? "text-gray-200" : "text-gray-900"
+            }`}
+          >
             Welcome to Twilio Developer Support
           </h3>
-          <p className="text-slate-600 max-w-md">
+          <p
+            className={`max-w-md mb-6 ${
+              isDark ? "text-gray-400" : "text-gray-600"
+            }`}
+          >
             Ask me anything about Twilio APIs, SMS, Voice, Video, WhatsApp, or
             any other Twilio services. I can help with code examples,
             troubleshooting, and best practices.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-2 justify-center max-w-lg">
             {[
               "How do I send an SMS in Node.js?",
               "What does error 30001 mean?",
               "How to set up webhooks?",
               "Voice API examples",
             ].map((suggestion) => (
-              <span
+              <button
                 key={suggestion}
-                className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full text-sm hover:bg-slate-200 transition-colors cursor-pointer"
+                className={`px-4 py-2 rounded-full text-sm transition-colors border ${
+                  isDark
+                    ? "bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700 hover:border-emerald-500/30"
+                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200 hover:border-emerald-400"
+                }`}
                 onClick={() => {
-                  // This will be handled by the parent component
                   const event = new CustomEvent("suggestionClick", {
                     detail: suggestion,
                   });
@@ -113,26 +177,39 @@ const MessageList = ({ messages, isLoading, messagesEndRef }) => {
                 }}
               >
                 {suggestion}
-              </span>
+              </button>
             ))}
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="py-4">
           {messages.map(renderMessage)}
 
           {/* Loading indicator */}
           {isLoading && (
-            <div className="flex justify-start mb-6">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
+            <div className="flex justify-start mb-4 px-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border ${
+                    isDark
+                      ? "bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30"
+                      : "bg-gradient-to-r from-emerald-400/30 to-cyan-400/30 border-emerald-400/50"
+                  }`}
+                >
+                  <Bot
+                    className={`w-4 h-4 ${
+                      isDark ? "text-emerald-400" : "text-emerald-600"
+                    }`}
+                  />
                 </div>
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
-                    <span className="text-sm text-slate-600">Thinking...</span>
-                  </div>
+                <div
+                  className={`rounded-2xl px-4 py-3 ${
+                    isDark
+                      ? "bg-gray-800 border-gray-700"
+                      : "bg-gray-50 border-gray-200"
+                  } border`}
+                >
+                  <TypingIndicator />
                 </div>
               </div>
             </div>

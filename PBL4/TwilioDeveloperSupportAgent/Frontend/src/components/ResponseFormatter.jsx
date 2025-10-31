@@ -13,8 +13,14 @@ import {
 } from "lucide-react";
 import CodeEditor from "./CodeEditor";
 
-const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
+const ResponseFormatter = ({
+  content,
+  sources = [],
+  metadata = {},
+  theme = "dark",
+}) => {
   const [copiedCode, setCopiedCode] = useState({});
+  const isDark = theme === "dark";
 
   const copyToClipboard = async (text, id) => {
     try {
@@ -76,14 +82,32 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
     if (!metadata || Object.keys(metadata).length === 0) return null;
 
     return (
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+      <div
+        className={`mb-4 p-3 border rounded-lg ${
+          isDark
+            ? "bg-emerald-500/10 border-emerald-500/30"
+            : "bg-blue-50 border-blue-200"
+        }`}
+      >
         <div className="flex items-center space-x-2 mb-2">
-          <Info className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-900">
+          <Info
+            className={`w-4 h-4 ${
+              isDark ? "text-emerald-400" : "text-blue-600"
+            }`}
+          />
+          <span
+            className={`text-sm font-medium ${
+              isDark ? "text-emerald-300" : "text-blue-900"
+            }`}
+          >
             Response Details
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+        <div
+          className={`grid grid-cols-2 gap-2 text-xs ${
+            isDark ? "text-emerald-200" : "text-blue-800"
+          }`}
+        >
           {metadata.api && (
             <div className="flex items-center space-x-1">
               <Code className="w-3 h-3" />
@@ -116,21 +140,49 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
     if (!sources || sources.length === 0) return null;
 
     return (
-      <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+      <div
+        className={`mt-6 p-4 border rounded-lg ${
+          isDark
+            ? "bg-gray-800 border-gray-700"
+            : "bg-slate-50 border-slate-200"
+        }`}
+      >
         <div className="flex items-center space-x-2 mb-3">
-          <ExternalLink className="w-4 h-4 text-slate-600" />
-          <span className="text-sm font-medium text-slate-900">Sources</span>
+          <ExternalLink
+            className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-slate-600"}`}
+          />
+          <span
+            className={`text-sm font-medium ${
+              isDark ? "text-gray-200" : "text-slate-900"
+            }`}
+          >
+            Sources
+          </span>
         </div>
         <div className="space-y-2">
           {sources.slice(0, 3).map((source, index) => (
             <div
               key={index}
-              className="text-xs text-slate-600 bg-white p-2 rounded border"
+              className={`text-xs p-2 rounded border ${
+                isDark
+                  ? "text-gray-300 bg-gray-900 border-gray-700"
+                  : "text-slate-600 bg-white border-slate-200"
+              }`}
             >
-              <div className="font-medium text-slate-800 mb-1">
+              <div
+                className={`font-medium mb-1 ${
+                  isDark ? "text-gray-100" : "text-slate-800"
+                }`}
+              >
                 Source {index + 1}
                 {source.similarity && (
-                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">
+                  <span
+                    className={`ml-2 px-2 py-0.5 rounded text-xs border ${
+                      isDark
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        : "bg-green-100 text-green-800 border-green-200"
+                    }`}
+                  >
                     {(source.similarity * 100).toFixed(1)}% match
                   </span>
                 )}
@@ -142,12 +194,24 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
               {source.metadata && (
                 <div className="mt-1 flex flex-wrap gap-1">
                   {source.metadata.api && (
-                    <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-xs border ${
+                        isDark
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                          : "bg-blue-100 text-blue-800 border-blue-200"
+                      }`}
+                    >
                       {source.metadata.api}
                     </span>
                   )}
                   {source.metadata.language && (
-                    <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-xs border ${
+                        isDark
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          : "bg-purple-100 text-purple-800 border-purple-200"
+                      }`}
+                    >
                       {source.metadata.language}
                     </span>
                   )}
@@ -167,17 +231,27 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
       if (block.type === "code") {
         const codeId = `code-${index}`;
         return (
-          <div key={index} className="my-4">
-            <div className="flex items-center justify-between bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg">
-              <div className="flex items-center space-x-2">
-                <Code className="w-4 h-4" />
-                <span className="text-sm font-medium">
+          <div key={index} className="my-4 w-full min-w-0">
+            <div
+              className={`flex items-center justify-between px-4 py-2 rounded-t-lg border ${
+                isDark
+                  ? "bg-gray-800 text-gray-200 border-gray-700"
+                  : "bg-slate-800 text-slate-200 border-slate-700"
+              }`}
+            >
+              <div className="flex items-center space-x-2 min-w-0">
+                <Code className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm font-medium truncate">
                   {block.language || "Code"}
                 </span>
               </div>
               <button
                 onClick={() => copyToClipboard(block.code, codeId)}
-                className="flex items-center space-x-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-xs transition-colors"
+                className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors border flex-shrink-0 ${
+                  isDark
+                    ? "bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-200"
+                    : "bg-slate-700 hover:bg-slate-600 border-slate-600 text-slate-200"
+                }`}
               >
                 {copiedCode[codeId] ? (
                   <>
@@ -192,19 +266,30 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
                 )}
               </button>
             </div>
-            <div className="bg-slate-900 rounded-b-lg overflow-hidden">
-              <CodeEditor
-                language={block.language}
-                value={block.code}
-                readOnly={true}
-                height="200px"
-              />
+            <div
+              className={`rounded-b-lg overflow-x-auto border border-t-0 ${
+                isDark
+                  ? "bg-gray-900 border-gray-700"
+                  : "bg-slate-900 border-slate-700"
+              }`}
+            >
+              <div className="min-w-0">
+                <CodeEditor
+                  language={block.language}
+                  value={block.code}
+                  readOnly={true}
+                  height="200px"
+                />
+              </div>
             </div>
           </div>
         );
       } else {
         return (
-          <div key={index} className="prose prose-sm max-w-none">
+          <div
+            key={index}
+            className="w-full min-w-0 overflow-hidden break-words"
+          >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeHighlight]}
@@ -217,7 +302,11 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
                     </code>
                   ) : (
                     <code
-                      className="bg-slate-100 px-1 py-0.5 rounded text-sm"
+                      className={`px-1.5 py-0.5 rounded text-sm border ${
+                        isDark
+                          ? "bg-gray-800 border-gray-700 text-emerald-400"
+                          : "bg-slate-100 border-slate-300 text-slate-800"
+                      }`}
                       {...props}
                     >
                       {children}
@@ -225,46 +314,86 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
                   );
                 },
                 h1: ({ children }) => (
-                  <h1 className="text-lg font-bold text-slate-900 mb-3">
+                  <h1
+                    className={`text-lg font-bold mb-3 ${
+                      isDark ? "text-gray-100" : "text-slate-900"
+                    }`}
+                  >
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-base font-semibold text-slate-900 mb-2">
+                  <h2
+                    className={`text-base font-semibold mb-2 ${
+                      isDark ? "text-gray-100" : "text-slate-900"
+                    }`}
+                  >
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">
+                  <h3
+                    className={`text-sm font-semibold mb-2 ${
+                      isDark ? "text-gray-100" : "text-slate-900"
+                    }`}
+                  >
                     {children}
                   </h3>
                 ),
                 p: ({ children }) => (
-                  <p className="text-sm text-slate-700 mb-3 leading-relaxed">
+                  <p
+                    className={`text-sm mb-3 leading-relaxed break-words overflow-wrap-anywhere ${
+                      isDark ? "text-gray-300" : "text-slate-700"
+                    }`}
+                  >
                     {children}
                   </p>
                 ),
                 ul: ({ children }) => (
-                  <ul className="text-sm text-slate-700 mb-3 space-y-1">
+                  <ul
+                    className={`text-sm mb-3 space-y-1 ${
+                      isDark ? "text-gray-300" : "text-slate-700"
+                    }`}
+                  >
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="text-sm text-slate-700 mb-3 space-y-1">
+                  <ol
+                    className={`text-sm mb-3 space-y-1 ${
+                      isDark ? "text-gray-300" : "text-slate-700"
+                    }`}
+                  >
                     {children}
                   </ol>
                 ),
                 li: ({ children }) => <li className="ml-4">{children}</li>,
                 strong: ({ children }) => (
-                  <strong className="font-semibold text-slate-900">
+                  <strong
+                    className={`font-semibold ${
+                      isDark ? "text-gray-100" : "text-slate-900"
+                    }`}
+                  >
                     {children}
                   </strong>
                 ),
                 em: ({ children }) => (
-                  <em className="italic text-slate-800">{children}</em>
+                  <em
+                    className={`italic ${
+                      isDark ? "text-gray-300" : "text-slate-800"
+                    }`}
+                  >
+                    {children}
+                  </em>
                 ),
                 blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-blue-200 pl-4 py-2 bg-blue-50 text-slate-700 italic">
+                  <blockquote
+                    className={`border-l-4 border-emerald-500/50 pl-4 py-2 italic ${
+                      isDark
+                        ? "bg-emerald-500/10 text-gray-300"
+                        : "bg-emerald-50 text-slate-700"
+                    }`}
+                  >
                     {children}
                   </blockquote>
                 ),
@@ -273,7 +402,11 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 underline"
+                    className={`underline ${
+                      isDark
+                        ? "text-emerald-400 hover:text-emerald-300"
+                        : "text-emerald-600 hover:text-emerald-700"
+                    }`}
                   >
                     {children}
                   </a>
@@ -289,7 +422,7 @@ const ResponseFormatter = ({ content, sources = [], metadata = {} }) => {
   };
 
   return (
-    <div className="text-sm">
+    <div className="text-sm w-full min-w-0 overflow-hidden break-words">
       {renderMetadata()}
       {renderContent()}
       {renderSources()}
