@@ -1,6 +1,5 @@
 // Backend Express server for Twilio Developer Support Agent
 import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -32,19 +31,44 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(
-  cors({
-    origin: [
-      process.env.FRONTEND_URL || "http://localhost:5173",
-      "http://localhost:5174", // Allow both frontend ports
-      "http://localhost:3000", // Common React dev server port
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// CORS configuration - MUST be first middleware
+app.use((req, res, next) => {
+  // Log CORS requests
+  const origin = req.headers.origin;
+  console.log(`🌐 ${req.method} ${req.path} - Origin: ${origin || "none"}`);
+
+  // Set CORS headers - MUST be set before any response
+  // CRITICAL: When using credentials: true, you CANNOT use "*" for origin
+  // Must use the specific origin or handle it properly
+  if (origin) {
+    // Only set origin if it's provided (browser will send it)
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    // No origin header (e.g., Postman or curl) - allow all
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    // Cannot use credentials with wildcard
+  }
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+  );
+  res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
+
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    console.log(`✅ Handling OPTIONS preflight for ${origin || "no origin"}`);
+    res.status(200).end();
+    return;
+  }
+
+  next();
+});
+
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -67,6 +91,13 @@ async function initializeServices() {
     pinecone = await initPinecone();
     vectorStore = await loadVectorStore();
     memory = new ConversationMemory();
+
+    // Initialize memory to load existing data from file
+    const memoryInitialized = await memory.initialize();
+    if (!memoryInitialized) {
+      console.log("⚠️ Memory system failed to initialize, but continuing...");
+    }
+
     apiDetector = new APIDetector();
 
     // Initialize MCP Server for tool access
@@ -104,8 +135,32 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Simple test endpoint to verify CORS works
+app.post("/api/test", (req, res) => {
+  console.log("🧪 Test endpoint called");
+  res.json({
+    message: "CORS is working!",
+    timestamp: new Date().toISOString(),
+    received: req.body,
+  });
+});
+
 // Chat endpoint
 app.post("/api/chat", async (req, res) => {
+  console.log(
+    `📨 Received POST /api/chat from ${req.headers.origin || "unknown origin"}`
+  );
+  console.log(`📦 Request body:`, {
+    query: req.body.query?.substring(0, 50) + "...",
+    sessionId: req.body.sessionId,
+  });
+
+  // Ensure response object is valid
+  if (!res || typeof res.status !== "function") {
+    console.error("❌ Invalid response object!");
+    return;
+  }
+
   try {
     const { query, sessionId } = req.body;
 
@@ -162,36 +217,39 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
+    // Use sessionId from request or default
+    const currentSessionId = sessionId || "default";
+    console.log(`🔑 Using sessionId: ${currentSessionId}`);
+
     // Generate memory-aware response with processed data
-    const result = await generateMemoryAwareResponse(
-      query,
-      {
-        chunks: processedData.chunks,
-        mcpResult: processedData.mcpResult,
-        generalSearchResults: processedData.generalSearchResults,
-        toolsUsed: processedData.toolsUsed,
-        classification,
-        enhancements,
-      },
-      geminiClient,
-      memory,
-      apiDetector
-    );
+    console.log(`🤖 Generating response for session: ${currentSessionId}`);
+    let result;
+    try {
+      result = await generateMemoryAwareResponse(
+        query,
+        {
+          chunks: processedData.chunks,
+          mcpResult: processedData.mcpResult,
+          generalSearchResults: processedData.generalSearchResults,
+          toolsUsed: processedData.toolsUsed,
+          classification,
+          enhancements,
+        },
+        geminiClient,
+        memory,
+        apiDetector,
+        currentSessionId
+      );
+      console.log(`✅ Response generated successfully`);
+    } catch (genError) {
+      console.error("❌ Error generating response:", genError);
+      throw genError;
+    }
 
     const responseTime = Date.now() - startTime;
+    console.log(`✅ Response generated in ${responseTime}ms`);
 
-    // Add conversation turn to memory
-    await memory.addConversationTurn(query, result.answer, {
-      language: result.metadata?.language,
-      api: result.metadata?.api,
-      errorCodes: detectErrorCodes(query),
-      chunkCount: processedData.chunks.length,
-      responseTime: responseTime,
-      route: classification.route,
-      toolsUsed: processedData.toolsUsed,
-    });
-
-    // Format response for frontend
+    // Format response for frontend FIRST - before any async operations
     const formattedResponse = {
       answer: result.answer,
       sources: result.sources || [],
@@ -199,7 +257,7 @@ app.post("/api/chat", async (req, res) => {
         ...result.metadata,
         responseTime,
         chunkCount: processedData.chunks.length,
-        sessionId: sessionId || "default",
+        sessionId: currentSessionId,
         route: classification.route,
         toolsUsed: processedData.toolsUsed,
         classification: classification,
@@ -207,14 +265,91 @@ app.post("/api/chat", async (req, res) => {
       timestamp: new Date().toISOString(),
     };
 
-    console.log(`✅ Response generated in ${responseTime}ms`);
-    res.json(formattedResponse);
+    console.log(
+      `📤 Preparing to send response for session: ${currentSessionId}`
+    );
+    const responseSize = JSON.stringify(formattedResponse).length;
+    console.log(`📊 Response size: ${responseSize} bytes`);
+
+    // Validate before sending
+    if (res.headersSent) {
+      console.error("❌ ERROR: Headers already sent!");
+      return;
+    }
+
+    if (!result || !result.answer) {
+      console.error("❌ Invalid result object:", result);
+      return res.status(500).json({
+        error: "Invalid response generated",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    // SEND RESPONSE IMMEDIATELY - ABSOLUTELY CRITICAL
+    console.log(`📤 Sending response NOW - this MUST complete`);
+
+    // Send response synchronously - no async operations after this
+    res.status(200).json(formattedResponse);
+
+    // Log AFTER sending to verify it worked
+    console.log(`✅ Response sent successfully!`);
+    console.log(`   Status: ${res.statusCode}`);
+    console.log(`   Headers sent: ${res.headersSent}`);
+    console.log(`   Origin: ${req.headers.origin || "none"}`);
+
+    // Save conversation history AFTER response is sent
+    // Use setTimeout with longer delay to ensure response is fully received by client
+    // This prevents nodemon from restarting during the response
+    setTimeout(() => {
+      memory
+        .addConversationTurn(
+          query,
+          result.answer,
+          {
+            language: result.metadata?.language,
+            api: result.metadata?.api,
+            errorCodes: detectErrorCodes(query),
+            chunkCount: processedData.chunks.length,
+            responseTime: responseTime,
+            route: classification.route,
+            toolsUsed: processedData.toolsUsed,
+          },
+          currentSessionId
+        )
+        .catch((err) => {
+          // Silently fail - response already sent
+          console.error("⚠️ Failed to save conversation turn:", err.message);
+        });
+    }, 1000); // Wait 1 second after response to save memory
+
+    // Explicitly return - response is complete
+    return;
   } catch (error) {
     console.error("❌ Chat API error:", error);
-    res.status(500).json({
+    console.error("Error stack:", error.stack);
+
+    // Send proper error response (CORS middleware handles headers)
+    const errorResponse = {
       error: "Internal server error",
-      message: error.message,
-    });
+      message:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "An error occurred while processing your request",
+      timestamp: new Date().toISOString(),
+    };
+
+    if (!res.headersSent) {
+      try {
+        res.status(500).json(errorResponse);
+        console.log(
+          `✅ Error response sent to ${req.headers.origin || "unknown"}`
+        );
+      } catch (sendError) {
+        console.error("❌ Failed to send error response:", sendError);
+      }
+    } else {
+      console.error("⚠️ Cannot send error response - headers already sent");
+    }
   }
 });
 
@@ -222,10 +357,37 @@ app.post("/api/chat", async (req, res) => {
 app.get("/api/conversation/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const context = memory.getConversationContext();
+    const currentSessionId = sessionId || "default";
+
+    // Get conversation history for the session
+    const session = memory.getSession(currentSessionId);
+    const conversationHistory = session?.conversationHistory || [];
+
+    // Convert conversation history to frontend format (alternating user and assistant messages)
+    const history = [];
+    conversationHistory.forEach((turn, index) => {
+      // Add user message
+      history.push({
+        id: `user_${currentSessionId}_${index}`,
+        type: "user",
+        content: turn.query,
+        timestamp: turn.timestamp,
+      });
+
+      // Add assistant message
+      history.push({
+        id: `assistant_${currentSessionId}_${index}`,
+        type: "assistant",
+        content: turn.response,
+        sources: [],
+        metadata: turn.metadata || {},
+        timestamp: turn.timestamp,
+      });
+    });
+
     res.json({
-      history: context.recentHistory || [],
-      sessionId: sessionId || "default",
+      history: history,
+      sessionId: currentSessionId,
     });
   } catch (error) {
     console.error("❌ Conversation history error:", error);
@@ -240,8 +402,12 @@ app.get("/api/conversation/:sessionId", async (req, res) => {
 app.delete("/api/conversation/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    await memory.clearConversationHistory(sessionId || "default");
-    res.json({ message: "Conversation history cleared successfully" });
+    const currentSessionId = sessionId || "default";
+    await memory.clearConversationHistory(currentSessionId);
+    res.json({
+      message: "Conversation history cleared successfully",
+      sessionId: currentSessionId,
+    });
   } catch (error) {
     console.error("❌ Clear conversation error:", error);
     res.status(500).json({
@@ -255,8 +421,12 @@ app.delete("/api/conversation/:sessionId", async (req, res) => {
 app.get("/api/preferences/:sessionId", async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const preferences = await memory.getUserPreferences(sessionId || "default");
-    res.json({ preferences });
+    const currentSessionId = sessionId || "default";
+    const preferences = memory.getUserPreferences(currentSessionId);
+    res.json({
+      preferences,
+      sessionId: currentSessionId,
+    });
   } catch (error) {
     console.error("❌ Get preferences error:", error);
     res.status(500).json({
@@ -266,13 +436,73 @@ app.get("/api/preferences/:sessionId", async (req, res) => {
   }
 });
 
-// Error handling middleware
+// List all sessions endpoint (for testing/debugging)
+app.get("/api/sessions", async (req, res) => {
+  try {
+    if (!memory) {
+      return res.status(500).json({
+        error: "Memory not initialized",
+        sessions: [],
+        total: 0,
+      });
+    }
+
+    // Use the getAllSessions method if available
+    let allSessions = [];
+    if (typeof memory.getAllSessions === "function") {
+      allSessions = memory.getAllSessions();
+      console.log(
+        `📋 Found ${allSessions.length} sessions via getAllSessions()`
+      );
+    } else {
+      // Fallback: Access memory's internal sessions object
+      const sessionIds = Object.keys(memory.memory?.sessions || {});
+      console.log(`📋 Found ${sessionIds.length} session IDs in memory`);
+      allSessions = sessionIds.map((sid) => {
+        const session = memory.getSession(sid);
+        return {
+          id: sid,
+          createdAt: session?.createdAt || null,
+          lastActivity: session?.lastActivity || null,
+          messageCount: session?.conversationHistory?.length || 0,
+          preferences: session?.userPreferences || {},
+        };
+      });
+    }
+
+    res.json({
+      sessions: allSessions,
+      total: allSessions.length,
+    });
+  } catch (error) {
+    console.error("❌ List sessions error:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      error: "Failed to list sessions",
+      message: error.message,
+      sessions: [],
+      total: 0,
+    });
+  }
+});
+
+// Error handling middleware - MUST be after all routes
 app.use((error, req, res, next) => {
-  console.error("❌ Unhandled error:", error);
-  res.status(500).json({
-    error: "Internal server error",
-    message: error.message,
-  });
+  // Only handle errors if response hasn't been sent
+  if (!res.headersSent) {
+    console.error("❌ Unhandled error:", error);
+    try {
+      res.status(500).json({
+        error: "Internal server error",
+        message: error.message,
+      });
+    } catch (sendError) {
+      console.error("❌ Cannot send error response:", sendError);
+    }
+  } else {
+    // Response already sent, just log the error
+    console.error("❌ Error occurred after response was sent:", error);
+  }
 });
 
 // 404 handler
@@ -307,6 +537,18 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   console.log("\n🛑 Shutting down server gracefully...");
   process.exit(0);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+  // Don't exit - just log it
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error) => {
+  console.error("❌ Uncaught Exception:", error);
+  process.exit(1);
 });
 
 startServer().catch((error) => {

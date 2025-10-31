@@ -1,0 +1,13 @@
+{
+  "watch": ["server.js", "src", "config"],
+  "ignore": [
+    "data/**/*",
+    "node_modules/**/*",
+    "*.log",
+    "*.json",
+    "!package.json",
+    "!package-lock.json"
+  ],
+  "ext": "js,json",
+  "delay": 2000
+}

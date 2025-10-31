@@ -98,10 +98,49 @@ class ConversationMemory {
   }
 
   /**
-   * Get current session data
+   * Get session data for a specific sessionId
+   * @param {string} sessionId - Session ID (uses this.sessionId if not provided)
+   */
+  getSession(sessionId = null) {
+    const sid = sessionId || this.sessionId;
+    return this.memory.sessions[sid] || null;
+  }
+
+  /**
+   * Get current session data (uses this.sessionId)
    */
   getCurrentSession() {
-    return this.memory.sessions[this.sessionId] || null;
+    return this.getSession();
+  }
+
+  /**
+   * Ensure a session exists for a given sessionId
+   * @param {string} sessionId - Session ID to ensure exists
+   */
+  async ensureSession(sessionId) {
+    if (!sessionId) sessionId = this.sessionId;
+
+    if (!this.memory.sessions[sessionId]) {
+      this.memory.sessions[sessionId] = {
+        id: sessionId,
+        createdAt: new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+        conversationHistory: [],
+        userPreferences: {
+          language: null,
+          api: null,
+          context: [],
+        },
+        currentContext: {
+          topic: null,
+          relatedAPIs: [],
+          errorCodes: [],
+          lastQuery: null,
+        },
+      };
+      await this.saveMemory();
+    }
+    return this.memory.sessions[sessionId];
   }
 
   /**
@@ -151,10 +190,11 @@ class ConversationMemory {
    * @param {string} query - User's question
    * @param {string} response - AI's response
    * @param {Object} metadata - Additional context (error codes, language, etc.)
+   * @param {string} sessionId - Session ID (optional, uses this.sessionId if not provided)
    */
-  async addConversationTurn(query, response, metadata = {}) {
-    const session = this.getCurrentSession();
-    if (!session) return;
+  async addConversationTurn(query, response, metadata = {}, sessionId = null) {
+    const sid = sessionId || this.sessionId;
+    const session = await this.ensureSession(sid);
 
     const conversationTurn = {
       timestamp: new Date().toISOString(),
@@ -199,10 +239,12 @@ class ConversationMemory {
 
   /**
    * Get conversation context for response generation
+   * @param {string} sessionId - Session ID (optional, uses this.sessionId if not provided)
    * @returns {Object} Context object with user preferences and recent history
    */
-  getConversationContext() {
-    const session = this.getCurrentSession();
+  getConversationContext(sessionId = null) {
+    const sid = sessionId || this.sessionId;
+    const session = this.getSession(sid);
     if (!session) {
       return {
         userPreferences: {},
@@ -359,10 +401,12 @@ class ConversationMemory {
   }
 
   /**
-   * Clear conversation history for current session
+   * Clear conversation history for a session
+   * @param {string} sessionId - Session ID (optional, uses this.sessionId if not provided)
    */
-  async clearSessionHistory() {
-    const session = this.getCurrentSession();
+  async clearConversationHistory(sessionId = null) {
+    const sid = sessionId || this.sessionId;
+    const session = this.getSession(sid);
     if (!session) return;
 
     session.conversationHistory = [];
@@ -374,7 +418,14 @@ class ConversationMemory {
     };
 
     await this.saveMemory();
-    console.log("🗑️ Session history cleared");
+    console.log(`🗑️ Session history cleared for session: ${sid}`);
+  }
+
+  /**
+   * Clear conversation history for current session (alias for backward compatibility)
+   */
+  async clearSessionHistory() {
+    await this.clearConversationHistory();
   }
 
   /**
@@ -412,12 +463,31 @@ class ConversationMemory {
   }
 
   /**
-   * Return user's current preferences (language, api, etc.)
+   * Return user's preferences for a session (language, api, etc.)
+   * @param {string} sessionId - Session ID (optional, uses this.sessionId if not provided)
    */
-  getUserPreferences() {
-    const session = this.getCurrentSession();
+  getUserPreferences(sessionId = null) {
+    const sid = sessionId || this.sessionId;
+    const session = this.getSession(sid);
     if (!session) return {};
     return session.userPreferences || {};
+  }
+
+  /**
+   * Get all sessions (for testing/debugging)
+   * @returns {Array} Array of session information
+   */
+  getAllSessions() {
+    return Object.keys(this.memory.sessions || {}).map((sid) => {
+      const session = this.getSession(sid);
+      return {
+        id: sid,
+        createdAt: session?.createdAt || null,
+        lastActivity: session?.lastActivity || null,
+        messageCount: session?.conversationHistory?.length || 0,
+        preferences: session?.userPreferences || {},
+      };
+    });
   }
 
   /**
