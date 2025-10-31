@@ -1,17 +1,13 @@
-// backend/src/chat.js
 import readline from "readline";
 import fs from "fs/promises";
 import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
+import HybridSearch from "../hybridSearch.js";
+import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import MemoryController from "../controllers/memoryController.js";
 import config from "../config/config.js";
-import chalk from "chalk";
-import { highlight } from "cli-highlight";
-import ConversationMemory from "./conversationMemory.js";
-import HybridSearch from "./hybridSearch.js";
-import APIDetector from "./apiDetector.js";
-import { TwilioMCPClient } from "./mcpClient.js";
 
 // Initialize Gemini client
 function initGeminiClient() {
@@ -48,7 +44,7 @@ async function initPinecone() {
   }
 }
 
-// Load vector store (fallback to local JSON)
+// Load vector store from Pinecone
 async function loadVectorStore() {
   try {
     const pinecone = await initPinecone();
@@ -58,73 +54,9 @@ async function loadVectorStore() {
     );
     return { type: "pinecone", index };
   } catch (error) {
-    console.log("⚠️ Pinecone unavailable, using local vector store...");
-    console.log(`   Reason: ${error.message}`);
-
-    // Fallback to local JSON
-    try {
-      const vectorStorePath = path.join(
-        process.cwd(),
-        "data",
-        "vector_store.json"
-      );
-      const data = await fs.readFile(vectorStorePath, "utf-8");
-      const vectorStore = JSON.parse(data);
-      console.log(
-        `✅ Loaded local vector store with ${vectorStore.chunks.length} chunks`
-      );
-      return { type: "local", data: vectorStore };
-    } catch (localError) {
-      console.error(
-        "❌ Failed to load local vector store:",
-        localError.message
-      );
-      throw localError;
-    }
-  }
-}
-
-// Load separate code and text chunks for hybrid search
-async function loadSeparateChunks() {
-  try {
-    const textChunksPath = path.join(
-      process.cwd(),
-      "src",
-      "data",
-      "text_chunks.json"
-    );
-    const codeChunksPath = path.join(
-      process.cwd(),
-      "src",
-      "data",
-      "code_chunks.json"
-    );
-
-    let textChunks = [];
-    let codeChunks = [];
-
-    try {
-      textChunks = JSON.parse(await fs.readFile(textChunksPath, "utf-8"));
-      console.log(
-        `📄 Loaded ${textChunks.length} text chunks for hybrid search`
-      );
-    } catch (error) {
-      console.log("⚠️ Text chunks not found, will use combined vector store");
-    }
-
-    try {
-      codeChunks = JSON.parse(await fs.readFile(codeChunksPath, "utf-8"));
-      console.log(
-        `💻 Loaded ${codeChunks.length} code chunks for hybrid search`
-      );
-    } catch (error) {
-      console.log("⚠️ Code chunks not found, will use combined vector store");
-    }
-
-    return { textChunks, codeChunks };
-  } catch (error) {
-    console.log("⚠️ Failed to load separate chunks, using vector store only");
-    return { textChunks: [], codeChunks: [] };
+    console.error("❌ Pinecone initialization failed:", error.message);
+    console.log("   Please check your Pinecone configuration and try again.");
+    throw error;
   }
 }
 
@@ -136,199 +68,22 @@ function cosineSimilarity(a, b) {
   return dotProduct / (magnitudeA * magnitudeB);
 }
 
-// Simple keyword-based search (fallback when embeddings fail)
-function searchChunks(query, vectorStore) {
-  const queryLower = query.toLowerCase();
-  const keywords = queryLower.split(/\s+/);
-
-  // Handle both Pinecone and local vector stores
-  const chunks =
-    vectorStore.type === "pinecone"
-      ? [] // Pinecone doesn't support keyword search, return empty
-      : vectorStore.data.chunks;
-
-  if (chunks.length === 0) {
-    console.log(
-      "⚠️ Keyword search not available for Pinecone, returning empty results"
-    );
-    return [];
-  }
-
-  const scoredChunks = chunks.map((chunk) => {
-    const contentLower = chunk.content.toLowerCase();
-    let score = 0;
-
-    keywords.forEach((keyword) => {
-      if (contentLower.includes(keyword)) {
-        score += 1;
-      }
-    });
-
-    return { chunk, score };
-  });
-
-  return scoredChunks
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, parseInt(config.MAX_CHUNKS) || 10)
-    .map((item) => ({
-      content: item.chunk.content,
-      metadata: item.chunk.metadata,
-      score: item.score,
-    }));
-}
-
-// Detect error codes in query
-function detectErrorCodes(query) {
-  const errorCodeMatches = query.match(/\b(2\d{4}|\d{5})\b/g) || [];
-  return [...new Set(errorCodeMatches)];
-}
-
-// Assess quality of local search results
-function assessSearchQuality(query, chunks) {
-  const queryLower = query.toLowerCase();
-  const queryKeywords = queryLower
-    .split(/\s+/)
-    .filter((word) => word.length > 2);
-
-  // If no chunks found, quality is poor
-  if (!chunks || chunks.length === 0) {
-    return {
-      quality: "poor",
-      score: 0,
-      reasons: ["No local results found"],
-      shouldWebSearch: true,
-    };
-  }
-
-  let totalScore = 0;
-  let reasons = [];
-
-  // Check chunk count
-  if (chunks.length < config.SEARCH_QUALITY_THRESHOLDS.MIN_CHUNKS) {
-    totalScore -= 20;
-    reasons.push("Very few results found");
-  } else if (chunks.length >= 5) {
-    totalScore += 10;
-    reasons.push("Good number of results");
-  }
-
-  // Check similarity scores
-  const avgSimilarity =
-    chunks.reduce((sum, chunk) => sum + (chunk.similarity || 0), 0) /
-    chunks.length;
-  if (avgSimilarity < config.SEARCH_QUALITY_THRESHOLDS.MIN_SIMILARITY) {
-    totalScore -= 30;
-    reasons.push("Low similarity scores");
-  } else if (avgSimilarity > 0.7) {
-    totalScore += 20;
-    reasons.push("High similarity scores");
-  }
-
-  // Check for keyword matches
-  let keywordMatches = 0;
-  chunks.forEach((chunk) => {
-    const contentLower = chunk.content.toLowerCase();
-    queryKeywords.forEach((keyword) => {
-      if (contentLower.includes(keyword)) {
-        keywordMatches++;
-      }
-    });
-  });
-
-  const keywordMatchRatio =
-    keywordMatches / (queryKeywords.length * chunks.length);
-  if (keywordMatchRatio < config.SEARCH_QUALITY_THRESHOLDS.MIN_KEYWORD_RATIO) {
-    totalScore -= 25;
-    reasons.push("Poor keyword matching");
-  } else if (keywordMatchRatio > 0.7) {
-    totalScore += 15;
-    reasons.push("Good keyword matching");
-  }
-
-  // Check for error codes in query
-  const errorCodes = detectErrorCodes(query);
-  if (errorCodes.length > 0) {
-    const hasErrorCodeMatch = chunks.some(
-      (chunk) =>
-        chunk.metadata?.error_codes &&
-        errorCodes.some((code) => chunk.metadata.error_codes.includes(code))
-    );
-    if (!hasErrorCodeMatch) {
-      totalScore -= 40;
-      reasons.push("No error code matches found");
-    } else {
-      totalScore += 20;
-      reasons.push("Error code match found");
-    }
-  }
-
-  // Check for API-specific content
-  const apiKeywords = ["sms", "voice", "video", "webhook", "whatsapp"];
-  const queryHasAPI = apiKeywords.some((api) => queryLower.includes(api));
-  if (queryHasAPI) {
-    const hasAPIMatch = chunks.some(
-      (chunk) =>
-        chunk.metadata?.api &&
-        apiKeywords.some((api) =>
-          chunk.metadata.api.toLowerCase().includes(api)
-        )
-    );
-    if (!hasAPIMatch) {
-      totalScore -= 20;
-      reasons.push("No API-specific content found");
-    } else {
-      totalScore += 10;
-      reasons.push("API-specific content found");
-    }
-  }
-
-  // Determine quality level using config thresholds
-  let quality, shouldWebSearch;
-  if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.EXCELLENT_SCORE) {
-    quality = "excellent";
-    shouldWebSearch = false;
-  } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.GOOD_SCORE) {
-    quality = "good";
-    shouldWebSearch = false;
-  } else if (totalScore >= config.SEARCH_QUALITY_THRESHOLDS.FAIR_SCORE) {
-    quality = "fair";
-    shouldWebSearch = true;
-  } else {
-    quality = "poor";
-    shouldWebSearch = true;
-  }
-
-  return {
-    quality,
-    score: totalScore,
-    reasons,
-    shouldWebSearch,
-    avgSimilarity,
-    keywordMatchRatio,
-    chunkCount: chunks.length,
-  };
-}
-
-// Detect programming language from query
-function detectQueryLanguage(query) {
-  const q = query.toLowerCase();
-  if (/\b(python|py|pip|flask|django)\b/.test(q)) return "python";
-  if (/\b(node|nodejs|npm|express|javascript|js)\b/.test(q))
-    return "javascript";
-  if (/\b(php|composer|laravel)\b/.test(q)) return "php";
-  if (/\b(java|maven|gradle)\b/.test(q)) return "java";
-  if (/\b(csharp|c#|dotnet|\.net)\b/.test(q)) return "csharp";
-  if (/\b(curl|bash|shell|cli)\b/.test(q)) return "bash";
-  return null;
-}
-
+// Retrieve relevant chunks using hybrid search (PostgreSQL BM25 + Semantic)
 async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
   try {
-    console.log("🔍 Searching for relevant information using hybrid search...");
+    console.log(
+      "🔍 Searching for relevant information using PostgreSQL hybrid search..."
+    );
 
-    // Initialize hybrid search system
-    const hybridSearch = new HybridSearch(vectorStore, embeddings);
+    // Initialize PostgreSQL BM25 service
+    const postgresBM25Service = new PostgreSQLBM25Service();
+
+    // Initialize hybrid search system with PostgreSQL
+    const hybridSearch = new HybridSearch(
+      vectorStore,
+      embeddings,
+      postgresBM25Service
+    );
 
     // Perform hybrid search
     const results = await hybridSearch.hybridSearch(
@@ -367,28 +122,12 @@ async function retrieveChunksWithHybridSearch(query, vectorStore, embeddings) {
   }
 }
 
-// Hybrid search with error code and language detection
-async function retrieveChunksWithEmbeddings(
-  query,
-  vectorStore,
-  embeddings,
-  separateChunks = { textChunks: [], codeChunks: [] }
-) {
+// Retrieve relevant chunks using embeddings (fallback)
+async function retrieveChunksWithEmbeddings(query, vectorStore, embeddings) {
   try {
     console.log(
-      "🔍 Starting hybrid search with error code and language detection..."
+      "🔍 Searching for relevant information using Gemini embeddings..."
     );
-
-    // Detect error codes and programming language
-    const errorCodes = detectErrorCodes(query);
-    const queryLanguage = detectQueryLanguage(query);
-
-    if (errorCodes.length > 0) {
-      console.log(`🚨 Detected error codes: ${errorCodes.join(", ")}`);
-    }
-    if (queryLanguage) {
-      console.log(`💻 Detected programming language: ${queryLanguage}`);
-    }
 
     // Generate query embedding using LangChain Gemini embeddings
     const queryEmbedding = await embeddings.embedQuery(query);
@@ -407,49 +146,7 @@ async function retrieveChunksWithEmbeddings(
     );
 
     let topChunks = [];
-    let errorCodeChunks = [];
-    let languageSpecificChunks = [];
 
-    // First, check for exact error code matches in separate chunks
-    if (
-      errorCodes.length > 0 &&
-      (separateChunks.textChunks.length > 0 ||
-        separateChunks.codeChunks.length > 0)
-    ) {
-      console.log("🔍 Searching for exact error code matches...");
-
-      const allChunks = [
-        ...separateChunks.textChunks,
-        ...separateChunks.codeChunks,
-      ];
-      errorCodeChunks = allChunks
-        .filter((chunk) =>
-          errorCodes.some(
-            (code) => chunk.errorCodes && chunk.errorCodes.includes(code)
-          )
-        )
-        .map((chunk) => ({
-          content: chunk.content,
-          metadata: {
-            source: chunk.url,
-            title: chunk.title,
-            category: chunk.api,
-            docType: "api",
-            type: chunk.type,
-            language: chunk.language,
-            api: chunk.api,
-            error_codes: chunk.errorCodes,
-          },
-          similarity: 1.0, // Exact match
-          matchType: "error_code",
-        }));
-
-      console.log(
-        `🚨 Found ${errorCodeChunks.length} exact error code matches`
-      );
-    }
-
-    // Search in vector store for semantic matches
     if (vectorStore.type === "pinecone") {
       console.log("🔍 Searching in Pinecone...");
       const searchResponse = await vectorStore.index.query({
@@ -465,15 +162,10 @@ async function retrieveChunksWithEmbeddings(
           title: match.metadata.title,
           category: match.metadata.category,
           docType: match.metadata.docType,
-          type: match.metadata.type,
-          language: match.metadata.language,
-          api: match.metadata.api,
-          error_codes: match.metadata.error_codes || [],
           chunk_index: match.metadata.chunk_index,
           total_chunks: match.metadata.total_chunks,
         },
         similarity: match.score,
-        matchType: "semantic",
       }));
     } else {
       console.log("🔍 Searching in local vector store...");
@@ -494,429 +186,93 @@ async function retrieveChunksWithEmbeddings(
           content: item.chunk.content,
           metadata: item.chunk.metadata,
           similarity: item.similarity,
-          matchType: "semantic",
         }));
     }
 
-    // Filter by language if detected
-    if (
-      queryLanguage &&
-      (separateChunks.textChunks.length > 0 ||
-        separateChunks.codeChunks.length > 0)
-    ) {
-      console.log(`💻 Filtering results by language: ${queryLanguage}`);
-      languageSpecificChunks = topChunks.filter(
-        (chunk) => chunk.metadata.language === queryLanguage
-      );
-      console.log(
-        `💻 Found ${languageSpecificChunks.length} language-specific matches`
-      );
-    }
-
-    // Combine and prioritize results
-    let finalChunks = [];
-
-    // 1. Add exact error code matches first (highest priority)
-    finalChunks.push(...errorCodeChunks);
-
-    // 2. Add language-specific matches (medium priority)
-    if (languageSpecificChunks.length > 0) {
-      finalChunks.push(...languageSpecificChunks.slice(0, 3));
-    }
-
-    // 3. Add remaining semantic matches (lower priority)
-    const remainingSlots =
-      (parseInt(config.MAX_CHUNKS) || 10) - finalChunks.length;
-    if (remainingSlots > 0) {
-      const remainingChunks = topChunks
-        .filter(
-          (chunk) => !finalChunks.some((fc) => fc.content === chunk.content)
-        )
-        .slice(0, remainingSlots);
-      finalChunks.push(...remainingChunks);
-    }
-
-    // Remove duplicates and sort by priority
-    const uniqueChunks = finalChunks.filter(
-      (chunk, index, self) =>
-        index === self.findIndex((c) => c.content === chunk.content)
+    console.log(
+      `📊 Top similarity scores: ${topChunks
+        .slice(0, 3)
+        .map((t) => t.similarity.toFixed(3))
+        .join(", ")}`
     );
 
-    console.log(`📊 Final results: ${uniqueChunks.length} chunks`);
-    console.log(`   🚨 Error code matches: ${errorCodeChunks.length}`);
-    console.log(`   💻 Language matches: ${languageSpecificChunks.length}`);
-    console.log(`   🔍 Semantic matches: ${topChunks.length}`);
-
-    return uniqueChunks;
+    console.log(
+      `📚 Found ${topChunks.length} relevant chunks using semantic search`
+    );
+    return topChunks;
   } catch (error) {
-    console.error(
-      "❌ Embedding retrieval failed, using keyword search:",
-      error.message
-    );
-    return searchChunks(query, vectorStore);
-  }
-}
-
-// Generate memory-aware response using Gemini with MCP tools
-async function generateMemoryAwareResponse(
-  query,
-  chunks,
-  geminiClient,
-  memory,
-  apiDetector,
-  mcpServer = null
-) {
-  try {
-    console.log(
-      chalk.green("🤖 Generating memory-aware response with MCP tools...")
-    );
-
-    // Detect API and language from query
-    const context = memory.getConversationContext();
-    const apiDetection = apiDetector.detectAPI(query, context);
-    const detectedLanguage = detectQueryLanguage(query);
-
-    // Assess quality of local search results
-    const searchQuality = assessSearchQuality(query, chunks);
-    console.log(chalk.cyan(`📊 Search Quality Assessment:`));
-    console.log(
-      chalk.cyan(
-        `   Quality: ${searchQuality.quality} (score: ${searchQuality.score})`
-      )
-    );
-    console.log(chalk.cyan(`   Reasons: ${searchQuality.reasons.join(", ")}`));
-    console.log(
-      chalk.cyan(`   Should web search: ${searchQuality.shouldWebSearch}`)
-    );
-
-    // Use MCP tools for enhanced analysis if available
-    let mcpEnhancements = null;
-    let errorCodeInfo = null;
-    let codeValidation = null;
-    let webSearchResults = null;
-    let webSearchTriggered = false;
-
-    if (mcpServer) {
-      try {
-        // Enhance context with MCP tools
-        const contextResult = await mcpServer.handleEnhanceChatContext({
-          query,
-          context,
-        });
-        if (contextResult.content) {
-          mcpEnhancements = JSON.parse(contextResult.content[0].text);
-        }
-
-        // Look up error codes if detected
-        const errorCodes = detectErrorCodes(query);
-        if (errorCodes.length > 0) {
-          const errorResult = await mcpServer.handleLookupErrorCode({
-            errorCode: errorCodes[0],
-          });
-          if (errorResult.content) {
-            errorCodeInfo = JSON.parse(errorResult.content[0].text);
-          }
-        }
-
-        // Validate any code snippets in the query
-        const codeMatch = query.match(/```[\s\S]*?```/g);
-        if (codeMatch) {
-          const codeResult = await mcpServer.handleValidateTwilioCode({
-            code: codeMatch[0],
-            language: detectedLanguage || "javascript",
-          });
-          if (codeResult.content) {
-            codeValidation = JSON.parse(codeResult.content[0].text);
-          }
-        }
-
-        // Perform web search ONLY if local search quality is insufficient
-        if (searchQuality.shouldWebSearch) {
-          console.log(
-            chalk.yellow(
-              `⚠️ Local search quality is ${searchQuality.quality}. Triggering web search...`
-            )
-          );
-          console.log(
-            chalk.yellow(`   Reasons: ${searchQuality.reasons.join(", ")}`)
-          );
-
-          try {
-            const searchResults = await mcpServer.performWebSearch(query, 3);
-            webSearchResults = searchResults;
-            webSearchTriggered = true;
-            console.log(
-              chalk.green(
-                `✅ Web search found ${
-                  webSearchResults.results?.length || 0
-                } results`
-              )
-            );
-          } catch (webError) {
-            console.log(chalk.red("❌ Web search failed:", webError.message));
-          }
-        } else {
-          console.log(
-            chalk.green(
-              `✅ Local search quality is ${searchQuality.quality}. Skipping web search.`
-            )
-          );
-        }
-      } catch (mcpError) {
-        console.log(
-          chalk.yellow("⚠️ MCP tools unavailable, using fallback analysis")
-        );
-      }
-    }
-
-    // Update memory with detected information
-    if (detectedLanguage) {
-      await memory.updateLanguagePreference(detectedLanguage);
-    }
-
-    if (apiDetection.primary) {
-      await memory.updateAPIPreference(apiDetection.primary.api);
-    }
-
-    // Update current context
-    await memory.updateCurrentContext({
-      topic: apiDetection.primary?.api || "general",
-      relatedAPIs: apiDetection.all?.slice(0, 3).map((d) => d.api) || [],
-      errorCodes: detectErrorCodes(query),
-      lastQuery: query,
-    });
-
-    // Prepare context from retrieved chunks
-    const contextChunks = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
-      .join("\n\n");
-
-    // Generate context-aware prompt
-    const contextPrompt = memory.generateContextPrompt(query);
-
-    // Add API-specific context
-    let apiContext = "";
-    if (apiDetection.primary) {
-      apiContext = `\nDETECTED API: The user is working with ${apiDetection.primary.api.toUpperCase()} API. `;
-      if (apiDetection.primary.reasons.length > 0) {
-        apiContext += `Detection based on: ${apiDetection.primary.reasons.join(
-          ", "
-        )}. `;
-      }
-
-      // Add related API suggestions
-      const relatedAPIs = apiDetector.getRelatedAPIs(apiDetection.primary.api);
-      if (relatedAPIs.length > 0) {
-        apiContext += `Related APIs that might be relevant: ${relatedAPIs.join(
-          ", "
-        )}. `;
-      }
-    }
-
-    // Add MCP tool insights
-    let mcpContext = "";
-    if (mcpEnhancements) {
-      mcpContext += `\nMCP ANALYSIS: `;
-      if (mcpEnhancements.enhancements.detectedLanguage) {
-        mcpContext += `Detected language: ${mcpEnhancements.enhancements.detectedLanguage}. `;
-      }
-      if (mcpEnhancements.enhancements.detectedAPI) {
-        mcpContext += `Detected API: ${mcpEnhancements.enhancements.detectedAPI}. `;
-      }
-      if (mcpEnhancements.enhancements.suggestedFocus) {
-        mcpContext += `Suggested focus: ${mcpEnhancements.enhancements.suggestedFocus}. `;
-      }
-    }
-
-    if (errorCodeInfo && errorCodeInfo.found) {
-      mcpContext += `\nERROR CODE ANALYSIS: ${errorCodeInfo.message} - ${errorCodeInfo.description}. Solution: ${errorCodeInfo.solution}`;
-    }
-
-    if (codeValidation) {
-      mcpContext += `\nCODE VALIDATION: `;
-      if (codeValidation.isValid) {
-        mcpContext += `Code appears valid. `;
-      } else {
-        mcpContext += `Issues found: ${codeValidation.issues.join(
-          ", "
-        )}. Suggestions: ${codeValidation.suggestions.join(", ")}. `;
-      }
-    }
-
-    // Add web search results to context with clear labeling
-    if (
-      webSearchResults &&
-      webSearchResults.found &&
-      webSearchResults.results
-    ) {
-      mcpContext += `\n\n🌐 WEB SEARCH RESULTS (Latest Twilio Information from Internet): `;
-      mcpContext += `\n⚠️ Note: Local search quality was ${
-        searchQuality.quality
-      } (${searchQuality.reasons.join(
-        ", "
-      )}), so I searched the web for additional information.`;
-      webSearchResults.results.forEach((result, index) => {
-        mcpContext += `\n[WEB-${index + 1}] ${result.title} (${result.link}): ${
-          result.snippet
-        } `;
-      });
-      mcpContext += `\n\nNote: Information marked with [WEB-X] comes from real-time web search and may contain the most up-to-date information.`;
-    } else if (
-      webSearchTriggered === false &&
-      searchQuality.shouldWebSearch === false
-    ) {
-      mcpContext += `\n\n✅ Using local documentation only (search quality: ${searchQuality.quality})`;
-    }
-
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-      sourceType: "hybrid_search", // Mark as hybrid search
-      searchType: chunk.searchType || "unknown", // semantic, bm25, or fused
-    }));
-
-    // Add web search results to sources if available
-    if (
-      webSearchResults &&
-      webSearchResults.found &&
-      webSearchResults.results
-    ) {
-      webSearchResults.results.forEach((result, index) => {
-        sources.push({
-          content: result.snippet,
-          metadata: {
-            source: result.link,
-            title: result.title,
-            displayLink: result.displayLink,
-          },
-          similarity: 1.0, // Web search results are considered highly relevant
-          score: 1.0,
-          index: sources.length + 1,
-          sourceType: "web_search",
-          searchType: "web",
-        });
-      });
-    }
-
-    // Generate response using Gemini with memory context
-    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
-
-${contextPrompt}${apiContext}${mcpContext}
-
-CONTEXT (Twilio Documentation):
-${contextChunks}
-
-USER QUESTION: ${query}
-
-SEARCH QUALITY INFO:
-- Local search quality: ${searchQuality.quality} (score: ${searchQuality.score})
-- Web search triggered: ${webSearchTriggered ? "Yes" : "No"}
-- Reasons for web search: ${
-      webSearchTriggered ? searchQuality.reasons.join(", ") : "N/A"
-    }
-
-RESPONSE GUIDELINES:
-1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
-2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
-3. **Include Code**: Always include practical code examples in the appropriate programming language
-4. **Step-by-Step**: Break down complex processes into clear, actionable steps
-5. **Error Handling**: Mention common errors and how to handle them
-6. **Best Practices**: Include security considerations and best practices
-7. **Source Citations**: Reference specific sources using [Source X] format
-8. **If Uncertain**: Clearly state when information isn't available in the context
-9. **Memory Awareness**: Reference previous conversation context when relevant
-10. **API Focus**: Prioritize information relevant to the detected API
-11. **Search Transparency**: If web search was used, mention it in your response
-
-FORMAT YOUR RESPONSE:
-- Start with a direct answer to the question
-- Provide detailed explanation with code examples
-- Include relevant API endpoints and parameters
-- Mention any prerequisites or setup requirements
-- Reference conversation context when helpful
-- CLEARLY distinguish between information sources:
-  * Use [Source X] for hybrid search results (documentation)
-  * Use [WEB-X] for web search results (latest information)
-- If web search was triggered, mention: "I searched the web for additional information because [reason]"
-- If only local search was used, mention: "Based on our comprehensive documentation"
-- End with source citations
-
-`;
-
-    const model = geminiClient.getGenerativeModel({
-      model: "gemini-2.0-flash",
-    });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Highlight code blocks in the response
-    const highlightedText = text.replace(
-      /```(.*?)\n([\s\S]*?)```/g,
-      (match, lang, code) => {
-        const highlighted = highlight(code, {
-          language: lang || detectedLanguage || "javascript",
-          ignoreIllegals: true,
-          theme: {
-            keyword: chalk.cyanBright,
-            built_in: chalk.yellowBright,
-            string: chalk.green,
-            literal: chalk.magenta,
-            section: chalk.blue,
-            comment: chalk.gray,
-            number: chalk.redBright,
-            attr: chalk.yellow,
-          },
-        });
-        return chalk.bgBlackBright(`\n${highlighted}\n`);
-      }
-    );
-
-    // Clean the response text by removing ANSI escape codes
-    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
-
-    return {
-      answer: cleanText,
-      sources: chunks,
-      metadata: {
-        language: detectedLanguage,
-        api: apiDetection.primary?.api,
-        confidence: apiDetection.primary?.confidence,
-        reasoning: apiDetection.reasoning,
-      },
-    };
-  } catch (error) {
-    console.error(
-      chalk.red("❌ Memory-aware response generation failed:"),
-      error.message
-    );
+    console.error("❌ Embedding retrieval failed:", error.message);
+    console.log("   Please check your Pinecone configuration and try again.");
     throw error;
   }
 }
 
-// Generate response using Gemini (fallback)
+// Generate response using Gemini
 async function generateResponse(query, chunks, geminiClient) {
   try {
-    console.log(chalk.green("🤖 Generating response..."));
+    console.log("🤖 Generating response...");
 
-    // Prepare context from retrieved chunks
-    const context = chunks
-      .map((chunk, index) => `[Source ${index + 1}] ${chunk.content}`)
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
       .join("\n\n");
 
-    const sources = chunks.map((chunk, index) => ({
-      content: chunk.content,
-      metadata: chunk.metadata,
-      similarity: chunk.similarity,
-      score: chunk.score || 0,
-      index: index + 1,
-    }));
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Twilio Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://twilio.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
 
     // Generate response using Gemini
-    const prompt = `You are an expert Twilio developer support agent with deep knowledge of Twilio's api docs, sms quickstart, webhooks, and developer tools. Your role is to provide accurate, helpful, and actionable guidance to developers working with Twilio.
+    const prompt = `You are an expert Twilio Developer Support assistant. You help with Twilio SMS, Voice, Video, WhatsApp, webhooks, error codes, and SDKs. Provide accurate, actionable, and safe guidance.
 
 CONTEXT (Twilio Documentation):
 ${context}
@@ -924,23 +280,33 @@ ${context}
 USER QUESTION: ${query}
 
 RESPONSE GUIDELINES:
-1. **Accuracy First**: Base your answer strictly on the provided Twilio documentation context
-2. **Be Specific**: Provide exact API endpoints, parameter names, and code examples when relevant
-3. **Include Code**: Always include practical code examples in the appropriate programming language
-4. **Step-by-Step**: Break down complex processes into clear, actionable steps
-5. **Error Handling**: Mention common errors and how to handle them
-6. **Best Practices**: Include security considerations and best practices
-7. **Source Citations**: Reference specific sources using [Source X] format
-8. **If Uncertain**: Clearly state when information isn't available in the context
+1. Accuracy First: Base your answer STRICTLY on the provided Twilio context when possible.
+2. Be Specific: Include exact API names, parameters, and example code.
+3. Include Code: Provide practical examples for the detected language when applicable.
+4. Step-by-Step: Break down with clear steps.
+5. Error Handling: Mention common errors and fixes.
+6. Best Practices: Security, webhooks validation, environment variables.
+7. Source Citations: Reference with [Source X].
+8. If Uncertain: State what's missing and suggest next steps.
 
 FORMAT YOUR RESPONSE:
 - Start with a direct answer to the question
 - Provide detailed explanation with code examples
 - Include relevant API endpoints and parameters
 - Mention any prerequisites or setup requirements
-- End with source citations
+- End with a formatted source list using this EXACT format:
 
-`;
+📚 **Sources:**
+🔗 [Title] - URL
+🔗 [Title] - URL
+🔗 [Title] - URL
+
+IMPORTANT: 
+- Use clean, readable titles (remove markdown formatting, truncate if too long)
+- Include the actual URLs from the source metadata
+- Format sources as clickable links with emojis for visual separation
+- Keep titles concise and descriptive (max 60 characters)
+- Only show the most relevant sources (top 3)`;
 
     const model = geminiClient.getGenerativeModel({
       model: "gemini-2.0-flash",
@@ -949,72 +315,176 @@ FORMAT YOUR RESPONSE:
     const response = await result.response;
     const text = response.text();
 
-    // Highlight code blocks in the response
-    const highlightedText = text.replace(
-      /```(.*?)\n([\s\S]*?)```/g,
-      (match, lang, code) => {
-        const highlighted = highlight(code, {
-          language: lang || "javascript",
-          ignoreIllegals: true,
-          theme: {
-            keyword: chalk.cyanBright,
-            built_in: chalk.yellowBright,
-            string: chalk.green,
-            literal: chalk.magenta,
-            section: chalk.blue,
-            comment: chalk.gray,
-            number: chalk.redBright,
-            attr: chalk.yellow,
-          },
-        });
-        return chalk.bgBlackBright(`\n${highlighted}\n`);
-      }
-    );
-
-    // Clean the response text by removing ANSI escape codes
-    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, "");
-
     return {
-      answer: cleanText,
-      sources: chunks,
-      webSearchResults: webSearchResults || null,
-      metadata: {
-        language: detectedLanguage,
-        api: apiDetection.primary?.api,
-        confidence: apiDetection.primary?.confidence,
-        webSearchUsed: !!webSearchResults,
-        webSearchResultCount: webSearchResults?.results?.length || 0,
-      },
+      answer: text,
+      sources: sources,
     };
   } catch (error) {
-    console.error(chalk.red("❌ Response generation failed:"), error.message);
+    console.error("❌ Response generation failed:", error.message);
     throw error;
   }
 }
 
-// Main chat function with memory
+// Generate response with memory context integration
+async function generateResponseWithMemory(
+  query,
+  chunks,
+  geminiClient,
+  memoryContext
+) {
+  try {
+    console.log("\n🤖 Generating response with memory context...");
+
+    // Limit sources to most relevant ones (configurable)
+    const maxSources = parseInt(config.MAX_SOURCES) || 3;
+    const limitedChunks = chunks.slice(0, maxSources);
+
+    // Prepare context from limited chunks with meaningful source titles
+    const context = limitedChunks
+      .map((chunk, index) => {
+        const title =
+          chunk.metadata?.title ||
+          chunk.metadata?.doc_title ||
+          `Document ${index + 1}`;
+        const category = chunk.metadata?.category || "documentation";
+        return `[Source ${index + 1}: ${title} (${category})]\n${
+          chunk.content
+        }`;
+      })
+      .join("\n\n");
+
+    const sources = limitedChunks.map((chunk, index) => {
+      // Generate clean, ChatGPT-style titles
+      let title = chunk.metadata?.title || chunk.metadata?.doc_title;
+
+      // If no title, generate one from content
+      if (!title || title.trim() === "") {
+        const contentLines = chunk.content
+          .split("\n")
+          .filter((line) => line.trim() !== "");
+        const firstLine = contentLines[0] || "";
+        title =
+          firstLine.length > 60
+            ? firstLine.substring(0, 60) + "..."
+            : firstLine;
+        if (!title) title = "Twilio Documentation";
+      }
+
+      // Clean up title formatting
+      title = title
+        .replace(/^#+\s*/, "")
+        .replace(/\n.*$/, "")
+        .trim();
+
+      const category = chunk.metadata?.category || "documentation";
+      const url =
+        chunk.metadata?.source ||
+        chunk.metadata?.source_url ||
+        "https://twilio.com/docs";
+
+      return {
+        content: chunk.content,
+        metadata: chunk.metadata,
+        title: title,
+        category: category,
+        url: url,
+        similarity: chunk.similarity,
+        score: chunk.score || 0,
+        index: index + 1,
+      };
+    });
+
+    // Build memory context string
+    let memoryContextString = "";
+
+    if (memoryContext.recentContext && memoryContext.recentContext.hasContext) {
+      memoryContextString += `\n\nRECENT CONVERSATION CONTEXT:\n${memoryContext.recentContext.contextString}`;
+    }
+
+    if (
+      memoryContext.longTermContext &&
+      memoryContext.longTermContext.hasLongTermContext
+    ) {
+      const relevantQAs = memoryContext.longTermContext.relevantQAs;
+      if (relevantQAs && relevantQAs.length > 0) {
+        memoryContextString += `\n\nRELEVANT PREVIOUS DISCUSSIONS:\n`;
+        relevantQAs.forEach((qa, index) => {
+          memoryContextString += `[Previous Q&A ${index + 1}] Q: ${
+            qa.question
+          }\nA: ${qa.answer.substring(0, 200)}...\n\n`;
+        });
+      }
+    }
+
+    // Generate response using Gemini with memory context
+    const prompt = `You are an expert Twilio Developer Support assistant. You help with Twilio SMS, Voice, Video, WhatsApp, webhooks, error codes, and SDKs. Provide accurate, actionable, and safe guidance.
+
+CONTEXT (Twilio Documentation):
+${context}
+
+USER QUESTION: ${query}
+${memoryContext}
+
+RESPONSE GUIDELINES:
+1. Accuracy First: Base your answer STRICTLY on the provided Twilio context when possible.
+2. Be Specific: Include exact API names, parameters, and example code.
+3. Include Code: Provide practical examples for the detected language when applicable.
+4. Step-by-Step: Break down with clear steps.
+5. Error Handling: Mention common errors and fixes.
+6. Best Practices: Security, webhooks validation, environment variables.
+7. Source Citations: Reference with [Source X].
+8. If Uncertain: State what's missing and suggest next steps.
+
+FORMAT YOUR RESPONSE:
+- Start with a direct answer to the question
+- Provide detailed explanation with code examples
+- Include relevant API endpoints and parameters
+- Mention any prerequisites or setup requirements
+- End with a formatted source list using this EXACT format:
+
+📚 **Sources:**
+🔗 [Title] - URL
+🔗 [Title] - URL
+🔗 [Title] - URL
+
+IMPORTANT: 
+- Use clean, readable titles (remove markdown formatting, truncate if too long)
+- Include the actual URLs from the source metadata
+- Format sources as clickable links with emojis for visual separation
+- Keep titles concise and descriptive (max 60 characters)
+- Only show the most relevant sources (top 3)`;
+
+    const model = geminiClient.getGenerativeModel({
+      model: "gemini-2.0-flash",
+    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    return {
+      answer: text,
+      sources: sources,
+    };
+  } catch (error) {
+    console.error("❌ Memory-aware response generation failed:", error.message);
+    // Fallback to regular response generation
+    return await generateResponse(query, chunks, geminiClient);
+  }
+}
+
+// Main chat function
 async function startChat() {
-  console.log(
-    chalk.bold.blue("💳 Twilio Developer Support Agent - Chat with Memory")
-  );
-  console.log(chalk.gray("=".repeat(60)));
-  console.log(chalk.cyan("🤖 AI Provider:"), chalk.yellow("Gemini"));
-  console.log(chalk.cyan("🧠 Memory:"), chalk.yellow("Enabled"));
-  console.log(
-    chalk.green(
-      "💡 Type 'exit' to quit, 'sample' for sample questions, 'memory' for memory stats"
-    )
-  );
-  console.log(chalk.gray("=".repeat(60)));
+  console.log("📞 Twilio Developer Support Agent - Chat Interface");
+  console.log("=".repeat(60));
+  console.log("🤖 AI Provider: GEMINI");
+  console.log("🧠 Memory System: BufferWindowMemory + PostgreSQL");
+  console.log("💡 Type 'exit' to quit, 'sample' for more questions");
+  console.log("=".repeat(60));
   console.log("\n🚀 Sample Questions to Get Started:");
-  console.log("\nHow do I send an SMS in Node.js?");
-  console.log("What does error 30001 mean?");
-  console.log(
-    "What are A2P 10DLC campaign approval requirements for all brand types?"
-  );
-  console.log("How can I port US phone number to Twilio?");
-  console.log("How can I get the delivery status of an SMS message?");
-  console.log("How do I reset/change my Twilio password?");
+  console.log("  • How do I send an SMS with Twilio in Node.js?");
+  console.log("  • How do I validate Twilio webhook signatures?");
+  console.log("  • What does error code 20003 mean and how to fix it?");
+  console.log("  • How do I create a programmable voice call?");
   console.log("=".repeat(60));
 
   try {
@@ -1022,16 +492,17 @@ async function startChat() {
     const geminiClient = initGeminiClient();
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
-    const separateChunks = await loadSeparateChunks();
 
     // Initialize memory system
-    const memory = new ConversationMemory();
-    const apiDetector = new APIDetector();
-
-    const memoryInitialized = await memory.initialize();
-    if (!memoryInitialized) {
-      console.log("⚠️ Memory system not available, using basic chat mode");
-    }
+    const memoryController = new MemoryController();
+    const sessionId = `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    await memoryController.initializeSession(sessionId, "chat_user", {
+      project: "stripe_support",
+      context: "customer_support",
+      startTime: new Date().toISOString(),
+    });
 
     // Create readline interface
     const rl = readline.createInterface({
@@ -1040,9 +511,23 @@ async function startChat() {
     });
 
     const askQuestion = () => {
-      rl.question(chalk.bold("\n❓ Your question: "), async (query) => {
+      rl.question("\n❓ Your question: ", async (query) => {
         if (query.toLowerCase() === "exit") {
-          console.log(chalk.green("👋 Goodbye!"));
+          console.log("👋 Goodbye!");
+
+          // Create conversation summary before closing
+          try {
+            await memoryController.createConversationSummary();
+            console.log("📝 Conversation summary created and stored");
+          } catch (error) {
+            console.error(
+              "❌ Failed to create conversation summary:",
+              error.message
+            );
+          }
+
+          // Close memory system
+          await memoryController.close();
           rl.close();
           return;
         }
@@ -1050,47 +535,57 @@ async function startChat() {
         if (query.toLowerCase() === "sample") {
           console.log("\n💡 Example Questions by Category:");
           console.log("\n🔧 API Integration:");
-          console.log("  • How to handle Twilio API errors and exceptions?");
+          console.log("  • Send SMS in Node.js / Python / PHP");
+          console.log("  • Differences between test and live mode");
           console.log("\n🔐 Security & Webhooks:");
-          console.log(
-            "  • What are webhook signatures and how do I verify them?"
-          );
-          console.log("  • How to secure my Twilio integration?");
-          askQuestion();
-          return;
-        }
-
-        if (query.toLowerCase() === "memory") {
-          const stats = memory.getMemoryStats();
-          console.log("\n🧠 Memory Statistics:");
-          console.log(`   Session ID: ${stats.sessionId}`);
-          console.log(`   Conversation Turns: ${stats.conversationTurns}`);
-          console.log(`   Session Duration: ${stats.sessionDuration} minutes`);
-          console.log(`   User Preferences:`, stats.userPreferences);
-          console.log(`   Current Context:`, stats.currentContext);
-          askQuestion();
-          return;
-        }
-
-        if (query.toLowerCase() === "clear") {
-          await memory.clearSessionHistory();
-          console.log("🗑️ Conversation history cleared");
+          console.log("  • Validate webhook signatures");
+          console.log("  • Best practices for storing Twilio credentials");
+          console.log("\n📞 Voice & Messaging:");
+          console.log("  • Create voice calls with Twilio");
+          console.log("  • Handle incoming SMS and replies");
+          console.log("\n🛠️ Errors & Debugging:");
+          console.log("  • Error 20003 authentication error fix");
+          console.log("  • 21211 invalid 'To' number");
           askQuestion();
           return;
         }
 
         if (query.trim() === "") {
-          console.log(chalk.red("❌ Please enter a valid question."));
+          console.log("❌ Please enter a question.");
           askQuestion();
           return;
         }
-
         try {
-          const startTime = Date.now();
+          // Process user message with memory system
+          await memoryController.processUserMessage(query, {
+            timestamp: new Date().toISOString(),
+            source: "chat_interface",
+          });
 
-          // Retrieve relevant chunks using hybrid search
+          // Get complete memory context for query reformulation
+          const memoryContext = await memoryController.getCompleteMemoryContext(
+            query
+          );
+          console.log(
+            `🧠 Memory context: ${
+              memoryContext.recentContext?.messageCount || 0
+            } recent messages, ${
+              memoryContext.longTermContext?.relevantQAs?.length || 0
+            } relevant Q&As`
+          );
+
+          // Use reformulated query for retrieval
+          const searchQuery = memoryContext.reformulatedQuery || query;
+          console.log(
+            `\n🔍 Searching with reformulated query: "${searchQuery.substring(
+              0,
+              100
+            )}..."`
+          );
+
+          // Retrieve relevant chunks using hybrid search with reformulated query
           const chunks = await retrieveChunksWithHybridSearch(
-            query,
+            searchQuery,
             vectorStore,
             embeddings
           );
@@ -1103,80 +598,62 @@ async function startChat() {
             return;
           }
 
-          // Generate memory-aware response
-          const result = await generateMemoryAwareResponse(
+          // Generate augmented response with memory context
+          const result = await generateResponseWithMemory(
             query,
             chunks,
             geminiClient,
-            memory,
-            apiDetector
+            memoryContext
           );
 
-          const responseTime = Date.now() - startTime;
-
-          // Add conversation turn to memory
-          await memory.addConversationTurn(query, result.answer, {
-            language: result.metadata?.language,
-            api: result.metadata?.api,
-            errorCodes: detectErrorCodes(query),
-            chunkCount: chunks.length,
-            responseTime: responseTime,
+          // Process assistant response with memory system
+          await memoryController.processAssistantResponse(result.answer, {
+            timestamp: new Date().toISOString(),
+            sources: result.sources?.length || 0,
+            searchQuery: searchQuery,
           });
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
+          console.log(result.answer);
+          console.log("-".repeat(40));
 
-          // Show detection info if available
-          if (result.metadata?.api) {
-            console.log(
-              chalk.cyan(
-                `🔍 Detected API: ${result.metadata.api.toUpperCase()}`
-              )
-            );
-            if (result.metadata.confidence) {
-              console.log(
-                chalk.gray(
-                  `   Confidence: ${(result.metadata.confidence * 100).toFixed(
-                    1
-                  )}%`
-                )
-              );
-            }
-          }
+          // Show sources only for Stripe-related queries
+          const isTwilioQuery =
+            query.toLowerCase().includes("twilio") ||
+            query.toLowerCase().includes("sms") ||
+            query.toLowerCase().includes("mms") ||
+            query.toLowerCase().includes("voice") ||
+            query.toLowerCase().includes("phone number") ||
+            query.toLowerCase().includes("messaging") ||
+            query.toLowerCase().includes("api") ||
+            query.toLowerCase().includes("webhook") ||
+            query.toLowerCase().includes("sid") ||
+            query.toLowerCase().includes("verify") ||
+            query.toLowerCase().includes("authy") ||
+            query.toLowerCase().includes("conversation") ||
+            query.toLowerCase().includes("segment") ||
+            query.toLowerCase().includes("flex") ||
+            query.toLowerCase().includes("call") ||
+            query.toLowerCase().includes("programmable") ||
+            query.toLowerCase().includes("a2p") ||
+            query.toLowerCase().includes("10dlc") ||
+            query.toLowerCase().includes("short code") ||
+            query.toLowerCase().includes("toll-free") ||
+            query.toLowerCase().includes("lookup") ||
+            query.toLowerCase().includes("status callback") ||
+            query.toLowerCase().includes("media url") ||
+            query.toLowerCase().includes("delivery receipt") ||
+            query.toLowerCase().includes("rate limit") ||
+            query.toLowerCase().includes("error code") ||
+            query.toLowerCase().includes("console") ||
+            query.toLowerCase().includes("subaccount") ||
+            query.toLowerCase().includes("account sid") ||
+            query.toLowerCase().includes("auth token");
 
-          if (result.metadata?.language) {
-            console.log(
-              chalk.cyan(`💻 Detected Language: ${result.metadata.language}`)
-            );
-          }
-
-          const formattedAnswer = result.answer.replace(
-            /```(.*?)\n([\s\S]*?)```/g,
-            (match, lang, code) => {
-              const highlighted = highlight(code, {
-                language: lang || result.metadata?.language || "javascript",
-                ignoreIllegals: true,
-                theme: {
-                  keyword: chalk.cyanBright,
-                  built_in: chalk.yellowBright,
-                  string: chalk.green,
-                  literal: chalk.magenta,
-                  section: chalk.blue,
-                  comment: chalk.gray,
-                  number: chalk.redBright,
-                  attr: chalk.yellow,
-                },
-              });
-              return chalk.bgBlackBright(`\n${highlighted}\n`);
-            }
-          );
-
-          console.log(formattedAnswer);
-          console.log(chalk.blue.bold("=".repeat(40)));
-
-          // Show sources
-          if (result.sources && result.sources.length > 0) {
+          if (isTwilioQuery && result.sources && result.sources.length > 0) {
             console.log("\n📚 Sources:");
+            // console.log("\n📚First Source:", result.sources[0]);
             result.sources.forEach((source) => {
               // Generate a better title from content if metadata title is empty
               let title = source.metadata.title || source.metadata.doc_title;
@@ -1248,13 +725,7 @@ if (process.argv[1] && process.argv[1].endsWith("chat.js")) {
 export {
   generateResponse,
   loadVectorStore,
-  loadSeparateChunks,
   initGeminiClient,
   initGeminiEmbeddings,
-  initPinecone,
-  retrieveChunksWithEmbeddings,
   retrieveChunksWithHybridSearch,
-  generateMemoryAwareResponse,
-  detectQueryLanguage,
-  detectErrorCodes,
 };

@@ -99,3 +99,4 @@ export class CodeDetector {
     return cleanContent;
   }
 }
+

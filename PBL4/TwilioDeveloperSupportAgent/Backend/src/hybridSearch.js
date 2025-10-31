@@ -43,14 +43,19 @@ class HybridSearch {
             `      📏 Dimensions: ${indexStats.dimension || "Unknown"}`
           );
         } catch (error) {
-          console.error(`      ❌ Pinecone connection failed: ${error.message}`);
+          console.error(
+            `      ❌ Pinecone connection failed: ${error.message}`
+          );
         }
       }
 
       this.isInitialized = true;
       console.log("   ✅ Twilio Hybrid Search Initialized Successfully");
     } catch (error) {
-      console.error("❌ Failed to initialize Twilio Hybrid Search:", error.message);
+      console.error(
+        "❌ Failed to initialize Twilio Hybrid Search:",
+        error.message
+      );
       throw error;
     }
   }
@@ -60,19 +65,19 @@ class HybridSearch {
    */
   isErrorCode(query) {
     const errorPatterns = [
-      // 🔹 Twilio API Error Codes (like 20003, 20404, etc.)
-      /\b(20\d{3}|21\d{3}|31\d{3}|54\d{3})\b/,
-      // 🔹 Twilio Resource SIDs
-      /\b(A[C|K|P|S|Z|M|F|H|D|R|I|E|J|L|O|Q|N|T|U|V|W|X|Y|Z])[\da-fA-F]{32}\b/,
-      // 🔹 Webhook signatures
+      // Twilio Error Codes (3-6 digits, e.g., 11200, 21614, 30007, 63001, 53405, etc.)
+      /\b(1\d{4,5}|2\d{4,5}|3\d{4,5}|4\d{4,5}|5\d{4,5}|6\d{4,5}|7\d{4,5}|8\d{4,5}|9\d{4,5}|300\d{2})\b/,
+      // Twilio Resource SIDs (e.g., AC..., SM..., PN..., etc.)
+      /\b([A-Z]{2})[a-fA-F0-9]{32}\b/,
+      // Webhook signatures
       /X-Twilio-Signature|twilio_signature/i,
-      // 🔹 API Keys and Tokens
-      /SK[0-9a-fA-F]{32}|AC[0-9a-fA-F]{32}|TWILIO_AUTH_TOKEN/i,
-      // 🔹 Messaging/Phone identifiers
+      // API Keys and Tokens (SK, AC, RK, PK, EK, etc.)
+      /\b([A-Z]{2})[a-fA-F0-9]{32}\b|TWILIO_AUTH_TOKEN/i,
+      // Messaging/Phone identifiers (E.164 phone, SM SID)
       /\+\d{10,15}|\bSM[a-zA-Z0-9]{32}\b/i,
-      // 🔹 Common error words
-      /invalid_number|authentication_error|api_error|rate_limit|forbidden|unauthorized/i,
-      // 🔹 HTTP status codes
+      // Common error words
+      /invalid_number|invalid_phone_number|invalid_sid|invalid_auth_token|authentication_error|api_error|rate_limit|forbidden|unauthorized/i,
+      // HTTP status codes
       /\b(4\d{2}|5\d{2})\b/,
     ];
 
@@ -157,7 +162,12 @@ class HybridSearch {
   }
 
   /** Fuse BM25 + Semantic results with weighted blending */
-  fuseResults(bm25Results, semanticResults, semanticWeight = 0.7, bm25Weight = 0.3) {
+  fuseResults(
+    bm25Results,
+    semanticResults,
+    semanticWeight = 0.7,
+    bm25Weight = 0.3
+  ) {
     console.log(
       `🔄 Fusing ${bm25Results.length} BM25 + ${semanticResults.length} semantic results`
     );
@@ -240,8 +250,8 @@ class HybridSearch {
           Rank: i + 1,
           Source: r.source || r.metadata?.source || "Unknown",
           "Final Score": r.finalScore.toFixed(3),
-          "BM25": r.bm25Score.toFixed(3),
-          "Semantic": r.semanticScore.toFixed(3),
+          BM25: r.bm25Score.toFixed(3),
+          Semantic: r.semanticScore.toFixed(3),
           "Match Type": r.searchType || "fused",
         }))
       );
