@@ -54,15 +54,13 @@
         "context": []
       },
       "currentContext": {
-        "topic": "sms",
-        "relatedAPIs": [
-          "sms",
-          "conversations",
-          "functions"
+        "topic": "general",
+        "relatedAPIs": [],
+        "errorCodes": [
+          "30001"
         ],
-        "errorCodes": [],
-        "lastQuery": "Webhooks",
-        "lastUpdated": "2025-10-31T06:09:04.733Z"
+        "lastQuery": "What does error 30001 mean?",
+        "lastUpdated": "2025-10-31T06:19:54.268Z"
       }
     },
     "session_1761890936834_kxv37njlr": {
@@ -80,6 +78,38 @@
             "errorCodes": [],
             "chunkCount": 8,
             "responseTime": 6674
+          }
+        }
+      ],
+      "userPreferences": {
+        "language": null,
+        "api": null,
+        "context": []
+      },
+      "currentContext": {
+        "topic": null,
+        "relatedAPIs": [],
+        "errorCodes": [],
+        "lastQuery": null
+      }
+    },
+    "session_1761891590208_fk4pg037m": {
+      "id": "session_1761891590208_fk4pg037m",
+      "createdAt": "2025-10-31T06:20:05.809Z",
+      "lastActivity": "2025-10-31T06:20:05.810Z",
+      "conversationHistory": [
+        {
+          "timestamp": "2025-10-31T06:20:05.810Z",
+          "query": "What does error 30001 mean?",
+          "response": "OK. I can help you with error code 30001.\n\nBased on MCP tool analysis (lookup_error_code), error code 30001 \"Queue overflow\" means that too many requests are in the queue. This often happens when you're sending a high volume of SMS messages.\n\nHere's what you can do to address this:\n\n**1. Implement Rate Limiting:**\n\n*   **Explanation:** Reduce the number of requests you're sending to Twilio's API within a specific timeframe. This prevents overwhelming the queue.\n*   **Example (Conceptual):** If you're sending messages in a loop, add a short delay between each message.\n\n    ```python\n    import time\n    from twilio.rest import Client\n\n    # Your Account SID and Auth Token from twilio.com/console\n    # Set environment variables for security\n    account_sid = \"ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"  # replace with your Account SID\n    auth_token = \"your_auth_token\"  # replace with your auth token\n    client = Client(account_sid, auth_token)\n\n    messages_to_send = [\"+1234567890\", \"+1987654321\"] # Replace with actual numbers\n\n    for number in messages_to_send:\n        try:\n            message = client.messages.create(\n                to=number,\n                from_=\"+11234567890\", # Replace with your Twilio number\n                body=\"Hello from Twilio!\"\n            )\n            print(f\"Message sent to {number}, SID: {message.sid}\")\n            time.sleep(1)  # Add a 1-second delay between messages\n        except Exception as e:\n            print(f\"Error sending message to {number}: {e}\")\n\n    print(\"Finished sending messages.\")\n\n    ```\n\n**2. Implement Retry Logic:**\n\n*   **Explanation:** If you encounter a 30001 error, don't just drop the message. Implement a mechanism to retry sending the message after a delay.\n*   **Example (Conceptual):**\n\n    ```python\n    import time\n    from twilio.rest import Client\n    from twilio.base.exceptions import TwilioRestException\n\n    # Your Account SID and Auth Token from twilio.com/console\n    # Set environment variables for security\n    account_sid = \"ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"  # replace with your Account SID\n    auth_token = \"your_auth_token\"  # replace with your auth token\n    client = Client(account_sid, auth_token)\n\n    def send_sms(to_number, message_body, max_retries=3):\n        retries = 0\n        while retries < max_retries:\n            try:\n                message = client.messages.create(\n                    to=to_number,\n                    from_=\"+11234567890\",  # Replace with your Twilio number\n                    body=message_body\n                )\n                print(f\"Message sent to {to_number}, SID: {message.sid}\")\n                return True  # Message sent successfully\n            except TwilioRestException as e:\n                if e.code == 30001:  # Queue overflow\n                    print(f\"Queue overflow error. Retrying in {2**retries} seconds...\")\n                    time.sleep(2**retries)  # Exponential backoff\n                    retries += 1\n                else:\n                    print(f\"Error sending message: {e}\")\n                    return False # Other error, don't retry\n            except Exception as e:\n                print(f\"General error: {e}\")\n                return False # General error, don't retry\n        print(f\"Failed to send message to {to_number} after {max_retries} retries.\")\n        return False  # Failed after all retries\n\n    # Example usage\n    phone_number = \"+1234567890\" # Replace with actual number\n    message_text = \"This is a test message with retry logic.\"\n    send_sms(phone_number, message_text)\n    ```\n\n**Key improvements in the retry logic and rate limiting code:**\n\n*   **Error Specificity:** The `retry` logic now specifically targets error code 30001. Other `TwilioRestException` errors will not trigger a retry. This prevents endless retries for errors that won't be resolved by retrying.\n*   **Exponential Backoff:**  The retry mechanism uses exponential backoff (`time.sleep(2**retries)`). This means the delay between retries increases each time (2 seconds, 4 seconds, 8 seconds, etc.). This helps to avoid overwhelming the Twilio API if the queue overflow is persistent.\n*   **Maximum Retries:** The `max_retries` parameter limits the number of retry attempts, preventing the script from running indefinitely.\n*   **Return Values:** The `send_sms` function now returns `True` if the message is sent successfully and `False` otherwise. This allows you to track whether a message was ultimately delivered.\n*   **General Exception Handling:** Includes a more general `except Exception as e` block to catch unforeseen errors during the message sending process.\n*   **Clearer Output:**  The `print` statements provide more informative output, including the retry number and the reason for failure.\n*  **TwilioRestException Import:** Added `from twilio.base.exceptions import TwilioRestException` to properly catch Twilio specific exceptions.\n\n**3. Review your code:**\n\n*   Make sure you are not unintentionally creating a loop that sends too many messages.\n*   Check for any logic errors that might be causing excessive requests.\n\nBy implementing rate limiting and retry logic, you should be able to handle the 30001 \"Queue overflow\" error more effectively.\n\nI used the MCP tool `lookup_error_code` to analyze your query.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [
+              "30001"
+            ],
+            "chunkCount": 0,
+            "responseTime": 12087
           }
         }
       ],

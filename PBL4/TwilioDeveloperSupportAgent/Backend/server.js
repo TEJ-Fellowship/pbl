@@ -1,5 +1,6 @@
 // Backend Express server for Twilio Developer Support Agent
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -31,43 +32,19 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration - MUST be first middleware
-app.use((req, res, next) => {
-  // Log CORS requests
-  const origin = req.headers.origin;
-  console.log(`🌐 ${req.method} ${req.path} - Origin: ${origin || "none"}`);
-
-  // Set CORS headers - MUST be set before any response
-  // CRITICAL: When using credentials: true, you CANNOT use "*" for origin
-  // Must use the specific origin or handle it properly
-  if (origin) {
-    // Only set origin if it's provided (browser will send it)
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  } else {
-    // No origin header (e.g., Postman or curl) - allow all
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    // Cannot use credentials with wildcard
-  }
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With, Accept, Origin"
-  );
-  res.setHeader("Access-Control-Expose-Headers", "Content-Type, Authorization");
-
-  // Handle preflight requests
-  if (req.method === "OPTIONS") {
-    console.log(`✅ Handling OPTIONS preflight for ${origin || "no origin"}`);
-    res.status(200).end();
-    return;
-  }
-
-  next();
-});
+// CORS configuration
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -135,32 +112,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Simple test endpoint to verify CORS works
-app.post("/api/test", (req, res) => {
-  console.log("🧪 Test endpoint called");
-  res.json({
-    message: "CORS is working!",
-    timestamp: new Date().toISOString(),
-    received: req.body,
-  });
-});
-
 // Chat endpoint
 app.post("/api/chat", async (req, res) => {
-  console.log(
-    `📨 Received POST /api/chat from ${req.headers.origin || "unknown origin"}`
-  );
-  console.log(`📦 Request body:`, {
-    query: req.body.query?.substring(0, 50) + "...",
-    sessionId: req.body.sessionId,
-  });
-
-  // Ensure response object is valid
-  if (!res || typeof res.status !== "function") {
-    console.error("❌ Invalid response object!");
-    return;
-  }
-
   try {
     const { query, sessionId } = req.body;
 
@@ -265,41 +218,12 @@ app.post("/api/chat", async (req, res) => {
       timestamp: new Date().toISOString(),
     };
 
-    console.log(
-      `📤 Preparing to send response for session: ${currentSessionId}`
-    );
-    const responseSize = JSON.stringify(formattedResponse).length;
-    console.log(`📊 Response size: ${responseSize} bytes`);
-
-    // Validate before sending
-    if (res.headersSent) {
-      console.error("❌ ERROR: Headers already sent!");
-      return;
-    }
-
-    if (!result || !result.answer) {
-      console.error("❌ Invalid result object:", result);
-      return res.status(500).json({
-        error: "Invalid response generated",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // SEND RESPONSE IMMEDIATELY - ABSOLUTELY CRITICAL
-    console.log(`📤 Sending response NOW - this MUST complete`);
-
-    // Send response synchronously - no async operations after this
+    // Send response
     res.status(200).json(formattedResponse);
+    console.log(`✅ Response sent successfully in ${responseTime}ms`);
 
-    // Log AFTER sending to verify it worked
-    console.log(`✅ Response sent successfully!`);
-    console.log(`   Status: ${res.statusCode}`);
-    console.log(`   Headers sent: ${res.headersSent}`);
-    console.log(`   Origin: ${req.headers.origin || "none"}`);
-
-    // Save conversation history AFTER response is sent
-    // Use setTimeout with longer delay to ensure response is fully received by client
-    // This prevents nodemon from restarting during the response
+    // Save conversation history AFTER response is sent (non-blocking)
+    // Delay prevents nodemon from restarting during response
     setTimeout(() => {
       memory
         .addConversationTurn(
@@ -317,38 +241,22 @@ app.post("/api/chat", async (req, res) => {
           currentSessionId
         )
         .catch((err) => {
-          // Silently fail - response already sent
           console.error("⚠️ Failed to save conversation turn:", err.message);
         });
-    }, 1000); // Wait 1 second after response to save memory
-
-    // Explicitly return - response is complete
-    return;
+    }, 1000);
   } catch (error) {
     console.error("❌ Chat API error:", error);
     console.error("Error stack:", error.stack);
 
-    // Send proper error response (CORS middleware handles headers)
-    const errorResponse = {
-      error: "Internal server error",
-      message:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : "An error occurred while processing your request",
-      timestamp: new Date().toISOString(),
-    };
-
     if (!res.headersSent) {
-      try {
-        res.status(500).json(errorResponse);
-        console.log(
-          `✅ Error response sent to ${req.headers.origin || "unknown"}`
-        );
-      } catch (sendError) {
-        console.error("❌ Failed to send error response:", sendError);
-      }
-    } else {
-      console.error("⚠️ Cannot send error response - headers already sent");
+      res.status(500).json({
+        error: "Internal server error",
+        message:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "An error occurred while processing your request",
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 });
@@ -486,22 +394,14 @@ app.get("/api/sessions", async (req, res) => {
   }
 });
 
-// Error handling middleware - MUST be after all routes
+// Error handling middleware
 app.use((error, req, res, next) => {
-  // Only handle errors if response hasn't been sent
+  console.error("❌ Unhandled error:", error);
   if (!res.headersSent) {
-    console.error("❌ Unhandled error:", error);
-    try {
-      res.status(500).json({
-        error: "Internal server error",
-        message: error.message,
-      });
-    } catch (sendError) {
-      console.error("❌ Cannot send error response:", sendError);
-    }
-  } else {
-    // Response already sent, just log the error
-    console.error("❌ Error occurred after response was sent:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: error.message,
+    });
   }
 });
 
