@@ -9,68 +9,7 @@ import { AdvancedChunker } from "../utils/advanceChunker.js";
 import DocumentStorageService from '../services/documentStorageService.js'
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
 import config from "../config/config.js";
-// import { runChunking } from "./chunkDoc_v2.js";
 
-// // ----------------- Tier2 helpers -----------------
-
-// // Detect if a chunk looks like code
-// function isCodeBlock(content) {
-//   if (!content) return false;
-//   const c = content.trim();
-//   // quick heuristics: code fences, typical code tokens, CLI commands
-//   if (/^```/.test(c) || /```/.test(c)) return true;
-//   if (
-//     /(const |let |var |function |=>|console\.log|module\.exports|import |export )/.test(
-//       c
-//     )
-//   )
-//     return true;
-//   if (/(def |class |print\(|import |from )/.test(c)) return true;
-//   if (/<\?php|->|echo |composer require/.test(c)) return true;
-//   if (/curl |-X POST|--header|wget |npm install|pip install|docker /.test(c))
-//     return true;
-//   return false;
-// }
-
-// // Rough language detector (fallback to 'text')
-// function detectLanguage(content) {
-//   if (!content) return "text";
-//   const s = content.slice(0, 500).toLowerCase();
-//   if (/\b(def |import |from |print\(|flask|django)\b/.test(s)) return "python";
-//   if (
-//     /\b(const |let |var |function |console\.log|require\(|module\.exports|=>)\b/.test(
-//       s
-//     )
-//   )
-//     return "javascript";
-//   if (/\bnamespace |using |public class\b/.test(s)) return "csharp";
-//   if (/<\?php\b|composer require\b|->\b/.test(s)) return "php";
-//   if (/\b(public |class |System\.out)\b/.test(s)) return "java";
-//   if (/\bcurl\b|--header|-X POST|wget\b/.test(s)) return "bash";
-//   return "text";
-// }
-
-// // Extract Twilio-like error codes (e.g., 30001, 21211, 2\d{4} or 5-digit codes)
-// function extractErrorCodes(content = "") {
-//   const matches = content.match(/\b(2\d{4}|\d{5})\b/g) || [];
-//   // unique and return
-//   return Array.from(new Set(matches));
-// }
-
-// // Optional: infer api from URL or category
-// function inferApiFromDocMetadata(docMeta = {}) {
-//   const url = (docMeta.source || "").toLowerCase();
-//   const cat = (docMeta.category || "").toLowerCase();
-//   if (url.includes("/sms")) return "sms";
-//   if (url.includes("/voice")) return "voice";
-//   if (url.includes("/whatsapp")) return "whatsapp";
-//   if (url.includes("/video")) return "video";
-//   if (cat.includes("errors") || url.includes("/api/errors")) return "errors";
-//   if (cat.includes("quickstart") || url.includes("quickstart"))
-//     return "quickstart";
-//   return docMeta.api || "twilio";
-// }
-// ----------------- end helpers -----------------
 
 // Configuration
 const CHUNK_SIZE = parseInt(config.CHUNK_SIZE) || 800;

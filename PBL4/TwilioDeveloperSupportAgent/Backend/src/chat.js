@@ -423,7 +423,7 @@ CONTEXT (Twilio Documentation):
 ${context}
 
 USER QUESTION: ${query}
-${memoryContext}
+${memoryContextString}
 
 RESPONSE GUIDELINES:
 1. Accuracy First: Base your answer STRICTLY on the provided Twilio context when possible.
