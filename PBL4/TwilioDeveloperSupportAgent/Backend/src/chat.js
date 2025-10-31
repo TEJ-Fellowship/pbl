@@ -669,7 +669,8 @@ async function generateMemoryAwareResponse(
   processedData, // Contains: chunks, mcpResult, generalSearchResults, toolsUsed, classification, enhancements
   geminiClient,
   memory,
-  apiDetector
+  apiDetector,
+  sessionId = null
 ) {
   try {
     console.log(chalk.green("🤖 Generating memory-aware response..."));
@@ -684,7 +685,7 @@ async function generateMemoryAwareResponse(
     } = processedData;
 
     // Detect API and language from query/enhancements
-    const context = memory.getConversationContext();
+    const context = memory.getConversationContext(sessionId);
     const apiDetection = apiDetector.detectAPI(query, context);
     const detectedLanguage =
       enhancements?.detectedLanguage || detectQueryLanguage(query);

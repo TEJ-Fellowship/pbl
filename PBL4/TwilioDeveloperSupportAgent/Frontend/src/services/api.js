@@ -113,6 +113,17 @@ export const getUserPreferences = async (sessionId = "default") => {
   }
 };
 
+// List all sessions (for testing/debugging)
+export const listSessions = async () => {
+  try {
+    const response = await api.get("/sessions");
+    return response.data.sessions || [];
+  } catch (error) {
+    console.error("List sessions failed:", error);
+    return [];
+  }
+};
+
 // MCP Tools API functions removed; frontend should use /api/chat for user-facing flows
 
 export default api;
