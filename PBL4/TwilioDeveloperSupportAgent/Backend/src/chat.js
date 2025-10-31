@@ -4,7 +4,7 @@ import path from "path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { Pinecone } from "@pinecone-database/pinecone";
-import HybridSearch from "../hybridSearch.js";
+import HybridSearch from "./hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
 import MemoryController from "../controllers/memoryController.js";
 import config from "../config/config.js";
