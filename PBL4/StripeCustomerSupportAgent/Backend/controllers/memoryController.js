@@ -28,15 +28,15 @@ class MemoryController {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️  GEMINI_API_KEY not found, using rule-based summarization"
         );
         return;
       }
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
       console.log(
-        "✅ Gemini client initialized for conversation summarization"
+        "✅ Gemini client 3 initialized for conversation summarization"
       );
     } catch (error) {
       console.warn("⚠️  Failed to initialize Gemini client:", error.message);
@@ -493,7 +493,7 @@ class MemoryController {
 
       // Get Gemini model
       const model = this.geminiClient.getGenerativeModel({
-        model: config.GEMINI_API_MODEL,
+        model: config.GEMINI_API_MODEL_2,
         generationConfig: {
           temperature: 0.3,
           topK: 40,

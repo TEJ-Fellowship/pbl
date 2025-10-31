@@ -20,15 +20,15 @@ class PostgreSQLMemoryService {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️ GEMINI_API_KEY not found, using regex-based extraction as fallback"
         );
         return;
       }
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
       console.log(
-        "✅ PostgreSQLMemoryService: Gemini AI initialized for info extraction"
+        "✅ PostgreSQLMemoryService: Gemini AI 3 initialized for info extraction"
       );
     } catch (error) {
       console.warn(
@@ -79,7 +79,7 @@ RESPONSE FORMAT (JSON only, no extra text):
 }`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: config.GEMINI_API_MODEL_2,
       });
 
       const result = await model.generateContent(prompt);

@@ -19,11 +19,25 @@ function initGeminiClient() {
   return new GoogleGenerativeAI(config.GEMINI_API_KEY);
 }
 
+function initGeminiClient2() {
+  if (!config.GEMINI_API_KEY_2) {
+    throw new Error("GEMINI_API_KEY_2 environment variable is required");
+  }
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY_2);
+}
+
+function initGeminiClient3() {
+  if (!config.GEMINI_API_KEY_3) {
+    throw new Error("GEMINI_API_KEY_3 environment variable is required");
+  }
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
+}
+
 // Wrapper to call Gemini with basic retry/backoff and clear rate-limit signaling
 async function generateContentWithRetry(
   geminiClient,
   prompt,
-  modelName = config.GEMINI_API_MODEL,
+  modelName = config.GEMINI_API_MODEL_3,
   options = {}
 ) {
   const { maxRetries = 1, initialDelayMs = 1200 } = options;
@@ -82,11 +96,11 @@ async function generateContentWithRetry(
 
 // Initialize Gemini embeddings
 function initGeminiEmbeddings() {
-  if (!config.GEMINI_API_KEY) {
+  if (!config.GEMINI_API_KEY_3) {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
   return new GoogleGenerativeAIEmbeddings({
-    apiKey: config.GEMINI_API_KEY,
+    apiKey: config.GEMINI_API_KEY_3,
     modelName: "text-embedding-004",
   });
 }
@@ -385,12 +399,12 @@ async function generateResponseWithMCP(
         Please provide a simple, direct answer to the user's question.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: config.GEMINI_API_MODEL,
+      model: config.GEMINI_API_MODEL_3,
     });
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      "gemini-2.0-flash",
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -487,7 +501,7 @@ async function generateConversationalResponse(
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      config.GEMINI_API_MODEL,
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -652,7 +666,7 @@ async function generateResponseWithMemoryAndMCP(
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      config.GEMINI_API_MODEL,
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -679,6 +693,8 @@ async function startIntegratedChat() {
     // Initialize services
     console.log("🔧 Initializing services...");
     const geminiClient = initGeminiClient();
+    const geminiClient2 = initGeminiClient2();
+    const geminiClient3 = initGeminiClient3();
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
@@ -986,7 +1002,7 @@ async function startIntegratedChat() {
             result = await generateConversationalResponse(
               query,
               memoryContext,
-              geminiClient
+              geminiClient2
             );
           } else if (classification.approach === "MCP_TOOLS_ONLY") {
             console.log("\n");
@@ -1311,6 +1327,8 @@ export {
   generateConversationalResponse,
   loadVectorStore,
   initGeminiClient,
+  initGeminiClient2,
+  initGeminiClient3,
   initGeminiEmbeddings,
   generateContentWithRetry,
   retrieveChunksWithHybridSearch,

@@ -23,14 +23,14 @@ class QueryReformulationService {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_2) {
         console.warn(
           "⚠️  GEMINI_API_KEY not found, using rule-based reformulation"
         );
         return;
       }
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-      console.log("✅ Gemini client initialized for query reformulation");
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_2);
+      console.log("✅ Gemini client 2 initialized for query reformulation");
     } catch (error) {
       console.warn("⚠️  Failed to initialize Gemini client:", error.message);
     }
@@ -211,7 +211,8 @@ class QueryReformulationService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: config.GEMINI_API_MODEL,
+        // model: config.GEMINI_API_MODEL,
+        model: config.GEMINI_API_MODEL_2,
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -421,7 +422,7 @@ class QueryReformulationService {
 
     try {
       const model = this.geminiClient.getGenerativeModel({
-        model: config.GEMINI_API_MODEL,
+        model: config.GEMINI_API_MODEL_3,
       });
       const result = await model.generateContent(prompt);
       const response = await result.response;

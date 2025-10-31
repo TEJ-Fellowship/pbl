@@ -129,12 +129,38 @@ async function initializeConnections() {
     try {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-lite",
+      });
       const result = await model.generateContent("test");
       await result.response;
       console.log("   ✅ Gemini API: Connected successfully");
     } catch (error) {
       console.log(`   ❌ Gemini API: Connection failed - ${error.message}`);
+    }
+    try {
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_2);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-lite",
+      });
+      const result = await model.generateContent("test");
+      await result.response;
+      console.log("   ✅ Gemini API 2: Connected successfully");
+    } catch (error) {
+      console.log(`   ❌ Gemini API 2: Connection failed - ${error.message}`);
+    }
+    try {
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY_3);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash-lite",
+      });
+      const result = await model.generateContent("test");
+      await result.response;
+      console.log("   ✅ Gemini API 3: Connected successfully");
+    } catch (error) {
+      console.log(`   ❌ Gemini API 3: Connection failed - ${error.message}`);
     }
 
     console.log("");

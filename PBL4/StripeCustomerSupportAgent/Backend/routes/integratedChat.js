@@ -4,6 +4,8 @@ import {
   generateResponseWithMemoryAndMCP,
   loadVectorStore,
   initGeminiClient,
+  initGeminiClient2,
+  initGeminiClient3,
   initGeminiEmbeddings,
   retrieveChunksWithHybridSearch,
   calculateConfidence,
@@ -44,6 +46,8 @@ async function initializeServices() {
 
     // Initialize core services
     const geminiClient = initGeminiClient();
+    const geminiClient2 = initGeminiClient2();
+    const geminiClient3 = initGeminiClient3();
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
@@ -66,6 +70,8 @@ async function initializeServices() {
 
     services = {
       geminiClient,
+      geminiClient2,
+      geminiClient3,
       embeddings,
       vectorStore,
       memoryController,
@@ -100,6 +106,8 @@ router.post("/", async (req, res) => {
     // Initialize services if not already done
     const {
       geminiClient,
+      geminiClient2,
+      geminiClient3,
       embeddings,
       vectorStore,
       memoryController,
@@ -171,7 +179,7 @@ router.post("/", async (req, res) => {
       result = await generateConversationalResponse(
         message,
         memoryContext,
-        geminiClient
+        geminiClient2
       );
     } else if (classification.approach === "MCP_TOOLS_ONLY") {
       console.log("🔧 Using MCP tools only approach");
@@ -209,7 +217,7 @@ router.post("/", async (req, res) => {
           result = await generateConversationalResponse(
             message,
             memoryContext,
-            geminiClient
+            geminiClient2
           );
         } else {
           // Fallback to hybrid search if MCP fails and it's not a conversation query

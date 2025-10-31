@@ -7,8 +7,11 @@ dotenv.config();
 const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2,
+  GEMINI_API_KEY_3: process.env.GEMINI_API_KEY_3,
   GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.0-flash",
-
+  GEMINI_API_MODEL_2: process.env.GEMINI_API_MODEL_2 || "gemini-2.0-flash-lite",
+  GEMINI_API_MODEL_3: process.env.GEMINI_API_MODEL_3 || "gemini-2.5-flash-lite",
   // PostgreSQL Configuration
   DB_HOST: process.env.DB_HOST,
   DB_PORT: process.env.DB_PORT,

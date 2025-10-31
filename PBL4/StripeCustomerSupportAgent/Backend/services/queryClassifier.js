@@ -17,15 +17,15 @@ class QueryClassifier {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️ GEMINI_API_KEY not found. Query classifier will use fallback rules."
         );
         return;
       }
 
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-      console.log("✅ Query Classifier: Gemini AI initialized");
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
+      console.log("✅ Query Classifier: Gemini AI 3 initialized");
     } catch (error) {
       console.error(
         "❌ Query Classifier: Failed to initialize Gemini:",
@@ -93,7 +93,9 @@ class QueryClassifier {
           }`;
 
       const result = await this.geminiClient
-        .getGenerativeModel({ model: "gemini-2.0-flash" })
+        .getGenerativeModel({
+          model: config.GEMINI_API_MODEL_3 || "gemini-2.5-flash-lite",
+        })
         .generateContent(prompt);
       const responseText = result.response.text();
 
