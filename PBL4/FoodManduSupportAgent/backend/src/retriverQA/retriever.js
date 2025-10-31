@@ -52,8 +52,36 @@ async function getGeminiEmbedding(text) {
   }
 }
 
-// --- Retrieve Top Context Sections ---
-export async function retrieveTopSections(query, topK = 3) {
+// Infer topic from query for metadata boosting
+function inferTopicFromQuery(query) {
+  const lowerQuery = query.toLowerCase();
+  if (
+    /payment|pay|bill|cost|price|esewa|khalti|wallet|cod|cash/.test(lowerQuery)
+  )
+    return "payment";
+  if (/refund|money.*back|return.*payment|cancel.*order/.test(lowerQuery))
+    return "refund";
+  if (
+    /delivery|deliver|area|coverage|zone|location|address|available.*area/.test(
+      lowerQuery
+    )
+  )
+    return "delivery";
+  if (
+    /restaurant|partner|menu|update.*menu|pause.*order|business/.test(
+      lowerQuery
+    )
+  )
+    return "restaurant";
+  if (/order|place.*order|how.*to.*order|ordering/.test(lowerQuery))
+    return "ordering";
+  if (/track|status|where|eta|time|delay/.test(lowerQuery)) return "support";
+  if (/contact|phone|email|help|support/.test(lowerQuery)) return "contact";
+  return null; // No specific topic detected
+}
+
+// --- Hybrid Search: Semantic + Keyword + Topic Boosting ---
+export async function hybridSearch(query, topK = 5, options = {}) {
   if (!query || typeof query !== "string") {
     throw new Error("Invalid query for retrieval");
   }
@@ -63,23 +91,169 @@ export async function retrieveTopSections(query, topK = 3) {
   }
 
   try {
-    const queryEmbedding = await getGeminiEmbedding(query);
+    // Infer topic from query for relevance boosting
+    const inferredTopic = options.topic || inferTopicFromQuery(query);
 
-    const result = await index.query({
+    // 1. Semantic search (vector similarity)
+    const queryEmbedding = await getGeminiEmbedding(query);
+    const semanticResults = await index.query({
       vector: queryEmbedding,
-      topK,
+      topK: Math.ceil(topK * 2), // Get more results for reranking
       includeMetadata: true,
+      // Optional: filter by metadata if strict filtering is desired
+      // filter: inferredTopic ? { topic: { $eq: inferredTopic } } : undefined,
     });
 
-    const sections = (result.matches || [])
+    // 2. Keyword search (extract key terms from query)
+    const keywords = extractKeywords(query);
+
+    // Combine results with scores
+    const scoredResults = (semanticResults.matches || []).map((match) => {
+      const text = (match.metadata?.text || "").toLowerCase();
+      const url = (match.metadata?.url || "").toLowerCase();
+      const metadataTopic = match.metadata?.topic || "";
+
+      // Calculate keyword match score
+      let keywordScore = 0;
+      keywords.forEach((keyword) => {
+        if (text.includes(keyword) || url.includes(keyword)) {
+          keywordScore += 1;
+        }
+      });
+
+      // Normalize keyword score (0 to 1)
+      const normalizedKeywordScore = Math.min(
+        keywordScore / keywords.length,
+        1
+      );
+
+      // Topic boosting: add bonus if metadata topic matches inferred topic
+      const topicBoost =
+        inferredTopic && metadataTopic === inferredTopic ? 0.15 : 0;
+
+      // Combine semantic score (60%), keyword score (25%), topic boost (15%)
+      const combinedScore =
+        match.score * 0.6 + normalizedKeywordScore * 0.25 + topicBoost;
+
+      return {
+        ...match,
+        keywordScore,
+        topicBoost,
+        combinedScore,
+      };
+    });
+
+    // Sort by combined score and take topK
+    const topResults = scoredResults
+      .sort((a, b) => b.combinedScore - a.combinedScore)
+      .slice(0, topK);
+
+    // Log topic boost info for debugging
+    if (inferredTopic) {
+      console.log(`📊 Topic inferred: ${inferredTopic}`);
+      const boostedCount = topResults.filter((r) => r.topicBoost > 0).length;
+      if (boostedCount > 0) {
+        console.log(
+          `✨ ${boostedCount}/${topResults.length} results boosted by topic match`
+        );
+      }
+    }
+
+    const sections = topResults
       .map((m) => m.metadata?.text || "")
       .filter(Boolean);
 
     return sections;
   } catch (error) {
-    console.error("❌ Retrieval failed:", error.message);
+    console.error("❌ Hybrid retrieval failed:", error.message);
     throw new Error(`Failed to retrieve context: ${error.message}`);
   }
+}
+
+// --- Extract Keywords from Query ---
+function extractKeywords(query) {
+  const stopWords = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "should",
+    "could",
+    "may",
+    "might",
+    "must",
+    "can",
+    "this",
+    "that",
+    "these",
+    "those",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "what",
+    "which",
+    "who",
+    "when",
+    "where",
+    "why",
+    "how",
+    "my",
+    "your",
+    "his",
+    "her",
+    "its",
+    "our",
+    "their",
+    "म",
+    "तिमी",
+    "हाम्रो",
+    "तपाईं",
+    "यो",
+    "त्यो",
+    "के",
+    "कसरी",
+  ]);
+
+  return query
+    .toLowerCase()
+    .split(/[\s.,;:!?()]+/)
+    .filter((word) => word.length > 2 && !stopWords.has(word))
+    .slice(0, 10); // Max 10 keywords
+}
+
+// --- Retrieve Top Context Sections (backward compatible) ---
+export async function retrieveTopSections(query, topK = 3) {
+  // Use hybrid search by default
+  return await hybridSearch(query, topK);
 }
 
 // --- Ask Gemini ---
@@ -98,9 +272,17 @@ export async function askGemini(question, contextSections, language = "en") {
         ? contextSections.join("\n\n")
         : "No specific context available.";
 
-    // Language-specific prompts
+    // Language-specific prompts with empathetic tone
     const languagePrompts = {
-      en: `You are a helpful and friendly Foodmandu support assistant. Your goal is to help users with their questions about Foodmandu services.
+      en: `You are a helpful, friendly, and empathetic Foodmandu support assistant. Your goal is to help users with their questions about Foodmandu services, especially when they're hungry and waiting for their orders.
+
+IMPORTANT TONE GUIDELINES:
+- Be warm and understanding, especially for delivery delays
+- Show empathy: "I understand you're hungry and waiting..."
+- Provide clear next steps and reassurance
+- For late orders, acknowledge frustration: "I know waiting is frustrating..."
+- For payment issues, be patient and helpful: "Let me help you resolve this..."
+- Always end with positive action: "I'm here to help!"
 
 ${
   contextSections.length > 0
@@ -108,9 +290,17 @@ ${
     : ""
 }Question: ${question}
 
-Please provide a clear, concise, and helpful answer in English. If the information is not available in the context, politely let the user know and suggest contacting support.`,
+Please provide a clear, empathetic, and helpful answer in English. If the information is not available in the context, politely let the user know and suggest contacting support with contact details.`,
 
-      np: `तपाईं एक सहायक र मित्रवत् Foodmandu सहायता सहायक हुनुहुन्छ। तपाईंको लक्ष्य Foodmandu सेवाहरूको बारेमा प्रयोगकर्ताहरूको प्रश्नहरूमा मद्दत गर्नु हो।
+      np: `तपाईं एक सहायक, मित्रवत् र सहानुभूतिपूर्ण Foodmandu सहायता सहायक हुनुहुन्छ। तपाईंको लक्ष्य Foodmandu सेवाहरूको बारेमा प्रयोगकर्ताहरूको प्रश्नहरूमा मद्दत गर्नु हो, विशेष गरी जब तिनीहरू भोकाएका छन् र आफ्नो अर्डरको लागि पर्खिरहेका छन्।
+
+महत्वपूर्ण स्वर निर्देशन:
+- न्यानो र समझदार बन्नुहोस्, विशेष गरी डेलिभरी ढिलाइको लागि
+- सहानुभूति देखाउनुहोस्: "म बुझ्छु तपाईं भोकाएको छ र पर्खिरहनुभएको छ..."
+- स्पष्ट अर्को चरण र आश्वासन प्रदान गर्नुहोस्
+- ढिलो अर्डरको लागि, निराशा स्वीकार गर्नुहोस्: "मलाई थाहा छ पर्खनु निराशाजनक छ..."
+- भुक्तानी समस्याको लागि, धैर्यवान र सहायक बन्नुहोस्: "म तपाईंलाई यो समाधान गर्न मद्दत गर्छु..."
+- सधैं सकारात्मक कार्यको साथ अन्त्य गर्नुहोस्: "म तपाईंलाई मद्दत गर्न यहाँ छु!"
 
 ${
   contextSections.length > 0
@@ -118,7 +308,7 @@ ${
     : ""
 }प्रश्न: ${question}
 
-कृपया नेपालीमा स्पष्ट, संक्षिप्त र सहायक जवाफ प्रदान गर्नुहोस्। यदि जानकारी सन्दर्भमा उपलब्ध छैन भने, विनम्रतापूर्वक प्रयोगकर्तालाई थाहा दिनुहोस् र सहायतासँग सम्पर्क गर्न सुझाव दिनुहोस्।`,
+कृपया नेपालीमा स्पष्ट, सहानुभूतिपूर्ण र सहायक जवाफ प्रदान गर्नुहोस्। यदि जानकारी सन्दर्भमा उपलब्ध छैन भने, विनम्रतापूर्वक प्रयोगकर्तालाई थाहा दिनुहोस् र सम्पर्क विवरण सहित सहायतासँग सम्पर्क गर्न सुझाव दिनुहोस्।`,
     };
 
     const prompt = languagePrompts[language] || languagePrompts.en;
@@ -139,7 +329,9 @@ ${
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 512, // Reduced from 1024 for faster responses
+          topP: 0.95,
+          topK: 40,
         },
       }),
     });

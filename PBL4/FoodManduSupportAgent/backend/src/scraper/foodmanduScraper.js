@@ -6,31 +6,48 @@ import { fileURLToPath } from "url";
 
 const BASE_URL = "https://www.foodmandu.com/";
 const DATA_SOURCES = [
+  // Core pages
   "https://foodmandu.com/",
   "https://foodmandu.com/Home/About",
+  "https://foodmandu.com/Home/AboutUs",
+
+  // Help & Support (High Priority)
+  "https://foodmandu.com/Help",
+  "https://foodmandu.com/Home/Help",
+  "https://foodmandu.com/FAQ",
+  "https://foodmandu.com/Home/Faqs",
+  "https://foodmandu.com/FAQs",
+
+  // Delivery & Coverage
+  "https://foodmandu.com/page/coverage",
   "https://foodmandu.com/Home/AvailableAreas",
   "https://foodmandu.com/Home/DeliveryCharge",
+  "https://foodmandu.com/Home/DeliveryCharges",
+
+  // Payment Methods (High Priority for intent classification)
   "https://foodmandu.com/page/payment-options",
+
+  // Refund Policy (High Priority for refund requests)
+  "https://foodmandu.com/page/refund-policy",
+
+  // How to Order (High Priority for new users)
+  "https://foodmandu.com/page/how-to-order",
   "https://foodmandu.com/Home/HowToOrder",
-  "https://foodmandu.com/Home/Faqs",
-  "https://foodmandu.com/Contact",
-  "https://foodmandu.com/Home/TermsOfUse",
-  "https://foodmandu.com/Home/PrivacyPolicy",
-  "https://blog.foodmandu.com/",
+
+  // Restaurant Partners (for restaurant queries)
+  "https://foodmandu.com/page/restaurant-partners",
   "https://foodmandu.com/Restaurant/",
-  `${BASE_URL}Home/TermsAndPrivacy`,
-  `${BASE_URL}Home/DeliveryCharges`,
-  `${BASE_URL}FAQs`,
-  `${BASE_URL}Home/Help`,
-  `${BASE_URL}page/restaurant-partners`,
-  `${BASE_URL}Home/AboutUs`,
-  `${BASE_URL}Help`,
-  `${BASE_URL}FAQ`,
-  `${BASE_URL}page/coverage`,
-  `${BASE_URL}page/payment-options`,
-  `${BASE_URL}page/refund-policy`,
-  `${BASE_URL}page/how-to-order`,
-  `${BASE_URL}Contact`,
+
+  // Contact Information (for escalations)
+  "https://foodmandu.com/Contact",
+
+  // Policies
+  "https://foodmandu.com/Home/TermsOfUse",
+  "https://foodmandu.com/Home/TermsAndPrivacy",
+  "https://foodmandu.com/Home/PrivacyPolicy",
+
+  // Blog (optional - may have updates)
+  "https://blog.foodmandu.com/",
 ];
 
 function cleanText(text) {

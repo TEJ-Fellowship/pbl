@@ -79,6 +79,6 @@ Inspired by [Foodmandu's Help Center](https://foodmandu.com/Help) and their in-a
 - Nepali language nuances (Romanized Nepali in queries)
 - Local payment ecosystem (eSewa, Khalti, COD)
 - Address ambiguity (no standardized postal codes in many areas)
-- Cultural context (festival rush times, food preferences)
+- ✅ Cultural context (festival rush times, food preferences) 
 
 ---

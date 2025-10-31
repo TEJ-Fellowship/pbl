@@ -40,5 +40,7 @@
   "locationAccessDeniedDesc": "Using default location. Enable location services for accurate tracking to your address.",
   "tryAgain": "Try Again",
   "requestingLocation": "Requesting your location for accurate tracking...",
-  "trackingToYourLocation": "Tracking to your location"
+  "trackingToYourLocation": "Tracking to your location",
+  "howWouldYouLikeToGetAssistance": "How would you like to get assistance with your order?",
+  "selectAnOptionBelow": "Select an option below to view specific information about your order"
 }
