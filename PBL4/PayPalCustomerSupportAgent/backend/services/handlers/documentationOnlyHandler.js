@@ -49,6 +49,9 @@ async function handleDocumentationOnlyQuery(
       };
     }
 
+    // Get chat history for context (BEFORE saving current message)
+    const chatHistory = sessionId ? await getChatHistory(sessionId, 10) : [];
+
     // Detect sentiment and issue type
     const sentiment = await detectSentiment(query, genAI);
     const issueType =
@@ -61,8 +64,7 @@ async function handleDocumentationOnlyQuery(
       await saveChatMessage(sessionId, "user", query, { sentiment, issueType });
     }
 
-    // Build prompt with documentation context only
-    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
+    // Build prompt with documentation context
     const conversationContext =
       chatHistory.length > 0
         ? `\n\nPrevious conversation:\n${chatHistory
@@ -90,7 +92,9 @@ async function handleDocumentationOnlyQuery(
       /what\s+is\s+your\s+name|who\s+are\s+you|hello|hi|hey/.test(lowerQ);
     const sawProfanity = containsProfanity(query);
 
-    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent. Keep your responses concise and under 150 words.`;
+    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent. Keep your responses concise and under 150 words.
+
+IMPORTANT: Use information from the "Previous conversation" section below to remember details the user shared in this conversation. If the user asks personal questions, check the conversation history first and answer naturally using that information. Do NOT say things like "I've noted that", "For future reference", or "You told me earlier" - just answer naturally using what they shared previously.`;
 
     if (shouldIntroduce) {
       systemInstruction += ` If the user asked or greeted, briefly introduce yourself as ${AGENT_NAME}.`;

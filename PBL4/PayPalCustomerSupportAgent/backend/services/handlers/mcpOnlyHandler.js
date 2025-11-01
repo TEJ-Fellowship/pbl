@@ -19,8 +19,8 @@ async function handleMCPOnlyQuery(
   try {
     console.log("🔧 Handling MCP-only query with AI tool selection");
 
-    // Get chat history for context
-    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
+    // Get chat history for context (previous messages from this sessionId)
+    const chatHistory = sessionId ? await getChatHistory(sessionId, 10) : [];
 
     // Use AI-based tool selection
     const mcpData = await selectAndExecuteTools(
@@ -58,7 +58,9 @@ async function handleMCPOnlyQuery(
       }
     }
 
-    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent. Keep your responses concise and under 150 words.`;
+    let systemInstruction = `You are ${AGENT_NAME}, a helpful PayPal customer support agent. Keep your responses concise and under 150 words.
+
+IMPORTANT: Use information from the "Previous conversation" section below to remember details the user shared in this conversation. If the user asks personal questions (like "what is my name?" or "who am i?"), check the conversation history first and answer naturally using that information. Do NOT say things like "I've noted that", "For future reference", or "You told me earlier" - just answer naturally using what they shared previously.`;
 
     if (sentiment.sentiment === "frustrated" || containsProfanity(query)) {
       systemInstruction += ` The customer may be upset. Start with one short, kind, de‑escalating sentence, then provide a clear helpful answer.`;
