@@ -89,6 +89,70 @@ export default function PayPalChat() {
     }
   };
 
+  // Map source names to PayPal URLs
+  const getSourceUrl = (sourceName) => {
+    if (!sourceName) return null;
+
+    const sourceLower = sourceName.toLowerCase();
+
+    // Map source names to PayPal URLs
+    const sourceUrlMap = {
+      // Fee-related sources
+      "paypal_consumer_fees.json":
+        "https://www.paypal.com/us/webapps/mpp/paypal-fees",
+      "paypal_merchant_fees.json":
+        "https://www.paypal.com/us/webapps/mpp/paypal-fees",
+      "paypal_braintree_fees.json":
+        "https://www.paypal.com/us/webapps/mpp/paypal-fees",
+
+      // Policy and agreement sources
+      user_agreement:
+        "https://www.paypal.com/us/webapps/mpp/ua/useragreement-full",
+      "user agreement":
+        "https://www.paypal.com/us/webapps/mpp/ua/useragreement-full",
+      policy: "https://www.paypal.com/us/webapps/mpp/ua/useragreement-full",
+      policies: "https://www.paypal.com/us/webapps/mpp/ua/useragreement-full",
+
+      // Protection programs
+      seller_protection:
+        "https://www.paypal.com/us/webapps/mpp/security/seller-protection",
+      "seller protection":
+        "https://www.paypal.com/us/webapps/mpp/security/seller-protection",
+      buyer_protection:
+        "https://www.paypal.com/us/webapps/mpp/paypal-safety-and-security",
+      "buyer protection":
+        "https://www.paypal.com/us/webapps/mpp/paypal-safety-and-security",
+      "purchase protection":
+        "https://www.paypal.com/us/webapps/mpp/paypal-safety-and-security",
+
+      // Disputes
+      dispute: "https://www.paypal.com/disputes/",
+      disputes: "https://www.paypal.com/disputes/",
+      "dispute resolution": "https://www.paypal.com/disputes/",
+
+      // Developer documentation
+      developer_docs: "https://developer.paypal.com/docs/",
+      developer: "https://developer.paypal.com/docs/",
+      api: "https://developer.paypal.com/docs/",
+      docs: "https://developer.paypal.com/docs/",
+    };
+
+    // Direct match
+    if (sourceUrlMap[sourceLower]) {
+      return sourceUrlMap[sourceLower];
+    }
+
+    // Partial match - check if source name contains any key
+    for (const [key, url] of Object.entries(sourceUrlMap)) {
+      if (sourceLower.includes(key)) {
+        return url;
+      }
+    }
+
+    // Default to Help Center if no match found
+    return "https://www.paypal.com/us/cshelp/";
+  };
+
   const formatText = (text) => {
     if (!text || typeof text !== "string") return "No content available";
 
@@ -343,21 +407,39 @@ export default function PayPalChat() {
                           Sources
                         </p>
                         <div className="space-y-1.5">
-                          {msg.citations.map((citation, i) => (
-                            <div
-                              key={i}
-                              className="flex items-center gap-2 text-xs text-cyan-400 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-600/30 hover:border-cyan-500/50 transition-colors"
-                            >
-                              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                              <span className="font-mono flex-1 text-cyan-300">
-                                {typeof citation === "string"
-                                  ? citation
-                                  : citation.source ||
-                                    citation.label ||
-                                    `Source ${i + 1}`}
-                              </span>
-                            </div>
-                          ))}
+                          {msg.citations.map((citation, i) => {
+                            const sourceName =
+                              typeof citation === "string"
+                                ? citation
+                                : citation.source ||
+                                  citation.label ||
+                                  `Source ${i + 1}`;
+
+                            const sourceUrl = getSourceUrl(sourceName);
+
+                            return (
+                              <div
+                                key={i}
+                                className="flex items-center gap-2 text-xs text-cyan-400 px-3 py-2 rounded-xl bg-slate-900/50 border border-slate-600/30 hover:border-cyan-500/50 transition-colors"
+                              >
+                                <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
+                                {sourceUrl ? (
+                                  <a
+                                    href={sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono flex-1 text-cyan-300 hover:text-cyan-200 hover:underline transition-colors cursor-pointer"
+                                  >
+                                    {sourceName}
+                                  </a>
+                                ) : (
+                                  <span className="font-mono flex-1 text-cyan-300">
+                                    {sourceName}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
