@@ -6,9 +6,11 @@ const { logConversation } = require("../../dbHybrid");
 const { hybridSearch } = require("../search/hybridSearch");
 const { combineHybridAndWebResults } = require("../search/resultCombiner");
 const { AGENT_NAME } = require("../config/constants");
+const { selectAndExecuteTools } = require("../utils/mcpToolSelector");
 
 /**
  * Handle hybrid queries (both MCP tools and documentation search)
+ * AI-based tool selection: AI decides which tools to call and with what arguments
  */
 async function handleHybridQuery(
   query,
@@ -21,46 +23,36 @@ async function handleHybridQuery(
   sessionId
 ) {
   try {
-    console.log("🔄 Handling hybrid query (MCP tools + documentation)");
+    console.log(
+      "🔄 Handling hybrid query (MCP tools + documentation) with AI tool selection"
+    );
 
-    // Get MCP tool data
-    const mcpData = {};
-    for (const toolName of classification.requires_mcp_tools) {
-      try {
-        const mcpToolMap = {
-          currency: "currency",
-          status_check: "status",
-          fee_calculation: "feecalculator",
-          web_search: "websearch",
-          timeline: "timeline",
-        };
+    // Get chat history for context
+    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
 
-        const mcpTool = mcpToolMap[toolName];
-        if (mcpTool) {
-          const toolResult = await mcpTools.getToolData(mcpTool, query);
-          if (toolResult) {
-            mcpData[toolName] = toolResult;
-          }
-        }
-      } catch (error) {
-        console.error(`Error getting ${toolName} data:`, error.message);
-      }
-    }
+    // Use AI-based tool selection
+    const mcpData = await selectAndExecuteTools(
+      query,
+      genAI,
+      mcpTools,
+      classification,
+      chatHistory
+    );
 
     // Run hybrid search
     const hybridResults = await hybridSearch(query, embedder, index, dbClient);
 
     // Combine web search results if available
     let finalSearchResults = hybridResults;
-    if (mcpData.web_search || mcpData.websearch) {
-      const webData = mcpData.web_search || mcpData.websearch;
-      if (webData.success && webData.data) {
-        const webResults = webData.data;
-        finalSearchResults = combineHybridAndWebResults(
-          hybridResults,
-          webResults
-        );
-      }
+    // Check for web search results (could be from AI-selected "search_web" tool or fallback "websearch")
+    const webData =
+      mcpData.search_web || mcpData.web_search || mcpData.websearch;
+    if (webData && webData.success && webData.data) {
+      const webResults = webData.data;
+      finalSearchResults = combineHybridAndWebResults(
+        hybridResults,
+        webResults
+      );
     }
 
     if (finalSearchResults.length === 0) {
@@ -82,15 +74,14 @@ async function handleHybridQuery(
       await saveChatMessage(sessionId, "user", query, { sentiment, issueType });
     }
 
-    // Get chat history
-    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
-
     // Prepare context
     const context = finalSearchResults
       .map((chunk, idx) => {
         const content =
           chunk.metadata?.text ||
           chunk.metadata?.preview ||
+          chunk.snippet ||
+          chunk.title ||
           "No content available";
         return `[Source ${idx + 1} - ${chunk.source}]: ${content}`;
       })

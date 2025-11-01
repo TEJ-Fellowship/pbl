@@ -3,9 +3,11 @@ const { containsProfanity } = require("../utils/textUtils");
 const { formatStructuredResponse } = require("../utils/responseFormatter");
 const { saveChatMessage, getChatHistory } = require("../chat/chatHistory");
 const { AGENT_NAME } = require("../config/constants");
+const { selectAndExecuteTools } = require("../utils/mcpToolSelector");
 
 /**
  * Handle MCP-only queries (real-time data, no documentation search)
+ * AI-based tool selection: AI decides which tools to call and with what arguments
  */
 async function handleMCPOnlyQuery(
   query,
@@ -15,32 +17,19 @@ async function handleMCPOnlyQuery(
   sessionId
 ) {
   try {
-    console.log("🔧 Handling MCP-only query");
+    console.log("🔧 Handling MCP-only query with AI tool selection");
 
-    // Get MCP tool data based on classification
-    const mcpData = {};
-    for (const toolName of classification.requires_mcp_tools) {
-      try {
-        // Map classification tool names to MCP tool names
-        const mcpToolMap = {
-          currency: "currency",
-          status_check: "status",
-          fee_calculation: "feecalculator",
-          web_search: "websearch",
-          timeline: "timeline",
-        };
+    // Get chat history for context
+    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
 
-        const mcpTool = mcpToolMap[toolName];
-        if (mcpTool) {
-          const toolResult = await mcpTools.getToolData(mcpTool, query);
-          if (toolResult) {
-            mcpData[toolName] = toolResult;
-          }
-        }
-      } catch (error) {
-        console.error(`Error getting ${toolName} data:`, error.message);
-      }
-    }
+    // Use AI-based tool selection
+    const mcpData = await selectAndExecuteTools(
+      query,
+      genAI,
+      mcpTools,
+      classification,
+      chatHistory
+    );
 
     // Detect sentiment (for PayPal queries)
     const sentiment = await detectSentiment(query, genAI);
@@ -54,8 +43,7 @@ async function handleMCPOnlyQuery(
       await saveChatMessage(sessionId, "user", query, { sentiment, issueType });
     }
 
-    // Build prompt with MCP tool data only
-    const chatHistory = sessionId ? await getChatHistory(sessionId, 5) : [];
+    // Build prompt with MCP tool data
     const conversationContext =
       chatHistory.length > 0
         ? `\n\nPrevious conversation:\n${chatHistory
@@ -87,8 +75,10 @@ async function handleMCPOnlyQuery(
 
 Customer: ${query}`;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
+    const responseModel = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+    });
+    const result = await responseModel.generateContent(prompt);
     const response = await result.response;
     let answer = response.text().trim();
 

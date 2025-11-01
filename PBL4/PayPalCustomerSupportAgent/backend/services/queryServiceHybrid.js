@@ -1,4 +1,4 @@
-const MCPToolsService = require("../../mcp-server/src/index.js");
+const MCPToolsService = require("../../mcp-server/serviceAdapter.cjs");
 const QueryRouter = require("./QueryRouter.js");
 const { handleGeneralQuery } = require("./handlers/generalHandler.js");
 const { handleMCPOnlyQuery } = require("./handlers/mcpOnlyHandler.js");

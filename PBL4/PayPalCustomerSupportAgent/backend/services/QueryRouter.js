@@ -66,8 +66,12 @@ class QueryRouter {
       "- currency: Currency conversion queries",
       "- status_check: PayPal service status/outage queries",
       "- fee_calculation: Fee calculation queries",
-      "- web_search: Recent information needed",
+      "- web_search: Recent information needed (ALWAYS use for policy changes, updates, recent changes)",
       "- timeline: Transaction timeline estimates",
+      "",
+      "IMPORTANT: Policy change queries should use web_search tool and be classified as hybrid or mcp_only.",
+      "Policy queries include: policy changes, terms updates, user agreement changes, etc.",
+      "These need real-time web search to find the latest policy updates.",
       "",
       "Return ONLY valid JSON with this exact structure:",
       "{",
@@ -85,8 +89,14 @@ class QueryRouter {
       'Query: "Convert 100 USD to EUR"',
       '→ {"query_type": "mcp_only", "issue_type": ["currency_conversion"], "requires_mcp_tools": ["currency"], "is_paypal_related": true, "confidence": "high"}',
       "",
+      'Query: "what is 100 dollar in nrs"',
+      '→ {"query_type": "mcp_only", "issue_type": ["currency_conversion"], "requires_mcp_tools": ["currency"], "is_paypal_related": true, "confidence": "high"}',
+      "",
       'Query: "How do I request a refund?"',
       '→ {"query_type": "documentation_only", "issue_type": ["refund"], "requires_mcp_tools": [], "is_paypal_related": true, "confidence": "high"}',
+      "",
+      'Query: "What are the recent policy changes?"',
+      '→ {"query_type": "hybrid", "issue_type": ["general_help"], "requires_mcp_tools": ["web_search"], "is_paypal_related": true, "confidence": "high"}',
       "",
       'Query: "Is PayPal down today and what is the refund policy?"',
       '→ {"query_type": "hybrid", "issue_type": ["service_status", "refund"], "requires_mcp_tools": ["status_check"], "is_paypal_related": true, "confidence": "high"}',
@@ -199,7 +209,12 @@ class QueryRouter {
     const requiresMCPTools = [];
 
     // Check for MCP tool requirements
-    if (/convert|exchange|currency|rate|USD|EUR|GBP|JPY/.test(lowerQuery)) {
+    // Include common currency terms: dollar, rupee, nrs, npr, etc.
+    if (
+      /convert|exchange|currency|rate|USD|EUR|GBP|JPY|DOLLAR|RUPEE|NRS|NPR|NEPALI/i.test(
+        lowerQuery
+      )
+    ) {
       requiresMCPTools.push("currency");
       queryType = "mcp_only";
     }
@@ -229,15 +244,36 @@ class QueryRouter {
       }
     }
 
-    if (/recent|current|today|now|latest|update/.test(lowerQuery)) {
+    // Trigger web_search for policy change queries and recent updates
+    if (
+      /(policy.*change|policy.*update|change.*policy|update.*policy|terms.*change|terms.*update|user agreement.*change|user agreement.*update|recent.*policy|latest.*policy)/i.test(
+        lowerQuery
+      )
+    ) {
       requiresMCPTools.push("web_search");
       if (queryType !== "general") {
-        queryType = "hybrid";
+        queryType = queryType === "mcp_only" ? "hybrid" : "hybrid";
       }
     }
 
+    // Trigger web_search for recent/current/today/now queries (but not for general policy questions)
     if (
-      /timeline|how long|when will|hold period|funds available/.test(lowerQuery)
+      /(recent|current|today|now|latest|update|change)/i.test(lowerQuery) &&
+      !/(what.*policy|explain.*policy|how.*policy|tell.*policy)/i.test(
+        lowerQuery
+      )
+    ) {
+      requiresMCPTools.push("web_search");
+      if (queryType !== "general") {
+        queryType = queryType === "mcp_only" ? "hybrid" : "hybrid";
+      }
+    }
+
+    // Only trigger timeline for explicit transaction timeline queries
+    if (
+      /(timeline|hold period|funds available|when will.*funds|money available)/i.test(
+        lowerQuery
+      )
     ) {
       requiresMCPTools.push("timeline");
       if (queryType !== "general") {

@@ -22,14 +22,28 @@ function combineHybridAndWebResults(hybridResults, webResults) {
 
   // Add web results with moderate scoring
   webResults.forEach((result) => {
+    // Handle both old and new result formats
+    const combinedScore = result.combinedScore || result.score || 0.8;
+    const metadata = result.metadata || {
+      title: result.title,
+      text: result.snippet,
+      preview: result.snippet,
+      source: result.link || result.url,
+    };
+
     allResults.push({
       ...result,
+      metadata,
       source: "web_search",
-      adjustedScore: result.combinedScore * 1.1, // Moderate boost
+      combinedScore,
+      adjustedScore: combinedScore * 1.1, // Moderate boost
       priority: "recent_info",
-      isRecent: result.isRecent || false,
-      isOfficial: result.isOfficial || false,
-      originalScore: result.combinedScore,
+      isRecent: result.isRecent !== undefined ? result.isRecent : true,
+      isOfficial:
+        result.isOfficial !== undefined
+          ? result.isOfficial
+          : /paypal\.com/i.test(metadata.source || ""),
+      originalScore: combinedScore,
     });
   });
 
