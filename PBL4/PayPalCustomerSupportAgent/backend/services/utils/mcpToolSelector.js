@@ -46,6 +46,11 @@ Rules:
 - Choose the most appropriate tool(s) for the query
 - Extract arguments from the query (e.g., "100 dollar" → amount: 100, fromCurrency: "USD")
 - For currency queries, map common terms: "dollar" → "USD", "nrs" → "NPR", "euro" → "EUR", etc.
+- For datetime queries (e.g., "what time is it", "current time in nepal", "what is the date"):
+  * ALWAYS use get_datetime tool
+  * Extract location from query if mentioned (e.g., "in nepal" → location: "Nepal", "in india" → location: "India")
+  * Common locations: "Nepal", "India", "US", "UK", "Australia", etc.
+  * If no location mentioned, omit the location argument (returns UTC time)
 - For fee calculation queries, CRITICALLY IMPORTANT:
   * Extract payment type from query if mentioned (e.g., "PayPal Checkout" → paymentType: "PayPal Checkout")
   * Common payment types: "PayPal Checkout", "QR code Transactions", "Standard Credit and Debit Card Payments", "PayPal Pay Later", "Pay with Venmo", "Send/Receive Money for Goods and Services"
@@ -122,6 +127,7 @@ Rules:
       fee_calculation: { old: "feecalculator", new: "calculate_fees" },
       web_search: { old: "websearch", new: "search_web" },
       timeline: { old: "timeline", new: "estimate_timeline" },
+      datetime: { old: "datetime", new: "get_datetime" },
     };
 
     for (const toolName of classification.requires_mcp_tools || []) {

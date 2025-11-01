@@ -18,6 +18,7 @@ import { FeeCalculatorService } from "./components/feeCalculator.js";
 import { FeeCalculatorEnhancedService } from "./components/feeCalculatorEnhanced.js";
 import { ApiStatusChecker } from "./components/apiStatusChecker.js";
 import { TransactionTimelineService } from "./components/transactionTimeline.js";
+import { DateTimeService } from "./components/dateTime.js";
 
 // ===== PAYPAL MCP SERVER =====
 class PayPalMCPServer {
@@ -50,6 +51,7 @@ class PayPalMCPServer {
     this.feeCalculator = new FeeCalculatorService(); // Keep for backward compatibility
     this.feeCalculatorEnhanced = new FeeCalculatorEnhancedService(this.dbPool); // Enhanced fee calculator with DB pool
     this.timelineService = new TransactionTimelineService();
+    this.dateTimeService = new DateTimeService();
 
     this.setupHandlers();
   }
@@ -156,6 +158,21 @@ class PayPalMCPServer {
                   type: "string",
                   enum: ["low_risk", "medium_risk", "high_risk"],
                   description: "Risk level of the transaction",
+                },
+              },
+            },
+          },
+          {
+            name: "get_datetime",
+            description:
+              "Get current date and time, optionally for a specific location (e.g., Nepal, India, US)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                location: {
+                  type: "string",
+                  description:
+                    "Location or timezone (e.g., 'Nepal', 'India', 'US', 'Asia/Kathmandu')",
                 },
               },
             },
@@ -346,6 +363,22 @@ class PayPalMCPServer {
             };
           }
 
+          case "get_datetime": {
+            const location = args.location || null;
+            const query = location
+              ? `what is the time now in ${location}`
+              : "what is the time now";
+            const result = await this.dateTimeService.execute(query, location);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: result.message,
+                },
+              ],
+            };
+          }
+
           default:
             return {
               content: [
@@ -397,6 +430,7 @@ export class MCPToolsService {
     this.feeCalculator = new FeeCalculatorService(); // Keep for backward compatibility
     this.feeCalculatorEnhanced = new FeeCalculatorEnhancedService(this.dbPool); // Enhanced fee calculator with DB pool
     this.timelineService = new TransactionTimelineService();
+    this.dateTimeService = new DateTimeService();
   }
 
   // Check which tools should be triggered for this query
@@ -418,6 +452,9 @@ export class MCPToolsService {
     if (this.timelineService.isTimelineQuery(query)) {
       tools.push("timeline");
     }
+    if (this.dateTimeService.isTimeQuery(query)) {
+      tools.push("datetime");
+    }
 
     return tools;
   }
@@ -435,6 +472,8 @@ export class MCPToolsService {
         return await this.handleFeeQuery(query);
       case "timeline":
         return await this.handleTimelineQuery(query);
+      case "datetime":
+        return await this.handleDateTimeQuery(query);
       default:
         return null;
     }
@@ -525,6 +564,23 @@ export class MCPToolsService {
       return {
         success: false,
         message: `Sorry, I couldn't estimate the timeline: ${error.message}`,
+      };
+    }
+  }
+
+  async handleDateTimeQuery(query) {
+    try {
+      const result = await this.dateTimeService.execute(query);
+      return {
+        success: result.success,
+        message: result.message,
+        timeInfo: result.timeInfo,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        message: `Error getting time information: ${error.message}`,
       };
     }
   }
@@ -738,6 +794,19 @@ export class MCPToolsService {
             success: result.success,
             message: result.message,
             data: result.data,
+          };
+        }
+
+        case "get_datetime": {
+          const location = args?.location || null;
+          const query = location
+            ? `what is the time now in ${location}`
+            : "what is the time now";
+          const result = await this.dateTimeService.execute(query, location);
+          return {
+            success: result.success,
+            message: result.message,
+            timeInfo: result.timeInfo,
           };
         }
 

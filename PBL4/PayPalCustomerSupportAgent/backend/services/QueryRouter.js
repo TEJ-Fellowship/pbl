@@ -68,6 +68,7 @@ class QueryRouter {
       "- fee_calculation: Fee calculation queries",
       "- web_search: Recent information needed (ALWAYS use for policy changes, updates, recent changes)",
       "- timeline: Transaction timeline estimates",
+      "- datetime: Date and time queries (e.g., 'what time is it', 'current time in nepal', 'what is the date')",
       "",
       "IMPORTANT: Policy CHANGE queries (policy changes, terms updates, user agreement changes) should use web_search tool and be classified as mcp_only (NOT hybrid).",
       "Policy CHANGE queries need real-time web search to find latest updates from official pages.",
@@ -111,6 +112,12 @@ class QueryRouter {
       "",
       'Query: "How much fee for $100 transaction?"',
       '→ {"query_type": "mcp_only", "issue_type": ["fees"], "requires_mcp_tools": ["fee_calculation"], "is_paypal_related": true, "confidence": "high"}',
+      "",
+      'Query: "what is the time now in nepal"',
+      '→ {"query_type": "mcp_only", "issue_type": null, "requires_mcp_tools": ["datetime"], "is_paypal_related": false, "confidence": "high"}',
+      "",
+      'Query: "what time is it"',
+      '→ {"query_type": "mcp_only", "issue_type": null, "requires_mcp_tools": ["datetime"], "is_paypal_related": false, "confidence": "high"}',
       "",
       `Query: "${query}"`,
       context.sessionHistory
@@ -341,6 +348,18 @@ class QueryRouter {
       if (queryType !== "general") {
         queryType = queryType === "mcp_only" ? "hybrid" : "documentation_only";
       }
+    }
+
+    // Trigger datetime for time/date queries
+    if (
+      /(what.*time|current.*time|time.*now|time.*in|date.*now|current.*date|what.*date|what.*day)/i.test(
+        lowerQuery
+      )
+    ) {
+      requiresMCPTools.push("datetime");
+      queryType = "mcp_only";
+      // DateTime queries can be PayPal-related or general, but still use MCP tool
+      // Don't override isPayPalRelated check above, but ensure datetime tool is used
     }
 
     // Determine issue_type

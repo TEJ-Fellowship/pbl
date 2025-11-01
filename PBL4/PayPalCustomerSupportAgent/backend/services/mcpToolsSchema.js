@@ -259,6 +259,43 @@ const AVAILABLE_MCP_TOOLS = [
       },
     ],
   },
+  {
+    name: "get_datetime",
+    description:
+      "Get current date and time, optionally for a specific location (e.g., Nepal, India, US, UK, Australia). Use this when user asks about time, date, or current time in a specific location.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        location: {
+          type: "string",
+          description:
+            "Location or timezone (e.g., 'Nepal', 'India', 'US', 'UK', 'Australia', 'Asia/Kathmandu'). Optional - if not provided, returns UTC time.",
+        },
+      },
+    },
+    examples: [
+      {
+        query: "what is the time now in nepal",
+        arguments: {
+          location: "Nepal",
+        },
+      },
+      {
+        query: "what is the current time in india",
+        arguments: {
+          location: "India",
+        },
+      },
+      {
+        query: "what time is it now",
+        arguments: {},
+      },
+      {
+        query: "current date and time",
+        arguments: {},
+      },
+    ],
+  },
 ];
 
 /**
