@@ -7,6 +7,7 @@ const { hybridSearch } = require("../search/hybridSearch");
 const { combineHybridAndWebResults } = require("../search/resultCombiner");
 const { AGENT_NAME } = require("../config/constants");
 const { selectAndExecuteTools } = require("../utils/mcpToolSelector");
+const { enhanceQueryForSearch } = require("../utils/queryEnhancer");
 
 /**
  * Handle hybrid queries (both MCP tools and documentation search)
@@ -39,8 +40,26 @@ async function handleHybridQuery(
       chatHistory
     );
 
-    // Run hybrid search
-    const hybridResults = await hybridSearch(query, embedder, index, dbClient);
+    // AI-powered query enhancement for documentation search (happens AFTER classification)
+    const enhancedQuery = await enhanceQueryForSearch(
+      query,
+      classification,
+      genAI
+    );
+    console.log(`🔍 Original query: "${query}"`);
+    if (enhancedQuery !== query) {
+      console.log(
+        `✨ Enhanced query for documentation search: "${enhancedQuery}"`
+      );
+    }
+
+    // Run hybrid search with enhanced query (MCP tools use original query)
+    const hybridResults = await hybridSearch(
+      enhancedQuery,
+      embedder,
+      index,
+      dbClient
+    );
 
     // Combine web search results if available
     let finalSearchResults = hybridResults;

@@ -46,6 +46,13 @@ Rules:
 - Choose the most appropriate tool(s) for the query
 - Extract arguments from the query (e.g., "100 dollar" → amount: 100, fromCurrency: "USD")
 - For currency queries, map common terms: "dollar" → "USD", "nrs" → "NPR", "euro" → "EUR", etc.
+- For fee calculation queries, CRITICALLY IMPORTANT:
+  * Extract payment type from query if mentioned (e.g., "PayPal Checkout" → paymentType: "PayPal Checkout")
+  * Common payment types: "PayPal Checkout", "QR code Transactions", "Standard Credit and Debit Card Payments", "PayPal Pay Later", "Pay with Venmo", "Send/Receive Money for Goods and Services"
+  * If query mentions "sending money", "send to family", "send to friends", "PayPal balance", "bank account" → paymentType: "PayPal balance or a bank account", accountType: "personal", feeCategory: "consumer"
+  * If query says "merchant" or "business account" → accountType: "business"
+  * If query says "PayPal Checkout" → paymentType: "PayPal Checkout" (exact match, case-sensitive)
+  * If query says "using my PayPal balance" or "with PayPal balance" → paymentType: "PayPal balance or a bank account"
 - For policy queries (policy changes, terms updates, user agreement changes), ALWAYS use search_web tool
 - Policy queries should use search_web with the original query or a policy-focused variation
 - You can call multiple tools if needed

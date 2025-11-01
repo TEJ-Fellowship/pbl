@@ -6,10 +6,16 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { Pool } from "pg";
+import dotenv from "dotenv";
+
+// Load environment variables
+dotenv.config();
 
 import { CurrencyExchangeService } from "./components/currencyExchange.js";
 import { WebSearchService } from "./components/webSearch.js";
 import { FeeCalculatorService } from "./components/feeCalculator.js";
+import { FeeCalculatorEnhancedService } from "./components/feeCalculatorEnhanced.js";
 import { ApiStatusChecker } from "./components/apiStatusChecker.js";
 import { TransactionTimelineService } from "./components/transactionTimeline.js";
 
@@ -28,11 +34,21 @@ class PayPalMCPServer {
       }
     );
 
+    // Create database pool for fee calculator
+    this.dbPool = new Pool({
+      user: process.env.POSTGRES_USER || "postgres",
+      host: process.env.POSTGRES_HOST || "localhost",
+      database: process.env.POSTGRES_DATABASE || "paypalAgent",
+      password: process.env.POSTGRES_PASSWORD || "your_password_here",
+      port: parseInt(process.env.POSTGRES_PORT || "5433", 10),
+    });
+
     // Initialize services
     this.currencyService = new CurrencyExchangeService();
     this.webSearchService = new WebSearchService();
     this.statusChecker = new ApiStatusChecker();
-    this.feeCalculator = new FeeCalculatorService();
+    this.feeCalculator = new FeeCalculatorService(); // Keep for backward compatibility
+    this.feeCalculatorEnhanced = new FeeCalculatorEnhancedService(this.dbPool); // Enhanced fee calculator with DB pool
     this.timelineService = new TransactionTimelineService();
 
     this.setupHandlers();
@@ -366,10 +382,20 @@ class PayPalMCPServer {
 // This adapter provides the same interface as before for the backend to use
 export class MCPToolsService {
   constructor() {
+    // Create database pool for fee calculator
+    this.dbPool = new Pool({
+      user: process.env.POSTGRES_USER || "postgres",
+      host: process.env.POSTGRES_HOST || "localhost",
+      database: process.env.POSTGRES_DATABASE || "paypalAgent",
+      password: process.env.POSTGRES_PASSWORD || "your_password_here",
+      port: parseInt(process.env.POSTGRES_PORT || "5433", 10),
+    });
+
     this.currencyService = new CurrencyExchangeService();
     this.webSearchService = new WebSearchService();
     this.statusChecker = new ApiStatusChecker();
-    this.feeCalculator = new FeeCalculatorService();
+    this.feeCalculator = new FeeCalculatorService(); // Keep for backward compatibility
+    this.feeCalculatorEnhanced = new FeeCalculatorEnhancedService(this.dbPool); // Enhanced fee calculator with DB pool
     this.timelineService = new TransactionTimelineService();
   }
 
@@ -655,8 +681,10 @@ export class MCPToolsService {
             amount,
             transactionType = "domestic",
             accountType = "personal",
-            paymentMethod = "paypal_balance",
+            paymentMethod = null,
+            paymentType = null,
             currency = "USD",
+            feeCategory = "auto",
           } = args || {};
           if (!amount) {
             return {
@@ -664,19 +692,19 @@ export class MCPToolsService {
               message: "Missing required argument: amount",
             };
           }
-          const result = this.feeCalculator.calculateFees(
+          // Use enhanced fee calculator with actual fee data
+          const result = await this.feeCalculatorEnhanced.calculateFees({
             amount,
             transactionType,
             accountType,
-            paymentMethod,
-            currency
-          );
+            paymentType: paymentType || paymentMethod,
+            currency,
+            feeCategory,
+          });
           if (result.success) {
             return {
               success: true,
-              message: result.data?.formatted
-                ? result.message
-                : "Fee calculation completed",
+              message: result.message || "Fee calculation completed",
               data: result.data,
             };
           } else {

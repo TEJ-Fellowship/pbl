@@ -73,6 +73,11 @@ class QueryRouter {
       "Policy CHANGE queries need real-time web search to find latest updates from official pages.",
       "General policy questions (what is policy, explain policy) should use documentation_only.",
       "",
+      "IMPORTANT: Fee queries distinction:",
+      "- Fee PERCENTAGE/RATE questions (e.g., 'What is the fee percentage for...', 'What are the fees for...', 'fee structure', 'fee rate') should use documentation_only to access fee structure data.",
+      "- Fee CALCULATION queries with specific amounts (e.g., 'how much fee for $100', 'calculate fee for 50 dollars') should use mcp_only with fee_calculation tool.",
+      "Fee percentage/rate queries need documentation search, while fee calculation queries need the fee calculator tool.",
+      "",
       "Return ONLY valid JSON with this exact structure:",
       "{",
       '  "query_type": "general" | "mcp_only" | "documentation_only" | "hybrid",',
@@ -100,6 +105,12 @@ class QueryRouter {
       "",
       'Query: "Is PayPal down today and what is the refund policy?"',
       '→ {"query_type": "hybrid", "issue_type": ["service_status", "refund"], "requires_mcp_tools": ["status_check"], "is_paypal_related": true, "confidence": "high"}',
+      "",
+      'Query: "What is the exact PayPal fee percentage for sending money from the US to Australia using a personal account?"',
+      '→ {"query_type": "documentation_only", "issue_type": ["fees"], "requires_mcp_tools": [], "is_paypal_related": true, "confidence": "high"}',
+      "",
+      'Query: "How much fee for $100 transaction?"',
+      '→ {"query_type": "mcp_only", "issue_type": ["fees"], "requires_mcp_tools": ["fee_calculation"], "is_paypal_related": true, "confidence": "high"}',
       "",
       `Query: "${query}"`,
       context.sessionHistory
@@ -232,16 +243,66 @@ class QueryRouter {
       }
     }
 
-    if (
-      /fee|calculate|how much|cost|pricing/.test(lowerQuery) &&
-      /for \$|transaction/.test(lowerQuery)
-    ) {
+    // Fee queries: Distinguish between fee percentage/rate questions vs fee calculation queries
+    // Fee percentage/rate questions should use documentation_only (RAG has fee structure data)
+    // Fee calculation queries (with specific amounts) should use MCP fee calculator
+    // BUT: Cryptocurrency queries should ALWAYS use documentation_only (fee calculator doesn't support crypto)
+    const isFeeQuery = /fee|fees|charge|charges|rate|pricing|cost/.test(
+      lowerQuery
+    );
+
+    // Detect cryptocurrency-related queries (these need documentation, not fee calculator)
+    const isCryptoQuery =
+      /crypto|bitcoin|ethereum|blockchain|btc|eth|digital.*currency|cryptocurrency/.test(
+        lowerQuery
+      );
+
+    const isFeePercentageQuery =
+      isFeeQuery &&
+      (/percentage|percent|rate|structure|what.*fee|fee.*for.*sending|fee.*for.*receiving|how much.*fee.*percentage/.test(
+        lowerQuery
+      ) ||
+        /exact.*fee|fee.*exact|fee.*is|are.*fees/.test(lowerQuery));
+
+    // Improved regex to catch more patterns - handle ANY amount-based fee query:
+    // - "fee for [action] worth [amount] [currency]"
+    // - "fee for [amount] [currency]"
+    // - "fee [amount] USD/US dollar/dollars"
+    // - "fee worth [amount]"
+    // - "what.*fee.*\d+|\d+.*fee|fee.*\d+"
+    // - "how much.*fee.*\d+|\d+.*cost.*fee|cost.*\d+.*fee"
+    // - "\$\d+|USD.*\d+|\d+.*USD|\d+.*dollar"
+    // General pattern: any query with fee + number (amount)
+    const hasAmountInQuery =
+      /(\$?\d+(?:\.\d+)?|USD|\d+.*dollar|dollar.*\d+)/i.test(query);
+    const isFeeCalculationQuery =
+      isFeeQuery &&
+      !isCryptoQuery && // Exclude crypto from fee calculator
+      (hasAmountInQuery || // Any fee query with an amount
+        /calculate|how much.*fee|fee.*how much|fee.*calculate|transaction.*fee.*\d+/i.test(
+          lowerQuery
+        ));
+
+    if (isCryptoQuery && isFeeQuery) {
+      // Cryptocurrency fee queries → ALWAYS documentation_only (fee calculator doesn't support crypto)
+      queryType = "documentation_only";
+      console.log(
+        "🔍 Cryptocurrency fee query detected - routing to documentation search"
+      );
+    } else if (isFeePercentageQuery) {
+      // Fee percentage/rate questions → documentation_only (use RAG data)
+      queryType = "documentation_only";
+    } else if (isFeeCalculationQuery) {
+      // Fee calculation queries with amounts → mcp_only (use fee calculator tool)
       requiresMCPTools.push("fee_calculation");
       if (queryType === "mcp_only") {
         queryType = "hybrid";
       } else {
         queryType = "mcp_only";
       }
+    } else if (isFeeQuery) {
+      // Generic fee query without clear indication → default to documentation_only
+      queryType = "documentation_only";
     }
 
     // Trigger web_search for policy change queries - use mcp_only (not hybrid)

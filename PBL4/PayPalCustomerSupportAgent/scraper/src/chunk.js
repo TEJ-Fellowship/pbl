@@ -1,5 +1,5 @@
 //Reads all JSON files in /data, merges them, splits long text fields into overlapping chunks,
- // and saves the formatted output to /output/chunks.json
+// and saves the formatted output to /output/chunks.json
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -13,8 +13,8 @@ const outputDir = path.resolve(__dirname, "./chunkData");
 const outputFile = "chunks.json";
 
 // Chunking parameters
-const chunkSize = 800;      // Number of characters per chunk
-const chunkOverlap = 200;    // Overlap for context continuity
+const chunkSize = 800; // Number of characters per chunk
+const chunkOverlap = 200; // Overlap for context continuity
 
 // Utility: log with timestamp
 function log(msg) {
@@ -23,7 +23,7 @@ function log(msg) {
 
 // Step 1: Load and merge all JSON files from /data
 async function loadAllJSON() {
-  const files = fs.readdirSync(inputDir).filter(f => f.endsWith(".json"));
+  const files = fs.readdirSync(inputDir).filter((f) => f.endsWith(".json"));
   if (files.length === 0) throw new Error("No JSON files found in /data");
 
   log(`Found ${files.length} JSON files in /data`);
@@ -70,12 +70,53 @@ async function createChunks(entries) {
   const allChunks = [];
 
   for (const entry of entries) {
-    // Choose which field to chunk (e.g., text, content, description)
-    const rawText =
-      entry.text ||
-      entry.content ||
-      entry.description ||
-      JSON.stringify(entry);
+    let rawText;
+
+    // PRIORITY: Special handling for fee table structures (from paypal fees JSON files)
+    // Check for table structure FIRST, as it contains the actual fee data
+    if (entry.headers && entry.rows && Array.isArray(entry.rows)) {
+      // Convert table structure to readable text format
+      const tableLines = [];
+
+      // Add description if available
+      if (entry.description) {
+        tableLines.push(entry.description);
+      }
+
+      // Add headers
+      if (entry.headers && entry.headers.length > 0) {
+        tableLines.push(`Headers: ${entry.headers.join(" | ")}`);
+      }
+
+      // Add rows with data - this is the CRITICAL fee information
+      entry.rows.forEach((row, idx) => {
+        if (typeof row === "object" && row !== null) {
+          const rowText = entry.headers
+            ? entry.headers
+                .map((header, i) => {
+                  const value = row[header] || Object.values(row)[i] || "";
+                  return `${header}: ${value}`;
+                })
+                .join(", ")
+            : Object.entries(row)
+                .map(([key, val]) => `${key}: ${val}`)
+                .join(", ");
+          tableLines.push(`Row ${idx + 1}: ${rowText}`);
+        } else {
+          tableLines.push(`Row ${idx + 1}: ${row}`);
+        }
+      });
+
+      rawText = tableLines.join("\n");
+    } else {
+      // Fallback to standard fields (text, content, description)
+      rawText = entry.text || entry.content || entry.description;
+    }
+
+    // Final fallback to JSON stringify if still no text
+    if (!rawText) {
+      rawText = JSON.stringify(entry);
+    }
 
     if (!rawText || rawText.trim() === "") continue;
 

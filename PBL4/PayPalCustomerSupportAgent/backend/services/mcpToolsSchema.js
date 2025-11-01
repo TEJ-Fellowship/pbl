@@ -86,13 +86,13 @@ const AVAILABLE_MCP_TOOLS = [
   {
     name: "calculate_fees",
     description:
-      "Calculate PayPal transaction fees based on amount, transaction type, account type, and payment method",
+      "Calculate PayPal transaction fees based on amount, transaction type, account type, and payment method. Uses actual fee data from PayPal's fee tables. IMPORTANT: Extract payment type from query (e.g., 'PayPal Checkout', 'QR code Transactions', 'Standard Credit and Debit Card Payments', 'PayPal Pay Later', 'PayPal balance or a bank account', 'Cards'). If query mentions 'sending money', 'send to family', 'PayPal balance', or 'bank account' → use paymentType: 'PayPal balance or a bank account' and accountType: 'personal'. If query mentions a specific payment type, ALWAYS include it in paymentType argument.",
     inputSchema: {
       type: "object",
       properties: {
         amount: {
           type: "number",
-          description: "Transaction amount",
+          description: "Transaction amount (required)",
         },
         transactionType: {
           type: "string",
@@ -107,12 +107,23 @@ const AVAILABLE_MCP_TOOLS = [
         paymentMethod: {
           type: "string",
           enum: ["paypal_balance", "credit_card", "debit_card"],
-          description: "Payment method used (default: paypal_balance)",
+          description: "Payment method used (legacy, prefer paymentType)",
+        },
+        paymentType: {
+          type: "string",
+          description:
+            "Payment type (e.g., 'PayPal Checkout', 'QR code Transactions', 'Cards', 'Cryptocurrency', 'Donations', 'PayPal balance or a bank account', etc.). For 'sending money' queries with PayPal balance, use 'PayPal balance or a bank account'",
         },
         currency: {
           type: "string",
-          default: "USD",
-          description: "Currency code (default: USD)",
+          description:
+            "Currency code (USD, EUR, GBP, JPY, CAD, AUD, etc.) - default: USD",
+        },
+        feeCategory: {
+          type: "string",
+          enum: ["merchant", "consumer", "auto"],
+          description:
+            "Fee category to use (default: auto - uses merchant for business, consumer for personal)",
         },
       },
       required: ["amount"],
@@ -124,7 +135,72 @@ const AVAILABLE_MCP_TOOLS = [
           amount: 100,
           transactionType: "domestic",
           accountType: "personal",
-          paymentMethod: "paypal_balance",
+          currency: "USD",
+        },
+      },
+      {
+        query: "calculate fee for $150 crypto purchase",
+        arguments: {
+          amount: 150,
+          paymentType: "Cryptocurrency",
+          accountType: "personal",
+          currency: "USD",
+        },
+      },
+      {
+        query: "what are the fees for 500 euros merchant payment",
+        arguments: {
+          amount: 500,
+          accountType: "business",
+          paymentType: "PayPal Checkout",
+          currency: "EUR",
+        },
+      },
+      {
+        query: "fee for sending 50 dollars using card",
+        arguments: {
+          amount: 50,
+          paymentType: "Cards",
+          accountType: "personal",
+          transactionType: "domestic",
+          currency: "USD",
+        },
+      },
+      {
+        query: "calculate merchant fee for $250 PayPal Checkout in USD",
+        arguments: {
+          amount: 250,
+          accountType: "business",
+          paymentType: "PayPal Checkout",
+          currency: "USD",
+        },
+      },
+      {
+        query: "what's the fee for 100 dollars QR code transaction",
+        arguments: {
+          amount: 100,
+          accountType: "business",
+          paymentType: "QR code Transactions",
+          currency: "USD",
+        },
+      },
+      {
+        query: "fee for 200 credit card payment from business account",
+        arguments: {
+          amount: 200,
+          accountType: "business",
+          paymentType: "Standard Credit and Debit Card Payments",
+          currency: "USD",
+        },
+      },
+      {
+        query:
+          "What's the fee for sending $200 to family using my PayPal balance?",
+        arguments: {
+          amount: 200,
+          accountType: "personal",
+          paymentType: "PayPal balance or a bank account",
+          feeCategory: "consumer",
           currency: "USD",
         },
       },
