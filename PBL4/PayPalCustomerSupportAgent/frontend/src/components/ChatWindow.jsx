@@ -92,7 +92,71 @@ export default function PayPalChat() {
   const formatText = (text) => {
     if (!text || typeof text !== "string") return "No content available";
 
-    return text
+    let formatted = text;
+
+    // First, handle 🔗 emoji links (do this before regular URL processing)
+    formatted = formatted.replace(
+      /🔗\s*(https?:\/\/[^\s<>"{}|\\^`[\]()]+|[a-zA-Z0-9][^\s<>"{}|\\^`[\]()]*\.[a-zA-Z]{2,}[^\s<>"{}|\\^`[\]()]*)/gi,
+      (match, url) => {
+        let href = url.trim();
+        if (!href.startsWith("http://") && !href.startsWith("https://")) {
+          href = "https://" + href;
+        }
+        return `🔗 <a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors break-all">${url.trim()}</a>`;
+      }
+    );
+
+    // Then convert plain URLs to clickable links
+    // Match URLs: https://..., http://..., www...., or domain.com/path
+    const urlRegex =
+      /(https?:\/\/[^\s<>"{}|\\^`[\]()]+|www\.[^\s<>"{}|\\^`[\]()]+|[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}(:\d+)?(\/[^\s<>"{}|\\^`[\]()]*)?)/gi;
+
+    // Process URLs by finding matches and their positions
+    const matches = [];
+    let match;
+    urlRegex.lastIndex = 0; // Reset regex state
+    while ((match = urlRegex.exec(formatted)) !== null) {
+      matches.push({
+        url: match[0],
+        index: match.index,
+      });
+    }
+
+    // Process matches in reverse order to preserve indices
+    for (let i = matches.length - 1; i >= 0; i--) {
+      const { url, index } = matches[i];
+
+      // Skip if already inside HTML tags
+      const before = formatted.substring(Math.max(0, index - 100), index);
+      if (before.includes("<a ") || before.includes("href=")) {
+        continue;
+      }
+
+      // Skip if it's part of markdown link syntax [text](url)
+      if (before.includes("](")) {
+        continue;
+      }
+
+      // Clean up URL (remove trailing punctuation that shouldn't be part of link)
+      let cleanUrl = url.replace(/[.,;:!?]+$/, "");
+      const trailingPunct = url.slice(cleanUrl.length);
+
+      // Add protocol if missing
+      let href = cleanUrl;
+      if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+        href = "https://" + cleanUrl;
+      }
+
+      // Replace the URL with clickable link
+      const replacement = `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors break-all">${cleanUrl}</a>${trailingPunct}`;
+      formatted =
+        formatted.substring(0, index) +
+        replacement +
+        formatted.substring(index + url.length);
+    }
+
+    // Then apply other formatting
+    return formatted
       .replace(
         /\*\*(.*?)\*\*/g,
         "<strong class='text-white font-semibold'>$1</strong>"

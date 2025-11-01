@@ -66,10 +66,57 @@ async function handleMCPOnlyQuery(
       systemInstruction += ` The customer is concerned. Be reassuring and calm.`;
     }
 
-    systemInstruction += `\n\nIMPORTANT: Use the real-time tool data provided below to answer the customer's question accurately.
+    // Detect if this is a policy query for better context
+    const isPolicyQuery =
+      /(policy.*change|policy.*update|change.*policy|update.*policy|terms.*change|terms.*update|user agreement.*change|user agreement.*update|recent.*policy|latest.*policy)/i.test(
+        query
+      );
+
+    if (isPolicyQuery) {
+      systemInstruction += `\n\nCRITICAL INSTRUCTIONS for policy change queries:
+1. Check if search results contain ANY policy updates/changes
+2. If YES (results found):
+   - Start with: "YES, there are policy changes."
+   - Extract and summarize the ACTUAL policy changes from the search results:
+     * ALL dates mentioned - especially "Last updated on [date]" (e.g., "Last updated on 20 August 2025")
+     * "X days ago", "X weeks ago" timestamps
+     * Which agreements changed (e.g., "United States PayPal User Agreement", "Payment Services Agreement")
+     * Effective dates if provided (e.g., "Effective September 28, 2025")
+     * Key changes mentioned in snippets
+   - MUST include ALL dates found in search results - they are critical information
+   - Structure the response clearly with dates prominently displayed
+   - Include the actual LINKS from search results
+   - Format:
+     "YES, there are policy changes.
+     
+     Last Updated: [extract date from search results, e.g., "20 August 2025"]
+     
+     Summary of Changes:
+     [List the actual policy changes from snippets]
+     
+     Effective Dates:
+     [List effective dates if mentioned]
+     
+     Links:
+     [List actual URLs from search results]"
+3. If NO (no results or empty):
+   - Respond: "NO, no recent policy changes found."
+   - Suggest checking PayPal's official policy pages
+
+IMPORTANT: 
+- Extract EVERY date mentioned in search results - dates are critical!
+- Look for "Last updated on [date]" patterns - these must be included
+- Extract REAL information from search result snippets/titles
+- Look for phrases like "Policy Updates", "Notice of Amendment", "Last updated", "days ago"
+- DO NOT make up information - use ONLY what's in the search results
+- Include actual URLs from the search results
+- If multiple dates are found, include ALL of them`;
+    } else {
+      systemInstruction += `\n\nIMPORTANT: Use the real-time tool data provided below to answer the customer's question accurately.
 - The tool data is current and accurate
 - Provide the information clearly and concisely
 - If the tool data indicates an issue, help the customer understand next steps`;
+    }
 
     const prompt = `${systemInstruction}${mcpContext}${conversationContext}
 
@@ -82,10 +129,12 @@ Customer: ${query}`;
     const response = await result.response;
     let answer = response.text().trim();
 
-    // Ensure response is under 150 words
+    // For policy queries, allow longer responses to include all dates and details
+    // For other queries, keep to 150 words
+    const wordLimit = isPolicyQuery ? 250 : 150;
     const words = answer.split(" ");
-    if (words.length > 150) {
-      answer = words.slice(0, 150).join(" ") + "...";
+    if (words.length > wordLimit) {
+      answer = words.slice(0, wordLimit).join(" ") + "...";
     }
 
     const finalAnswer = formatStructuredResponse(

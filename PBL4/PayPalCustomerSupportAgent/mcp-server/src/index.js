@@ -187,13 +187,13 @@ class PayPalMCPServer {
           case "search_web": {
             const query = args.query || "";
             const results = await this.webSearchService.searchPayPalWeb(query);
-            
+
             // Detect if this is a policy query for appropriate messaging
             const isPolicyQuery =
               /(policy.*change|policy.*update|change.*policy|update.*policy|terms.*change|terms.*update|user agreement.*change|user agreement.*update|recent.*policy|latest.*policy)/i.test(
                 query
               );
-            
+
             if (results.length === 0) {
               const message = isPolicyQuery
                 ? `No policy updates found for: ${query}. Please check PayPal's official policy pages for the latest information.`
@@ -207,24 +207,55 @@ class PayPalMCPServer {
                 ],
               };
             }
-            
+
             // Use appropriate result limit (5 for policy queries, 3 for others)
             const resultLimit = isPolicyQuery ? 5 : 3;
             const displayedResults = results.slice(0, resultLimit);
-            
-            // Format results with indication of official sources for policy queries
+
+            // Format results with indication of official sources and date information for policy queries
             const formattedResults = displayedResults
               .map((r, i) => {
-                const isOfficial = /paypal\.com\/(legal|legalhome|.*policy)/i.test(r.link);
-                const officialBadge = isPolicyQuery && isOfficial ? "[OFFICIAL] " : "";
-                return `${i + 1}. ${officialBadge}${r.title}\n   ${r.snippet}\n   🔗 ${r.link}`;
+                const isOfficial =
+                  /paypal\.com\/(legal|legalhome|.*policy)/i.test(r.link);
+                const officialBadge =
+                  isPolicyQuery && isOfficial ? "[OFFICIAL] " : "";
+
+                // Try to extract date from snippet or title for policy queries
+                let dateInfo = "";
+                if (isPolicyQuery) {
+                  // Look for "X days ago", "X weeks ago", dates in various formats including "Last updated on 20 August 2025"
+                  const datePatterns = [
+                    /(Last\s+updated\s+on|Updated\s+on|Last\s+updated|Updated\s+on).*?(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\w\s]+\d{1,2},?\s+\d{4})/i, // "Last updated on 20 August 2025"
+                    /(\d+\s+(days?|weeks?|months?)\s+ago)/i, // "3 days ago", "2 weeks ago"
+                    /(Effective|Effective\s+date).*?(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})/i,
+                    /\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/i, // "20 August 2025"
+                    /\d{1,2}\/\d{1,2}\/\d{4}/,
+                    /\d{4}-\d{2}-\d{2}/,
+                  ];
+                  const fullText = `${r.title} ${r.snippet}`;
+                  for (const pattern of datePatterns) {
+                    const match = fullText.match(pattern);
+                    if (match) {
+                      dateInfo = `\n   📅 ${match[0]}`;
+                      break;
+                    }
+                  }
+                }
+
+                return `${i + 1}. ${officialBadge}${r.title}\n   ${
+                  r.snippet
+                }${dateInfo}\n   🔗 ${r.link}`;
               })
               .join("\n\n");
-            
+
             const header = isPolicyQuery
-              ? `Found ${results.length} policy update${results.length !== 1 ? "s" : ""} from PayPal's official pages:\n\n`
-              : `Found ${results.length} recent result${results.length !== 1 ? "s" : ""}:\n\n`;
-            
+              ? `Found ${results.length} policy update${
+                  results.length !== 1 ? "s" : ""
+                } from PayPal's official pages:\n\n`
+              : `Found ${results.length} recent result${
+                  results.length !== 1 ? "s" : ""
+                }:\n\n`;
+
             return {
               content: [
                 {
@@ -523,20 +554,25 @@ export class MCPToolsService {
             };
           }
           try {
-            const results = await this.webSearchService.searchPayPalWeb(query);
-            if (results.length === 0) {
-              return {
-                success: true,
-                message: `No recent results found for: ${query}`,
-                data: [],
-              };
-            }
-            // Detect if this is a policy query
+            // Detect if this is a policy query first (needed for error message too)
             const isPolicyQuery =
               /(policy.*change|policy.*update|change.*policy|update.*policy|terms.*change|terms.*update|user agreement.*change|user agreement.*update|recent.*policy|latest.*policy)/i.test(
                 query
               );
-            
+
+            const results = await this.webSearchService.searchPayPalWeb(query);
+            if (results.length === 0) {
+              // Context-aware message for policy queries
+              const message = isPolicyQuery
+                ? `No policy updates found for: ${query}. Please check PayPal's official policy pages for the latest information.`
+                : `No recent results found for: ${query}`;
+              return {
+                success: true,
+                message: message,
+                data: [],
+              };
+            }
+
             // Format results for resultCombiner compatibility
             const formattedResults = results.map((r) => ({
               ...r,
@@ -548,23 +584,60 @@ export class MCPToolsService {
                 source: r.link,
               },
               isRecent: !isPolicyQuery, // Policy queries may be from weeks ago
-              isOfficial: /paypal\.com\/(legal|legalhome|.*policy)/i.test(r.link),
+              isOfficial: /paypal\.com\/(legal|legalhome|.*policy)/i.test(
+                r.link
+              ),
             }));
             // Use appropriate result limit and message for policy queries
             const resultLimit = isPolicyQuery ? 5 : 3;
             const displayedResults = formattedResults.slice(0, resultLimit);
             const headerMessage = isPolicyQuery
-              ? `Found ${formattedResults.length} policy update${formattedResults.length !== 1 ? "s" : ""} from PayPal's official pages`
-              : `Found ${formattedResults.length} recent result${formattedResults.length !== 1 ? "s" : ""}`;
-            
+              ? `Found ${formattedResults.length} policy update${
+                  formattedResults.length !== 1 ? "s" : ""
+                } from PayPal's official pages`
+              : `Found ${formattedResults.length} recent result${
+                  formattedResults.length !== 1 ? "s" : ""
+                }`;
+
+            // Format results with official source highlighting and date information
+            const formattedMessage = displayedResults
+              .map((r, i) => {
+                const isOfficial =
+                  /paypal\.com\/(legal|legalhome|.*policy)/i.test(r.link);
+                const officialBadge =
+                  isPolicyQuery && isOfficial ? "[OFFICIAL] " : "";
+
+                // Try to extract date from snippet or title
+                let dateInfo = "";
+                if (isPolicyQuery) {
+                  // Look for "X days ago", "X weeks ago", dates in various formats including "Last updated on 20 August 2025"
+                  const datePatterns = [
+                    /(Last\s+updated\s+on|Updated\s+on|Last\s+updated|Updated\s+on).*?(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\w\s]+\d{1,2},?\s+\d{4})/i, // "Last updated on 20 August 2025"
+                    /(\d+\s+(days?|weeks?|months?)\s+ago)/i, // "3 days ago", "2 weeks ago"
+                    /(Effective|Effective\s+date).*?(\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}|\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2})/i,
+                    /\d{1,2}\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}/i, // "20 August 2025"
+                    /\d{1,2}\/\d{1,2}\/\d{4}/,
+                    /\d{4}-\d{2}-\d{2}/,
+                  ];
+                  const fullText = `${r.title} ${r.snippet}`;
+                  for (const pattern of datePatterns) {
+                    const match = fullText.match(pattern);
+                    if (match) {
+                      dateInfo = `\n   📅 ${match[0]}`;
+                      break;
+                    }
+                  }
+                }
+
+                return `${i + 1}. ${officialBadge}${r.title}\n   ${
+                  r.snippet
+                }${dateInfo}\n   🔗 ${r.link}`;
+              })
+              .join("\n\n");
+
             return {
               success: true,
-              message: `${headerMessage}:\n\n${displayedResults
-                .map(
-                  (r, i) =>
-                    `${i + 1}. ${r.title}\n   ${r.snippet}\n   ${r.link}`
-                )
-                .join("\n\n")}`,
+              message: `${headerMessage}:\n\n${formattedMessage}`,
               data: formattedResults,
             };
           } catch (error) {

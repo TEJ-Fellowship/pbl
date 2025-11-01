@@ -166,7 +166,7 @@ export class WebSearchService {
           lr: "lang_en",
         };
       } else if (isPolicyQuery) {
-        // For policy queries, look back a few weeks/months to catch recent policy changes
+        // For policy queries, search without date restriction to get all policy updates
         searchQuery = optimizedQuery;
         searchParams = {
           key: this.googleApiKey,
@@ -174,8 +174,8 @@ export class WebSearchService {
           q: searchQuery,
           num: 10, // Get more results for policy queries
           safe: "off",
-          sort: "date",
-          dateRestrict: "m3", // Look back 3 months to catch policy changes from a few weeks ago
+          sort: "date", // Sort by date to get newest first
+          // No dateRestrict - search all time
           lr: "lang_en",
         };
       } else {
@@ -198,7 +198,7 @@ export class WebSearchService {
           isOutageQuery
             ? "status-focused"
             : isPolicyQuery
-            ? "policy-focused (looking back 3 months)"
+            ? "policy-focused (no date restriction)"
             : "general"
         }`
       );
@@ -232,7 +232,7 @@ export class WebSearchService {
         );
         // Fallback: broaden search if initial constraints return nothing
         const fallbackQuery = isPolicyQuery
-          ? `site:paypal.com/legal OR site:paypal.com/legalhome "${query}" policy`
+          ? `site:paypal.com/legalhub policy OR site:paypal.com/legalhome/updates`
           : `PayPal ${query}`;
         const fallbackParams = {
           key: this.googleApiKey,
@@ -241,7 +241,7 @@ export class WebSearchService {
           num: isPolicyQuery ? 10 : 8,
           safe: "off",
           sort: "date",
-          dateRestrict: isPolicyQuery ? "m3" : "m3", // Look back 3 months for policy fallback too
+          // No dateRestrict for policy queries - search all time
           lr: "lang_en",
         };
         response = await makeApiCallWithRetry(async () => {
@@ -354,9 +354,8 @@ export class WebSearchService {
 
     // Add site-specific searches for better accuracy
     if (queryPatterns.policy) {
-      // For policy queries, ONLY search PayPal official policy pages
-      // Include country-specific policy pages (e.g., Australian policies)
-      optimizedQuery = `(site:paypal.com/legal OR site:paypal.com/us/legalhome/updates OR site:paypal.com/au/legalhome/updates OR site:paypal.com/uk/legalhome/updates OR site:paypal.com/legalhome/updates) "${query}" policy change update`;
+      // For policy queries, target actual PayPal policy update pages (matches Google search results)
+      optimizedQuery = `site:paypal.com/legalhub policy OR site:paypal.com/legalhome/updates`;
     } else if (queryPatterns.outage.test(query) || queryPatterns.recent) {
       // For status queries, prioritize official PayPal sources
       optimizedQuery = `site:paypal.com OR site:status.paypal.com OR site:paypal-community.com "${query}"`;

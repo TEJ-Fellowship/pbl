@@ -69,9 +69,9 @@ class QueryRouter {
       "- web_search: Recent information needed (ALWAYS use for policy changes, updates, recent changes)",
       "- timeline: Transaction timeline estimates",
       "",
-      "IMPORTANT: Policy change queries should use web_search tool and be classified as hybrid or mcp_only.",
-      "Policy queries include: policy changes, terms updates, user agreement changes, etc.",
-      "These need real-time web search to find the latest policy updates.",
+      "IMPORTANT: Policy CHANGE queries (policy changes, terms updates, user agreement changes) should use web_search tool and be classified as mcp_only (NOT hybrid).",
+      "Policy CHANGE queries need real-time web search to find latest updates from official pages.",
+      "General policy questions (what is policy, explain policy) should use documentation_only.",
       "",
       "Return ONLY valid JSON with this exact structure:",
       "{",
@@ -96,7 +96,7 @@ class QueryRouter {
       '→ {"query_type": "documentation_only", "issue_type": ["refund"], "requires_mcp_tools": [], "is_paypal_related": true, "confidence": "high"}',
       "",
       'Query: "What are the recent policy changes?"',
-      '→ {"query_type": "hybrid", "issue_type": ["general_help"], "requires_mcp_tools": ["web_search"], "is_paypal_related": true, "confidence": "high"}',
+      '→ {"query_type": "mcp_only", "issue_type": ["general_help"], "requires_mcp_tools": ["web_search"], "is_paypal_related": true, "confidence": "high"}',
       "",
       'Query: "Is PayPal down today and what is the refund policy?"',
       '→ {"query_type": "hybrid", "issue_type": ["service_status", "refund"], "requires_mcp_tools": ["status_check"], "is_paypal_related": true, "confidence": "high"}',
@@ -244,7 +244,8 @@ class QueryRouter {
       }
     }
 
-    // Trigger web_search for policy change queries and recent updates
+    // Trigger web_search for policy change queries - use mcp_only (not hybrid)
+    // Policy changes are time-sensitive and need real-time search, not static documentation
     if (
       /(policy.*change|policy.*update|change.*policy|update.*policy|terms.*change|terms.*update|user agreement.*change|user agreement.*update|recent.*policy|latest.*policy)/i.test(
         lowerQuery
@@ -252,7 +253,7 @@ class QueryRouter {
     ) {
       requiresMCPTools.push("web_search");
       if (queryType !== "general") {
-        queryType = queryType === "mcp_only" ? "hybrid" : "hybrid";
+        queryType = "mcp_only"; // Use web search only, not hybrid (no documentation needed)
       }
     }
 
