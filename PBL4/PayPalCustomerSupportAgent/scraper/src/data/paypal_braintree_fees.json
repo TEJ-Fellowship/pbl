@@ -93,12 +93,7 @@
         "Payment type": "PayPal transactions",
         "Description": "Subject to the terms applicable to your PayPal account",
         "Rate per transaction": "PayPal Merchant Fees"
-      },
-      {
-        "Payment type": "Venmo transactions",
-        "Description": "Venmo is available in the US only",
-        "Rate per transaction": "3.49% + 0.49 USD"
-      },
+       },
       {
         "Payment type": "ACH direct debit transactions",
         "Description": "Maximum per transaction fee is capped at 5.00 USD",

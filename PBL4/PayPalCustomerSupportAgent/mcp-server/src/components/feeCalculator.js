@@ -1,20 +1,29 @@
-const fs = require('fs');
-const path = require('path');
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { CurrencyExchangeService } from "./currencyExchange.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== FEE CALCULATOR SERVICE =====
-class FeeCalculatorService {
+export class FeeCalculatorService {
   constructor() {
     this.feeRates = this.loadFeeRates();
+    this.fx = new CurrencyExchangeService();
   }
 
   // Load fee rates from JSON file
   loadFeeRates() {
     try {
-      const feeRatesPath = path.join(__dirname, '../../fee-rates/paypal-fees.json');
-      const data = fs.readFileSync(feeRatesPath, 'utf8');
+      const feeRatesPath = path.join(
+        __dirname,
+        "../../fee-rates/paypal-fees.json"
+      );
+      const data = fs.readFileSync(feeRatesPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error('❌ Failed to load fee rates:', error.message);
+      console.error("❌ Failed to load fee rates:", error.message);
       return null;
     }
   }
@@ -23,55 +32,82 @@ class FeeCalculatorService {
   isFeeQuery(query) {
     const lowerQuery = query.toLowerCase();
     const feeKeywords = [
-      'fee', 'fees', 'cost', 'costs', 'charge', 'charges', 'calculate', 'calculation',
-      'how much', 'paypal fee', 'transaction fee', 'payment fee', 'send money fee',
-      'receive money fee', 'domestic fee', 'international fee', 'currency fee'
+      "fee",
+      "fees",
+      "cost",
+      "costs",
+      "charge",
+      "charges",
+      "calculate",
+      "calculation",
+      "how much",
+      "paypal fee",
+      "transaction fee",
+      "payment fee",
+      "send money fee",
+      "receive money fee",
+      "domestic fee",
+      "international fee",
+      "currency fee",
     ];
-    
-    return feeKeywords.some(keyword => lowerQuery.includes(keyword));
+
+    return feeKeywords.some((keyword) => lowerQuery.includes(keyword));
   }
 
   // Parse fee calculation query
   parseFeeQuery(query) {
     const upperQuery = query.toUpperCase();
-    
+
     // Extract amount
     const amountMatch = query.match(/(\d+(?:\.\d+)?)/);
     const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
 
     // Determine transaction type
-    let transactionType = 'domestic';
-    if (upperQuery.includes('INTERNATIONAL') || upperQuery.includes('CROSS-BORDER') || 
-        upperQuery.includes('FOREIGN') || upperQuery.includes('OVERSEAS')) {
-      transactionType = 'international';
+    let transactionType = "domestic";
+    if (
+      upperQuery.includes("INTERNATIONAL") ||
+      upperQuery.includes("CROSS-BORDER") ||
+      upperQuery.includes("FOREIGN") ||
+      upperQuery.includes("OVERSEAS")
+    ) {
+      transactionType = "international";
     }
 
     // Determine account type
-    let accountType = 'personal';
-    if (upperQuery.includes('BUSINESS') || upperQuery.includes('MERCHANT') || 
-        upperQuery.includes('COMMERCIAL')) {
-      accountType = 'business';
+    let accountType = "personal";
+    if (
+      upperQuery.includes("BUSINESS") ||
+      upperQuery.includes("MERCHANT") ||
+      upperQuery.includes("COMMERCIAL")
+    ) {
+      accountType = "business";
     }
 
     // Determine payment method
-    let paymentMethod = 'paypal_balance';
-    if (upperQuery.includes('CREDIT CARD') || upperQuery.includes('CREDITCARD')) {
-      paymentMethod = 'credit_card';
-    } else if (upperQuery.includes('DEBIT CARD') || upperQuery.includes('DEBITCARD')) {
-      paymentMethod = 'debit_card';
+    let paymentMethod = "paypal_balance";
+    if (
+      upperQuery.includes("CREDIT CARD") ||
+      upperQuery.includes("CREDITCARD")
+    ) {
+      paymentMethod = "credit_card";
+    } else if (
+      upperQuery.includes("DEBIT CARD") ||
+      upperQuery.includes("DEBITCARD")
+    ) {
+      paymentMethod = "debit_card";
     }
 
     // Determine currency
-    let currency = 'USD';
+    let currency = "USD";
     const currencyPatterns = [
-      { pattern: /USD|US\s*DOLLAR/i, code: 'USD' },
-      { pattern: /EUR|EURO/i, code: 'EUR' },
-      { pattern: /GBP|POUND|BRITISH/i, code: 'GBP' },
-      { pattern: /JPY|YEN|JAPANESE/i, code: 'JPY' },
-      { pattern: /CAD|CANADIAN/i, code: 'CAD' },
-      { pattern: /AUD|AUSTRALIAN/i, code: 'AUD' },
-      { pattern: /INR|INDIAN\s*RUPEE/i, code: 'INR' },
-      { pattern: /NPR|NEPALI\s*RUPEE/i, code: 'NPR' }
+      { pattern: /USD|US\s*DOLLAR/i, code: "USD" },
+      { pattern: /EUR|EURO/i, code: "EUR" },
+      { pattern: /GBP|POUND|BRITISH/i, code: "GBP" },
+      { pattern: /JPY|YEN|JAPANESE/i, code: "JPY" },
+      { pattern: /CAD|CANADIAN/i, code: "CAD" },
+      { pattern: /AUD|AUSTRALIAN/i, code: "AUD" },
+      { pattern: /INR|INDIAN\s*RUPEE/i, code: "INR" },
+      { pattern: /NPR|NEPALI\s*RUPEE/i, code: "NPR" },
     ];
 
     for (const pattern of currencyPatterns) {
@@ -87,20 +123,26 @@ class FeeCalculatorService {
       accountType,
       paymentMethod,
       currency,
-      isValid: amount !== null && amount > 0
+      isValid: amount !== null && amount > 0,
     };
   }
 
   // Calculate PayPal fees
-  calculateFees(amount, transactionType, accountType, paymentMethod, currency = 'USD') {
+  async calculateFees(
+    amount,
+    transactionType,
+    accountType,
+    paymentMethod,
+    currency = "USD"
+  ) {
     try {
       // Validate inputs
       if (!amount || amount <= 0) {
-        throw new Error('Amount must be greater than 0');
+        throw new Error("Amount must be greater than 0");
       }
 
       if (!this.feeRates) {
-        throw new Error('Fee rates not available');
+        throw new Error("Fee rates not available");
       }
 
       // Check if currency is supported
@@ -109,9 +151,14 @@ class FeeCalculatorService {
       }
 
       // Get fee structure
-      const feeStructure = this.feeRates.fee_structures[transactionType]?.[accountType]?.[paymentMethod];
+      const feeStructure =
+        this.feeRates.fee_structures[transactionType]?.[accountType]?.[
+          paymentMethod
+        ];
       if (!feeStructure) {
-        throw new Error(`Fee structure not found for ${transactionType} ${accountType} ${paymentMethod}`);
+        throw new Error(
+          `Fee structure not found for ${transactionType} ${accountType} ${paymentMethod}`
+        );
       }
 
       // Check for micropayments
@@ -127,16 +174,36 @@ class FeeCalculatorService {
 
       // Calculate fees
       const percentageFee = amount * feeStructureToUse.percentage;
-      const fixedFee = feeStructureToUse.fixed_fee;
+      let fixedFee = feeStructureToUse.fixed_fee;
+
+      // Convert fixed fee to target currency if fee base currency differs
+      const baseFeeCurrency = feeStructureToUse.currency || "USD";
+      if (currency !== baseFeeCurrency) {
+        try {
+          const fx = await this.fx.getExchangeRate(
+            baseFeeCurrency,
+            currency,
+            fixedFee
+          );
+          fixedFee = fx.converted_amount;
+        } catch (_) {
+          // If FX fails, keep original fixed fee units as-is
+        }
+      }
       const totalFee = percentageFee + fixedFee;
       const amountReceived = amount - totalFee;
 
-      // Check for currency conversion fee
+      // Check for currency conversion fee (apply only if cross-currency or international)
       let currencyConversionFee = 0;
-      let currencyConversionNote = '';
-      if (currency !== 'USD') {
-        currencyConversionFee = amount * this.feeRates.currency_conversion.additional_fee_percentage;
-        currencyConversionNote = ` + ${this.feeRates.currency_conversion.additional_fee_percentage * 100}% currency conversion fee`;
+      let currencyConversionNote = "";
+      const needsConversionFee =
+        transactionType === "international" || currency !== baseFeeCurrency;
+      if (needsConversionFee) {
+        currencyConversionFee =
+          amount * this.feeRates.currency_conversion.additional_fee_percentage;
+        currencyConversionNote = ` + ${
+          this.feeRates.currency_conversion.additional_fee_percentage * 100
+        }% currency conversion fee`;
       }
 
       const finalTotalFee = totalFee + currencyConversionFee;
@@ -147,7 +214,8 @@ class FeeCalculatorService {
       const formatAmount = (amt) => {
         const symbol = currencyInfo.symbol;
         const decimals = currencyInfo.decimal_places;
-        const formatted = decimals === 0 ? Math.round(amt) : amt.toFixed(decimals);
+        const formatted =
+          decimals === 0 ? Math.round(amt) : amt.toFixed(decimals);
         return `${symbol}${formatted}`;
       };
 
@@ -163,11 +231,11 @@ class FeeCalculatorService {
             percentageFee: percentageFee,
             fixedFee: fixedFee,
             currencyConversionFee: currencyConversionFee,
-            totalFee: finalTotalFee
+            totalFee: finalTotalFee,
           },
           amountReceived: finalAmountReceived,
           isMicropayment: isMicropayment,
-          currencyConversionNote: currencyConversionNote
+          currencyConversionNote: currencyConversionNote,
         },
         formatted: {
           amount: formatAmount(amount),
@@ -175,14 +243,13 @@ class FeeCalculatorService {
           fixedFee: formatAmount(fixedFee),
           currencyConversionFee: formatAmount(currencyConversionFee),
           totalFee: formatAmount(finalTotalFee),
-          amountReceived: formatAmount(finalAmountReceived)
-        }
+          amountReceived: formatAmount(finalAmountReceived),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -191,15 +258,16 @@ class FeeCalculatorService {
   async handleFeeQuery(query) {
     try {
       const parsedQuery = this.parseFeeQuery(query);
-      
+
       if (!parsedQuery.isValid) {
         return {
           success: false,
-          message: 'I couldn\'t understand the fee calculation request. Please try: "Calculate PayPal fee for $100 domestic payment" or "What are the fees for sending $50 internationally?"'
+          message:
+            'I couldn\'t understand the fee calculation request. Please try: "Calculate PayPal fee for $100 domestic payment" or "What are the fees for sending $50 internationally?"',
         };
       }
 
-      const result = this.calculateFees(
+      const result = await this.calculateFees(
         parsedQuery.amount,
         parsedQuery.transactionType,
         parsedQuery.accountType,
@@ -210,7 +278,7 @@ class FeeCalculatorService {
       if (!result.success) {
         return {
           success: false,
-          message: `Sorry, I couldn't calculate the fees: ${result.error}`
+          message: `Sorry, I couldn't calculate the fees: ${result.error}`,
         };
       }
 
@@ -219,22 +287,35 @@ class FeeCalculatorService {
 
       // Create detailed breakdown message
       let message = `💳 PayPal Fee Calculation:\n\n`;
-      message += `Transaction: ${formatted.amount} (${data.transactionType.charAt(0).toUpperCase() + data.transactionType.slice(1)})\n`;
-      message += `Account Type: ${data.accountType.charAt(0).toUpperCase() + data.accountType.slice(1)}\n`;
-      message += `Payment Method: ${data.paymentMethod.replace('_', ' ').toUpperCase()}\n\n`;
+      message += `Transaction: ${formatted.amount} (${
+        data.transactionType.charAt(0).toUpperCase() +
+        data.transactionType.slice(1)
+      })\n`;
+      message += `Account Type: ${
+        data.accountType.charAt(0).toUpperCase() + data.accountType.slice(1)
+      }\n`;
+      message += `Payment Method: ${data.paymentMethod
+        .replace("_", " ")
+        .toUpperCase()}\n\n`;
 
       if (isMicropayment) {
         message += `⚠️ Micropayment rates apply (≤ $${this.feeRates.micropayments.threshold})\n\n`;
       }
 
       message += `Fee Breakdown:\n`;
-      message += `- Percentage Fee: ${formatted.percentageFee} (${(feeBreakdown.percentageFee / data.amount * 100).toFixed(2)}%)\n`;
+      message += `- Percentage Fee: ${formatted.percentageFee} (${(
+        (feeBreakdown.percentageFee / data.amount) *
+        100
+      ).toFixed(2)}%)\n`;
       message += `- Fixed Fee: ${formatted.fixedFee}\n`;
-      
+
       if (feeBreakdown.currencyConversionFee > 0) {
-        message += `- Currency Conversion: ${formatted.currencyConversionFee} (2.5%)\n`;
+        const convPct = (
+          this.feeRates.currency_conversion.additional_fee_percentage * 100
+        ).toFixed(2);
+        message += `- Currency Conversion: ${formatted.currencyConversionFee} (${convPct}%)\n`;
       }
-      
+
       message += `- Total Fee: ${formatted.totalFee}\n\n`;
       message += `Amount Received: ${formatted.amountReceived}\n\n`;
 
@@ -247,13 +328,12 @@ class FeeCalculatorService {
       return {
         success: true,
         message: message,
-        data: data
+        data: data,
       };
-
     } catch (error) {
       return {
         success: false,
-        message: `Sorry, I couldn't calculate the fees: ${error.message}`
+        message: `Sorry, I couldn't calculate the fees: ${error.message}`,
       };
     }
   }
@@ -271,9 +351,7 @@ class FeeCalculatorService {
       version: this.feeRates.version,
       lastUpdated: this.feeRates.last_updated,
       supportedCurrencies: this.getSupportedCurrencies(),
-      micropaymentThreshold: this.feeRates.micropayments.threshold
+      micropaymentThreshold: this.feeRates.micropayments.threshold,
     };
   }
 }
-
-module.exports = FeeCalculatorService;
