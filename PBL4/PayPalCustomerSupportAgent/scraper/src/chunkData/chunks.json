@@ -25107,595 +25107,727 @@
     "source": "paypal_braintree_fees.json",
     "original_index": 0,
     "chunk_index": 0,
-    "text": "Table 1"
+    "text": "Table 1\nHeaders: United States (US)"
   },
   {
     "source": "paypal_braintree_fees.json",
     "original_index": 1,
     "chunk_index": 0,
-    "text": "Table 2"
+    "text": "Table 2\nHeaders: Payment type | Description | Rate per transaction\nRow 1: Payment type: Cards and third-party digital wallet transactions, Description: For standard merchants1, Rate per transaction: 2.89% + 0.29 USD\nRow 2: Payment type: Pass-through American Express transaction2, Description: 0.15 USD, Rate per transaction: \nRow 3: Payment type: Presented in any non-USD currency, Description: Additional 1%, Rate per transaction: \nRow 4: Payment type: Customer card issued outside of the United States, Description: Additional 1%, Rate per transaction: \nRow 5: Payment type: Chargeback, Description: 15.00 USD, Rate per transaction: \nRow 6: Payment type: PayPal transactions, Description: Subject to the terms applicable to your PayPal account, Rate per transaction: PayPal Merchant Fees"
+  },
+  {
+    "source": "paypal_braintree_fees.json",
+    "original_index": 1,
+    "chunk_index": 1,
+    "text": "Row 6: Payment type: PayPal transactions, Description: Subject to the terms applicable to your PayPal account, Rate per transaction: PayPal Merchant Fees\nRow 7: Payment type: Venmo transactions, Description: Venmo is available in the US only, Rate per transaction: 3.49% + 0.49 USD\nRow 8: Payment type: ACH direct debit transactions, Description: Maximum per transaction fee is capped at 5.00 USD, Rate per transaction: 0.75%\nRow 9: Payment type: Returned by banking network, Description: 5.00 USD, Rate per transaction: \nRow 10: Payment type: Disputed by your customer as unauthorized, Description: 5.00 USD, Rate per transaction:"
   },
   {
     "source": "paypal_braintree_fees.json",
     "original_index": 2,
     "chunk_index": 0,
-    "text": "Table 3"
+    "text": "Table 3\nHeaders: Payment type | Description | Rate per transaction\nRow 1: Payment type: Cards and third-party digital wallet transactions, Description: For verified charitable 501(c)(3) organizations, Rate per transaction: 2.19% + 0.29 USD\nRow 2: Payment type: Pass-through American Express transaction1, Description: 0.15 USD, Rate per transaction: \nRow 3: Payment type: Presented in any non-USD currency, Description: Additional 1%, Rate per transaction: \nRow 4: Payment type: Customer card issued outside of the United States, Description: Additional 1%, Rate per transaction: \nRow 5: Payment type: Chargeback, Description: 15.00 USD, Rate per transaction:"
+  },
+  {
+    "source": "paypal_braintree_fees.json",
+    "original_index": 2,
+    "chunk_index": 1,
+    "text": "Row 5: Payment type: Chargeback, Description: 15.00 USD, Rate per transaction: \nRow 6: Payment type: PayPal transactions, Description: Subject to the terms applicable to your PayPal account, Rate per transaction: PayPal Merchant Fees\nRow 7: Payment type: Venmo transactions, Description: Venmo is available in the US only, Rate per transaction: 3.49% + 0.49 USD\nRow 8: Payment type: ACH direct debit transactions, Description: Maximum per transaction fee is capped at 5.00 USD, Rate per transaction: 0.75%\nRow 9: Payment type: Returned by banking network, Description: 5.00 USD, Rate per transaction: \nRow 10: Payment type: Disputed by your customer as unauthorized, Description: 5.00 USD, Rate per transaction:"
   },
   {
     "source": "paypal_braintree_fees.json",
     "original_index": 3,
     "chunk_index": 0,
-    "text": "Table 4"
+    "text": "Table 4\nHeaders: Service | Description | Fee\nRow 1: Service: Chargeback Protection Tools1, Description: Chargeback Protection, Fee: Starting at 0.4% per transaction\nRow 2: Service: Effortless Chargeback Protection, Description: Starting at 0.6% per transaction, Fee: \nRow 3: Service: Fraud Maintenance Tools2, Description: Fraud Protection Lite, Fee: 0.05 USD per inquiry"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 0,
     "chunk_index": 0,
-    "text": "Table 1"
+    "text": "Table 1\nHeaders: Tariff\nRow 1: Tariff: No Fee (when no currency conversion is involved)"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 1,
     "chunk_index": 0,
-    "text": "Table 2"
+    "text": "Table 2\nHeaders: Purchase, sale, or conversion amount | Fee\nRow 1: Purchase, sale, or conversion amount: 1.00 - 74.99 USD, Fee: 2.20%\nRow 2: Purchase, sale, or conversion amount: 75.00 – 200.00 USD, Fee: 2.00%\nRow 3: Purchase, sale, or conversion amount: 200.01 – 1000.00 USD, Fee: 1.80%\nRow 4: Purchase, sale, or conversion amount: 1000.01 USD +, Fee: 1.50%"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 2,
     "chunk_index": 0,
-    "text": "Table 3"
+    "text": "Table 3\nHeaders: Transfer Type | Fee\nRow 1: Transfer Type: Receiving a crypto transfer, Fee: No fee\nRow 2: Transfer Type: Transferring crypto to another PayPal or Venmo account, Fee: No fee\nRow 3: Transfer Type: Transferring crypto to an address outside of PayPal or Venmo, Fee: You will be charged a cryptocurrency network fee, payable in the crypto you transfer, which varies. For details on the network fee, see the PayPal Cryptocurrency Terms and Conditions. We will display such network fee right before you transfer any crypto."
+  },
+  {
+    "source": "paypal_consumer_fees.json",
+    "original_index": 2,
+    "chunk_index": 1,
+    "text": "Row 4: Transfer Type: Using PayPal as a funding source to buy and transfer crypto in one step to external cryptocurrency wallet providers who support this feature, Fee: When you buy crypto to be transferred in one step, you will also be charged a cryptocurrency network fee, payable in the crypto you transfer. The crypto amount to be transferred in one step to an external wallet plus the crypto amount you will be charged to cover the cryptocurrency network fee is the “combined cryptocurrency purchase amount.” We will display the network fee right before you transfer any crypto.\n‎"
+  },
+  {
+    "source": "paypal_consumer_fees.json",
+    "original_index": 2,
+    "chunk_index": 2,
+    "text": "‎\nFor crypto other than PYUSD, you will pay (1) the transaction fee listed in the “Buying or selling a cryptocurrency” table above on the USD value of the combined cryptocurrency purchase amount and (2) 1% only on the USD value of the crypto that you transfer to your external wallet.\n‎\nFor PYUSD, you will pay 1.5% on the USD value of the PYUSD that you transfer to your external wallet. You will not pay a transaction fee on the combined cryptocurrency purchase amount.\nRow 5: Transfer Type: Using PayPal to transfer and sell crypto out of supported external cryptocurrency wallets in one step, Fee: When you transfer and sell crypto out of a supported external cryptocurrency wallet in one step, you will pay a transaction fee on the USD value of the crypto you are selling.\n‎"
+  },
+  {
+    "source": "paypal_consumer_fees.json",
+    "original_index": 2,
+    "chunk_index": 3,
+    "text": "‎\n‎For crypto other than PYUSD, you will pay (1) the transaction fee listed in the “Buying or selling a cryptocurrency” table above and (2) 1% only on the USD value of the crypto that you receive from your external wallet.\n‎\n‎For PYUSD, you will pay 1.5% on the USD value of the PYUSD that you receive from your external wallet. You will not pay a transaction fee listed in the “Buying or selling a cryptocurrency” table above."
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 3,
     "chunk_index": 0,
-    "text": "Table 4"
+    "text": "Table 4\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donate Button, Rate: 2.89% + fixed fee\nRow 2: Payment Type: PayPal Checkout for Donations, Rate: 2.89% + fixed fee"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 4,
     "chunk_index": 0,
-    "text": "Table 5"
+    "text": "Table 5\nHeaders: Payment Type | Rate\nRow 1: Payment Type: All Donations, Rate: 1.50%"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 5,
     "chunk_index": 0,
-    "text": "Table 6"
+    "text": "Table 6\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 6,
     "chunk_index": 0,
-    "text": "Table 7"
+    "text": "Table 7\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 7,
     "chunk_index": 0,
-    "text": "Table 8"
+    "text": "Table 8\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donations, Rate: No Fee"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 8,
     "chunk_index": 0,
-    "text": "Table 9"
+    "text": "Table 9\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donations, Rate: No Fee (when no currency conversion is needed)"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 9,
     "chunk_index": 0,
-    "text": "Table 10"
+    "text": "Table 10\nHeaders: Payment method | Fee\nRow 1: Payment method: PayPal balance or a bank account, Fee: No fee\nRow 2: Payment method: Cards, Fee: 2.90% + fixed fee\nRow 3: Payment method: Amex Send™ Account, Fee: No fee\nRow 4: Payment method: Visa+ transaction to Venmo Visa+-enabled digital wallets, Fee: No Fee\nRow 5: Payment method: Visa+ transaction to non-Venmo Visa+-enabled digital wallets, Fee: 1.75%\nA minimum fee of 0.25 USDA maximum fee of 25.00 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 10,
     "chunk_index": 0,
-    "text": "Table 11"
+    "text": "Table 11\nHeaders: Payment method | Fee\nRow 1: Payment method: PayPal balance or a bank account, Fee: 5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD\nRow 2: Payment method: Cards, Fee: 5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD\nRow 3: Payment method: Amex Send™ Account, Fee: 5.00%\nA minimum international fee of 0.99 USDA maximum international fee of 4.99 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 11,
     "chunk_index": 0,
-    "text": "Table 12"
+    "text": "Table 12\nHeaders: Rate\nRow 1: Rate: No fee (when no currency conversion is involved)"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 12,
     "chunk_index": 0,
-    "text": "Table 13"
+    "text": "Table 13\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.30 AUD\nRow 2: Currency: Brazilian real, Fee: 0.60 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.30 CAD\nRow 4: Currency: Czech koruna, Fee: 10.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.60 DKK\nRow 6: Currency: Euro, Fee: 0.35 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 2.35 HKD\nRow 8: Currency: Hungarian forint, Fee: 90.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.20 ILS\nRow 10: Currency: Japanese yen, Fee: 40.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 4.00 MXN"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 13,
     "chunk_index": 0,
-    "text": "Table 14"
+    "text": "Table 14\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 10.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.45 NZD\nRow 3: Currency: Norwegian krone, Fee: 2.80 NOK\nRow 4: Currency: Philippine peso, Fee: 15.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.35 PLN\nRow 6: Currency: Russian ruble, Fee: 10.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.50 SGD\nRow 8: Currency: Swedish krona, Fee: 3.25 SEK\nRow 9: Currency: Swiss franc, Fee: 0.55 CHF\nRow 10: Currency: Thai baht, Fee: 11.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.20 GBP\nRow 12: Currency: US dollar, Fee: 0.30 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 14,
     "chunk_index": 0,
-    "text": "Table 15"
+    "text": "Table 15\nHeaders: Type of Transaction | Currency Conversion Spread\nRow 1: Type of Transaction: Paying for goods or services in a currency other than the currency the goods or services are listed in.Sending money to a friend or family member such that they receive a different currency from the currency in which you pay.Sending money using PayPal Payouts such that your recipients receive a different currency from the currency in which you pay., Currency Conversion Spread: 4.00%, or such other amount as may be disclosed to you during the transaction.\nRow 2: Type of Transaction: All other transactions, Currency Conversion Spread: 3.00%, or such other amount as may be disclosed to you during the transaction."
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 15,
     "chunk_index": 0,
-    "text": "Table 16"
+    "text": "Table 16\nHeaders: Withdrawal/Transfer to | Withdrawal/Transfer Type | Rate\nRow 1: Withdrawal/Transfer to: Bank account, Withdrawal/Transfer Type: Standard\nWith eligible linked bank account, Rate: No Fee (when no currency conversion is involved)\nRow 2: Withdrawal/Transfer to: Instant\nWithdrawal limits apply, Withdrawal/Transfer Type: 1.75% of amount transferred\nMinimum and Maximum fees apply based on the card withdrawal currency, in the table below, Rate: \nRow 3: Withdrawal/Transfer to: Cards, Withdrawal/Transfer Type: Standard\nWith eligible linked debit cardWithdrawal limits apply, Rate: No Fee (when no currency conversion is involved)\nRow 4: Withdrawal/Transfer to: Instant\nWith eligible linked debit cardWithdrawal limits apply, Withdrawal/Transfer Type: 1.75% of amount transferred"
+  },
+  {
+    "source": "paypal_consumer_fees.json",
+    "original_index": 15,
+    "chunk_index": 1,
+    "text": "Row 4: Withdrawal/Transfer to: Instant\nWith eligible linked debit cardWithdrawal limits apply, Withdrawal/Transfer Type: 1.75% of amount transferred\nMinimum and Maximum fees apply based on the card withdrawal currency, in the table below, Rate: \nRow 5: Withdrawal/Transfer to: Checks, Withdrawal/Transfer Type: Have a paper check mailed to you, Rate: 1.50 USD (Fee only applies to PayPal personal accounts without a linked PayPal Balance account)"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 16,
     "chunk_index": 0,
-    "text": "Table 17"
+    "text": "Table 17\nHeaders: Frequency | Maximum (up to)\nRow 1: Frequency: Per transaction, Maximum (up to): 25,000.00 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 17,
     "chunk_index": 0,
-    "text": "Table 18"
+    "text": "Table 18\nHeaders: Frequency | Maximum (up to)\nRow 1: Frequency: Per transaction, Maximum (up to): 5000.00 USD\nRow 2: Frequency: Per day, Maximum (up to): 5000.00 USD\nRow 3: Frequency: Per week, Maximum (up to): 5000.00 USD\nRow 4: Frequency: Per month, Maximum (up to): 15,000.00 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 18,
     "chunk_index": 0,
-    "text": "Table 19"
+    "text": "Table 19\nHeaders: Currency | Minimum Fee | Maximum Fee\nRow 1: Currency: US dollar, Minimum Fee: 0.25 USD, Maximum Fee: 25.00 USD"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 19,
     "chunk_index": 0,
-    "text": "Table 20"
+    "text": "Table 20\nHeaders: Activity | Description | Rate\nRow 1: Activity: Bank Return on Withdrawal/Transfer out of PayPal, Description: This fee is charged when a withdrawal/transfer out of PayPal is attempted by a user and it fails because incorrect bank account information or delivery information is provided., Rate: No Fee\nRow 2: Activity: Credit Card and Debit Card Confirmation(s), Description: Some users, in order to increase their sending limit or as PayPal may determine, may be charged a credit card and debit card link and confirmation fee. This amount will be refunded when you successfully complete the credit card or debit card verification process., Rate: See Credit Card and Debit Card Link and Confirmation Table below."
+  },
+  {
+    "source": "paypal_consumer_fees.json",
+    "original_index": 19,
+    "chunk_index": 1,
+    "text": "Row 3: Activity: PayPal Business Debit MasterCard, Description: Use of the PayPal Business Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms., Rate: Please see our PayPal Business Debit MasterCard Cardholder Agreement and Privacy Notice\nRow 4: Activity: PayPal Debit MasterCard, Description: Use of the PayPal Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms., Rate: Please see our PayPal Debit MasterCard Cardholder Agreement"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 20,
     "chunk_index": 0,
-    "text": "Table 21"
+    "text": "Table 21\nHeaders: Currency | Rate\nRow 1: Currency: Australian dollar, Rate: 2.00 AUD\nRow 2: Currency: Brazilian real, Rate: 4.00 BRL\nRow 3: Currency: Canadian dollar, Rate: 2.45 CAD\nRow 4: Currency: Czech koruna, Rate: 50.00 CZK\nRow 5: Currency: Danish krone, Rate: 12.50 DKK\nRow 6: Currency: Euro, Rate: 1.50 EUR\nRow 7: Currency: Hong Kong dollar, Rate: 15.00 HKD\nRow 8: Currency: Hungarian forint, Rate: 400.00 HUF\nRow 9: Currency: Israeli new shekel, Rate: 8.00 ILS\nRow 10: Currency: Japanese yen, Rate: 200.00 JPY\nRow 11: Currency: Malaysian ringgit, Rate: Not Applicable\nRow 12: Currency: Mexican peso, Rate: 20.00 MXN"
   },
   {
     "source": "paypal_consumer_fees.json",
     "original_index": 21,
     "chunk_index": 0,
-    "text": "Table 22"
+    "text": "Table 22\nHeaders: Currency | Rate\nRow 1: Currency: New Taiwan dollar, Rate: 70.00 TWD\nRow 2: Currency: New Zealand dollar, Rate: 3.00 NZD\nRow 3: Currency: Norwegian krone, Rate: 15.00 NOK\nRow 4: Currency: Philippine peso, Rate: 100.00 PHP\nRow 5: Currency: Polish zloty, Rate: 6.50 PLN\nRow 6: Currency: Russian ruble, Rate: 60.00 RUB\nRow 7: Currency: Singapore dollar, Rate: 3.00 SGD\nRow 8: Currency: Swedish krona, Rate: 15.00 SEK\nRow 9: Currency: Swiss franc, Rate: 3.00 CHF\nRow 10: Currency: Thai baht, Rate: 70.00 THB\nRow 11: Currency: UK pounds sterling, Rate: 1.00 GBP\nRow 12: Currency: US dollar, Rate: 1.95 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 0,
     "chunk_index": 0,
-    "text": "Table 1"
+    "text": "Table 1\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Alternative Payment Method (APM), Rate: APM Transaction Rates Apply\nRow 2: Payment Type: PayPal Checkout, Rate: 3.49% + fixed fee\nRow 3: Payment Type: PayPal Guest Checkout, Rate: 3.49% + fixed fee\nRow 4: Payment Type: QR code Transactions, Rate: 2.29% + fixed fee\nRow 5: Payment Type: QR code Transactions through third party integrator, Rate: 2.29% + 0.09 USD\nRow 6: Payment Type: Pay with Venmo, Rate: 3.49% + fixed fee\nRow 7: Payment Type: Send/Receive Money for Goods and Services, Rate: 2.99%\nRow 8: Payment Type: Standard Credit and Debit Card Payments, Rate: 2.99% + fixed fee\nRow 9: Payment Type: PayPal Pay Later options, Rate: 4.99% + fixed fee\nRow 10: Payment Type: All Other Commercial Transactions, Rate: 3.49% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 1,
     "chunk_index": 0,
-    "text": "Table 2"
+    "text": "Table 2\nHeaders: Payment Type | Rate\nRow 1: Payment Type: All Commercial Transactions, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 2,
     "chunk_index": 0,
-    "text": "Table 3"
+    "text": "Table 3\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 3,
     "chunk_index": 0,
-    "text": "Table 4"
+    "text": "Table 4\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 4,
     "chunk_index": 0,
-    "text": "Table 5"
+    "text": "Table 5\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.12 AUD\nRow 2: Currency: Brazilian real, Fee: 0.50 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.11 CAD\nRow 4: Currency: Czech koruna, Fee: 1.90 CZK\nRow 5: Currency: Danish krone, Fee: 0.56 DKK\nRow 6: Currency: Euro, Fee: 0.07 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 0.70 HKD\nRow 8: Currency: Hungarian forint, Fee: 29.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 0.30 ILS\nRow 10: Currency: Japanese yen, Fee: 9.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 0.40 MYR\nRow 12: Currency: Mexican peso, Fee: 1.79 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 5,
     "chunk_index": 0,
-    "text": "Table 6"
+    "text": "Table 6\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 3.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.13 NZD\nRow 3: Currency: Norwegian krone, Fee: 0.77 NOK\nRow 4: Currency: Philippine peso, Fee: 4.40 PHP\nRow 5: Currency: Polish zloty, Fee: 0.34 PLN\nRow 6: Currency: Russian ruble, Fee: 6.90 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.12 SGD\nRow 8: Currency: Swedish krona, Fee: 0.76 SEK\nRow 9: Currency: Swiss franc, Fee: 0.08 CHF\nRow 10: Currency: Thai baht, Fee: 2.90 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.07 GBP\nRow 12: Currency: US dollar, Fee: 0.09 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 6,
     "chunk_index": 0,
-    "text": "Table 7"
+    "text": "Table 7\nHeaders: Activity | Description | Fee\nRow 1: Activity: Campaign Fee – Store Cash transactions, Description: All applicable PayPal transaction fees are calculated from the cart total, after any Store Cash offers being applied by the PayPal user. For more information about Campaign Fee calculations, please see the PayPal Store Cash Agreement., Fee: 8.00%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 7,
     "chunk_index": 0,
-    "text": "Table 8"
+    "text": "Table 8\nHeaders: Purchase or sale amount | Fee\nRow 1: Purchase or sale amount: 1.00 - 74.99 USD, Fee: 2.20%\nRow 2: Purchase or sale amount: 75.00 - 200.00 USD, Fee: 2.00%\nRow 3: Purchase or sale amount: 200.01 - 1000.00 USD, Fee: 1.80%\nRow 4: Purchase or sale amount: 1000.01 USD +, Fee: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 8,
     "chunk_index": 0,
-    "text": "Table 9"
+    "text": "Table 9\nHeaders: Transfer Type | Fee\nRow 1: Transfer Type: Receiving a Crypto Asset transfer, Fee: No Fee\nRow 2: Transfer Type: Transferring Crypto Asset to an address outside of PayPal or Venmo, Fee: You will be charged a cryptocurrency network fee, payable in the Crypto Asset you transfer, which varies. For details on the network fee, see the PayPal Cryptocurrency Terms and Conditions. We will display such network fee right before you transfer any crypto"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 9,
     "chunk_index": 0,
-    "text": "Table 10"
+    "text": "Table 10\nHeaders: Payment Type through an Invoicing Transaction | Rate\nRow 1: Payment Type through an Invoicing Transaction: PayPal Checkout, Pay with Venmo, or PayPal Guest Checkout, Rate: 3.49% + fixed fee\nRow 2: Payment Type through an Invoicing Transaction: Standard Credit and Debit Card Payments, Apple Pay, or other third-party wallets, Rate: 2.99% + fixed fee\nRow 3: Payment Type through an Invoicing Transaction: PayPal Pay Later options, Rate: 4.99% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 10,
     "chunk_index": 0,
-    "text": "Table 11"
+    "text": "Table 11\nHeaders: Payment Type through an Invoicing Transaction | Rate\nRow 1: Payment Type through an Invoicing Transaction: All Payment Types through Invoicing Transactions, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 11,
     "chunk_index": 0,
-    "text": "Table 12"
+    "text": "Table 12\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 12,
     "chunk_index": 0,
-    "text": "Table 13"
+    "text": "Table 13\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 13,
     "chunk_index": 0,
-    "text": "Table 14"
+    "text": "Table 14\nHeaders: Service Type | Rate\nRow 1: Service Type: Invoicing Subscription, Rate: 14.99 USD per month"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 14,
     "chunk_index": 0,
-    "text": "Table 15"
+    "text": "Table 15\nHeaders: Funding Type | Rate\nRow 1: Funding Type: PayPal Wallet – Bank Account, Rate: Waived – No Fee\nRow 2: Funding Type: PayPal Wallet – Balance, Rate: Waived – No Fee\nRow 3: Funding Type: PYUSD (subject to availability), Rate: Waived – No Fee\nRow 4: Funding Type: Debit and Credit, Rate: 2.9%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 15,
     "chunk_index": 0,
-    "text": "Table 16"
+    "text": "Table 16\nHeaders: Disbursement Type | Rate\nRow 1: Disbursement Type: ACH – US Domestic, Rate: 0.49 USD per transaction\nRow 2: Disbursement Type: ACH – International, Rate: Fixed Fee\nRow 3: Disbursement Type: PayPal Wallet USD, Rate: No Fee\nRow 4: Disbursement Type: PayPal Wallet Other Currencies, Rate: No Fee\nRow 5: Disbursement Type: Venmo (subject to availability), Rate: No Fee\nRow 6: Disbursement Type: PYUSD (subject to availability), Rate: 1%\nRow 7: Disbursement Type: Mailed Checks, Rate: 2.00 USD per check\nRow 8: Disbursement Type: Virtual Card (subject to availability), Rate: No Fee\nRow 9: Disbursement Type: Instant Transfer (subject to availability), Rate: 1% (Minimum Fee of 2.00 USD, Maximum Fee of 50.00 USD)\nRow 10: Disbursement Type: Pay faster by Check, Rate: 20.00 USD"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 15,
+    "chunk_index": 1,
+    "text": "Row 9: Disbursement Type: Instant Transfer (subject to availability), Rate: 1% (Minimum Fee of 2.00 USD, Maximum Fee of 50.00 USD)\nRow 10: Disbursement Type: Pay faster by Check, Rate: 20.00 USD\nRow 11: Disbursement Type: Pay faster by ACH, Rate: 1% (Minimum Fee of 2.00 USD, Maximum Fee of 50.00 USD)\nRow 12: Disbursement Type: Wire Transfer, Rate: Fixed Fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 16,
     "chunk_index": 0,
-    "text": "Table 17"
+    "text": "Table 17\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 1.50 AUD\nRow 2: Currency: Brazilian real, Fee: 25.00 BRL\nRow 3: Currency: Canadian dollar, Fee: 1.50 CAD\nRow 4: Currency: Czech koruna, Fee: 120.00 CZK\nRow 5: Currency: Chinese yuan, Fee: 36.00 CNY\nRow 6: Currency: Danish krone, Fee: 35.00 DKK\nRow 7: Currency: Euro, Fee: 0.90 EUR\nRow 8: Currency: Hong Kong dollar, Fee: 7.60 HKD\nRow 9: Currency: Hungarian forint, Fee: 1,900.00 HUF\nRow 10: Currency: Israeli new shekel, Fee: 20.00 ILS\nRow 11: Currency: Indian rupee, Fee: 420.00 INR\nRow 12: Currency: Japanese yen, Fee: 745.00 JPY"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 17,
     "chunk_index": 0,
-    "text": "Table 18"
+    "text": "Table 18\nHeaders: Currency | Fee\nRow 1: Currency: Korean won, Fee: 7,200.00 KRW\nRow 2: Currency: Mexican peso, Fee: 20.00 MXN\nRow 3: Currency: New Zealand dollar, Fee: 8.60 NZD\nRow 4: Currency: Norwegian krone, Fee: 55.00 NOK\nRow 5: Currency: Philippine peso, Fee: 290.00 PHP\nRow 6: Currency: Polish zloty, Fee: 20.00 PLN\nRow 7: Currency: Singapore dollar, Fee: 6.95 SGD\nRow 8: Currency: Swedish krona, Fee: 55.00 SEK\nRow 9: Currency: Swiss franc, Fee: 4.45 CHF\nRow 10: Currency: UK pounds sterling, Fee: 0.75 GBP\nRow 11: Currency: US dollar, Fee: 0.95 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 18,
     "chunk_index": 0,
-    "text": "Table 19"
+    "text": "Table 19\nHeaders: Currency | Fee\nRow 1: Currency: US dollar, Fee: 20.00 USD\nRow 2: Currency: Euro, Fee: 19.00 EUR\nRow 3: Currency: Australian dollar, Fee: 30.00 AUD\nRow 4: Currency: Japanese yen, Fee: 3,000.00 JPY\nRow 5: Currency: Korean won, Fee: 29,000.00 KRW"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 19,
     "chunk_index": 0,
-    "text": "Table 20"
+    "text": "Table 20\nHeaders: Service Type | Rate\nRow 1: Service Type: Bill Pay Two-Way Accounting Syncing, Rate: 9.99 USD per month"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 20,
     "chunk_index": 0,
-    "text": "Table 21"
+    "text": "Table 21\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donate Button, Rate: 2.89% + fixed fee\nRow 2: Payment Type: PayPal Checkout for Donations, Rate: 2.89% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 21,
     "chunk_index": 0,
-    "text": "Table 22"
+    "text": "Table 22\nHeaders: Payment Type | Rate\nRow 1: Payment Type: All Donations, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 22,
     "chunk_index": 0,
-    "text": "Table 23"
+    "text": "Table 23\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 23,
     "chunk_index": 0,
-    "text": "Table 24"
+    "text": "Table 24\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 24,
     "chunk_index": 0,
-    "text": "Table 25"
+    "text": "Table 25\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donations, Rate: No fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 25,
     "chunk_index": 0,
-    "text": "Table 26"
+    "text": "Table 26\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Donations, Rate: No fee (when no currency conversion is needed)"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 26,
     "chunk_index": 0,
-    "text": "Table 27"
+    "text": "Table 27\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Charity Transactions, Rate: 1.99% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 27,
     "chunk_index": 0,
-    "text": "Table 28"
+    "text": "Table 28\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Charity Transactions, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 28,
     "chunk_index": 0,
-    "text": "Table 29"
+    "text": "Table 29\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 29,
     "chunk_index": 0,
-    "text": "Table 30"
+    "text": "Table 30\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 30,
     "chunk_index": 0,
-    "text": "Table 31"
+    "text": "Table 31\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Alternative Payment Method (APM), Rate: 2.89% + fixed fee\nRow 2: Payment Type: Alternative Payment Method (APM) through Pay Links and Buttons, Payment Links and Buttons, Payment Links, Buy Buttons, Shopping Cart Buttons, Rate: 2.99% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 31,
     "chunk_index": 0,
-    "text": "Table 32"
+    "text": "Table 32\nHeaders: Payment Type | Fee\nRow 1: Payment Type: Alternative Payment Method (APM), Fee: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 32,
     "chunk_index": 0,
-    "text": "Table 33"
+    "text": "Table 33\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.39 AUD\nRow 2: Currency: Brazilian real, Fee: 1.70 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.39 CAD\nRow 4: Currency: Czech koruna, Fee: 5.00 CZK\nRow 5: Currency: Danish krone, Fee: 1.70 DKK\nRow 6: Currency: Euro, Fee: 0.19 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 2.29 HKD\nRow 8: Currency: Hungarian forint, Fee: 89.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 0.90 ILS\nRow 10: Currency: Japanese yen, Fee: 29.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 1.20 MYR\nRow 12: Currency: Mexican peso, Fee: 5.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 33,
     "chunk_index": 0,
-    "text": "Table 34"
+    "text": "Table 34\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 8.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.49 NZD\nRow 3: Currency: Norwegian krone, Fee: 2.30 NOK\nRow 4: Currency: Philippine peso, Fee: 15.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.09 PLN\nRow 6: Currency: Russian ruble, Fee: 23.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.49 SGD\nRow 8: Currency: Swedish krona, Fee: 2.40 SEK\nRow 9: Currency: Swiss franc, Fee: 0.29 CHF\nRow 10: Currency: Thai baht, Fee: 9.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.19 GBP\nRow 12: Currency: US dollar, Fee: 0.29 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 34,
     "chunk_index": 0,
-    "text": "Table 35"
+    "text": "Table 35\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 35,
     "chunk_index": 0,
-    "text": "Table 36"
+    "text": "Table 36\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 36,
     "chunk_index": 0,
-    "text": "Table 37"
+    "text": "Table 37\nRow 1: \nRow 2:"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 37,
     "chunk_index": 0,
-    "text": "Table 38"
+    "text": "Table 38\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Advanced Credit and Debit Card Payments, Rate: 2.89% + fixed fee\nRow 2: Payment Type: ACH Services, Rate: 0.80% (capped at $5.00 per transaction)\nRow 3: Payment Type: Payments Advanced, Rate: 2.89% + fixed fee\nRow 4: Payment Type: Payments Pro, Rate: 2.89% + fixed fee\nRow 5: Payment Type: Virtual Terminal, Rate: 3.39% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 38,
     "chunk_index": 0,
-    "text": "Table 39"
+    "text": "Table 39\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Payments Pro, Rate: 1.99% + fixed fee\nRow 2: Payment Type: Virtual Terminal, Rate: 2.69% + fixed fee\nRow 3: Payment Type: Advanced Credit and Debit Card Payments, Rate: 2.19% + fixed fee\nRow 4: Payment Type: Advanced Credit and Debit Card Payments (Interchange Plus Plus), Rate: Interchange Plus Plus Rates Apply"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 39,
     "chunk_index": 0,
-    "text": "Table 40"
+    "text": "Table 40\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.59 AUD\nRow 2: Currency: Brazilian real, Fee: 2.90 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.59 CAD\nRow 4: Currency: Czech koruna, Fee: 9.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.90 DKK\nRow 6: Currency: Euro, Fee: 0.39 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 3.79 HKD\nRow 8: Currency: Hungarian forint, Fee: 149.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.60 ILS\nRow 10: Currency: Japanese yen, Fee: 49.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 2.00 MYR\nRow 12: Currency: Mexican peso, Fee: 9.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 40,
     "chunk_index": 0,
-    "text": "Table 41"
+    "text": "Table 41\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 14.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.69 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.90 NOK\nRow 4: Currency: Philippine peso, Fee: 25.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.89 PLN\nRow 6: Currency: Russian ruble, Fee: 39.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.69 SGD\nRow 8: Currency: Swedish krona, Fee: 4.09 SEK\nRow 9: Currency: Swiss franc, Fee: 0.49 CHF\nRow 10: Currency: Thai baht, Fee: 15.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.39 GBP\nRow 12: Currency: US dollar, Fee: 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 41,
     "chunk_index": 0,
-    "text": "Table 42"
+    "text": "Table 42\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.39 AUD\nRow 2: Currency: Brazilian real, Fee: 1.70 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.39 CAD\nRow 4: Currency: Czech koruna, Fee: 5.00 CZK\nRow 5: Currency: Danish krone, Fee: 1.70 DKK\nRow 6: Currency: Euro, Fee: 0.19 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 2.29 HKD\nRow 8: Currency: Hungarian forint, Fee: 89.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 0.90 ILS\nRow 10: Currency: Japanese yen, Fee: 29.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 1.20 MYR\nRow 12: Currency: Mexican peso, Fee: 5.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 42,
     "chunk_index": 0,
-    "text": "Table 43"
+    "text": "Table 43\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 8.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.49 NZD\nRow 3: Currency: Norwegian krone, Fee: 2.30 NOK\nRow 4: Currency: Philippine peso, Fee: 15.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.09 PLN\nRow 6: Currency: Russian ruble, Fee: 23.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.49 SGD\nRow 8: Currency: Swedish krona, Fee: 2.40 SEK\nRow 9: Currency: Swiss franc, Fee: 0.29 CHF\nRow 10: Currency: Thai baht, Fee: 9.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.19 GBP\nRow 12: Currency: US dollar, Fee: 0.29 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 43,
     "chunk_index": 0,
-    "text": "Table 44"
+    "text": "Table 44\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Advanced Credit and Debit Card Payments (Interchange Plus Plus), Rate: Interchange Pass-through Costs + 0.49% + fixed fee (collectively “Interchange Plus Plus”)"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 44,
     "chunk_index": 0,
-    "text": "Table 45"
+    "text": "Table 45\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.49 AUD\nRow 2: Currency: Brazilian real, Fee: 2.29 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.49 CAD\nRow 4: Currency: Czech koruna, Fee: 7.00 CZK\nRow 5: Currency: Danish krone, Fee: 2.29 DKK\nRow 6: Currency: Euro, Fee: 0.29 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 2.99 HKD\nRow 8: Currency: Hungarian forint, Fee: 119.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 1.29 ILS\nRow 10: Currency: Japanese yen, Fee: 39.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 1.59 MYR\nRow 12: Currency: Mexican peso, Fee: 7.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 45,
     "chunk_index": 0,
-    "text": "Table 46"
+    "text": "Table 46\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 11.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.59 NZD\nRow 3: Currency: Norwegian krone, Fee: 3.09 NOK\nRow 4: Currency: Philippine peso, Fee: 20.00 PHP\nRow 5: Currency: Polish zloty, Fee: 1.49 PLN\nRow 6: Currency: Russian ruble, Fee: 31.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.59 SGD\nRow 8: Currency: Swedish krona, Fee: 3.29 SEK\nRow 9: Currency: Swiss franc, Fee: 0.39 CHF\nRow 10: Currency: Thai baht, Fee: 12.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.29 GBP\nRow 12: Currency: US dollar, Fee: 0.39 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 46,
     "chunk_index": 0,
-    "text": "Table 47"
+    "text": "Table 47\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Advanced Credit and Debit Card Payments (Interchange Plus Plus), Rate: No additional percentage-based fee for international transactions for this Payment Type\nRow 2: Payment Type: All Other PayPal Card Payment Services Transactions, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 47,
     "chunk_index": 0,
-    "text": "Table 48"
+    "text": "Table 48\nHeaders: Activity | Description | Fee\nRow 1: Activity: Account Monitoring Service, Description: Optional Service, Fee: 29.95 USD set up fee19.95 USD per month\nRow 2: Activity: ACH Services Return Fee or Unauthorized Fee, Description: This fee is charged when a return is requested or when the transaction is unauthorized and then rejected/reversed., Fee: 5.00 USD Return Fee for each transaction returned by the banking network5.00 USD Unauthorized Fee for each transaction disputed by your customer as unauthorized\nRow 3: Activity: Fraud Protection Advanced, Description: Optional Service, Fee: 0.07 USD per transaction"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 47,
+    "chunk_index": 1,
+    "text": "Row 3: Activity: Fraud Protection Advanced, Description: Optional Service, Fee: 0.07 USD per transaction\nRow 4: Activity: Additional Risk Factors, Description: If PayPal determines that your Account receives, or is likely to receive a disproportionately higher number of customer complaints, reversals, chargebacks, claims, or other indicators of a serious level of risk, PayPal may increase the percentage components of your Transaction Fees after giving you 30 days prior notice of the increase., Fee: Up to 5.00% per transaction\nRow 5: Activity: Buyer Authentication Service, Description: Optional Service, Fee: 10.00 USD per month0.10 USD per transaction\nRow 6: Activity: Card Verification Transactions, Description: For each account verification request, Fee: 0.30 USD"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 47,
+    "chunk_index": 2,
+    "text": "Row 6: Activity: Card Verification Transactions, Description: For each account verification request, Fee: 0.30 USD\nRow 7: Activity: Chargeback Protection Tools, Description: Chargeback Protection Tool\nAdvanced Credit and Debit Card Payments, Fee: 0.40% per transaction\nRow 8: Activity: Effortless Chargeback Protection Tool\nAdvanced Credit and Debit Card Payments, Description: 0.60% per transaction, Fee: \nRow 9: Activity: Failure to implement Express Checkout, Description: If you do not implement Express Checkout as required, the percentage components of your Transaction Fees may increase after giving you 30 days prior notice., Fee: 1.00% per transaction\nRow 10: Activity: Monthly Fees, Description: Advanced Credit and Debit Card Payments and ACH Services, Fee: No fee"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 47,
+    "chunk_index": 3,
+    "text": "Row 10: Activity: Monthly Fees, Description: Advanced Credit and Debit Card Payments and ACH Services, Fee: No fee\nRow 11: Activity: Payments Advanced, Description: 5.00 USD, Fee: \nRow 12: Activity: Payments Pro, Description: 30.00 USD, Fee: \nRow 13: Activity: Payments Pro Payflow, Description: 30.00 USD, Fee: \nRow 14: Activity: Recurring Billing, Description: Optional Service, Fee: 10.00 USD per month\nRow 15: Activity: Recurring Payment Tool, Description: Optional Service, Fee: 30.00 USD per month\nRow 16: Activity: Uncaptured Authorization Transactions, Description: For each successful but uncaptured authorization transaction., Fee: 0.30 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 48,
     "chunk_index": 0,
-    "text": "Table 49"
+    "text": "Table 49\nHeaders: Payment type | Fee\nRow 1: Payment type: Payflow Pro Transaction, Fee: 0.10 USD\nRow 2: Payment type: Payflow Link Transaction, Fee: 0.10 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 49,
     "chunk_index": 0,
-    "text": "Table 50"
+    "text": "Table 50\nHeaders: Activity | Description | Fee\nRow 1: Activity: Monthly Fees, Description: Payflow Pro, Fee: 25.00 USD\nRow 2: Activity: Payflow Link, Description: No fee, Fee: \nRow 3: Activity: PayPal Recurring Billing Service (Monthly), Description: Payflow Pro, Fee: 10.00 USD\nRow 4: Activity: Payflow Link, Description: 10.00 USD, Fee: \nRow 5: Activity: PayPal Fraud Protection Services (Monthly), Description: Basic Package, Fee: No fee\nRow 6: Activity: Advanced Package, Description: 10.00 USD, Fee: \nRow 7: Activity: Buyer Authentication +, Description: 10.00 USD, Fee: \nRow 8: Activity: PayPal Fraud Protection Services (Monthly Excess Transaction Fee), Description: Basic Package, Fee: No fee\nRow 9: Activity: Advanced Package, Description: 0.05 USD, Fee:"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 49,
+    "chunk_index": 1,
+    "text": "Row 8: Activity: PayPal Fraud Protection Services (Monthly Excess Transaction Fee), Description: Basic Package, Fee: No fee\nRow 9: Activity: Advanced Package, Description: 0.05 USD, Fee: \nRow 10: Activity: Buyer Authentication +, Description: 0.10 USD, Fee: \nRow 11: Activity: Recurring Billing Service, Description: No fee, Fee:"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 50,
     "chunk_index": 0,
-    "text": "Table 51"
+    "text": "Table 51\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Card Present Transactions, Rate: 2.29% + 0.09 USD\nRow 2: Payment Type: Manual Card Entry Transactions, Rate: 3.49% + 0.09 USD\nRow 3: Payment Type: QR code Transactions, Rate: 2.29% + 0.09 USD\nRow 4: Payment Type: Payment links: PayPal Checkout, Pay with Venmo, PayPal Pay Later offers, or PayPal Guest Checkout, Rate: 3.49% + 0.49 USD\nRow 5: Payment Type: Payment links: Standard Credit and Debit Card Payments, Apple Pay, or other third-party wallets, Rate: 2.99% + 0.49 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 51,
     "chunk_index": 0,
-    "text": "Table 52"
+    "text": "Table 52\nHeaders: Transaction | Rate\nRow 1: Transaction: US, Rate: 2% of total transaction amount (not to exceed the maximum fee cap below)\nRow 2: Transaction: US\nWhen using the Payouts API, Rate: Flat Rate (see fee table below)\nRow 3: Transaction: International PayPal Payouts, Rate: 2% of total transaction amount (not to exceed the maximum fee cap below)"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 52,
     "chunk_index": 0,
-    "text": "Table 53"
+    "text": "Table 53\nHeaders: Currency | US Maximum Fee Cap | US – When using the Payouts API Fee | International Maximum Fee Cap\nRow 1: Currency: Australian dollar, US Maximum Fee Cap: 1.25 AUD, US – When using the Payouts API Fee: 0.32 AUD, International Maximum Fee Cap: 24.00 AUD\nRow 2: Currency: Brazilian real, US Maximum Fee Cap: 2.00 BRL, US – When using the Payouts API Fee: 0.50 BRL, International Maximum Fee Cap: 40.00 BRL\nRow 3: Currency: Canadian dollar, US Maximum Fee Cap: 1.25 CAD, US – When using the Payouts API Fee: 0.32 CAD, International Maximum Fee Cap: 24.00 CAD\nRow 4: Currency: Czech koruna, US Maximum Fee Cap: 24.00 CZK, US – When using the Payouts API Fee: 6.00 CZK, International Maximum Fee Cap: 400.00 CZK"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 52,
+    "chunk_index": 1,
+    "text": "Row 4: Currency: Czech koruna, US Maximum Fee Cap: 24.00 CZK, US – When using the Payouts API Fee: 6.00 CZK, International Maximum Fee Cap: 400.00 CZK\nRow 5: Currency: Danish krone, US Maximum Fee Cap: 6.00 DKK, US – When using the Payouts API Fee: 1.50 DKK, International Maximum Fee Cap: 120.00 DKK\nRow 6: Currency: Euro, US Maximum Fee Cap: 0.85 EUR, US – When using the Payouts API Fee: 0.22 EUR, International Maximum Fee Cap: 16.00 EUR\nRow 7: Currency: Hong Kong dollar, US Maximum Fee Cap: 7.00 HKD, US – When using the Payouts API Fee: 1.75 HKD, International Maximum Fee Cap: 160.00 HKD\nRow 8: Currency: Hungarian forint, US Maximum Fee Cap: 210.00 HUF, US – When using the Payouts API Fee: 53.00 HUF, International Maximum Fee Cap: 6000.00 HUF"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 52,
+    "chunk_index": 2,
+    "text": "Row 8: Currency: Hungarian forint, US Maximum Fee Cap: 210.00 HUF, US – When using the Payouts API Fee: 53.00 HUF, International Maximum Fee Cap: 6000.00 HUF\nRow 9: Currency: Israeli new shekel, US Maximum Fee Cap: 4.00 ILS, US – When using the Payouts API Fee: 1.00 ILS, International Maximum Fee Cap: 80.00 ILS\nRow 10: Currency: Japanese yen, US Maximum Fee Cap: 120.00 JPY, US – When using the Payouts API Fee: 30.00 JPY, International Maximum Fee Cap: 2000.00 JPY\nRow 11: Currency: Malaysian ringgit, US Maximum Fee Cap: 4.00 MYR, US – When using the Payouts API Fee: Not Applicable, International Maximum Fee Cap: 80.00 MYR\nRow 12: Currency: Mexican peso, US Maximum Fee Cap: 11.00 MXN, US – When using the Payouts API Fee: 2.75 MXN, International Maximum Fee Cap: 300.00 MXN"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 52,
+    "chunk_index": 3,
+    "text": "Row 12: Currency: Mexican peso, US Maximum Fee Cap: 11.00 MXN, US – When using the Payouts API Fee: 2.75 MXN, International Maximum Fee Cap: 300.00 MXN\nRow 13: Currency: New Taiwan dollar, US Maximum Fee Cap: 33.00 TWD, US – When using the Payouts API Fee: 8.00 TWD, International Maximum Fee Cap: 800.00 TWD\nRow 14: Currency: New Zealand dollar, US Maximum Fee Cap: 1.50 NZD, US – When using the Payouts API Fee: 0.38 NZD, International Maximum Fee Cap: 30.00 NZD\nRow 15: Currency: Norwegian krone, US Maximum Fee Cap: 6.75 NOK, US – When using the Payouts API Fee: 1.70 NOK, International Maximum Fee Cap: 120.00 NOK\nRow 16: Currency: Philippine peso, US Maximum Fee Cap: 50.00 PHP, US – When using the Payouts API Fee: 12.50 PHP, International Maximum Fee Cap: 1000.00 PHP"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 52,
+    "chunk_index": 4,
+    "text": "Row 16: Currency: Philippine peso, US Maximum Fee Cap: 50.00 PHP, US – When using the Payouts API Fee: 12.50 PHP, International Maximum Fee Cap: 1000.00 PHP\nRow 17: Currency: Polish zloty, US Maximum Fee Cap: 3.00 PLN, US – When using the Payouts API Fee: 0.75 PLN, International Maximum Fee Cap: 60.00 PLN\nRow 18: Currency: Russian ruble, US Maximum Fee Cap: 30.00 RUB, US – When using the Payouts API Fee: 60.00 RUB, International Maximum Fee Cap: 600.00 RUB\nRow 19: Currency: Singapore dollar, US Maximum Fee Cap: 1.60 SGD, US – When using the Payouts API Fee: 0.40 SGD, International Maximum Fee Cap: 32.00 SGD\nRow 20: Currency: Swedish krona, US Maximum Fee Cap: 9.00 SEK, US – When using the Payouts API Fee: 2.25 SEK, International Maximum Fee Cap: 160.00 SEK"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 52,
+    "chunk_index": 5,
+    "text": "Row 20: Currency: Swedish krona, US Maximum Fee Cap: 9.00 SEK, US – When using the Payouts API Fee: 2.25 SEK, International Maximum Fee Cap: 160.00 SEK\nRow 21: Currency: Swiss franc, US Maximum Fee Cap: 1.30 CHF, US – When using the Payouts API Fee: 0.33 CHF, International Maximum Fee Cap: 20.00 CHF\nRow 22: Currency: Thai baht, US Maximum Fee Cap: 36.00 THB, US – When using the Payouts API Fee: 9.00 THB, International Maximum Fee Cap: 800.00 THB\nRow 23: Currency: UK pounds sterling, US Maximum Fee Cap: 0.65 GBP, US – When using the Payouts API Fee: 0.17 GBP, International Maximum Fee Cap: 14.00 GBP\nRow 24: Currency: US dollar, US Maximum Fee Cap: 1.00 USD, US – When using the Payouts API Fee: 0.25 USD, International Maximum Fee Cap: 20.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 53,
     "chunk_index": 0,
-    "text": "Table 54"
+    "text": "Table 54\nHeaders: Payment Type | Rate\nRow 1: Payment Type: US, Rate: 4.99% + fixed fee"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 54,
     "chunk_index": 0,
-    "text": "Table 55"
+    "text": "Table 55\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Micropayments, Rate: 1.50%"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 55,
     "chunk_index": 0,
-    "text": "Table 56"
+    "text": "Table 56\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 0.12 AUD\nRow 2: Currency: Brazilian real, Fee: 0.50 BRL\nRow 3: Currency: Canadian dollar, Fee: 0.11 CAD\nRow 4: Currency: Czech koruna, Fee: 1.90 CZK\nRow 5: Currency: Danish krone, Fee: 0.56 DKK\nRow 6: Currency: Euro, Fee: 0.07 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 0.70 HKD\nRow 8: Currency: Hungarian forint, Fee: 29.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 0.30 ILS\nRow 10: Currency: Japanese yen, Fee: 9.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 0.40 MYR\nRow 12: Currency: Mexican peso, Fee: 1.79 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 56,
     "chunk_index": 0,
-    "text": "Table 57"
+    "text": "Table 57\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 3.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 0.13 NZD\nRow 3: Currency: Norwegian krone, Fee: 0.77 NOK\nRow 4: Currency: Philippine peso, Fee: 4.40 PHP\nRow 5: Currency: Polish zloty, Fee: 0.34 PLN\nRow 6: Currency: Russian ruble, Fee: 6.90 RUB\nRow 7: Currency: Singapore dollar, Fee: 0.12 SGD\nRow 8: Currency: Swedish krona, Fee: 0.76 SEK\nRow 9: Currency: Swiss franc, Fee: 0.08 CHF\nRow 10: Currency: Thai baht, Fee: 2.90 THB\nRow 11: Currency: UK pounds sterling, Fee: 0.07 GBP\nRow 12: Currency: US dollar, Fee: 0.09 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 57,
     "chunk_index": 0,
-    "text": "Table 58"
+    "text": "Table 58\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 22.00 AUD\nRow 2: Currency: Brazilian real, Fee: 35.00 BRL\nRow 3: Currency: Canadian dollar, Fee: 20.00 CAD\nRow 4: Currency: Czech koruna, Fee: 400.00 CZK\nRow 5: Currency: Danish krone, Fee: 120.00 DKK\nRow 6: Currency: Euro, Fee: 16.00 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 155.00 HKD\nRow 8: Currency: Hungarian forint, Fee: 4,325.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 75.00 ILS\nRow 10: Currency: Japanese yen, Fee: 1,875.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: 65.00 MYR\nRow 12: Currency: Mexican peso, Fee: 250.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 58,
     "chunk_index": 0,
-    "text": "Table 59"
+    "text": "Table 59\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 625.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 28.00 NZD\nRow 3: Currency: Norwegian krone, Fee: 125.00 NOK\nRow 4: Currency: Philippine peso, Fee: 900.00 PHP\nRow 5: Currency: Polish zloty, Fee: 65.00 PLN\nRow 6: Currency: Russian ruble, Fee: 640.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 28.00 SGD\nRow 8: Currency: Swedish krona, Fee: 150.00 SEK\nRow 9: Currency: Swiss franc, Fee: 22.00 CHF\nRow 10: Currency: Thai baht, Fee: 650.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 14.00 GBP\nRow 12: Currency: US dollar, Fee: 20.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 59,
     "chunk_index": 0,
-    "text": "Table 60"
+    "text": "Table 60\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 25.00 AUD\nRow 2: Currency: Brazilian real, Fee: 65.00 BRL\nRow 3: Currency: Canadian dollar, Fee: 20.00 CAD\nRow 4: Currency: Czech koruna, Fee: 350.00 CZK\nRow 5: Currency: Danish krone, Fee: 100.00 DKK\nRow 6: Currency: Euro, Fee: 14.00 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 115.00 HKD\nRow 8: Currency: Hungarian forint, Fee: 4,585.00 HUF\nRow 9: Currency: Indian Rupee, Fee: 1080.00 INR\nRow 10: Currency: Israeli new shekel, Fee: 55.00 ILS\nRow 11: Currency: Japanese yen, Fee: 1,630.00 JPY\nRow 12: Currency: Malaysian ringgit, Fee: 65.00 MYR\nRow 13: Currency: Mexican peso, Fee: 300.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 60,
     "chunk_index": 0,
-    "text": "Table 61"
+    "text": "Table 61\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 455.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 25.00 NZD\nRow 3: Currency: Norwegian krone, Fee: 140.00 NOK\nRow 4: Currency: Philippine peso, Fee: 760.00 PHP\nRow 5: Currency: Polish zloty, Fee: 60.00 PLN\nRow 6: Currency: Russian ruble, Fee: 1125.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 20.00 SGD\nRow 8: Currency: Swedish krona, Fee: 145.00 SEK\nRow 9: Currency: Swiss franc, Fee: 15.00 CHF\nRow 10: Currency: Thai baht, Fee: 465.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 12.00 GBP\nRow 12: Currency: US dollar, Fee: 15.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 61,
     "chunk_index": 0,
-    "text": "Table 62"
+    "text": "Table 62\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 50.00 AUD\nRow 2: Currency: Brazilian real, Fee: 130.00 BRL\nRow 3: Currency: Canadian dollar, Fee: 40.00 CAD\nRow 4: Currency: Czech koruna, Fee: 700.00 CZK\nRow 5: Currency: Danish krone, Fee: 200.00 DKK\nRow 6: Currency: Euro, Fee: 28.00 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 230.00 HKD\nRow 8: Currency: Hungarian forint, Fee: 9,170.00 HUF\nRow 9: Currency: Indian Rupee, Fee: 2160.00 INR\nRow 10: Currency: Israeli new shekel, Fee: 110.00 ILS\nRow 11: Currency: Japanese yen, Fee: 3,260.00 JPY\nRow 12: Currency: Malaysian ringgit, Fee: 130.00 MYR\nRow 13: Currency: Mexican peso, Fee: 600.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 62,
     "chunk_index": 0,
-    "text": "Table 63"
+    "text": "Table 63\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 910.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 50.00 NZD\nRow 3: Currency: Norwegian krone, Fee: 280.00 NOK\nRow 4: Currency: Philippine peso, Fee: 1520.00 PHP\nRow 5: Currency: Polish zloty, Fee: 120.00 PLN\nRow 6: Currency: Russian ruble, Fee: 2250.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 40.00 SGD\nRow 8: Currency: Swedish krona, Fee: 290.00 SEK\nRow 9: Currency: Swiss franc, Fee: 30.00 CHF\nRow 10: Currency: Thai baht, Fee: 930.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 24.00 GBP\nRow 12: Currency: US dollar, Fee: 30.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 63,
     "chunk_index": 0,
-    "text": "Table 64"
+    "text": "Table 64\nHeaders: Type of Transaction | Currency Conversion Spread\nRow 1: Type of Transaction: Paying for goods or services in a currency other than the currency the goods or services are listed in.Sending money to a friend or family member such that they receive a different currency from the currency in which you pay.Sending money using PayPal Payouts such that your recipients receive a different currency from the currency in which you pay., Currency Conversion Spread: 4.00%, or such other amount as may be disclosed to you during the transaction.\nRow 2: Type of Transaction: All other transactions, Currency Conversion Spread: 3.00%, or such other amount as may be disclosed to you during the transaction."
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 64,
     "chunk_index": 0,
-    "text": "Table 65"
+    "text": "Table 65\nHeaders: Payment Type | Rate\nRow 1: Payment Type: Per each payment transaction, Rate: Commercial Transaction Rates"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 65,
     "chunk_index": 0,
-    "text": "Table 66"
+    "text": "Table 66\nHeaders: Currency | Maximum fee cap\nRow 1: Currency: Australian dollar, Maximum fee cap: 300.00 AUD\nRow 2: Currency: Brazilian real, Maximum fee cap: 500.00 BRL\nRow 3: Currency: Canadian dollar, Maximum fee cap: 300.00 CAD\nRow 4: Currency: Czech koruna, Maximum fee cap: 5000.00 CZK\nRow 5: Currency: Danish krone, Maximum fee cap: 1500.00 DKK\nRow 6: Currency: Euro, Maximum fee cap: 200.00 EUR\nRow 7: Currency: Hong Kong dollar, Maximum fee cap: 2500.00 HKD\nRow 8: Currency: Hungarian forint, Maximum fee cap: 54,000.00 HUF\nRow 9: Currency: Israeli new shekel, Maximum fee cap: 1100.00 ILS\nRow 10: Currency: Japanese yen, Maximum fee cap: 24,000.00 JPY\nRow 11: Currency: Malaysian ringgit, Maximum fee cap: 1000.00 MYR\nRow 12: Currency: Mexican peso, Maximum fee cap: 3500.00 MXN"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 65,
+    "chunk_index": 1,
+    "text": "Row 10: Currency: Japanese yen, Maximum fee cap: 24,000.00 JPY\nRow 11: Currency: Malaysian ringgit, Maximum fee cap: 1000.00 MYR\nRow 12: Currency: Mexican peso, Maximum fee cap: 3500.00 MXN\nRow 13: Currency: New Taiwan dollar, Maximum fee cap: 9000.00 TWD\nRow 14: Currency: New Zealand dollar, Maximum fee cap: 400.00 NZD\nRow 15: Currency: Norwegian krone, Maximum fee cap: 1600.00 NOK\nRow 16: Currency: Philippine peso, Maximum fee cap: 13,000.00 PHP\nRow 17: Currency: Polish zloty, Maximum fee cap: 800.00 PLN\nRow 18: Currency: Russian ruble, Maximum fee cap: 12,000.00 RUB\nRow 19: Currency: Singapore dollar, Maximum fee cap: 400.00 SGD\nRow 20: Currency: Swedish krona, Maximum fee cap: 1800.00 SEK\nRow 21: Currency: Swiss franc, Maximum fee cap: 300.00 CHF"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 65,
+    "chunk_index": 2,
+    "text": "Row 19: Currency: Singapore dollar, Maximum fee cap: 400.00 SGD\nRow 20: Currency: Swedish krona, Maximum fee cap: 1800.00 SEK\nRow 21: Currency: Swiss franc, Maximum fee cap: 300.00 CHF\nRow 22: Currency: Thai baht, Maximum fee cap: 9000.00 THB\nRow 23: Currency: UK pounds sterling, Maximum fee cap: 200.00 GBP\nRow 24: Currency: US dollar, Maximum fee cap: 300.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 66,
     "chunk_index": 0,
-    "text": "Table 67"
+    "text": "Table 67\nHeaders: Withdrawal/Transfer to | Withdrawal/Transfer Type | Rate\nRow 1: Withdrawal/Transfer to: Bank account, Withdrawal/Transfer Type: Standard\nWith eligible linked bank account, Rate: No Fee (when no currency conversion is involved)\nRow 2: Withdrawal/Transfer to: Instant\nWithdrawal limits apply, Withdrawal/Transfer Type: 1.50% of amount transferred\nMinimum fee applies based on the card withdrawal currency, in the table below, Rate: \nRow 3: Withdrawal/Transfer to: Cards, Withdrawal/Transfer Type: Standard\nWith eligible linked debit cardWithdrawal limits apply, Rate: No Fee (when no currency conversion is involved)\nRow 4: Withdrawal/Transfer to: Instant\nWith eligible linked debit cardWithdrawal limits apply, Withdrawal/Transfer Type: 1.50% of amount transferred"
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 66,
+    "chunk_index": 1,
+    "text": "Row 4: Withdrawal/Transfer to: Instant\nWith eligible linked debit cardWithdrawal limits apply, Withdrawal/Transfer Type: 1.50% of amount transferred\nMinimum fee applies based on the card withdrawal currency, in the table below, Rate:"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 67,
     "chunk_index": 0,
-    "text": "Table 68"
+    "text": "Table 68\nHeaders: Frequency | Maximum (up to)\nRow 1: Frequency: Per transaction, Maximum (up to): 25,000.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 68,
     "chunk_index": 0,
-    "text": "Table 69"
+    "text": "Table 69\nHeaders: Frequency | Maximum (up to)\nRow 1: Frequency: Per transaction, Maximum (up to): 50,000.00 USD\nRow 2: Frequency: Per day, Maximum (up to): 100,000.00 USD\nRow 3: Frequency: Per week, Maximum (up to): 250,000.00 USD\nRow 4: Frequency: Per month, Maximum (up to): 500,000.00 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 69,
     "chunk_index": 0,
-    "text": "Table 70"
+    "text": "Table 70\nHeaders: Currency | Minimum Fee\nRow 1: Currency: US dollar, Minimum Fee: 0.50 USD"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 70,
     "chunk_index": 0,
-    "text": "Table 71"
+    "text": "Table 71\nHeaders: Activity | Description | Fee\nRow 1: Activity: Bank Return on Withdrawal/Transfer out of PayPal, Description: This fee is charged when a withdrawal/transfer out of PayPal is attempted by a user and it fails because incorrect bank account information or delivery information is provided., Fee: No Fee\nRow 2: Activity: Commercial Transaction and Invoicing Transaction Refunds, Description: Full Refunds, Fee: If you refund a Commercial Transaction or an Invoicing Transaction payment, there are no fees to make the refund, but the fees you originally paid to receive the payment are not returned to you."
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 70,
+    "chunk_index": 1,
+    "text": "Row 3: Activity: Partial Refunds, Description: If you refund a Commercial Transaction or an Invoicing Transaction payment, there are no fees to make the refund, but the fees you originally paid to receive the payment are not returned to you., Fee: \nRow 4: Activity: Credit Card and Debit Card Confirmation(s), Description: Some users, in order to increase their sending limit or as PayPal may determine, may be charged a Credit Card and Debit Card Link and Confirmation fee. This amount will be refunded when you successfully complete the credit card or debit card verification process., Fee: See Credit Card and Debit Card Link and Confirmation Table below."
+  },
+  {
+    "source": "paypal_merchant_fees.json",
+    "original_index": 70,
+    "chunk_index": 2,
+    "text": "Row 5: Activity: PayPal Business Debit MasterCard, Description: Use of the PayPal Business Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms., Fee: Please see our PayPal Business Debit MasterCard Cardholder Agreement and Privacy Notice\nRow 6: Activity: PayPal Debit MasterCard, Description: Use of the PayPal Debit MasterCard is subject to eligibility, application, approval by PayPal and your acceptance of the terms., Fee: Please see our PayPal Debit MasterCard Cardholder Agreement"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 71,
     "chunk_index": 0,
-    "text": "Table 72"
+    "text": "Table 72\nHeaders: Currency | Fee\nRow 1: Currency: Australian dollar, Fee: 2.00 AUD\nRow 2: Currency: Brazilian real, Fee: 4.00 BRL\nRow 3: Currency: Canadian dollar, Fee: 2.45 CAD\nRow 4: Currency: Czech koruna, Fee: 50.00 CZK\nRow 5: Currency: Danish krone, Fee: 12.50 DKK\nRow 6: Currency: Euro, Fee: 1.50 EUR\nRow 7: Currency: Hong Kong dollar, Fee: 15.00 HKD\nRow 8: Currency: Hungarian forint, Fee: 400.00 HUF\nRow 9: Currency: Israeli new shekel, Fee: 8.00 ILS\nRow 10: Currency: Japanese yen, Fee: 200.00 JPY\nRow 11: Currency: Malaysian ringgit, Fee: Not Applicable\nRow 12: Currency: Mexican peso, Fee: 20.00 MXN"
   },
   {
     "source": "paypal_merchant_fees.json",
     "original_index": 72,
     "chunk_index": 0,
-    "text": "Table 73"
+    "text": "Table 73\nHeaders: Currency | Fee\nRow 1: Currency: New Taiwan dollar, Fee: 70.00 TWD\nRow 2: Currency: New Zealand dollar, Fee: 3.00 NZD\nRow 3: Currency: Norwegian krone, Fee: 15.00 NOK\nRow 4: Currency: Philippine peso, Fee: 100.00 PHP\nRow 5: Currency: Polish zloty, Fee: 6.50 PLN\nRow 6: Currency: Russian ruble, Fee: 60.00 RUB\nRow 7: Currency: Singapore dollar, Fee: 3.00 SGD\nRow 8: Currency: Swedish krona, Fee: 15.00 SEK\nRow 9: Currency: Swiss franc, Fee: 3.00 CHF\nRow 10: Currency: Thai baht, Fee: 70.00 THB\nRow 11: Currency: UK pounds sterling, Fee: 1.00 GBP\nRow 12: Currency: US dollar, Fee: 1.95 USD"
   },
   {
     "source": "seller_protection.json",
