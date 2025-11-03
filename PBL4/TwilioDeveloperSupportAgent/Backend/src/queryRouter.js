@@ -33,14 +33,17 @@ class QueryRouter {
       toolsUsed: [],
     };
 
-    // Initialize search services
-    const hybridSearch = new HybridSearch(this.vectorStore, this.embeddings);
+    // Initialize GeneralSearch (lightweight, no initialization needed)
     const generalSearch = new GeneralSearch();
 
-    // Initialize hybrid search if needed
-    if (!hybridSearch.isInitialized) {
-      await hybridSearch.initialize();
-    }
+    // Helper function to initialize hybrid search only when needed
+    const ensureHybridSearch = async () => {
+      const hybridSearch = new HybridSearch(this.vectorStore, this.embeddings);
+      if (!hybridSearch.isInitialized) {
+        await hybridSearch.initialize();
+      }
+      return hybridSearch;
+    };
 
     switch (classification.route) {
       case "mcp": {
@@ -51,6 +54,8 @@ class QueryRouter {
               `⚠️ MCP Server not available. Falling back to Hybrid Search...`
             )
           );
+          // Initialize hybrid search only for fallback
+          const hybridSearch = await ensureHybridSearch();
           // Fallback to hybrid search
           const hybridResults = await hybridSearch.hybridSearch(
             query,
@@ -85,6 +90,7 @@ class QueryRouter {
       case "hybrid": {
         // Documentation search only
         console.log(chalk.blue(`\n📚 Executing Hybrid Search...`));
+        const hybridSearch = await ensureHybridSearch();
         const hybridResults = await hybridSearch.hybridSearch(
           classification.hybridQuery || query,
           parseInt(config.MAX_CHUNKS) || 10
@@ -128,6 +134,7 @@ class QueryRouter {
 
         // Execute Hybrid search
         console.log(chalk.blue(`   Step 2: Hybrid search`));
+        const hybridSearch = await ensureHybridSearch();
         const hybridResults = await hybridSearch.hybridSearch(
           classification.hybridQuery || query,
           parseInt(config.MAX_CHUNKS) || 10
@@ -156,6 +163,7 @@ class QueryRouter {
         console.log(chalk.blue(`\n🌐 Executing General Search (Web)...`));
 
         if (generalSearch.isAvailable()) {
+          // Web search available - no need to initialize hybrid search
           results.generalSearchResults = await generalSearch.performWebSearch(
             query,
             5
@@ -173,8 +181,9 @@ class QueryRouter {
               `⚠️ General search not available (missing API credentials)`
             )
           );
-          // Fallback to hybrid search
+          // Fallback to hybrid search - only initialize when needed
           console.log(chalk.blue(`   Falling back to Hybrid Search...`));
+          const hybridSearch = await ensureHybridSearch();
           const hybridResults = await hybridSearch.hybridSearch(
             query,
             parseInt(config.MAX_CHUNKS) || 10
