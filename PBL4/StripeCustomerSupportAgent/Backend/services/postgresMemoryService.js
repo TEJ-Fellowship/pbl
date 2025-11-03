@@ -12,6 +12,8 @@ class PostgreSQLMemoryService {
   constructor() {
     this.pool = pool;
     this.geminiClient = null;
+    this.geminiRateLimitBlocked = false;
+    this.geminiRateLimitBlockedUntil = null;
     this.initializeGemini();
   }
 
@@ -48,6 +50,21 @@ class PostgreSQLMemoryService {
       return null; // Fallback to regex patterns
     }
 
+    // Check if we're currently blocked due to rate limits
+    if (this.geminiRateLimitBlocked) {
+      if (
+        this.geminiRateLimitBlockedUntil &&
+        Date.now() < this.geminiRateLimitBlockedUntil
+      ) {
+        // Still in rate limit cooldown period, skip API call
+        return null; // Fallback to regex patterns
+      } else {
+        // Cooldown period expired, reset flag
+        this.geminiRateLimitBlocked = false;
+        this.geminiRateLimitBlockedUntil = null;
+      }
+    }
+
     try {
       const prompt = `You are an expert at extracting personal information from user messages.
 
@@ -82,9 +99,20 @@ RESPONSE FORMAT (JSON only, no extra text):
         model: config.GEMINI_API_MODEL_2,
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const textResponse = response.text().trim();
+      // Add timeout wrapper to prevent hanging on rate limits
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Gemini API request timeout (5s)"));
+        }, 5000); // 5 second timeout
+      });
+
+      const apiPromise = (async () => {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text().trim();
+      })();
+
+      const textResponse = await Promise.race([apiPromise, timeoutPromise]);
 
       // Extract JSON from response (handle markdown code blocks if present)
       let jsonText = textResponse;
@@ -149,7 +177,25 @@ RESPONSE FORMAT (JSON only, no extra text):
 
       return null;
     } catch (error) {
-      console.warn("⚠️ Gemini personal info extraction failed:", error.message);
+      const errorMessage = error?.message || "";
+      const isRateLimited =
+        error?.status === 429 ||
+        /\b429\b/.test(errorMessage) ||
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("quota") ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("Resource exhausted");
+
+      if (isRateLimited) {
+        // Block further API calls for 30 seconds to avoid repeated rate limit hits
+        this.geminiRateLimitBlocked = true;
+        this.geminiRateLimitBlockedUntil = Date.now() + 30000; // 30 second cooldown
+        // Don't log rate limit errors repeatedly, just skip gracefully
+        // This prevents spamming the console and allows the system to continue
+        return null; // Fallback to regex patterns
+      }
+
+      console.warn("⚠️ Gemini personal info extraction failed:", errorMessage);
       return null; // Fallback to regex patterns
     }
   }
@@ -452,6 +498,12 @@ RESPONSE FORMAT (JSON only, no extra text):
             let infoFound = false;
 
             // Try Gemini AI extraction first (more flexible) - works for any personal info statement
+            // Add small delay between API calls to avoid rate limits when processing multiple messages
+            if (!this.geminiRateLimitBlocked) {
+              // Add delay only if not already rate limited (to avoid unnecessary waiting)
+              await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms delay between calls
+            }
+
             try {
               const geminiResult = await this.extractPersonalInfoWithGemini(
                 content
@@ -800,6 +852,11 @@ RESPONSE FORMAT (JSON only, no extra text):
             // Check if this message contains any personal information
             // Process ALL user messages for personal information automatically
             // Try Gemini AI extraction first (more flexible)
+            // Add small delay between API calls to avoid rate limits when processing multiple messages
+            if (!this.geminiRateLimitBlocked) {
+              await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms delay between calls
+            }
+
             try {
               const geminiResult = await this.extractPersonalInfoWithGemini(
                 content

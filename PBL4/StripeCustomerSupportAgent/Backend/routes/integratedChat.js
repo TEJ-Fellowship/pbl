@@ -406,6 +406,30 @@ router.post("/", async (req, res) => {
       console.error("❌ Failed to update token usage:", tokenError);
     }
 
+    // Automatic conversation summarization (every 4 messages)
+    // This aligns with Client 3 usage: gemini-2.0-flash-lite for session summarization
+    try {
+      const sessionStats = await memoryController.getSessionStats();
+      if (
+        sessionStats &&
+        sessionStats.total_messages &&
+        sessionStats.total_messages > 0 &&
+        sessionStats.total_messages % 4 === 0
+      ) {
+        console.log(
+          `\n📝 Auto-creating conversation summary (message #${sessionStats.total_messages})`
+        );
+        await memoryController.createConversationSummary();
+        console.log("✅ Conversation summary created automatically");
+      }
+    } catch (summaryError) {
+      // Non-critical error - don't break the flow
+      console.warn(
+        "⚠️ Failed to auto-create conversation summary:",
+        summaryError.message
+      );
+    }
+
     // Prepare response
     const response = {
       success: true,
@@ -518,6 +542,48 @@ router.get("/health", async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
+    });
+  }
+});
+
+// Manually trigger conversation summarization for a session
+router.post("/summarize/:sessionId", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { userId = "web_user" } = req.body;
+
+    console.log(`📝 Manual summarization request for session: ${sessionId}`);
+
+    const { memoryController } = await initializeServices();
+
+    // Initialize session if needed
+    await memoryController.initializeSession(sessionId, userId, {
+      project: "stripe_support",
+      context: "customer_support_with_mcp",
+    });
+
+    // Create conversation summary
+    const summary = await memoryController.createConversationSummary();
+
+    console.log(`✅ Conversation summary created for session: ${sessionId}`);
+
+    res.json({
+      success: true,
+      data: {
+        sessionId,
+        summary: {
+          summaryText: summary.summary_text,
+          keyTopics: summary.key_topics || [],
+          createdAt: summary.created_at,
+        },
+        message: "Conversation summary created successfully",
+      },
+    });
+  } catch (error) {
+    console.error("❌ Summarization error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to create conversation summary",
     });
   }
 });

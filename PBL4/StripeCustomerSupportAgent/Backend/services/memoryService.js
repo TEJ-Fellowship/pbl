@@ -104,16 +104,49 @@ class MemoryService {
 
   /**
    * Get session summary
+   * Retrieves existing summary, or creates one if it doesn't exist
    */
-  async getSessionSummary(sessionId) {
+  async getSessionSummary(sessionId, createIfMissing = false) {
     try {
-      const summary = await this.memoryController.createConversationSummary();
-      return {
-        sessionId,
-        summary: summary.summary,
-        keyTopics: summary.keyTopics,
-        createdAt: new Date().toISOString(),
-      };
+      // Initialize session in memory controller to ensure it's set up
+      await this.memoryController.initializeSession(sessionId, "web_user", {
+        project: "stripe_support",
+        context: "customer_support",
+      });
+
+      // Try to get existing summary
+      const existingSummary =
+        await this.memoryController.postgresMemory.getConversationSummary(
+          sessionId
+        );
+
+      if (existingSummary) {
+        console.log(`📝 Retrieved existing summary for session: ${sessionId}`);
+        return {
+          sessionId,
+          summary: existingSummary.summary_text,
+          keyTopics: existingSummary.key_topics || [],
+          createdAt: existingSummary.created_at,
+        };
+      }
+
+      // If no summary exists and createIfMissing is true, create one
+      if (createIfMissing) {
+        console.log(
+          `📝 No summary found, creating new summary for session: ${sessionId}`
+        );
+        const newSummary =
+          await this.memoryController.createConversationSummary();
+        return {
+          sessionId,
+          summary: newSummary.summary_text,
+          keyTopics: newSummary.key_topics || [],
+          createdAt: newSummary.created_at,
+        };
+      }
+
+      // Return null if no summary exists and we're not creating one
+      return null;
     } catch (error) {
       console.error("❌ Memory service - get summary error:", error);
       throw error;
