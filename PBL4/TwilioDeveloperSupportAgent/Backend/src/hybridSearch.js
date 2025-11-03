@@ -104,16 +104,24 @@ class HybridSearch {
    */
   isErrorCode(query) {
     const errorPatterns = [
-      // // Stripe error codes
-      // /card_declined|card_expired|insufficient_funds|invalid_cvc|processing_error/i,
-      // API error patterns
-      /err_\d+|error_\d+|api_error|validation_error/i,
-      // HTTP status codes
-      /\b(4\d{2}|5\d{2})\b/,
-      // Technical tokens
-      /sk_(live|test)_[a-zA-Z0-9]+|pk_(live|test)_[a-zA-Z0-9]+/i,
-      // Webhook signatures
-      /whsec_[a-zA-Z0-9]+/i,
+      // Twilio error codes (e.g., 20001, 30007, 11200, 60000, etc.)
+      /\b(1\d{4}|2\d{4}|3\d{4}|4\d{4}|5\d{4}|6\d{4})\b/,
+      // Twilio error code property in JSON (e.g., "code": 30007)
+      /"code"\s*:\s*\d{4,5}/i,
+      // Twilio HTTP status codes (common ones: 400, 401, 403, 404, 429, 500, 503)
+      /\b(400|401|403|404|405|429|500|503)\b/,
+      // Twilio SID patterns (e.g., AC..., SM..., PN..., etc.)
+      /\b(A[CD][a-zA-Z0-9]{32}|SM[a-zA-Z0-9]{32}|PN[a-zA-Z0-9]{32}|CA[a-zA-Z0-9]{32}|CH[a-zA-Z0-9]{32}|MG[a-zA-Z0-9]{32})\b/,
+      // Twilio API Key/Secret patterns (SK/AC/...)
+      /\b(SK[0-9a-f]{32}|AC[0-9a-f]{32})\b/i,
+      // Twilio webhook signature (X-Twilio-Signature)
+      /X-Twilio-Signature:\s*[a-zA-Z0-9+/=]+/i,
+      // Twilio error message keywords
+      /twilio.*error|twilio.*exception|twilio.*fail(ed)?/i,
+      // Twilio API error response fields
+      /"status"\s*:\s*(400|401|403|404|405|429|500|503)/i,
+      // Twilio "more_info" error documentation URLs
+      /https:\/\/www\.twilio\.com\/docs\/errors\/\d{4,5}/i,
     ];
 
     return errorPatterns.some((pattern) => pattern.test(query));
