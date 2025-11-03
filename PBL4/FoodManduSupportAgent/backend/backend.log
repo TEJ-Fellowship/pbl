@@ -1,0 +1,30 @@
+
+> backend@1.0.0 start
+> node src/index.js
+
+[dotenv@17.2.3] injecting env (8) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+✅ All required environment variables are set
+
+==================================================
+🚀 Server running on port 5000
+🌍 Environment: development
+📝 API Docs: http://localhost:5000/
+❤️  Health Check: http://localhost:5000/api/health
+==================================================
+
+✅ MongoDB Connected Successfully
+📝 New question: "tell me about Bajeko Sekuwa restaurant" (Language: en)
+🎯 Intent: restaurant_search (confidence: 0.85)
+🔧 Using MCP tool: web_search_restaurant
+✅ MCP tool result: Success
+💾 Chat saved to database (ID: 69045367a56294620a6ac934)
+✅ Request completed in 2161ms
+POST /chat - 200 (2215ms)
+📝 New question: "tell me about Bajeko Sekuwa restaurant" (Language: en)
+🎯 Intent: restaurant_search (confidence: 0.85)
+🔧 Using MCP tool: web_search_restaurant
+✅ MCP tool result: Success
+💾 Chat saved to database (ID: 69045369a56294620a6ac936)
+✅ Request completed in 1505ms
+POST /chat - 200 (1547ms)

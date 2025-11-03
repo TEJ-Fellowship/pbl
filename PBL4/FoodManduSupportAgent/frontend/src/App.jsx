@@ -126,16 +126,23 @@ export default function FoodmanduSupportAgent() {
 
   // Function to extract order details from message
   const extractOrderDetails = (message) => {
-    // Simple regex patterns to extract order ID and location
+    // Improved regex patterns to extract order ID and location
+    // Look for order IDs in format: FM followed by numbers, or ORD- followed by numbers
     const orderIdMatch = message.match(
-      /(?:order\s*id|order\s*number|id)\s*:?\s*([a-zA-Z0-9-]+)/i
+      /(?:order\s*(?:id|number)|id)\s*:?\s*(FM\d+|ORD-?\d+|FM[A-Z0-9-]+)/i
     );
     const locationMatch = message.match(
-      /(?:location|restaurant|from)\s*:?\s*([^,.\n]+)/i
+      /(?:location|restaurant|from)\s*:?\s*([A-Za-z][^,.\n]+)/i
     );
 
+    // Only return order ID if it matches proper format (starts with letters and has minimum length)
+    const extractedOrderId =
+      orderIdMatch && orderIdMatch[1].trim().length >= 3
+        ? orderIdMatch[1].trim()
+        : null;
+
     return {
-      orderId: orderIdMatch ? orderIdMatch[1].trim() : null,
+      orderId: extractedOrderId,
       location: locationMatch ? locationMatch[1].trim() : null,
     };
   };
@@ -155,40 +162,31 @@ export default function FoodmanduSupportAgent() {
     setInput("");
     setLoading(true);
 
-    // Check for tracking intent
-    if (detectTrackingIntent(currentInput)) {
-      const orderDetails = extractOrderDetails(currentInput);
-
-      if (orderDetails.orderId) {
-        // User provided order ID, show tracking
-        setTrackingOrderId(orderDetails.orderId);
-        setShowOrderTracking(true);
-
-        const trackingResponse = {
-          id: messages.length + 2,
-          type: "bot",
-          text: t("trackOrderPrompt"),
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, trackingResponse]);
-        setLoading(false);
-        return;
-      } else {
-        // User wants to track but didn't provide order ID
-        const promptResponse = {
-          id: messages.length + 2,
-          type: "bot",
-          text: t("trackOrderPrompt"),
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, promptResponse]);
-        setLoading(false);
-        return;
-      }
-    }
-
+    // Let backend intent classifier handle all queries (removed frontend interception)
     try {
-      // Call backend API
+      // Get user location if available
+      let userLat = null;
+      let userLng = null;
+      try {
+        if (navigator.geolocation) {
+          // Try to get cached location or request
+          const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 2000,
+              maximumAge: 300000, // 5 minutes
+            });
+          }).catch(() => null);
+
+          if (position) {
+            userLat = position.coords.latitude;
+            userLng = position.coords.longitude;
+          }
+        }
+      } catch (geoError) {
+        // Silently fail - location is optional
+      }
+
+      // Call backend API with enhanced chat endpoint
       const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: {
@@ -196,7 +194,9 @@ export default function FoodmanduSupportAgent() {
         },
         body: JSON.stringify({
           question: currentInput,
-          language: i18n.language, // CHANGED: Now using i18n.language instead of local state
+          language: i18n.language,
+          userLat: userLat,
+          userLng: userLng,
         }),
       });
 
@@ -208,8 +208,31 @@ export default function FoodmanduSupportAgent() {
           type: "bot",
           text: data.answer,
           timestamp: new Date(),
+          // Include MCP result metadata if available
+          mcpResult: data.data?.mcpResult || null,
+          intent: data.data?.intent || null,
         };
+
         setMessages((prev) => [...prev, botResponse]);
+
+        // If MCP tool was used and returned order tracking, show flashcard
+        if (data.data?.mcpResult?.hasData && data.data?.mcpResult?.orderId) {
+          const orderId = data.data.mcpResult.orderId;
+          setTrackingOrderId(orderId);
+          setShowOrderTracking(true);
+        } else if (
+          data.data?.intent === "track_order" &&
+          data.data?.mcpTool === "get_all_details"
+        ) {
+          // Also show flashcard if tracking intent detected (even without explicit mcpResult)
+          const orderIdFromResponse =
+            data.data.mcpResult?.orderId ||
+            extractOrderDetails(currentInput).orderId;
+          if (orderIdFromResponse) {
+            setTrackingOrderId(orderIdFromResponse);
+            setShowOrderTracking(true);
+          }
+        }
       } else {
         throw new Error(data.error || "Failed to get response");
       }
@@ -218,7 +241,7 @@ export default function FoodmanduSupportAgent() {
       const errorResponse = {
         id: messages.length + 2,
         type: "bot",
-        text: t("errorMessage"), // CHANGED: Now using translation key instead of ternary operator
+        text: t("errorMessage"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorResponse]);
@@ -228,7 +251,7 @@ export default function FoodmanduSupportAgent() {
   };
 
   // Function to handle quick action clicks
-  const handleQuickAction = (actionLabel) => {
+  const handleQuickAction = async (actionLabel) => {
     if (actionLabel === t("trackOrder")) {
       const promptResponse = {
         id: messages.length + 1,
@@ -237,6 +260,44 @@ export default function FoodmanduSupportAgent() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, promptResponse]);
+    } else if (actionLabel === t("requestRefund")) {
+      // Handle refund request
+      const refundPrompt = {
+        id: messages.length + 1,
+        type: "bot",
+        text:
+          i18n.language === "np"
+            ? "कृपया आफ्नो अर्डर आइडी र रिफन्ड चाहनुको कारण बताउनुहोस्। हामी तपाईंको रिफन्ड अनुरोध प्रशोधन गर्नेछौं।"
+            : "Please provide your Order ID and the reason for the refund request. We'll process your refund request.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, refundPrompt]);
+
+      // Set input to help user
+      setInput(
+        i18n.language === "np"
+          ? "मलाई रिफन्ड चाहिएको छ "
+          : "I need a refund for order "
+      );
+    } else if (actionLabel === t("contactRestaurant")) {
+      // Handle contact restaurant
+      const contactPrompt = {
+        id: messages.length + 1,
+        type: "bot",
+        text:
+          i18n.language === "np"
+            ? "कृपया आफ्नो अर्डर आइडी प्रदान गर्नुहोस् र हामी तपाईंलाई रेस्टुरेन्ट सम्पर्क विवरण प्रदान गर्नेछौं।"
+            : "Please provide your Order ID and we'll help you with restaurant contact details.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, contactPrompt]);
+
+      // Set input to help user
+      setInput(
+        i18n.language === "np"
+          ? "रेस्टुरेन्ट सम्पर्क गर्नुहोस् "
+          : "Contact restaurant for order "
+      );
     }
   };
 
@@ -330,8 +391,20 @@ export default function FoodmanduSupportAgent() {
             <button
               onClick={() => {
                 if (orderId.trim()) {
-                  setTrackingOrderId(orderId.trim());
+                  const selectedOrderId = orderId.trim();
+                  setTrackingOrderId(selectedOrderId);
                   setShowOrderTracking(true);
+
+                  // Add bot message to chat showing tracking started
+                  const trackingMessage = {
+                    id: Date.now(),
+                    type: "bot",
+                    text: `${
+                      t("trackOrder") || "Tracking order"
+                    }: ${selectedOrderId}`,
+                    timestamp: new Date(),
+                  };
+                  setMessages((prev) => [...prev, trackingMessage]);
                 }
               }}
               disabled={!orderId.trim()}
