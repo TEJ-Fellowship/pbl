@@ -6,6 +6,8 @@ import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
 import HybridSearch from "./hybridSearch.js";
+import mcpClient from "./mcpClient/mcpClient.js";
+import QueryClassifier, { classifyQuery } from "./utils/queryClassifier.js";
 
 class MailChimpFAQInterface {
   constructor() {
@@ -42,6 +44,13 @@ class MailChimpFAQInterface {
     this.localChunks = null;
     this.hybridSearch = null;
     this.hybridSearchAvailable = false;
+
+    // Initialize MCP Client (will fallback to semantic search if it fails)
+    this.mcpClient = null;
+    this.mcpAvailable = false;
+
+    // Initialize Query Classifier
+    this.queryClassifier = new QueryClassifier();
   }
 
   async initialize() {
@@ -63,6 +72,9 @@ class MailChimpFAQInterface {
 
     // Try to load local chunks as fallback
     await this.loadLocalChunks();
+
+    // Initialize MCP Client
+    await this.initializeMCPClient();
 
     try {
       this.pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
@@ -132,6 +144,21 @@ class MailChimpFAQInterface {
     } catch (error) {
       console.error("❌ Failed to load local chunks:", error.message);
       this.localChunks = [];
+    }
+  }
+
+  async initializeMCPClient() {
+    try {
+      console.log("🔧 Initializing MCP Client...");
+      this.mcpClient = mcpClient;
+      // Touch the server by listing tools to ensure connectivity
+      await this.mcpClient.listTools();
+      this.mcpAvailable = true;
+      console.log("✅ MCP Client initialized successfully");
+    } catch (error) {
+      console.log(`⚠️  MCP Client initialization failed: ${error.message}`);
+      console.log("🔄 Will use semantic search as fallback");
+      this.mcpAvailable = false;
     }
   }
 
@@ -360,9 +387,306 @@ Answer:`);
     return answer;
   }
 
-  async askQuestion(question) {
-    console.log("\n🔍 Searching for relevant information...");
+  async processWithMCPTools(userQuery, recommendedTool = null) {
+    try {
+      const q = userQuery.toLowerCase();
 
+      // Use recommended tool if provided, otherwise decide via heuristics
+      let tool = recommendedTool;
+      let args = {};
+
+      // If no recommended tool, use heuristics to determine the tool
+      if (tool) {
+        // Set appropriate args based on the recommended tool
+        if (
+          tool === "search_email_best_practices" ||
+          tool === "search_email_trends"
+        ) {
+          args = { query: userQuery, maxResults: 5 };
+        } else if (tool === "analyze_email_subject") {
+          const match = userQuery.match(/"([^"]+)"|'([^']+)'/);
+          const subject = match ? match[1] || match[2] : userQuery;
+          args = { subject };
+        } else if (tool === "send_time_optimizer") {
+          const industries = [
+            "ecommerce",
+            "software",
+            "saas",
+            "marketing",
+            "retail",
+            "hospitality",
+            "b2b",
+          ];
+          const industry = industries.find((i) => q.includes(i)) || "default";
+          args = { industry };
+        } else if (tool === "email_list_growth") {
+          const nums = q.match(/\d+/g) || [];
+          if (nums.length >= 3) {
+            args = {
+              startingSubscribers: Number(nums[0]),
+              newSubscribers: Number(nums[1]),
+              unsubscribes: Number(nums[2]),
+            };
+          } else {
+            // Not enough numbers for this tool
+            tool = null;
+          }
+        }
+      } else if (q.includes("best practice")) {
+        tool = "search_email_best_practices";
+        args = { query: userQuery, maxResults: 5 };
+      } else if (q.includes("trend") || q.includes("latest")) {
+        tool = "search_email_trends";
+        args = { query: userQuery, maxResults: 5 };
+      } else if (q.includes("subject line") || q.includes("subject")) {
+        tool = "analyze_email_subject";
+        // Try to extract a quoted subject; otherwise use whole question
+        const match = userQuery.match(/"([^"]+)"|'([^']+)'/);
+        const subject = match ? match[1] || match[2] : userQuery;
+        args = { subject };
+      } else if (
+        q.includes("send time") ||
+        q.includes("best time") ||
+        q.includes("best day")
+      ) {
+        tool = "send_time_optimizer";
+        // crude industry extraction
+        const industries = [
+          "ecommerce",
+          "software",
+          "saas",
+          "marketing",
+          "retail",
+          "hospitality",
+          "b2b",
+        ];
+        const industry = industries.find((i) => q.includes(i)) || "default";
+        args = { industry };
+      } else if (
+        (q.includes("list growth") || q.includes("subscriber growth")) &&
+        /\d/.test(q)
+      ) {
+        // Only choose if numbers are present
+        tool = "email_list_growth";
+        // Extract simple numbers; fallback if not found -> skip MCP
+        const nums = q.match(/\d+/g) || [];
+        if (nums.length >= 3) {
+          args = {
+            startingSubscribers: Number(nums[0]),
+            newSubscribers: Number(nums[1]),
+            unsubscribes: Number(nums[2]),
+          };
+        } else {
+          tool = null;
+        }
+      }
+
+      if (!tool) {
+        return { success: false, response: "No suitable MCP tool matched." };
+      }
+
+      console.log(`🔧 Using MCP tool: ${tool}`);
+      const result = await this.mcpClient.callTool(tool, args);
+      const response = this.formatMcpResponse(tool, result);
+
+      return { success: true, response, tool, confidence: 0.8 };
+    } catch (error) {
+      console.error("Error processing query with MCP:", error);
+      return {
+        success: false,
+        response: "Sorry, I encountered an error processing your request.",
+      };
+    }
+  }
+
+  formatMcpResponse(tool, result) {
+    // Expect result.content[0].text to be a JSON string; parse if possible
+    let parsed = null;
+    try {
+      const text = Array.isArray(result?.content)
+        ? result.content[0]?.text || ""
+        : "";
+      parsed = JSON.parse(text);
+    } catch (_) {
+      // leave parsed null, fallback to raw
+    }
+
+    if (
+      tool === "search_email_trends" ||
+      tool === "search_email_best_practices"
+    ) {
+      if (parsed) {
+        const lines = [];
+        if (parsed.summary) lines.push(parsed.summary);
+        if (Array.isArray(parsed.results)) {
+          lines.push("\nTop sources:");
+          parsed.results.slice(0, 5).forEach((r, i) => {
+            lines.push(`${i + 1}. ${r.title}`);
+            if (r.url) lines.push(`   ${r.url}`);
+            if (r.snippet) lines.push(`   ${r.snippet}`);
+          });
+        }
+        return lines.join("\n");
+      }
+      return JSON.stringify(result, null, 2);
+    }
+
+    if (tool === "analyze_email_subject") {
+      if (parsed) {
+        const {
+          subject,
+          length,
+          wordCount,
+          spamScore,
+          readability,
+          tips = [],
+        } = parsed;
+        const lines = [
+          `Subject: ${subject}`,
+          `Length: ${length} chars | Words: ${wordCount}`,
+          `Spam score: ${spamScore}/100`,
+          `Readability: ${readability}`,
+        ];
+        if (tips.length) {
+          lines.push("Tips:");
+          tips.forEach((t) => lines.push(`- ${t}`));
+        }
+        return lines.join("\n");
+      }
+      return JSON.stringify(result, null, 2);
+    }
+
+    if (tool === "send_time_optimizer") {
+      if (parsed) {
+        const lines = [
+          `Industry: ${parsed.industry}`,
+          `Best days: ${parsed.bestDays?.join(", ") || "N/A"}`,
+          `Best times: ${parsed.bestTimes?.join(", ") || "N/A"}`,
+        ];
+        if (Array.isArray(parsed.generalTips)) {
+          lines.push("General tips:");
+          parsed.generalTips.forEach((t) => lines.push(`- ${t}`));
+        }
+        return lines.join("\n");
+      }
+      return JSON.stringify(result, null, 2);
+    }
+
+    if (tool === "email_list_growth_simple" || tool === "email_list_growth") {
+      if (parsed) {
+        const lines = [
+          `Starting subscribers: ${parsed.startingSubscribers}`,
+          `New subscribers: ${parsed.newSubscribers}`,
+          `Unsubscribes: ${parsed.unsubscribes}`,
+          `Net growth: ${parsed.netGrowth}`,
+          `Growth rate: ${
+            parsed["email list growth rate"] || parsed.growthRate
+          }`,
+          `Insight: ${parsed.insight}`,
+        ];
+        if (Array.isArray(parsed.tips)) {
+          lines.push("Tips:");
+          parsed.tips.forEach((t) => lines.push(`- ${t}`));
+        }
+        return lines.join("\n");
+      }
+      return JSON.stringify(result, null, 2);
+    }
+
+    // Fallback raw
+    return typeof result === "string"
+      ? result
+      : JSON.stringify(result, null, 2);
+  }
+
+  async askQuestion(question) {
+    console.log("\n🔍 Processing your question...");
+
+    // Initialize query classifier if not already
+    if (!this.queryClassifier) {
+      this.queryClassifier = new QueryClassifier(
+        this.geminiAvailable ? this.model : null
+      );
+    }
+
+    // Classify the query with enhanced AI-powered classifier
+    const context = {
+      mcpAvailable: this.mcpAvailable,
+      hybridSearchAvailable: this.hybridSearchAvailable,
+    };
+
+    const classification = await this.queryClassifier.classifyQuery(
+      question,
+      0.5,
+      context
+    );
+
+    if (classification.category) {
+      console.log(
+        `🏷️  Query classified as: ${classification.category} (confidence: ${(
+          classification.confidence * 100
+        ).toFixed(1)}%)`
+      );
+      if (classification.reasoning) {
+        console.log(`💭 Reasoning: ${classification.reasoning}`);
+      }
+      console.log(
+        `🧭 Recommended approach: ${classification.approach || "HYBRID_SEARCH"}`
+      );
+    }
+
+    // First, try MCP tools if available (based on classification)
+    const shouldUseMCP =
+      this.mcpAvailable &&
+      (classification.approach === "MCP_TOOLS_ONLY" ||
+        classification.approach === "COMBINED" ||
+        classification.category === "mcp_tools");
+
+    if (shouldUseMCP) {
+      try {
+        console.log("🔧 Checking if MCP tools can handle this query...");
+        const mcpResult = await this.processWithMCPTools(question);
+
+        if (mcpResult.success) {
+          console.log("\n" + "=".repeat(80));
+          console.log("🤖 MAILCHIMP SUPPORT AGENT RESPONSE:");
+          console.log("=".repeat(80));
+          console.log(mcpResult.response);
+          console.log("=".repeat(80));
+
+          if (mcpResult.tool) {
+            console.log(`\n🔧 Tool used: ${mcpResult.tool}`);
+            console.log(
+              `📊 Confidence: ${(mcpResult.confidence * 100).toFixed(1)}%`
+            );
+          }
+          return;
+        } else {
+          console.log(
+            "🔄 MCP tools couldn't handle this query, falling back to semantic search..."
+          );
+        }
+      } catch (error) {
+        console.log(`⚠️  MCP processing failed: ${error.message}`);
+        console.log("🔄 Falling back to semantic search...");
+      }
+    } else if (classification.approach === "CONVERSATIONAL") {
+      console.log("💬 Handling as conversational query...");
+      // For CLI mode, we can provide a simple conversational response
+      if (!this.mcpAvailable && !this.hybridSearchAvailable) {
+        console.log("\n" + "=".repeat(80));
+        console.log("🤖 MAILCHIMP SUPPORT AGENT RESPONSE:");
+        console.log("=".repeat(80));
+        console.log(
+          "I can help with MailChimp-related questions. Please specify what you'd like to know about MailChimp."
+        );
+        console.log("=".repeat(80));
+        return;
+      }
+    }
+
+    // Fallback to semantic search
+    console.log("\n🔍 Searching knowledge base...");
     const chunks = await this.searchSimilarChunks(question, 5);
 
     if (chunks.length === 0) {
@@ -449,6 +773,12 @@ Answer:`);
         this.localChunks ? this.localChunks.length : 0
       } available`
     );
+    console.log(
+      `🔧 MCP Client: ${this.mcpAvailable ? "✅ Connected" : "❌ Disconnected"}`
+    );
+    console.log(
+      `🧠 MCP Tools: ${this.mcpAvailable ? "✅ Available" : "❌ Unavailable"}`
+    );
 
     if (this.index) {
       try {
@@ -470,6 +800,19 @@ Answer:`);
       }
     }
 
+    // Check MCP tools status
+    if (this.mcpAvailable && this.mcpClient) {
+      try {
+        const tools = await this.mcpClient.listTools();
+        console.log(`🛠️  Available MCP Tools: ${tools.length}`);
+        tools.forEach((tool) => {
+          console.log(`   • ${tool.name}: ${tool.description || ""}`);
+        });
+      } catch (error) {
+        console.log(`🛠️  MCP Tools Status: ❌ ${error.message}`);
+      }
+    }
+
     console.log("\n💡 TROUBLESHOOTING:");
     console.log(
       "1. Make sure .env file exists with API keys and DB credentials"
@@ -478,6 +821,8 @@ Answer:`);
     console.log("3. Run: npm run enhanced-ingest (process documents)");
     console.log("4. Run: npm run db:populate (populate PostgreSQL)");
     console.log("5. Check Pinecone index name matches config");
+    console.log("6. Run: npm run mcp:server (start MCP server)");
+    console.log("7. Check config.js has TAVILY_API_KEY for MCP tools");
   }
 
   async handleCustomQuestion() {
@@ -548,9 +893,19 @@ Answer:`);
         if (!retry) break;
       }
     }
+
+    // Cleanup
+    if (this.mcpAvailable && this.mcpClient) {
+      this.mcpClient.cleanup();
+    }
   }
 }
 
-// Run the interface
-const faqInterface = new MailChimpFAQInterface();
-faqInterface.run().catch(console.error);
+// Export the class for use in API server
+export default MailChimpFAQInterface;
+
+// Run the interface only if this file is executed directly (CLI mode)
+if (process.argv[1] && process.argv[1].endsWith("faq-interface.js")) {
+  const faqInterface = new MailChimpFAQInterface();
+  faqInterface.run().catch(console.error);
+}

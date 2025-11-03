@@ -1,6 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, ArrowLeft, Bot, User, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Bot,
+  User,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import supportAgentService from "../services/mcpService";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([
@@ -24,30 +33,59 @@ const ChatPage = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isLoading) return;
 
+    const question = inputText.trim();
     const userMessage = {
       id: messages.length + 1,
-      text: inputText,
+      text: question,
       sender: "user",
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
 
-    // Simulate bot response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      // Call the actual API
+      const response = await supportAgentService.askQuestion(question);
+
       const botMessage = {
         id: messages.length + 2,
-        text: "I understand you're asking about: " + inputText + ". Let me help you with that. This is a simulated response - in a real implementation, this would connect to your MailChimp support API.",
+        text:
+          response.response ||
+          "I apologize, but I couldn't generate a response. Please try again.",
         sender: "bot",
         timestamp: new Date().toLocaleTimeString(),
+        sources: response.sources || [],
+        toolUsed: response.toolUsed || null,
+        classification: response.classification || null,
       };
-      setMessages(prev => [...prev, botMessage]);
+
+      // Log classification if available
+      if (response.classification?.category) {
+        console.log(
+          `Query classified as: ${response.classification.category} (${(
+            response.classification.confidence * 100
+          ).toFixed(1)}% confidence)`
+        );
+      }
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      const errorMessage = {
+        id: messages.length + 2,
+        text: `Sorry, I encountered an error: ${error.message}. Please make sure the backend server is running on http://localhost:3001`,
+        sender: "bot",
+        timestamp: new Date().toLocaleTimeString(),
+        isError: true,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -74,7 +112,9 @@ const ChatPage = () => {
               <Bot size={20} className="text-black" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">MailChimp Support Assistant</h1>
+              <h1 className="font-bold text-gray-900 text-lg">
+                MailChimp Support Assistant
+              </h1>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <p className="text-sm text-green-600 font-medium">Online</p>
@@ -83,7 +123,9 @@ const ChatPage = () => {
           </div>
         </div>
         <div className="bg-gray-100/80 px-4 py-2 rounded-full">
-          <p className="text-sm text-gray-600 font-medium">{new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-gray-600 font-medium">
+            {new Date().toLocaleDateString()}
+          </p>
         </div>
       </header>
 
@@ -101,7 +143,7 @@ const ChatPage = () => {
                 <Bot size={20} className="text-black" />
               </div>
             )}
-            
+
             <div
               className={`max-w-[75%] rounded-3xl px-6 py-5 shadow-lg ${
                 message.sender === "user"
@@ -125,10 +167,16 @@ const ChatPage = () => {
                     >
                       <Copy size={12} className="text-gray-500" />
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded" title="Good response">
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded"
+                      title="Good response"
+                    >
                       <ThumbsUp size={12} className="text-gray-500" />
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded" title="Poor response">
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded"
+                      title="Poor response"
+                    >
                       <ThumbsDown size={12} className="text-gray-500" />
                     </button>
                   </div>
@@ -152,8 +200,14 @@ const ChatPage = () => {
             <div className="bg-white/90 border border-gray-200/50 rounded-3xl px-6 py-5 shadow-lg backdrop-blur-sm ring-1 ring-gray-200/30">
               <div className="flex space-x-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                <div
+                  className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                ></div>
+                <div
+                  className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></div>
               </div>
             </div>
           </div>
@@ -172,14 +226,14 @@ const ChatPage = () => {
               placeholder="Ask me anything about MailChimp..."
               className="w-full px-6 py-4 border border-gray-300/30 rounded-3xl resize-none focus:outline-none focus:ring-4 focus:ring-yellow-400/30 focus:border-transparent bg-white/80 backdrop-blur-sm shadow-lg scrollbar-hide transition-all duration-300 flex items-center"
               rows="1"
-              style={{ 
-                height: "56px", 
-                maxHeight: "120px", 
+              style={{
+                height: "56px",
+                maxHeight: "120px",
                 MozAppearance: "textfield",
                 WebkitAppearance: "none",
                 appearance: "none",
                 scrollbarWidth: "none",
-                msOverflowStyle: "none"
+                msOverflowStyle: "none",
               }}
             />
           </div>

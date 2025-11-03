@@ -184,7 +184,7 @@ server.tool(
 
 // Tools 4: Send time optimization
 server.tool(
-  "Send time optimizer",
+  "send_time_optimizer",
   "Suggest best days/times for email sends based on industry.",
   { industry: z.string().optional() },
   async ({ industry }) => {
@@ -273,7 +273,7 @@ server.tool(
 
 // Tools 5: List growth calculator
 server.tool(
-  "email_list_growth_simple",
+  "email_list_growth",
   "Calculate email list growth rate and projected list size.",
   {
     startingSubscribers: z.number().min(1, "Must have at least 1 subscriber"),
