@@ -145,6 +145,58 @@ export function validateSearchOptions(options) {
  * @param {string} sessionId - Session ID to validate
  * @returns {Object} Validation result
  */
+export function validateServerId(serverId) {
+  const result = {
+    isValid: false,
+    error: null,
+    sanitized: null
+  };
+
+  if (!serverId) {
+    result.error = 'Server ID is required';
+    return result;
+  }
+
+  if (typeof serverId !== 'string') {
+    result.error = 'Server ID must be a string';
+    return result;
+  }
+
+  // Sanitize server ID
+  const sanitized = serverId.trim();
+  
+  if (sanitized.length === 0) {
+    result.error = 'Server ID cannot be empty';
+    return result;
+  }
+
+  if (sanitized.length > 100) {
+    result.error = 'Server ID is too long (max 100 characters)';
+    return result;
+  }
+
+  // Check for potentially malicious content
+  const suspiciousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /eval\s*\(/i,
+    /[<>{}[\]]/i  // Brackets
+  ];
+
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(sanitized)) {
+      result.error = 'Server ID contains potentially harmful content';
+      return result;
+    }
+  }
+
+  result.isValid = true;
+  result.sanitized = sanitized;
+  return result;
+}
+
+// Alias for backward compatibility (deprecated)
 export function validateSessionId(sessionId) {
   const result = {
     isValid: false,
