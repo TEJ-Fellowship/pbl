@@ -33,18 +33,54 @@
     "default": {
       "id": "default",
       "createdAt": "2025-10-31T05:40:23.504Z",
-      "lastActivity": "2025-10-31T07:34:41.487Z",
+      "lastActivity": "2025-11-03T06:48:19.323Z",
       "conversationHistory": [
         {
-          "timestamp": "2025-10-31T07:13:41.985Z",
-          "query": "SMS API",
-          "response": "Okay, I can help you with understanding the Twilio SMS API.\n\nThe Twilio SMS API allows you to send and receive SMS messages, and build cross-channel experiences across WhatsApp, SMS, MMS, and chat [Source 5, 6].\n\nHere's a general overview of how to use the SMS API with JavaScript, based on the provided documentation:\n\n**1. Prerequisites:**\n\n*   A Twilio account and phone number.\n*   Node.js and the Twilio Node.js library installed.\n\n**2. Installation:**\n\n```bash\nnpm install twilio\n```\n\n**3. Sending an SMS Message:**\n\nHere's a basic example of how to send an SMS message using the Twilio Node.js library:\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Find your Account SID and Auth Token at twilio.com/console\n// Set the environment variables TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst client = require('twilio')(accountSid, authToken);\n\nclient.messages\n  .create({\n    body: 'This is the ship that made the Kessel Run in fourteen parsecs?',\n    from: '+15017250604', // Replace with your Twilio phone number\n    to: '+15558675310'  // Replace with the recipient's phone number\n  })\n  .then(message => console.log(message.sid));\n```\n\n**Explanation:**\n\n*   **Import the Twilio module:**  `const twilio = require('twilio');`\n*   **Create a Twilio client:** You'll need your Account SID and Auth Token from your Twilio account. You can find these at [twilio.com/console](https://twilio.com/console).  It is best practice to set these as environment variables.\n*   **Use the `client.messages.create()` method:**\n    *   `to`:  The recipient's phone number.  Must be in E.164 format (e.g., +12345678900).\n    *   `from`:  Your Twilio phone number.\n    *   `body`:  The text of the SMS message.\n*   **Handle the Promise:** The `create()` method returns a Promise.  Use `.then()` to handle the successful creation of the message and access the `message.sid` (the unique ID of the message).\n\n**4.  Asynchronous JavaScript:**\n\nSince Javascript is asynchronous, the `.then()` block will only be executed once the SMS has been successfully sent.\n\n**5. Error Handling:**\n\nYou can use a `.catch()` block to handle errors that may occur during the message sending process.\n\n```javascript\nclient.messages\n  .create({\n    body: 'This is the ship that made the Kessel Run in fourteen parsecs?',\n    from: '+15017250604', // Replace with your Twilio phone number\n    to: '+15558675310'  // Replace with the recipient's phone number\n  })\n  .then(message => console.log(message.sid))\n  .catch(error => console.error(error));\n```\n\n**6.  Webhooks:**\n\nYou can use webhooks to receive information about incoming SMS messages, delivery receipts, and more.  You'll need to configure a URL in your Twilio account where Twilio can send these requests.\n\n**7.  A2P 10DLC (for US and Canada):**\n\nIf you are sending SMS messages to the US or Canada from a local number, you need to register for A2P 10DLC [Source 3, 4].\n\nLet me know if you have any specific questions about sending SMS messages, receiving SMS messages, or any other aspect of the Twilio SMS API!\n",
+          "timestamp": "2025-11-03T06:04:44.219Z",
+          "query": "What is webhooks?",
+          "response": "Webhooks are user-defined HTTP callbacks that are triggered by an event in a web application and facilitate the integration of different applications or third-party APIs, like Twilio [Source 7, 8]. Twilio uses webhooks to notify your application when events occur, such as receiving an SMS message or getting an incoming phone call [Source 7, 8]. When an event occurs, Twilio makes an HTTP request (usually a `POST` or `GET`) to the URL you configured for the webhook [Source 7, 8]. This request includes details about the event, such as the incoming phone number or the body of an incoming message [Source 4, 7, 8].\n\nMany other modern web services like GitHub and Slack also use webhooks to communicate events [Source 3, 4]. Some webhooks are informational, such as notifying you that a voice call recording is ready for download. Others require your web application to respond, for example, to let Twilio know what to do when someone calls your Twilio phone number [Source 3, 4].\n\nYou can also set up webhooks for events in your application, such as billing levels reaching a certain threshold, or if an error occurs when Twilio calls your web application [Source 1, 2, 5, 6]. You could set up a pipeline that sends your webhooks into Slack, Microsoft Teams, or another chat system, or to notify you via email [Source 5, 6].\n\nTo get started with webhooks for Twilio, you can refer to the documentation on setting them up for different products like Voice, Messaging, Conversations, and Sync [Source 1, 2].\n",
           "metadata": {
             "detectedLanguage": null,
             "detectedAPI": "sms",
             "errorCodes": [],
             "chunkCount": 8,
-            "responseTime": 13142
+            "responseTime": 10652
+          }
+        },
+        {
+          "timestamp": "2025-11-03T06:05:27.922Z",
+          "query": "What time is it now?",
+          "response": "The current time is Monday, November 3, 2025, at 11:50:26 AM in Asia/Katmandu time.\n\nI used the `get_current_time` tool to determine this.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 3187
+          }
+        },
+        {
+          "timestamp": "2025-11-03T06:33:51.574Z",
+          "query": "What is the latest updates on twilio documentation?",
+          "response": "It's difficult to provide a concise list of *all* the latest updates to Twilio's documentation, as it's constantly evolving. However, I can guide you on how to stay informed and highlight some general areas of recent focus based on web search results:\n\n**Staying Up-to-Date:**\n\n*   **Twilio Docs Site:** The best way to find the latest updates is to regularly check the Twilio documentation website ([WEB-1], [WEB-2]). Look for \"What's New\" or \"Changelog\" sections if available.\n*   **API Reference:** Browse the API reference for the specific products you're using (e.g., SMS, Voice) ([WEB-1], [WEB-3], [WEB-4], [WEB-5]). Recent updates are usually noted on the individual resource pages.\n*   **Twilio Blog:** Keep an eye on the Twilio blog for announcements about new features, updates, and improvements to the platform.\n*   **SDK Documentation:** Check the SDK documentation for your preferred language (e.g., Node.js, Python, Java, PHP, C#) for the latest changes and updates to the SDK itself ([WEB-3], [WEB-5]).\n\n**General Areas of Recent Focus (based on web search):**\n\n*   **Messaging API:** Updates and improvements to the Programmable Messaging API, including features like message scheduling, Copilot, and enhanced delivery reporting ([WEB-4]).\n*   **API Explorer:** Interactive API documentation that lets you test requests directly from your browser.\n*   **SDK Improvements:** Ongoing updates and improvements to the various Twilio SDKs to enhance performance, security, and developer experience.\n\nI hope this helps you stay informed about the latest updates to Twilio's documentation!\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 6270
+          }
+        },
+        {
+          "timestamp": "2025-11-03T06:48:19.322Z",
+          "query": "What time is it?",
+          "response": "Right now, according to the MCP tool, it is 12:33:17 PM on November 3rd, 2025 (Asia/Katmandu time). The UTC time is Monday, November 3rd, 2025, at 06:48:17 GMT. I used the `get_current_time` MCP tool to get this information.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 2967
           }
         }
       ],
@@ -54,13 +90,11 @@
         "context": []
       },
       "currentContext": {
-        "topic": "sms",
-        "relatedAPIs": [
-          "sms"
-        ],
+        "topic": "general",
+        "relatedAPIs": [],
         "errorCodes": [],
-        "lastQuery": "SMS API",
-        "lastUpdated": "2025-10-31T07:34:41.488Z"
+        "lastQuery": "What time is it?",
+        "lastUpdated": "2025-11-03T06:48:17.905Z"
       }
     },
     "session_1761890936834_kxv37njlr": {
@@ -108,7 +142,7 @@
     "session_1761891590208_fk4pg037m": {
       "id": "session_1761891590208_fk4pg037m",
       "createdAt": "2025-10-31T06:20:05.809Z",
-      "lastActivity": "2025-10-31T06:20:05.810Z",
+      "lastActivity": "2025-11-03T05:20:08.496Z",
       "conversationHistory": [],
       "userPreferences": {
         "language": null,
@@ -137,6 +171,66 @@
             "errorCodes": [],
             "chunkCount": 8,
             "responseTime": 12464
+          }
+        }
+      ],
+      "userPreferences": {
+        "language": null,
+        "api": null,
+        "context": []
+      },
+      "currentContext": {
+        "topic": null,
+        "relatedAPIs": [],
+        "errorCodes": [],
+        "lastQuery": null
+      }
+    },
+    "session_1762143556183_5r2oagpef": {
+      "id": "session_1762143556183_5r2oagpef",
+      "createdAt": "2025-11-03T04:19:27.653Z",
+      "lastActivity": "2025-11-03T04:19:27.654Z",
+      "conversationHistory": [
+        {
+          "timestamp": "2025-11-03T04:19:27.654Z",
+          "query": "What time is it?",
+          "response": "The current time is Monday, November 3, 2025, at 10:04:25 AM in Asia/Katmandu time. In UTC, it is Monday, November 3, 2025, at 04:19:25 AM.\n\nI used the `get_current_time` tool to provide this information.\n",
+          "metadata": {
+            "detectedLanguage": null,
+            "detectedAPI": null,
+            "errorCodes": [],
+            "chunkCount": 0,
+            "responseTime": 2550
+          }
+        }
+      ],
+      "userPreferences": {
+        "language": null,
+        "api": null,
+        "context": []
+      },
+      "currentContext": {
+        "topic": null,
+        "relatedAPIs": [],
+        "errorCodes": [],
+        "lastQuery": null
+      }
+    },
+    "session_1762147135788_q3a0r1x86": {
+      "id": "session_1762147135788_q3a0r1x86",
+      "createdAt": "2025-11-03T05:19:17.950Z",
+      "lastActivity": "2025-11-03T05:19:17.951Z",
+      "conversationHistory": [
+        {
+          "timestamp": "2025-11-03T05:19:17.951Z",
+          "query": "How do I send an SMS in Node.js?",
+          "response": "To send an SMS in Node.js using Twilio, follow these steps:\n\n1.  **Install the Twilio Node.js library:**\n\n    ```bash\n    npm install twilio\n    ```\n\n    or\n\n    ```bash\n    yarn add twilio\n    ```\n\n    [Source 5, 6]\n2.  **Require the Twilio module:**\n\n    ```javascript\n    const twilio = require(\"twilio\");\n    // Or, for ESM: import twilio from 'twilio';\n    ```\n\n    [Source 1, 2]\n3.  **Initialize the Twilio client:**\n\n    You'll need your Account SID and Auth Token from the Twilio Console.  It's best practice to set these as environment variables.\n\n    ```javascript\n    const accountSid = process.env.TWILIO_ACCOUNT_SID;\n    const authToken = process.env.TWILIO_AUTH_TOKEN;\n    const client = twilio(accountSid, authToken);\n    ```\n\n    [Source 1, 2]\n4.  **Send an SMS:**\n\n    Use the `client.messages.create` method to send an SMS message.\n\n    ```javascript\n    client.messages\n      .create({\n        body: \"This is the message body\",\n        to: \"+1234567890\", // Replace with the recipient's phone number\n        from: \"+11234567890\", // Replace with your Twilio phone number\n      })\n      .then((message) => console.log(message.sid))\n      .catch((error) => console.error(error));\n    ```\n\n    *   `to`: The recipient's phone number.  Must be in E.164 format (e.g., +12316803929).\n    *   `from`: Your Twilio phone number.\n    *   `body`: The text of the SMS message.\n\nHere's a complete example:\n\n```javascript\n// Download the helper library from https://www.twilio.com/docs/node/install\n// Find your Account SID and Auth Token at twilio.com/console\n// and set the environment variables. See http://twil.io/secure\nconst accountSid = process.env.TWILIO_ACCOUNT_SID;\nconst authToken = process.env.TWILIO_AUTH_TOKEN;\nconst twilio = require(\"twilio\");\nconst client = new twilio(accountSid, authToken);\n\nclient.messages\n  .create({\n    body: \"Hello from Twilio!\",\n    to: \"+1234567890\", // Replace with the recipient's phone number\n    from: \"+11234567890\", // Replace with your Twilio phone number\n  })\n  .then((message) => console.log(message.sid))\n  .catch((error) => console.error(error));\n```\n\n**Important Considerations:**\n\n*   **Phone Number Format:**  Ensure the `to` and `from` numbers are in the correct E.164 format.\n*   **Twilio Phone Number:** You must have a Twilio phone number to send SMS messages. You can purchase one through the Twilio Console.\n*   **Error Handling:** Implement proper error handling to catch any issues during the SMS sending process.\n*   **Asynchronous Operation:**  The `client.messages.create` method is asynchronous.  Use `.then()` to handle the successful sending of the message and `.catch()` to handle errors.\n\nI have used the available documentation to provide this response. [Source 1, 2, 5, 6]\n",
+          "metadata": {
+            "detectedLanguage": "javascript",
+            "detectedAPI": "sms",
+            "errorCodes": [],
+            "chunkCount": 8,
+            "responseTime": 14505
           }
         }
       ],
