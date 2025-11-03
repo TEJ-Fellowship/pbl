@@ -6,6 +6,8 @@ import fs from "fs/promises";
 import path from "path";
 import config from "../config/config.js";
 import HybridSearch from "./hybridSearch.js";
+import ConversationMemoryService from "./services/conversationMemoryService.js";
+import { tavily as createTavily } from "@tavily/core";
 
 class MailChimpFAQInterface {
   constructor() {
@@ -42,6 +44,14 @@ class MailChimpFAQInterface {
     this.localChunks = null;
     this.hybridSearch = null;
     this.hybridSearchAvailable = false;
+
+    // Conversational memory
+    this.memory = new ConversationMemoryService(8);
+    this.sessionId = null;
+
+    // Web fallback
+    this.tavily = null;
+    this.tavilyAvailable = false;
   }
 
   async initialize() {
@@ -61,9 +71,24 @@ class MailChimpFAQInterface {
       `🗄️  PostgreSQL Database: ${config.DB_NAME || "mailchimp_support_db"}`
     );
 
+    // Resume last session if present; otherwise create a new one
+    try {
+      const existing = await this.memory.getLatestSessionId("terminal-user");
+      if (existing) {
+        this.sessionId = existing;
+        console.log(`🗄️  Resumed conversation session: ${this.sessionId}`);
+      } else {
+        this.sessionId = await this.memory.createSession("terminal-user");
+        console.log(`🗄️  Conversation session created: ${this.sessionId}`);
+      }
+    } catch (e) {
+      console.log(`⚠️  Conversation memory unavailable: ${e.message}`);
+    }
+
     // Try to load local chunks as fallback
     await this.loadLocalChunks();
 
+    let pineconeOk = false;
     try {
       this.pinecone = new Pinecone({ apiKey: config.PINECONE_API_KEY });
       this.index = this.pinecone.Index(config.PINECONE_INDEX_NAME);
@@ -99,50 +124,66 @@ class MailChimpFAQInterface {
           this.hybridSearchAvailable = false;
         }
       }
-
-      return true;
+      pineconeOk = true;
     } catch (error) {
       console.error("❌ Failed to connect to Pinecone:", error.message);
       console.log("🔄 Falling back to local data...");
-      return false;
+      pineconeOk = false;
     }
+
+    // Initialize Tavily web search client (best-effort, non-fatal)
+    try {
+      if (config.TAVILY_API_KEY) {
+        this.tavily = createTavily({ apiKey: config.TAVILY_API_KEY });
+        this.tavilyAvailable = true;
+      }
+    } catch {
+      this.tavilyAvailable = false;
+    }
+
+    return pineconeOk;
   }
 
   async loadLocalChunks() {
-    try {
-      const chunksPath = path.resolve(
-        "./src/data/processed_chunks/enhanced_chunks.json"
-      );
-      const enhancedChunksPath = path.resolve(
-        "./src/data/processed_chunks/enhanced_chunks.json"
-      );
+    // Try multiple possible locations for processed chunks
+    const possiblePaths = [
+      path.resolve("./src/data/processed_chunks/enhanced_chunks.json"),
+      path.resolve("../src/data/processed_chunks/enhanced_chunks.json"),
+      path.resolve("../data/processed_chunks/enhanced_chunks.json"),
+      path.resolve("./data/processed_chunks/enhanced_chunks.json"),
+      path.resolve("./src/data/processed_chunks/chunks.json"),
+    ];
 
-      // Try enhanced chunks first, then fallback to regular chunks
-      let chunksData;
+    for (const chunksPath of possiblePaths) {
       try {
-        chunksData = await fs.readFile(enhancedChunksPath, "utf-8");
-        console.log("📁 Loaded enhanced chunks from local storage");
-      } catch {
-        chunksData = await fs.readFile(chunksPath, "utf-8");
-        console.log("📁 Loaded regular chunks from local storage");
+        const chunksData = await fs.readFile(chunksPath, "utf-8");
+        this.localChunks = JSON.parse(chunksData);
+        console.log(`📁 Loaded chunks from: ${chunksPath}`);
+        console.log(`📚 Local chunks loaded: ${this.localChunks.length} chunks`);
+        return; // Successfully loaded
+      } catch (err) {
+        // Try next path
+        continue;
       }
-
-      this.localChunks = JSON.parse(chunksData);
-      console.log(`📚 Local chunks loaded: ${this.localChunks.length} chunks`);
-    } catch (error) {
-      console.error("❌ Failed to load local chunks:", error.message);
-      this.localChunks = [];
     }
+
+    // If all paths failed
+    console.error("❌ Failed to load local chunks from any known location");
+    console.error("💡 Make sure you've run: npm run enhanced-ingest");
+    this.localChunks = [];
   }
 
   async searchSimilarChunks(query, limit = 5) {
     console.log(`🔍 Searching for: "${query}"`);
 
+    // Expand asset-related queries to improve recall for image upload in campaigns
+    const expandedQuery = this.expandQueryIfNeeded(query);
+
     // Try Hybrid Search first (BM25 + Semantic + Recency Boost)
     if (this.hybridSearchAvailable && this.hybridSearch) {
       try {
         console.log("🔬 Using Hybrid Search (BM25 + Semantic + Recency Boost)");
-        const results = await this.hybridSearch.hybridSearch(query, limit);
+        const results = await this.hybridSearch.hybridSearch(expandedQuery, limit);
 
         if (results.length > 0) {
           // Format results to match expected structure
@@ -168,7 +209,7 @@ class MailChimpFAQInterface {
     if (this.index && this.embeddingsAvailable) {
       try {
         console.log("🔍 Using semantic search (Pinecone only)");
-        const queryEmbedding = await this.embeddings.embedQuery(query);
+        const queryEmbedding = await this.embeddings.embedQuery(expandedQuery);
 
         const searchResponse = await this.index.query({
           vector: queryEmbedding,
@@ -190,15 +231,109 @@ class MailChimpFAQInterface {
 
     // Final fallback to local search
     console.log("🔄 Using local search fallback...");
-    return this.searchLocalChunks(query, limit);
+    const localResults = this.searchLocalChunks(expandedQuery, limit);
+    
+    if (localResults.length === 0 && this.localChunks && this.localChunks.length > 0) {
+      console.log(`⚠️  Local search returned 0 results from ${this.localChunks.length} available chunks`);
+      console.log(`🔍 Query: "${expandedQuery}"`);
+      console.log(`💡 Try using more specific Mailchimp terms (campaign, audience, automation, etc.)`);
+    }
+    
+    return localResults;
+  }
+
+  expandQueryIfNeeded(query) {
+    const q = String(query || "");
+    const lower = q.toLowerCase();
+    const mentionsImage = /\b(image|upload|picture|media|logo|banner|asset|photo|alt text)\b/.test(lower);
+    const mentionsCampaign = /\b(campaign|email|template|design|editor)\b/.test(lower);
+
+    // Only expand when the user actually mentions images/media; do NOT expand on
+    // generic campaign queries. If both are present, keep expansion to image topics.
+    if (mentionsImage) {
+      const boosters = [
+        "image upload",
+        "media library",
+        "content studio",
+        "add image",
+        "replace image",
+        "image size",
+        "supported formats",
+        "alt text",
+        "optimize images",
+        "template editor",
+      ];
+      // Optionally bias to campaign context if mentioned, without altering user intent
+      const contextHint = mentionsCampaign ? " campaign" : "";
+      return `${q}${contextHint} ${boosters.join(" ")}`.trim();
+    }
+    return q;
+  }
+
+  async webSearchFallback(query, limit = 5) {
+    if (!this.tavilyAvailable || !this.tavily) return [];
+    try {
+      const result = await this.tavily.search(query, {
+        maxResults: limit,
+        searchDepth: "advanced",
+        includeAnswer: true,
+        include_raw_content: true,
+      });
+
+      const items = (result?.results || []).map((r) => ({
+        score: 0.5,
+        metadata: {
+          title: r.title || "Web Result",
+          heading: r.title || "",
+          category: "web",
+          difficulty: "intermediate",
+          pageContent: (r.content || r.snippet || "").slice(0, 1200),
+          url: r.url,
+        },
+      }));
+
+      if (!items.length && result?.answer) {
+        items.push({
+          score: 0.5,
+          metadata: {
+            title: "Web Summary",
+            heading: "Web Summary",
+            category: "web",
+            difficulty: "intermediate",
+            pageContent: String(result.answer).slice(0, 1500),
+          },
+        });
+      }
+
+      return items;
+    } catch (e) {
+      console.log(`🌐 Web search failed: ${e.message}`);
+      return [];
+    }
+  }
+
+  areResultsWeak(results, minScore = 0.15) {
+    if (!Array.isArray(results) || results.length === 0) return true;
+    // Use 'score' if present; otherwise try to infer from mapped fields
+    const scores = results.map((r) => {
+      if (typeof r.score === "number") return r.score;
+      const m = r.metadata || {};
+      // Fallback: if we mapped final/semantic/bm25 earlier into score, it's already there
+      // If no score, consider neutral 0.0
+      return 0;
+    });
+    const top = Math.max(...scores);
+    return !Number.isFinite(top) || top < minScore;
   }
 
   async searchLocalChunks(query, limit = 5) {
     if (!this.localChunks || this.localChunks.length === 0) {
       console.log("❌ No local chunks available");
+      console.log("💡 Make sure you've run: npm run enhanced-ingest");
       return [];
     }
 
+    console.log(`🔍 Searching ${this.localChunks.length} local chunks for: "${query}"`);
     const queryLower = query.toLowerCase();
     const scoredChunks = [];
 
@@ -260,7 +395,21 @@ class MailChimpFAQInterface {
     return results;
   }
 
-  async generateAnswer(query, relevantChunks) {
+  async generateAnswer(query, relevantChunks, memory = { recentMessages: [], recalled: [] }, source = "docs") {
+    const memorySnippet = this.formatMemoryForPrompt(memory.recentMessages, memory.recalled);
+    // Extract user name from recent messages, if provided by user
+    let userName = null;
+    const recent = memory.recentMessages || [];
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const m = recent[i];
+      if (m.role === "user") {
+        const match = /my name is\s+([a-zA-Z][\w\s'-]+)/i.exec(m.content || "");
+        if (match && match[1]) {
+          userName = match[1].trim();
+          break;
+        }
+      }
+    }
     const context = relevantChunks
       .map((chunk, index) => {
         const metadata = chunk.metadata;
@@ -273,22 +422,38 @@ Content: ${chunk.metadata.pageContent || "No content available"}`;
     // Try Gemini first (only if available), fallback to template-based response
     if (this.geminiAvailable) {
       try {
+        const sourceHint = source === "web" 
+          ? "These results are from web search. Provide accurate, helpful information based on the web sources."
+          : source === "mixed"
+          ? "These results combine Mailchimp documentation with web sources. Prioritize Mailchimp docs when available."
+          : "These results are from Mailchimp documentation. Use official Mailchimp terminology and features.";
+
         const result = await this.model
-          .generateContent(`You are a professional Mailchimp Support AI trained on official Mailchimp documentation. Your goal is to help users by giving accurate, concise, and friendly explanations using only the provided documentation context.
+          .generateContent(`You are a professional Mailchimp Support AI. Provide accurate, concise, and friendly explanations using only the provided context.
 
 
 User Question: ${query}
 
-Context from MailChimp Documentation:
+Conversation Memory (most recent first, then recalled snippets):
+${memorySnippet}
+
+User Profile:
+Name: ${userName || "(unknown)"}
+
+Source Type: ${source === "web" ? "Web Search (Tavily)" : source === "mixed" ? "Mixed (Mailchimp Docs + Web)" : "Mailchimp Documentation"}
+${sourceHint}
+
+Context:
 ${context}
 
 1. Use ONLY the context provided — do not invent or assume information.
-2. Give a clear, step-by-step answer tailored to the user’s question.
-3. Mention specific Mailchimp features, tools, or UI paths (e.g., “Campaigns → Automations → Create Email”).
-4. Preserve any numbered lists or bullet points from the documentation.
-5. Reference the **source category** (e.g., “Campaigns,” “Lists,” “Automation,” “Getting Started”) when explaining.
-6. If the context doesn’t have enough information, clearly say so and suggest checking the Mailchimp Help Center.
-7. Maintain a friendly, knowledgeable tone — like a real Mailchimp expert helping a user on chat.
+2. Give a clear, step-by-step answer tailored to the user's question.
+3. When context is from Mailchimp docs, reference specific features or UI paths (e.g., "Campaigns → Automations").
+4. When context is from web search, cite sources if URLs are provided.
+5. Preserve any numbered lists or bullet points.
+6. If the context doesn't have enough information, clearly say so.
+7. Maintain a friendly, knowledgeable tone.
+8. If a user name is provided above, greet the user by name in the opening line.
 
 Answer:`);
 
@@ -303,16 +468,54 @@ Answer:`);
     }
 
     // Fallback: Generate a structured response from the context
-    return this.generateTemplateAnswer(query, relevantChunks);
+    return this.generateTemplateAnswer(query, relevantChunks, { recentMessages: memory.recentMessages, recalled: memory.recalled }, source);
   }
 
-  generateTemplateAnswer(query, relevantChunks) {
+  formatMemoryForPrompt(recentMessages = [], recalled = []) {
+    const recent = recentMessages
+      .map((m) => `${m.created_at?.toISOString ? m.created_at.toISOString() : m.created_at} - ${m.role.toUpperCase()}: ${m.content}`)
+      .join("\n");
+
+    const rec = recalled
+      .map((m) => `RECALLED (${(m.score || 0).toFixed(2)}): ${m.role.toUpperCase()}: ${m.content}`)
+      .join("\n");
+
+    const combined = [recent, rec].filter(Boolean).join("\n");
+    return combined || "(no prior messages)";
+  }
+
+  generateTemplateAnswer(query, relevantChunks, memory = { recentMessages: [], recalled: [] }, source = "docs") {
     if (relevantChunks.length === 0) {
-      return "I couldn't find specific information about your question in the MailChimp documentation. Please try rephrasing your question or contact MailChimp support for assistance.";
+      const msg = source === "web" 
+        ? "I couldn't find relevant information from web search. Please try rephrasing your question."
+        : "I couldn't find specific information about your question in the MailChimp documentation. Please try rephrasing your question or contact MailChimp support for assistance.";
+      return msg;
     }
 
     const queryLower = query.toLowerCase();
-    let answer = `Based on the MailChimp documentation, here's what I found about "${query}":\n\n`;
+    // Personalize with a simple name extractor from recent messages
+    const recent = memory.recentMessages || [];
+    let userName = null;
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const m = recent[i];
+      if (m.role === "user") {
+        const match = /my name is\s+([a-zA-Z][\w\s'-]+)/i.exec(m.content || "");
+        if (match && match[1]) {
+          userName = match[1].trim();
+          break;
+        }
+      }
+    }
+
+    const sourcePrefix = source === "web" 
+      ? "Based on web search results"
+      : source === "mixed"
+      ? "Based on MailChimp documentation and web sources"
+      : "Based on the MailChimp documentation";
+
+    let answer = userName
+      ? `Hi ${userName}, ${sourcePrefix.toLowerCase()}, here's what I found about "${query}":\n\n`
+      : `${sourcePrefix}, here's what I found about "${query}":\n\n`;
 
     // Group chunks by category
     const categories = {};
@@ -357,25 +560,155 @@ Answer:`);
     answer += `- Check the MailChimp community forums for user discussions\n`;
     answer += `- Contact MailChimp support for personalized assistance\n`;
 
+    // Mention that earlier conversation was considered if recall found matches
+    const recalled = memory.recalled || [];
+    if (recalled.length > 0) {
+      answer += `\n🧠 I also considered your earlier messages while answering.`;
+    }
+
     return answer;
   }
 
   async askQuestion(question) {
     console.log("\n🔍 Searching for relevant information...");
 
-    const chunks = await this.searchSimilarChunks(question, 5);
+    // Lightweight math Q&A (e.g., "addition of 12 and 9", "12 + 9")
+    const mathAnswer = this.maybeAnswerMath(question);
+    if (mathAnswer !== null) {
+      // Save user question
+      if (this.sessionId) {
+        try { await this.memory.addMessage(this.sessionId, "user", question); } catch {}
+      }
 
-    if (chunks.length === 0) {
-      console.log("❌ No relevant information found in the knowledge base.");
-      console.log("💡 Try running the ingestion process first:");
-      console.log("   npm run enhanced-ingest");
+      // Output and save assistant answer
+      console.log("\n" + "=".repeat(80));
+      console.log("📋 ANSWER:");
+      console.log("=".repeat(80));
+      console.log(mathAnswer);
+      console.log("=".repeat(80));
+
+      if (this.sessionId) {
+        try { await this.memory.addMessage(this.sessionId, "assistant", mathAnswer); } catch {}
+      }
+
       return;
+    }
+
+    // Save user question to memory
+    if (this.sessionId) {
+      try {
+        await this.memory.addMessage(this.sessionId, "user", question);
+      } catch {}
+    }
+
+    // Retrieve recent buffer and relevant recalled snippets
+    let recentMessages = [];
+    let recalled = [];
+    if (this.sessionId) {
+      try {
+        recentMessages = await this.memory.getRecentMessages(this.sessionId, 8);
+        recalled = await this.memory.recallRelevant(this.sessionId, question, 3);
+      } catch {}
+    }
+
+    // Detect if question is Mailchimp-related
+    const isMailchimpRelated = this.isMailchimpRelated(question);
+    // Detect intents that must use Mailchimp docs only (never web fallback)
+    const docsOnlyIntent = this.isDocsOnlyIntent(question);
+    let chunks = [];
+    let answerSource = "docs";
+
+    if (isMailchimpRelated) {
+      console.log("📚 Question is Mailchimp-related. Searching Mailchimp documentation...");
+      chunks = await this.searchSimilarChunks(question, 5);
+      answerSource = "docs";
+
+      console.log(`📊 Search returned ${chunks.length} chunks from Mailchimp docs`);
+      
+      // Show what was found for debugging
+      if (chunks.length > 0) {
+        console.log(`📄 Top chunks found:`);
+        chunks.slice(0, 3).forEach((chunk, i) => {
+          const title = chunk.metadata?.title || "Unknown";
+          const score = typeof chunk.score === 'number' ? (chunk.score * 100).toFixed(1) : "N/A";
+          console.log(`   ${i + 1}. ${title} (score: ${score}%)`);
+        });
+      } else {
+        console.log(`⚠️  No chunks found! Available sources:`);
+        console.log(`   - Local chunks: ${this.localChunks?.length || 0}`);
+        console.log(`   - Hybrid search: ${this.hybridSearchAvailable ? "✅" : "❌"}`);
+        console.log(`   - Pinecone: ${this.index ? "✅" : "❌"}`);
+      }
+
+      // Check if docs results are meaningful (not just empty or very low quality),
+      // unless this is a docs-only intent where we must not use web fallback.
+      const isWeak = this.areResultsWeak(chunks, 0.05);
+
+      if (!docsOnlyIntent && (chunks.length === 0 || isWeak)) {
+        console.log("⚠️  Mailchimp documentation has no/weak results. Trying web search (Tavily) for better answers...");
+        const expanded = this.expandQueryIfNeeded(question);
+        const webChunks = await this.webSearchFallback(expanded, 5);
+        
+        if (webChunks.length > 0) {
+          // Use web results if docs are empty, otherwise combine
+          if (chunks.length === 0) {
+            chunks = webChunks;
+            answerSource = "web";
+            console.log("🌐 Using web search results (no Mailchimp docs available)");
+          } else {
+            // Combine weak docs with web for better coverage
+            chunks = [...chunks, ...webChunks];
+            answerSource = "mixed";
+            console.log(`🌐 Combined ${chunks.length} results (docs + web) for comprehensive answer`);
+          }
+        } else if (chunks.length === 0) {
+          console.log("❌ No results found from Mailchimp docs or web search.");
+          return;
+        } else {
+          console.log(`✅ Using ${chunks.length} Mailchimp documentation results (web search unavailable)`);
+        }
+      } else {
+        // We have good docs results - use them!
+        console.log(`✅ Found ${chunks.length} relevant Mailchimp documentation results`);
+      }
+    } else {
+      console.log("🌐 Question is not Mailchimp-related. Using web search (Tavily)...");
+      const expanded = this.expandQueryIfNeeded(question);
+      chunks = await this.webSearchFallback(expanded, 5);
+      answerSource = "web";
+
+      if (chunks.length === 0) {
+        console.log("❌ No relevant information found from web search.");
+        return;
+      }
     }
 
     console.log(`📚 Found ${chunks.length} relevant sources`);
 
     console.log("\n🤖 Generating answer...");
-    const answer = await this.generateAnswer(question, chunks);
+    let answer = await this.generateAnswer(question, chunks, {
+      recentMessages,
+      recalled,
+    }, answerSource);
+
+    // Check if the answer indicates insufficient information from docs
+    // If so, and we haven't used Tavily yet, try web search — except for docs-only intents
+    if (isMailchimpRelated && !docsOnlyIntent && answerSource === "docs" && this.isAnswerInsufficient(answer)) {
+      console.log("\n⚠️  Answer indicates docs don't have enough info. Trying web search (Tavily)...");
+      const expanded = this.expandQueryIfNeeded(question);
+      const webChunks = await this.webSearchFallback(expanded, 5);
+      
+      if (webChunks.length > 0) {
+        // Regenerate with web results
+        chunks = [...chunks, ...webChunks];
+        answerSource = "mixed";
+        console.log(`🌐 Regenerating with ${chunks.length} combined results (docs + web)...`);
+        answer = await this.generateAnswer(question, chunks, {
+          recentMessages,
+          recalled,
+        }, answerSource);
+      }
+    }
 
     console.log("\n" + "=".repeat(80));
     console.log("📋 ANSWER:");
@@ -393,6 +726,193 @@ Answer:`);
       );
       console.log(`   Score: ${(chunk.score * 100).toFixed(1)}%`);
     });
+
+    // Save assistant answer to memory
+    if (this.sessionId) {
+      try {
+        await this.memory.addMessage(this.sessionId, "assistant", answer);
+      } catch {}
+    }
+  }
+
+  maybeAnswerMath(question) {
+    if (!question) return null;
+    const q = String(question).toLowerCase().trim();
+
+    // Patterns like: "addition of 12 and 9", "sum of 12 and 9"
+    let m = q.match(/\b(addition|sum)\s+of\s+(-?\d+(?:\.\d+)?)\s+and\s+(-?\d+(?:\.\d+)?)/);
+    if (m) {
+      const a = parseFloat(m[2]);
+      const b = parseFloat(m[3]);
+      const res = a + b;
+      return `${a} + ${b} = ${res}`;
+    }
+
+    // Direct operators: "12 + 9", "20 - 5", "6 * 3", "15 / 2"
+    m = q.match(/(-?\d+(?:\.\d+)?)\s*([+\-*\/])\s*(-?\d+(?:\.\d+)?)/);
+    if (m) {
+      const a = parseFloat(m[1]);
+      const op = m[2];
+      const b = parseFloat(m[3]);
+      let res;
+      switch (op) {
+        case '+': res = a + b; break;
+        case '-': res = a - b; break;
+        case '*': res = a * b; break;
+        case '/': res = b === 0 ? 'Infinity' : a / b; break;
+        default: return null;
+      }
+      return `${a} ${op} ${b} = ${res}`;
+    }
+
+    return null;
+  }
+
+  detectForceWeb(question) {
+    const q = String(question || "").toLowerCase();
+    return q.startsWith("web:") || /\b(search\s+web|use\s+web|internet\s+search)\b/.test(q);
+  }
+
+  stripForceWeb(question) {
+    return String(question || "").replace(/^\s*web:\s*/i, "").trim();
+  }
+
+  isAnswerInsufficient(answer) {
+    if (!answer || typeof answer !== "string") return false;
+    const lower = answer.toLowerCase();
+    
+    // Phrases that indicate the answer doesn't have enough info
+    const insufficientPhrases = [
+      "doesn't contain",
+      "does not contain",
+      "not contain",
+      "doesn't have",
+      "does not have",
+      "not have",
+      "unfortunately",
+      "currently have access to does not",
+      "does not provide",
+      "doesn't provide",
+      "not provide",
+      "not available",
+      "unavailable",
+      "no information",
+      "no details",
+      "no specific",
+      "insufficient",
+      "cannot find",
+      "couldn't find",
+      "don't have enough",
+      "not enough information",
+    ];
+    
+    return insufficientPhrases.some((phrase) => lower.includes(phrase));
+  }
+
+  isMailchimpRelated(question) {
+    if (!question) return false;
+    const q = String(question).toLowerCase();
+
+    // Mailchimp-specific keywords (expanded list)
+    const mailchimpKeywords = [
+      "mailchimp",
+      "mail chimp",
+      "campaign",
+      "audience",
+      "list",
+      "automation",
+      "template",
+      "email marketing",
+      "subscriber",
+      "segment",
+      "merge field",
+      "tag",
+      "landing page",
+      "pop-up",
+      "form",
+      "survey",
+      "report",
+      "analytics",
+      "ab testing",
+      "a/b test",
+      "transactional",
+      "api key",
+      "integration",
+      "workflow",
+      "trigger",
+      "sender",
+      "domain",
+      "dns",
+      "autoresponder",
+      // Contact/subscriber management
+      "import",
+      "import contacts",
+      "contact",
+      "contacts",
+      "add contact",
+      "upload contacts",
+      "csv import",
+      "csv upload",
+      // Common Mailchimp tasks
+      "create",
+      "edit",
+      "delete",
+      "manage",
+      "set up",
+      "setup",
+      "configure",
+      "send",
+      "schedule",
+      "draft",
+      // Email-specific
+      "email",
+      "newsletter",
+      "blast",
+      "broadcast",
+    ];
+
+    // Check for Mailchimp keywords
+    const hasMailchimpKeyword = mailchimpKeywords.some((keyword) =>
+      q.includes(keyword)
+    );
+
+    // Exclude non-Mailchimp contexts (general math, programming languages, etc.)
+    const isMathOrGeneral = /^(\d+\s*[+\-*\/]\s*\d+)|addition|subtraction|multiplication|division|calculate|sum|difference|product|quotient/i.test(q);
+    if (isMathOrGeneral) return false;
+
+    // If question contains "how do i" or "how to" and has Mailchimp keywords, it's likely Mailchimp-related
+    const hasHowQuestion = /^(how do i|how to|how can i|how should i)/i.test(q.trim());
+    if (hasHowQuestion) {
+      // More likely to be Mailchimp-related if it's a "how do I" question
+      // unless it's clearly about something else (like "how do i learn python")
+      const clearlyNotMailchimp = /(python|javascript|java|code|programming|learn|tutorial|course|book)/i.test(q);
+      return !clearlyNotMailchimp || hasMailchimpKeyword;
+    }
+
+    // Exclude very general questions without context
+    const isGeneralQuestion =
+      /^what is (email|marketing|automation|campaign)$/i.test(q.trim());
+
+    // If it's a general "what is" question without Mailchimp keywords, it's not Mailchimp-related
+    if (isGeneralQuestion && !hasMailchimpKeyword) return false;
+
+    // Default: if it has Mailchimp keywords, it's related
+    // Also, if it's asking "how do I" something, assume it's Mailchimp-related unless proven otherwise
+    return hasMailchimpKeyword || hasHowQuestion;
+  }
+
+  // Certain intents must be answered strictly from Mailchimp docs (no web fallback)
+  isDocsOnlyIntent(question) {
+    const q = String(question || "").toLowerCase();
+    // Core Mailchimp guided flows we want to keep docs-only
+    const patterns = [
+      /\b(create|set\s*up|setup|make|build)\s+(a\s+)?(regular\s+email\s+)?campaign\b/,
+      /\bimport\s+(contacts|audience|subscribers)\b/,
+      /\bmanage\s+(audience|list|contacts)\b/,
+      /\bcreate\s+(template|email\s+template)\b/,
+      /\bautomation\b/, // setup automation flows
+    ];
+    return patterns.some((re) => re.test(q));
   }
 
   async showMainMenu() {

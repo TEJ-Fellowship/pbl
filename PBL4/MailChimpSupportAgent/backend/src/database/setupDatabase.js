@@ -29,6 +29,13 @@ async function setupDatabase() {
     await pool.query("SELECT NOW()");
     console.log(`Database connection successful!`);
 
+    // Ensure required extensions (for UUID generation)
+    console.log(`Ensuring required extensions...`);
+    await pool.query(`
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    `);
+    console.log(`Extensions ensured`);
+
     // Create documents_chunks table
     console.log(`Creating documents_chunks table...`);
     await pool.query(`
@@ -82,6 +89,34 @@ async function setupDatabase() {
       ON documents_chunks (published_date DESC)
     `);
     console.log(`Published date index created`);
+
+    // Conversation tables for chat history
+    console.log(`Creating conversation tables...`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conversation_sessions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS conversation_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        session_id UUID REFERENCES conversation_sessions(id) ON DELETE CASCADE,
+        role TEXT CHECK (role IN ('user','assistant','system')) NOT NULL,
+        content TEXT NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_messages_session_time
+      ON conversation_messages (session_id, created_at);
+    `);
+    console.log(`Conversation tables created`);
 
     // Create trigger to automatically update search_vector
     console.log(`Creating automatic search vector trigger...`);

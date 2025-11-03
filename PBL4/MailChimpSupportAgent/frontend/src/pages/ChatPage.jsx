@@ -37,17 +37,33 @@ const ChatPage = () => {
     setInputText("");
     setIsLoading(true);
 
-    // Simulate bot response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: userMessage.text })
+      });
+      const data = await res.json();
+      const answerText = data?.answer || 'Sorry, I could not generate an answer right now.';
+
       const botMessage = {
-        id: messages.length + 2,
-        text: "I understand you're asking about: " + inputText + ". Let me help you with that. This is a simulated response - in a real implementation, this would connect to your MailChimp support API.",
-        sender: "bot",
+        id: userMessage.id + 1,
+        text: answerText,
+        sender: 'bot',
         timestamp: new Date().toLocaleTimeString(),
       };
       setMessages(prev => [...prev, botMessage]);
+    } catch (e) {
+      const botMessage = {
+        id: userMessage.id + 1,
+        text: 'There was a problem contacting the support service. Please try again.',
+        sender: 'bot',
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e) => {

@@ -1155,7 +1155,7 @@
     }
   },
   {
-    "pageContent": "Mailchimp is a web-based application that works in most browsers. You don't need to download or install any software on your computer. To make sure Mailchimp works properly in your browser, enable cookies, pop-ups, and JavaScript. When you create a Mailchimp account, you agree to comply with our Terms of Use. Need help? Search Check out our searchable guides and tutorials if you want to learn how something works, or if you run into any trouble. As part of Mailchimp’s onboarding services, new users with a paid Marketing plan are eligible for advanced assistance via a 1:1 consultation with an onboarding specialist. To learn more about the onboarding service included with your pricing plan, check out About Personalized Onboarding with Mailchimp.",
+    "pageContent": "Mailchimp is a web-based application that works in most browsers. You don't need to download or install any software on your computer. To make sure Mailchimp works properly in your browser, enable cookies, pop-ups, and JavaScript. When you create a Mailchimp account, you agree to comply with our Terms of Use. Need help? Search Check out our searchable guides and tutorials if you want to learn how something works, or if you run into any trouble",
     "metadata": {
       "title": "Getting Started with Mailchimp",
       "category": "getting-started",
@@ -1178,9 +1178,44 @@
         }
       },
       "chunk_id": "Getting Started with Mailchimp_0",
-      "tokenCount": 188,
+      "tokenCount": 112,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". As part of Mailchimp’s onboarding services, new users with a paid Marketing plan are eligible for advanced assistance via a 1:1 consultation with an onboarding specialist. To learn more about the onboarding service included with your pricing plan, check out About Personalized Onboarding with Mailchimp.",
+    "metadata": {
+      "title": "Getting Started with Mailchimp",
+      "category": "getting-started",
+      "heading": "Things to know",
+      "url": "https://mailchimp.com/help/getting-started-with-mailchimp/",
+      "scrapedAt": "2025-10-15T04:08:55.966Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Mailchimp_1",
+      "tokenCount": 76,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -1680,7 +1715,7 @@
     }
   },
   {
-    "pageContent": "Here are some things to know before you begin this process. Mailchimp is a web-based application. While it doesn't require you to install or download software, your web browser needs to meet our requirements. You'll need to provide an email address that will be associated with the account. We'll use this email to communicate with you, so it should be an address that you have access to. You must include a physical mailing address in all emails. This can be any address where you can receive mail, like an office address or P.O. Box. All accounts start on our Free plan, so you don't need a credit card to sign up. If you choose to purchase add-ons or upgrade to a paid plan, we'll need your credit card information. We can't accept bank transfers, e-checks, or checks from users outside the United States.",
+    "pageContent": "Here are some things to know before you begin this process. Mailchimp is a web-based application. While it doesn't require you to install or download software, your web browser needs to meet our requirements. You'll need to provide an email address that will be associated with the account. We'll use this email to communicate with you, so it should be an address that you have access to. You must include a physical mailing address in all emails. This can be any address where you can receive mail, like an office address or P.O. Box",
     "metadata": {
       "title": "How to Create an Account",
       "category": "campaigns",
@@ -1703,10 +1738,45 @@
         }
       },
       "chunk_id": "How to Create an Account_0",
-      "tokenCount": 202,
+      "tokenCount": 134,
       "chunkIndex": 0,
-      "totalChunks": 1,
-      "difficulty": "advanced",
+      "totalChunks": 2,
+      "difficulty": "intermediate",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". This can be any address where you can receive mail, like an office address or P.O. Box. All accounts start on our Free plan, so you don't need a credit card to sign up. If you choose to purchase add-ons or upgrade to a paid plan, we'll need your credit card information. We can't accept bank transfers, e-checks, or checks from users outside the United States.",
+    "metadata": {
+      "title": "How to Create an Account",
+      "category": "general",
+      "heading": "Before you start",
+      "url": "https://mailchimp.com/help/create-an-account/",
+      "scrapedAt": "2025-10-15T04:08:58.022Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "How to Create an Account_1",
+      "tokenCount": 91,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -1750,7 +1820,7 @@
     }
   },
   {
-    "pageContent": "The first time you log in to your account, we'll ask for required information. We use this information to help make sure your account is compliant with our Terms of Use and to provide guidance that is relevant to you and your company's needs. In this section, you'll learn how we use this information. Name The name associated with your account profile. The profile is unique to you and can have access to multiple Mailchimp accounts. Business name The name of your company or organization. It will appear on every email along with your physical mailing address. Phone number (optional) A mobile phone number. It can be used for account verification, recovery, and 2-factor authentication setup. Physical address The mailing address where you can receive mail. A physical address is required by law on any email you send out. Ideas for a physical address include your personal address, business address, or a P.O. Box. Organization questions Details about your organization",
+    "pageContent": "The first time you log in to your account, we'll ask for required information. We use this information to help make sure your account is compliant with our Terms of Use and to provide guidance that is relevant to you and your company's needs. In this section, you'll learn how we use this information. Name The name associated with your account profile. The profile is unique to you and can have access to multiple Mailchimp accounts. Business name The name of your company or organization. It will appear on every email along with your physical mailing address",
     "metadata": {
       "title": "How to Create an Account",
       "category": "campaigns",
@@ -1773,9 +1843,9 @@
         }
       },
       "chunk_id": "How to Create an Account_0",
-      "tokenCount": 243,
+      "tokenCount": 140,
       "chunkIndex": 0,
-      "totalChunks": 2,
+      "totalChunks": 3,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -1785,7 +1855,42 @@
     }
   },
   {
-    "pageContent": ". Ideas for a physical address include your personal address, business address, or a P.O. Box. Organization questions Details about your organization. These help us provide relevant content and guidance. Website URL The website URL for your company, organization, or personal website. Provide your website so Mailchimp can help you automatically create on-brand content. After you type in the information, follow the prompts to finish the activation process and get started in your new Mailchimp account.",
+    "pageContent": ". It will appear on every email along with your physical mailing address. Phone number (optional) A mobile phone number. It can be used for account verification, recovery, and 2-factor authentication setup. Physical address The mailing address where you can receive mail. A physical address is required by law on any email you send out. Ideas for a physical address include your personal address, business address, or a P.O. Box. Organization questions Details about your organization. These help us provide relevant content and guidance",
+    "metadata": {
+      "title": "How to Create an Account",
+      "category": "campaigns",
+      "heading": "The signup process",
+      "url": "https://mailchimp.com/help/create-an-account/",
+      "scrapedAt": "2025-10-15T04:08:58.022Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "How to Create an Account_1",
+      "tokenCount": 134,
+      "chunkIndex": 1,
+      "totalChunks": 3,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". These help us provide relevant content and guidance. Website URL The website URL for your company, organization, or personal website. Provide your website so Mailchimp can help you automatically create on-brand content. After you type in the information, follow the prompts to finish the activation process and get started in your new Mailchimp account.",
     "metadata": {
       "title": "How to Create an Account",
       "category": "general",
@@ -1807,11 +1912,11 @@
           "to": 1
         }
       },
-      "chunk_id": "How to Create an Account_1",
-      "tokenCount": 126,
-      "chunkIndex": 1,
-      "totalChunks": 2,
-      "difficulty": "intermediate",
+      "chunk_id": "How to Create an Account_2",
+      "tokenCount": 89,
+      "chunkIndex": 2,
+      "totalChunks": 3,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -1820,7 +1925,7 @@
     }
   },
   {
-    "pageContent": "After you activate your account, your homepage will show a personalized list of recommended next steps. Here are some other resources to get to know Mailchimp's features. Getting Started with Mailchimp Get an overview of Mailchimp basics to get started. Verify your domain Verification makes sure your From email address is hosted at a domain that you can access. If you want to send from a personal or company domain, you'll need to go through the verification process before you can send through Mailchimp. It's best to send email campaigns with a personal or a company domain. Many free email providers have implemented DMARC authentication policies that affect the delivery of email campaigns that use a free provider's domain for the From email address. Add other people to your account If you want multiple logins for your account, you can invite users. Set different levels of permission based on how much access you want each user to have.",
+    "pageContent": "After you activate your account, your homepage will show a personalized list of recommended next steps. Here are some other resources to get to know Mailchimp's features. Getting Started with Mailchimp Get an overview of Mailchimp basics to get started. Verify your domain Verification makes sure your From email address is hosted at a domain that you can access. If you want to send from a personal or company domain, you'll need to go through the verification process before you can send through Mailchimp. It's best to send email campaigns with a personal or a company domain",
     "metadata": {
       "title": "How to Create an Account",
       "category": "campaigns",
@@ -1843,10 +1948,45 @@
         }
       },
       "chunk_id": "How to Create an Account_0",
-      "tokenCount": 237,
+      "tokenCount": 145,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
       "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". It's best to send email campaigns with a personal or a company domain. Many free email providers have implemented DMARC authentication policies that affect the delivery of email campaigns that use a free provider's domain for the From email address. Add other people to your account If you want multiple logins for your account, you can invite users. Set different levels of permission based on how much access you want each user to have.",
+    "metadata": {
+      "title": "How to Create an Account",
+      "category": "campaigns",
+      "heading": "Next steps",
+      "url": "https://mailchimp.com/help/create-an-account/",
+      "scrapedAt": "2025-10-15T04:08:58.022Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "How to Create an Account_1",
+      "tokenCount": 110,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "intermediate",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -1995,10 +2135,10 @@
     }
   },
   {
-    "pageContent": "There are 4 types of email campaigns in Mailchimp. Regular This is the most common type of email. Design and customize your content, and choose whether to send immediately or schedule your email for later. Plain-text The simplest form of mass email you can send. These emails contain only text and have no formatting options. A/B or Multivariate testing Send more than one version of the same email and see which one comes out on top. Test subject lines, From names, content, and send times. Test up to eight different versions with a multivariate test, included with a Standard plan or higher. Automated Automated emails are triggered by a specific date, event, or a subscribed contact's activity. Use Automation Flow emails to add tags, send targeted emails, and accomplish other important tasks for you. Create an automation flow custom from scratch, or use one of our many flow template emails",
+    "pageContent": "There are 4 types of email campaigns in Mailchimp. Regular This is the most common type of email. Design and customize your content, and choose whether to send immediately or schedule your email for later. Plain-text The simplest form of mass email you can send. These emails contain only text and have no formatting options. A/B or Multivariate testing Send more than one version of the same email and see which one comes out on top. Test subject lines, From names, content, and send times. Test up to eight different versions with a multivariate test, included with a Standard plan or higher",
     "metadata": {
       "title": "Getting Started with Campaigns",
-      "category": "automation",
+      "category": "campaigns",
       "heading": "Email campaigns",
       "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
       "scrapedAt": "2025-10-15T04:09:00.181Z",
@@ -2018,7 +2158,7 @@
         }
       },
       "chunk_id": "Getting Started with Campaigns_0",
-      "tokenCount": 224,
+      "tokenCount": 148,
       "chunkIndex": 0,
       "totalChunks": 2,
       "difficulty": "advanced",
@@ -2030,7 +2170,7 @@
     }
   },
   {
-    "pageContent": ". Use Automation Flow emails to add tags, send targeted emails, and accomplish other important tasks for you. Create an automation flow custom from scratch, or use one of our many flow template emails. Best Practices for Mailchimp Emails Create a Plain-Text Email Create an A/B Test About Marketing Automation Flows",
+    "pageContent": ". Automated Automated emails are triggered by a specific date, event, or a subscribed contact's activity. Use Automation Flow emails to add tags, send targeted emails, and accomplish other important tasks for you. Create an automation flow custom from scratch, or use one of our many flow template emails. Best Practices for Mailchimp Emails Create a Plain-Text Email Create an A/B Test About Marketing Automation Flows",
     "metadata": {
       "title": "Getting Started with Campaigns",
       "category": "automation",
@@ -2053,10 +2193,10 @@
         }
       },
       "chunk_id": "Getting Started with Campaigns_1",
-      "tokenCount": 79,
+      "tokenCount": 105,
       "chunkIndex": 1,
       "totalChunks": 2,
-      "difficulty": "beginner",
+      "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -2240,7 +2380,7 @@
     }
   },
   {
-    "pageContent": "Templates are the HTML files that serve as the starting point for any email campaign. The template you use determines the layout of your images and text. We have many predesigned templates for you to choose from, so if you aren't an HTML whiz, you'll still be able to create and send great-looking email campaigns. Drag-and-drop templates make the process even easier. If you are an experienced coder, you can also edit our templates, code your own, or create an editable template with our Template Language. Types of Email Templates Create an Email Template Getting Started With Mailchimp's Email Template Language",
+    "pageContent": "Templates are the HTML files that serve as the starting point for any email campaign. The template you use determines the layout of your images and text. We have many predesigned templates for you to choose from, so if you aren't an HTML whiz, you'll still be able to create and send great-looking email campaigns. Drag-and-drop templates make the process even easier. If you are an experienced coder, you can also edit our templates, code your own, or create an editable template with our Template Language",
     "metadata": {
       "title": "Getting Started with Campaigns",
       "category": "campaigns",
@@ -2263,9 +2403,44 @@
         }
       },
       "chunk_id": "Getting Started with Campaigns_0",
-      "tokenCount": 154,
+      "tokenCount": 127,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "intermediate",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Types of Email Templates Create an Email Template Getting Started With Mailchimp's Email Template Language",
+    "metadata": {
+      "title": "Getting Started with Campaigns",
+      "category": "campaigns",
+      "heading": "About campaign templates",
+      "url": "https://mailchimp.com/help/getting-started-with-campaigns/",
+      "scrapedAt": "2025-10-15T04:09:00.181Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Campaigns_1",
+      "tokenCount": 27,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -2380,7 +2555,7 @@
     }
   },
   {
-    "pageContent": "How you build and manage your audience affects the ways you can use Mailchimp. With the right data, you can group contacts based on a variety of factors, then send content to just those groups. Take a moment to think about your marketing goals, who your contacts are, and what information they want to receive from you. For example: Do you have seasonal customers, sales shoppers, or customers who are only interested in certain types of products, services, or events? Do you want to send different content to donors, sponsors, members, or other patrons? Does it matter if your contacts are local, domestic, or international? Do you sell products or services online, and ask customers to sign up for email marketing in the checkout process? Are there other factors that affect your audience?",
+    "pageContent": "How you build and manage your audience affects the ways you can use Mailchimp. With the right data, you can group contacts based on a variety of factors, then send content to just those groups. Take a moment to think about your marketing goals, who your contacts are, and what information they want to receive from you",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "campaigns",
@@ -2403,9 +2578,44 @@
         }
       },
       "chunk_id": "Getting Started with Your Audience_0",
-      "tokenCount": 198,
+      "tokenCount": 80,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". For example: Do you have seasonal customers, sales shoppers, or customers who are only interested in certain types of products, services, or events? Do you want to send different content to donors, sponsors, members, or other patrons? Does it matter if your contacts are local, domestic, or international? Do you sell products or services online, and ask customers to sign up for email marketing in the checkout process? Are there other factors that affect your audience?",
+    "metadata": {
+      "title": "Getting Started with Your Audience",
+      "category": "campaigns",
+      "heading": "Things to consider",
+      "url": "https://mailchimp.com/help/getting-started-audience/",
+      "scrapedAt": "2025-10-15T04:09:02.229Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Your Audience_1",
+      "tokenCount": 118,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
@@ -2450,7 +2660,7 @@
     }
   },
   {
-    "pageContent": "When you create a Mailchimp account, we’ll create an audience for you with the details you provide. We’ll also help you follow anti-spam practices for your emails and text messages. We recommend you maintain 1 primary audience in Mailchimp, and use tags, groups, or segments to organize and target your contacts. You can add subscribed contacts one at a time, upload contacts from a file, copy and paste from a spreadsheet, or sync from other apps. We won't allow you to send emails or text messages to purchased, rented, or third-party lists, so be sure to check our audience requirements before you begin. Here are some links to help you add contacts. Add a Single Subscriber to an Audience Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce",
+    "pageContent": "When you create a Mailchimp account, we’ll create an audience for you with the details you provide. We’ll also help you follow anti-spam practices for your emails and text messages. We recommend you maintain 1 primary audience in Mailchimp, and use tags, groups, or segments to organize and target your contacts. You can add subscribed contacts one at a time, upload contacts from a file, copy and paste from a spreadsheet, or sync from other apps",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "campaigns",
@@ -2473,9 +2683,9 @@
         }
       },
       "chunk_id": "Getting Started with Your Audience_0",
-      "tokenCount": 196,
+      "tokenCount": 112,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
@@ -2485,7 +2695,42 @@
     }
   },
   {
-    "pageContent": "Multi-audiences can be added to your account by selecting the __double opt-in option during registration or from your audience dashboard to manage your audience settings. The Double Opt-in option provides access to add multiple audiences__, register a new sending number or sender ID, import contacts and purchase SMS credits to send SMS from multi-countries. If you have previously registered for SMS, your existing business information is prefilled to create new sender numbers or sender IDs. Your business details can be updated to specify a new business location. Do not re-register; validate your information inline and select your original business. You may register multiple EINs; each as a new business in the registration modal by following the initial steps to set up an SMS marketing program for your preferred country. Here are some links to help you add contacts",
+    "pageContent": ". We won't allow you to send emails or text messages to purchased, rented, or third-party lists, so be sure to check our audience requirements before you begin. Here are some links to help you add contacts. Add a Single Subscriber to an Audience Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce",
+    "metadata": {
+      "title": "Getting Started with Your Audience",
+      "category": "campaigns",
+      "heading": "Create an audience",
+      "url": "https://mailchimp.com/help/getting-started-audience/",
+      "scrapedAt": "2025-10-15T04:09:02.229Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Your Audience_1",
+      "tokenCount": 84,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "Multi-audiences can be added to your account by selecting the __double opt-in option during registration or from your audience dashboard to manage your audience settings. The Double Opt-in option provides access to add multiple audiences__, register a new sending number or sender ID, import contacts and purchase SMS credits to send SMS from multi-countries. If you have previously registered for SMS, your existing business information is prefilled to create new sender numbers or sender IDs. Your business details can be updated to specify a new business location",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "campaigns",
@@ -2508,10 +2753,10 @@
         }
       },
       "chunk_id": "Getting Started with Your Audience_0",
-      "tokenCount": 219,
+      "tokenCount": 142,
       "chunkIndex": 0,
       "totalChunks": 2,
-      "difficulty": "advanced",
+      "difficulty": "intermediate",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -2520,7 +2765,7 @@
     }
   },
   {
-    "pageContent": ". Here are some links to help you add contacts. Add a Single Subscriber to an Audience __Create a new audience group__ Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce",
+    "pageContent": ". Your business details can be updated to specify a new business location. Do not re-register; validate your information inline and select your original business. You may register multiple EINs; each as a new business in the registration modal by following the initial steps to set up an SMS marketing program for your preferred country. Here are some links to help you add contacts. Add a Single Subscriber to an Audience __Create a new audience group__ Import Contacts to Mailchimp Sync with other apps like WooCommerce, Magento, or BigCommerce",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "lists",
@@ -2543,10 +2788,10 @@
         }
       },
       "chunk_id": "Getting Started with Your Audience_1",
-      "tokenCount": 53,
+      "tokenCount": 137,
       "chunkIndex": 1,
       "totalChunks": 2,
-      "difficulty": "beginner",
+      "difficulty": "intermediate",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -2555,7 +2800,42 @@
     }
   },
   {
-    "pageContent": "Each Mailchimp audience comes with a signup form that you can share across your online channels. Use the signup form options in your Mailchimp account to gather contact information from members of your audience. Customers with manager permissions and higher can create interest groups for your signup form and audience. Interest groups can be assigned by you or selected by your contacts, and can be visible or hidden on your forms. Your audience will grow and change as people sign up, unsubscribe, and update their profiles. We recommend keeping an update your preferences link in your emails to encourage contacts to update their own information and interests.",
+    "pageContent": "Each Mailchimp audience comes with a signup form that you can share across your online channels. Use the signup form options in your Mailchimp account to gather contact information from members of your audience. Customers with manager permissions and higher can create interest groups for your signup form and audience. Interest groups can be assigned by you or selected by your contacts, and can be visible or hidden on your forms. Your audience will grow and change as people sign up, unsubscribe, and update their profiles",
+    "metadata": {
+      "title": "Getting Started with Your Audience",
+      "category": "lists",
+      "heading": "Build signup forms",
+      "url": "https://mailchimp.com/help/getting-started-audience/",
+      "scrapedAt": "2025-10-15T04:09:02.229Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Your Audience_0",
+      "tokenCount": 131,
+      "chunkIndex": 0,
+      "totalChunks": 2,
+      "difficulty": "advanced",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Your audience will grow and change as people sign up, unsubscribe, and update their profiles. We recommend keeping an update your preferences link in your emails to encourage contacts to update their own information and interests.",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "campaigns",
@@ -2577,11 +2857,11 @@
           "to": 1
         }
       },
-      "chunk_id": "Getting Started with Your Audience_0",
-      "tokenCount": 166,
-      "chunkIndex": 0,
-      "totalChunks": 1,
-      "difficulty": "advanced",
+      "chunk_id": "Getting Started with Your Audience_1",
+      "tokenCount": 58,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -2590,7 +2870,7 @@
     }
   },
   {
-    "pageContent": "Use segments to group contacts with shared data. To create a segment, use conditions to filter contacts in your audience. You can create segments with almost any condition, like signup form data, tags, group preferences, email interactions, and location, to name a few. If you sync an e-commerce platform to your Mailchimp account, you'll also be able to use purchase activity to add segments. For Free and Essential plans, the segmenting tool supports up to 5 conditions, and you can save any segment for future use. Mailchimp accounts on a Standard plan or higher have a segmenting tool that supports unlimited conditions and nested logic.To learn more, check out how to Create and Send to a Segment.",
+    "pageContent": "Use segments to group contacts with shared data. To create a segment, use conditions to filter contacts in your audience. You can create segments with almost any condition, like signup form data, tags, group preferences, email interactions, and location, to name a few. If you sync an e-commerce platform to your Mailchimp account, you'll also be able to use purchase activity to add segments. For Free and Essential plans, the segmenting tool supports up to 5 conditions, and you can save any segment for future use",
     "metadata": {
       "title": "Getting Started with Your Audience",
       "category": "campaigns",
@@ -2613,10 +2893,45 @@
         }
       },
       "chunk_id": "Getting Started with Your Audience_0",
-      "tokenCount": 176,
+      "tokenCount": 129,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Mailchimp accounts on a Standard plan or higher have a segmenting tool that supports unlimited conditions and nested logic.To learn more, check out how to Create and Send to a Segment.",
+    "metadata": {
+      "title": "Getting Started with Your Audience",
+      "category": "campaigns",
+      "heading": "Segment your audience",
+      "url": "https://mailchimp.com/help/getting-started-audience/",
+      "scrapedAt": "2025-10-15T04:09:02.229Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Your Audience_1",
+      "tokenCount": 47,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -2800,7 +3115,7 @@
     }
   },
   {
-    "pageContent": "Email campaign reports contain a summary of the campaign’s performance, including who received the campaign, when they opened it, what links they clicked, and how many successful deliveries were made. You can click through the report to view more detailed stats and to discover deeper insights about your campaign’s performance. About Email Campaign Reports Create a Regular Email Campaign Use Comparative Reports to compare stats from multiple email campaigns. Add filter conditions and compare subscriber engagement over time. This advanced reporting tool is included with the Standard plan or higher. About Comparative Reports",
+    "pageContent": "Email campaign reports contain a summary of the campaign’s performance, including who received the campaign, when they opened it, what links they clicked, and how many successful deliveries were made. You can click through the report to view more detailed stats and to discover deeper insights about your campaign’s performance. About Email Campaign Reports Create a Regular Email Campaign Use Comparative Reports to compare stats from multiple email campaigns. Add filter conditions and compare subscriber engagement over time",
     "metadata": {
       "title": "Getting Started with Reports",
       "category": "campaigns",
@@ -2823,10 +3138,45 @@
         }
       },
       "chunk_id": "Getting Started with Reports_0",
-      "tokenCount": 157,
+      "tokenCount": 132,
       "chunkIndex": 0,
-      "totalChunks": 1,
-      "difficulty": "advanced",
+      "totalChunks": 2,
+      "difficulty": "intermediate",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Add filter conditions and compare subscriber engagement over time. This advanced reporting tool is included with the Standard plan or higher. About Comparative Reports",
+    "metadata": {
+      "title": "Getting Started with Reports",
+      "category": "campaigns",
+      "heading": "Email campaign reports",
+      "url": "https://mailchimp.com/help/getting-started-reports/",
+      "scrapedAt": "2025-10-15T04:09:04.414Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Reports_1",
+      "tokenCount": 42,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -3115,7 +3465,7 @@
     }
   },
   {
-    "pageContent": "If you have an e-commerce store connected to your Mailchimp account, you can find data about revenue in various reports. Email campaign, automation, and landing page reports These reports contain information about revenue generated from the campaign. Ad reports Reports generated from Google Remarketing Ads include information about return on investment (ROI), first time customers, total revenue, and more. Audience dashboard View predictive insights about your contacts to estimate their Customer Lifetime Value and Purchase Likelihood on your audience dashboard. Website dashboard View orders, total revenue, average order value, and purchase conversion rate in the Business Highlights section of your website dashboard.",
+    "pageContent": "If you have an e-commerce store connected to your Mailchimp account, you can find data about revenue in various reports. Email campaign, automation, and landing page reports These reports contain information about revenue generated from the campaign. Ad reports Reports generated from Google Remarketing Ads include information about return on investment (ROI), first time customers, total revenue, and more. Audience dashboard View predictive insights about your contacts to estimate their Customer Lifetime Value and Purchase Likelihood on your audience dashboard",
     "metadata": {
       "title": "Getting Started with Reports",
       "category": "automation",
@@ -3138,9 +3488,44 @@
         }
       },
       "chunk_id": "Getting Started with Reports_0",
-      "tokenCount": 181,
+      "tokenCount": 141,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Website dashboard View orders, total revenue, average order value, and purchase conversion rate in the Business Highlights section of your website dashboard.",
+    "metadata": {
+      "title": "Getting Started with Reports",
+      "category": "general",
+      "heading": "E-commerce data",
+      "url": "https://mailchimp.com/help/getting-started-reports/",
+      "scrapedAt": "2025-10-15T04:09:04.414Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Getting Started with Reports_1",
+      "tokenCount": 40,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -3255,7 +3640,7 @@
     }
   },
   {
-    "pageContent": "The open rate is a percentage that tells you how many successfully delivered emails were opened by recipients. Mailchimp loads a tiny, transparent image into each email and counts how often the image is downloaded for delivered emails. The image is invisible to your recipients. Open rate tracking relies on images, so it isn't 100% accurate. For example, if a recipient's email client has images turned off, the tracking image won't load, and their email won't register as opened. Mailchimp reduces this margin of error by factoring in click-throughs with open rates. Recipients must open an email to click a link inside it. We'll consider those clicks as opens, even if the tracking image didn't load. We recommend that you exclude Apple MPP from your reports for more accurate opens and open-related metrics. To learn more about Apple MPP, check out About Apple Mail Privacy Protection (MPP)",
+    "pageContent": "The open rate is a percentage that tells you how many successfully delivered emails were opened by recipients. Mailchimp loads a tiny, transparent image into each email and counts how often the image is downloaded for delivered emails. The image is invisible to your recipients. Open rate tracking relies on images, so it isn't 100% accurate. For example, if a recipient's email client has images turned off, the tracking image won't load, and their email won't register as opened. Mailchimp reduces this margin of error by factoring in click-throughs with open rates",
     "metadata": {
       "title": "About Open and Click Rates",
       "category": "campaigns",
@@ -3278,10 +3663,10 @@
         }
       },
       "chunk_id": "About Open and Click Rates_0",
-      "tokenCount": 224,
+      "tokenCount": 142,
       "chunkIndex": 0,
-      "totalChunks": 2,
-      "difficulty": "advanced",
+      "totalChunks": 3,
+      "difficulty": "intermediate",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -3290,7 +3675,7 @@
     }
   },
   {
-    "pageContent": ". We recommend that you exclude Apple MPP from your reports for more accurate opens and open-related metrics. To learn more about Apple MPP, check out About Apple Mail Privacy Protection (MPP). Want to know more about different types of opens, including unique opens and total opens? Check out About Email Reports and Use Open Tracking in Emails. The click rate is a percentage that tells you how many delivered emails registered at least 1 click. Your click rate reveals general trends, but isn't detailed. For information about different types of clicks, check out Use Open Tracking in Emails and About Email Reports.",
+    "pageContent": ". Mailchimp reduces this margin of error by factoring in click-throughs with open rates. Recipients must open an email to click a link inside it. We'll consider those clicks as opens, even if the tracking image didn't load. We recommend that you exclude Apple MPP from your reports for more accurate opens and open-related metrics. To learn more about Apple MPP, check out About Apple Mail Privacy Protection (MPP). Want to know more about different types of opens, including unique opens and total opens? Check out About Email Reports and Use Open Tracking in Emails",
     "metadata": {
       "title": "About Open and Click Rates",
       "category": "campaigns",
@@ -3313,10 +3698,10 @@
         }
       },
       "chunk_id": "About Open and Click Rates_1",
-      "tokenCount": 155,
+      "tokenCount": 142,
       "chunkIndex": 1,
-      "totalChunks": 2,
-      "difficulty": "advanced",
+      "totalChunks": 3,
+      "difficulty": "intermediate",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -3325,7 +3710,42 @@
     }
   },
   {
-    "pageContent": "Open and click rates can give you a good idea of how your emails are performing with a particular audience. A high open rate may mean that your audience is connecting with the subject lines. If your click rates are good, this could mean that your content is important to recipients. Average open and click rates can vary from audience to audience, and differ by industry, company size, and other factors. Check out the Email Marketing Benchmarks report, which can give you an idea of how your rates stack up against similar users. Once you know where you stand, you can use Mailchimp tools such as A/B tests or multivariate tests to test and improve your email marketing. Make time to review your reports after every email, consider what factors might have affected your results, and test.",
+    "pageContent": ". The click rate is a percentage that tells you how many delivered emails registered at least 1 click. Your click rate reveals general trends, but isn't detailed. For information about different types of clicks, check out Use Open Tracking in Emails and About Email Reports.",
+    "metadata": {
+      "title": "About Open and Click Rates",
+      "category": "campaigns",
+      "heading": "How we calculate open and click rates",
+      "url": "https://mailchimp.com/help/about-open-and-click-rates/",
+      "scrapedAt": "2025-10-15T04:09:06.465Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "About Open and Click Rates_2",
+      "tokenCount": 69,
+      "chunkIndex": 2,
+      "totalChunks": 3,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "Open and click rates can give you a good idea of how your emails are performing with a particular audience. A high open rate may mean that your audience is connecting with the subject lines. If your click rates are good, this could mean that your content is important to recipients. Average open and click rates can vary from audience to audience, and differ by industry, company size, and other factors. Check out the Email Marketing Benchmarks report, which can give you an idea of how your rates stack up against similar users",
     "metadata": {
       "title": "About Open and Click Rates",
       "category": "campaigns",
@@ -3348,10 +3768,45 @@
         }
       },
       "chunk_id": "About Open and Click Rates_0",
-      "tokenCount": 197,
+      "tokenCount": 132,
       "chunkIndex": 0,
-      "totalChunks": 1,
-      "difficulty": "advanced",
+      "totalChunks": 2,
+      "difficulty": "intermediate",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Once you know where you stand, you can use Mailchimp tools such as A/B tests or multivariate tests to test and improve your email marketing. Make time to review your reports after every email, consider what factors might have affected your results, and test.",
+    "metadata": {
+      "title": "About Open and Click Rates",
+      "category": "campaigns",
+      "heading": "Why open and click rates are important",
+      "url": "https://mailchimp.com/help/about-open-and-click-rates/",
+      "scrapedAt": "2025-10-15T04:09:06.465Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "About Open and Click Rates_1",
+      "tokenCount": 65,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -3745,7 +4200,7 @@
     }
   },
   {
-    "pageContent": "To generate an API key, follow these steps. Click your profile icon and choose Profile. Click the Extras drop-down then choose API keys. In the Your API Keys section, click Create A Key. Name your key. Be descriptive, so you know what app uses that key. Keep in mind that you’ll see only this name and the first 4 key digits on your list of API keys. Click Generate Key. Once we generate your key, click Copy Key to Clipboard. Save your key someplace secure–you won’t be able to see or copy it again. If you lose this key, you’ll need to generate a new key and update any integration that uses it. Click Done.",
+    "pageContent": "To generate an API key, follow these steps. Click your profile icon and choose Profile. Click the Extras drop-down then choose API keys. In the Your API Keys section, click Create A Key. Name your key. Be descriptive, so you know what app uses that key. Keep in mind that you’ll see only this name and the first 4 key digits on your list of API keys. Click Generate Key. Once we generate your key, click Copy Key to Clipboard. Save your key someplace secure–you won’t be able to see or copy it again. If you lose this key, you’ll need to generate a new key and update any integration that uses it",
     "metadata": {
       "title": "About API Keys",
       "category": "getting-started",
@@ -3768,9 +4223,44 @@
         }
       },
       "chunk_id": "About API Keys_0",
-      "tokenCount": 152,
+      "tokenCount": 149,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". If you lose this key, you’ll need to generate a new key and update any integration that uses it. Click Done.",
+    "metadata": {
+      "title": "About API Keys",
+      "category": "getting-started",
+      "heading": "About API Keys",
+      "url": "https://mailchimp.com/help/about-api-keys/",
+      "scrapedAt": "2025-10-15T04:09:08.510Z",
+      "sectionType": "introduction",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "About API Keys_1",
+      "tokenCount": 28,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -3885,10 +4375,10 @@
     }
   },
   {
-    "pageContent": "API keys grant full access to your Mailchimp account. You should protect them the same way you would protect your password. Keep these common scenarios in mind when working with API keys. Give each integration its own API key. Assign descriptive names to each key so you know which key goes with which app. If a specific API key is compromised, you can revoke that key without disabling access to your other integrations. Be careful not to expose the key to the public (such as in screenshots, videos, or help documents). Remember that blurring your data isn't always enough. It's best to remove the data completely. Because of the potential security risks that come with exposing account API keys, Mailchimp doesn’t support client-side implementation of our API using CORS requests or including API keys in mobile apps. If you need to share access to your account, generate a new key and name it so you’ll know which key to revoke, if needed. Never email an API key",
+    "pageContent": "API keys grant full access to your Mailchimp account. You should protect them the same way you would protect your password. Keep these common scenarios in mind when working with API keys. Give each integration its own API key. Assign descriptive names to each key so you know which key goes with which app. If a specific API key is compromised, you can revoke that key without disabling access to your other integrations. Be careful not to expose the key to the public (such as in screenshots, videos, or help documents). Remember that blurring your data isn't always enough",
     "metadata": {
       "title": "About API Keys",
-      "category": "campaigns",
+      "category": "general",
       "heading": "API key security",
       "url": "https://mailchimp.com/help/about-api-keys/",
       "scrapedAt": "2025-10-15T04:09:08.510Z",
@@ -3908,9 +4398,9 @@
         }
       },
       "chunk_id": "About API Keys_0",
-      "tokenCount": 242,
+      "tokenCount": 144,
       "chunkIndex": 0,
-      "totalChunks": 2,
+      "totalChunks": 3,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
@@ -3920,7 +4410,7 @@
     }
   },
   {
-    "pageContent": ". If you need to share access to your account, generate a new key and name it so you’ll know which key to revoke, if needed. Never email an API key. This could allow access to your Mailchimp account if hackers were to compromise your email account. If you revoke a user's access to your Mailchimp account, we’ll remove any API keys that user generated from your account. The role of the user who generated the API key determines access to each endpoint. To learn more about user level permissions, visit Manage User Levels in Your Account.",
+    "pageContent": ". Remember that blurring your data isn't always enough. It's best to remove the data completely. Because of the potential security risks that come with exposing account API keys, Mailchimp doesn’t support client-side implementation of our API using CORS requests or including API keys in mobile apps. If you need to share access to your account, generate a new key and name it so you’ll know which key to revoke, if needed. Never email an API key. This could allow access to your Mailchimp account if hackers were to compromise your email account",
     "metadata": {
       "title": "About API Keys",
       "category": "campaigns",
@@ -3943,10 +4433,45 @@
         }
       },
       "chunk_id": "About API Keys_1",
-      "tokenCount": 135,
+      "tokenCount": 137,
       "chunkIndex": 1,
-      "totalChunks": 2,
+      "totalChunks": 3,
       "difficulty": "advanced",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". This could allow access to your Mailchimp account if hackers were to compromise your email account. If you revoke a user's access to your Mailchimp account, we’ll remove any API keys that user generated from your account. The role of the user who generated the API key determines access to each endpoint. To learn more about user level permissions, visit Manage User Levels in Your Account.",
+    "metadata": {
+      "title": "About API Keys",
+      "category": "campaigns",
+      "heading": "API key security",
+      "url": "https://mailchimp.com/help/about-api-keys/",
+      "scrapedAt": "2025-10-15T04:09:08.510Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "About API Keys_2",
+      "tokenCount": 98,
+      "chunkIndex": 2,
+      "totalChunks": 3,
+      "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
       "pointCount": 0,
@@ -4025,7 +4550,7 @@
     }
   },
   {
-    "pageContent": "To watch this video, you need to accept Performance and Functionality Cookies. For more info, check our cookie policy. We're sorry. Due to a technical issue, the video is currently unable to load. Please try again later. document.addEventListener(\"DOMContentLoaded\", () => { // Create function to load the KalturaPlayers so we can reuse it const loadPlayer = () => { try { let kalturaPlayer = KalturaPlayer.setup({ targetId: \"kaltura_video_1_n9an72b6\", provider: { partnerId: 5472032, uiConfId: 53047392 }, playback: { muted: false, } }); kalturaPlayer.loadMedia({ entryId: \"1_n9an72b6\" }); document.removeEventListener(\"kalturaPlayerLoaded\", loadPlayer); } catch (e) { console.error(e.message) } } // Check if the KalturaPlayer is already loaded if (window.KalturaPlayer !== undefined) { loadPlayer(); } else { // If not, wait for the event to be fired // then load the player document.addEventListener(\"kalturaPlayerLoaded\", loadPlayer); } });",
+    "pageContent": "To watch this video, you need to accept Performance and Functionality Cookies. For more info, check our cookie policy. We're sorry. Due to a technical issue, the video is currently unable to load. Please try again later",
     "metadata": {
       "title": "Create a Marketing Automation Flow",
       "category": "automation",
@@ -4048,9 +4573,9 @@
         }
       },
       "chunk_id": "Create a Marketing Automation Flow_0",
-      "tokenCount": 236,
+      "tokenCount": 55,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 3,
       "difficulty": "beginner",
       "hasStructure": false,
       "stepCount": 0,
@@ -4060,7 +4585,77 @@
     }
   },
   {
-    "pageContent": "Here are some things to know before you begin this process. Depending on your plan, you may not have access to all marketing automation flow tools. To find out what features are included in each plan, check out our pricing page. To learn more about automation flows, how they work, and what features come with your plan, check out About Marketing Automation Flows. Our flow templates use default triggers, along with default rules and actions. To learn more, check out Use Automation Flow Templates. This article shows you how to build a marketing automation flow. To learn more about other email automation tools, check out Create a Classic Automation.",
+    "pageContent": ". document.addEventListener(\"DOMContentLoaded\", () => { // Create function to load the KalturaPlayers so we can reuse it const loadPlayer = () => { try { let kalturaPlayer = KalturaPlayer.setup({ targetId: \"kaltura_video_1_n9an72b6\", provider: { partnerId: 5472032, uiConfId: 53047392 }, playback: { muted: false, } }); kalturaPlayer.loadMedia({ entryId: \"1_n9an72b6\" }); document.removeEventListener(\"kalturaPlayerLoaded\", loadPlayer); } catch (e) { console.error(e.message) } } // Check if the KalturaPlayer is already loaded if (window.KalturaPlayer !== undefined) { loadPlayer(); } else { // If",
+    "metadata": {
+      "title": "Create a Marketing Automation Flow",
+      "category": "automation",
+      "heading": "Create a Marketing Automation Flow",
+      "url": "https://mailchimp.com/help/create-customer-journey/",
+      "scrapedAt": "2025-10-15T04:09:10.630Z",
+      "sectionType": "introduction",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Create a Marketing Automation Flow_1",
+      "tokenCount": 150,
+      "chunkIndex": 1,
+      "totalChunks": 3,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "is already loaded if (window.KalturaPlayer !== undefined) { loadPlayer(); } else { // If not, wait for the event to be fired // then load the player document.addEventListener(\"kalturaPlayerLoaded\", loadPlayer); } });",
+    "metadata": {
+      "title": "Create a Marketing Automation Flow",
+      "category": "automation",
+      "heading": "Create a Marketing Automation Flow",
+      "url": "https://mailchimp.com/help/create-customer-journey/",
+      "scrapedAt": "2025-10-15T04:09:10.630Z",
+      "sectionType": "introduction",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Create a Marketing Automation Flow_2",
+      "tokenCount": 54,
+      "chunkIndex": 2,
+      "totalChunks": 3,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "Here are some things to know before you begin this process. Depending on your plan, you may not have access to all marketing automation flow tools. To find out what features are included in each plan, check out our pricing page. To learn more about automation flows, how they work, and what features come with your plan, check out About Marketing Automation Flows. Our flow templates use default triggers, along with default rules and actions. To learn more, check out Use Automation Flow Templates. This article shows you how to build a marketing automation flow",
     "metadata": {
       "title": "Create a Marketing Automation Flow",
       "category": "automation",
@@ -4083,9 +4678,9 @@
         }
       },
       "chunk_id": "Create a Marketing Automation Flow_0",
-      "tokenCount": 163,
+      "tokenCount": 141,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
@@ -4095,7 +4690,42 @@
     }
   },
   {
-    "pageContent": "You’ll create and manage your automation flow on the Automation flows homepage. You can build a new flow from scratch, or choose from a variety of flow templates. In this tutorial, you'll learn how to create a new automation flow. To create an automation flow, follow these steps. Click the Automations icon. Click Build from scratch. Enter a Name for your flow, then click the drop-down to choose an Audience. Click Choose a trigger. Good job! Now that you’ve created an automation flow, you can add triggers, actions, and rules that will determine each contact’s path. To do this, you’ll plot these steps on your automation flow map. This map will help you visualize how contacts move along different paths. An automation flow map can be as simple or complex as you want it to be. Review the different options, and choose only the ones that best suit your marketing needs.",
+    "pageContent": ". This article shows you how to build a marketing automation flow. To learn more about other email automation tools, check out Create a Classic Automation.",
+    "metadata": {
+      "title": "Create a Marketing Automation Flow",
+      "category": "automation",
+      "heading": "Before you start",
+      "url": "https://mailchimp.com/help/create-customer-journey/",
+      "scrapedAt": "2025-10-15T04:09:10.630Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Create a Marketing Automation Flow_1",
+      "tokenCount": 39,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "You’ll create and manage your automation flow on the Automation flows homepage. You can build a new flow from scratch, or choose from a variety of flow templates. In this tutorial, you'll learn how to create a new automation flow. To create an automation flow, follow these steps. Click the Automations icon. Click Build from scratch. Enter a Name for your flow, then click the drop-down to choose an Audience. Click Choose a trigger. Good job! Now that you’ve created an automation flow, you can add triggers, actions, and rules that will determine each contact’s path",
     "metadata": {
       "title": "Create a Marketing Automation Flow",
       "category": "automation",
@@ -4118,9 +4748,9 @@
         }
       },
       "chunk_id": "Create a Marketing Automation Flow_0",
-      "tokenCount": 219,
+      "tokenCount": 142,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
@@ -4130,7 +4760,42 @@
     }
   },
   {
-    "pageContent": "A trigger is the activity or event that adds a contact to a flow. Each automation flow can have up to 3 triggers. For example, if you have a flow for high-value contacts, you could choose to add people to it based on two different triggers: added tag “VIP” or added tag “top donor.” To add your first trigger, follow these steps. Click Choose a trigger. Choose the trigger you want. To learn more about the different types of triggers, read All the Marketing Automation Flow Triggers. Choose the specific settings for your trigger type. For example, if you choose Signs up for Email, you’ll then choose whether to include imported contacts. Optional: Click Filter who can enter this flow to use segmenting conditions to filter your trigger. Click Save Trigger. Nice job! You chose the first trigger for your workflow. Add up to 3 triggers with a Standard plan or higher. To add another trigger, first Add a step. Then click Add trigger and repeat steps 2-5.",
+    "pageContent": ". To do this, you’ll plot these steps on your automation flow map. This map will help you visualize how contacts move along different paths. An automation flow map can be as simple or complex as you want it to be. Review the different options, and choose only the ones that best suit your marketing needs.",
+    "metadata": {
+      "title": "Create a Marketing Automation Flow",
+      "category": "automation",
+      "heading": "Create an automation flow",
+      "url": "https://mailchimp.com/help/create-customer-journey/",
+      "scrapedAt": "2025-10-15T04:09:10.630Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Create a Marketing Automation Flow_1",
+      "tokenCount": 76,
+      "chunkIndex": 1,
+      "totalChunks": 2,
+      "difficulty": "beginner",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": "A trigger is the activity or event that adds a contact to a flow. Each automation flow can have up to 3 triggers. For example, if you have a flow for high-value contacts, you could choose to add people to it based on two different triggers: added tag “VIP” or added tag “top donor.” To add your first trigger, follow these steps. Click Choose a trigger. Choose the trigger you want. To learn more about the different types of triggers, read All the Marketing Automation Flow Triggers. Choose the specific settings for your trigger type",
     "metadata": {
       "title": "Create a Marketing Automation Flow",
       "category": "automation",
@@ -4153,9 +4818,44 @@
         }
       },
       "chunk_id": "Create a Marketing Automation Flow_0",
-      "tokenCount": 239,
+      "tokenCount": 134,
       "chunkIndex": 0,
-      "totalChunks": 1,
+      "totalChunks": 2,
+      "difficulty": "advanced",
+      "hasStructure": false,
+      "stepCount": 0,
+      "pointCount": 0,
+      "isInstructional": false,
+      "hasVisuals": false
+    }
+  },
+  {
+    "pageContent": ". Choose the specific settings for your trigger type. For example, if you choose Signs up for Email, you’ll then choose whether to include imported contacts. Optional: Click Filter who can enter this flow to use segmenting conditions to filter your trigger. Click Save Trigger. Nice job! You chose the first trigger for your workflow. Add up to 3 triggers with a Standard plan or higher. To add another trigger, first Add a step. Then click Add trigger and repeat steps 2-5.",
+    "metadata": {
+      "title": "Create a Marketing Automation Flow",
+      "category": "automation",
+      "heading": "Add a trigger",
+      "url": "https://mailchimp.com/help/create-customer-journey/",
+      "scrapedAt": "2025-10-15T04:09:10.630Z",
+      "sectionType": "content",
+      "screenshots": [],
+      "numberedLists": [],
+      "bulletPoints": [],
+      "hasScreenshots": false,
+      "hasNumberedLists": false,
+      "hasBulletPoints": false,
+      "totalSteps": 0,
+      "totalPoints": 0,
+      "loc": {
+        "lines": {
+          "from": 1,
+          "to": 1
+        }
+      },
+      "chunk_id": "Create a Marketing Automation Flow_1",
+      "tokenCount": 119,
+      "chunkIndex": 1,
+      "totalChunks": 2,
       "difficulty": "advanced",
       "hasStructure": false,
       "stepCount": 0,
