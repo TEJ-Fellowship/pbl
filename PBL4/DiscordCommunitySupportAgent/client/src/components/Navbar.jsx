@@ -2,7 +2,7 @@ import { SiDiscord } from "react-icons/si";
 import { LogIn, UserPlus } from "lucide-react";
 import { useState } from "react";
 
-const Navbar = ({ onLogin }) => {
+const Navbar = ({ onLogin, onOpenChat, onOpenHistory }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
 
@@ -33,39 +33,36 @@ const Navbar = ({ onLogin }) => {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-gray-900/60 bg-gray-900/80 border-b border-gray-800">
-        <div className="max-w-6xl mx-auto px-3 md:px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3 -ml-1 md:-ml-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white">
-              <SiDiscord size={16} />
-            </span>
-            <span className="text-sm md:text-base font-semibold tracking-tight">Support Hub</span>
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-sm text-gray-300">
-            <a href="#features" className="hover:text-white">Features</a>
-            <a href="#pricing" className="hover:text-white">Pricing</a>
-            <a href="#help" className="hover:text-white">Help</a>
-          </div>
+      <nav className="sticky top-0 z-40 backdrop-blur-md bg-black/60 border-b border-blue-500/10 px-8 md:px-16 py-5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => {
-                setAuthMode('login');
-                setShowAuthModal(true);
-              }}
-              className="hidden md:inline-flex h-9 items-center gap-2 rounded-md border border-gray-700 px-3 text-sm text-gray-300 hover:bg-gray-800"
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-2xl animate-pulse shadow-lg shadow-blue-500/50">
+              🤖
+            </div>
+            <span className="text-xl font-bold text-white">Support Hub</span>
+          </div>
+          <div className="hidden md:flex items-center gap-10">
+            <a href="#features" className="text-gray-300 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-blue-500 after:to-pink-500 hover:after:w-full after:transition-all">Features</a>
+            <a href="#pricing" className="text-gray-300 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-blue-500 after:to-pink-500 hover:after:w-full after:transition-all">Pricing</a>
+            <a href="#help" className="text-gray-300 hover:text-white transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-gradient-to-r after:from-blue-500 after:to-pink-500 hover:after:w-full after:transition-all">Help</a>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Open Chat (full page) - uses Sign Up animation style */}
+            <button
+              onClick={() => onOpenChat && onOpenChat()}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-purple-500 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all"
+              title="Chat"
             >
-              <LogIn size={14} />
-              Log In
+              💬
+              <span className="hidden sm:inline">Chat</span>
             </button>
-            <button 
-              onClick={() => {
-                setAuthMode('signup');
-                setShowAuthModal(true);
-              }}
-              className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-500"
+            <button
+              onClick={() => onOpenHistory && onOpenHistory()}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg border-2 border-white/20 bg-white/5 text-white font-semibold hover:bg-white/10 transition-all"
+              title="History"
             >
-              <UserPlus size={14} />
-              Sign Up
+              🕘
+              <span className="hidden sm:inline">History</span>
             </button>
           </div>
         </div>

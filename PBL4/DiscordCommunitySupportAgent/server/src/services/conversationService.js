@@ -44,6 +44,25 @@ class ConversationService {
     
     // Check if query contains Discord keywords
     const hasDiscordKeyword = discordKeywords.some(keyword => queryLower.includes(keyword));
+    const wordCount = query.trim().split(/\s+/).filter(Boolean).length;
+    
+    // Treat generic greetings and very short, non-Discord queries as out of context
+    const greetingPatterns = [
+      /^(hi|hello|hey|yo|sup|howdy)[!.?]*$/i,
+      /^good\s+(morning|afternoon|evening)[!.?]*$/i,
+      /^how are you\b/i,
+      /^who (are|r) you\b/i,
+      /^help[!.?]*$/i
+    ];
+    if (!hasDiscordKeyword) {
+      if (greetingPatterns.some(p => p.test(query))) {
+        return true;
+      }
+      // Extremely short generic queries (<= 3 words) without Discord terms
+      if (wordCount <= 3) {
+        return true;
+      }
+    }
     
     // Patterns indicating non-Discord queries
     const nonDiscordPatterns = [
@@ -209,9 +228,14 @@ class ConversationService {
       let prompt;
       if (isUsingWebSearch || isOutOfContext) {
         // For out-of-context queries, use web search results to answer
-        prompt = `You are a helpful AI assistant. The user has asked a question that is NOT about Discord. Answer their question DIRECTLY using the web search results provided below.
+        prompt = `You are a helpful, knowledgeable AI assistant. The user has asked a question that is NOT about Discord. Provide a comprehensive, detailed, and engaging answer based on the web search results provided below.
 
-**IMPORTANT**: Do NOT mention Discord. Do NOT try to relate this to Discord features. Just answer the question as a helpful assistant would.
+**CRITICAL INSTRUCTIONS:**
+- Do NOT mention Discord or relate to Discord features.
+- Do NOT invent facts. Only use information from the web search results, but you CAN expand on what's provided to give context and explanations.
+- Do NOT include raw URLs in your response. URLs are for your reference only.
+- Structure your answer clearly and professionally - avoid messy formatting.
+- Be comprehensive and detailed - similar to how you would answer Discord-related queries.
 
 User Question: ${query}
 ${userName ? `User Context: The user's name is ${userName}` : ''}
@@ -219,26 +243,71 @@ ${userName ? `User Context: The user's name is ${userName}` : ''}
 Web Search Results:
 ${mcpResults}
 
-${context.trim().length > 0 ? `\nNote: Discord documentation is also available but is NOT relevant to this query. Ignore it.\n` : ''}
+${context.trim().length > 0 ? `\nNote: Discord documentation is present but NOT relevant to this query. Ignore it entirely.\n` : ''}
 
-Your task:
-1. Read the web search results carefully
-2. Extract the most relevant information to answer the user's question
-3. Provide a clear, direct answer based on the web search results
-4. If the web search results contain multiple pieces of information, synthesize them into a coherent answer
-5. If you need to do calculations (like math), show your work or explain the answer clearly
+**Answer Format Requirements:**
 
-Formatting requirements:
-- Use **bold** for important terms
-- Use \`code blocks\` for technical terms, code, or calculations  
-- Use > blockquotes for important notes
-- Use bullet points for lists
-- Use numbered lists for sequential steps
-- Include relevant emojis: 📚 for educational content, 💡 for tips, ✅ for completion, 🔍 for search
+1. **Start with a friendly, engaging greeting** that acknowledges the question and sets a positive tone (use emojis like 👋💬🌟 to make it welcoming)
 
-Be friendly, helpful, and provide a comprehensive answer (100-300 words). End with an offer to help with follow-up questions.
+2. **Provide a comprehensive, well-structured answer:**
+   - If asking "what is X?", include:
+     * A clear, detailed definition or overview with context  
+     * Background or origin if available  
+     * Key features, characteristics, or components  
+     * Purpose, goals, or real-world significance  
+     * Related concepts, technologies, or connections  
+   - If asking for a list (e.g., "five tools"), include:
+     * That exact number of items, each clearly numbered or bulleted  
+     * Detailed explanations for each (what it does, why it matters, and how it’s used)  
+     * A brief comparison or summary if relevant  
+   - Organize content into clear, logical sections  
+   - Expand on findings: explain what they mean, connect ideas, and give context  
+   - Use bullet points for lists and numbered lists for steps or rankings  
 
-Now answer the user's question:`;
+3. **Response length (BE COMPREHENSIVE):**
+   - 0 results: Around ~100 words explaining no information found + helpful suggestions or next steps  
+   - 1–2 results: ~200–300 words with detailed explanations and added context  
+   - 3+ results: ~400–600 words (flexible depending on topic complexity) including:
+     * In-depth explanations  
+     * Clear, organized sections  
+     * Synthesized information across multiple sources  
+     * Additional insights and relevant background  
+
+4. **Formatting style (same as Discord responses):**
+   - Use **bold** for important terms, names, and main ideas  
+   - Use \`code blocks\` for tool names, commands, or technical terms  
+   - Use > blockquotes for important notes, warnings, or takeaways  
+   - Use • for bullet lists and numbers (1, 2, 3) for ordered sequences  
+   - Add proper spacing and clear sections for readability  
+   - Include relevant emojis throughout (📚 💡 ✅ 🔍 🚀 ⚙️ ⚠️ 🎯 💻 🌟 📖 🎓) for engagement  
+
+5. **Engagement and style:**
+   - Maintain a friendly, conversational tone  
+   - Explain concepts thoroughly — don’t just list facts  
+   - Connect related information and make transitions smooth  
+   - Keep the response engaging, helpful, and easy to read  
+   - Add enthusiasm or friendly phrasing to make it interesting  
+
+6. **Synthesis and depth:**
+   - Combine information from **all available search results** into a cohesive, unified answer  
+   - Avoid listing — synthesize, explain, and expand  
+   - Emphasize the **why** and **how**, not just the **what**  
+   - Highlight relationships, context, and significance of the information  
+   - Provide meaningful insights or patterns where possible  
+
+7. **Structure example for "What is X?":**
+   - Friendly greeting 👋  
+   - Clear, detailed definition with context  
+   - Background or origin if available  
+   - Key features or characteristics explained  
+   - Purpose, goals, or significance  
+   - Related concepts or connections  
+   - Friendly closing inviting follow-up ✨  
+
+8. **End with a friendly, encouraging closing** that offers to help with follow-up questions or provide additional clarification.
+
+
+Now provide a comprehensive, detailed, and engaging answer that thoroughly addresses the user's question based on the web search results above. Be detailed, explain context, and provide a rich, informative response:`;
       } else {
         // For Discord-related queries, use the existing Discord-focused prompt
         prompt = `You are a Discord Community Support Agent. Answer this question based on the Discord documentation provided.
@@ -287,7 +356,10 @@ Answer:`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      return response.text();
+      const rawText = response.text();
+      // Compact and format URLs in the final answer for clean display
+      const cleanedText = this.compactUrls(rawText);
+      return cleanedText;
       
     } catch (error) {
       console.error("Error generating answer:", error.message);
@@ -302,6 +374,51 @@ Answer:`;
       
       return "I apologize, but I'm having trouble generating an answer right now. Please try again or contact support if the issue persists.";
     }
+  }
+
+  /**
+   * Compact long/redirected URLs in text for clean display
+   * - Decodes DuckDuckGo redirect URLs (uddg=)
+   * - Shortens very long URLs to host + path with ellipsis
+   * - Wraps displayed URL in backticks to avoid layout issues
+   * @param {string} text
+   * @returns {string}
+   */
+  compactUrls(text) {
+    if (!text || typeof text !== 'string') return text;
+
+    const decodeDuckDuckGoUrl = (url) => {
+      try {
+        const match = url.match(/uddg=([^&]+)/);
+        if (match) {
+          return decodeURIComponent(match[1]);
+        }
+        return url;
+      } catch {
+        return url;
+      }
+    };
+
+    const shorten = (urlStr) => {
+      try {
+        const original = decodeDuckDuckGoUrl(urlStr);
+        const u = new URL(original);
+        const base = `${u.hostname}${u.pathname}`;
+        const queryIndicator = u.search ? '?' : '';
+        const display = `${base}${queryIndicator}`;
+        // Limit display length; keep it readable
+        if (display.length > 70) {
+          return `\`${display.slice(0, 67)}...\``;
+        }
+        return `\`${display}\``;
+      } catch {
+        // Fallback: trim plain string if not a valid URL
+        const trimmed = urlStr.length > 70 ? `${urlStr.slice(0, 67)}...` : urlStr;
+        return `\`${trimmed}\``;
+      }
+    };
+
+    return text.replace(/https?:\/\/[^\s)]+/g, (m) => shorten(m));
   }
 
   /**
@@ -515,11 +632,44 @@ Answer:`;
       return 'No web search results found.';
     }
 
-    let formatted = `Found ${result.totalResults} search results:\n`;
-    result.results.slice(0, 3).forEach((item, index) => {
-      formatted += `${index + 1}. ${item.title}\n`;
-      formatted += `   URL: ${item.url}\n`;
-      formatted += `   Description: ${item.description}\n\n`;
+    // Helper to clean DuckDuckGo redirect URLs
+    const cleanUrl = (url) => {
+      if (!url) return '';
+      // Extract actual URL from DuckDuckGo redirect
+      const uddgMatch = url.match(/uddg=([^&]+)/);
+      if (uddgMatch) {
+        try {
+          return decodeURIComponent(uddgMatch[1]);
+        } catch (e) {
+          return url;
+        }
+      }
+      // Remove DuckDuckGo redirect wrapper if present
+      if (url.includes('duckduckgo.com/l/?')) {
+        const urlMatch = url.match(/uddg=([^&]+)/);
+        if (urlMatch) {
+          try {
+            return decodeURIComponent(urlMatch[1]);
+          } catch (e) {
+            return url;
+          }
+        }
+      }
+      return url;
+    };
+
+    let formatted = `Web Search Results (${result.totalResults} found):\n\n`;
+    result.results.slice(0, 5).forEach((item, index) => {
+      const cleanTitle = item.title || 'Untitled';
+      const cleanUrlStr = cleanUrl(item.url || '');
+      const cleanDesc = item.description || 'No description available';
+      
+      formatted += `Result ${index + 1}:\n`;
+      formatted += `Title: ${cleanTitle}\n`;
+      if (cleanUrlStr && !cleanUrlStr.includes('duckduckgo.com')) {
+        formatted += `Source: ${cleanUrlStr}\n`;
+      }
+      formatted += `Content: ${cleanDesc}\n\n`;
     });
 
     return formatted;

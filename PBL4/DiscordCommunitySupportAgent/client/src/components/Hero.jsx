@@ -100,24 +100,23 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative px-4 pt-14 pb-10 md:pt-24 md:pb-14">
+    <section className="relative px-4 pt-20 pb-10 md:pt-28 md:pb-16">
       <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 md:mb-6">
-          Your AI-Powered Community
-          <span className="block">Assistant</span>
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4 md:mb-6 bg-gradient-to-r from-white via-blue-400 to-pink-400 bg-clip-text text-transparent">
+          Your AI-Powered Community Assistant
         </h1>
-        <p className="text-gray-400 text-base md:text-lg leading-relaxed mb-6 md:mb-8">
+        <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-2xl mx-auto">
           Automate moderation, answer questions, and manage your Discord server with ease. 
           Need help? Search our knowledge base below.
         </p>
 
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-stretch rounded-lg border border-gray-700 bg-gray-800 overflow-hidden">
+          <div className="flex items-stretch rounded-xl border border-white/10 bg-white/5 backdrop-blur-md overflow-hidden shadow-lg shadow-blue-900/20">
             <div className="px-3 hidden sm:flex items-center text-gray-400"><Search size={16} /></div>
             <input
               type="text"
               placeholder="Search for help articles..."
-              className="flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-500"
+              className="flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-gray-400"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -125,7 +124,7 @@ const Hero = () => {
             <button 
               onClick={handleSearch}
               disabled={isLoading}
-              className="bg-blue-600 px-4 md:px-5 text-sm font-medium hover:bg-blue-500 disabled:opacity-50"
+              className="bg-blue-600 px-4 md:px-6 text-sm font-medium hover:bg-blue-500 disabled:opacity-50"
             >
               {isLoading ? 'Searching...' : 'Search'}
             </button>
@@ -135,7 +134,7 @@ const Hero = () => {
         {/* AI Generated Answer */}
         {aiAnswer && (
           <div className="mt-8 max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-lg p-6 mb-6">
+            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-2xl p-6 mb-6 backdrop-blur-sm">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                 <h3 className="text-lg font-semibold text-blue-300">AI Answer</h3>
@@ -238,12 +237,12 @@ const Hero = () => {
           </div>
         )}
 
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <button className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
-              <MdLogin />
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-500 px-6 py-3.5 text-base font-semibold text-white hover:shadow-2xl hover:shadow-blue-500/50 hover:-translate-y-1 transition-all">
+              <MdLogin size={18} />
               <span>Login with Discord</span>
             </button>
-            <button className="inline-flex items-center rounded-md border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-gray-800">Learn More</button>
+            <button className="inline-flex items-center rounded-xl border-2 border-white/20 bg-transparent px-6 py-3.5 text-base font-semibold text-white hover:bg-white/5 hover:border-white/40 hover:-translate-y-1 transition-all">Learn More</button>
           </div>
         </div>
       </section>

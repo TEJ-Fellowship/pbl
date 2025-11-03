@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, User, Bot, LogIn, UserPlus, Settings, ChevronDown, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Send, User, Bot, LogIn, UserPlus, Settings, ChevronDown, ThumbsUp, ThumbsDown, X } from "lucide-react";
 
-const ChatInterface = () => {
+const ChatInterface = ({ sessionId = 'default', onClose }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -57,7 +57,7 @@ const ChatInterface = () => {
         },
         body: JSON.stringify({ 
           query: inputMessage, 
-          sessionId: user?.id || 'anonymous',
+          sessionId: sessionId || user?.id || 'anonymous',
           serverContext: serverContext,
           searchOptions: {
             method: 'hybrid',
@@ -176,7 +176,7 @@ const ChatInterface = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: user?.id || 'anonymous',
+          sessionId: sessionId || user?.id || 'anonymous',
           query: message.query || '',
           responseId: String(message.id),
           feedbackType: type
@@ -247,6 +247,15 @@ const ChatInterface = () => {
                 Sign Up
               </button>
             </div>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="ml-2 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              title="Close"
+            >
+              <X size={20} />
+            </button>
           )}
         </div>
       </div>
