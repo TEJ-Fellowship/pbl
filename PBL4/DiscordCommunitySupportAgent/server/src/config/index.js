@@ -56,6 +56,28 @@ export const config = {
     guidelines: "https://discord.com/guidelines",
     safetyPrivacy: "https://support.discord.com/hc/en-us/sections/360000045712",
   },
+
+  // Memory Configuration (Hybrid: Exact Query Cache + Conversation Memory)
+  memory: {
+    // Exact Query Cache Configuration
+    queryCache: {
+      enabled: process.env.QUERY_CACHE_ENABLED !== 'false',
+      ttlHours: parseInt(process.env.QUERY_CACHE_TTL_HOURS) || 6,
+      collectionName: 'query_cache'
+    },
+    // Server-Based Conversation Memory Configuration
+    conversation: {
+      enabled: process.env.CONVERSATION_MEMORY_ENABLED !== 'false',
+      messageLimit: parseInt(process.env.CONVERSATION_MESSAGE_LIMIT) || 10,
+      ttlDays: parseInt(process.env.CONVERSATION_TTL_DAYS) || 2,
+      collectionName: 'conversations'
+    },
+    // Server Context Configuration
+    serverContext: {
+      enabled: process.env.SERVER_CONTEXT_ENABLED !== 'false',
+      collectionName: 'server_contexts'
+    }
+  },
 };
 
 export default config;

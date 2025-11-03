@@ -1,8 +1,11 @@
-import { searchSimilarDocuments } from '../repositories/vectorRepository.js';
-import { searchDocuments } from '../search/keywordSearch.js';
-import { hybridSearch, initializeHybridSearch } from '../search/hybridSearch.js';
-import { rerankResults } from '../search/reranker.js';
-import queryIntentService from './queryIntentService.js';
+import { searchSimilarDocuments } from "../repositories/vectorRepository.js";
+import { searchDocuments } from "../search/keywordSearch.js";
+import {
+  hybridSearch,
+  initializeHybridSearch,
+} from "../search/hybridSearch.js";
+import { rerankResults } from "../search/reranker.js";
+import queryIntentService from "./queryIntentService.js";
 
 /**
  * Main Search Service - Orchestrates all search functionality
@@ -13,21 +16,66 @@ class SearchService {
     this.isInitialized = false;
   }
 
+  // Clamp a numeric score to [0, 1]
+  clampScore(value) {
+    const v = typeof value === "number" ? value : 0;
+    if (Number.isNaN(v)) return 0;
+    return Math.max(0, Math.min(1, v));
+  }
+
+  // Attach display-safe percentages without changing ranking math
+  attachDisplayScores(result, { enableReranking = false } = {}) {
+    const clamp = (v) => Math.max(0, Math.min(1, typeof v === 'number' ? v : 0));
+  
+    const sem = clamp(result.semanticScore);
+    const kw  = clamp(result.keywordScore);
+    const ce  = clamp(result.crossEncoderScore);
+  
+    // Default Tier-2 weights
+    const SEM_W = 0.65;
+    const KW_W  = 0.35;
+  
+    let overall;
+    if (enableReranking && ce > 0) {
+      // Give CE half the weight; split the other half by SEM:KW = 0.65:0.35
+      const wCE  = 0.5;
+      const wSem = 0.5 * (SEM_W / (SEM_W + KW_W)); // 0.325
+      const wKw  = 0.5 * (KW_W  / (SEM_W + KW_W)); // 0.175
+      overall = clamp(wCE * ce + wSem * sem + wKw * kw);
+    } else {
+      overall = clamp(SEM_W * sem + KW_W * kw);
+    }
+  
+    return {
+      ...result,
+      // bounded components
+      semanticScore: sem,
+      keywordScore: kw,
+      crossEncoderScore: ce,
+      // display-safe percentages (<= 100.0)
+      display: {
+        totalPct:        Math.round(overall * 1000) / 10,
+        semanticPct:     Math.round(sem    * 1000) / 10,
+        keywordPct:      Math.round(kw     * 1000) / 10,
+        crossEncoderPct: Math.round(ce     * 1000) / 10
+      }
+    };
+  }
   async initialize() {
     try {
-      console.log('🔍 Initializing Search Service...');
-      
+      console.log("🔍 Initializing Search Service...");
+
       // Initialize hybrid search
       await initializeHybridSearch();
-      
+
       // Initialize query intent service
       await queryIntentService.initialize();
-      
+
       this.isInitialized = true;
-      console.log('✅ Search Service initialized');
+      console.log("✅ Search Service initialized");
       return true;
     } catch (error) {
-      console.error('❌ Search Service initialization failed:', error.message);
+      console.error("❌ Search Service initialization failed:", error.message);
       return false;
     }
   }
@@ -42,26 +90,38 @@ class SearchService {
   async semanticSearch(query, limit = 5, serverContext = {}) {
     try {
       // Classify query intent
-      const intentClassification = await queryIntentService.detectIntents(query, serverContext);
-      
+      const intentClassification = await queryIntentService.detectIntents(
+        query,
+        serverContext
+      );
+
       // Perform semantic search with intent filtering
-      const results = await searchSimilarDocuments(query, limit * 2, intentClassification);
-      
-      const semanticResults = results.documents[0].map((doc, index) => ({
-        content: doc,
-        metadata: results.metadatas[0][index],
-        similarity: 1 - results.distances[0][index],
-        searchMethod: 'semantic',
-        semanticScore: 1 - results.distances[0][index],
-        keywordScore: 0,
-        crossEncoderScore: 0,
-        intentClassification: intentClassification
-      })).slice(0, limit);
-      
-      console.log(`\n✅ SEMANTIC SEARCH COMPLETE: ${semanticResults.length} results returned\n`);
+      const results = await searchSimilarDocuments(
+        query,
+        limit * 2,
+        intentClassification
+      );
+
+      const semanticResults = results.documents[0]
+        .map((doc, index) => ({
+          content: doc,
+          metadata: results.metadatas[0][index],
+          similarity: 1 - results.distances[0][index],
+          searchMethod: "semantic",
+          semanticScore: 1 - results.distances[0][index],
+          keywordScore: 0,
+          crossEncoderScore: 0,
+          intentClassification: intentClassification,
+        }))
+        .slice(0, limit)
+        .map((r) => this.attachDisplayScores(r));
+
+      console.log(
+        `\n✅ SEMANTIC SEARCH COMPLETE: ${semanticResults.length} results returned\n`
+      );
       return semanticResults;
     } catch (error) {
-      console.error('❌ Semantic search failed:', error.message);
+      console.error("❌ Semantic search failed:", error.message);
       return [];
     }
   }
@@ -75,18 +135,18 @@ class SearchService {
   keywordSearch(query, limit = 5) {
     try {
       const results = searchDocuments(query, [], limit);
-      
-      return results.map(result => ({
+
+      return results.map((result) => ({
         content: result.content,
         metadata: result.metadata,
         similarity: result.score,
-        searchMethod: 'keyword',
+        searchMethod: "keyword",
         semanticScore: 0,
         keywordScore: result.score,
-        crossEncoderScore: 0
+        crossEncoderScore: 0,
       }));
     } catch (error) {
-      console.error('❌ Keyword search failed:', error.message);
+      console.error("❌ Keyword search failed:", error.message);
       return [];
     }
   }
@@ -101,26 +161,42 @@ class SearchService {
    * @param {Object} intentClassification - Intent classification for filtering
    * @returns {Promise<Array>} Search results
    */
-  async hybridSearch(query, limit = 5, semanticWeight = 0.65, keywordWeight = 0.35, enableReranking = false, intentClassification = null) {
+  async hybridSearch(
+    query,
+    limit = 5,
+    semanticWeight = 0.65,
+    keywordWeight = 0.35,
+    enableReranking = false,
+    intentClassification = null
+  ) {
     try {
       if (!this.isInitialized) {
-        console.log('⚠️ Search service not initialized, falling back to semantic search');
+        console.log(
+          "⚠️ Search service not initialized, falling back to semantic search"
+        );
         return await this.semanticSearch(query, limit);
       }
 
-      const results = await hybridSearch(query, limit, semanticWeight, keywordWeight, enableReranking, intentClassification);
-      
-      return results.map(result => ({
+      const results = await hybridSearch(
+        query,
+        limit,
+        semanticWeight,
+        keywordWeight,
+        enableReranking,
+        intentClassification
+      );
+
+      return results.map((result) => ({
         content: result.content,
         metadata: result.metadata,
         similarity: result.combinedScore || result.similarity,
-        searchMethod: 'hybrid',
+        searchMethod: "hybrid",
         semanticScore: result.semanticScore || 0,
         keywordScore: result.keywordScore || 0,
-        crossEncoderScore: result.crossEncoderScore || 0
+        crossEncoderScore: result.crossEncoderScore || 0,
       }));
     } catch (error) {
-      console.error('❌ Hybrid search failed:', error.message);
+      console.error("❌ Hybrid search failed:", error.message);
       return await this.semanticSearch(query, limit);
     }
   }
@@ -134,11 +210,11 @@ class SearchService {
    */
   async search(query, options = {}, serverContext = {}) {
     const {
-      method = 'hybrid',
+      method = "hybrid",
       limit = 5,
       semanticWeight = 0.65,
       keywordWeight = 0.35,
-      enableReranking = false
+      enableReranking = false,
     } = options;
 
     console.log(`\n🔍 SEARCH REQUEST:`);
@@ -147,38 +223,71 @@ class SearchService {
     if (serverContext.type) {
       console.log(`   Server Context: ${serverContext.type} server`);
     }
-    
+
     // Classify query intent (used for all methods)
-    const intentClassification = await queryIntentService.detectIntents(query, serverContext);
+    const intentClassification = await queryIntentService.detectIntents(
+      query,
+      serverContext
+    );
 
     switch (method) {
-      case 'semantic':
+      case "semantic":
         return await this.semanticSearch(query, limit, serverContext);
-      
-      case 'keyword':
+
+      case "keyword":
         return this.keywordSearch(query, limit);
-      
-      case 'hybrid':
+
+      case "hybrid":
         // For hybrid, pass intent classification to enable filtering in semantic search
-        let results = await this.hybridSearch(query, limit * 2, semanticWeight, keywordWeight, enableReranking, intentClassification);
-        
+        let results = await this.hybridSearch(
+          query,
+          limit * 2,
+          semanticWeight,
+          keywordWeight,
+          enableReranking,
+          intentClassification
+        );
+
         // Apply intent-based filtering and boosting
         if (intentClassification.confidence > 0.3) {
-          results = this.applyIntentFiltering(results, intentClassification, limit);
+          results = this.applyIntentFiltering(
+            results,
+            intentClassification,
+            limit
+          );
         }
-        
-        console.log(`\n✅ SEARCH COMPLETE: ${results.length} results returned\n`);
+        // Clamp and attach display-safe scores to avoid >100% UI values
+        results = results.map((r) => this.attachDisplayScores(r));
+
+        console.log(
+          `\n✅ SEARCH COMPLETE: ${results.length} results returned\n`
+        );
         return results.slice(0, limit);
-      
+
       default:
-        console.log('⚠️ Unknown search method, using hybrid search');
-        let defaultResults = await this.hybridSearch(query, limit * 2, semanticWeight, keywordWeight, enableReranking, intentClassification);
-        
+        console.log("⚠️ Unknown search method, using hybrid search");
+        let defaultResults = await this.hybridSearch(
+          query,
+          limit * 2,
+          semanticWeight,
+          keywordWeight,
+          enableReranking,
+          intentClassification
+        );
+
         if (intentClassification.confidence > 0.3) {
-          defaultResults = this.applyIntentFiltering(defaultResults, intentClassification, limit);
+          defaultResults = this.applyIntentFiltering(
+            defaultResults,
+            intentClassification,
+            limit
+          );
         }
-        
-        console.log(`\n✅ SEARCH COMPLETE: ${defaultResults.length} results returned\n`);
+        // Clamp and attach display-safe scores
+        defaultResults = defaultResults.map((r) => this.attachDisplayScores(r));
+
+        console.log(
+          `\n✅ SEARCH COMPLETE: ${defaultResults.length} results returned\n`
+        );
         return defaultResults.slice(0, limit);
     }
   }
@@ -192,63 +301,91 @@ class SearchService {
    */
   applyIntentFiltering(results, intentClassification, limit) {
     const { relevantCategories, confidence } = intentClassification;
-    
+
     console.log(`\n🎯 APPLYING INTENT-BASED FILTERING & BOOSTING:`);
     console.log(`   Input results: ${results.length}`);
-    
+
     // Apply boosting based on intent match
-    const processedResults = results.map(result => {
+    const processedResults = results.map((result) => {
       const boost = queryIntentService.getBoostMultiplier(
-        intentClassification, 
+        intentClassification,
         result.metadata
       );
-      
+
       const originalScore = result.combinedScore || result.similarity;
       const boostedScore = originalScore * boost;
-      
+
       return {
         ...result,
         intentBoost: boost,
         similarity: boostedScore,
         // Update combined scores if they exist
         combinedScore: boostedScore,
-        originalScore: originalScore
+        originalScore: originalScore,
       };
     });
-    
+
     // Display boost information for top results
-    const sortedByOriginal = [...processedResults].sort((a, b) => 
-      (b.originalScore || b.similarity) - (a.originalScore || a.similarity)
+    const sortedByOriginal = [...processedResults].sort(
+      (a, b) =>
+        (b.originalScore || b.similarity) - (a.originalScore || a.similarity)
     );
-    
+
     console.log(`\n📈 Top 5 Results - Boost Analysis:`);
     sortedByOriginal.slice(0, 5).forEach((result, index) => {
-      const docCategory = result.metadata?.category || 'general';
-      const docTags = result.metadata?.tags?.join(', ') || 'none';
-      const boostIndicator = result.intentBoost > 1.2 ? '🚀' : result.intentBoost > 1.0 ? '⬆️' : result.intentBoost < 0.8 ? '⬇️' : '➡️';
-      console.log(`   ${index + 1}. ${boostIndicator} Category: ${docCategory.padEnd(15)} | Tags: ${docTags.padEnd(30)} | Boost: ${result.intentBoost.toFixed(2)}x | Score: ${result.originalScore.toFixed(3)} → ${(result.combinedScore || result.similarity).toFixed(3)}`);
+      const docCategory = result.metadata?.category || "general";
+      const docTags = result.metadata?.tags?.join(", ") || "none";
+      const boostIndicator =
+        result.intentBoost > 1.2
+          ? "🚀"
+          : result.intentBoost > 1.0
+          ? "⬆️"
+          : result.intentBoost < 0.8
+          ? "⬇️"
+          : "➡️";
+      console.log(
+        `   ${index + 1}. ${boostIndicator} Category: ${docCategory.padEnd(
+          15
+        )} | Tags: ${docTags.padEnd(30)} | Boost: ${result.intentBoost.toFixed(
+          2
+        )}x | Score: ${result.originalScore.toFixed(3)} → ${(
+          result.combinedScore || result.similarity
+        ).toFixed(3)}`
+      );
     });
-    
+
     // Filter out very irrelevant results (boost < 0.5)
-    const relevantResults = processedResults.filter(r => r.intentBoost >= 0.5);
-    console.log(`\n   After filtering (boost >= 0.5): ${relevantResults.length} results`);
-    
-    // Sort by boosted similarity
-    const sortedResults = relevantResults.sort((a, b) => 
-      (b.combinedScore || b.similarity) - (a.combinedScore || a.similarity)
+    const relevantResults = processedResults.filter(
+      (r) => r.intentBoost >= 0.5
     );
-    
+    console.log(
+      `\n   After filtering (boost >= 0.5): ${relevantResults.length} results`
+    );
+
+    // Sort by boosted similarity
+    const sortedResults = relevantResults.sort(
+      (a, b) =>
+        (b.combinedScore || b.similarity) - (a.combinedScore || a.similarity)
+    );
+
     // If we filtered too many, keep top results even if boost is lower
     if (sortedResults.length < limit) {
-      console.log(`   ⚠️  Filtered too many (${sortedResults.length} < ${limit}), keeping top results with lower boost`);
-      const allSorted = processedResults.sort((a, b) => 
-        (b.combinedScore || b.similarity) - (a.combinedScore || a.similarity)
+      console.log(
+        `   ⚠️  Filtered too many (${sortedResults.length} < ${limit}), keeping top results with lower boost`
+      );
+      const allSorted = processedResults.sort(
+        (a, b) =>
+          (b.combinedScore || b.similarity) - (a.combinedScore || a.similarity)
       );
       return allSorted.slice(0, limit);
     }
-    
-    console.log(`   ✅ Final results: ${sortedResults.slice(0, limit).length} (after intent filtering)\n`);
-    
+
+    console.log(
+      `   ✅ Final results: ${
+        sortedResults.slice(0, limit).length
+      } (after intent filtering)\n`
+    );
+
     return sortedResults.slice(0, limit);
   }
 
@@ -259,13 +396,13 @@ class SearchService {
   getStatus() {
     return {
       initialized: this.isInitialized,
-      methods: ['semantic', 'keyword', 'hybrid'],
+      methods: ["semantic", "keyword", "hybrid"],
       features: {
         vectorSearch: true,
         keywordSearch: true,
         hybridSearch: this.isInitialized,
-        reranking: true
-      }
+        reranking: true,
+      },
     };
   }
 }

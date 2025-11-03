@@ -1,7 +1,16 @@
-import { saveConversation, getConversationHistory, connectToMongoDB, saveUserProfile, getUserProfile, updateUserProfile } from '../repositories/conversationRepository.js';
+import {
+  saveConversation,
+  getConversationHistory,
+  connectToMongoDB,
+  getQueryCache,
+  saveQueryCache,
+  getServerContext as getServerContextFromDB,
+  saveServerContext as saveServerContextToDB
+} from '../repositories/conversationRepository.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config/index.js';
 import MCPToolsManager from '../mcp/mcpToolsManager.js';
+import { formatDiscordMarkdown } from '../utils/formatters.js';
 
 /**
  * Conversation Service - Handles conversation management and AI responses
@@ -83,49 +92,16 @@ class ConversationService {
     return false;
   }
 
-  /**
-   * Extract user information from query
-   * @param {string} query - User query
-   * @returns {Object} Extracted user information
-   */
-  extractUserInfo(query) {
-    const userInfo = {};
-    
-    // Extract name patterns
-    const namePatterns = [
-      /my name is (\w+)/i,
-      /i am (\w+)/i,
-      /call me (\w+)/i,
-      /i'm (\w+)/i,
-      /i'm called (\w+)/i,
-      /my name's (\w+)/i
-    ];
-    
-    for (const pattern of namePatterns) {
-      const match = query.match(pattern);
-      if (match) {
-        userInfo.name = match[1];
-        break;
-      }
-    }
-    
-    // Extract other preferences
-    if (query.toLowerCase().includes('prefer') || query.toLowerCase().includes('like')) {
-      // Could extract preferences here
-    }
-    
-    return userInfo;
-  }
 
   /**
    * Generate AI response using RAG with Discord-style formatting
    * @param {string} query - User query
    * @param {Array} retrievedDocs - Retrieved documents
    * @param {Object} serverContext - Server context information
-   * @param {Object} userProfile - User profile information
-   * @returns {Promise<string>} AI-generated response
+   * @param {Array} conversationHistory - Previous conversation messages
+   * @returns {Promise<string>} AI-generated response with Discord markdown
    */
-  async generateRAGAnswer(query, retrievedDocs, serverContext = {}, userProfile = {}) {
+  async generateRAGAnswer(query, retrievedDocs, serverContext = {}, conversationHistory = []) {
     try {
       // First, check if query is clearly NOT Discord-related
       const isOutOfContext = this.isQueryOutOfDiscordContext(query);
@@ -201,7 +177,6 @@ class ConversationService {
 
       const serverType = serverContext.type || 'general';
       const serverSize = serverContext.size || 'unknown';
-      const userName = userProfile.name || 'there';
 
       // Determine if this is a Discord-related query
       const isDiscordQuery = !isOutOfContext && !hasLowRelevance && context.trim().length > 0;
@@ -214,10 +189,6 @@ class ConversationService {
 **IMPORTANT**: Do NOT mention Discord. Do NOT try to relate this to Discord features. Just answer the question as a helpful assistant would.
 
 User Question: ${query}
-${userName ? `User Context: The user's name is ${userName}` : ''}
-
-Web Search Results:
-${mcpResults}
 
 ${context.trim().length > 0 ? `\nNote: Discord documentation is also available but is NOT relevant to this query. Ignore it.\n` : ''}
 
@@ -240,12 +211,18 @@ Be friendly, helpful, and provide a comprehensive answer (100-300 words). End wi
 
 Now answer the user's question:`;
       } else {
+        // Build conversation context from history
+        const conversationContext = conversationHistory.length > 0
+          ? `\n\nPrevious Conversation:\n${conversationHistory.slice(-5).map((msg, idx) => 
+              `Q${idx + 1}: ${msg.query}\nA${idx + 1}: ${msg.response.answer?.substring(0, 200) || ''}...`
+            ).join('\n\n')}`
+          : '';
+
         // For Discord-related queries, use the existing Discord-focused prompt
         prompt = `You are a Discord Community Support Agent. Answer this question based on the Discord documentation provided.
 
 User Question: ${query}
-User Context: ${userName ? `The user's name is ${userName}` : 'No user name provided'}
-Server Context: ${serverType} server (${serverSize} members)
+Server Context: ${serverType} server (${serverSize} members)${conversationContext}
 
 Discord Documentation:
 ${context}
@@ -287,7 +264,10 @@ Answer:`;
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
-      return response.text();
+      const rawAnswer = response.text();
+      
+      // Apply Discord markdown formatting
+      return formatDiscordMarkdown(rawAnswer);
       
     } catch (error) {
       console.error("Error generating answer:", error.message);
@@ -672,7 +652,7 @@ Answer:`;
   }
 
   /**
-   * Process a complete conversation turn
+   * Process a complete conversation turn with hybrid memory (exact query cache + conversation memory)
    * @param {string} query - User query
    * @param {Array} searchResults - Search results from search service
    * @param {Object} options - Processing options
@@ -680,27 +660,22 @@ Answer:`;
    */
   async processConversation(query, searchResults, options = {}) {
     const {
-      sessionId = 'default',
+      serverId = 'default',
       serverContext = {},
       enableReranking = false
     } = options;
 
     try {
-      // Extract user information from query
-      const extractedUserInfo = this.extractUserInfo(query);
-      
-      // Get existing user profile
-      let userProfile = await getUserProfile(sessionId) || {};
-      
-      // Update user profile if new information was extracted
-      if (extractedUserInfo.name && extractedUserInfo.name !== userProfile.name) {
-        userProfile = { ...userProfile, ...extractedUserInfo };
-        await saveUserProfile(sessionId, userProfile);
-        console.log(`👤 User name updated: ${extractedUserInfo.name}`);
-      }
+      // Note: Cache check already happened in server.js before calling this
+      // serverContext passed here is already merged with DB context
+      const mergedServerContext = serverContext;
 
-      // Generate AI response with user context
-      const answer = await this.generateRAGAnswer(query, searchResults, serverContext, userProfile);
+      // Get conversation history for context
+      const conversationHistory = await getConversationHistory(serverId);
+      console.log(`📜 Retrieved ${conversationHistory.length} previous messages for server ${serverId}`);
+
+      // Generate AI response with conversation context
+      const answer = await this.generateRAGAnswer(query, searchResults, mergedServerContext, conversationHistory);
 
       // Prepare response object
       const response = {
@@ -724,18 +699,27 @@ Answer:`;
           keywordScore: doc.keywordScore,
           crossEncoderScore: doc.crossEncoderScore
         })),
-        sessionId,
+        serverId,
         searchMethod: searchResults[0]?.searchMethod || 'unknown',
         features: {
           hybridSearch: true,
           reranking: enableReranking,
-          serverContext: Object.keys(serverContext).length > 0
+          serverContext: Object.keys(mergedServerContext).length > 0,
+          queryCache: false, // This is a fresh response, not from cache
+          conversationMemory: conversationHistory.length > 0
         },
         timestamp: new Date().toISOString()
       };
 
-      // Save conversation to database (async, don't wait)
-      this.saveConversationAsync(sessionId, query, searchResults, serverContext);
+      // Save exact query cache (async, don't wait)
+      saveQueryCache(query, mergedServerContext, response).catch(error => {
+        console.error('⚠️ Failed to save query cache:', error.message);
+      });
+
+      // Save conversation to memory (async, don't wait)
+      this.saveConversationAsync(serverId, query, response, mergedServerContext).catch(error => {
+        console.error('⚠️ Failed to save conversation:', error.message);
+      });
 
       return response;
 
@@ -747,7 +731,7 @@ Answer:`;
         answer: "I apologize, but I'm having trouble processing your request right now.",
         results: [],
         sources: [],
-        sessionId,
+        serverId,
         searchMethod: 'error',
         error: error.message,
         timestamp: new Date().toISOString()
@@ -757,15 +741,17 @@ Answer:`;
 
   /**
    * Save conversation asynchronously (don't block response)
-   * @param {string} sessionId - Session identifier
+   * @param {string} serverId - Server identifier
    * @param {string} query - User query
-   * @param {Array} results - Search results
+   * @param {Object} response - Complete response object
    * @param {Object} serverContext - Server context
    */
-  async saveConversationAsync(sessionId, query, results, serverContext) {
+  async saveConversationAsync(serverId, query, response, serverContext) {
     try {
-      await saveConversation(sessionId, query, results, {
+      await saveConversation(serverId, query, response, {
         serverContext,
+        resultCount: response.results?.length || 0,
+        rerankingEnabled: response.features?.reranking || false,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
@@ -775,14 +761,14 @@ Answer:`;
   }
 
   /**
-   * Get conversation history for a session
-   * @param {string} sessionId - Session identifier
+   * Get conversation history for a server
+   * @param {string} serverId - Server identifier
    * @param {number} limit - Number of recent conversations to retrieve
    * @returns {Promise<Array>} Conversation history
    */
-  async getConversationHistory(sessionId, limit = 10) {
+  async getConversationHistory(serverId, limit = null) {
     try {
-      return await getConversationHistory(sessionId, limit);
+      return await getConversationHistory(serverId, limit);
     } catch (error) {
       console.error('❌ Failed to get conversation history:', error.message);
       return [];

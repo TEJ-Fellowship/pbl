@@ -6,8 +6,8 @@ import searchService from './services/searchService.js';
 import conversationService from './services/conversationService.js';
 import analyticsService from './services/analyticsService.js';
 import postgresqlConfig from './config/postgresql.js';
-import { validateQuery, validateServerContext, validateSearchOptions, validateSessionId } from './utils/validators.js';
-import { getUserProfile, saveUserProfile } from './repositories/conversationRepository.js';
+import { validateQuery, validateServerContext, validateSearchOptions, validateServerId } from './utils/validators.js';
+import { saveServerContext as saveServerContextToDB, getQueryCache, getServerContext as getServerContextFromDB } from './repositories/conversationRepository.js';
 import { formatErrorMessage } from './utils/formatters.js';
 
 // Load environment variables (allow later values to override existing)
@@ -78,7 +78,7 @@ app.get('/api/health', (req, res) => {
 // Main search endpoint
 app.post('/api/search', async (req, res) => {
   try {
-    const { query, sessionId, serverContext = {}, searchOptions = {} } = req.body;
+    const { query, serverId, serverContext = {}, searchOptions = {} } = req.body;
     
     // Validate inputs
     const queryValidation = validateQuery(query);
@@ -96,9 +96,34 @@ app.post('/api/search', async (req, res) => {
     const sanitizedContext = contextValidation.sanitized;
     const sanitizedOptions = optionsValidation.sanitized;
     
-    console.log(`🔍 Searching for: "${sanitizedQuery}"`);
+    // Validate serverId
+    const serverIdValidation = validateServerId(serverId || 'default');
+    const sanitizedServerId = serverIdValidation.sanitized || 'default';
     
-    // Perform search with server context for intent classification
+    // Get or merge server context from database BEFORE cache check
+    const dbServerContext = await getServerContextFromDB(sanitizedServerId);
+    const mergedServerContext = { ...dbServerContext, ...sanitizedContext };
+    
+    // Save server context if provided
+    if (Object.keys(sanitizedContext).length > 0) {
+      await saveServerContextToDB(sanitizedServerId, sanitizedContext);
+    }
+    
+    // Check cache FIRST (before expensive search) with merged context
+    const cachedResponse = await getQueryCache(sanitizedQuery, mergedServerContext);
+    if (cachedResponse) {
+      console.log(`💾 Cache HIT - returning cached response for: "${sanitizedQuery.substring(0, 50)}..."`);
+      return res.json({
+        ...cachedResponse,
+        cached: true,
+        serverId: sanitizedServerId,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    console.log(`🔍 Cache MISS - performing search for: "${sanitizedQuery}"`);
+    
+    // Perform search with server context for intent classification (only if cache miss)
     const searchResults = await searchService.search(sanitizedQuery, {
       method: sanitizedOptions.method,
       limit: sanitizedOptions.limit,
@@ -114,7 +139,7 @@ app.post('/api/search', async (req, res) => {
         answer: "I couldn't find relevant information about that topic. Please try rephrasing your question.",
         results: [],
         sources: [],
-        sessionId: sessionId || 'default',
+        serverId: sanitizedServerId,
         searchMethod: sanitizedOptions.method,
         features: {
           hybridSearch: searchServiceReady,
@@ -130,8 +155,8 @@ app.post('/api/search', async (req, res) => {
       sanitizedQuery, 
       searchResults, 
       {
-        sessionId: sessionId || 'default',
-        serverContext: sanitizedContext,
+        serverId: sanitizedServerId,
+        serverContext: mergedServerContext, // Pass merged context
         enableReranking: sanitizedOptions.enableReranking
       }
     );
@@ -143,7 +168,7 @@ app.post('/api/search', async (req, res) => {
         searchResults,
         confidenceScore: response.confidenceScore || 0.8,
         searchMethod: sanitizedOptions.method,
-        sessionId: sessionId || 'default',
+        serverId: sanitizedServerId,
         serverContext: sanitizedContext
       }).catch(error => {
         console.error('❌ Analytics tracking failed:', error.message);
@@ -163,9 +188,18 @@ app.post('/api/search', async (req, res) => {
 });
 
 // Server context endpoint
-app.post('/api/server-context', (req, res) => {
+app.post('/api/server-context', async (req, res) => {
   try {
-    const { sessionId, serverType, serverSize, purpose } = req.body;
+    const { serverId, serverType, serverSize, purpose } = req.body;
+    
+    // Validate serverId
+    const serverIdValidation = validateServerId(serverId || 'default');
+    if (!serverIdValidation.isValid) {
+      return res.status(400).json({ 
+        error: serverIdValidation.error,
+        success: false 
+      });
+    }
     
     const contextValidation = validateServerContext({
       type: serverType,
@@ -181,12 +215,16 @@ app.post('/api/server-context', (req, res) => {
     }
     
     const sanitizedContext = contextValidation.sanitized;
+    const sanitizedServerId = serverIdValidation.sanitized;
     
-    console.log(`📝 Server context updated for ${sessionId}: ${sanitizedContext.type} server (${sanitizedContext.size} members) - ${sanitizedContext.purpose}`);
+    // Save server context to database
+    await saveServerContextToDB(sanitizedServerId, sanitizedContext);
+    
+    console.log(`📝 Server context updated for ${sanitizedServerId}: ${sanitizedContext.type} server (${sanitizedContext.size} members) - ${sanitizedContext.purpose}`);
     
     res.json({
       success: true,
-      sessionId: sessionId || 'default',
+      serverId: sanitizedServerId,
       serverContext: {
         ...sanitizedContext,
         timestamp: new Date().toISOString()
@@ -203,28 +241,28 @@ app.post('/api/server-context', (req, res) => {
   }
 });
 
-// Conversation history endpoint
-app.get('/api/conversations/:sessionId', async (req, res) => {
+// Conversation history endpoint (server-based)
+app.get('/api/conversations/:serverId', async (req, res) => {
   try {
-    const { sessionId } = req.params;
-    const { limit = 10 } = req.query;
+    const { serverId } = req.params;
+    const { limit } = req.query;
     
-    const sessionValidation = validateSessionId(sessionId);
-    if (!sessionValidation.isValid) {
+    const serverIdValidation = validateServerId(serverId);
+    if (!serverIdValidation.isValid) {
       return res.status(400).json({ 
-        error: sessionValidation.error,
+        error: serverIdValidation.error,
         success: false 
       });
     }
     
     const conversations = await conversationService.getConversationHistory(
-      sessionValidation.sanitized, 
-      parseInt(limit)
+      serverIdValidation.sanitized,
+      limit ? parseInt(limit) : null
     );
     
     res.json({
       success: true,
-      sessionId: sessionValidation.sanitized,
+      serverId: serverIdValidation.sanitized,
       conversations,
       count: conversations.length
     });
@@ -235,72 +273,6 @@ app.get('/api/conversations/:sessionId', async (req, res) => {
       error: 'Failed to retrieve conversation history',
       success: false,
       message: formatErrorMessage(error, 'conversation history')
-    });
-  }
-});
-
-// User profile endpoints
-app.get('/api/user/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    
-    const sessionValidation = validateSessionId(sessionId);
-    if (!sessionValidation.isValid) {
-      return res.status(400).json({ 
-        error: sessionValidation.error,
-        success: false 
-      });
-    }
-    
-    const userProfile = await getUserProfile(sessionValidation.sanitized);
-    
-    res.json({
-      success: true,
-      sessionId: sessionValidation.sanitized,
-      userProfile: userProfile || {},
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ User profile error:', error.message);
-    res.status(500).json({ 
-      error: 'Failed to retrieve user profile',
-      success: false,
-      message: formatErrorMessage(error, 'user profile')
-    });
-  }
-});
-
-app.post('/api/user/:sessionId', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { name, preferences, ...otherData } = req.body;
-    
-    const sessionValidation = validateSessionId(sessionId);
-    if (!sessionValidation.isValid) {
-      return res.status(400).json({ 
-        error: sessionValidation.error,
-        success: false 
-      });
-    }
-    
-    const userData = { name, preferences, ...otherData };
-    const userProfile = await saveUserProfile(sessionValidation.sanitized, userData);
-    
-    res.json({
-      success: true,
-      sessionId: sessionValidation.sanitized,
-      userProfile: userProfile || {},
-      message: 'User profile updated successfully',
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ User profile update error:', error.message);
-    res.status(500).json({ 
-      error: 'Failed to update user profile',
-      success: false,
-      message: formatErrorMessage(error, 'user profile update')
     });
   }
 });
