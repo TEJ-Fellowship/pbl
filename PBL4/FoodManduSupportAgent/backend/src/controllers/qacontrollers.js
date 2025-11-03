@@ -175,8 +175,9 @@ export const handleChat = async (req, res) => {
     if (sessionId) {
       const recentChats = await Chat.find({ sessionId })
         .sort({ createdAt: -1 })
-        .limit(5)
-        .select("question answer intent orderId");
+        .limit(3) // Reduced from 5 to 3 for faster context loading
+        .select("question answer intent orderId")
+        .lean(); // Use lean() for faster queries (plain JS objects)
       conversationContext = recentChats.reverse();
       if (conversationContext.length > 0) {
         console.log(`💭 Found ${conversationContext.length} previous messages in session`);
@@ -337,7 +338,7 @@ export const handleChat = async (req, res) => {
       let contextualQuestion = ragQuestion;
       if (conversationContext.length > 0) {
         const contextString = conversationContext.map((chat, idx) => {
-          return `Q${idx + 1}: ${chat.question}\nA${idx + 1}: ${chat.answer.substring(0, 200)}...`;
+          return `Q${idx + 1}: ${chat.question}\nA${idx + 1}: ${chat.answer.substring(0, 100)}...`; // Reduced for faster processing
         }).join('\n\n');
         contextualQuestion = `Previous conversation context:\n${contextString}\n\nCurrent question: ${ragQuestion}`;
       }
@@ -346,10 +347,19 @@ export const handleChat = async (req, res) => {
         answer = await askGemini(contextualQuestion, topSections, language);
       } catch (ragError) {
         console.error(`❌ RAG generation error:`, ragError.message);
-        answer =
-          language === "np"
-            ? "माफ गर्नुहोस्, म तपाईंको प्रश्नको जवाफ दिन असमर्थ भएँ। कृपया पछि प्रयास गर्नुहोस्।"
-            : "Sorry, I couldn't generate an answer. Please try again.";
+        
+        // RAG failed, try general knowledge as fallback
+        console.log("🔍 Trying general knowledge search as fallback...");
+        try {
+          answer = await askGemini(question, [], language);
+          console.log("✅ General knowledge search succeeded");
+        } catch (webError) {
+          console.error(`❌ General knowledge search failed:`, webError.message);
+          answer =
+            language === "np"
+              ? "माफ गर्नुहोस्, म तपाईंको प्रश्नको जवाफ दिन असमर्थ भएँ। कृपया पछि प्रयास गर्नुहोस्।"
+              : "Sorry, I couldn't generate an answer. Please try again.";
+        }
       }
     }
 
@@ -415,8 +425,15 @@ export const handleChat = async (req, res) => {
     }
     
     const newChat = new Chat(chatData);
-    await newChat.save();
-    console.log(`💾 Chat saved to database (ID: ${newChat._id})`);
+    const chatDocId = newChat._id; // Store ID before async save
+    
+    // Save chat asynchronously (non-blocking) for better performance
+    newChat.save().then(() => {
+      console.log(`💾 Chat saved to database (ID: ${chatDocId})`);
+    }).catch(err => {
+      console.error(`⚠️ Failed to save chat:`, err.message);
+    });
+    
     console.log(`✅ Request completed in ${duration}ms`);
 
     res.status(200).json({
@@ -425,8 +442,8 @@ export const handleChat = async (req, res) => {
       data: {
         question,
         answer,
-        chatId: newChat._id,
-        timestamp: newChat.createdAt,
+        chatId: chatDocId,
+        timestamp: new Date().toISOString(),
         language,
         intent: intent.intent,
         mcpTool: intent.tool || null,
@@ -721,12 +738,27 @@ export const getChatHistory = async (req, res) => {
   }
 };
 
-// Helper function to load orders from JSON file
+// In-memory cache for orders data
+let ordersCache = null;
+let ordersCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to load orders from JSON file with caching
 const loadOrders = () => {
+  const now = Date.now();
+  
+  // Return cached data if fresh
+  if (ordersCache && (now - ordersCacheTime) < CACHE_TTL) {
+    return ordersCache;
+  }
+  
+  // Load from disk and update cache
   try {
     const ordersPath = path.join(__dirname, "../dummy data/orders.json");
     const ordersData = fs.readFileSync(ordersPath, "utf8");
-    return JSON.parse(ordersData);
+    ordersCache = JSON.parse(ordersData);
+    ordersCacheTime = now;
+    return ordersCache;
   } catch (error) {
     console.error("❌ Error loading orders:", error.message);
     return [];

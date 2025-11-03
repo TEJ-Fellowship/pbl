@@ -98,7 +98,7 @@ export async function hybridSearch(query, topK = 5, options = {}) {
     const queryEmbedding = await getGeminiEmbedding(query);
     const semanticResults = await index.query({
       vector: queryEmbedding,
-      topK: Math.ceil(topK * 2), // Get more results for reranking
+      topK: topK + 2, // Get 2 extra results for reranking (was 2x)
       includeMetadata: true,
       // Optional: filter by metadata if strict filtering is desired
       // filter: inferredTopic ? { topic: { $eq: inferredTopic } } : undefined,
@@ -286,11 +286,9 @@ IMPORTANT TONE GUIDELINES:
 
 ${
   contextSections.length > 0
-    ? `Use the following context from our documentation to provide accurate answers:\n\nContext:\n${context}\n\n`
-    : ""
-}Question: ${question}
-
-Please provide a clear, empathetic, and helpful answer in English. If the information is not available in the context, politely let the user know and suggest contacting support with contact details.`,
+    ? `Use the following context from our documentation to provide accurate answers:\n\nContext:\n${context}\n\nQuestion: ${question}\n\nPlease provide a clear, empathetic, and helpful answer in English based on the context above.`
+    : `Question: ${question}\n\nPlease provide a clear, helpful, and comprehensive answer in English using your general knowledge about food delivery, restaurants, Nepal, or any other relevant information.`
+}`,
 
       np: `तपाईं एक सहायक, मित्रवत् र सहानुभूतिपूर्ण Foodmandu सहायता सहायक हुनुहुन्छ। तपाईंको लक्ष्य Foodmandu सेवाहरूको बारेमा प्रयोगकर्ताहरूको प्रश्नहरूमा मद्दत गर्नु हो, विशेष गरी जब तिनीहरू भोकाएका छन् र आफ्नो अर्डरको लागि पर्खिरहेका छन्।
 
@@ -304,11 +302,9 @@ Please provide a clear, empathetic, and helpful answer in English. If the inform
 
 ${
   contextSections.length > 0
-    ? `हाम्रो कागजातबाट सही जवाफहरू प्रदान गर्न निम्नलिखित सन्दर्भ प्रयोग गर्नुहोस्:\n\nसन्दर्भ:\n${context}\n\n`
-    : ""
-}प्रश्न: ${question}
-
-कृपया नेपालीमा स्पष्ट, सहानुभूतिपूर्ण र सहायक जवाफ प्रदान गर्नुहोस्। यदि जानकारी सन्दर्भमा उपलब्ध छैन भने, विनम्रतापूर्वक प्रयोगकर्तालाई थाहा दिनुहोस् र सम्पर्क विवरण सहित सहायतासँग सम्पर्क गर्न सुझाव दिनुहोस्।`,
+    ? `हाम्रो कागजातबाट सही जवाफहरू प्रदान गर्न निम्नलिखित सन्दर्भ प्रयोग गर्नुहोस्:\n\nसन्दर्भ:\n${context}\n\nप्रश्न: ${question}\n\nकृपया नेपालीमा स्पष्ट, सहानुभूतिपूर्ण र सहायक जवाफ प्रदान गर्नुहोस् र माथिको सन्दर्भमा आधारित भएर।`
+    : `प्रश्न: ${question}\n\nकृपया नेपालीमा स्पष्ट, सहायक र विस्तृत जवाफ प्रदान गर्नुहोस् आफ्नो सामान्य ज्ञान प्रयोग गरेर खाना वितरण, रेस्टुरेन्ट, नेपाल वा कुनै अन्य सम्बन्धित जानकारीको बारेमा।`
+}`,
     };
 
     const prompt = languagePrompts[language] || languagePrompts.en;
@@ -328,10 +324,10 @@ ${
           },
         ],
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.5, // Reduced from 0.7 for faster, more focused responses
           maxOutputTokens: 512, // Reduced from 1024 for faster responses
-          topP: 0.95,
-          topK: 40,
+          topP: 0.9, // Reduced from 0.95 for faster sampling
+          topK: 32, // Reduced from 40 for faster generation
         },
       }),
     });
