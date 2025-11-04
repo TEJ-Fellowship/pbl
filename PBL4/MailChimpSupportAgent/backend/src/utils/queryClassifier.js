@@ -48,13 +48,84 @@ export function detectGreetingOrGeneralQuery(query) {
     q.includes(keyword.toLowerCase())
   );
 
-  // Try to extract name from greeting (e.g., "Hi John, how do I...")
+  // Try to extract name from greeting or introduction
   let extractedName = null;
-  if (isGreeting) {
+
+  // Pattern 1: "this is [name]", "i am [name]", "my name is [name]"
+  const introPatterns = [
+    /\bthis\s+is\s+([a-z]+)\b/i,
+    /\bi\s+am\s+([a-z]+)\b/i,
+    /\bi'?m\s+([a-z]+)\b/i,
+    /\bmy\s+name\s+is\s+([a-z]+)\b/i,
+    /\bcall\s+me\s+([a-z]+)\b/i,
+  ];
+
+  for (const pattern of introPatterns) {
+    const introMatch = q.match(pattern);
+    if (introMatch && introMatch[1]) {
+      const potentialName = introMatch[1].toLowerCase();
+      const commonWords = [
+        "here",
+        "not",
+        "ready",
+        "interested",
+        "sure",
+        "good",
+        "fine",
+        "done",
+        "back",
+        "going",
+        "okay",
+        "ok",
+      ];
+
+      if (!commonWords.includes(potentialName)) {
+        extractedName =
+          potentialName.charAt(0).toUpperCase() + potentialName.slice(1);
+        break;
+      }
+    }
+  }
+
+  // Pattern 2: "Hi [name], ..." or "Hey [name]" (only if no name found yet)
+  if (!extractedName && isGreeting) {
     const nameMatch = q.match(/^(?:hi|hello|hey|greetings)\s+([a-z]+)[\s,]/i);
     if (nameMatch && nameMatch[1]) {
-      extractedName =
-        nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
+      const potentialName = nameMatch[1].toLowerCase();
+      // Filter out common false positives
+      const commonWords = [
+        "how",
+        "there",
+        "everyone",
+        "all",
+        "folks",
+        "guys",
+        "what",
+        "who",
+        "where",
+        "when",
+        "why",
+        "can",
+        "could",
+        "would",
+        "should",
+        "are",
+        "is",
+        "am",
+        "my",
+        "your",
+        "i",
+        "you",
+        "we",
+        "they",
+        "this",
+      ];
+
+      // Only set as name if it's not a common word
+      if (!commonWords.includes(potentialName)) {
+        extractedName =
+          potentialName.charAt(0).toUpperCase() + potentialName.slice(1);
+      }
     }
   }
 
@@ -132,6 +203,27 @@ class QueryClassifier {
 
     const q = query.toLowerCase().trim();
 
+    // Check for personal information queries (conversation memory)
+    if (
+      q.includes("my name") ||
+      q.includes("what is my") ||
+      q.includes("who am i") ||
+      q.includes("do you know me") ||
+      q.includes("remember me") ||
+      q.includes("what did i say") ||
+      q.includes("what did we talk") ||
+      q.includes("our conversation") ||
+      q.includes("earlier i") ||
+      q.includes("i told you")
+    ) {
+      return {
+        category: "personal_info",
+        confidence: 0.95,
+        approach: "CONVERSATION_MEMORY",
+        reasoning: "Query seeks personal information from conversation memory",
+      };
+    }
+
     // Check for MCP tool specific patterns
     if (
       q.includes("best practice") ||
@@ -142,7 +234,13 @@ class QueryClassifier {
       q.includes("send time") ||
       q.includes("best time") ||
       q.includes("best day") ||
-      ((q.includes("list growth") || q.includes("subscriber growth")) &&
+      ((q.includes("list growth") ||
+        q.includes("subscriber growth") ||
+        q.includes("growth rate") ||
+        q.includes("email growth") ||
+        q.includes("calculate growth") ||
+        (q.includes("growth") && q.includes("rate")) ||
+        q.includes("list rate")) &&
         /\d/.test(q))
     ) {
       return {

@@ -52,6 +52,27 @@ async function initializeFAQInterface() {
   return initPromise;
 }
 
+// Helper function to safely save messages with session existence check
+async function saveMessageToMemory(sessionId, role, content, metadata = null) {
+  if (!faqInterface?.memory || !sessionId) {
+    return;
+  }
+
+  try {
+    // Check if session exists, if not create it
+    const exists = await faqInterface.memory.sessionExists(sessionId);
+    if (!exists) {
+      console.log(`📝 Auto-creating session ${sessionId}...`);
+      await faqInterface.memory.createSessionWithId(sessionId, "web-user");
+    }
+
+    // Now save the message
+    await faqInterface.memory.addMessage(sessionId, role, content, metadata);
+  } catch (err) {
+    console.log(`⚠️ Failed to save ${role} message to memory: ${err.message}`);
+  }
+}
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
@@ -59,6 +80,76 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     service: "MailChimp Support Agent API",
   });
+});
+
+// Session initialization/resume endpoint
+app.post("/api/session/init", async (req, res) => {
+  try {
+    const { sessionId, userId } = req.body;
+
+    if (!faqInterface) {
+      await initializeFAQInterface();
+    }
+
+    // If sessionId provided, try to resume or create it
+    if (sessionId && faqInterface.memory) {
+      const exists = await faqInterface.memory.sessionExists(sessionId);
+
+      if (exists) {
+        // Session exists, get stats and resume
+        const stats = await faqInterface.memory.getSessionStats(sessionId);
+        return res.json({
+          status: "success",
+          sessionId: sessionId,
+          resumed: true,
+          messages: stats.messages || 0,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Session doesn't exist, create it in the database with the provided UUID
+        console.log(
+          `Session ${sessionId} not found, creating it in database...`
+        );
+        try {
+          await faqInterface.memory.createSessionWithId(
+            sessionId,
+            userId || "web-user"
+          );
+          console.log(`✅ Created new session: ${sessionId}`);
+          return res.json({
+            status: "success",
+            sessionId: sessionId,
+            resumed: false,
+            messages: 0,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (createErr) {
+          console.error(`❌ Failed to create session: ${createErr.message}`);
+          throw createErr;
+        }
+      }
+    }
+
+    // No sessionId provided, shouldn't happen with current frontend
+    // but fallback to creating one
+    const newSessionId = faqInterface.memory
+      ? await faqInterface.memory.createSession(userId || "web-user")
+      : null;
+
+    res.json({
+      status: "success",
+      sessionId: newSessionId,
+      resumed: false,
+      messages: 0,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("❌ Error initializing session:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 });
 
 // System status endpoint
@@ -118,6 +209,12 @@ app.post("/api/ask", async (req, res) => {
 
     console.log(`📨 Received question: "${question}"`);
 
+    // Get or create session ID (used throughout for memory tracking)
+    const sessionId = req.body.sessionId || `api-${req.ip}-${Date.now()}`;
+
+    // Save user question to memory
+    await saveMessageToMemory(sessionId, "user", question);
+
     // Classify the query using Gemini if available
     const classification = await classifyQuery(
       question,
@@ -139,11 +236,16 @@ app.post("/api/ask", async (req, res) => {
         greetingDetection.isGeneralHelpRequest) &&
       !greetingDetection.mailchimpRelated
     ) {
-      const name = greetingDetection.extractedName || null;
-      const base = name
-        ? `Hey ${name}! Thanks for reaching out.`
-        : "Hey! Thanks for reaching out.";
-      const greetResponse = `${base}\nHow can I help you today? Please specify your question about MailChimp so I can assist you better.\n\nFor example:\n• How do I create a campaign?\n• How do I import contacts?\n• What's a good open rate?\n• How do I set up automation?`;
+      const name = greetingDetection.extractedName;
+      const base =
+        name && name.trim()
+          ? `Hi ${name}! It's great to hear from you again.`
+          : "Hi! Thanks for reaching out.";
+      const greetResponse = `${base}\n\nHow can I help you with Mailchimp today?`;
+
+      // Save assistant response to memory
+      await saveMessageToMemory(sessionId, "assistant", greetResponse);
+
       return res.json({
         status: "success",
         response: greetResponse,
@@ -187,6 +289,10 @@ app.post("/api/ask", async (req, res) => {
         !greetingDetection.mailchimpRelated
       ) {
         const clarification = `I can help with MailChimp-related questions. Could you please specify what you'd like to do in MailChimp? For example: create a campaign, import contacts, set up automation, or view analytics.`;
+
+        // Save assistant response to memory
+        await saveMessageToMemory(sessionId, "assistant", clarification);
+
         return res.json({
           status: "success",
           response: clarification,
@@ -227,6 +333,9 @@ app.post("/api/ask", async (req, res) => {
           toolUsed = mcpResult.tool;
           confidence = mcpResult.confidence || 0.8;
 
+          // Save assistant response to memory
+          await saveMessageToMemory(sessionId, "assistant", response);
+
           return res.json({
             status: "success",
             response,
@@ -248,16 +357,74 @@ app.post("/api/ask", async (req, res) => {
       }
     }
 
+    // Handle conversational queries with simple responses (no sources)
+    if (approach === "CONVERSATIONAL") {
+      console.log("💬 Handling as conversational query...");
+
+      // Retrieve recent messages and recalled context for this session
+      let recentMessages = [];
+      let recalled = [];
+
+      if (faqInterface.memory) {
+        try {
+          recentMessages = await faqInterface.memory.getRecentMessages(
+            sessionId,
+            8
+          );
+          recalled = await faqInterface.memory.recallRelevant(
+            sessionId,
+            question,
+            3
+          );
+        } catch (err) {
+          console.log(`⚠️ Memory retrieval failed: ${err.message}`);
+        }
+      }
+
+      // Generate conversational response using the unified generateAnswer method
+      const conversationalResponse = await faqInterface.generateAnswer(
+        question,
+        [], // No chunks needed for conversational queries
+        {
+          recentMessages,
+          recalled,
+        },
+        "conversational", // source type
+        "conversational" // queryType
+      );
+
+      // Save assistant response to memory
+      await saveMessageToMemory(sessionId, "assistant", conversationalResponse);
+
+      return res.json({
+        status: "success",
+        response: conversationalResponse,
+        classification: {
+          category: queryType,
+          confidence: classification.confidence || 0.9,
+          reasoning: "Conversational query - simple response without sources",
+          approach: "CONVERSATIONAL",
+        },
+        sources: [], // No sources for conversational queries
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     // Semantic/Hybrid search path
     console.log("🔍 Searching knowledge base...");
     const chunks = await faqInterface.searchSimilarChunks(question, 5);
 
     if (chunks.length === 0) {
+      const noResultsResponse = greetingDetection.mailchimpRelated
+        ? "I couldn't find specific information about your question in the MailChimp documentation. Please try rephrasing your question or contact MailChimp support for assistance."
+        : "Could you please specify your question about MailChimp? For example: How do I create a campaign? How do I import contacts? What's a good open rate?";
+
+      // Save assistant response to memory
+      await saveMessageToMemory(sessionId, "assistant", noResultsResponse);
+
       return res.json({
         status: "success",
-        response: greetingDetection.mailchimpRelated
-          ? "I couldn't find specific information about your question in the MailChimp documentation. Please try rephrasing your question or contact MailChimp support for assistance."
-          : "Could you please specify your question about MailChimp? For example: How do I create a campaign? How do I import contacts? What's a good open rate?",
+        response: noResultsResponse,
         classification: {
           category: queryType || classification.category,
           confidence: classification.confidence,
@@ -271,9 +438,38 @@ app.post("/api/ask", async (req, res) => {
 
     console.log(`📚 Found ${chunks.length} relevant sources`);
 
+    // Retrieve memory for context-aware responses
+    let recentMessages = [];
+    let recalled = [];
+
+    if (faqInterface.memory) {
+      try {
+        recentMessages = await faqInterface.memory.getRecentMessages(
+          sessionId,
+          8
+        );
+        recalled = await faqInterface.memory.recallRelevant(
+          sessionId,
+          question,
+          3
+        );
+      } catch (err) {
+        console.log(`⚠️ Memory retrieval failed: ${err.message}`);
+      }
+    }
+
     // Generate answer
     console.log("🤖 Generating answer...");
-    response = await faqInterface.generateAnswer(question, chunks);
+    response = await faqInterface.generateAnswer(
+      question,
+      chunks,
+      {
+        recentMessages,
+        recalled,
+      },
+      "docs", // source type - from documentation
+      "documentation" // queryType
+    );
 
     // Format sources
     sources = chunks.map((chunk, index) => {
@@ -285,8 +481,12 @@ app.post("/api/ask", async (req, res) => {
         category: metadata.category || "general",
         difficulty: metadata.difficulty || "intermediate",
         score: ((chunk.score || 0) * 100).toFixed(1) + "%",
+        url: metadata.url || null,
       };
     });
+
+    // Save assistant response to memory
+    await saveMessageToMemory(sessionId, "assistant", response);
 
     res.json({
       status: "success",

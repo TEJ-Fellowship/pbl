@@ -350,11 +350,110 @@ class MailChimpFAQInterface {
         });
       }
 
+      // Store the answer for rich formatting
+      if (result?.answer) {
+        items.tavilyAnswer = result.answer;
+      }
+
       return items;
     } catch (e) {
       console.log(`🌐 Web search failed: ${e.message}`);
       return [];
     }
+  }
+
+  formatWebSearchResponse(query, chunks, generatedAnswer) {
+    const lines = [];
+
+    // Header
+    lines.push("");
+    lines.push("🌐 Web Search Results");
+    lines.push("━".repeat(60));
+    lines.push("");
+
+    // Query Context
+    lines.push("🔍 Your Query");
+    lines.push("─".repeat(60));
+    lines.push(query);
+    lines.push("");
+
+    // AI-Generated Summary
+    if (generatedAnswer && generatedAnswer.length > 0) {
+      lines.push("📋 Summary");
+      lines.push("─".repeat(60));
+
+      // Clean up the generated answer
+      const cleanAnswer = generatedAnswer
+        .replace(/\*\*/g, "") // Remove markdown bold
+        .replace(/\*/g, "") // Remove markdown italics
+        .trim();
+
+      // Split into paragraphs and format
+      const paragraphs = cleanAnswer
+        .split("\n\n")
+        .filter((p) => p.trim().length > 0);
+      paragraphs.forEach((para, i) => {
+        if (i > 0) lines.push("");
+        lines.push(para.trim());
+      });
+      lines.push("");
+    }
+
+    // Key Points (if answer has bullet points or numbered lists)
+    const bulletPoints = generatedAnswer.match(/^[•\-\*]\s+.+$/gm);
+    const numberedPoints = generatedAnswer.match(/^\d+\.\s+.+$/gm);
+
+    if (bulletPoints && bulletPoints.length > 0) {
+      lines.push("🔑 Key Points");
+      lines.push("─".repeat(60));
+      bulletPoints.slice(0, 5).forEach((point) => {
+        const cleaned = point.replace(/^[•\-\*]\s+/, "").trim();
+        lines.push(`\n✓ ${cleaned}`);
+      });
+      lines.push("");
+    } else if (numberedPoints && numberedPoints.length > 0) {
+      lines.push("🔑 Key Points");
+      lines.push("─".repeat(60));
+      numberedPoints.slice(0, 5).forEach((point, i) => {
+        const cleaned = point.replace(/^\d+\.\s+/, "").trim();
+        lines.push(`\n${i + 1}. ${cleaned}`);
+      });
+      lines.push("");
+    }
+
+    // Sources
+    if (Array.isArray(chunks) && chunks.length > 0) {
+      lines.push("📚 Sources & References");
+      lines.push("─".repeat(60));
+
+      const uniqueSources = [];
+      const seenUrls = new Set();
+
+      chunks.forEach((chunk) => {
+        const url = chunk.metadata?.url;
+        const title = chunk.metadata?.title;
+        if (url && !seenUrls.has(url) && title && title !== "Web Summary") {
+          seenUrls.add(url);
+          uniqueSources.push({ title, url });
+        }
+      });
+
+      uniqueSources.slice(0, 5).forEach((source, i) => {
+        lines.push(`\n[${i + 1}] ${source.title}`);
+        lines.push(`    ${source.url}`);
+      });
+      lines.push("");
+    }
+
+    // Footer
+    lines.push("");
+    lines.push("─".repeat(60));
+    lines.push(
+      "💡 These results are from web search. For Mailchimp-specific help, try asking about Mailchimp features!"
+    );
+    lines.push("");
+
+    return lines.join("\n");
   }
 
   areResultsWeak(results, minScore = 0.15) {
@@ -446,7 +545,8 @@ class MailChimpFAQInterface {
     query,
     relevantChunks,
     memory = { recentMessages: [], recalled: [] },
-    source = "docs"
+    source = "docs",
+    queryType = "documentation"
   ) {
     const memorySnippet = this.formatMemoryForPrompt(
       memory.recentMessages,
@@ -458,35 +558,93 @@ class MailChimpFAQInterface {
     for (let i = recent.length - 1; i >= 0; i--) {
       const m = recent[i];
       if (m.role === "user") {
-        const match = /my name is\s+([a-zA-Z][\w\s'-]+)/i.exec(m.content || "");
-        if (match && match[1]) {
-          userName = match[1].trim();
-          break;
+        // Enhanced name extraction patterns
+        const patterns = [
+          /my name is\s+([a-zA-Z][\w\s'-]+)/i,
+          /i'?m\s+([a-zA-Z][\w\s'-]+)/i,
+          /i am\s+([a-zA-Z][\w\s'-]+)/i,
+          /call me\s+([a-zA-Z][\w\s'-]+)/i,
+          /this is\s+([a-zA-Z][\w\s'-]+)/i,
+        ];
+
+        for (const pattern of patterns) {
+          const match = pattern.exec(m.content || "");
+          if (match && match[1]) {
+            const potentialName = match[1].trim();
+            // Filter out common false positives
+            const commonWords = [
+              "not",
+              "here",
+              "ready",
+              "interested",
+              "sure",
+              "good",
+              "fine",
+              "done",
+              "back",
+            ];
+            if (!commonWords.includes(potentialName.toLowerCase())) {
+              userName = potentialName;
+              break;
+            }
+          }
         }
+        if (userName) break;
       }
     }
-    const context = relevantChunks
-      .map((chunk, index) => {
-        const metadata = chunk.metadata;
-        return `[Source ${index + 1}] ${metadata.title} - ${metadata.heading}
-Category: ${metadata.category} | Difficulty: ${metadata.difficulty}
-Content: ${chunk.metadata.pageContent || "No content available"}`;
-      })
-      .join("\n\n");
 
     // Try Gemini first (only if available), fallback to template-based response
     if (this.geminiAvailable) {
       try {
-        const sourceHint =
-          source === "web"
-            ? "These results are from web search. Provide accurate, helpful information based on the web sources."
-            : source === "mixed"
-            ? "These results combine Mailchimp documentation with web sources. Prioritize Mailchimp docs when available."
-            : "These results are from Mailchimp documentation. Use official Mailchimp terminology and features.";
+        let prompt = "";
 
-        const result = await this.model
-          .generateContent(`You are a professional Mailchimp Support AI. Provide accurate, concise, and friendly explanations using only the provided context.
+        // Different prompts based on query type
+        if (queryType === "conversational") {
+          // CONVERSATIONAL PROMPT - Simple response without sources
+          prompt = `You are a friendly and helpful Mailchimp Support AI. 
+The user has sent you a conversational message (greeting, general chat, or casual question).
 
+User Message: ${query}
+
+Conversation Memory (most recent first, then recalled snippets):
+${memorySnippet}
+
+User Profile:
+Name: ${userName || "(unknown)"}
+
+INSTRUCTIONS:
+1. Respond naturally and warmly to the user's message
+2. If it's a greeting, greet them back and offer help with Mailchimp
+3. If they ask a general question about you, explain you're a Mailchimp Support AI assistant designed to help with Mailchimp-related questions
+4. Keep the response brief and friendly (2-3 sentences max)
+5. If they mention their name, acknowledge it warmly
+6. Do NOT provide technical documentation or sources
+7. Keep it conversational and welcoming
+8. Encourage them to ask specific Mailchimp questions if needed
+
+Response:`;
+        } else {
+          // DOCUMENTATION OR WEB SEARCH PROMPT - Response with sources
+          const context = relevantChunks
+            .map((chunk, index) => {
+              const metadata = chunk.metadata;
+              const sourceUrl = metadata.url ? `\nURL: ${metadata.url}` : "";
+              return `[Source ${index + 1}] ${metadata.title} - ${
+                metadata.heading
+              }
+Category: ${metadata.category} | Difficulty: ${metadata.difficulty}${sourceUrl}
+Content: ${chunk.metadata.pageContent || "No content available"}`;
+            })
+            .join("\n\n");
+
+          const sourceHint =
+            source === "web"
+              ? "These results are from web search. Provide accurate, helpful information and CITE the source URLs when available."
+              : source === "mixed"
+              ? "These results combine Mailchimp documentation with web sources. Prioritize Mailchimp docs when available and cite sources."
+              : "These results are from Mailchimp documentation. Use official Mailchimp terminology and features. Reference the source titles when helpful.";
+
+          prompt = `You are a professional Mailchimp Support AI. Provide accurate, concise, and friendly explanations using the provided context.
 
 User Question: ${query}
 
@@ -497,28 +655,35 @@ User Profile:
 Name: ${userName || "(unknown)"}
 
 Source Type: ${
-          source === "web"
-            ? "Web Search (Tavily)"
-            : source === "mixed"
-            ? "Mixed (Mailchimp Docs + Web)"
-            : "Mailchimp Documentation"
-        }
+            source === "web"
+              ? "Web Search (Tavily)"
+              : source === "mixed"
+              ? "Mixed (Mailchimp Docs + Web)"
+              : "Mailchimp Documentation"
+          }
 ${sourceHint}
 
 Context:
 ${context}
 
-1. Use ONLY the context provided — do not invent or assume information.
-2. Give a clear, step-by-step answer tailored to the user's question.
-3. When context is from Mailchimp docs, reference specific features or UI paths (e.g., "Campaigns → Automations").
-4. When context is from web search, cite sources if URLs are provided.
-5. Preserve any numbered lists or bullet points.
-6. If the context doesn't have enough information, clearly say so.
+INSTRUCTIONS:
+1. **Personal Information Queries**: If the user asks about personal information (like their name, previous questions, etc.), check the Conversation Memory and User Profile sections FIRST.
+2. **Use Context Appropriately**: For Mailchimp-related questions, use ONLY the context provided — do not invent or assume information.
+3. Give a clear, step-by-step answer tailored to the user's question.
+4. ${
+            source === "docs"
+              ? "When referencing information, mention the source title naturally (e.g., 'According to the Campaign Setup guide...')"
+              : "When referencing information from web sources, include the URL or mention 'according to [source title]'"
+          }
+5. Preserve any numbered lists or bullet points from the sources.
+6. If the context doesn't have enough information, clearly say so and suggest contacting Mailchimp support.
 7. Maintain a friendly, knowledgeable tone.
-8. If a user name is provided above, greet the user by name in the opening line.
+8. If a user name is provided and it's their first interaction, acknowledge them by name.
 
-Answer:`);
+Answer:`;
+        }
 
+        const result = await this.model.generateContent(prompt);
         const response = await result.response;
         return response.text();
       } catch (error) {
@@ -530,6 +695,13 @@ Answer:`);
     }
 
     // Fallback: Generate a structured response from the context
+    if (queryType === "conversational") {
+      const greeting = userName
+        ? `Hello ${userName}! I'm your Mailchimp Support AI assistant.`
+        : "Hello! I'm your Mailchimp Support AI assistant.";
+      return `${greeting} I'm here to help you with any questions about Mailchimp features, campaigns, audiences, automations, and more. What would you like to know?`;
+    }
+
     return this.generateTemplateAnswer(
       query,
       relevantChunks,
@@ -688,12 +860,50 @@ Answer:`);
           const industry = industries.find((i) => q.includes(i)) || "default";
           args = { industry };
         } else if (tool === "email_list_growth") {
-          const nums = q.match(/\d+/g) || [];
-          if (nums.length >= 3) {
+          // Smart extraction: try to find context-specific numbers
+          let startingSubscribers = null;
+          let newSubscribers = null;
+          let unsubscribes = null;
+
+          // Pattern matching for contextual extraction
+          const startingMatch = userQuery.match(
+            /starting\s+subscriber[s]?\s+(?:is|are|:)?\s*(\d+)/i
+          );
+          const newMatch = userQuery.match(
+            /new\s+subscriber[s]?\s+(?:is|are|:)?\s*(\d+)/i
+          );
+          const unsubMatch = userQuery.match(
+            /unsubscribe[s]?\s+(?:is|are|:)?\s*(\d+)/i
+          );
+
+          if (startingMatch) startingSubscribers = Number(startingMatch[1]);
+          if (newMatch) newSubscribers = Number(newMatch[1]);
+          if (unsubMatch) unsubscribes = Number(unsubMatch[1]);
+
+          // Fallback: extract all numbers in order
+          if (
+            startingSubscribers === null ||
+            newSubscribers === null ||
+            unsubscribes === null
+          ) {
+            const nums = userQuery.match(/\d+/g) || [];
+            if (nums.length >= 3) {
+              startingSubscribers = startingSubscribers ?? Number(nums[0]);
+              newSubscribers = newSubscribers ?? Number(nums[1]);
+              unsubscribes = unsubscribes ?? Number(nums[2]);
+            }
+          }
+
+          // Check if we have all required parameters
+          if (
+            startingSubscribers !== null &&
+            newSubscribers !== null &&
+            unsubscribes !== null
+          ) {
             args = {
-              startingSubscribers: Number(nums[0]),
-              newSubscribers: Number(nums[1]),
-              unsubscribes: Number(nums[2]),
+              startingSubscribers,
+              newSubscribers,
+              unsubscribes,
             };
           } else {
             // Not enough numbers for this tool
@@ -731,20 +941,65 @@ Answer:`);
         const industry = industries.find((i) => q.includes(i)) || "default";
         args = { industry };
       } else if (
-        (q.includes("list growth") || q.includes("subscriber growth")) &&
+        (q.includes("list growth") ||
+          q.includes("subscriber growth") ||
+          q.includes("growth rate") ||
+          q.includes("email growth") ||
+          q.includes("calculate growth") ||
+          (q.includes("growth") && q.includes("rate")) ||
+          q.includes("list rate")) &&
         /\d/.test(q)
       ) {
         // Only choose if numbers are present
         tool = "email_list_growth";
-        // Extract simple numbers; fallback if not found -> skip MCP
-        const nums = q.match(/\d+/g) || [];
-        if (nums.length >= 3) {
+
+        // Smart extraction: try to find context-specific numbers
+        let startingSubscribers = null;
+        let newSubscribers = null;
+        let unsubscribes = null;
+
+        // Pattern matching for contextual extraction
+        const startingMatch = userQuery.match(
+          /starting\s+subscriber[s]?\s+(?:is|are|:)?\s*(\d+)/i
+        );
+        const newMatch = userQuery.match(
+          /new\s+subscriber[s]?\s+(?:is|are|:)?\s*(\d+)/i
+        );
+        const unsubMatch = userQuery.match(
+          /unsubscribe[s]?\s+(?:is|are|:)?\s*(\d+)/i
+        );
+
+        if (startingMatch) startingSubscribers = Number(startingMatch[1]);
+        if (newMatch) newSubscribers = Number(newMatch[1]);
+        if (unsubMatch) unsubscribes = Number(unsubMatch[1]);
+
+        // Fallback: extract all numbers in order
+        if (
+          startingSubscribers === null ||
+          newSubscribers === null ||
+          unsubscribes === null
+        ) {
+          const nums = userQuery.match(/\d+/g) || [];
+          if (nums.length >= 3) {
+            startingSubscribers = startingSubscribers ?? Number(nums[0]);
+            newSubscribers = newSubscribers ?? Number(nums[1]);
+            unsubscribes = unsubscribes ?? Number(nums[2]);
+          }
+        }
+
+        // Check if we have all required parameters
+        if (
+          startingSubscribers !== null &&
+          newSubscribers !== null &&
+          unsubscribes !== null
+        ) {
           args = {
-            startingSubscribers: Number(nums[0]),
-            newSubscribers: Number(nums[1]),
-            unsubscribes: Number(nums[2]),
+            startingSubscribers,
+            newSubscribers,
+            unsubscribes,
           };
         } else {
+          // Not enough numbers for this tool
           tool = null;
         }
       }
@@ -785,15 +1040,169 @@ Answer:`);
     ) {
       if (parsed) {
         const lines = [];
-        if (parsed.summary) lines.push(parsed.summary);
-        if (Array.isArray(parsed.results)) {
-          lines.push("\nTop sources:");
-          parsed.results.slice(0, 5).forEach((r, i) => {
-            lines.push(`${i + 1}. ${r.title}`);
-            if (r.url) lines.push(`   ${r.url}`);
-            if (r.snippet) lines.push(`   ${r.snippet}`);
-          });
+
+        // Header with icon and title
+        const isBestPractices = tool === "search_email_best_practices";
+        const headerEmoji = isBestPractices ? "📧" : "📈";
+        const headerTitle = isBestPractices
+          ? "Email Marketing Best Practices"
+          : "Email Marketing Trends";
+
+        lines.push("");
+        lines.push(`${headerEmoji} ${headerTitle}`);
+        lines.push("━".repeat(20));
+        lines.push("");
+
+        // Extract and format key points from summary
+        if (parsed.summary) {
+          // Clean up the summary - remove artifacts and noise
+          let cleanSummary = parsed.summary
+            .replace(/\[\.\.\.\]/g, "")
+            .replace(/https?:\/\/[^\s]+/g, "")
+            .replace(/Image shows[^.]*\./g, "")
+            .replace(/Image source:[^\n]*/g, "")
+            .replace(/Updated [A-Z][a-z]+ \d+, \d+/g, "")
+            .replace(/Watch now/gi, "")
+            .replace(/Read more/gi, "")
+            .replace(/Click here/gi, "")
+            .replace(/\s{2,}/g, " ")
+            .trim();
+
+          // Split into sentences and clean each one
+          const sentences = cleanSummary
+            .split(/[.!?]+/)
+            .map((s) => {
+              // Remove leading/trailing numbers and whitespace
+              let cleaned = s
+                .trim()
+                .replace(/^\d+\s*/, "") // Remove leading numbers
+                .replace(/\s+\d+$/, "") // Remove trailing numbers
+                .replace(/^\s*[-•*]\s*/, "") // Remove bullet points
+                .trim();
+
+              // Ensure it starts with capital letter
+              if (cleaned.length > 0) {
+                cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+              }
+
+              return cleaned;
+            })
+            .filter((s) => {
+              // Filter for complete, meaningful sentences
+              return (
+                s.length > 50 &&
+                s.length < 350 &&
+                !s.match(/^\d+$/) && // Not just numbers
+                !s.match(/^(See|Read|Watch|Click)/i) && // Not call-to-action fragments
+                s.split(" ").length >= 6
+              ); // At least 6 words
+            });
+
+          if (sentences.length > 0) {
+            // Key Insights - Take next 3-5 actionable points
+            const keyPoints = sentences.slice(2, 7);
+            if (keyPoints.length > 0) {
+              lines.push("Key Insights");
+              lines.push("─".repeat(20));
+              keyPoints.forEach((point, i) => {
+                if (point && point.length > 30) {
+                  // Ensure point ends with period
+                  const formattedPoint = point.endsWith(".")
+                    ? point
+                    : point + ".";
+                  lines.push(`\n${i + 1}. ${formattedPoint}`);
+                }
+              });
+              lines.push("");
+            }
+          }
         }
+
+        // Actionable Recommendations
+        if (Array.isArray(parsed.results) && parsed.results.length > 0) {
+          lines.push("");
+          lines.push("Actionable Recommendations");
+          lines.push("─".repeat(20));
+
+          // Extract specific recommendations from snippets
+          const recommendations = parsed.results
+            .slice(0, 3)
+            .map((r) => {
+              if (r.snippet) {
+                // Extract short, actionable sentences
+                const actionable = r.snippet
+                  .split(/[.!?]+/)
+                  .map((s) => {
+                    // Clean up each sentence
+                    return s
+                      .trim()
+                      .replace(/^\d+\s*/, "") // Remove leading numbers
+                      .replace(/\s+\d+$/, "") // Remove trailing numbers
+                      .replace(/^\s*[-•*]\s*/, "") // Remove bullet points
+                      .trim();
+                  })
+                  .filter(
+                    (s) =>
+                      s.length > 40 &&
+                      s.length < 400 && // Increased from 200 to allow complete sentences
+                      s.split(" ").length >= 5 && // At least 5 words
+                      (s.toLowerCase().includes("should") ||
+                        s.toLowerCase().includes("ensure") ||
+                        s.toLowerCase().includes("use") ||
+                        s.toLowerCase().includes("make") ||
+                        s.toLowerCase().includes("keep") ||
+                        s.toLowerCase().includes("avoid") ||
+                        s.toLowerCase().includes("consider") ||
+                        s.toLowerCase().includes("implement"))
+                  )
+                  .slice(0, 1);
+
+                if (actionable[0]) {
+                  let rec = actionable[0].trim();
+                  // Ensure it starts with capital letter
+                  if (rec.length > 0) {
+                    rec = rec.charAt(0).toUpperCase() + rec.slice(1);
+                  }
+                  return rec;
+                }
+              }
+              return null;
+            })
+            .filter(Boolean)
+            .slice(0, 5);
+
+          if (recommendations.length > 0) {
+            recommendations.forEach((rec) => {
+              // Ensure recommendation ends with period
+              const formattedRec = rec.endsWith(".") ? rec : rec + ".";
+              lines.push(`\n• ${formattedRec}`); // Changed from ✓ to •
+            });
+            lines.push("");
+          }
+        }
+
+        // References
+        if (Array.isArray(parsed.results) && parsed.results.length > 0) {
+          lines.push("");
+          lines.push("References & Further Reading");
+          lines.push("─".repeat(20));
+          parsed.results.slice(0, 4).forEach((r, i) => {
+            if (r.title && r.url) {
+              lines.push(`\n[${i + 1}] ${r.title}`);
+              lines.push(`    ${r.url}`);
+            }
+          });
+          lines.push("");
+        }
+
+        // Footer note
+        lines.push("");
+        lines.push("─".repeat(60));
+        lines.push(
+          "💬 Need more specific guidance? Feel free to ask follow-up questions!"
+        );
+        lines.push("");
+
         return lines.join("\n");
       }
       return JSON.stringify(result, null, 2);
@@ -809,16 +1218,95 @@ Answer:`);
           readability,
           tips = [],
         } = parsed;
-        const lines = [
-          `Subject: ${subject}`,
-          `Length: ${length} chars | Words: ${wordCount}`,
-          `Spam score: ${spamScore}/100`,
-          `Readability: ${readability}`,
-        ];
-        if (tips.length) {
-          lines.push("Tips:");
-          tips.forEach((t) => lines.push(`- ${t}`));
+
+        const lines = [];
+
+        // Header
+        lines.push("");
+        lines.push("✉️ Email Subject Line Analysis");
+        lines.push("━".repeat(60));
+        lines.push("");
+
+        // Subject Line Display
+        lines.push("📝 Your Subject Line");
+        lines.push("─".repeat(60));
+        lines.push(`"${subject}"`);
+        lines.push("");
+
+        // Performance Metrics
+        lines.push("📊 Performance Metrics");
+        lines.push("─".repeat(60));
+
+        // Length Analysis with recommendation
+        const lengthStatus =
+          length <= 60
+            ? "✅ Optimal"
+            : length <= 70
+            ? "⚠️ Acceptable"
+            : "❌ Too Long";
+        lines.push(`\nLength: ${length} characters ${lengthStatus}`);
+        if (length > 60) {
+          lines.push(
+            `  → Recommended: Keep under 60 characters for better mobile visibility`
+          );
         }
+
+        // Word Count
+        const wordStatus =
+          wordCount >= 3 && wordCount <= 9 ? "✅ Good" : "⚠️ Adjust";
+        lines.push(`\nWord Count: ${wordCount} words ${wordStatus}`);
+
+        // Spam Score with visual indicator
+        const spamStatus =
+          spamScore <= 30
+            ? "✅ Low Risk"
+            : spamScore <= 60
+            ? "⚠️ Medium Risk"
+            : "❌ High Risk";
+        const spamBar =
+          "█".repeat(Math.floor(spamScore / 10)) +
+          "░".repeat(10 - Math.floor(spamScore / 10));
+        lines.push(`\nSpam Score: ${spamScore}/100 ${spamStatus}`);
+        lines.push(`  ${spamBar}`);
+
+        // Readability
+        lines.push(`\nReadability: ${readability}`);
+        lines.push("");
+
+        // Optimization Tips
+        if (tips.length) {
+          lines.push("💡 Optimization Recommendations");
+          lines.push("─".repeat(60));
+          tips.forEach((t) => lines.push(`\n✓ ${t}`));
+          lines.push("");
+        }
+
+        // Quick Wins Section
+        lines.push("");
+        lines.push("🚀 Quick Wins");
+        lines.push("─".repeat(60));
+        const quickWins = [];
+        if (spamScore > 50)
+          quickWins.push("Remove spammy words like 'FREE', 'BUY NOW'");
+        if (length > 60) quickWins.push("Shorten to 50-60 characters");
+        if (!/[!?]/.test(subject) && spamScore < 30)
+          quickWins.push("Consider adding urgency (use sparingly)");
+        if (!subject.match(/[A-Z]/g) || subject === subject.toLowerCase())
+          quickWins.push("Use title case for professionalism");
+
+        if (quickWins.length > 0) {
+          quickWins.forEach((win) => lines.push(`• ${win}`));
+        } else {
+          lines.push(
+            "• Your subject line looks great! Consider A/B testing variations."
+          );
+        }
+
+        lines.push("");
+        lines.push("─".repeat(60));
+        lines.push("💬 Want to test another subject line? Just ask!");
+        lines.push("");
+
         return lines.join("\n");
       }
       return JSON.stringify(result, null, 2);
@@ -826,15 +1314,100 @@ Answer:`);
 
     if (tool === "send_time_optimizer") {
       if (parsed) {
-        const lines = [
-          `Industry: ${parsed.industry}`,
-          `Best days: ${parsed.bestDays?.join(", ") || "N/A"}`,
-          `Best times: ${parsed.bestTimes?.join(", ") || "N/A"}`,
-        ];
-        if (Array.isArray(parsed.generalTips)) {
-          lines.push("General tips:");
-          parsed.generalTips.forEach((t) => lines.push(`- ${t}`));
+        const lines = [];
+
+        // Header
+        lines.push("");
+        lines.push("⏰ Optimal Send Time Strategy");
+        lines.push("━".repeat(60));
+        lines.push("");
+
+        // Industry Context
+        const industryName =
+          parsed.industry.charAt(0).toUpperCase() + parsed.industry.slice(1);
+        lines.push("🏢 Industry Analysis");
+        lines.push("─".repeat(60));
+        lines.push(
+          `Target Industry: ${
+            industryName === "Default"
+              ? "General / Mixed Audience"
+              : industryName
+          }`
+        );
+        lines.push("");
+
+        // Optimal Timing
+        lines.push("📅 Recommended Send Schedule");
+        lines.push("─".repeat(60));
+        lines.push("");
+        lines.push("Best Days of Week:");
+        if (parsed.bestDays && parsed.bestDays.length > 0) {
+          parsed.bestDays.forEach((day) => {
+            lines.push(`  📌 ${day}`);
+          });
         }
+        lines.push("");
+        lines.push("Best Times of Day:");
+        if (parsed.bestTimes && parsed.bestTimes.length > 0) {
+          parsed.bestTimes.forEach((time) => {
+            lines.push(`  🕐 ${time}`);
+          });
+        }
+        lines.push("");
+
+        // Why It Matters
+        lines.push("🎯 Why This Matters");
+        lines.push("─".repeat(60));
+        lines.push(
+          "Sending at the right time can increase your open rates by 20-50%."
+        );
+        lines.push(
+          "These recommendations are based on industry benchmarks and user behavior patterns."
+        );
+        lines.push("");
+
+        // General Best Practices
+        if (
+          Array.isArray(parsed.generalTips) &&
+          parsed.generalTips.length > 0
+        ) {
+          lines.push("💡 Best Practices");
+          lines.push("─".repeat(60));
+          parsed.generalTips.forEach((t) => lines.push(`\n✓ ${t}`));
+          lines.push("");
+        }
+
+        // Advanced Strategies
+        if (
+          Array.isArray(parsed.advancedTips) &&
+          parsed.advancedTips.length > 0
+        ) {
+          lines.push("");
+          lines.push("🚀 Advanced Optimization");
+          lines.push("─".repeat(60));
+          parsed.advancedTips.forEach((t, i) => {
+            lines.push(`\n${i + 1}. ${t}`);
+          });
+          lines.push("");
+        }
+
+        // Action Items
+        lines.push("");
+        lines.push("✅ Next Steps");
+        lines.push("─".repeat(60));
+        lines.push(
+          "• Schedule your next campaign for one of the recommended time slots"
+        );
+        lines.push("• Run A/B tests comparing different send times");
+        lines.push(
+          "• Monitor your analytics to find your audience's sweet spot"
+        );
+        lines.push("• Consider time zones if you have a global audience");
+        lines.push("");
+        lines.push("─".repeat(60));
+        lines.push("💬 Need help with scheduling or analytics? Just ask!");
+        lines.push("");
+
         return lines.join("\n");
       }
       return JSON.stringify(result, null, 2);
@@ -842,20 +1415,123 @@ Answer:`);
 
     if (tool === "email_list_growth_simple" || tool === "email_list_growth") {
       if (parsed) {
-        const lines = [
-          `Starting subscribers: ${parsed.startingSubscribers}`,
-          `New subscribers: ${parsed.newSubscribers}`,
-          `Unsubscribes: ${parsed.unsubscribes}`,
-          `Net growth: ${parsed.netGrowth}`,
-          `Growth rate: ${
-            parsed["email list growth rate"] || parsed.growthRate
-          }`,
-          `Insight: ${parsed.insight}`,
-        ];
-        if (Array.isArray(parsed.tips)) {
-          lines.push("Tips:");
-          parsed.tips.forEach((t) => lines.push(`- ${t}`));
+        const growthRate =
+          parsed["email list growth rate"] || parsed.growthRate || "0%";
+        const isPositive = parsed.netGrowth > 0;
+        const growthEmoji = isPositive
+          ? "📈"
+          : parsed.netGrowth === 0
+          ? "➡️"
+          : "📉";
+
+        const lines = [];
+
+        // Header
+        lines.push("");
+        lines.push("📊 Email List Growth Analysis");
+        lines.push("━".repeat(60));
+        lines.push("");
+
+        // Input Summary
+        lines.push("📥 Your Data");
+        lines.push("─".repeat(60));
+        lines.push(
+          `Starting Subscribers: ${parsed.startingSubscribers.toLocaleString()}`
+        );
+        lines.push(
+          `New Subscribers: ${parsed.newSubscribers.toLocaleString()}`
+        );
+        lines.push(`Unsubscribes: ${parsed.unsubscribes.toLocaleString()}`);
+        lines.push("");
+
+        // Growth Metrics
+        lines.push("🎯 Growth Metrics");
+        lines.push("─".repeat(60));
+        lines.push("");
+
+        // Net Growth with visual
+        const netGrowthFormatted =
+          parsed.netGrowth >= 0
+            ? `+${parsed.netGrowth.toLocaleString()}`
+            : parsed.netGrowth.toLocaleString();
+        lines.push(
+          `Net Subscriber Change: ${growthEmoji} ${netGrowthFormatted}`
+        );
+
+        // Growth Rate with progress bar
+        const rateValue = parseFloat(growthRate);
+        const barLength = Math.min(Math.abs(Math.floor(rateValue / 2)), 30);
+        const progressBar = isPositive
+          ? "█".repeat(barLength)
+          : "▓".repeat(barLength);
+        lines.push(`Growth Rate: ${growthRate}`);
+        if (barLength > 0) {
+          lines.push(`${progressBar}`);
         }
+        lines.push("");
+
+        // Final Count
+        const finalCount = parsed.startingSubscribers + parsed.netGrowth;
+        lines.push(
+          `Current List Size: ${finalCount.toLocaleString()} subscribers`
+        );
+        lines.push("");
+
+        // Performance Assessment
+        lines.push("🔍 Performance Assessment");
+        lines.push("─".repeat(60));
+        lines.push(parsed.insight);
+        lines.push("");
+
+        // Benchmarks
+        lines.push("📊 Industry Benchmarks");
+        lines.push("─".repeat(60));
+        lines.push("• Excellent Growth: > 5% per month");
+        lines.push("• Good Growth: 2-5% per month");
+        lines.push("• Average Growth: 0-2% per month");
+        lines.push("• Negative Growth: < 0%");
+        lines.push("");
+
+        // Actionable Recommendations
+        if (Array.isArray(parsed.tips) && parsed.tips.length > 0) {
+          lines.push("💡 Growth Optimization Strategies");
+          lines.push("─".repeat(60));
+          parsed.tips.forEach((t, i) => {
+            lines.push(`\n${i + 1}. ${t}`);
+          });
+          lines.push("");
+        }
+
+        // Next Steps
+        lines.push("");
+        lines.push("✅ Recommended Actions");
+        lines.push("─".repeat(60));
+        if (isPositive) {
+          lines.push(
+            "• Keep doing what you're doing - your strategy is working!"
+          );
+          lines.push("• Document your successful tactics for future reference");
+          lines.push("• Consider scaling your acquisition efforts");
+          lines.push("• Monitor engagement metrics to ensure quality growth");
+        } else if (parsed.netGrowth === 0) {
+          lines.push("• Analyze your signup forms and calls-to-action");
+          lines.push("• Review your content quality and frequency");
+          lines.push("• Survey subscribers to understand their needs");
+          lines.push("• Implement re-engagement campaigns");
+        } else {
+          lines.push("• Urgent: Review why subscribers are leaving");
+          lines.push("• Audit your email frequency and content relevance");
+          lines.push("• Implement a win-back campaign");
+          lines.push("• Segment your list and personalize content");
+        }
+
+        lines.push("");
+        lines.push("─".repeat(60));
+        lines.push(
+          "💬 Want to calculate growth over a different period? Just ask!"
+        );
+        lines.push("");
+
         return lines.join("\n");
       }
       return JSON.stringify(result, null, 2);
@@ -999,29 +1675,38 @@ Answer:`);
       }
     } else if (classification.approach === "CONVERSATIONAL") {
       console.log("💬 Handling as conversational query...");
-      // For CLI mode, we can provide a simple conversational response
-      if (!this.mcpAvailable && !this.hybridSearchAvailable) {
-        const conversationalResponse =
-          "I can help with MailChimp-related questions. Please specify what you'd like to know about MailChimp.";
-        console.log("\n" + "=".repeat(80));
-        console.log("🤖 MAILCHIMP SUPPORT AGENT RESPONSE:");
-        console.log("=".repeat(80));
-        console.log(conversationalResponse);
-        console.log("=".repeat(80));
 
-        // Save assistant answer to memory
-        if (this.sessionId) {
-          try {
-            await this.memory.addMessage(
-              this.sessionId,
-              "assistant",
-              conversationalResponse
-            );
-          } catch {}
-        }
+      // Generate conversational response using the unified generateAnswer method
+      const conversationalResponse = await this.generateAnswer(
+        question,
+        [], // No chunks needed for conversational queries
+        {
+          recentMessages,
+          recalled,
+        },
+        "conversational", // source type
+        "conversational" // queryType
+      );
 
-        return;
+      console.log("\n" + "=".repeat(80));
+      console.log("🤖 MAILCHIMP SUPPORT AGENT RESPONSE:");
+      console.log("=".repeat(80));
+      console.log(conversationalResponse);
+      console.log("=".repeat(80));
+
+      // Save assistant answer to memory
+      if (this.sessionId) {
+        try {
+          await this.memory.addMessage(
+            this.sessionId,
+            "assistant",
+            conversationalResponse
+          );
+        } catch {}
       }
+
+      // Return early - no sources needed for conversational queries
+      return;
     }
 
     // Detect if question is Mailchimp-related
@@ -1127,7 +1812,8 @@ Answer:`);
         recentMessages,
         recalled,
       },
-      answerSource
+      answerSource,
+      "documentation" // queryType - using documentation for Mailchimp queries
     );
 
     // Check if the answer indicates insufficient information from docs
@@ -1158,27 +1844,40 @@ Answer:`);
             recentMessages,
             recalled,
           },
-          answerSource
+          answerSource,
+          "documentation" // queryType - still documentation even with web results
         );
       }
     }
 
-    console.log("\n" + "=".repeat(80));
-    console.log("📋 ANSWER:");
-    console.log("=".repeat(80));
-    console.log(answer);
-    console.log("=".repeat(80));
-
-    // Show sources
-    console.log("\n📖 Sources:");
-    chunks.forEach((chunk, index) => {
-      const metadata = chunk.metadata;
-      console.log(`${index + 1}. ${metadata.title} - ${metadata.heading}`);
-      console.log(
-        `   Category: ${metadata.category} | Difficulty: ${metadata.difficulty}`
+    // Format output based on source type
+    if (answerSource === "web" || answerSource === "mixed") {
+      // Use rich web search formatting
+      const formattedResponse = this.formatWebSearchResponse(
+        question,
+        chunks,
+        answer
       );
-      console.log(`   Score: ${(chunk.score * 100).toFixed(1)}%`);
-    });
+      console.log(formattedResponse);
+    } else {
+      // Standard documentation response
+      console.log("\n" + "=".repeat(80));
+      console.log("📋 ANSWER:");
+      console.log("=".repeat(80));
+      console.log(answer);
+      console.log("=".repeat(80));
+
+      // Show sources
+      console.log("\n📖 Sources:");
+      chunks.forEach((chunk, index) => {
+        const metadata = chunk.metadata;
+        console.log(`${index + 1}. ${metadata.title} - ${metadata.heading}`);
+        console.log(
+          `   Category: ${metadata.category} | Difficulty: ${metadata.difficulty}`
+        );
+        console.log(`   Score: ${(chunk.score * 100).toFixed(1)}%`);
+      });
+    }
 
     // Save assistant answer to memory
     if (this.sessionId) {

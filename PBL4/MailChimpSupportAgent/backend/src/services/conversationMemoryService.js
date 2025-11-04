@@ -19,6 +19,19 @@ class ConversationMemoryService {
     }
   }
 
+  async createSessionWithId(sessionId, userId = "anonymous") {
+    const client = await this.pool.connect();
+    try {
+      await client.query(
+        `INSERT INTO conversation_sessions (id, user_id) VALUES ($1, $2)`,
+        [sessionId, userId]
+      );
+      return sessionId;
+    } finally {
+      client.release();
+    }
+  }
+
   async addMessage(sessionId, role, content, metadata = null) {
     const client = await this.pool.connect();
     try {
@@ -91,6 +104,19 @@ class ConversationMemoryService {
     }
   }
 
+  async sessionExists(sessionId) {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        `SELECT EXISTS(SELECT 1 FROM conversation_sessions WHERE id = $1) AS exists`,
+        [sessionId]
+      );
+      return result.rows[0].exists;
+    } finally {
+      client.release();
+    }
+  }
+
   async getSessionStats(sessionId) {
     const client = await this.pool.connect();
     try {
@@ -108,5 +134,3 @@ class ConversationMemoryService {
 }
 
 export default ConversationMemoryService;
-
-
