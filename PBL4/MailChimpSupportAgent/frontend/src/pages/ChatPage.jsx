@@ -7,6 +7,9 @@ import {
   Copy,
   ThumbsUp,
   ThumbsDown,
+  FileText,
+  RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import supportAgentService from "../services/mcpService";
@@ -22,6 +25,8 @@ const ChatPage = () => {
   ]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionInitialized, setSessionInitialized] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -31,6 +36,36 @@ const ChatPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Initialize session on mount
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        console.log("🔧 Initializing chat session...");
+        const sessionData = await supportAgentService.initializeSession();
+        setSessionInfo(sessionData);
+        setSessionInitialized(true);
+        console.log("✅ Session initialized successfully");
+
+        // If session was resumed and has previous messages, show a notification
+        if (sessionData.resumed && sessionData.messages > 0) {
+          const resumeMessage = {
+            id: Date.now(),
+            text: `Welcome back! You have ${sessionData.messages} message(s) from your previous conversation. Feel free to continue or start fresh!`,
+            sender: "bot",
+            timestamp: new Date().toLocaleTimeString(),
+            isSystemMessage: true,
+          };
+          setMessages((prev) => [...prev, resumeMessage]);
+        }
+      } catch (error) {
+        console.error("❌ Failed to initialize session:", error);
+        setSessionInitialized(false);
+      }
+    };
+
+    initSession();
+  }, []);
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -61,6 +96,8 @@ const ChatPage = () => {
         sources: response.sources || [],
         toolUsed: response.toolUsed || null,
         classification: response.classification || null,
+        confidence: response.confidence || null, // MCP tool confidence
+        isGreeting: response.isGreeting || false,
       };
 
       // Log classification if available
@@ -70,6 +107,12 @@ const ChatPage = () => {
             response.classification.confidence * 100
           ).toFixed(1)}% confidence)`
         );
+        if (response.classification.approach) {
+          console.log(`Approach: ${response.classification.approach}`);
+        }
+        if (response.classification.reasoning) {
+          console.log(`Reasoning: ${response.classification.reasoning}`);
+        }
       }
 
       setMessages((prev) => [...prev, botMessage]);
@@ -99,6 +142,34 @@ const ChatPage = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleNewConversation = async () => {
+    try {
+      // Reset session ID and get a new one
+      supportAgentService.resetSession();
+
+      // Initialize new session
+      const sessionData = await supportAgentService.initializeSession();
+      setSessionInfo(sessionData);
+
+      // Clear messages
+      setMessages([
+        {
+          id: 1,
+          text: "Hello! I'm your MailChimp support assistant. This is a fresh conversation. How can I help you today?",
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+
+      console.log(
+        "✅ New conversation started with session:",
+        sessionData.sessionId
+      );
+    } catch (error) {
+      console.error("❌ Failed to start new conversation:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
@@ -116,16 +187,43 @@ const ChatPage = () => {
                 MailChimp Support Assistant
               </h1>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">Online</p>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    sessionInitialized
+                      ? "bg-green-500 animate-pulse"
+                      : "bg-yellow-500"
+                  }`}
+                ></div>
+                <p
+                  className={`text-sm font-medium ${
+                    sessionInitialized ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {sessionInitialized ? "Connected" : "Connecting..."}
+                </p>
+                {sessionInfo && sessionInfo.resumed && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    Session Resumed
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-gray-100/80 px-4 py-2 rounded-full">
-          <p className="text-sm text-gray-600 font-medium">
-            {new Date().toLocaleDateString()}
-          </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleNewConversation}
+            className="flex items-center gap-2 bg-gradient-to-br from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl ring-2 ring-yellow-400/20"
+            title="Start a new conversation"
+          >
+            <RefreshCw size={16} />
+            New Chat
+          </button>
+          <div className="bg-gray-100/80 px-4 py-2 rounded-full">
+            <p className="text-sm text-gray-600 font-medium">
+              {new Date().toLocaleDateString()}
+            </p>
+          </div>
         </div>
       </header>
 
@@ -154,7 +252,77 @@ const ChatPage = () => {
               <p className="text-base leading-relaxed whitespace-pre-wrap font-medium">
                 {message.text}
               </p>
-              <div className="flex items-center justify-between mt-2">
+
+              {/* Sources Section */}
+              {message.sender === "bot" &&
+                Array.isArray(message.sources) &&
+                message.sources.length > 0 &&
+                message.classification?.category !== "conversational" &&
+                message.classification?.category !== "greeting" &&
+                message.classification?.category !== "personal_info" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText size={14} className="text-gray-600" />
+                      <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                        Sources ({message.sources.length})
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {message.sources.map((source, idx) => (
+                        <div
+                          key={source?.id || idx}
+                          className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-800 truncate">
+                                {source?.title || "Untitled"}
+                              </p>
+                              {source?.heading && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {source.heading}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                {source?.category && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                                    {source.category}
+                                  </span>
+                                )}
+                                {source?.difficulty && (
+                                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                                    {source.difficulty}
+                                  </span>
+                                )}
+                                {source?.score && (
+                                  <span className="text-xs text-gray-500">
+                                    Score: {source.score}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {source?.url && (
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0 p-1 hover:bg-gray-200 rounded transition-colors"
+                                title="View source"
+                              >
+                                <ExternalLink
+                                  size={14}
+                                  className="text-gray-600"
+                                />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              <div className="flex items-center justify-between mt-3 pt-2">
                 <span className="text-xs text-gray-500">
                   {message.timestamp}
                 </span>
@@ -162,19 +330,19 @@ const ChatPage = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => copyToClipboard(message.text)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                      title="Copy"
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Copy response"
                     >
                       <Copy size={12} className="text-gray-500" />
                     </button>
                     <button
-                      className="p-1 hover:bg-gray-100 rounded"
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
                       title="Good response"
                     >
                       <ThumbsUp size={12} className="text-gray-500" />
                     </button>
                     <button
-                      className="p-1 hover:bg-gray-100 rounded"
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
                       title="Poor response"
                     >
                       <ThumbsDown size={12} className="text-gray-500" />
