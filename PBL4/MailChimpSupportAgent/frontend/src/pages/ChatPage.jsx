@@ -1,6 +1,18 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, ArrowLeft, Bot, User, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Bot,
+  User,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+  FileText,
+  RefreshCw,
+  ExternalLink,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import supportAgentService from "../services/mcpService";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([
@@ -13,6 +25,8 @@ const ChatPage = () => {
   ]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionInitialized, setSessionInitialized] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -23,44 +37,95 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+  // Initialize session on mount
+  useEffect(() => {
+    const initSession = async () => {
+      try {
+        console.log("🔧 Initializing chat session...");
+        const sessionData = await supportAgentService.initializeSession();
+        setSessionInfo(sessionData);
+        setSessionInitialized(true);
+        console.log("✅ Session initialized successfully");
 
+        // If session was resumed and has previous messages, show a notification
+        if (sessionData.resumed && sessionData.messages > 0) {
+          const resumeMessage = {
+            id: Date.now(),
+            text: `Welcome back! You have ${sessionData.messages} message(s) from your previous conversation. Feel free to continue or start fresh!`,
+            sender: "bot",
+            timestamp: new Date().toLocaleTimeString(),
+            isSystemMessage: true,
+          };
+          setMessages((prev) => [...prev, resumeMessage]);
+        }
+      } catch (error) {
+        console.error("❌ Failed to initialize session:", error);
+        setSessionInitialized(false);
+      }
+    };
+
+    initSession();
+  }, []);
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || isLoading) return;
+
+    const question = inputText.trim();
     const userMessage = {
       id: messages.length + 1,
-      text: inputText,
+      text: question,
       sender: "user",
       timestamp: new Date().toLocaleTimeString(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userMessage.text })
-      });
-      const data = await res.json();
-      const answerText = data?.answer || 'Sorry, I could not generate an answer right now.';
+      // Call the actual API
+      const response = await supportAgentService.askQuestion(question);
 
       const botMessage = {
-        id: userMessage.id + 1,
-        text: answerText,
-        sender: 'bot',
+        id: messages.length + 2,
+        text:
+          response.response ||
+          "I apologize, but I couldn't generate a response. Please try again.",
+        sender: "bot",
         timestamp: new Date().toLocaleTimeString(),
+        sources: response.sources || [],
+        toolUsed: response.toolUsed || null,
+        classification: response.classification || null,
+        confidence: response.confidence || null, // MCP tool confidence
+        isGreeting: response.isGreeting || false,
       };
-      setMessages(prev => [...prev, botMessage]);
-    } catch (e) {
-      const botMessage = {
-        id: userMessage.id + 1,
-        text: 'There was a problem contacting the support service. Please try again.',
-        sender: 'bot',
+
+      // Log classification if available
+      if (response.classification?.category) {
+        console.log(
+          `Query classified as: ${response.classification.category} (${(
+            response.classification.confidence * 100
+          ).toFixed(1)}% confidence)`
+        );
+        if (response.classification.approach) {
+          console.log(`Approach: ${response.classification.approach}`);
+        }
+        if (response.classification.reasoning) {
+          console.log(`Reasoning: ${response.classification.reasoning}`);
+        }
+      }
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      const errorMessage = {
+        id: messages.length + 2,
+        text: `Sorry, I encountered an error: ${error.message}. Please make sure the backend server is running on http://localhost:3001`,
+        sender: "bot",
         timestamp: new Date().toLocaleTimeString(),
+        isError: true,
       };
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +142,34 @@ const ChatPage = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleNewConversation = async () => {
+    try {
+      // Reset session ID and get a new one
+      supportAgentService.resetSession();
+
+      // Initialize new session
+      const sessionData = await supportAgentService.initializeSession();
+      setSessionInfo(sessionData);
+
+      // Clear messages
+      setMessages([
+        {
+          id: 1,
+          text: "Hello! I'm your MailChimp support assistant. This is a fresh conversation. How can I help you today?",
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
+
+      console.log(
+        "✅ New conversation started with session:",
+        sessionData.sessionId
+      );
+    } catch (error) {
+      console.error("❌ Failed to start new conversation:", error);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
@@ -90,16 +183,47 @@ const ChatPage = () => {
               <Bot size={20} className="text-black" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">MailChimp Support Assistant</h1>
+              <h1 className="font-bold text-gray-900 text-lg">
+                MailChimp Support Assistant
+              </h1>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">Online</p>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    sessionInitialized
+                      ? "bg-green-500 animate-pulse"
+                      : "bg-yellow-500"
+                  }`}
+                ></div>
+                <p
+                  className={`text-sm font-medium ${
+                    sessionInitialized ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {sessionInitialized ? "Connected" : "Connecting..."}
+                </p>
+                {sessionInfo && sessionInfo.resumed && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    Session Resumed
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
-        <div className="bg-gray-100/80 px-4 py-2 rounded-full">
-          <p className="text-sm text-gray-600 font-medium">{new Date().toLocaleDateString()}</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleNewConversation}
+            className="flex items-center gap-2 bg-gradient-to-br from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl ring-2 ring-yellow-400/20"
+            title="Start a new conversation"
+          >
+            <RefreshCw size={16} />
+            New Chat
+          </button>
+          <div className="bg-gray-100/80 px-4 py-2 rounded-full">
+            <p className="text-sm text-gray-600 font-medium">
+              {new Date().toLocaleDateString()}
+            </p>
+          </div>
         </div>
       </header>
 
@@ -117,7 +241,7 @@ const ChatPage = () => {
                 <Bot size={20} className="text-black" />
               </div>
             )}
-            
+
             <div
               className={`max-w-[75%] rounded-3xl px-6 py-5 shadow-lg ${
                 message.sender === "user"
@@ -128,7 +252,77 @@ const ChatPage = () => {
               <p className="text-base leading-relaxed whitespace-pre-wrap font-medium">
                 {message.text}
               </p>
-              <div className="flex items-center justify-between mt-2">
+
+              {/* Sources Section */}
+              {message.sender === "bot" &&
+                Array.isArray(message.sources) &&
+                message.sources.length > 0 &&
+                message.classification?.category !== "conversational" &&
+                message.classification?.category !== "greeting" &&
+                message.classification?.category !== "personal_info" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText size={14} className="text-gray-600" />
+                      <span className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                        Sources ({message.sources.length})
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {message.sources.map((source, idx) => (
+                        <div
+                          key={source?.id || idx}
+                          className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-800 truncate">
+                                {source?.title || "Untitled"}
+                              </p>
+                              {source?.heading && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {source.heading}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                {source?.category && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                                    {source.category}
+                                  </span>
+                                )}
+                                {source?.difficulty && (
+                                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                                    {source.difficulty}
+                                  </span>
+                                )}
+                                {source?.score && (
+                                  <span className="text-xs text-gray-500">
+                                    Score: {source.score}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {source?.url && (
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-shrink-0 p-1 hover:bg-gray-200 rounded transition-colors"
+                                title="View source"
+                              >
+                                <ExternalLink
+                                  size={14}
+                                  className="text-gray-600"
+                                />
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              <div className="flex items-center justify-between mt-3 pt-2">
                 <span className="text-xs text-gray-500">
                   {message.timestamp}
                 </span>
@@ -136,15 +330,21 @@ const ChatPage = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => copyToClipboard(message.text)}
-                      className="p-1 hover:bg-gray-100 rounded"
-                      title="Copy"
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Copy response"
                     >
                       <Copy size={12} className="text-gray-500" />
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded" title="Good response">
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Good response"
+                    >
                       <ThumbsUp size={12} className="text-gray-500" />
                     </button>
-                    <button className="p-1 hover:bg-gray-100 rounded" title="Poor response">
+                    <button
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                      title="Poor response"
+                    >
                       <ThumbsDown size={12} className="text-gray-500" />
                     </button>
                   </div>
@@ -168,8 +368,14 @@ const ChatPage = () => {
             <div className="bg-white/90 border border-gray-200/50 rounded-3xl px-6 py-5 shadow-lg backdrop-blur-sm ring-1 ring-gray-200/30">
               <div className="flex space-x-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                <div
+                  className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.1s" }}
+                ></div>
+                <div
+                  className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.2s" }}
+                ></div>
               </div>
             </div>
           </div>
@@ -188,14 +394,14 @@ const ChatPage = () => {
               placeholder="Ask me anything about MailChimp..."
               className="w-full px-6 py-4 border border-gray-300/30 rounded-3xl resize-none focus:outline-none focus:ring-4 focus:ring-yellow-400/30 focus:border-transparent bg-white/80 backdrop-blur-sm shadow-lg scrollbar-hide transition-all duration-300 flex items-center"
               rows="1"
-              style={{ 
-                height: "56px", 
-                maxHeight: "120px", 
+              style={{
+                height: "56px",
+                maxHeight: "120px",
                 MozAppearance: "textfield",
                 WebkitAppearance: "none",
                 appearance: "none",
                 scrollbarWidth: "none",
-                msOverflowStyle: "none"
+                msOverflowStyle: "none",
               }}
             />
           </div>

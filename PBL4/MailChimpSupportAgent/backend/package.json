@@ -10,9 +10,11 @@
     "ingest": "node src/ingest.js",
     "enhanced-ingest": "node src/enhanced-ingest.js",
     "faq": "node src/faq-interface.js",
+    "server": "node src/server.js",
     "db:setup": "node src/database/setupDatabase.js",
     "db:populate": "node src/database/populateDatabase.js",
     "mcp:server": "node src/mcpServer/mcpServer.js",
+    "mcp:client": "node src/mcpClient/main.js",
     "mcpServer:inspect": "DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector npm run mcp:server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
