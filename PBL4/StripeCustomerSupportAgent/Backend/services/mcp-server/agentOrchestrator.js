@@ -5,16 +5,90 @@ import CodeValidatorTool from "../mcp-tools/codeValidatorTool.js";
 import DateTimeTool from "../mcp-tools/dateTimeTool.js";
 import CurrencyConverterTool from "../mcp-tools/currencyConverterTool.js";
 import AIToolSelectionService from "./aiToolSelectionService.js";
+import MCPClient from "../mcp-client/mcpClient.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * MCP Agent Orchestrator
- * Coordinates multiple MCP tools for intelligent Stripe support
+ * Coordinates multiple MCP tools using MCP protocol (not direct calls)
  */
 class AgentOrchestrator {
   constructor() {
-    this.tools = new Map();
+    this.tools = new Map(); // Keep for tool info/config, but execution via MCP
+    this.mcpClient = new MCPClient();
     this.aiToolSelection = new AIToolSelectionService();
-    this.initializeTools();
+    this.isInitialized = false;
+    this.initializeTools(); // Initialize tool references for config/metadata
+  }
+
+  /**
+   * Initialize MCP client connection
+   */
+  async initialize() {
+    if (this.isInitialized) {
+      console.log("✅ [AgentOrchestrator] Already initialized");
+      return true;
+    }
+
+    try {
+      console.log("🔧 [AgentOrchestrator] Initializing MCP connection...");
+
+      const serverScript = path.join(__dirname, "mcpServer.js");
+      const serverConfig = {
+        command: "node",
+        args: [serverScript],
+        env: {
+          ...process.env,
+        },
+      };
+
+      console.log(`📋 [AgentOrchestrator] Server script: ${serverScript}`);
+      console.log(
+        `📋 [AgentOrchestrator] Server script exists: ${fs.existsSync(
+          serverScript
+        )}`
+      );
+      console.log(
+        `📋 [AgentOrchestrator] Full path: ${path.resolve(serverScript)}`
+      );
+
+      this.isInitialized = await this.mcpClient.initialize(serverConfig);
+
+      if (this.isInitialized) {
+        console.log("✅ [AgentOrchestrator] MCP orchestrator ready");
+        const availableTools = this.mcpClient.getAvailableTools();
+        console.log(
+          `📋 [AgentOrchestrator] Tools from client: ${availableTools.join(
+            ", "
+          )}`
+        );
+      } else {
+        console.error("❌ [AgentOrchestrator] Initialization failed");
+        console.error(
+          "❌ [AgentOrchestrator] MCP client connected:",
+          this.mcpClient.isConnected
+        );
+        console.error(
+          "❌ [AgentOrchestrator] MCP client ready:",
+          this.mcpClient.isReady()
+        );
+      }
+
+      return this.isInitialized;
+    } catch (error) {
+      console.error(
+        "❌ [AgentOrchestrator] Initialization error:",
+        error.message
+      );
+      console.error("❌ [AgentOrchestrator] Error stack:", error.stack);
+      this.isInitialized = false;
+      return false;
+    }
   }
 
   /**
@@ -87,7 +161,7 @@ class AgentOrchestrator {
   }
 
   /**
-   *3. Fallback rule-based tool selection (original implementation)
+   *3. Fallback rule-based tool selection (pattern-based)
    * @param {string} query - User query
    * @param {number} confidence - Document confidence
    * @param {Array} enabledTools - Enabled tools
@@ -96,69 +170,63 @@ class AgentOrchestrator {
   fallbackRuleBasedSelection(query, confidence = 0.5, enabledTools = null) {
     const toolDecisions = [];
 
-    console.log("🔄 Using rule-based fallback selection");
+    console.log("🔄 [AgentOrchestrator] Using rule-based fallback selection");
 
-    // Always check if tools should be used based on query content
-    for (const [toolName, tool] of this.tools) {
-      // Check if tool is enabled (if enabledTools array is provided)
-      if (enabledTools && !enabledTools.includes(toolName)) {
-        console.log(`❌ ${toolName} skipped (disabled)`);
-        continue;
-      }
-
-      if (tool.shouldUse && tool.shouldUse(query)) {
-        toolDecisions.push(toolName);
-        console.log(`✅ ${toolName} triggered by query content`);
-      }
-    }
-
-    // Low confidence fallback to web search (only if enabled)
+    // Low confidence fallback to web search
     if (confidence < 0.6 && !toolDecisions.includes("web_search")) {
       if (!enabledTools || enabledTools.includes("web_search")) {
         toolDecisions.push("web_search");
-        console.log("✅ web_search triggered by low confidence");
-      } else {
         console.log(
-          "❌ web_search skipped (disabled) - low confidence fallback"
+          "✅ [AgentOrchestrator] web_search triggered by low confidence"
         );
       }
     }
 
-    // High confidence queries might still benefit from specific tools
-    if (confidence >= 0.6) {
-      // Check for specific patterns that warrant tool usage
-      if (
-        this.hasMathPatterns(query) &&
-        !toolDecisions.includes("calculator")
-      ) {
+    // Pattern-based tool selection
+    if (this.hasMathPatterns(query) && !toolDecisions.includes("calculator")) {
+      if (!enabledTools || enabledTools.includes("calculator")) {
         toolDecisions.push("calculator");
-        console.log("✅ calculator triggered by math patterns");
+        console.log(
+          "✅ [AgentOrchestrator] calculator triggered by math patterns"
+        );
       }
+    }
 
-      if (
-        this.hasStatusPatterns(query) &&
-        !toolDecisions.includes("status_checker")
-      ) {
+    if (
+      this.hasStatusPatterns(query) &&
+      !toolDecisions.includes("status_checker")
+    ) {
+      if (!enabledTools || enabledTools.includes("status_checker")) {
         toolDecisions.push("status_checker");
-        console.log("✅ status_checker triggered by status patterns");
+        console.log(
+          "✅ [AgentOrchestrator] status_checker triggered by status patterns"
+        );
       }
+    }
 
-      if (
-        this.hasCodePatterns(query) &&
-        !toolDecisions.includes("code_validator")
-      ) {
+    if (
+      this.hasCodePatterns(query) &&
+      !toolDecisions.includes("code_validator")
+    ) {
+      if (!enabledTools || enabledTools.includes("code_validator")) {
         toolDecisions.push("code_validator");
-        console.log("✅ code_validator triggered by code patterns");
+        console.log(
+          "✅ [AgentOrchestrator] code_validator triggered by code patterns"
+        );
       }
+    }
 
-      if (this.hasTimePatterns(query) && !toolDecisions.includes("datetime")) {
+    if (this.hasTimePatterns(query) && !toolDecisions.includes("datetime")) {
+      if (!enabledTools || enabledTools.includes("datetime")) {
         toolDecisions.push("datetime");
-        console.log("✅ datetime triggered by time patterns");
+        console.log(
+          "✅ [AgentOrchestrator] datetime triggered by time patterns"
+        );
       }
     }
 
     console.log(
-      `🎯 Rule-based selection complete: ${toolDecisions.length} tools selected`
+      `🎯 [AgentOrchestrator] Rule-based selection complete: ${toolDecisions.length} tools selected`
     );
     return toolDecisions;
   }
@@ -226,35 +294,56 @@ class AgentOrchestrator {
   }
 
   /**
-   * 4. Execute selected tools
+   * 4. Execute selected tools via MCP protocol
    * @param {Array} toolNames - Array of tool names to execute
    * @param {string} query - User query
    * @returns {Object} - Combined tool results
    */
   async executeTools(toolNames, query) {
+    // Ensure MCP client is initialized
+    if (!this.isInitialized) {
+      const initialized = await this.initialize();
+      if (!initialized) {
+        throw new Error("MCP orchestrator not initialized");
+      }
+    }
+
+    console.log(
+      `🚀 [AgentOrchestrator] Executing ${toolNames.length} tools via MCP protocol...`
+    );
+
     const results = {};
     const errors = [];
 
-    console.log(`🚀 Executing ${toolNames.length} tools...`);
-
-    // Execute tools in parallel for better performance
+    // Execute tools via MCP protocol (not direct calls)
     const toolPromises = toolNames.map(async (toolName) => {
       try {
-        const tool = this.tools.get(toolName);
-        if (!tool) {
-          throw new Error(`Tool ${toolName} not found`);
+        console.log(`⚙️ [AgentOrchestrator] Executing ${toolName} via MCP...`);
+
+        // Call tool via MCP protocol instead of direct method call
+        const mcpResult = await this.mcpClient.callTool(toolName, {
+          query: query,
+        });
+
+        console.log(`📥 [AgentOrchestrator] ${toolName} MCP result:`, {
+          success: mcpResult.success,
+          hasParsedResult: !!mcpResult.parsedResult,
+        });
+
+        if (mcpResult.success && mcpResult.parsedResult) {
+          return {
+            toolName,
+            result: mcpResult.parsedResult,
+            success: true,
+          };
+        } else {
+          throw new Error(mcpResult.error || "MCP tool call failed");
         }
-
-        console.log(`⚙️  Executing ${toolName}...`);
-        const result = await tool.execute(query);
-
-        return {
-          toolName,
-          result,
-          success: true,
-        };
       } catch (error) {
-        console.error(`❌ Error executing ${toolName}:`, error.message);
+        console.error(
+          `❌ [AgentOrchestrator] ${toolName} error:`,
+          error.message
+        );
         return {
           toolName,
           result: null,
@@ -270,14 +359,25 @@ class AgentOrchestrator {
     toolResults.forEach(({ toolName, result, success, error }) => {
       if (success && result) {
         results[toolName] = result;
+        console.log(
+          `✅ [AgentOrchestrator] ${toolName} completed - Confidence: ${(
+            result.confidence * 100
+          ).toFixed(1)}%`
+        );
       } else {
         errors.push({ toolName, error });
       }
     });
 
-    // Generate combined response using the better formatToolResults method
+    // Generate combined response
     const combinedResponse = this.formatToolResults(results, errors);
     const overallConfidence = this.calculateOverallConfidence(results);
+
+    console.log(
+      `✅ [AgentOrchestrator] Execution complete - Overall confidence: ${(
+        overallConfidence * 100
+      ).toFixed(1)}%`
+    );
 
     return {
       success: true,
@@ -286,7 +386,7 @@ class AgentOrchestrator {
       combinedResponse,
       overallConfidence,
       toolsUsed: toolNames,
-      message: combinedResponse, // Use the same formatted response
+      message: combinedResponse,
     };
   }
 
@@ -437,6 +537,14 @@ class AgentOrchestrator {
   }
 
   /**
+   * Check if ready (MCP client connected)
+   * @returns {boolean}
+   */
+  isReady() {
+    return this.isInitialized && (this.mcpClient?.isReady() || false);
+  }
+
+  /**
    * Check if any tools are available
    * @returns {boolean} - Whether any tools are available
    */
@@ -450,6 +558,17 @@ class AgentOrchestrator {
    */
   getAvailableTools() {
     return Array.from(this.tools.keys());
+  }
+
+  /**
+   * Close MCP connection
+   */
+  async close() {
+    if (this.mcpClient) {
+      await this.mcpClient.close();
+    }
+    this.isInitialized = false;
+    console.log("🔌 [AgentOrchestrator] MCP connection closed");
   }
 }
 

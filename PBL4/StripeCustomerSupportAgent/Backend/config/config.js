@@ -7,7 +7,7 @@ dotenv.config();
 const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-  GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.0-flash",
+  GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.5-flash",
 
   // PostgreSQL Configuration
   DB_HOST: process.env.DB_HOST,
@@ -37,6 +37,10 @@ const config = {
   MAX_CHUNKS: process.env.MAX_CHUNKS,
   MAX_SOURCES: process.env.MAX_SOURCES,
   BATCH_SIZE: process.env.BATCH_SIZE,
+
+  // MCP Integration
+  GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
+  GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
 
   // Rate Limiting
   RATE_LIMIT_DELAY: process.env.RATE_LIMIT_DELAY,

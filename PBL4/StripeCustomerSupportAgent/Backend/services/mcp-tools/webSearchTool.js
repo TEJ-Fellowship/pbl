@@ -1,42 +1,101 @@
-import axios from "axios";
+import config from "../../config/config.js";
 import dotenv from "dotenv";
+import axios from "axios";
 
 // Load environment variables
 dotenv.config();
 
 /**
- * Web Search Tool for Stripe Documentation Fallback
- * Uses Google Custom Search API to find recent Stripe documentation and updates
+ * Web Search Tool - Uses Google Custom Search API for web search
+ * Wrapped as MCP tool for RPC requests
  */
 class WebSearchTool {
   constructor() {
     this.name = "web_search";
     this.description =
       "Search the web for recent information and official sources (Stripe and non-Stripe).";
-    this.apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-    this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
-    this.baseUrl = "https://www.googleapis.com/customsearch/v1";
+    this.isInitialized = true; // No initialization needed for direct API calls
     this.cache = new Map();
     this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
     this.currentIsStripeQuery = false;
+
+    // Google Custom Search API configuration
+    this.apiKey = config.GOOGLE_SEARCH_API_KEY;
+    this.engineId = config.GOOGLE_SEARCH_ENGINE_ID;
+    this.baseUrl = "https://www.googleapis.com/customsearch/v1";
+
+    // Rate limiting for Google Search API - prevent quota exhaustion
+    this.lastRequestTime = 0;
+    this.minDelayBetweenRequests = 1000; // 1 second minimum (Google has 100 queries/day free tier)
+    this.requestQueue = [];
+    this.isProcessingQueue = false;
+
+    // Track API quota usage
+    this.dailyRequestCount = 0;
+    this.lastResetDate = new Date().toDateString();
   }
 
   /**
-   * Execute web search for Stripe-related queries
+   * Initialize Google Custom Search API configuration
+   * @returns {Promise<boolean>}
+   */
+  async initialize() {
+    if (!this.apiKey || !this.engineId) {
+      console.error(
+        "❌ [WebSearchTool] Google Search API credentials not configured"
+      );
+      console.error(
+        "💡 [WebSearchTool] Please set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID in your .env file"
+      );
+      return false;
+    }
+
+    console.log("✅ [WebSearchTool] Google Custom Search API configured");
+    return true;
+  }
+
+  /**
+   * Execute web search via Google Custom Search API
    * @param {string} query - User query
    * @returns {Object} - Search results with confidence score
    */
   async execute(query) {
     try {
-      console.log(`🔍 Web Search Tool: Processing "${query}"`);
+      console.log(`🔍 [WebSearchTool] Processing "${query}"`);
 
-      if (!this.apiKey || !this.searchEngineId) {
+      // Check API credentials
+      if (!this.apiKey || !this.engineId) {
+        const initialized = await this.initialize();
+        if (!initialized) {
+          return {
+            success: false,
+            result: null,
+            confidence: 0,
+            message:
+              "Google Custom Search API not configured. Please set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID.",
+          };
+        }
+      }
+
+      // Check daily quota (reset daily)
+      const currentDate = new Date().toDateString();
+      if (currentDate !== this.lastResetDate) {
+        this.dailyRequestCount = 0;
+        this.lastResetDate = currentDate;
+        console.log("📅 [WebSearchTool] Daily quota reset");
+      }
+
+      // Check if we've exceeded daily quota (100 free queries/day)
+      if (this.dailyRequestCount >= 100) {
+        console.warn(
+          "⚠️ [WebSearchTool] Daily quota limit reached (100 queries/day)"
+        );
         return {
           success: false,
           result: null,
           confidence: 0,
           message:
-            "Google Custom Search API not configured. Please set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID environment variables.",
+            "Google Custom Search API daily quota exceeded. Please try again tomorrow or upgrade your plan.",
         };
       }
 
@@ -50,17 +109,103 @@ class WebSearchTool {
       if (!wantsRefresh && this.cache.has(cacheKey)) {
         const cached = this.cache.get(cacheKey);
         if (Date.now() - cached.timestamp < this.cacheTimeout) {
-          console.log("📋 Using cached search results");
+          console.log("📋 [WebSearchTool] Using cached search results");
           return cached.result;
         }
       }
 
-      // Determine context and perform search
+      // Determine context and build search query
       const isStripe = this.isStripeQuery(query);
       this.currentIsStripeQuery = isStripe;
       const searchQuery = this.buildSearchQuery(query, isStripe);
-      const extraParams = this.getAdditionalSearchParams(query, isStripe);
-      const results = await this.performSearch(searchQuery, extraParams);
+
+      console.log(
+        `🔍 [WebSearchTool] Calling Google Custom Search API with query: "${searchQuery}"`
+      );
+
+      // Rate limiting: Enforce minimum delay between requests
+      const timeSinceLastRequest = Date.now() - this.lastRequestTime;
+      if (timeSinceLastRequest < this.minDelayBetweenRequests) {
+        const waitTime = this.minDelayBetweenRequests - timeSinceLastRequest;
+        console.log(
+          `⏳ [WebSearchTool] Throttling: Waiting ${Math.round(
+            waitTime
+          )}ms since last request (min ${
+            this.minDelayBetweenRequests
+          }ms required)...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+
+      // Update last request time
+      this.lastRequestTime = Date.now();
+
+      // Build Google Custom Search API request
+      const searchParams = this.buildGoogleSearchParams(searchQuery, isStripe);
+
+      console.log(
+        `🔧 [WebSearchTool] Google Search API request: ${JSON.stringify(
+          searchParams,
+          null,
+          2
+        )}`
+      );
+
+      // Make API request
+      let apiResponse;
+      try {
+        const response = await axios.get(this.baseUrl, {
+          params: searchParams,
+          timeout: 10000, // 10 second timeout
+        });
+
+        apiResponse = response.data;
+        this.dailyRequestCount++;
+
+        console.log(
+          `✅ [WebSearchTool] Google API call successful (quota: ${this.dailyRequestCount}/100)`
+        );
+      } catch (error) {
+        console.error(
+          `❌ [WebSearchTool] Google API call failed:`,
+          error.message
+        );
+
+        // Handle specific Google API errors
+        if (error.response) {
+          const status = error.response.status;
+          const errorData = error.response.data;
+
+          if (status === 429) {
+            return {
+              success: false,
+              result: null,
+              confidence: 0,
+              error:
+                "Google Custom Search API quota exceeded. Please try again later.",
+            };
+          } else if (status === 400) {
+            return {
+              success: false,
+              result: null,
+              confidence: 0,
+              error: `Google Custom Search API error: ${
+                errorData?.error?.message || "Invalid request"
+              }`,
+            };
+          }
+        }
+
+        return {
+          success: false,
+          result: null,
+          confidence: 0,
+          error: error.message,
+        };
+      }
+
+      // Transform Google API response to our expected format
+      const results = this.transformGoogleResponse(apiResponse, searchQuery);
 
       // Cache results (always overwrite if refresh)
       this.cache.set(cacheKey, {
@@ -70,7 +215,8 @@ class WebSearchTool {
 
       return results;
     } catch (error) {
-      console.error("❌ Web Search Tool Error:", error);
+      console.error("❌ [WebSearchTool] Error:", error.message);
+      console.error("❌ [WebSearchTool] Stack:", error.stack);
       return {
         success: false,
         result: null,
@@ -78,6 +224,133 @@ class WebSearchTool {
         error: error.message,
       };
     }
+  }
+
+  /**
+   * Transform Google Custom Search API response to our expected format
+   * @param {Object} googleResponse - Response from Google Custom Search API
+   * @param {string} query - Original query
+   * @returns {Object} - Transformed results
+   */
+  transformGoogleResponse(googleResponse, query) {
+    try {
+      // Handle null/undefined response
+      if (!googleResponse) {
+        console.warn(
+          "⚠️ [WebSearchTool] transformGoogleResponse received null/undefined"
+        );
+        return {
+          success: false,
+          results: [],
+          confidence: 0,
+          message: "No response from Google Custom Search API",
+        };
+      }
+
+      // Check for API errors
+      if (googleResponse.error) {
+        console.error(
+          "❌ [WebSearchTool] Google API Error:",
+          googleResponse.error
+        );
+        return {
+          success: false,
+          results: [],
+          confidence: 0,
+          message: `Google Custom Search API error: ${
+            googleResponse.error.message || "Unknown error"
+          }`,
+        };
+      }
+
+      // Extract results from Google API response
+      // Google Custom Search API format: { items: [...] }
+      let results = [];
+
+      if (googleResponse.items && Array.isArray(googleResponse.items)) {
+        console.log(
+          `✅ [WebSearchTool] Found ${googleResponse.items.length} items in Google API response`
+        );
+        results = googleResponse.items.map((item, index) => ({
+          title: item.title || `Result ${index + 1}`,
+          url: item.link || item.url || "",
+          description: item.snippet || item.htmlSnippet || "",
+          publishedDate:
+            item.pagemap?.metatags?.[0]?.["article:published_time"] ||
+            item.pagemap?.metatags?.[0]?.["og:updated_time"] ||
+            null,
+          relevanceScore: 0.9 - index * 0.1, // Higher relevance for Google results
+        }));
+      } else if (googleResponse.searchInformation?.totalResults === "0") {
+        console.warn("⚠️ [WebSearchTool] No results found for query");
+      } else {
+        console.warn(
+          "⚠️ [WebSearchTool] Unexpected Google API response format"
+        );
+        console.warn(
+          "⚠️ [WebSearchTool] Response keys:",
+          Object.keys(googleResponse)
+        );
+      }
+
+      // Calculate confidence
+      const confidence = this.calculateConfidence(results, query);
+
+      // Generate formatted response message
+      const message =
+        results.length > 0
+          ? this.generateResponse(results, query)
+          : "No results found for your query.";
+
+      return {
+        success: results.length > 0,
+        results,
+        confidence,
+        message,
+      };
+    } catch (error) {
+      console.error(
+        "❌ [WebSearchTool] Error transforming Google API response:",
+        error.message
+      );
+      return {
+        success: false,
+        result: null,
+        confidence: 0,
+        error: `Failed to parse Google API response: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Build Google Custom Search API parameters
+   * @param {string} query - Search query
+   * @param {boolean} isStripe - Whether this is a Stripe-specific query
+   * @returns {Object} - API parameters
+   */
+  buildGoogleSearchParams(query, isStripe = false) {
+    const params = {
+      key: this.apiKey,
+      cx: this.engineId,
+      q: query,
+      num: 10, // Number of results
+      safe: "active", // Safe search
+    };
+
+    // Add site filters for Stripe queries
+    if (isStripe) {
+      params.q = `${query} site:stripe.com OR site:support.stripe.com OR site:docs.stripe.com`;
+    }
+
+    // Add date filters if query mentions recent/current/latest
+    if (
+      /\b(recent|current|latest|new|updated|2025|2024|now|today)\b/i.test(query)
+    ) {
+      // Google allows date restrictions in the query itself
+      params.q = `${params.q} (2025 OR 2024)`;
+    }
+
+    return params;
   }
 
   /**
@@ -125,57 +398,6 @@ class WebSearchTool {
     }
 
     return searchQuery;
-  }
-
-  /**
-   * Perform actual search using Google Custom Search API
-   * @param {string} searchQuery - Search query
-   * @returns {Object} - Search results
-   */
-  async performSearch(searchQuery, extraParams = {}) {
-    try {
-      const response = await axios.get(this.baseUrl, {
-        params: {
-          key: this.apiKey,
-          cx: this.searchEngineId, // Custom Search Engine ID
-          q: searchQuery,
-          num: 10, // Number of results
-          safe: "active",
-          fields: "items(title,link,snippet,pagemap)",
-          ...extraParams,
-        },
-        timeout: 10000,
-      });
-
-      const results = this.processSearchResults(response.data);
-      const confidence = this.calculateConfidence(results, searchQuery);
-
-      return {
-        success: true,
-        results,
-        confidence,
-        message: this.generateResponse(results, searchQuery),
-      };
-    } catch (error) {
-      console.error("❌ Google Custom Search API Error:", error.message);
-      throw new Error(`Search failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Process and filter search results
-   * @param {Object} apiResponse - Raw API response
-   * @returns {Array} - Processed results
-   */
-  processSearchResults(apiResponse) {
-    if (!apiResponse.items || apiResponse.items.length === 0) {
-      return [];
-    }
-
-    return apiResponse.items
-      .filter((result) => this.isRelevantResult(result))
-      .map((result) => this.formatResult(result))
-      .slice(0, 5); // Limit to top 5 results
   }
 
   /**
