@@ -27,8 +27,9 @@ const config = {
   PORT: process.env.PORT,
   HOST: process.env.HOST,
 
-  // Security
+  // Security & Authentication
   JWT_SECRET: process.env.JWT_SECRET,
+  JWT_EXPIRATION: process.env.JWT_EXPIRATION || "7d",
 
   // Frontend
   FRONTEND_URL: process.env.FRONTEND_URL,

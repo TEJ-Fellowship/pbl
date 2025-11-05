@@ -6,14 +6,18 @@ import {
   DASHBOARD,
   CUSTOMERS,
   KNOWLEDGE,
+  LOGIN_ROUTE,
+  SIGNUP_ROUTE,
 } from "../../constants/routes";
 import AnimatedText from "../animated/AnimatedText";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../../context/AuthContext";
 
 const LandingSidebar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOthersOpen, setIsOthersOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, isAnonymous, logout } = useAuth();
 
   const mainMenuItems = [
     { name: "Home", path: LANDING_PAGE },
@@ -24,12 +28,40 @@ const LandingSidebar = () => {
     { name: "Others", path: "#" },
   ];
 
-  const otherMenuItems = [
-    { name: "Tools", path: "#" },
-    { name: "Admin", path: "#" },
-    { name: "Settings", path: "#" },
-    { name: "Profile", path: "#" },
-  ];
+  // Dynamic menu items based on authentication status
+  const getOtherMenuItems = () => {
+    const baseItems = [
+      { name: "Tools", path: "#" },
+      { name: "Admin", path: "#" },
+      { name: "Settings", path: "#" },
+      { name: "Profile", path: "#" },
+    ];
+
+    if (isAuthenticated && !isAnonymous) {
+      // Authenticated user - show logout
+      return [
+        ...baseItems,
+        { name: "Logout", path: "#", action: "logout", icon: "logout" },
+      ];
+    } else {
+      // Anonymous user - show login/signup
+      return [
+        ...baseItems,
+        { name: "Login", path: LOGIN_ROUTE, icon: "login" },
+        { name: "Sign Up", path: SIGNUP_ROUTE, icon: "person_add" },
+      ];
+    }
+  };
+
+  const otherMenuItems = getOtherMenuItems();
+
+  const handleMenuItemClick = (item) => {
+    if (item.action === "logout") {
+      logout();
+      setIsOthersOpen(false);
+      setIsMenuOpen(false);
+    }
+  };
 
   return (
     <div className="h-[92vh] flex items-center justify-center gap-[1.8vw] w-[10vw]">
@@ -118,23 +150,73 @@ const LandingSidebar = () => {
                         transition={{ duration: 0.2 }}
                         className="absolute bottom-0 left-[120%] mt-5 w-48 bg-stone-800/75 backdrop-blur-md rounded-lg shadow-2xl border border-gray-600/50 py-2 z-[100]"
                       >
-                        {otherMenuItems.map((item) => (
-                          <Link
-                            key={item.name}
-                            to={item.path}
-                            onClick={() => {
-                              // setIsMenuOpen(false);
-                              setIsOthersOpen(false);
-                            }}
-                            className={`block px-4 py-2 text-sm text-text-dark hover:bg-gray-700/50 transition-colors ${
-                              location.pathname === item.path
-                                ? "bg-primary/20 text-primary"
-                                : ""
-                            }`}
-                          >
-                            {item.name}
-                          </Link>
-                        ))}
+                        {/* User info section for authenticated users */}
+                        {isAuthenticated && !isAnonymous && user && (
+                          <div className="px-4 py-2 border-b border-gray-600/50 mb-2">
+                            <p className="text-xs text-gray-400">
+                              Signed in as
+                            </p>
+                            <p className="text-sm text-text-dark font-medium truncate">
+                              {user.name || user.email}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Guest user indicator */}
+                        {isAnonymous && (
+                          <div className="px-4 py-2 border-b border-gray-600/50 mb-2">
+                            <p className="text-xs text-gray-400">Guest Mode</p>
+                            <p className="text-sm text-amber-400 font-medium">
+                              🎭 Anonymous User
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Menu items */}
+                        {otherMenuItems.map((item) => {
+                          if (item.action === "logout") {
+                            return (
+                              <button
+                                key={item.name}
+                                onClick={() => handleMenuItemClick(item)}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                              >
+                                {item.icon && (
+                                  <span className="material-symbols-outlined text-base">
+                                    {item.icon}
+                                  </span>
+                                )}
+                                {item.name}
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <Link
+                              key={item.name}
+                              to={item.path}
+                              onClick={() => {
+                                setIsOthersOpen(false);
+                              }}
+                              className={`flex items-center gap-2 px-4 py-2 text-sm text-text-dark hover:bg-gray-700/50 transition-colors ${
+                                location.pathname === item.path
+                                  ? "bg-primary/20 text-primary"
+                                  : ""
+                              } ${
+                                item.name === "Login" || item.name === "Sign Up"
+                                  ? "border-t border-gray-600/50 text-blue-400 hover:text-blue-300"
+                                  : ""
+                              }`}
+                            >
+                              {item.icon && (
+                                <span className="material-symbols-outlined text-base">
+                                  {item.icon}
+                                </span>
+                              )}
+                              {item.name}
+                            </Link>
+                          );
+                        })}
                       </motion.div>
                     )}
                   </AnimatePresence>

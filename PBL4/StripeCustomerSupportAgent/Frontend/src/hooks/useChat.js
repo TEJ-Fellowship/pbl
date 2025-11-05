@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { apiService } from "../services/api.js";
+import { useAuth } from "../context/AuthContext";
 
 export const useChat = () => {
+  const { user, incrementMessageCount } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -93,6 +95,29 @@ export const useChat = () => {
     }
   }, [currentSessionId]);
 
+  // Reset chat state when user changes (e.g., after logout)
+  useEffect(() => {
+    // Clear chat state when user ID changes
+    setMessages([
+      {
+        id: 1,
+        text: "Hello! I'm your Stripe.AI assistant. How can I help you with Stripe integration or billing questions today?",
+        sender: "ai",
+        timestamp: new Date(),
+      },
+    ]);
+    setCurrentSessionId(null);
+    setChatHistory([]);
+    setInputValue("");
+    setError(null);
+    setSources([]);
+    setConfidence(null);
+
+    // Clear localStorage session data
+    localStorage.removeItem("stripe_current_session");
+    localStorage.removeItem("stripe_chat_history");
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadExistingSession = async () => {
     try {
       // If we have a current session, try to load its history
@@ -178,7 +203,7 @@ export const useChat = () => {
       }
 
       console.log("🔄 Initializing new chat session...");
-      const response = await apiService.createSession("web_user", {
+      const response = await apiService.createSession(user?.id, {
         project: "stripe_support",
         context: "customer_support",
       });
@@ -211,7 +236,7 @@ export const useChat = () => {
       const response = await apiService.sendMessage(
         messageText,
         currentSessionId,
-        "web_user"
+        user?.id
       );
 
       const aiMessage = {
@@ -233,6 +258,9 @@ export const useChat = () => {
       );
       console.log("📊 Confidence:", response.data.confidence);
       console.log("📚 Sources:", response.data.sources?.length || 0);
+
+      // Increment message count for anonymous users
+      incrementMessageCount();
 
       // Update chat history
       updateChatHistory(messageText);
@@ -297,7 +325,7 @@ export const useChat = () => {
   const handleNewChat = async () => {
     try {
       console.log("🆕 Creating new chat session...");
-      const response = await apiService.createSession("web_user", {
+      const response = await apiService.createSession(user?.id, {
         project: "stripe_support",
         context: "customer_support",
       });

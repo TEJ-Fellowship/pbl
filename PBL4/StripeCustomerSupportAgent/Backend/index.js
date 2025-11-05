@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
 // Import routes
+import authRoutes from "./routes/auth.js";
 import chatRoutes from "./routes/chat.js";
 import healthRoutes from "./routes/health.js";
 import integratedChatRoutes from "./routes/integratedChat.js";
@@ -42,6 +43,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 // Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/integrated-chat", integratedChatRoutes);
@@ -51,8 +53,9 @@ app.get("/", (req, res) => {
   console.log("🏠 Root endpoint accessed");
   res.json({
     message: "Stripe Support API is running!",
-    version: "1.0.0",
+    version: "2.0.0",
     endpoints: {
+      auth: "/api/auth",
       health: "/api/health",
       chat: "/api/chat",
       integratedChat: "/api/integrated-chat",

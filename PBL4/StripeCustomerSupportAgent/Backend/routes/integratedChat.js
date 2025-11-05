@@ -17,6 +17,7 @@ import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
 import config from "../config/config.js";
 import { generateConversationalResponse as generateConversationalResponseService } from "../scripts/integratedChat.js";
+import { optionalAuth, requireUserId } from "../middleware/optionalAuth.js";
 
 /**
  * Generate simple conversational response from memory only
@@ -34,6 +35,9 @@ async function generateConversationalResponse(
 }
 
 const router = express.Router();
+
+// Apply optional auth to all integrated chat routes
+router.use(optionalAuth);
 
 // Initialize services (singleton pattern)
 let services = null;
@@ -89,14 +93,23 @@ async function initializeServices() {
 }
 
 // Enhanced chat endpoint with full integrated functionality
-router.post("/", async (req, res) => {
+router.post("/", requireUserId, async (req, res) => {
   try {
-    const { message, sessionId, userId = "web_user" } = req.body;
+    const { message, sessionId } = req.body;
+    // Get userId from auth middleware (authenticated) or request body (anonymous)
+    const userId = req.userId;
 
     if (!message || !sessionId) {
       return res.status(400).json({
         success: false,
         error: "Message and sessionId are required",
+      });
+    }
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "User ID is required. Please log in or provide a user ID.",
       });
     }
 
@@ -547,10 +560,18 @@ router.get("/health", async (req, res) => {
 });
 
 // Manually trigger conversation summarization for a session
-router.post("/summarize/:sessionId", async (req, res) => {
+router.post("/summarize/:sessionId", requireUserId, async (req, res) => {
   try {
     const { sessionId } = req.params;
-    const { userId = "web_user" } = req.body;
+    // Get userId from auth middleware (authenticated) or request body (anonymous)
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "User ID is required. Please log in or provide a user ID.",
+      });
+    }
 
     console.log(`📝 Manual summarization request for session: ${sessionId}`);
 

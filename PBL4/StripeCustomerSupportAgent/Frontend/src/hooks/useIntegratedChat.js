@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { apiService } from "../services/api.js";
+import { useAuth } from "../context/AuthContext";
 
 export const useIntegratedChat = () => {
+  const { user, incrementMessageCount } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -80,11 +82,41 @@ export const useIntegratedChat = () => {
     }
   }, [currentSessionId]);
 
+  // Reset chat state when user changes (e.g., after logout)
+  useEffect(() => {
+    // Clear chat state when user ID changes
+    setMessages([
+      {
+        id: 1,
+        text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!\n\n💡 **Quick Commands:**\n• Type `sample` to see example questions\n• Type `mcp` to check system status\n• Ask me anything about Stripe!",
+        sender: "ai",
+        timestamp: new Date(),
+      },
+    ]);
+    setCurrentSessionId(null);
+    setChatHistory([]);
+    setInputValue("");
+    setError(null);
+    setSources([]);
+    setConfidence(null);
+    setMcpToolsUsed([]);
+    setMcpConfidence(null);
+    setClassification(null);
+
+    // Clear localStorage session data
+    localStorage.removeItem("stripe_integrated_current_session");
+
+    // Reload sessions for the new user
+    if (user?.id) {
+      loadSessionsFromDatabase();
+    }
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadSessionsFromDatabase = async () => {
     try {
       console.log("🔄 Loading sessions from database...");
       setIsLoadingSessions(true);
-      const response = await apiService.getAllSessions("web_user", 50, 0);
+      const response = await apiService.getAllSessions(user?.id, 50, 0);
 
       if (response.success && response.data.sessions) {
         const formattedSessions = response.data.sessions.map(
@@ -180,7 +212,7 @@ export const useIntegratedChat = () => {
       }
 
       console.log("🔄 Initializing new integrated chat session...");
-      const response = await apiService.createSession("web_user", {
+      const response = await apiService.createSession(user?.id, {
         project: "stripe_support",
         context: "customer_support_with_mcp",
       });
@@ -233,7 +265,7 @@ export const useIntegratedChat = () => {
       const response = await apiService.sendIntegratedMessage(
         messageText,
         currentSessionId,
-        "web_user"
+        user?.id
       );
 
       const aiMessage = {
@@ -281,6 +313,9 @@ export const useIntegratedChat = () => {
       console.log("📚 Sources:", response.data.sources?.length || 0);
       console.log("🔍 Full API Response:", response.data);
       console.log("🔍 Sources Details:", response.data.sources);
+
+      // Increment message count for anonymous users
+      incrementMessageCount();
 
       // Update chat history
       await updateChatHistory(messageText);
@@ -359,7 +394,7 @@ export const useIntegratedChat = () => {
   const handleNewChat = async () => {
     try {
       console.log("🆕 Creating new integrated chat session...");
-      const response = await apiService.createSession("web_user", {
+      const response = await apiService.createSession(user?.id, {
         project: "stripe_support",
         context: "customer_support_with_mcp",
       });

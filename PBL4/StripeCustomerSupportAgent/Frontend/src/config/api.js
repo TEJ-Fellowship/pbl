@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
 
 // Default values
 export const DEFAULT_VALUES = {
-  USER_ID: "web_user",
+  // USER_ID is now obtained from authentication context
   SESSION_CONTEXT: {
     project: "stripe_support",
     context: "customer_support",
@@ -31,3 +31,7 @@ export const DEFAULT_VALUES = {
   MESSAGE_LIMIT: 50,
   MESSAGE_OFFSET: 0,
 };
+
+// Default export for easy importing
+const API_BASE_URL = API_CONFIG.BASE_URL;
+export default API_BASE_URL;
