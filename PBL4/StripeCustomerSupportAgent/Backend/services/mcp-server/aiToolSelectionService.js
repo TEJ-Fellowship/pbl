@@ -28,7 +28,7 @@ class AIToolSelectionService {
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       this.geminiClient = genAI.getGenerativeModel({
-        model: config.GEMINI_API_MODEL_2 || "gemini-2.0-flash-lite",
+        model: config.GEMINI_API_MODEL_2 || "gemini-2.5-flash-lite",
       });
       console.log(
         "✅ AI Tool Selection Service: Gemini AI initialized with model: ",

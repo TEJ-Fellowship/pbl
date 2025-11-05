@@ -400,16 +400,21 @@ router.post("/", requireUserId, async (req, res) => {
     }
 
     // Process assistant response with memory system
-    await memoryController.processAssistantResponse(result.answer, {
-      timestamp: new Date().toISOString(),
-      sources: result.sources?.length || 0,
-      searchQuery:
-        classification.approach === "MCP_TOOLS_ONLY"
-          ? message
-          : searchQuery || message,
-      mcpToolsUsed: result.mcpToolsUsed?.length || 0,
-      mcpConfidence: result.mcpConfidence || 0,
-    });
+    // Use asyncQAExtraction=true for faster response (Q&A extraction runs in background)
+    await memoryController.processAssistantResponse(
+      result.answer,
+      {
+        timestamp: new Date().toISOString(),
+        sources: result.sources?.length || 0,
+        searchQuery:
+          classification.approach === "MCP_TOOLS_ONLY"
+            ? message
+            : searchQuery || message,
+        mcpToolsUsed: result.mcpToolsUsed?.length || 0,
+        mcpConfidence: result.mcpConfidence || 0,
+      },
+      true // Enable async Q&A extraction (non-blocking)
+    );
 
     // Update session token usage after processing messages
     try {
@@ -419,29 +424,39 @@ router.post("/", requireUserId, async (req, res) => {
       console.error("❌ Failed to update token usage:", tokenError);
     }
 
-    // Automatic conversation summarization (every 4 messages)
+    // Automatic conversation summarization (every 4 messages) - BACKGROUND PROCESSING
     // This aligns with Client 3 usage: gemini-2.0-flash-lite for session summarization
-    try {
-      const sessionStats = await memoryController.getSessionStats();
-      if (
-        sessionStats &&
-        sessionStats.total_messages &&
-        sessionStats.total_messages > 0 &&
-        sessionStats.total_messages % 4 === 0
-      ) {
-        console.log(
-          `\n📝 Auto-creating conversation summary (message #${sessionStats.total_messages})`
+    // Fire-and-forget: Don't block the response to user
+    memoryController
+      .getSessionStats()
+      .then((sessionStats) => {
+        if (
+          sessionStats &&
+          sessionStats.total_messages &&
+          sessionStats.total_messages > 0 &&
+          sessionStats.total_messages % 4 === 0
+        ) {
+          console.log(
+            `\n📝 [Background] Auto-creating conversation summary (message #${sessionStats.total_messages})`
+          );
+          return memoryController.createConversationSummary();
+        }
+        return null;
+      })
+      .then((summary) => {
+        if (summary) {
+          console.log(
+            "✅ [Background] Conversation summary created automatically"
+          );
+        }
+      })
+      .catch((summaryError) => {
+        // Non-critical error - just log it
+        console.warn(
+          "⚠️ [Background] Failed to auto-create conversation summary:",
+          summaryError.message
         );
-        await memoryController.createConversationSummary();
-        console.log("✅ Conversation summary created automatically");
-      }
-    } catch (summaryError) {
-      // Non-critical error - don't break the flow
-      console.warn(
-        "⚠️ Failed to auto-create conversation summary:",
-        summaryError.message
-      );
-    }
+      });
 
     // Prepare response
     const response = {

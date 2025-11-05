@@ -1306,16 +1306,21 @@ async function startIntegratedChat() {
           }
 
           //step 3: Process assistant response with memory system
-          await memoryController.processAssistantResponse(result.answer, {
-            timestamp: new Date().toISOString(),
-            sources: result.sources?.length || 0,
-            searchQuery:
-              classification.approach === "MCP_TOOLS_ONLY"
-                ? query
-                : searchQuery || query,
-            mcpToolsUsed: result.mcpToolsUsed?.length || 0,
-            mcpConfidence: result.mcpConfidence || 0,
-          });
+          // Use asyncQAExtraction=true for faster response (Q&A extraction runs in background)
+          await memoryController.processAssistantResponse(
+            result.answer,
+            {
+              timestamp: new Date().toISOString(),
+              sources: result.sources?.length || 0,
+              searchQuery:
+                classification.approach === "MCP_TOOLS_ONLY"
+                  ? query
+                  : searchQuery || query,
+              mcpToolsUsed: result.mcpToolsUsed?.length || 0,
+              mcpConfidence: result.mcpConfidence || 0,
+            },
+            true // Enable async Q&A extraction (non-blocking)
+          );
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));

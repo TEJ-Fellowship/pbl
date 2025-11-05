@@ -94,7 +94,7 @@ class QueryClassifier {
 
       const result = await this.geminiClient
         .getGenerativeModel({
-          model: config.GEMINI_API_MODEL_3 || "gemini-2.5-flash-lite",
+          model: config.GEMINI_API_MODEL_3 || "gemini-2.5-flash",
         })
         .generateContent(prompt);
       const responseText = result.response.text();
@@ -165,8 +165,65 @@ class QueryClassifier {
 
       const classification = JSON.parse(jsonMatch[0]);
 
-      // Validate and set defaults
-      if (!classification.approach) {
+      // Validate approach value - normalize any malformed values
+      const validApproaches = [
+        "MCP_TOOLS_ONLY",
+        "HYBRID_SEARCH",
+        "COMBINED",
+        "CONVERSATIONAL",
+      ];
+
+      if (classification.approach) {
+        // Normalize the approach value (handle typos, case issues, etc.)
+        const normalizedApproach = classification.approach.toUpperCase().trim();
+
+        // Check if it's a valid approach
+        if (!validApproaches.includes(normalizedApproach)) {
+          console.warn(
+            `⚠️ Invalid approach from AI: "${classification.approach}"`
+          );
+          console.warn(`   Attempting to normalize...`);
+
+          // Try to fix common issues
+          if (
+            normalizedApproach.includes("MCP") &&
+            normalizedApproach.includes("TOOL")
+          ) {
+            classification.approach = "MCP_TOOLS_ONLY";
+            console.log(`   ✅ Normalized to: MCP_TOOLS_ONLY`);
+          } else if (
+            normalizedApproach.includes("HYBRID") ||
+            normalizedApproach.includes("SEARCH")
+          ) {
+            classification.approach = "HYBRID_SEARCH";
+            console.log(`   ✅ Normalized to: HYBRID_SEARCH`);
+          } else if (
+            normalizedApproach.includes("COMBINED") ||
+            normalizedApproach.includes("BOTH")
+          ) {
+            classification.approach = "COMBINED";
+            console.log(`   ✅ Normalized to: COMBINED`);
+          } else if (
+            normalizedApproach.includes("CONVERSATIONAL") ||
+            normalizedApproach.includes("MEMORY")
+          ) {
+            classification.approach = "CONVERSATIONAL";
+            console.log(`   ✅ Normalized to: CONVERSATIONAL`);
+          } else {
+            // If we can't normalize, use fallback
+            classification.approach = null;
+          }
+        } else {
+          classification.approach = normalizedApproach;
+        }
+      }
+
+      // Validate and set defaults if approach is still invalid
+      if (
+        !classification.approach ||
+        !validApproaches.includes(classification.approach)
+      ) {
+        console.warn(`⚠️ Using fallback classification for invalid approach`);
         // Auto-detect conversational queries first
         const lowerQuery = query.toLowerCase();
         const conversationKeywords = [

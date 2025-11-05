@@ -412,11 +412,16 @@ class ChatService {
       this.addTokensToSession(sessionId, aiResponseTokens);
 
       // Process assistant response with memory system
-      await this.memoryController.processAssistantResponse(response.answer, {
-        timestamp: new Date().toISOString(),
-        sources: response.sources?.length || 0,
-        searchQuery: searchQuery,
-      });
+      // Use asyncQAExtraction=true for faster response
+      await this.memoryController.processAssistantResponse(
+        response.answer,
+        {
+          timestamp: new Date().toISOString(),
+          sources: response.sources?.length || 0,
+          searchQuery: searchQuery,
+        },
+        true // Enable async Q&A extraction (non-blocking)
+      );
 
       // Calculate confidence score (use empty array for MCP-only responses)
       const confidence = this.calculateConfidence([], response.sources);
