@@ -322,7 +322,8 @@ class ToolManager {
 
     const usageStats = this.mcpService.getToolUsageStats();
     const statusSummary = this.mcpService.getToolStatusSummary();
-    const managementInfo = this.mcpService.getToolManagementInfo();
+    await this.mcpService.ensureInitialized();
+    const managementInfo = await this.mcpService.getToolManagementInfo();
 
     console.log(`🛠️ Total Tools: ${statusSummary.total}`);
     console.log(`✅ Enabled: ${statusSummary.enabled}`);

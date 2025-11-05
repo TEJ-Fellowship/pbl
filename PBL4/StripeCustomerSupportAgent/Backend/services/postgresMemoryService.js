@@ -79,7 +79,7 @@ RESPONSE FORMAT (JSON only, no extra text):
 }`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       });
 
       const result = await model.generateContent(prompt);

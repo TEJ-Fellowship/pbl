@@ -22,6 +22,96 @@ class ChatService {
   }
 
   /**
+   * Helper function to call Gemini with retry logic for rate limits and service unavailability
+   * @param {Object} model - Gemini model instance
+   * @param {string|Array} prompt - Prompt to generate content for
+   * @param {Object} options - Retry options
+   * @returns {Promise<string>} Generated text
+   */
+  async generateContentWithRetry(model, prompt, options = {}) {
+    const { maxRetries = 3, initialDelayMs = 1000 } = options;
+
+    let attempt = 0;
+    let lastError = null;
+    while (attempt <= maxRetries) {
+      try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+      } catch (error) {
+        lastError = error;
+        const message = error?.message || "";
+        const status = error?.status || error?.response?.status;
+
+        // Check for retryable errors: 429 (rate limit) or 503 (service unavailable)
+        const isRateLimited =
+          status === 429 ||
+          /\b429\b/.test(message) ||
+          message.includes("Too Many Requests") ||
+          message.includes("quota") ||
+          message.includes("rate limit");
+
+        const isServiceUnavailable =
+          status === 503 ||
+          /\b503\b/.test(message) ||
+          message.includes("Service Unavailable") ||
+          message.includes("overloaded") ||
+          message.includes("try again later");
+
+        const isRetryable = isRateLimited || isServiceUnavailable;
+
+        if (!isRetryable) {
+          // Non-retryable error - throw immediately
+          throw error;
+        }
+
+        // Calculate retry delay with exponential backoff
+        let retryAfterSeconds = 5;
+
+        // Try to parse suggested retry delay from error message
+        const match = message.match(/retry\s*in\s*(\d+(?:\.\d+)?)s/i);
+        if (match) {
+          retryAfterSeconds = Math.ceil(parseFloat(match[1]));
+        } else {
+          // Exponential backoff: 2s, 4s, 8s for subsequent attempts
+          retryAfterSeconds = Math.min(Math.pow(2, attempt) * 1, 30); // Cap at 30 seconds
+        }
+
+        if (attempt < maxRetries) {
+          const delayMs = Math.max(initialDelayMs, retryAfterSeconds * 1000);
+          const errorType = isServiceUnavailable
+            ? "overloaded"
+            : "rate-limited";
+          console.warn(
+            `⚠️ [ChatService] Gemini ${errorType} (${
+              status || "unknown"
+            }). Retrying in ${Math.round(delayMs / 1000)}s (attempt ${
+              attempt + 1
+            }/${maxRetries})`
+          );
+          await new Promise((r) => setTimeout(r, delayMs));
+          attempt += 1;
+          continue;
+        }
+
+        // All retries exhausted
+        const errorMsg = isServiceUnavailable
+          ? "Gemini API service is currently overloaded. Please try again in a few moments."
+          : "Gemini API rate limit exceeded";
+
+        const retryError = new Error(errorMsg);
+        retryError.rateLimit = isRateLimited;
+        retryError.serviceUnavailable = isServiceUnavailable;
+        retryError.status = status;
+        retryError.retryAfterSeconds = retryAfterSeconds;
+        throw retryError;
+      }
+    }
+
+    throw lastError || new Error("Unknown error generating content");
+  }
+
+  /**
    * Estimate token count for text (rough approximation)
    */
   estimateTokenCount(text) {
@@ -417,11 +507,9 @@ class ChatService {
       Provide a clear, helpful response based on the MCP tool results.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = await this.generateContentWithRetry(model, prompt);
 
       return {
         answer: text,
@@ -582,11 +670,9 @@ class ChatService {
           - Provide links or brief references when available in the provided information.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = await this.generateContentWithRetry(model, prompt);
 
       // Post-process the response to add formatted sources
       const formattedResponse = this.addFormattedSources(text, sources, query);
@@ -727,11 +813,9 @@ FORMAT YOUR RESPONSE:
 Remember: You're helping developers build payment solutions with full awareness of their conversation history, so be practical, solution-oriented, and contextually aware.`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
       });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const text = await this.generateContentWithRetry(model, prompt);
 
       // Post-process the response to add formatted sources
       const formattedResponse = this.addFormattedSources(text, sources, query);

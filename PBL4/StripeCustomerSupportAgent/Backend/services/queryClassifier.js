@@ -93,7 +93,7 @@ class QueryClassifier {
           }`;
 
       const result = await this.geminiClient
-        .getGenerativeModel({ model: "gemini-2.0-flash" })
+        .getGenerativeModel({ model: "gemini-2.5-flash" })
         .generateContent(prompt);
       const responseText = result.response.text();
 
@@ -340,7 +340,7 @@ class QueryClassifier {
   getStats() {
     return {
       geminiAvailable: !!this.geminiClient,
-      model: this.geminiClient ? "gemini-2.0-flash" : "fallback",
+      model: this.geminiClient ? "gemini-2.5-flash" : "fallback",
       approaches: [
         "MCP_TOOLS_ONLY",
         "HYBRID_SEARCH",

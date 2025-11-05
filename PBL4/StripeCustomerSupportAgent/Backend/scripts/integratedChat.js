@@ -19,14 +19,14 @@ function initGeminiClient() {
   return new GoogleGenerativeAI(config.GEMINI_API_KEY);
 }
 
-// Wrapper to call Gemini with basic retry/backoff and clear rate-limit signaling
+// Wrapper to call Gemini with retry/backoff for rate limits and service unavailability
 async function generateContentWithRetry(
   geminiClient,
   prompt,
   modelName = config.GEMINI_API_MODEL,
   options = {}
 ) {
-  const { maxRetries = 1, initialDelayMs = 1200 } = options;
+  const { maxRetries = 3, initialDelayMs = 1000 } = options;
   const model = geminiClient.getGenerativeModel({ model: modelName });
 
   let attempt = 0;
@@ -39,41 +39,68 @@ async function generateContentWithRetry(
     } catch (error) {
       lastError = error;
       const message = error?.message || "";
+      const status = error?.status || error?.response?.status;
+
+      // Check for retryable errors: 429 (rate limit) or 503 (service unavailable)
       const isRateLimited =
-        error?.status === 429 ||
+        status === 429 ||
         /\b429\b/.test(message) ||
         message.includes("Too Many Requests") ||
         message.includes("quota") ||
         message.includes("rate limit");
 
-      if (!isRateLimited) {
+      const isServiceUnavailable =
+        status === 503 ||
+        /\b503\b/.test(message) ||
+        message.includes("Service Unavailable") ||
+        message.includes("overloaded") ||
+        message.includes("try again later");
+
+      const isRetryable = isRateLimited || isServiceUnavailable;
+
+      if (!isRetryable) {
+        // Non-retryable error - throw immediately
         throw error;
       }
 
-      // Try to parse suggested retry delay from error if present
-      let retryAfterSeconds = 15;
+      // Calculate retry delay with exponential backoff
+      let retryAfterSeconds = 5;
+
+      // Try to parse suggested retry delay from error message
       const match = message.match(/retry\s*in\s*(\d+(?:\.\d+)?)s/i);
       if (match) {
         retryAfterSeconds = Math.ceil(parseFloat(match[1]));
+      } else {
+        // Exponential backoff: 2s, 4s, 8s for subsequent attempts
+        retryAfterSeconds = Math.min(Math.pow(2, attempt) * 1, 30); // Cap at 30 seconds
       }
 
       if (attempt < maxRetries) {
         const delayMs = Math.max(initialDelayMs, retryAfterSeconds * 1000);
+        const errorType = isServiceUnavailable ? "overloaded" : "rate-limited";
         console.warn(
-          `⚠️ Gemini rate-limited. Retrying in ${Math.round(
-            delayMs
-          )}ms (attempt ${attempt + 1}/${maxRetries})`
+          `⚠️ Gemini ${errorType} (${
+            status || "unknown"
+          }). Retrying in ${Math.round(delayMs / 1000)}s (attempt ${
+            attempt + 1
+          }/${maxRetries})`
         );
         await new Promise((r) => setTimeout(r, delayMs));
         attempt += 1;
         continue;
       }
 
-      const rateLimitError = new Error("Gemini API rate limit exceeded");
-      rateLimitError.rateLimit = true;
-      rateLimitError.status = 429;
-      rateLimitError.retryAfterSeconds = retryAfterSeconds;
-      throw rateLimitError;
+      // All retries exhausted
+      const errorMsg = isServiceUnavailable
+        ? "Gemini API service is currently overloaded. Please try again in a few moments."
+        : "Gemini API rate limit exceeded";
+
+      const retryError = new Error(errorMsg);
+      retryError.rateLimit = isRateLimited;
+      retryError.serviceUnavailable = isServiceUnavailable;
+      retryError.status = status;
+      retryError.retryAfterSeconds = retryAfterSeconds;
+      throw retryError;
     }
   }
 
@@ -390,7 +417,7 @@ async function generateResponseWithMCP(
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      "gemini-2.0-flash",
+      "gemini-2.5-flash",
       { maxRetries: 1 }
     );
 
@@ -751,7 +778,8 @@ async function startIntegratedChat() {
         if (query.toLowerCase() === "mcp") {
           console.log("\n🔧 MCP System Status:");
           try {
-            const mcpStatus = mcpService.getToolManagementInfo();
+            await mcpService.ensureInitialized();
+            const mcpStatus = await mcpService.getToolManagementInfo();
 
             // Check integration status with null safety
             const integrationStatus = mcpStatus.integrationEnabled
