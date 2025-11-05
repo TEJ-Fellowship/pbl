@@ -85,9 +85,11 @@ Tool Selection Guidelines:
 - calculator: Use for fee calculations, math operations, pricing questions, percentage calculations, mathematical expressions
 - currency_converter: Use for currency conversions, exchange rates, "convert X to Y" queries
 - status_checker: Use for system status, downtime, "is Stripe down" questions
-- web_search: Use for recent updates, latest information, "what's new" questions
+- web_search: Use for ANY general knowledge queries, current events, news, recent updates, latest information, "what's new" questions, non-Stripe topics (politics, geography, history, science, etc.), questions that cannot be answered from Stripe documentation alone, or queries about the real world
 - code_validator: Use for code validation, API endpoint verification, syntax checking
 - datetime: Use for time-related queries, business hours, scheduling
+
+CRITICAL: If the query is NOT about Stripe API, payments, or Stripe-specific topics, you MUST use web_search tool. Examples: "Who is the PM of Nepal?", "Latest news about X", "What is the capital of Y?", "Current events in Z"
 
 If the query requires using one or more tools, respond with JSON:
 {
@@ -97,7 +99,9 @@ If the query requires using one or more tools, respond with JSON:
   "confidence": 0.8
 }
 
-If no tools are needed, respond with:
+If the query is about general knowledge, current events, news, or anything NOT related to Stripe documentation, you MUST use web_search tool.
+
+If no tools are needed (ONLY for Stripe-specific queries that can be answered from documentation), respond with:
 {
   "useTool": false,
   "reasoning": "Query can be answered with documentation alone"
@@ -234,7 +238,17 @@ Only respond with JSON, nothing else.`;
       tools.push("status_checker");
     }
 
-    if (lowerQuery.match(/(latest|recent|new|updated|2024|2025)/)) {
+    // Web search patterns: general knowledge, current events, news, geography, politics, etc.
+    const generalKnowledgePatterns = [
+      /(latest|recent|new|updated|2024|2025|current|present|today|now|breaking|news)/,
+      /(who is|what is|where is|when is|how many|capital of|president of|prime minister|pm of|leader of)/,
+      /(nepal|india|usa|china|uk|france|germany|country|city|state|nation)/, // Geography/politics
+      /(weather|climate|temperature|forecast)/, // Weather queries
+      /(history|historical|war|battle|event)/, // History
+      /(science|discovery|research|study|finding)/, // Science/news
+    ];
+
+    if (generalKnowledgePatterns.some((pattern) => pattern.test(lowerQuery))) {
       tools.push("web_search");
     }
 
@@ -244,6 +258,22 @@ Only respond with JSON, nothing else.`;
 
     if (lowerQuery.match(/(time|date|schedule|business hours|when)/)) {
       tools.push("datetime");
+    }
+
+    // If query doesn't mention Stripe and seems like general knowledge, use web_search
+    const isStripeQuery = lowerQuery.match(
+      /(stripe|payment|webhook|billing|subscription|charge|refund|dispute|api|developer|integration)/
+    );
+    if (
+      !isStripeQuery &&
+      (lowerQuery.includes("who") ||
+        lowerQuery.includes("what") ||
+        lowerQuery.includes("when") ||
+        lowerQuery.includes("where") ||
+        lowerQuery.includes("current") ||
+        lowerQuery.includes("present"))
+    ) {
+      tools.push("web_search");
     }
 
     // Low confidence fallback

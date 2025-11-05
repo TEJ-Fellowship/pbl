@@ -69,8 +69,8 @@ async function initializeServices() {
     // Initialize hybrid search
     await hybridSearch.initialize();
 
-    // Wait for MCP service to initialize
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Ensure MCP service is fully initialized
+    await mcpService.ensureInitialized();
 
     services = {
       geminiClient,
@@ -496,7 +496,8 @@ router.post("/", requireUserId, async (req, res) => {
 router.get("/mcp-status", async (req, res) => {
   try {
     const { mcpService } = await initializeServices();
-    const mcpStatus = mcpService.getToolManagementInfo();
+    await mcpService.ensureInitialized(); // Ensure MCP is initialized
+    const mcpStatus = await mcpService.getToolManagementInfo();
 
     res.json({
       success: true,

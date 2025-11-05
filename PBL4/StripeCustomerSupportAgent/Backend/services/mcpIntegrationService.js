@@ -7,7 +7,7 @@ dotenv.config();
 
 /**
  * MCP Integration Service
- * Integrates MCP tools with the existing Stripe support system
+ * Integrates MCP tools with the existing Stripe support system using MCP protocol
  */
 class MCPIntegrationService {
   constructor() {
@@ -15,26 +15,57 @@ class MCPIntegrationService {
     this.toolConfigManager = new ToolConfigManager();
     this.isEnabled = false;
     this.toolUsageStats = new Map();
-    this.initialize();
+    this._initPromise = null; // Track initialization promise
+    // Note: initialize() is called asynchronously - use ensureInitialized() before use
   }
 
   /**
    * Initialize the MCP integration service
    */
   async initialize() {
-    try {
-      await this.toolConfigManager.initialize();
-      this.isEnabled = this.checkMCPAvailability();
-      console.log(
-        "✅ MCP Integration Service: Initialized with tool configuration"
-      );
-    } catch (error) {
-      console.error(
-        "❌ MCP Integration Service: Failed to initialize:",
-        error.message
-      );
-      this.isEnabled = false;
+    // Prevent multiple simultaneous initializations
+    if (this._initPromise) {
+      return this._initPromise;
     }
+
+    this._initPromise = (async () => {
+      try {
+        await this.toolConfigManager.initialize();
+
+        // Initialize MCP orchestrator (connects to MCP server)
+        console.log(
+          "🔧 MCP Integration Service: Initializing MCP orchestrator..."
+        );
+        await this.orchestrator.initialize();
+
+        this.isEnabled = this.checkMCPAvailability();
+        console.log(
+          `✅ MCP Integration Service: Initialized ${
+            this.isEnabled ? "with MCP protocol" : "(MCP not available)"
+          }`
+        );
+        return true;
+      } catch (error) {
+        console.error(
+          "❌ MCP Integration Service: Failed to initialize:",
+          error.message
+        );
+        this.isEnabled = false;
+        throw error;
+      }
+    })();
+
+    return this._initPromise;
+  }
+
+  /**
+   * Ensure MCP service is initialized before use
+   */
+  async ensureInitialized() {
+    if (!this._initPromise) {
+      return await this.initialize();
+    }
+    return await this._initPromise;
   }
 
   /**
@@ -43,9 +74,33 @@ class MCPIntegrationService {
    */
   checkMCPAvailability() {
     try {
-      // Check if orchestrator is properly initialized
-      if (!this.orchestrator.hasAvailableTools()) {
+      // Check if orchestrator is properly initialized (using MCP protocol)
+      if (!this.orchestrator.isInitialized) {
+        console.warn(
+          "⚠️ MCP Integration: MCP orchestrator not initialized (isInitialized: false)"
+        );
+        return false;
+      }
+
+      if (!this.orchestrator.isReady()) {
+        console.warn(
+          "⚠️ MCP Integration: MCP orchestrator not ready (isReady: false)"
+        );
+        console.warn(
+          `   - Orchestrator isInitialized: ${this.orchestrator.isInitialized}`
+        );
+        console.warn(
+          `   - MCP Client ready: ${
+            this.orchestrator.mcpClient?.isReady() || false
+          }`
+        );
+        return false;
+      }
+
+      const availableTools = this.orchestrator.getAvailableTools();
+      if (!availableTools || availableTools.length === 0) {
         console.warn("⚠️ MCP Integration: No tools available");
+        console.warn(`   - Available tools: ${JSON.stringify(availableTools)}`);
         return false;
       }
 
@@ -101,6 +156,21 @@ class MCPIntegrationService {
    * @returns {Object} - Enhanced response with MCP tool results
    */
   async processQueryWithMCP(query, confidence = 0.5, context = {}) {
+    // Ensure initialization is complete before processing
+    try {
+      await this.ensureInitialized();
+    } catch (error) {
+      console.error(
+        "❌ MCP Integration: Initialization failed:",
+        error.message
+      );
+      return {
+        success: false,
+        message: "MCP tools not available (initialization failed)",
+        enhancedResponse: null,
+      };
+    }
+
     if (!this.isEnabled) {
       return {
         success: false,
@@ -113,9 +183,17 @@ class MCPIntegrationService {
       console.log(
         `🔧 MCP Integration: Processing query with confidence ${confidence}`
       );
+      console.log(
+        `📋 MCP Integration: isEnabled=${this.isEnabled}, orchestrator.isInitialized=${this.orchestrator.isInitialized}`
+      );
 
       // Get enabled tools from tool configuration
       const enabledTools = this.getEnabledTools();
+      console.log(
+        `📋 MCP Integration: Enabled tools: ${
+          enabledTools.join(", ") || "None"
+        }`
+      );
 
       // Decide which tools to use
       const toolNames = await this.orchestrator.decideToolUse(
@@ -284,7 +362,8 @@ class MCPIntegrationService {
    */
   isToolAvailable(toolName) {
     if (!this.isEnabled) return false;
-    return this.orchestrator.getAvailableTools().includes(toolName);
+    const available = this.orchestrator.getAvailableTools();
+    return available && available.includes(toolName);
   }
 
   /**
@@ -294,7 +373,8 @@ class MCPIntegrationService {
   getIntegrationStatus() {
     return {
       enabled: this.isEnabled,
-      toolsAvailable: this.orchestrator.getAvailableTools(),
+      mcpProtocol: true, // Using MCP protocol
+      toolsAvailable: this.orchestrator.getAvailableTools() || [],
       toolUsageStats: this.getToolUsageStats(),
       configuration: {
         googleSearchAvailable: !!(
@@ -302,6 +382,7 @@ class MCPIntegrationService {
           process.env.GOOGLE_SEARCH_ENGINE_ID
         ),
         environment: process.env.NODE_ENV || "development",
+        mcpInitialized: this.orchestrator.isInitialized || false,
       },
     };
   }
@@ -497,8 +578,14 @@ class MCPIntegrationService {
    */
   async refreshOrchestrator() {
     try {
+      // Close existing connection
+      if (this.orchestrator && this.orchestrator.close) {
+        await this.orchestrator.close();
+      }
+
       // Reinitialize orchestrator with updated tool configuration
       this.orchestrator = new AgentOrchestrator();
+      await this.orchestrator.initialize();
       this.isEnabled = this.checkMCPAvailability();
       console.log(
         "🔄 MCP Integration: Orchestrator refreshed with current tool configuration"
@@ -515,15 +602,24 @@ class MCPIntegrationService {
    * Get comprehensive tool management information
    * @returns {Object} - Complete tool management status
    */
-  getToolManagementInfo() {
+  async getToolManagementInfo() {
+    // Ensure initialized before accessing orchestrator data
+    try {
+      await this.ensureInitialized();
+    } catch (error) {
+      console.warn(
+        "⚠️ MCP Integration: getToolManagementInfo - initialization not complete"
+      );
+    }
+
     const statusSummary = this.getToolStatusSummary();
     const usageStats = this.getToolUsageStats();
     const configs = this.getAllToolConfigs();
-    const aiStats = this.orchestrator.aiToolSelection.getStats();
+    const aiStats = this.orchestrator?.aiToolSelection?.getStats() || {};
 
     // Get tool information from orchestrator (includes all available tools)
-    const orchestratorToolInfo = this.orchestrator.getToolInfo();
-    const availableTools = this.orchestrator.getAvailableTools();
+    const orchestratorToolInfo = this.orchestrator?.getToolInfo() || {};
+    const availableTools = this.orchestrator?.getAvailableTools() || [];
 
     return {
       status: statusSummary,

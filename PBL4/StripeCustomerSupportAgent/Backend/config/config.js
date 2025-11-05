@@ -9,7 +9,7 @@ const config = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2,
   GEMINI_API_KEY_3: process.env.GEMINI_API_KEY_3,
-  GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.0-flash",
+  GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.5-flash",
   GEMINI_API_MODEL_2: process.env.GEMINI_API_MODEL_2 || "gemini-2.0-flash-lite",
   GEMINI_API_MODEL_3: process.env.GEMINI_API_MODEL_3 || "gemini-2.5-flash-lite",
   // PostgreSQL Configuration
@@ -41,6 +41,10 @@ const config = {
   MAX_CHUNKS: process.env.MAX_CHUNKS,
   MAX_SOURCES: process.env.MAX_SOURCES,
   BATCH_SIZE: process.env.BATCH_SIZE,
+
+  // MCP Integration
+  GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
+  GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
 
   // Rate Limiting
   RATE_LIMIT_DELAY: process.env.RATE_LIMIT_DELAY,
