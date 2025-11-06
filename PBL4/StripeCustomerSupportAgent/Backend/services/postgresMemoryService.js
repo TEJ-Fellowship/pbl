@@ -222,15 +222,56 @@ RESPONSE FORMAT (JSON only, no extra text):
         return existingSession.rows[0];
       }
 
-      // Create new session
+      // Handle anonymous users: check if userId exists in users table
+      // If userId is "anonymous" or doesn't exist in users table, set to NULL
+      let finalUserId = userId;
+      let finalMetadata = { ...metadata };
+
+      if (userId && userId !== "anonymous") {
+        try {
+          // Check if user exists in users table
+          const userCheck = await client.query(
+            "SELECT id FROM users WHERE id = $1",
+            [userId]
+          );
+
+          // If user doesn't exist, it's an anonymous user - set to NULL
+          if (userCheck.rows.length === 0) {
+            console.log(
+              `🔓 Anonymous user detected (UUID: ${userId}), setting user_id to NULL`
+            );
+            finalUserId = null;
+            // Store anonymous UUID in metadata for migration purposes
+            finalMetadata.anonymousUserId = userId;
+          }
+        } catch (error) {
+          // If there's an error checking (e.g., invalid UUID format), treat as anonymous
+          console.log(
+            `🔓 Invalid or anonymous userId (${userId}), setting user_id to NULL`
+          );
+          finalUserId = null;
+          // Store original userId in metadata for migration purposes
+          if (userId !== "anonymous") {
+            finalMetadata.anonymousUserId = userId;
+          }
+        }
+      } else if (userId === "anonymous") {
+        finalUserId = null;
+      }
+
+      // Create new session with NULL user_id for anonymous users
       const newSession = await client.query(
         `INSERT INTO conversation_sessions (session_id, user_id, metadata) 
          VALUES ($1, $2, $3) 
          RETURNING *`,
-        [sessionId, userId, JSON.stringify(metadata)]
+        [sessionId, finalUserId, JSON.stringify(finalMetadata)]
       );
 
-      console.log(`🆕 Created new conversation session: ${sessionId}`);
+      console.log(
+        `🆕 Created new conversation session: ${sessionId}${
+          finalUserId ? ` (user: ${finalUserId})` : " (anonymous)"
+        }`
+      );
       return newSession.rows[0];
     } finally {
       client.release();

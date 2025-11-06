@@ -82,10 +82,13 @@ export const register = async (req, res) => {
         );
 
         // Update conversation_sessions
+        // Find sessions where user_id IS NULL and metadata contains the anonymousUserId
         const sessionsResult = await client.query(
           `UPDATE conversation_sessions 
-           SET user_id = $1, updated_at = NOW() 
-           WHERE user_id = $2::uuid 
+           SET user_id = $1, updated_at = NOW(),
+               metadata = jsonb_set(metadata, '{anonymousUserId}', 'null'::jsonb, true)
+           WHERE user_id IS NULL 
+             AND metadata->>'anonymousUserId' = $2
            RETURNING session_id`,
           [user.id, anonymousUserId]
         );
