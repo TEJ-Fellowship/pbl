@@ -6,6 +6,7 @@ const SignupPrompt = () => {
   const { messageCount, dismissSignupPrompt } = useAuth();
 
   const handleSignup = () => {
+    dismissSignupPrompt();
     navigate("/signup");
   };
 
