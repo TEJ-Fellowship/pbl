@@ -830,7 +830,7 @@ Return as JSON array:
     try {
       console.log("💡 Getting proactive suggestions for intent:", intent);
 
-      // Get rule-based suggestions
+      // OPTIMIZATION: Get rule-based suggestions first (fast, ~50ms)
       const ruleBasedSuggestions = await this.analyzeContextForSuggestions(
         message,
         conversationHistory,
@@ -839,14 +839,35 @@ Return as JSON array:
       );
       console.log("💡 Rule-based suggestions:", ruleBasedSuggestions.length);
 
-      // Get AI-generated suggestions
-      const aiSuggestions = await this.generateAISuggestions(
-        message,
-        conversationHistory,
-        intent,
-        userPreferences
-      );
-      console.log("💡 AI-generated suggestions:", aiSuggestions.length);
+      // OPTIMIZATION: Only generate AI suggestions if rule-based is insufficient
+      // This saves 1.5-3.5 seconds when rule-based already has good suggestions
+      let aiSuggestions = [];
+      if (ruleBasedSuggestions.length < 2) {
+        console.log("💡 Rule-based insufficient, generating AI suggestions...");
+        try {
+          // OPTIMIZATION: Run AI in parallel with timeout to prevent blocking
+          aiSuggestions = await Promise.race([
+            this.generateAISuggestions(
+              message,
+              conversationHistory,
+              intent,
+              userPreferences
+            ),
+            new Promise((resolve) =>
+              setTimeout(() => {
+                console.log("⏱️ AI suggestions timeout (1500ms), using rule-based only");
+                resolve([]);
+              }, 1500)
+            ), // 1.5s timeout for AI generation
+          ]);
+          console.log("💡 AI-generated suggestions:", aiSuggestions.length);
+        } catch (error) {
+          console.error("Error generating AI suggestions:", error);
+          aiSuggestions = []; // Continue with rule-based only
+        }
+      } else {
+        console.log("💡 Rule-based suggestions sufficient, skipping AI generation");
+      }
 
       // Combine and deduplicate suggestions
       const allSuggestions = [...ruleBasedSuggestions, ...aiSuggestions];

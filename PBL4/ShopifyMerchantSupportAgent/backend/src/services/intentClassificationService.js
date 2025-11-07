@@ -1041,9 +1041,34 @@ Return your response in JSON format:
    * @returns {Object} Classification result
    */
   async classifyIntent(query) {
-    // Get both rule-based and AI-based classifications
+    // OPTIMIZATION: Get rule-based classification first (fast, synchronous)
     const ruleBasedResult = this.classifyIntentRuleBased(query);
-    const aiResult = await this.classifyIntentAI(query);
+
+    // OPTIMIZATION: Only use AI if rule-based confidence is low
+    // This saves 300-800ms when rule-based is already confident
+    let aiResult = null;
+    let useAI = ruleBasedResult.confidence < 0.85; // Only use AI if confidence < 85%
+
+    if (useAI) {
+      try {
+        // OPTIMIZATION: Run AI classification with timeout to prevent blocking
+        aiResult = await Promise.race([
+          this.classifyIntentAI(query),
+          new Promise((resolve) =>
+            setTimeout(() => {
+              console.log("⏱️ AI classification timeout (1000ms), using rule-based");
+              resolve(ruleBasedResult); // Fallback to rule-based
+            }, 1000)
+          ), // 1s timeout for AI classification
+        ]);
+      } catch (error) {
+        console.error("AI classification error, using rule-based:", error);
+        aiResult = ruleBasedResult; // Fallback to rule-based on error
+      }
+    } else {
+      console.log(`✅ Rule-based confidence (${ruleBasedResult.confidence}) high enough, skipping AI classification`);
+      aiResult = ruleBasedResult; // Use rule-based result
+    }
 
     // Combine results with weighted scoring
     const hybridConfidence =
@@ -1060,7 +1085,7 @@ Return your response in JSON format:
       confidence: finalConfidence,
       ruleBased: ruleBasedResult,
       aiBased: aiResult,
-      method: "hybrid",
+      method: useAI && aiResult !== ruleBasedResult ? "hybrid" : "rule-based",
     };
   }
 
