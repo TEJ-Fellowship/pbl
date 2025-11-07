@@ -605,7 +605,8 @@ async function generateResponseWithMemoryAndMCP(
   confidence,
   precomputedMcpEnhancement = null,
   precomputedMcpToolsUsed = null,
-  precomputedMcpConfidence = null
+  precomputedMcpConfidence = null,
+  skipMcp = false
 ) {
   try {
     console.log(
@@ -657,7 +658,9 @@ async function generateResponseWithMemoryAndMCP(
     let mcpToolsUsed = [];
     let mcpConfidence = 0;
 
-    if (precomputedMcpEnhancement !== null) {
+    if (skipMcp) {
+      console.log("⏭️ Skipping MCP tools (high document confidence)");
+    } else if (precomputedMcpEnhancement !== null) {
       // Use pre-computed MCP results
       mcpEnhancement = precomputedMcpEnhancement;
       mcpToolsUsed = precomputedMcpToolsUsed || [];

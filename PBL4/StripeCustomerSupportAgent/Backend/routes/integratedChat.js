@@ -278,13 +278,21 @@ router.post("/", requireUserId, async (req, res) => {
           }
 
           const confidence = calculateConfidence(chunks);
+          // Skip MCP since it already failed in the MCP_TOOLS_ONLY approach
+          console.log(
+            "⏭️ Skipping MCP (already attempted and failed in MCP_TOOLS_ONLY approach)"
+          );
           result = await generateResponseWithMemoryAndMCP(
             message,
             chunks,
             geminiClient,
             memoryContext,
             mcpService,
-            confidence
+            confidence,
+            null, // precomputedMcpEnhancement
+            null, // precomputedMcpToolsUsed
+            null, // precomputedMcpConfidence
+            true // skipMcp: true since MCP already failed
           );
         }
       }
@@ -330,14 +338,42 @@ router.post("/", requireUserId, async (req, res) => {
       const confidence = calculateConfidence(chunks);
       console.log(`📊 Document confidence: ${(confidence * 100).toFixed(1)}%`);
 
-      // Generate response with memory context
+      // OPTIMIZATION: Only use MCP if document confidence is low
+      // If hybrid search found highly relevant documents (high confidence),
+      // we can skip MCP to save time and API calls
+      const MCP_CONFIDENCE_THRESHOLD = 0.5; // 50% threshold
+      const shouldUseMcp = confidence < MCP_CONFIDENCE_THRESHOLD;
+
+      if (shouldUseMcp) {
+        console.log(
+          `🔧 Document confidence (${(confidence * 100).toFixed(
+            1
+          )}%) is below threshold (${(MCP_CONFIDENCE_THRESHOLD * 100).toFixed(
+            0
+          )}%) - using MCP to enhance response`
+        );
+      } else {
+        console.log(
+          `✅ Document confidence (${(confidence * 100).toFixed(
+            1
+          )}%) is above threshold (${(MCP_CONFIDENCE_THRESHOLD * 100).toFixed(
+            0
+          )}%) - skipping MCP for faster response`
+        );
+      }
+
+      // Generate response with memory context (conditionally with/without MCP)
       result = await generateResponseWithMemoryAndMCP(
         message,
         chunks,
         geminiClient,
         memoryContext,
         mcpService,
-        confidence
+        confidence,
+        null, // precomputedMcpEnhancement
+        null, // precomputedMcpToolsUsed
+        null, // precomputedMcpConfidence
+        !shouldUseMcp // skipMcp: true if confidence is high
       );
     } else if (classification.approach === "COMBINED") {
       console.log("🔧🔍 Using combined approach (MCP + Hybrid search)");
