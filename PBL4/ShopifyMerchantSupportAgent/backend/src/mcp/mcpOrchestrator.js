@@ -5,15 +5,54 @@ import DateTimeTool from "./dateTimeTool.js";
 import CodeValidatorTool from "./codeValidatorTool.js";
 import CurrencyConverterTool from "./currencyConverterTool.js";
 import ThemeCompatibilityTool from "./themeCompatibilityTool.js";
+import { getMCPClient } from "./mcpClient.js";
 
 /**
  * MCP Client Orchestrator for Shopify Merchant Support Agent
- * Manages tool integration and decision making for when to use tools
+ *
+ * This orchestrator now uses the MCP client-server architecture:
+ * - Tools are registered with MCP server
+ * - Tool execution goes through MCP protocol (JSON-RPC)
+ * - Maintains backward compatibility with existing interface
+ * - Decision-making still uses direct tool instances for performance
+ *
+ * Architecture Flow:
+ * 1. Orchestrator decides which tools to use (direct tool instances)
+ * 2. Orchestrator calls MCP client to execute tools via protocol
+ * 3. MCP client sends JSON-RPC requests to MCP server
+ * 4. MCP server routes to appropriate tool handlers
+ * 5. Results flow back through protocol to orchestrator
  */
 export class MCPOrchestrator {
   constructor() {
-    this.tools = new Map();
+    this.tools = new Map(); // Keep for decision-making methods
+    this.mcpClient = null; // MCP client for protocol-based execution
+    this.clientInitialized = false; // Track initialization status
     this.initializeTools();
+    // Initialize client asynchronously (non-blocking)
+    this.initializeMCPClient().catch((err) => {
+      console.error("MCP client initialization error:", err);
+    });
+  }
+
+  /**
+   * Initialize MCP client connection (async, non-blocking)
+   */
+  async initializeMCPClient() {
+    if (this.clientInitialized) return;
+
+    try {
+      this.mcpClient = await getMCPClient({
+        useDirectServer: true, // Use direct server access for in-process (no protocol overhead)
+      });
+      this.clientInitialized = true;
+      console.log("🔌 MCP Orchestrator: Connected to MCP server via client");
+    } catch (error) {
+      console.error("Failed to initialize MCP client:", error);
+      // Fallback to direct calls if MCP client fails
+      console.warn("⚠️ Falling back to direct tool calls");
+      this.clientInitialized = false;
+    }
   }
 
   /**
@@ -224,6 +263,7 @@ export class MCPOrchestrator {
 
   /**
    * Execute the specified tools with the given query
+   * Now uses MCP client-server architecture via protocol
    * @param {Array} toolNames - Array of tool names to execute
    * @param {string} query - User query
    * @param {number} confidence - RAG confidence score
@@ -232,7 +272,74 @@ export class MCPOrchestrator {
   async executeTools(toolNames, query, confidence = 0.5) {
     const results = {};
 
-    // Execute tools in parallel for better performance
+    // Ensure client is initialized
+    if (!this.clientInitialized && !this.mcpClient) {
+      await this.initializeMCPClient();
+    }
+
+    // Use MCP client if available, otherwise fallback to direct calls
+    const useMCPClient = this.mcpClient && this.mcpClient.isConnected();
+
+    if (useMCPClient) {
+      // Execute tools via MCP protocol (client-server architecture)
+      console.log(`🔌 Executing ${toolNames.length} tools via MCP protocol`);
+
+      const toolPromises = toolNames.map(async (toolName) => {
+        try {
+          // Call tool via MCP client (JSON-RPC protocol)
+          const mcpResponse = await this.mcpClient.callTool(toolName, {
+            query: query,
+            confidence: confidence,
+          });
+
+          // Parse MCP response
+          let toolResult;
+          if (typeof mcpResponse === "string") {
+            toolResult = JSON.parse(mcpResponse);
+          } else if (mcpResponse.content && mcpResponse.content[0]) {
+            try {
+              toolResult = JSON.parse(mcpResponse.content[0].text);
+            } catch (e) {
+              // If not JSON, create result object
+              toolResult = {
+                summary: mcpResponse.content[0].text,
+                error: mcpResponse.isError ? "Tool execution failed" : null,
+              };
+            }
+          } else {
+            toolResult = mcpResponse;
+          }
+
+          return { toolName, result: toolResult };
+        } catch (error) {
+          console.error(`Error executing tool ${toolName} via MCP:`, error);
+          return {
+            toolName,
+            result: {
+              error: `Tool execution failed: ${error.message}`,
+              operations: [],
+              calculations: [],
+              validations: [],
+              summary: null,
+            },
+          };
+        }
+      });
+
+      // Wait for all tools to complete
+      const toolResults = await Promise.all(toolPromises);
+
+      // Organize results by tool name
+      toolResults.forEach(({ toolName, result }) => {
+        results[toolName] = result;
+      });
+
+      return results;
+    }
+
+    // Fallback to direct method calls (backward compatibility)
+    console.log(`⚠️ Using direct tool calls (MCP client not available)`);
+
     const toolPromises = toolNames.map(async (toolName) => {
       if (!this.tools.has(toolName)) {
         console.warn(`Tool ${toolName} not found`);
