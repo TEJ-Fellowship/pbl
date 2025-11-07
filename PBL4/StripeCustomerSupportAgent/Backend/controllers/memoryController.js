@@ -549,7 +549,7 @@ class MemoryController {
 
       // Get Gemini model
       const model = this.geminiClient.getGenerativeModel({
-        model: config.GEMINI_API_MODEL_2,
+        model: config.GEMINI_API_MODEL_3,
         generationConfig: {
           temperature: 0.3,
           topK: 40,

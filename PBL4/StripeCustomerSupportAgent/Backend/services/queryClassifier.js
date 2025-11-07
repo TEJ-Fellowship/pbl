@@ -94,7 +94,7 @@ class QueryClassifier {
 
       const result = await this.geminiClient
         .getGenerativeModel({
-          model: config.GEMINI_API_MODEL_3 || "gemini-2.5-flash",
+          model: config.GEMINI_API_MODEL_2 || "gemini-2.5-flash-lite",
         })
         .generateContent(prompt);
       const responseText = result.response.text();
