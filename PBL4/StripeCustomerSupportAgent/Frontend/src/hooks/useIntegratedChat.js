@@ -257,6 +257,9 @@ export const useIntegratedChat = () => {
     setIsTyping(true);
     setError(null);
 
+    // Record start time for response time calculation
+    const startTime = Date.now();
+
     try {
       console.log(
         "💬 Sending integrated message:",
@@ -267,6 +270,9 @@ export const useIntegratedChat = () => {
         currentSessionId,
         user?.id
       );
+
+      // Calculate response time
+      const responseTime = Date.now() - startTime;
 
       const aiMessage = {
         id: Date.now() + 1,
@@ -282,6 +288,7 @@ export const useIntegratedChat = () => {
         classification: response.data.classification,
         reasoning: response.data.reasoning,
         searchQuery: response.data.searchQuery,
+        responseTime: responseTime, // Add response time in milliseconds
       };
 
       setMessages((prev) => [...prev, aiMessage]);
