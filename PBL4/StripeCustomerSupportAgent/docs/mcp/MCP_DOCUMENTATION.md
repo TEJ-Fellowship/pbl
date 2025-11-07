@@ -8,6 +8,10 @@ The **Model Context Protocol (MCP)** tool integration for the Stripe Customer Su
 
 The MCP system is built on a multi-layered architecture that provides intelligent tool orchestration, AI-powered selection, and seamless integration with the core Stripe support system. The architecture emphasizes modularity, scalability, and intelligent decision-making.
 
+### **MCP Client-Server Architecture Overview**
+
+The MCP system uses a client-server architecture based on **JSON-RPC 2.0** protocol over **stdio transport**. The client and server communicate through standard input/output pipes, enabling process isolation and clean separation of concerns.
+
 ```mermaid
 flowchart TD
     USER["User Query"] --> CHAT["Chat Service"]
@@ -26,6 +30,397 @@ flowchart TD
     DOCS --> RESPONSE
     RESPONSE --> USER
 ```
+
+### **Detailed MCP Client-Server Workflow**
+
+The following diagram illustrates the complete lifecycle of MCP client-server communication, from initialization to tool execution and response handling.
+
+```mermaid
+sequenceDiagram
+    participant App as Application Layer
+    participant Orch as Agent Orchestrator
+    participant Client as MCP Client
+    participant Transport as Stdio Transport
+    participant Server as MCP Server
+    participant Tools as Tool Instances
+    participant ExtAPI as External APIs
+
+    Note over App,ExtAPI: Phase 1: Initialization
+    App->>Orch: Initialize MCP System
+    Orch->>Client: Create MCPClient instance
+    Client->>Transport: Create StdioClientTransport<br/>(spawns server process)
+    Transport->>Server: Spawn Node.js process<br/>(mcpServer.js)
+    Server->>Server: Constructor: Create Server instance
+    Server->>Server: setupTools(): Register tool instances
+    Server->>Tools: Instantiate tools<br/>(Calculator, StatusChecker, etc.)
+    Server->>Server: setupHandlers(): Register JSON-RPC handlers
+    Server->>Transport: Connect StdioServerTransport
+    Transport-->>Client: Connection established
+    Client->>Server: JSON-RPC: tools/list request
+    Note right of Client: {"jsonrpc":"2.0","method":"tools/list","id":1}
+    Server->>Server: Handler: ListToolsRequestSchema
+    Server->>Server: Build tool list from Map
+    Server-->>Client: JSON-RPC: tools/list response
+    Note right of Server: {"jsonrpc":"2.0","result":{"tools":[...]},"id":1}
+    Client->>Client: Store availableTools array
+    Client-->>Orch: Initialization complete
+    Orch-->>App: MCP System ready
+
+    Note over App,ExtAPI: Phase 2: Tool Selection
+    App->>Orch: processQueryWithMCP(query, confidence)
+    Orch->>Orch: AI Tool Selection Service
+    alt AI Available
+        Orch->>ExtAPI: Gemini AI: Analyze query
+        ExtAPI-->>Orch: Selected tools: ["calculator", "status_checker"]
+    else AI Unavailable
+        Orch->>Orch: Rule-based selection<br/>(pattern matching)
+        Orch->>Orch: Selected tools: ["calculator"]
+    end
+    Orch->>Orch: Filter enabled tools<br/>(check mcp-tools.json config)
+
+    Note over App,ExtAPI: Phase 3: Tool Execution (Parallel)
+    Orch->>Client: callTool(toolName, args) for each tool
+    par Tool 1: Calculator
+        Client->>Transport: JSON-RPC Request: tools/call
+        Note right of Client: {"jsonrpc":"2.0","method":"tools/call",<br/>"params":{"name":"calculator",<br/>"arguments":{"query":"..."}},"id":2}
+        Transport->>Server: Write to stdin (JSON-RPC)
+        Server->>Server: Handler: CallToolRequestSchema
+        Server->>Server: Extract: name="calculator", query="..."
+        Server->>Server: Lookup: tool = this.tools.get("calculator")
+        Server->>Tools: tool.execute(query)
+        Tools->>Tools: Extract math expressions
+        Tools->>Tools: Evaluate: math.evaluate("(2.9/100) * 1000")
+        Tools->>Tools: Calculate confidence: 0.95
+        Tools->>Tools: Format result: "29"
+        Tools-->>Server: Return: {success:true, results:[...], confidence:0.95}
+        Server->>Server: Wrap in MCP format
+        Server->>Transport: Write to stdout (JSON-RPC Response)
+        Note right of Server: {"jsonrpc":"2.0","result":{<br/>"content":[{"type":"text",<br/>"text":"{...}"}],"isError":false},"id":2}
+        Transport-->>Client: Read from stdout
+        Client->>Client: Parse JSON response
+        Client->>Client: Extract and parse text content
+        Client-->>Orch: Return: {success:true, parsedResult:{...}}
+    and Tool 2: Status Checker
+        Client->>Transport: JSON-RPC Request: tools/call
+        Note right of Client: {"jsonrpc":"2.0","method":"tools/call",<br/>"params":{"name":"status_checker",<br/>"arguments":{"query":"..."}},"id":3}
+        Transport->>Server: Write to stdin (JSON-RPC)
+        Server->>Server: Handler: CallToolRequestSchema
+        Server->>Server: Extract: name="status_checker", query="..."
+        Server->>Server: Lookup: tool = this.tools.get("status_checker")
+        Server->>Tools: tool.execute(query)
+        Tools->>Tools: Check cache validity
+        alt Cache expired
+            Tools->>ExtAPI: Stripe API: Test endpoints
+            ExtAPI-->>Tools: API response data
+            Tools->>Tools: Update cache
+        end
+        Tools->>Tools: Analyze status
+        Tools->>Tools: Calculate confidence: 0.7
+        Tools-->>Server: Return: {success:true, result:{...}, confidence:0.7}
+        Server->>Server: Wrap in MCP format
+        Server->>Transport: Write to stdout (JSON-RPC Response)
+        Transport-->>Client: Read from stdout
+        Client->>Client: Parse JSON response
+        Client-->>Orch: Return: {success:true, parsedResult:{...}}
+    end
+
+    Note over App,ExtAPI: Phase 4: Result Aggregation
+    Orch->>Orch: Collect all tool results
+    Orch->>Orch: formatToolResults(results, errors)
+    Orch->>Orch: calculateOverallConfidence(results)
+    Orch->>Orch: Generate combined response
+    Orch-->>App: Return: {success:true, results:{...}, combinedResponse:"..."}
+    App->>App: Generate final user response
+    App-->>USER: Display answer to user
+```
+
+### **MCP Client-Server Component Architecture**
+
+This diagram shows the internal structure and relationships between MCP components.
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        APP["Application/Service<br/>Uses MCP for tool execution"]
+    end
+
+    subgraph "MCP Client Side"
+        ORCH["Agent Orchestrator<br/>- Tool selection logic<br/>- Result aggregation<br/>- Workflow coordination"]
+        CLIENT["MCP Client<br/>- JSON-RPC client<br/>- Connection management<br/>- Request/response handling"]
+        CLIENT_TRANS["StdioClientTransport<br/>- Spawns server process<br/>- Manages stdio pipes<br/>- Serializes JSON-RPC"]
+    end
+
+    subgraph "Transport Layer (stdio)"
+        STDIN["stdin Pipe<br/>Client → Server<br/>JSON-RPC Requests"]
+        STDOUT["stdout Pipe<br/>Server → Client<br/>JSON-RPC Responses"]
+    end
+
+    subgraph "MCP Server Side"
+        SERVER["MCP Server<br/>- JSON-RPC server<br/>- Request routing<br/>- Response formatting"]
+        SERVER_TRANS["StdioServerTransport<br/>- Reads from stdin<br/>- Writes to stdout<br/>- Deserializes JSON-RPC"]
+        HANDLERS["Request Handlers<br/>- ListToolsRequestSchema<br/>- CallToolRequestSchema"]
+        TOOL_MAP["Tool Registry<br/>Map&lt;name, ToolInstance&gt;<br/>- calculator: CalculatorTool<br/>- status_checker: StatusCheckerTool<br/>- web_search: WebSearchTool<br/>- ..."]
+    end
+
+    subgraph "Tool Implementations"
+        CALC["CalculatorTool<br/>execute(query) → result"]
+        STATUS["StatusCheckerTool<br/>execute(query) → result"]
+        WEB["WebSearchTool<br/>execute(query) → result"]
+        OTHER["Other Tools..."]
+    end
+
+    subgraph "External Services"
+        STRIPE["Stripe API<br/>Status endpoints"]
+        GOOGLE["Google Search API<br/>Web search"]
+        GEMINI["Gemini AI<br/>Tool selection"]
+    end
+
+    APP -->|"processQueryWithMCP()"| ORCH
+    ORCH -->|"callTool()"| CLIENT
+    CLIENT -->|"JSON-RPC requests"| CLIENT_TRANS
+    CLIENT_TRANS -->|"Write JSON"| STDIN
+    STDIN -->|"Read JSON"| SERVER_TRANS
+    SERVER_TRANS -->|"Parse request"| SERVER
+    SERVER -->|"Route to handler"| HANDLERS
+    HANDLERS -->|"Lookup tool"| TOOL_MAP
+    TOOL_MAP -->|"Get instance"| CALC
+    TOOL_MAP -->|"Get instance"| STATUS
+    TOOL_MAP -->|"Get instance"| WEB
+    TOOL_MAP -->|"Get instance"| OTHER
+
+    CALC -->|"tool.execute()"| CALC
+    STATUS -->|"tool.execute()"| STRIPE
+    WEB -->|"tool.execute()"| GOOGLE
+    ORCH -->|"AI selection"| GEMINI
+
+    CALC -->|"Return result"| HANDLERS
+    STATUS -->|"Return result"| HANDLERS
+    WEB -->|"Return result"| HANDLERS
+
+    HANDLERS -->|"Format response"| SERVER
+    SERVER -->|"JSON-RPC response"| SERVER_TRANS
+    SERVER_TRANS -->|"Write JSON"| STDOUT
+    STDOUT -->|"Read JSON"| CLIENT_TRANS
+    CLIENT_TRANS -->|"Parse response"| CLIENT
+    CLIENT -->|"Return parsedResult"| ORCH
+    ORCH -->|"Combined results"| APP
+```
+
+### **JSON-RPC Communication Flow**
+
+This diagram details the JSON-RPC message exchange between client and server.
+
+```mermaid
+sequenceDiagram
+    participant Client as MCP Client
+    participant Transport as Stdio Transport
+    participant Server as MCP Server
+    participant Tool as Tool Instance
+
+    Note over Client,Tool: JSON-RPC Request Flow
+    Client->>Client: client.callTool({name, arguments})
+    Client->>Client: Serialize to JSON-RPC 2.0
+    Note right of Client: Request Format:<br/>{<br/>  "jsonrpc": "2.0",<br/>  "id": 42,<br/>  "method": "tools/call",<br/>  "params": {<br/>    "name": "calculator",<br/>    "arguments": {<br/>      "query": "What is 2.9% of $1000?"<br/>    }<br/>  }<br/>}
+    Client->>Transport: Write JSON string to stdin
+    Transport->>Server: Pipe JSON string via stdin
+    Server->>Server: Read JSON string from stdin
+    Server->>Server: Parse JSON-RPC request
+    Server->>Server: Validate request schema
+    Server->>Server: Extract method: "tools/call"
+    Server->>Server: Extract params: {name, arguments}
+    Server->>Server: Route to CallToolRequestSchema handler
+    Server->>Server: Lookup tool: this.tools.get("calculator")
+    Server->>Tool: tool.execute(query)
+
+    Note over Client,Tool: Tool Execution
+    Tool->>Tool: Process query<br/>(extract expressions, evaluate, etc.)
+    Tool->>Tool: Return result object
+    Note right of Tool: Tool Result Format:<br/>{<br/>  success: true,<br/>  results: [...],<br/>  confidence: 0.95,<br/>  message: "The result is 29..."<br/>}
+    Tool-->>Server: Return result object
+
+    Note over Client,Tool: JSON-RPC Response Flow
+    Server->>Server: Wrap result in MCP format
+    Server->>Server: Serialize to JSON-RPC 2.0
+    Note right of Server: Response Format:<br/>{<br/>  "jsonrpc": "2.0",<br/>  "id": 42,<br/>  "result": {<br/>    "content": [{<br/>      "type": "text",<br/>      "text": "{\"success\":true,...}"<br/>    }],<br/>    "isError": false<br/>  }<br/>}
+    Server->>Transport: Write JSON string to stdout
+    Transport->>Client: Pipe JSON string via stdout
+    Client->>Client: Read JSON string from stdout
+    Client->>Client: Parse JSON-RPC response
+    Client->>Client: Extract content[0].text
+    Client->>Client: Parse inner JSON: parsedResult
+    Client->>Client: Return: {success, content, parsedResult, isError}
+    Client-->>Client: Return to caller
+```
+
+### **Tool Execution Lifecycle**
+
+This diagram shows the complete lifecycle of a tool execution request.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialization: System Start
+    Initialization --> ServerStart: Create MCPServer
+    ServerStart --> RegisterTools: setupTools()
+    RegisterTools --> RegisterHandlers: setupHandlers()
+    RegisterHandlers --> ServerReady: Connect Transport
+    ServerReady --> Waiting: Server listening on stdin
+
+    Waiting --> RequestReceived: JSON-RPC request arrives
+    RequestReceived --> ValidateRequest: Parse and validate
+    ValidateRequest --> ToolNotFound: Tool not in Map
+    ValidateRequest --> ExtractParams: Tool found
+
+    ExtractParams --> GetToolInstance: Extract name and arguments
+    GetToolInstance --> CallExecute: Get tool from Map
+    CallExecute --> ToolProcessing: tool.execute(query)
+
+    ToolProcessing --> ToolSuccess: Execution successful
+    ToolProcessing --> ToolError: Execution failed
+
+    ToolSuccess --> FormatResponse: Wrap in MCP format
+    ToolError --> FormatError: Wrap error in MCP format
+
+    FormatResponse --> SerializeJSON: Convert to JSON string
+    FormatError --> SerializeJSON
+
+    SerializeJSON --> WriteStdout: Write to stdout pipe
+    WriteStdout --> Waiting: Response sent
+
+    ToolNotFound --> FormatError
+
+    note right of ToolProcessing
+        Tool-specific logic:
+        - Calculator: Extract expressions, evaluate
+        - StatusChecker: Check cache, call APIs
+        - WebSearch: Query Google API
+        - etc.
+    end note
+
+    note right of FormatResponse
+        MCP Response Format:
+        {
+          content: [{
+            type: "text",
+            text: JSON.stringify(toolResult)
+          }],
+          isError: false
+        }
+    end note
+```
+
+### **Multiple Tool Execution (Parallel)**
+
+This diagram illustrates how multiple tools are executed in parallel.
+
+```mermaid
+sequenceDiagram
+    participant Orch as Agent Orchestrator
+    participant Client as MCP Client
+    participant Transport as Stdio Transport
+    participant Server as MCP Server
+    participant Tool1 as Calculator Tool
+    participant Tool2 as Status Checker
+    participant Tool3 as Web Search
+
+    Orch->>Orch: executeTools(["calculator", "status_checker", "web_search"], query)
+    Orch->>Orch: Create Promise array for each tool
+
+    par Parallel Execution - Tool 1
+        Orch->>Client: callTool("calculator", {query})
+        Client->>Transport: JSON-RPC Request #1 (id: 1)
+        Transport->>Server: Request #1 via stdin
+        Server->>Tool1: tool.execute(query)
+        Tool1->>Tool1: Calculate: 2.9% of $1000 = 29
+        Tool1-->>Server: Result: {success:true, result:29}
+        Server->>Transport: JSON-RPC Response #1 (id: 1)
+        Transport-->>Client: Response #1 via stdout
+        Client-->>Orch: Result #1: {success:true, parsedResult:{...}}
+    and Parallel Execution - Tool 2
+        Orch->>Client: callTool("status_checker", {query})
+        Client->>Transport: JSON-RPC Request #2 (id: 2)
+        Transport->>Server: Request #2 via stdin
+        Server->>Tool2: tool.execute(query)
+        Tool2->>Tool2: Check Stripe API status
+        Tool2-->>Server: Result: {success:true, status:"operational"}
+        Server->>Transport: JSON-RPC Response #2 (id: 2)
+        Transport-->>Client: Response #2 via stdout
+        Client-->>Orch: Result #2: {success:true, parsedResult:{...}}
+    and Parallel Execution - Tool 3
+        Orch->>Client: callTool("web_search", {query})
+        Client->>Transport: JSON-RPC Request #3 (id: 3)
+        Transport->>Server: Request #3 via stdin
+        Server->>Tool3: tool.execute(query)
+        Tool3->>Tool3: Query Google Search API
+        Tool3-->>Server: Result: {success:true, results:[...]}
+        Server->>Transport: JSON-RPC Response #3 (id: 3)
+        Transport-->>Client: Response #3 via stdout
+        Client-->>Orch: Result #3: {success:true, parsedResult:{...}}
+    end
+
+    Orch->>Orch: Promise.all() resolves
+    Orch->>Orch: Aggregate all results
+    Orch->>Orch: formatToolResults(results)
+    Orch->>Orch: calculateOverallConfidence()
+    Orch-->>Orch: Return combined response
+```
+
+### **Key Architecture Components**
+
+#### **1. MCP Client (`mcpClient.js`)**
+
+- **Purpose**: JSON-RPC client that communicates with MCP server
+- **Responsibilities**:
+  - Establish stdio connection to server process
+  - Send JSON-RPC requests (`tools/list`, `tools/call`)
+  - Receive and parse JSON-RPC responses
+  - Manage connection lifecycle
+- **Key Methods**:
+  - `initialize(serverConfig)`: Connect to server and list tools
+  - `callTool(toolName, args)`: Execute a tool via JSON-RPC
+  - `listTools()`: Get available tools from server
+
+#### **2. MCP Server (`mcpServer.js`)**
+
+- **Purpose**: JSON-RPC server that exposes tools via MCP protocol
+- **Responsibilities**:
+  - Register tool instances in a Map
+  - Handle JSON-RPC requests (`tools/list`, `tools/call`)
+  - Route tool calls to appropriate tool instances
+  - Format responses in MCP format
+- **Key Components**:
+  - `setupTools()`: Instantiate and register all tools
+  - `setupHandlers()`: Register JSON-RPC request handlers
+  - Request handlers: Process incoming JSON-RPC requests
+
+#### **3. Stdio Transport**
+
+- **Purpose**: Communication channel between client and server
+- **Mechanism**: Standard input/output pipes
+- **Client Side**: `StdioClientTransport` spawns server process
+- **Server Side**: `StdioServerTransport` reads from stdin, writes to stdout
+- **Protocol**: JSON-RPC 2.0 messages serialized as JSON strings
+
+#### **4. Tool Instances**
+
+- **Purpose**: Individual tool implementations
+- **Interface**: All tools implement `async execute(query)` method
+- **Return Format**: Standardized `{success, result/results, confidence, message}`
+- **Examples**: CalculatorTool, StatusCheckerTool, WebSearchTool, etc.
+
+#### **5. Agent Orchestrator**
+
+- **Purpose**: Coordinate tool selection and execution
+- **Responsibilities**:
+  - Initialize MCP client connection
+  - Select appropriate tools (AI-powered or rule-based)
+  - Execute multiple tools in parallel
+  - Aggregate and format results
+- **Key Methods**:
+  - `initialize()`: Set up MCP client connection
+  - `decideToolUse()`: Select tools for a query
+  - `executeTools()`: Execute multiple tools in parallel
+
+---
 
 #### **1. User Interface Layer**
 
