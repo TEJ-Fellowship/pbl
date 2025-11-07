@@ -231,7 +231,7 @@ function App() {
         needsClarification: response.data.needsClarification || false,
         multiTurnContext: response.data.multiTurnContext || {},
         intentClassification: response.data.intentClassification || {},
-        proactiveSuggestions: response.data.proactiveSuggestions || [],
+        proactiveSuggestions: response.data.proactiveSuggestions || { suggestions: [] },
       };
 
       console.log(

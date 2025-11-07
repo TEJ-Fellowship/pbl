@@ -8,8 +8,15 @@ const MONGODB_URI =
 
 export const connectDB = async () => {
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log("✅ MongoDB connected successfully");
+    await mongoose.connect(MONGODB_URI, {
+      maxPoolSize: 10, // Maximum number of connections in the pool
+      minPoolSize: 5, // Minimum number of connections in the pool
+      serverSelectionTimeoutMS: 5000, // How long to wait for server selection
+      socketTimeoutMS: 45000, // How long to wait for socket operations
+    });
+    // Disable mongoose buffering (set globally, not in connect options)
+    mongoose.set("bufferCommands", false);
+    console.log("✅ MongoDB connected successfully with connection pooling");
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
     process.exit(1);

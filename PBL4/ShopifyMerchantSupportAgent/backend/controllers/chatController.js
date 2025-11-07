@@ -712,32 +712,39 @@ export async function processChatMessage(message, sessionId, shop = null) {
 
     const startTime = Date.now();
 
-    // Get or create conversation
-    let conversation = await Conversation.findOne({ sessionId });
-    if (!conversation) {
-      conversation = new Conversation({
+    // OPTIMIZATION: Parallelize database operations for faster response
+    // Load conversation and history in parallel instead of sequentially
+    const [conversation, conversationHistory] = await Promise.all([
+      Conversation.findOne({ sessionId }),
+      getConversationHistory(sessionId),
+    ]);
+
+    let finalConversation = conversation;
+    if (!finalConversation) {
+      finalConversation = new Conversation({
         sessionId,
         title: message.length > 50 ? message.substring(0, 50) + "..." : message,
       });
-      await conversation.save();
+      await finalConversation.save();
     }
 
-    // Get conversation history for multi-turn processing
-    const conversationHistory = await getConversationHistory(sessionId);
     const messages = conversationHistory.messages || [];
 
     // Create user message
     const userMessage = new Message({
-      conversationId: conversation._id,
+      conversationId: finalConversation._id,
       role: "user",
       content: message,
     });
-    await userMessage.save();
 
-    // Add message to conversation
-    await conversation.addMessage(userMessage._id);
+    // OPTIMIZATION: Save user message and add to conversation in parallel
+    await Promise.all([
+      userMessage.save(),
+      finalConversation.addMessage(userMessage._id),
+    ]);
 
     // Use multi-turn conversation manager for enhanced context
+    // OPTIMIZATION: Use finalConversation instead of conversation
     const enhancedContext = await multiTurnManager.buildEnhancedContext(
       message,
       sessionId,
@@ -748,7 +755,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
     // Check if clarification is needed
     if (enhancedContext.needsClarification) {
       const clarificationMessage = new Message({
-        conversationId: conversation._id,
+        conversationId: finalConversation._id,
         role: "assistant",
         content: enhancedContext.clarificationQuestion,
         metadata: {
@@ -760,7 +767,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
         },
       });
       await clarificationMessage.save();
-      await conversation.addMessage(clarificationMessage._id);
+      await finalConversation.addMessage(clarificationMessage._id);
 
       return {
         answer: enhancedContext.clarificationQuestion,
@@ -842,7 +849,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
 
       // Create assistant message for web search result
       const assistantMessage = new Message({
-        conversationId: conversation._id,
+        conversationId: finalConversation._id,
         role: "assistant",
         content: finalAnswer,
         metadata: {
@@ -858,7 +865,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
         },
       });
       await assistantMessage.save();
-      await conversation.addMessage(assistantMessage._id);
+      await finalConversation.addMessage(assistantMessage._id);
 
       const response = {
         answer: finalAnswer,
@@ -911,7 +918,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
 
       // Create assistant message for MCP tool result
       const assistantMessage = new Message({
-        conversationId: conversation._id,
+        conversationId: finalConversation._id,
         role: "assistant",
         content: finalAnswer,
         metadata: {
@@ -927,7 +934,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
         },
       });
       await assistantMessage.save();
-      await conversation.addMessage(assistantMessage._id);
+      await finalConversation.addMessage(assistantMessage._id);
 
       return {
         answer: finalAnswer,
@@ -947,10 +954,12 @@ export async function processChatMessage(message, sessionId, shop = null) {
     }
 
     // Continue with RAG search for Shopify-related queries
-    const queryEmbedding = await embedSingle(enhancedContext.contextualQuery);
+    // OPTIMIZATION: Generate embedding and classify intent in parallel
+    const [queryEmbedding, intentClassification] = await Promise.all([
+      embedSingle(enhancedContext.contextualQuery),
+      intentClassifier.classifyIntent(message),
+    ]);
 
-    // Classify intent for smart routing
-    const intentClassification = await intentClassifier.classifyIntent(message);
     console.log(
       `🎯 Intent classified as: ${intentClassification.intent} (confidence: ${intentClassification.confidence})`
     );
@@ -982,7 +991,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
       );
 
       const assistantMessage = new Message({
-        conversationId: conversation._id,
+        conversationId: finalConversation._id,
         role: "assistant",
         content: edgeCase.answer,
         metadata: {
@@ -1004,8 +1013,11 @@ export async function processChatMessage(message, sessionId, shop = null) {
           },
         },
       });
-      await assistantMessage.save();
-      await conversation.addMessage(assistantMessage._id);
+      // OPTIMIZATION: Save message and add to conversation in parallel
+      await Promise.all([
+        assistantMessage.save(),
+        finalConversation.addMessage(assistantMessage._id),
+      ]);
 
       return {
         answer: edgeCase.answer,
@@ -1066,16 +1078,41 @@ export async function processChatMessage(message, sessionId, shop = null) {
     );
 
     // Generate proactive suggestions
-    const suggestionsResult =
-      await proactiveSuggestions.getProactiveSuggestions(
+    // OPTIMIZATION: Wait for suggestions but log timing for monitoring
+    let suggestionsResult = { suggestions: [] };
+    const suggestionsStartTime = Date.now();
+    try {
+      suggestionsResult = await proactiveSuggestions.getProactiveSuggestions(
         message,
         messages,
         intentClassification.intent,
         enhancedResponse.conversationState.userPreferences
       );
-    console.log(
-      `💡 Generated ${suggestionsResult.suggestions.length} proactive suggestions`
-    );
+
+      const suggestionsTime = Date.now() - suggestionsStartTime;
+      console.log(
+        `💡 Generated ${suggestionsResult?.suggestions?.length || 0} proactive suggestions in ${suggestionsTime}ms`
+      );
+      
+      if (suggestionsResult?.suggestions?.length > 0) {
+        console.log(
+          `💡 Suggestions preview:`,
+          suggestionsResult.suggestions
+            .slice(0, 3)
+            .map((s) => (s.suggestion || s).substring(0, 50))
+        );
+      }
+      
+      // Warn if suggestions take too long (for monitoring)
+      if (suggestionsTime > 2000) {
+        console.warn(
+          `⚠️ Proactive suggestions took ${suggestionsTime}ms (consider optimizing)`
+        );
+      }
+    } catch (error) {
+      console.error("Error generating proactive suggestions:", error);
+      suggestionsResult = { suggestions: [] };
+    }
 
     // Track question for analytics
     // Note: We don't need to track here anymore as analytics now queries all user messages directly
@@ -1106,7 +1143,7 @@ export async function processChatMessage(message, sessionId, shop = null) {
 
     // Create assistant message with multi-turn metadata
     const assistantMessage = new Message({
-      conversationId: conversation._id,
+      conversationId: finalConversation._id,
       role: "assistant",
       content: finalAnswer,
       metadata: {
@@ -1137,10 +1174,14 @@ export async function processChatMessage(message, sessionId, shop = null) {
           method: intentClassification.method,
           routingConfig: routingConfig,
         },
-        proactiveSuggestions: suggestionsResult.suggestions,
+        proactiveSuggestions: suggestionsResult, // Store full object for consistency
       },
     });
-    await assistantMessage.save();
+    // OPTIMIZATION: Save message and add to conversation in parallel
+    await Promise.all([
+      assistantMessage.save(),
+      finalConversation.addMessage(assistantMessage._id),
+    ]);
     console.log(`✅ SAVING ASSISTANT MESSAGE:`);
     console.log(`   - User question: "${message}"`);
     console.log(`   - Classified intent: "${intentClassification.intent}"`);
@@ -1155,7 +1196,6 @@ export async function processChatMessage(message, sessionId, shop = null) {
       `   - Intent object:`,
       JSON.stringify(assistantMessage.metadata.intentClassification, null, 2)
     );
-    await conversation.addMessage(assistantMessage._id);
 
     const response = {
       answer: finalAnswer,
@@ -1189,8 +1229,17 @@ export async function processChatMessage(message, sessionId, shop = null) {
         toolsUsed: toolsUsed,
         toolResults: toolResults,
       },
-      proactiveSuggestions: suggestionsResult,
+      proactiveSuggestions: suggestionsResult || { suggestions: [] }, // Ensure structure is always correct
     };
+
+    // Debug: Log suggestions being sent to frontend
+    if (suggestionsResult?.suggestions?.length > 0) {
+      console.log(
+        `✅ Sending ${suggestionsResult.suggestions.length} proactive suggestions to frontend`
+      );
+    } else {
+      console.log(`ℹ️ No proactive suggestions to send (empty or error)`);
+    }
 
     // Cache the response for duplicate queries (now with semantic matching)
     // Cache regardless of follow-up status to handle repeated identical queries
@@ -1365,8 +1414,11 @@ export async function processClarificationResponse(
           },
         },
       });
-      await assistantMessage.save();
-      await conversation.addMessage(assistantMessage._id);
+      // OPTIMIZATION: Save message and add to conversation in parallel
+      await Promise.all([
+        assistantMessage.save(),
+        conversation.addMessage(assistantMessage._id),
+      ]);
 
       return {
         answer: finalAnswer,
@@ -1462,13 +1514,16 @@ export async function processClarificationResponse(
         },
       },
     });
-    await assistantMessage.save();
+    // OPTIMIZATION: Save message and add to conversation in parallel
+    await Promise.all([
+      assistantMessage.save(),
+      conversation.addMessage(assistantMessage._id),
+    ]);
     console.log(`✅ Saved assistant message with intentClassification:`, {
       intent: assistantMessage.metadata.intentClassification?.intent,
       confidence: assistantMessage.metadata.intentClassification?.confidence,
       hasIntentData: !!assistantMessage.metadata.intentClassification,
     });
-    await conversation.addMessage(assistantMessage._id);
 
     return {
       answer: finalAnswer,

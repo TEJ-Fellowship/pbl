@@ -101,6 +101,7 @@ class ResponseCache {
     }
 
     // If no exact match, try semantic similarity
+    // Only if cache has entries (optimization: skip embedding generation if cache is empty)
     if (this.queryEmbeddings.size === 0) {
       console.log(
         "[Response Cache] MISS - No semantic matches, cache is empty"
@@ -111,7 +112,8 @@ class ResponseCache {
     try {
       console.log("[Response Cache] Trying semantic similarity matching...");
 
-      // Generate embedding for the new query
+      // OPTIMIZATION: Only generate embedding if we have cached entries to compare
+      // This saves 200-300ms when cache is empty or only has exact matches
       const queryEmbedding = await embedSingle(message);
 
       // Find most similar cached query

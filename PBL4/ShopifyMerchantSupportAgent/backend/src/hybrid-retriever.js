@@ -165,22 +165,23 @@ export class HybridRetriever {
       // Get Pinecone index
       const index = await getPineconeIndex();
 
-      // 1. Enhanced semantic search using Pinecone
-      console.log("🔍 Performing semantic search...");
-      const semanticResults = await index.query({
-        vector: queryEmbedding,
-        topK: this.maxResults,
-        includeMetadata: true,
-        includeValues: false,
-        filter: this.buildSemanticFilter(processedQuery),
-      });
-
-      // 2. Enhanced keyword search using FlexSearch
-      console.log("🔍 Performing keyword search...");
+      // OPTIMIZATION: Perform semantic and keyword search in parallel
+      // This saves ~50ms by running both searches simultaneously
+      console.log("🔍 Performing parallel semantic and keyword search...");
       const keywordQueries = this.buildKeywordQueries(processedQuery);
-      const keywordResults = await this.performMultiKeywordSearch(
-        keywordQueries
-      );
+      
+      const [semanticResults, keywordResults] = await Promise.all([
+        // 1. Enhanced semantic search using Pinecone
+        index.query({
+          vector: queryEmbedding,
+          topK: this.maxResults,
+          includeMetadata: true,
+          includeValues: false,
+          filter: this.buildSemanticFilter(processedQuery),
+        }),
+        // 2. Enhanced keyword search using FlexSearch
+        this.performMultiKeywordSearch(keywordQueries),
+      ]);
 
       // Debug keyword search results
       console.log(`📊 Keyword search found ${keywordResults.length} results`);

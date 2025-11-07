@@ -10,7 +10,7 @@ export class WebSearchTool {
     this.description =
       "Search the web for recent information and Shopify-related content";
     this.maxResults = 2; // Reduced for faster response
-    this.timeout = 3000; // Reduced timeout for better performance
+    this.timeout = 2000; // Optimized: Reduced from 3000ms to 2000ms for faster responses
   }
 
   /**

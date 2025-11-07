@@ -10,7 +10,7 @@ export class ShopifyStatusTool {
     this.description =
       "Check Shopify's status page for current service issues and outages";
     this.statusApiUrl = "https://status.shopify.com/api/v2/status.json";
-    this.timeout = 10000; // 10 seconds timeout
+    this.timeout = 5000; // OPTIMIZATION: Reduced from 10s to 5s for faster responses
   }
 
   /**
