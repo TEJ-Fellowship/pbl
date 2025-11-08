@@ -113,6 +113,47 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
+## 📖 Documentation Structure
+
+This documentation is organized into the following folders for easy navigation:
+
+### 📁 Getting Started (`getting-started/`)
+- **SETUP_GUIDE.md** - Comprehensive setup instructions
+- **SETUP_SHOPIFY_OAUTH.md** - Shopify OAuth configuration guide
+- **requirements.md** - Project requirements and specifications
+
+### 🏗️ Architecture (`architecture/`)
+- **MCP_CLIENT_SERVER_ARCHITECTURE.md** - MCP protocol implementation details
+- **DATA_INGESTION_MENTAL_MODEL.md** - Data ingestion architecture
+- **MCP_TOOLS_EXPLAINED.md** - MCP tools documentation
+
+### 💻 Implementation (`implementation/`)
+- **IMPLEMENTATION_SUMMARY.md** - Overall implementation overview
+- **MCP_IMPLEMENTATION_SUMMARY.md** - MCP implementation details
+- **TIER3_OPTIMIZATION_IMPLEMENTATION.md** - Tier 3 optimization guide
+
+### ⚙️ Features (`features/`)
+- **Caching Documentation** - Semantic caching implementation and fixes
+  - CACHE_FIX_FINAL.md
+  - CACHING_COMPLETE_EXPLANATION.md
+  - CACHING_FIX_EXPLAINED.md
+  - SEMANTIC_CACHE_EXPLAINED.md
+  - SEMANTIC_CACHING_SUMMARY.md
+- **Memory Management** - Memory cleanup and user experience
+  - MEMORY_CLEANUP_AND_USER_EXPERIENCE.md
+  - MEMORY_CLEANUP_SIMPLE_VISUAL.md
+
+### 🔧 Troubleshooting (`troubleshooting/`)
+- **RACE_CONDITION_EXPLAINED.md** - Race condition issues and solutions
+- **test_fixes.md** - Test-related fixes and improvements
+- **terminalissue/** - Terminal-related issue documentation
+
+### 📊 Analysis (`analysis/`)
+- **LATENCY_ANALYSIS_AND_OPTIMIZATION.md** - Performance analysis
+- **Compatibility/** - Implementation compatibility analysis
+- **tier 3/** - Tier 3 architecture and flow analysis
+- **tier3 analysis/** - Comprehensive tier 3 analysis and recommendations
+
 ## 🔧 Manual Setup
 
 If you prefer manual setup:
