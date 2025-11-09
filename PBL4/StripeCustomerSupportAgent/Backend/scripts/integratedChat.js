@@ -788,7 +788,10 @@ async function startIntegratedChat() {
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
     const mcpService = new MCPIntegrationService();
-    const queryClassifier = new QueryClassifier(mcpService.orchestrator);
+    const queryClassifier = new QueryClassifier(
+      mcpService.orchestrator,
+      embeddings
+    );
 
     // Initialize PostgreSQL BM25 service for hybrid search
     const postgresBM25Service = new PostgreSQLBM25Service();

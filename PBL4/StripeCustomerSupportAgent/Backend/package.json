@@ -23,6 +23,7 @@
     "test:google-search": "node tests/testGoogleSearch.js",
     "test:status-checker": "node tests/testStatusChecker.js",
     "test:ai-tool-selection": "node tests/testAIToolSelection.js",
+    "test:query-classifier": "node tests/testQueryClassifier.js",
     "test:integrated-chat": "node scripts/testIntegratedChat.js",
     "demo:mcp": "node scripts/mcpDemo.js",
     "tool-manager": "node scripts/toolManager.js",
@@ -55,6 +56,7 @@
     "natural": "^6.10.0",
     "openai": "^4.28.0",
     "pg": "^8.11.3",
+    "string-similarity": "^4.0.4",
     "stripe": "^19.1.0",
     "tiktoken": "^1.0.22",
     "uuid": "^9.0.1"

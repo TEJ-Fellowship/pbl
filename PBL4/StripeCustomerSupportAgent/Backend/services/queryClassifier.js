@@ -1,14 +1,27 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import config from "../config/config.js";
+import HybridCache from "./hybridCache.js";
 
 /**
- * Simple AI-Powered Query Classifier
+ * AI-Powered Query Classifier with Hybrid Caching
  * Decides between MCP tools and hybrid search for optimal response
+ * Uses hybrid caching: exact match → fuzzy match → semantic match
  */
 class QueryClassifier {
-  constructor(agentOrchestrator = null) {
+  constructor(agentOrchestrator = null, embeddings = null) {
     this.geminiClient = null;
     this.agentOrchestrator = agentOrchestrator;
+    this.embeddings = embeddings;
+
+    // Initialize hybrid cache
+    this.cache = new HybridCache({
+      cacheTTL: 10 * 60 * 1000, // 10 minutes
+      fuzzyThreshold: 0.9, // 90% similarity
+      semanticThreshold: 0.85, // 85% similarity
+      embeddings: embeddings, // For semantic matching
+      cleanupThreshold: 100,
+    });
+
     this.initializeGemini();
   }
 
@@ -36,6 +49,7 @@ class QueryClassifier {
 
   /**
    * Classify query and decide between MCP tools or hybrid search
+   * Uses hybrid caching: exact match → fuzzy match → semantic match → Gemini API
    * @param {string} query - User query
    * @param {number} confidence - Document retrieval confidence (0-1)
    * @param {Array} enabledTools - Array of enabled tool names (optional)
@@ -43,10 +57,37 @@ class QueryClassifier {
    */
   async classifyQuery(query, confidence = 0.5, enabledTools = null) {
     try {
+      // Step 1-3: Check cache using hybrid matching (exact → fuzzy → semantic)
+      const cached = await this.cache.get(query, enabledTools);
+      if (cached) {
+        const classification = cached.value;
+        const latency = cached.metadata?.latency || 0;
+
+        if (cached.matchType === "exact") {
+          console.log(`✅ Exact cache hit (saved ~${latency}ms)`);
+        } else if (cached.matchType === "fuzzy") {
+          console.log(
+            `✅ Fuzzy cache hit: ${(cached.similarity * 100).toFixed(
+              1
+            )}% similarity (saved ~${latency}ms)`
+          );
+        } else if (cached.matchType === "semantic") {
+          console.log(
+            `✅ Semantic cache hit: ${(cached.similarity * 100).toFixed(
+              1
+            )}% similarity (saved ~${latency}ms)`
+          );
+        }
+
+        return classification;
+      }
+
+      // Step 4: Cache MISS - call Gemini API (~450ms)
       if (!this.geminiClient) {
         return this.fallbackClassification(query, confidence, enabledTools);
       }
 
+      const startTime = Date.now();
       console.log(
         `\n🤖 Query Classifier: Analyzing "${query}" (confidence: ${confidence})`
       );
@@ -105,9 +146,16 @@ class QueryClassifier {
         confidence
       );
 
+      const latency = Date.now() - startTime;
       console.log(
-        `✅ Query Classifier: ${classification.approach} - ${classification.reasoning}`
+        `✅ Query Classifier: ${classification.approach} - ${classification.reasoning} (took ${latency}ms)`
       );
+
+      // Cache the result
+      this.cache.set(query, classification, enabledTools, {
+        latency,
+      });
+
       return classification;
     } catch (error) {
       console.error("❌ Query Classification Error:", error.message);
@@ -393,7 +441,7 @@ class QueryClassifier {
   }
 
   /**
-   * Get classification statistics
+   * Get classification statistics including cache stats
    * @returns {Object} - Classification stats
    */
   getStats() {
@@ -406,6 +454,7 @@ class QueryClassifier {
         "COMBINED",
         "CONVERSATIONAL",
       ],
+      cache: this.cache.getStats(),
     };
   }
 }

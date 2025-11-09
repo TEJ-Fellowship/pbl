@@ -247,7 +247,10 @@ class ChatService {
 
       // Initialize query classifier
       console.log("   🤖 Initializing query classifier...");
-      this.queryClassifier = new QueryClassifier(this.mcpService.orchestrator);
+      this.queryClassifier = new QueryClassifier(
+        this.mcpService.orchestrator,
+        this.embeddings
+      );
       console.log("      ✅ Query classifier initialized");
 
       this.isInitialized = true;
