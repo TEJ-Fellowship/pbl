@@ -15,6 +15,7 @@ import MCPIntegrationService from "../services/mcpIntegrationService.js";
 import QueryClassifier from "../services/queryClassifier.js";
 import HybridSearch from "../hybridSearch.js";
 import PostgreSQLBM25Service from "../services/postgresBM25Service.js";
+import HybridCache from "../services/hybridCache.js";
 import config from "../config/config.js";
 import { generateConversationalResponse as generateConversationalResponseService } from "../scripts/integratedChat.js";
 import { optionalAuth, requireUserId } from "../middleware/optionalAuth.js";
@@ -75,6 +76,15 @@ async function initializeServices() {
     // Ensure MCP service is fully initialized
     await mcpService.ensureInitialized();
 
+    // Initialize response cache
+    const responseCache = new HybridCache({
+      cacheTTL: 10 * 60 * 1000, // 10 minutes
+      fuzzyThreshold: 0.8, // 85% for responses
+      semanticThreshold: 0.7, // 80% for responses
+      embeddings: embeddings, // For semantic matching
+      cleanupThreshold: 50,
+    });
+
     services = {
       geminiClient,
       geminiClient2,
@@ -85,6 +95,7 @@ async function initializeServices() {
       mcpService,
       queryClassifier,
       hybridSearch,
+      responseCache,
     };
 
     console.log("✅ Integrated chat services initialized");
@@ -120,6 +131,14 @@ router.post("/", requireUserId, async (req, res) => {
     console.log("\n💬 Processing message: " + message.substring(0, 50) + "...");
 
     // Initialize services if not already done
+    const services = await initializeServices();
+    if (!services) {
+      return res.status(500).json({
+        success: false,
+        error: "Failed to initialize services",
+      });
+    }
+
     const {
       geminiClient,
       geminiClient2,
@@ -130,7 +149,8 @@ router.post("/", requireUserId, async (req, res) => {
       mcpService,
       queryClassifier,
       hybridSearch,
-    } = await initializeServices();
+      responseCache,
+    } = services;
 
     // Initialize memory session if not exists
     try {
@@ -142,7 +162,7 @@ router.post("/", requireUserId, async (req, res) => {
     } catch (error) {
       console.log(
         "⚠️ Session already exists or initialization failed:",
-        error.message
+        error?.message || error || "Unknown error"
       );
     }
 
@@ -159,8 +179,6 @@ router.post("/", requireUserId, async (req, res) => {
 
     // OPTIMIZATION: Start classification and memory context retrieval in parallel
     // This saves ~500-1000ms by running these independent operations simultaneously
-    // For approaches that need complete memory context (HYBRID_SEARCH, COMBINED, MCP fallback),
-    // we prefetch it in parallel with classification
     const [classification, prefetchedMemoryContext] = await Promise.all([
       queryClassifier.classifyQuery(message, 0.5, enabledTools),
       // Prefetch complete memory context for non-CONVERSATIONAL approaches
@@ -169,7 +187,7 @@ router.post("/", requireUserId, async (req, res) => {
         // If prefetch fails, we'll fetch it later when needed
         console.warn(
           "⚠️ Memory context prefetch failed, will fetch on demand:",
-          error.message
+          error?.message || String(error) || "Unknown error"
         );
         return null;
       }),
@@ -177,9 +195,117 @@ router.post("/", requireUserId, async (req, res) => {
 
     console.log("🔍 Classification details:", classification);
 
+    // Safety check for classification
+    if (!classification || !classification.approach) {
+      console.error("❌ Invalid classification received:", classification);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to classify query. Please try again.",
+      });
+    }
+
+    // Check response cache first
+    // Generate cache context from classification and enabled tools
+    const cacheContext = classification.approach
+      ? `approach:${classification.approach}|tools:${
+          enabledTools ? enabledTools.sort().join(",") : "all"
+        }`
+      : enabledTools
+      ? `tools:${enabledTools.sort().join(",")}`
+      : "default";
+
+    let cachedResponse = null;
+    try {
+      cachedResponse = await responseCache.get(message, cacheContext);
+      if (!cachedResponse) {
+        console.log(
+          `🔍 Response cache miss for: "${message}" (context: ${cacheContext})`
+        );
+      }
+    } catch (cacheError) {
+      console.warn(
+        "⚠️ Response cache lookup failed, continuing without cache:",
+        cacheError?.message || String(cacheError) || "Unknown error"
+      );
+      // Continue without cache
+    }
+
+    if (cachedResponse) {
+      const matchType = cachedResponse.matchType;
+      const latency = cachedResponse.metadata?.latency || 0;
+      if (matchType === "exact") {
+        console.log(`✅ Response cache hit (exact) - saved ~${latency}ms`);
+      } else if (matchType === "fuzzy") {
+        console.log(
+          `✅ Response cache hit (fuzzy: ${(
+            cachedResponse.similarity * 100
+          ).toFixed(1)}%) - saved ~${latency}ms`
+        );
+      } else if (matchType === "semantic") {
+        console.log(
+          `✅ Response cache hit (semantic: ${(
+            cachedResponse.similarity * 100
+          ).toFixed(1)}%) - saved ~${latency}ms`
+        );
+      }
+
+      // IMPORTANT: Save cached response to session history (same as regular responses)
+      // This ensures cached responses appear in conversation history after refresh
+      try {
+        await memoryController.processAssistantResponse(
+          cachedResponse.value.answer,
+          {
+            timestamp: new Date().toISOString(),
+            sources: cachedResponse.value.sources?.length || 0,
+            searchQuery: cachedResponse.value.searchQuery || message,
+            mcpToolsUsed: 0,
+            mcpConfidence: 0,
+          },
+          true // Enable async Q&A extraction (non-blocking)
+        );
+        console.log("✅ Cached response saved to session history");
+      } catch (memoryError) {
+        console.warn(
+          "⚠️ Failed to save cached response to memory (non-critical):",
+          memoryError?.message || String(memoryError) || "Unknown error"
+        );
+        // Continue - memory save failure shouldn't break the response
+      }
+
+      // Update session token usage (even for cached responses)
+      try {
+        await memoryController.postgresMemory.updateSessionTokenUsage(
+          sessionId
+        );
+      } catch (tokenError) {
+        console.warn(
+          "⚠️ Failed to update token usage for cached response:",
+          tokenError
+        );
+      }
+
+      // Return cached response (match the structure of non-cached responses)
+      return res.json({
+        success: true,
+        data: {
+          message: cachedResponse.value.answer,
+          confidence: cachedResponse.value.confidence || 0,
+          sources: cachedResponse.value.sources || [],
+          mcpToolsUsed: [],
+          mcpConfidence: 0,
+          classification: classification.approach,
+          reasoning: "Cached response",
+          searchQuery: cachedResponse.value.searchQuery || message,
+          timestamp: cachedResponse.value.timestamp || new Date().toISOString(),
+        },
+        cached: true,
+      });
+    }
+
     let result;
     let chunks = [];
     let searchQuery = message;
+    const responseStartTime = Date.now();
 
     // Step 2: Route based on classification
     // Handle CONVERSATIONAL approach FIRST (highest priority)
@@ -497,7 +623,7 @@ router.post("/", requireUserId, async (req, res) => {
           sessionStats &&
           sessionStats.total_messages &&
           sessionStats.total_messages > 0 &&
-          sessionStats.total_messages % 4 === 0
+          sessionStats.total_messages % 6 === 0
         ) {
           console.log(
             `\n📝 [Background] Auto-creating conversation summary (message #${sessionStats.total_messages})`
@@ -517,9 +643,12 @@ router.post("/", requireUserId, async (req, res) => {
         // Non-critical error - just log it
         console.warn(
           "⚠️ [Background] Failed to auto-create conversation summary:",
-          summaryError.message
+          summaryError?.message || summaryError || "Unknown error"
         );
       });
+
+    // Calculate response latency
+    const responseLatency = Date.now() - responseStartTime;
 
     // Prepare response
     const response = {
@@ -536,6 +665,27 @@ router.post("/", requireUserId, async (req, res) => {
         timestamp: new Date().toISOString(),
       },
     };
+
+    // Cache the response for future similar queries
+    try {
+      const responseToCache = {
+        answer: result.answer,
+        sources: result.sources || [],
+        confidence: result.overallConfidence || result.mcpConfidence || 0.8,
+        sessionId,
+        searchQuery,
+        timestamp: new Date().toISOString(),
+      };
+      responseCache.set(message, responseToCache, cacheContext, {
+        latency: responseLatency,
+      });
+    } catch (cacheError) {
+      console.warn(
+        "⚠️ Response cache storage failed (non-critical):",
+        cacheError?.message || String(cacheError) || "Unknown error"
+      );
+      // Continue - caching failure shouldn't break the response
+    }
 
     console.log(
       `✅ Response generated with confidence: ${(
@@ -554,7 +704,7 @@ router.post("/", requireUserId, async (req, res) => {
     if (error?.rateLimit || error?.status === 429) {
       const retryAfter = Math.max(
         1,
-        parseInt(error.retryAfterSeconds || 15, 10)
+        parseInt(error?.retryAfterSeconds || 15, 10)
       );
       res.setHeader("Retry-After", String(retryAfter));
       return res.status(429).json({
@@ -565,7 +715,7 @@ router.post("/", requireUserId, async (req, res) => {
     }
     res.status(500).json({
       success: false,
-      error: error.message || "Internal server error",
+      error: error?.message || String(error) || "Internal server error",
     });
   }
 });
@@ -585,7 +735,7 @@ router.get("/mcp-status", async (req, res) => {
     console.error("❌ MCP status error:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error?.message || String(error) || "Failed to get MCP status",
     });
   }
 });
@@ -604,7 +754,8 @@ router.get("/classifier-status", async (req, res) => {
     console.error("❌ Classifier status error:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error:
+        error?.message || String(error) || "Failed to get classifier status",
     });
   }
 });
@@ -633,7 +784,7 @@ router.get("/health", async (req, res) => {
     console.error("❌ Health check error:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error?.message || String(error) || "Failed to get health status",
     });
   }
 });
@@ -683,7 +834,10 @@ router.post("/summarize/:sessionId", requireUserId, async (req, res) => {
     console.error("❌ Summarization error:", error);
     res.status(500).json({
       success: false,
-      error: error.message || "Failed to create conversation summary",
+      error:
+        error?.message ||
+        String(error) ||
+        "Failed to create conversation summary",
     });
   }
 });

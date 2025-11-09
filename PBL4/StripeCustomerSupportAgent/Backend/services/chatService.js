@@ -6,6 +6,7 @@ import PostgreSQLBM25Service from "./postgresBM25Service.js";
 import MemoryController from "../controllers/memoryController.js";
 import QueryClassifier from "./queryClassifier.js";
 import MCPIntegrationService from "./mcpIntegrationService.js";
+import HybridCache from "./hybridCache.js";
 import config from "../config/config.js";
 
 class ChatService {
@@ -253,6 +254,17 @@ class ChatService {
       );
       console.log("      ✅ Query classifier initialized");
 
+      // Initialize response cache
+      console.log("   💾 Initializing response cache...");
+      this.responseCache = new HybridCache({
+        cacheTTL: 10 * 60 * 1000, // 10 minutes
+        fuzzyThreshold: 0.85, // 85% for responses
+        semanticThreshold: 0.8, // 80% for responses
+        embeddings: this.embeddings, // For semantic matching
+        cleanupThreshold: 50,
+      });
+      console.log("      ✅ Response cache initialized");
+
       this.isInitialized = true;
       console.log("🎉 Chat service fully initialized and ready!");
     } catch (error) {
@@ -339,8 +351,55 @@ class ChatService {
         `📊 Classification: ${classification.approach} - ${classification.reasoning}`
       );
 
+      // Check response cache first
+      // Generate cache context from classification and enabled tools
+      const cacheContext = classification.approach
+        ? `approach:${classification.approach}|tools:${
+            enabledTools ? enabledTools.sort().join(",") : "all"
+          }`
+        : enabledTools
+        ? `tools:${enabledTools.sort().join(",")}`
+        : "default";
+
+      const cachedResponse = await this.responseCache.get(
+        message,
+        cacheContext
+      );
+
+      if (cachedResponse) {
+        const matchType = cachedResponse.matchType;
+        const latency = cachedResponse.metadata?.latency || 0;
+        if (matchType === "exact") {
+          console.log(`✅ Response cache hit (exact) - saved ~${latency}ms`);
+        } else if (matchType === "fuzzy") {
+          console.log(
+            `✅ Response cache hit (fuzzy: ${(
+              cachedResponse.similarity * 100
+            ).toFixed(1)}%) - saved ~${latency}ms`
+          );
+        } else if (matchType === "semantic") {
+          console.log(
+            `✅ Response cache hit (semantic: ${(
+              cachedResponse.similarity * 100
+            ).toFixed(1)}%) - saved ~${latency}ms`
+          );
+        }
+
+        // Return cached response
+        return {
+          answer: cachedResponse.value.answer,
+          sources: cachedResponse.value.sources,
+          confidence: cachedResponse.value.confidence,
+          sessionId,
+          searchQuery: cachedResponse.value.searchQuery || message,
+          timestamp: cachedResponse.value.timestamp || new Date().toISOString(),
+          cached: true,
+        };
+      }
+
       let response;
       let searchQuery = memoryContext.reformulatedQuery || message;
+      const responseStartTime = Date.now();
 
       // Step 2: Route based on classification
       const isStripe = this.isStripeRelatedQuery(message);
@@ -429,7 +488,8 @@ class ChatService {
       // Calculate confidence score (use empty array for MCP-only responses)
       const confidence = this.calculateConfidence([], response.sources);
 
-      return {
+      const responseLatency = Date.now() - responseStartTime;
+      const finalResponse = {
         answer: response.answer,
         sources: response.sources,
         confidence,
@@ -437,6 +497,13 @@ class ChatService {
         searchQuery,
         timestamp: new Date().toISOString(),
       };
+
+      // Cache the response
+      this.responseCache.set(message, finalResponse, cacheContext, {
+        latency: responseLatency,
+      });
+
+      return finalResponse;
     } catch (error) {
       console.error("❌ Chat service error:", error);
       throw error;

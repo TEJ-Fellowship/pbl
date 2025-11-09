@@ -216,8 +216,44 @@ export const login = async (req, res) => {
       user.id,
     ]);
 
+    // Migrate anonymous sessions if anonymousUserId provided
+    let migratedSessions = 0;
+    const { anonymousUserId } = req.body;
+    if (anonymousUserId) {
+      try {
+        console.log(
+          `🔄 Migrating sessions from anonymous user ${anonymousUserId} to ${user.id}`
+        );
+
+        // Import memoryService to transfer sessions
+        const { memoryService } = await import("../services/memoryService.js");
+        
+        const transferResult = await memoryService.transferSessionsToUser(
+          anonymousUserId,
+          user.id
+        );
+
+        migratedSessions = transferResult.transferredCount || 0;
+
+        if (migratedSessions > 0) {
+          console.log(
+            `✅ Migrated ${migratedSessions} session(s) to authenticated user account`
+          );
+        } else {
+          console.log(`ℹ️ No sessions found for anonymous user to migrate`);
+        }
+      } catch (migrationError) {
+        console.error("⚠️ Session migration error:", migrationError);
+        // Don't fail login if migration fails
+        // Continue with login
+      }
+    }
+
     // Log login
     console.log(`✅ User logged in: ${email}`);
+    if (migratedSessions > 0) {
+      console.log(`   📦 ${migratedSessions} session(s) migrated`);
+    }
 
     res.json({
       success: true,
@@ -230,6 +266,7 @@ export const login = async (req, res) => {
         },
         token,
         refreshToken,
+        migratedSessions,
       },
     });
   } catch (error) {

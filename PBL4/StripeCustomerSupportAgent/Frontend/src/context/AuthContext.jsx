@@ -176,12 +176,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
+
+      // Get anonymous user ID from localStorage if exists (for session transfer)
+      const anonymousUserId = localStorage.getItem("stripe_anonymous_user_id");
+
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          anonymousUserId: anonymousUserId || null, // Send for session transfer
+        }),
       });
 
       const data = await response.json();
@@ -198,10 +206,40 @@ export const AuthProvider = ({ children }) => {
       setUser(data.data.user);
       setIsAnonymous(false);
 
-      // Clear anonymous data after login
+      // Set previous state to anonymous BEFORE updating to authenticated
+      // This ensures the login detection in useIntegratedChat works correctly
+      if (!localStorage.getItem("previous_is_anonymous")) {
+        localStorage.setItem("previous_is_anonymous", "true");
+      }
+      if (!localStorage.getItem("previous_user_id") && anonymousUserId) {
+        localStorage.setItem("previous_user_id", anonymousUserId);
+      }
+
+      // Log session migration info if sessions were migrated
+      if (data.data.migratedSessions > 0) {
+        console.log(
+          `✅ ${data.data.migratedSessions} session(s) migrated to your account`
+        );
+      } else if (anonymousUserId) {
+        console.log(
+          `ℹ️ No sessions found to migrate (anonymousUserId: ${anonymousUserId})`
+        );
+      }
+
+      // Clear anonymous user ID after successful transfer (but keep session ID)
+      // The session will be transferred to the authenticated user
+      if (anonymousUserId) {
+        localStorage.removeItem("stripe_anonymous_user_id");
+      }
+
+      // Clear other anonymous data after login
       clearAnonymousData();
 
-      return { success: true, user: data.data.user };
+      return {
+        success: true,
+        user: data.data.user,
+        migratedSessions: data.data.migratedSessions || 0,
+      };
     } catch (err) {
       const errorMessage = err.message || "Login failed";
       setError(errorMessage);

@@ -140,13 +140,15 @@ class HybridCache {
         cachedKeyPart
       );
 
-      if (similarity > bestScore && similarity >= this.fuzzyThreshold) {
+      if (similarity > bestScore) {
         bestScore = similarity;
-        bestMatch = {
-          key: cachedKey,
-          value: cachedValue,
-          similarity: similarity,
-        };
+        if (similarity >= this.fuzzyThreshold) {
+          bestMatch = {
+            key: cachedKey,
+            value: cachedValue,
+            similarity: similarity,
+          };
+        }
       }
     }
 
@@ -154,6 +156,15 @@ class HybridCache {
       this.stats.fuzzyHits++;
       this.stats.totalRequests++;
       return bestMatch;
+    }
+
+    // Debug: Log if we found something close but below threshold
+    if (bestScore > 0 && bestScore < this.fuzzyThreshold) {
+      console.log(
+        `🔍 Fuzzy match found but below threshold: ${(bestScore * 100).toFixed(
+          1
+        )}% (need ${(this.fuzzyThreshold * 100).toFixed(0)}%)`
+      );
     }
 
     return null;
@@ -229,16 +240,15 @@ class HybridCache {
         // Calculate cosine similarity
         const similarity = this.cosineSimilarity(keyEmbedding, cachedEmbedding);
 
-        if (
-          similarity > bestSimilarity &&
-          similarity >= this.semanticThreshold
-        ) {
+        if (similarity > bestSimilarity) {
           bestSimilarity = similarity;
-          bestMatch = {
-            key: cachedKey,
-            value: cachedValue,
-            similarity: similarity,
-          };
+          if (similarity >= this.semanticThreshold) {
+            bestMatch = {
+              key: cachedKey,
+              value: cachedValue,
+              similarity: similarity,
+            };
+          }
         }
       }
 
@@ -246,6 +256,15 @@ class HybridCache {
         this.stats.semanticHits++;
         this.stats.totalRequests++;
         return bestMatch;
+      }
+
+      // Debug: Log if we found something close but below threshold
+      if (bestSimilarity > 0 && bestSimilarity < this.semanticThreshold) {
+        console.log(
+          `🔍 Semantic match found but below threshold: ${(
+            bestSimilarity * 100
+          ).toFixed(1)}% (need ${(this.semanticThreshold * 100).toFixed(0)}%)`
+        );
       }
 
       return null;

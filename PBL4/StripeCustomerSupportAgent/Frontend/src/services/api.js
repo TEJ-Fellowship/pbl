@@ -179,9 +179,12 @@ class ApiService {
   async getAllSessions(userId = null, limit = 50, offset = 0) {
     if (!userId) {
       console.warn(
-        "⚠️ getAllSessions called without userId - authentication required"
+        "⚠️ getAllSessions called without userId - returning empty array"
       );
-      throw new Error("User ID is required. Please log in.");
+      return {
+        success: true,
+        data: { sessions: [], userId: null, totalCount: 0 },
+      };
     }
     return this.request(
       `${API_ENDPOINTS.SESSIONS}?userId=${userId}&limit=${limit}&offset=${offset}`
@@ -193,6 +196,21 @@ class ApiService {
    */
   async getSessionDetails(sessionId) {
     return this.request(`${API_ENDPOINTS.SESSION_DETAILS}/${sessionId}`);
+  }
+
+  /**
+   * Transfer a session to a different user
+   * @param {string} sessionId - The session ID to transfer
+   * @param {string} newUserId - The new user ID
+   */
+  async transferSession(sessionId, newUserId) {
+    return this.request("/api/chat/transfer-session", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId,
+        newUserId,
+      }),
+    });
   }
 }
 

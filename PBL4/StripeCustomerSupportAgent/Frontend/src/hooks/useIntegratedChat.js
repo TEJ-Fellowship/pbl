@@ -70,6 +70,19 @@ export const useIntegratedChat = () => {
 
   // Initialize integrated chat session on component mount
   useEffect(() => {
+    // Initialize previous state if not set (for first-time users)
+    if (!localStorage.getItem("previous_is_anonymous")) {
+      const isCurrentlyAnonymous =
+        !user?.id || user?.id?.startsWith("anonymous_");
+      localStorage.setItem(
+        "previous_is_anonymous",
+        isCurrentlyAnonymous.toString()
+      );
+      if (user?.id) {
+        localStorage.setItem("previous_user_id", user.id);
+      }
+    }
+
     loadSessionsFromDatabase();
     loadExistingSession();
     fetchSystemStatus();
@@ -82,41 +95,166 @@ export const useIntegratedChat = () => {
     }
   }, [currentSessionId]);
 
-  // Reset chat state when user changes (e.g., after logout)
+  // Reset chat state when user changes (e.g., after logout or login)
   useEffect(() => {
-    // Clear chat state when user ID changes
-    setMessages([
-      {
-        id: 1,
-        text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!\n\n💡 **Quick Commands:**\n• Type `sample` to see example questions\n• Type `mcp` to check system status\n• Ask me anything about Stripe!",
-        sender: "ai",
-        timestamp: new Date(),
-      },
-    ]);
-    setCurrentSessionId(null);
-    setChatHistory([]);
-    setInputValue("");
-    setError(null);
-    setSources([]);
-    setConfidence(null);
-    setMcpToolsUsed([]);
-    setMcpConfidence(null);
-    setClassification(null);
+    // Get previous user state to detect login vs logout
+    const previousUserId = localStorage.getItem("previous_user_id");
+    const previousIsAnonymousRaw = localStorage.getItem(
+      "previous_is_anonymous"
+    );
+    const previousIsAnonymous = previousIsAnonymousRaw === "true";
+    const currentIsAnonymous = !user?.id || user?.id?.startsWith("anonymous_");
 
-    // Clear localStorage session data
-    localStorage.removeItem("stripe_integrated_current_session");
+    // Detect login: was anonymous (or not set), now authenticated
+    // Also check if user ID changed from anonymous to real user
+    const wasAnonymous = previousIsAnonymous || previousIsAnonymousRaw === null;
+    const isLogin =
+      wasAnonymous &&
+      !currentIsAnonymous &&
+      user?.id &&
+      user.id !== previousUserId;
 
-    // Reload sessions for the new user
+    // Detect logout: was authenticated, now anonymous or no user
+    const isLogout =
+      !previousIsAnonymous &&
+      previousIsAnonymousRaw !== null &&
+      previousUserId &&
+      (!user?.id || currentIsAnonymous);
+
+    // Debug logging
+    console.log("🔍 User state change detection:", {
+      previousUserId,
+      previousIsAnonymous: previousIsAnonymousRaw,
+      currentUserId: user?.id,
+      currentIsAnonymous,
+      isLogin,
+      isLogout,
+    });
+
+    // Store current state for next comparison
     if (user?.id) {
+      localStorage.setItem("previous_user_id", user.id);
+      localStorage.setItem(
+        "previous_is_anonymous",
+        currentIsAnonymous.toString()
+      );
+    } else {
+      localStorage.removeItem("previous_user_id");
+      localStorage.setItem("previous_is_anonymous", "true");
+    }
+
+    if (isLogout) {
+      // User logged out - clear everything
+      console.log("🚪 User logged out - clearing chat state");
+      setMessages([
+        {
+          id: 1,
+          text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!\n\n💡 **Quick Commands:**\n• Type `sample` to see example questions\n• Type `mcp` to check system status\n• Ask me anything about Stripe!",
+          sender: "ai",
+          timestamp: new Date(),
+        },
+      ]);
+      setCurrentSessionId(null);
+      setChatHistory([]);
+      localStorage.removeItem("stripe_integrated_current_session");
+    } else if (isLogin) {
+      // User logged in - sessions were transferred by backend during login
+      console.log(
+        "🔐 User logged in - sessions transferred to authenticated user"
+      );
+      const currentSession = localStorage.getItem(
+        "stripe_integrated_current_session"
+      );
+
+      // Wait for transfers to complete, then reload sessions
+      const reloadAfterTransfer = async () => {
+        try {
+          // Wait a bit for backend transfer to complete
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          if (currentSession && user?.id) {
+            // Also transfer the current session explicitly (in case it wasn't transferred by anonymousUserId)
+            try {
+              await apiService.transferSession(currentSession, user.id);
+              console.log(
+                "✅ Current session explicitly transferred:",
+                currentSession
+              );
+            } catch (transferError) {
+              console.warn(
+                "⚠️ Failed to transfer current session (may already be transferred):",
+                transferError
+              );
+            }
+          }
+
+          // Reload sessions for the authenticated user (will include transferred sessions)
+          console.log("🔄 Reloading sessions after transfer...");
+          await loadSessionsFromDatabase();
+
+          // Retry loading sessions after a short delay to ensure they're available
+          setTimeout(async () => {
+            console.log(
+              "🔄 Retrying session load to ensure all sessions are visible..."
+            );
+            await loadSessionsFromDatabase();
+          }, 2000);
+
+          // Reload messages from the transferred session if it exists
+          if (currentSession) {
+            setTimeout(() => {
+              loadExistingSession();
+            }, 500);
+          }
+        } catch (error) {
+          console.error("❌ Error during session transfer reload:", error);
+          // Still try to reload sessions even if transfer failed
+          loadSessionsFromDatabase();
+        }
+      };
+
+      reloadAfterTransfer();
+    } else if (user?.id && !currentIsAnonymous) {
+      // Authenticated user - just reload sessions (e.g., page refresh)
       loadSessionsFromDatabase();
+    } else if (!user?.id || currentIsAnonymous) {
+      // Anonymous user - clear state if needed
+      // Don't clear if we're just initializing
+      if (previousUserId && !isLogin) {
+        setMessages([
+          {
+            id: 1,
+            text: "Hello! I'm your enhanced Stripe.AI assistant with full MCP tool integration. I can help you with Stripe integration, calculations, status checks, and more!\n\n💡 **Quick Commands:**\n• Type `sample` to see example questions\n• Type `mcp` to check system status\n• Ask me anything about Stripe!",
+            sender: "ai",
+            timestamp: new Date(),
+          },
+        ]);
+        setCurrentSessionId(null);
+        setChatHistory([]);
+        localStorage.removeItem("stripe_integrated_current_session");
+      }
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSessionsFromDatabase = async () => {
     try {
-      console.log("🔄 Loading sessions from database...");
+      // Skip loading sessions if no user ID (anonymous users)
+      if (!user?.id) {
+        console.log("⚠️ No user ID - skipping session load (anonymous user)");
+        setIsLoadingSessions(false);
+        return;
+      }
+
+      console.log("🔄 Loading sessions from database for user:", user.id);
       setIsLoadingSessions(true);
-      const response = await apiService.getAllSessions(user?.id, 50, 0);
+      const response = await apiService.getAllSessions(user.id, 50, 0);
+
+      console.log("📥 Sessions API response:", {
+        success: response.success,
+        hasData: !!response.data,
+        sessionCount: response.data?.sessions?.length || 0,
+        sessions: response.data?.sessions,
+      });
 
       if (response.success && response.data.sessions) {
         const formattedSessions = response.data.sessions.map(
@@ -136,11 +274,77 @@ export const useIntegratedChat = () => {
           })
         );
 
+        // Preserve current session if it's not in the database results
+        // This can happen if the session was just created or hasn't been saved yet
+        if (currentSessionId) {
+          const currentSessionInResults = formattedSessions.find(
+            (s) => s.sessionId === currentSessionId
+          );
+
+          if (!currentSessionInResults) {
+            console.log(
+              `⚠️ Current session ${currentSessionId} not in database results, preserving it in chatHistory`
+            );
+            // Check if it's already in chatHistory (from updateChatHistory)
+            const existingInHistory = chatHistory.find(
+              (chat) => chat.sessionId === currentSessionId
+            );
+
+            if (existingInHistory) {
+              // Merge: add current session to the beginning of the list
+              formattedSessions.unshift(existingInHistory);
+              console.log("✅ Preserved current session in chatHistory");
+            } else {
+              // Create a placeholder entry for the current session
+              const currentSessionPlaceholder = {
+                id: Date.now(),
+                sessionId: currentSessionId,
+                title: "Current Conversation",
+                lastMessage:
+                  messages[messages.length - 1]?.text || "No messages yet",
+                timestamp: new Date(),
+                messageCount: messages.filter((m) => m.sender === "user")
+                  .length,
+                type: "integrated",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                isActive: true,
+                hasSummary: false,
+              };
+              formattedSessions.unshift(currentSessionPlaceholder);
+              console.log(
+                "✅ Added current session placeholder to chatHistory"
+              );
+            }
+          }
+        }
+
         setChatHistory(formattedSessions);
         console.log(
           "✅ Sessions loaded from database:",
-          formattedSessions.length
+          formattedSessions.length,
+          "sessions"
         );
+        console.log(
+          "📋 Session IDs:",
+          formattedSessions.map((s) => s.sessionId)
+        );
+
+        // Save to localStorage as backup
+        try {
+          localStorage.setItem(
+            "stripe_integrated_chat_history",
+            JSON.stringify(formattedSessions)
+          );
+        } catch (localError) {
+          console.warn(
+            "⚠️ Failed to save sessions to localStorage:",
+            localError
+          );
+        }
+      } else {
+        console.warn("⚠️ No sessions in response:", response);
+        setChatHistory([]);
       }
     } catch (error) {
       console.error("❌ Failed to load sessions from database:", error.message);
@@ -166,33 +370,60 @@ export const useIntegratedChat = () => {
           "🔄 Loading existing integrated session:",
           currentSessionId
         );
-        const response = await apiService.getHistory(currentSessionId);
+        try {
+          const response = await apiService.getHistory(currentSessionId);
 
-        if (response.data.messages.length > 0) {
-          const formattedMessages = response.data.messages.map(
-            (msg, index) => ({
-              id: msg.id || index + 1,
-              text: msg.content,
-              sender: msg.type === "user" ? "user" : "ai",
-              timestamp: new Date(msg.timestamp),
-              confidence: msg.metadata?.confidence,
-              sources: msg.metadata?.sources,
-              mcpToolsUsed: msg.metadata?.mcpToolsUsed,
-              mcpConfidence: msg.metadata?.mcpConfidence,
-              classification: msg.metadata?.classification,
-            })
-          );
+          if (
+            response.data &&
+            response.data.messages &&
+            response.data.messages.length > 0
+          ) {
+            const formattedMessages = response.data.messages.map(
+              (msg, index) => ({
+                id: msg.id || index + 1,
+                text: msg.content,
+                sender: msg.type === "user" ? "user" : "ai",
+                timestamp: new Date(msg.timestamp),
+                confidence: msg.metadata?.confidence,
+                sources: Array.isArray(msg.metadata?.sources)
+                  ? msg.metadata.sources
+                  : typeof msg.metadata?.sources === "number"
+                  ? []
+                  : msg.metadata?.sources || [],
+                mcpToolsUsed: msg.metadata?.mcpToolsUsed || [],
+                mcpConfidence: msg.metadata?.mcpConfidence,
+                classification: msg.metadata?.classification,
+              })
+            );
 
-          setMessages(formattedMessages);
+            setMessages(formattedMessages);
+            console.log(
+              "✅ Existing integrated session loaded:",
+              formattedMessages.length,
+              "messages"
+            );
+            return; // Successfully loaded, exit early
+          } else {
+            // Session exists but has no messages - create new session
+            console.log(
+              "⚠️ Session exists but has no messages, creating new session"
+            );
+            localStorage.removeItem("stripe_integrated_current_session");
+            setCurrentSessionId(null);
+            await initializeSession(true); // Force new session
+          }
+        } catch (historyError) {
+          // Session doesn't exist or error loading - clear and create new
           console.log(
-            "✅ Existing integrated session loaded:",
-            formattedMessages.length,
-            "messages"
+            "⚠️ Failed to load session history (session may not exist):",
+            historyError.message
           );
-        } else {
-          await initializeSession();
+          localStorage.removeItem("stripe_integrated_current_session");
+          setCurrentSessionId(null);
+          await initializeSession(true); // Force new session
         }
       } else {
+        // No session ID in localStorage - create new session
         await initializeSession();
       }
     } catch (error) {
@@ -200,30 +431,78 @@ export const useIntegratedChat = () => {
         "❌ Failed to load existing integrated session:",
         error.message
       );
-      await initializeSession();
+      // Clear invalid session ID and create new session
+      localStorage.removeItem("stripe_integrated_current_session");
+      setCurrentSessionId(null);
+      await initializeSession(true); // Force new session
     }
   };
 
   const initializeSession = async (forceNew = false) => {
     try {
+      // If forceNew is true, clear existing session
+      if (forceNew) {
+        console.log("🔄 Force creating new session (clearing existing)...");
+        localStorage.removeItem("stripe_integrated_current_session");
+        setCurrentSessionId(null);
+      }
+
+      // Only skip if we have a valid session ID and not forcing new
       if (currentSessionId && !forceNew) {
         console.log("✅ Using existing integrated session:", currentSessionId);
         return;
       }
 
       console.log("🔄 Initializing new integrated chat session...");
-      const response = await apiService.createSession(user?.id, {
+
+      // Get or generate anonymous user ID if no user is logged in
+      let userId = user?.id;
+      if (!userId) {
+        // Try to get stored anonymous user ID from localStorage
+        try {
+          userId = localStorage.getItem("stripe_anonymous_user_id");
+          if (!userId) {
+            // Generate new anonymous user ID
+            userId = `anonymous_${Date.now()}_${Math.random()
+              .toString(36)
+              .substr(2, 9)}`;
+            localStorage.setItem("stripe_anonymous_user_id", userId);
+            console.log("🆔 Generated new anonymous user ID:", userId);
+          } else {
+            console.log("🆔 Using stored anonymous user ID:", userId);
+          }
+        } catch {
+          // Fallback if localStorage fails
+          userId = `anonymous_${Date.now()}_${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+          console.log(
+            "🆔 Generated anonymous user ID (localStorage failed):",
+            userId
+          );
+        }
+      }
+
+      const response = await apiService.createSession(userId, {
         project: "stripe_support",
         context: "customer_support_with_mcp",
       });
-      setCurrentSessionId(response.data.sessionId);
-      console.log(
-        "✅ Integrated session initialized:",
-        response.data.sessionId
-      );
+
+      if (response.data && response.data.sessionId) {
+        setCurrentSessionId(response.data.sessionId);
+        console.log(
+          "✅ Integrated session initialized:",
+          response.data.sessionId
+        );
+      } else {
+        throw new Error("Session creation response missing sessionId");
+      }
     } catch (error) {
-      console.log("❌ Integrated session init failed:", error.message);
+      console.error("❌ Integrated session init failed:", error.message);
       setError("Failed to initialize integrated chat session");
+      // Clear invalid session ID
+      localStorage.removeItem("stripe_integrated_current_session");
+      setCurrentSessionId(null);
     }
   };
 
@@ -265,11 +544,60 @@ export const useIntegratedChat = () => {
         "💬 Sending integrated message:",
         messageText.substring(0, 50) + "..."
       );
+      // Get user ID (authenticated or anonymous)
+      let userId = user?.id;
+      if (!userId) {
+        // Try to get stored anonymous user ID from localStorage
+        try {
+          userId = localStorage.getItem("stripe_anonymous_user_id");
+          if (!userId) {
+            // Generate new anonymous user ID if not found
+            userId = `anonymous_${Date.now()}_${Math.random()
+              .toString(36)
+              .substr(2, 9)}`;
+            localStorage.setItem("stripe_anonymous_user_id", userId);
+            console.log("🆔 Generated anonymous user ID for message:", userId);
+          }
+        } catch {
+          // Fallback: generate temporary ID
+          userId = `anonymous_${Date.now()}_${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+          console.log("🆔 Generated temporary anonymous user ID:", userId);
+        }
+      }
+
+      if (!userId) {
+        throw new Error("Unable to get or generate user ID");
+      }
+
+      // Ensure we have a session ID before sending
+      let sessionIdToUse = currentSessionId;
+      if (!sessionIdToUse) {
+        console.log("⚠️ No current session ID, initializing new session...");
+        await initializeSession();
+        sessionIdToUse = currentSessionId;
+        if (!sessionIdToUse) {
+          throw new Error("Failed to initialize session");
+        }
+      }
+
       const response = await apiService.sendIntegratedMessage(
         messageText,
-        currentSessionId,
-        user?.id
+        sessionIdToUse,
+        userId
       );
+
+      // Update currentSessionId if backend returned a new one (shouldn't happen, but handle it)
+      if (
+        response.data?.sessionId &&
+        response.data.sessionId !== currentSessionId
+      ) {
+        console.log(
+          `⚠️ Backend returned different session ID: ${response.data.sessionId} (current: ${currentSessionId})`
+        );
+        setCurrentSessionId(response.data.sessionId);
+      }
 
       // Calculate response time
       const responseTime = Date.now() - startTime;
@@ -470,8 +798,12 @@ export const useIntegratedChat = () => {
         sender: msg.type === "user" ? "user" : "ai",
         timestamp: new Date(msg.timestamp),
         confidence: msg.metadata?.confidence,
-        sources: msg.metadata?.sources,
-        mcpToolsUsed: msg.metadata?.mcpToolsUsed,
+        sources: Array.isArray(msg.metadata?.sources)
+          ? msg.metadata.sources
+          : typeof msg.metadata?.sources === "number"
+          ? []
+          : msg.metadata?.sources || [],
+        mcpToolsUsed: msg.metadata?.mcpToolsUsed || [],
         mcpConfidence: msg.metadata?.mcpConfidence,
         classification: msg.metadata?.classification,
       }));

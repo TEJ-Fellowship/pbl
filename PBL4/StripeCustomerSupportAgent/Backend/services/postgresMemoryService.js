@@ -1475,6 +1475,110 @@ RESPONSE FORMAT (JSON only, no extra text):
   }
 
   /**
+   * Transfer sessions from anonymous user to authenticated user
+   * @param {string} anonymousUserId - The anonymous user ID (stored in metadata)
+   * @param {string} authenticatedUserId - The authenticated user ID
+   * @returns {Object} - Transfer result with count of transferred sessions
+   */
+  async transferSessionsToUser(anonymousUserId, authenticatedUserId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Update conversation_sessions
+      // Find sessions where user_id IS NULL and metadata contains the anonymousUserId
+      // Only transfer sessions that match the specific anonymousUserId
+      const sessionsResult = await client.query(
+        `UPDATE conversation_sessions 
+         SET user_id = $1, updated_at = NOW(),
+             metadata = CASE 
+               WHEN metadata IS NULL THEN jsonb_build_object('transferredFrom', $2)
+               WHEN metadata->>'anonymousUserId' = $2 THEN jsonb_set(metadata, '{anonymousUserId}', 'null'::jsonb, true)
+               ELSE metadata
+             END
+         WHERE user_id IS NULL 
+           AND metadata->>'anonymousUserId' = $2
+         RETURNING session_id, user_id, metadata`,
+        [authenticatedUserId, anonymousUserId]
+      );
+
+      const transferredSessions = sessionsResult.rows.map((row) => row.session_id);
+      const transferredCount = sessionsResult.rowCount;
+
+      await client.query("COMMIT");
+
+      if (transferredCount > 0) {
+        console.log(
+          `✅ Transferred ${transferredCount} session(s) from anonymous user ${anonymousUserId} to authenticated user ${authenticatedUserId}`
+        );
+        console.log(`   Session IDs: ${transferredSessions.join(", ")}`);
+      } else {
+        console.log(
+          `ℹ️ No sessions found for anonymous user ${anonymousUserId} to transfer`
+        );
+      }
+
+      return {
+        success: true,
+        transferredCount,
+        sessionIds: transferredSessions,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("❌ Failed to transfer sessions:", error.message);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Transfer a specific session to a different user
+   * @param {string} sessionId - The session ID to transfer
+   * @param {string} newUserId - The new user ID
+   * @returns {Object} - Transfer result
+   */
+  async transferSessionToUser(sessionId, newUserId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Update the session's user_id
+      const result = await client.query(
+        `UPDATE conversation_sessions 
+         SET user_id = $1, updated_at = NOW(),
+             metadata = jsonb_set(metadata, '{anonymousUserId}', 'null'::jsonb, true)
+         WHERE session_id = $2
+         RETURNING *`,
+        [newUserId, sessionId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error(`Session ${sessionId} not found`);
+      }
+
+      await client.query("COMMIT");
+
+      console.log(
+        `✅ Transferred session ${sessionId} to user ${newUserId}`
+      );
+
+      return {
+        success: true,
+        session: result.rows[0],
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("❌ Failed to transfer session:", error.message);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Close the connection pool
    */
   async close() {

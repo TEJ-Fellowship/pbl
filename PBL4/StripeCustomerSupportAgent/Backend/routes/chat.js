@@ -26,5 +26,6 @@ router.put("/tokens/:sessionId", chatController.updateTokenLimit);
 // Session management endpoints
 router.get("/sessions", requireUserId, chatController.getAllSessions);
 router.get("/sessions/:sessionId", chatController.getSessionDetails);
+router.post("/transfer-session", requireUserId, chatController.transferSession);
 
 export default router;

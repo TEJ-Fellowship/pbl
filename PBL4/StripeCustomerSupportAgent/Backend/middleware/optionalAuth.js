@@ -66,15 +66,30 @@ export const requireUserId = (req, res, next) => {
   const anonymousUserId =
     req.body?.userId || req.query?.userId || req.params?.userId;
 
-  if (anonymousUserId) {
-    req.userId = anonymousUserId;
+  // Check if userId is a valid non-empty string
+  if (
+    anonymousUserId &&
+    typeof anonymousUserId === "string" &&
+    anonymousUserId.trim().length > 0
+  ) {
+    req.userId = anonymousUserId.trim();
     req.isAnonymous = true;
     return next();
   }
 
-  // No user ID found
+  // No user ID found - provide helpful error message
+  console.warn("⚠️ requireUserId: No valid user ID found", {
+    hasBody: !!req.body,
+    bodyKeys: req.body ? Object.keys(req.body) : [],
+    bodyUserId: req.body?.userId,
+    queryUserId: req.query?.userId,
+    paramsUserId: req.params?.userId,
+    authenticatedUserId: req.userId,
+  });
+
   return res.status(400).json({
     success: false,
+    error: "User ID required. Please login or provide an anonymous user ID.",
     message: "User ID required. Please login or provide an anonymous user ID.",
   });
 };
