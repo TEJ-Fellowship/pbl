@@ -5458,5 +5458,1170 @@ document_revisions (
   author_id UUID,
   created_at TIMESTAMP,
   change_summary TEXT, -- "Added heading, edited paragraph 2"
-  INDEX idx_revisions
+  INDEX idx_revisions_document (document_id, created_at DESC)
+)
+
+-- Redis (real-time presence and operational transform)
+presence:{document_id} -> Hash {user_id: {name, cursor_position, last_seen}}
+ot_queue:{document_id} -> List of operations (for operational transform)
+document_lock:{document_id} -> user_id (for optimistic locking)
 ```
+
+#### Real-Time Synchronization Architecture:
+
+```
+User A (editing)
+    ↓ WebSocket
+[Server - Socket.io]
+    ↓ Broadcast
+User B, C, D (viewing/editing)
+```
+
+#### WebSocket Events:
+
+```javascript
+// Client → Server
+{
+  event: 'document:join',
+  data: { documentId, userId }
+}
+
+{
+  event: 'document:edit',
+  data: {
+    documentId,
+    operation: { type: 'insert', position: 42, text: 'Hello' },
+    timestamp: Date.now()
+  }
+}
+
+{
+  event: 'cursor:move',
+  data: { documentId, userId, position: 42 }
+}
+
+// Server → Client
+{
+  event: 'document:operation',
+  data: {
+    operation: {...},
+    author: { id, name, avatar },
+    timestamp: Date.now()
+  }
+}
+
+{
+  event: 'presence:update',
+  data: {
+    online: [{ id, name, avatar, cursorPosition }]
+  }
+}
+```
+
+#### Operational Transform (Simplified):
+
+```javascript
+// Operational Transform handles concurrent edits
+// Example: User A inserts "Hello" at position 0
+//          User B simultaneously inserts "World" at position 0
+// OT ensures both operations are applied correctly
+
+class OperationalTransform {
+  // Transform operation A against operation B
+  static transform(opA, opB) {
+    if (opA.type === "insert" && opB.type === "insert") {
+      if (opA.position < opB.position) {
+        // opB position shifts right
+        return { ...opB, position: opB.position + opA.text.length };
+      } else if (opA.position > opB.position) {
+        // opA position shifts right
+        return { ...opA, position: opA.position + opB.text.length };
+      } else {
+        // Same position - prioritize by timestamp or user ID
+        return opA.timestamp < opB.timestamp ? opA : opB;
+      }
+    }
+
+    if (opA.type === "delete" && opB.type === "insert") {
+      // Handle delete vs insert conflicts
+      // ... transformation logic
+    }
+
+    // ... more cases
+  }
+
+  // Apply operation to document
+  static apply(document, operation) {
+    switch (operation.type) {
+      case "insert":
+        return this.insertText(document, operation.position, operation.text);
+      case "delete":
+        return this.deleteText(document, operation.position, operation.length);
+      case "format":
+        return this.applyFormat(document, operation.range, operation.format);
+      default:
+        return document;
+    }
+  }
+
+  static insertText(doc, position, text) {
+    const content = doc.content;
+    return {
+      ...doc,
+      content: content.slice(0, position) + text + content.slice(position),
+    };
+  }
+}
+```
+
+#### WebSocket Server Implementation:
+
+```javascript
+// Socket.io server
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+
+  // Join document room
+  socket.on("document:join", async ({ documentId, userId }) => {
+    // Verify user has access
+    const hasAccess = await checkDocumentAccess(documentId, userId);
+    if (!hasAccess) {
+      socket.emit("error", { message: "Access denied" });
+      return;
+    }
+
+    // Join Socket.io room
+    socket.join(`doc:${documentId}`);
+
+    // Add to presence set
+    await redis.hset(
+      `presence:${documentId}`,
+      userId,
+      JSON.stringify({
+        userId,
+        name: socket.user.name,
+        avatar: socket.user.avatar,
+        joinedAt: Date.now(),
+      })
+    );
+
+    // Send current document state
+    const document = await getDocument(documentId);
+    socket.emit("document:loaded", document);
+
+    // Broadcast presence update to room
+    const presence = await getPresence(documentId);
+    io.to(`doc:${documentId}`).emit("presence:update", presence);
+
+    // Log event to Kafka
+    await kafka.send({
+      topic: "document.events",
+      messages: [
+        {
+          value: JSON.stringify({
+            event: "user_joined",
+            documentId,
+            userId,
+            timestamp: Date.now(),
+          }),
+        },
+      ],
+    });
+  });
+
+  // Handle document edits
+  socket.on("document:edit", async ({ documentId, operation }) => {
+    try {
+      // Apply operational transform
+      const transformedOp = await transformOperation(documentId, operation);
+
+      // Apply to document in database
+      await applyOperation(documentId, transformedOp);
+
+      // Broadcast to all clients in room (except sender)
+      socket.to(`doc:${documentId}`).emit("document:operation", {
+        operation: transformedOp,
+        author: {
+          id: socket.user.id,
+          name: socket.user.name,
+          avatar: socket.user.avatar,
+        },
+      });
+
+      // Acknowledge to sender
+      socket.emit("operation:ack", { operationId: operation.id });
+
+      // Log to Kafka
+      await kafka.send({
+        topic: "document.operations",
+        messages: [
+          {
+            value: JSON.stringify({
+              documentId,
+              operation: transformedOp,
+              userId: socket.user.id,
+              timestamp: Date.now(),
+            }),
+          },
+        ],
+      });
+    } catch (error) {
+      socket.emit("error", { message: "Failed to apply operation" });
+    }
+  });
+
+  // Handle cursor movement
+  socket.on("cursor:move", async ({ documentId, position }) => {
+    // Update presence
+    await redis.hset(
+      `presence:${documentId}`,
+      socket.user.id,
+      JSON.stringify({
+        userId: socket.user.id,
+        name: socket.user.name,
+        avatar: socket.user.avatar,
+        cursorPosition: position,
+        lastSeen: Date.now(),
+      })
+    );
+
+    // Broadcast cursor position
+    socket.to(`doc:${documentId}`).emit("cursor:update", {
+      userId: socket.user.id,
+      position,
+    });
+  });
+
+  // Handle disconnect
+  socket.on("disconnect", async () => {
+    // Remove from all presence sets
+    const rooms = Array.from(socket.rooms);
+    for (const room of rooms) {
+      if (room.startsWith("doc:")) {
+        const documentId = room.replace("doc:", "");
+        await redis.hdel(`presence:${documentId}`, socket.user.id);
+
+        // Broadcast presence update
+        const presence = await getPresence(documentId);
+        io.to(room).emit("presence:update", presence);
+      }
+    }
+  });
+});
+```
+
+#### API Endpoints:
+
+```javascript
+// Document CRUD
+POST /api/v1/documents - Create new document
+GET /api/v1/documents/:id - Get document
+PUT /api/v1/documents/:id - Update document metadata (title, etc.)
+DELETE /api/v1/documents/:id - Delete document
+GET /api/v1/documents - List user's documents
+
+// Collaboration
+POST /api/v1/documents/:id/share - Share with user
+GET /api/v1/documents/:id/collaborators - List collaborators
+DELETE /api/v1/documents/:id/collaborators/:userId - Remove collaborator
+
+// Revisions
+GET /api/v1/documents/:id/revisions - List document revisions
+GET /api/v1/documents/:id/revisions/:revisionId - Get specific revision
+POST /api/v1/documents/:id/revert/:revisionId - Revert to revision
+```
+
+#### Auto-Save Mechanism:
+
+```javascript
+// Client-side: Save document every 5 seconds if changes detected
+let hasUnsavedChanges = false;
+let saveTimeout;
+
+function onDocumentChange() {
+  hasUnsavedChanges = true;
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveDocument, 5000);
+}
+
+async function saveDocument() {
+  if (!hasUnsavedChanges) return;
+
+  await fetch(`/api/v1/documents/${documentId}`, {
+    method: "PUT",
+    body: JSON.stringify({ content: editor.getContent() }),
+  });
+
+  hasUnsavedChanges = false;
+}
+```
+
+#### Success Criteria:
+
+- Multiple users can edit simultaneously without data loss
+- Changes appear in real-time (< 500ms latency)
+- Presence awareness shows who's online
+- Basic conflict resolution works (no corrupted documents)
+- Auto-save prevents data loss on disconnect
+
+---
+
+### **Tier 2: Advanced Collaboration + CRDT** (Week 2)
+
+**Backend Focus: CRDT Implementation, Revision History, Comments**
+
+#### CRDT Implementation (Using Yjs):
+
+**Why CRDT over OT**: CRDTs guarantee eventual consistency without needing a central server for transformation. Better for peer-to-peer or decentralized architectures.
+
+```javascript
+// Server-side: Yjs document management
+const Y = require("yjs");
+const { WebsocketProvider } = require("y-websocket");
+
+// Store Yjs documents in memory (or persist to database)
+const documents = new Map();
+
+function getYDoc(documentId) {
+  if (!documents.has(documentId)) {
+    const ydoc = new Y.Doc();
+
+    // Load from database if exists
+    loadDocumentFromDB(documentId).then((content) => {
+      const ytext = ydoc.getText("content");
+      ytext.insert(0, content);
+    });
+
+    documents.set(documentId, ydoc);
+  }
+  return documents.get(documentId);
+}
+
+// WebSocket provider for Yjs
+const wsProvider = new WebsocketProvider(
+  "ws://localhost:1234",
+  "my-room",
+  ydoc
+);
+
+// Persist changes to database
+ydoc.on("update", async (update) => {
+  // Persist to PostgreSQL
+  await saveYjsUpdate(documentId, update);
+});
+```
+
+```javascript
+// Client-side: Yjs integration with rich text editor
+import * as Y from "yjs";
+import { WebsocketProvider } from "y-websocket";
+import { yCollab } from "y-codemirror.next"; // Or y-prosemirror, y-quill
+
+const ydoc = new Y.Doc();
+const ytext = ydoc.getText("content");
+
+// Connect to WebSocket server
+const provider = new WebsocketProvider("ws://localhost:1234", documentId, ydoc);
+
+// Bind to editor
+const editor = new Editor({
+  extensions: [yCollab(ytext, provider.awareness)],
+});
+
+// Yjs handles all conflict resolution automatically!
+```
+
+#### Advanced Features:
+
+**1. Comments & Suggestions**:
+
+```sql
+-- PostgreSQL
+comments (
+  id UUID PRIMARY KEY,
+  document_id UUID,
+  author_id UUID,
+  content TEXT,
+  range_start INT, -- Character position
+  range_end INT,
+  status TEXT, -- 'open', 'resolved', 'deleted'
+  parent_id UUID, -- For threaded replies
+  created_at TIMESTAMP
+)
+```
+
+```javascript
+// WebSocket events for comments
+socket.on("comment:add", async ({ documentId, range, content }) => {
+  const comment = await createComment(
+    documentId,
+    socket.user.id,
+    range,
+    content
+  );
+
+  // Broadcast to all collaborators
+  io.to(`doc:${documentId}`).emit("comment:added", comment);
+});
+
+socket.on("comment:resolve", async ({ commentId }) => {
+  await resolveComment(commentId);
+  io.to(`doc:${documentId}`).emit("comment:resolved", { commentId });
+});
+```
+
+**2. Revision History with Snapshots**:
+
+```javascript
+// Create snapshot every N edits or every M minutes
+async function createSnapshot(documentId) {
+  const document = await getDocument(documentId);
+
+  await db.query(
+    `INSERT INTO document_revisions (document_id, content, author_id, change_summary)
+     VALUES ($1, $2, $3, $4)`,
+    [documentId, document.content, null, "Auto-save snapshot"]
+  );
+}
+
+// Scheduled job: Create snapshots every 10 minutes
+setInterval(() => {
+  const activeDocuments = getActiveDocuments();
+  for (const docId of activeDocuments) {
+    createSnapshot(docId);
+  }
+}, 10 * 60 * 1000);
+```
+
+**3. Diff Visualization**:
+
+```javascript
+// Compare two revisions
+GET /api/v1/documents/:id/revisions/diff?from=revisionA&to=revisionB
+
+// Use diff-match-patch library
+const dmp = new DiffMatchPatch();
+const diffs = dmp.diff_main(revisionA.content, revisionB.content);
+dmp.diff_cleanupSemantic(diffs);
+
+return {
+  diffs: diffs.map(([op, text]) => ({
+    operation: op === 1 ? 'insert' : op === -1 ? 'delete' : 'equal',
+    text
+  }))
+};
+```
+
+**4. Offline Support**:
+
+```javascript
+// Client-side: Queue operations when offline
+const offlineQueue = [];
+
+editor.on("change", (operation) => {
+  if (!navigator.onLine) {
+    offlineQueue.push(operation);
+    showOfflineIndicator();
+  } else {
+    socket.emit("document:edit", { documentId, operation });
+  }
+});
+
+// When back online, replay queued operations
+window.addEventListener("online", () => {
+  for (const operation of offlineQueue) {
+    socket.emit("document:edit", { documentId, operation });
+  }
+  offlineQueue.length = 0;
+  hideOfflineIndicator();
+});
+```
+
+**5. Document Templates**:
+
+```sql
+document_templates (
+  id UUID PRIMARY KEY,
+  name TEXT,
+  description TEXT,
+  content JSONB,
+  category TEXT,
+  created_by UUID,
+  is_public BOOLEAN DEFAULT false
+)
+```
+
+```javascript
+POST /api/v1/documents/from-template
+
+Body:
+{
+  "templateId": "abc-123",
+  "title": "My New Document"
+}
+
+// Creates new document with template content
+```
+
+**6. Export Formats**:
+
+```javascript
+GET /api/v1/documents/:id/export?format=pdf|docx|markdown|html
+
+// Use libraries:
+// - PDFKit for PDF generation
+// - docxtemplater for DOCX
+// - turndown for Markdown conversion
+```
+
+#### High Volume Data Simulation:
+
+```javascript
+Seed Data:
+- 100,000 users
+- 1,000,000 documents
+- 50,000,000 document operations (edits) past 30 days
+- 10,000,000 comments
+- 5,000,000 document revisions
+- Average document size: 5KB (2-3 pages)
+- Average collaborators per document: 3
+```
+
+#### Load Testing:
+
+- 10,000 concurrent users editing documents
+- 1,000 users editing same document simultaneously
+- Test CRDT conflict resolution with 100 simultaneous edits
+- Measure synchronization latency under load
+- Test offline → online sync with 1000 queued operations
+
+#### Success Criteria:
+
+- CRDT handles 100 concurrent edits without conflicts
+- Synchronization latency < 200ms
+- Revision history loads instantly (< 500ms)
+- Comments thread correctly
+- Offline mode queues and replays operations correctly
+- Export to PDF/DOCX works for complex documents
+
+---
+
+### **Tier 3: AI-Powered Features + Performance Optimization** (Week 3)
+
+**AI Integration + Scalability**
+
+#### AI-Powered Features:
+
+**1. Smart Auto-Complete** (Gemini/OpenAI):
+
+```javascript
+// As user types, suggest completions
+socket.on(
+  "autocomplete:request",
+  async ({ documentId, text, cursorPosition }) => {
+    const context = getDocumentContext(documentId, cursorPosition, 500); // 500 chars before cursor
+
+    const suggestions = await aiModel.complete({
+      context,
+      partial: text,
+    });
+
+    socket.emit("autocomplete:suggestions", {
+      suggestions: suggestions.slice(0, 3), // Top 3 suggestions
+    });
+  }
+);
+```
+
+**2. Grammar & Spell Check**:
+
+```javascript
+// Real-time grammar checking
+const grammarErrors = await aiModel.checkGrammar({
+  text: paragraph,
+  language: "en",
+});
+
+socket.emit("grammar:errors", {
+  errors: grammarErrors.map((err) => ({
+    range: [err.start, err.end],
+    message: err.message,
+    suggestions: err.replacements,
+  })),
+});
+```
+
+**3. Content Summarization**:
+
+```javascript
+POST /api/v1/documents/:id/summarize
+
+const document = await getDocument(documentId);
+const summary = await aiModel.summarize({
+  text: document.content,
+  maxLength: 200 // words
+});
+
+return { summary };
+```
+
+**4. Smart Formatting Suggestions**:
+
+```javascript
+// AI detects headings, lists, quotes and suggests formatting
+const formatSuggestions = await aiModel.analyzeStructure({
+  text: document.content,
+});
+
+// formatSuggestions: [
+//   { range: [0, 20], suggestedFormat: 'heading1', confidence: 0.95 },
+//   { range: [50, 150], suggestedFormat: 'bulletList', confidence: 0.85 }
+// ]
+```
+
+**5. Intelligent Search**:
+
+```javascript
+GET /api/v1/documents/search?q=meeting notes from last week
+
+// Semantic search using embeddings
+const query = req.query.q;
+const queryEmbedding = await aiModel.embed(query);
+
+// Search documents by semantic similarity
+const results = await searchDocumentsBySimilarity(queryEmbedding, userId);
+
+return { documents: results };
+```
+
+**6. Writing Assistant**:
+
+```javascript
+// Suggest improvements to selected text
+POST /api/v1/documents/:id/improve
+
+Body:
+{
+  "text": "This is a sentence that could be better.",
+  "style": "professional" // or "casual", "academic"
+}
+
+const improved = await aiModel.rewrite({
+  text: body.text,
+  style: body.style
+});
+
+return { suggestions: [improved] };
+```
+
+#### Performance Optimizations:
+
+**1. Conflict-Free Data Structure (CRDT) Optimization**:
+
+```javascript
+// Use Yjs with efficient binary encoding
+const stateVector = Y.encodeStateVector(ydoc);
+const update = Y.encodeStateAsUpdate(ydoc, stateVector);
+
+// Send compressed updates over WebSocket
+socket.send(pako.deflate(update));
+```
+
+**2. Incremental Persistence**:
+
+```javascript
+// Don't save entire document on every change
+// Instead, save only the operation/update
+
+ydoc.on("update", async (update, origin) => {
+  if (origin !== "load") {
+    // Don't persist on load
+    await db.query(
+      `INSERT INTO document_updates (document_id, update_data, timestamp)
+       VALUES ($1, $2, $3)`,
+      [documentId, update, Date.now()]
+    );
+  }
+});
+
+// Periodically compact updates into snapshots
+async function compactUpdates(documentId) {
+  const updates = await getRecentUpdates(documentId);
+  const ydoc = new Y.Doc();
+
+  for (const update of updates) {
+    Y.applyUpdate(ydoc, update);
+  }
+
+  const snapshot = Y.encodeStateAsUpdate(ydoc);
+
+  // Save snapshot and delete old updates
+  await saveSnapshot(documentId, snapshot);
+  await deleteOldUpdates(documentId);
+}
+```
+
+**3. Debounced Broadcasts**:
+
+```javascript
+// Don't broadcast every keystroke
+// Batch operations and broadcast every 100ms
+
+const operationBuffer = [];
+let broadcastTimeout;
+
+socket.on("document:edit", ({ documentId, operation }) => {
+  operationBuffer.push(operation);
+
+  clearTimeout(broadcastTimeout);
+  broadcastTimeout = setTimeout(() => {
+    // Broadcast batched operations
+    socket.to(`doc:${documentId}`).emit("document:operations", {
+      operations: operationBuffer,
+      author: socket.user,
+    });
+
+    operationBuffer.length = 0;
+  }, 100);
+});
+```
+
+**4. Cursor Throttling**:
+
+```javascript
+// Throttle cursor position updates (max 10 per second)
+const cursorThrottle = {};
+
+socket.on("cursor:move", ({ documentId, position }) => {
+  const key = `${socket.user.id}:${documentId}`;
+
+  if (cursorThrottle[key] && Date.now() - cursorThrottle[key] < 100) {
+    return; // Skip this update
+  }
+
+  cursorThrottle[key] = Date.now();
+
+  // Broadcast cursor position
+  socket.to(`doc:${documentId}`).emit("cursor:update", {
+    userId: socket.user.id,
+    position,
+  });
+});
+```
+
+**5. Lazy Loading Large Documents**:
+
+```javascript
+// Load document in chunks
+GET /api/v1/documents/:id/content?range=0-10000
+
+// Client requests initial chunk, then loads more as user scrolls
+async function loadDocumentChunk(documentId, start, end) {
+  const content = await db.query(
+    `SELECT substring(content::text from $2 for $3) as chunk
+     FROM documents
+     WHERE id = $1`,
+    [documentId, start, end - start]
+  );
+
+  return content.rows[0].chunk;
+}
+```
+
+#### Frontend Optimizations:
+
+**1. Virtual Scrolling for Long Documents**:
+
+```javascript
+// Only render visible portion of document
+import { Virtuoso } from "react-virtuoso";
+
+<Virtuoso
+  totalCount={document.paragraphs.length}
+  itemContent={(index) => (
+    <Paragraph key={index} content={document.paragraphs[index]} />
+  )}
+/>;
+```
+
+**2. Collaborative Cursor Rendering**:
+
+```javascript
+// Show other users' cursors with names
+function CollaboratorCursor({ user, position }) {
+  return (
+    <div
+      className="cursor"
+      style={{
+        left: position.x,
+        top: position.y,
+        borderColor: user.color,
+      }}
+    >
+      <div className="cursor-flag">{user.name}</div>
+    </div>
+  );
+}
+```
+
+**3. Optimistic UI Updates**:
+
+```javascript
+// Apply changes locally immediately, rollback if server rejects
+function applyOperation(operation) {
+  // Apply to local editor state
+  editor.applyOperation(operation);
+
+  // Send to server
+  socket.emit("document:edit", { documentId, operation }, (ack) => {
+    if (!ack.success) {
+      // Rollback if server rejected
+      editor.undoOperation(operation);
+      showError("Your change conflicted with another edit");
+    }
+  });
+}
+```
+
+#### Success Criteria:
+
+- AI auto-complete suggests relevant completions within 500ms
+- Grammar checking processes 1000 words in < 1 second
+- Summarization generates accurate summaries (human evaluation)
+- Document with 100 concurrent editors synchronizes smoothly
+- Large documents (10,000 words) load and scroll smoothly (60 FPS)
+- WebSocket bandwidth < 10 KB/s per user (efficient updates)
+
+---
+
+### **Tier 4: Admin Dashboard + Analytics** (Week 4)
+
+**System Monitoring + Usage Analytics**
+
+#### Admin Dashboard Features:
+
+**1. Real-Time System Health**:
+
+- **Active Sessions**:
+  - Total users online (live count)
+  - Active documents being edited
+  - WebSocket connections (count, health)
+  - Server load (CPU, memory, connections)
+- **Performance Metrics**:
+  - Average synchronization latency (P50, P95, P99)
+  - Operations per second (OPS)
+  - Database query performance
+  - Redis memory usage
+
+**2. Document Analytics**:
+
+- **Usage Metrics**:
+  - Total documents created (by day/week/month)
+  - Most edited documents (leaderboard)
+  - Average document size (words, characters)
+  - Collaboration rate (% of documents with >1 editor)
+- **Revision Statistics**:
+  - Total revisions created
+  - Average revisions per document
+  - Largest documents (by revision count)
+- **Content Analysis**:
+  - Word count distribution (histogram)
+  - Most common document types (by content)
+  - Document age distribution
+
+**3. User Analytics**:
+
+- **Engagement Metrics**:
+  - Daily/monthly active users (DAU/MAU)
+  - Average session duration
+  - Documents per user (distribution)
+  - Power users (top 10% by activity)
+- **Collaboration Patterns**:
+  - Average collaborators per document
+  - Most collaborative users (share most)
+  - Team activity (if teams/workspaces implemented)
+- **Retention Analysis**:
+  - User retention cohorts
+  - Churn rate
+  - Time to first document creation
+
+**4. Collaboration Analytics**:
+
+- **Real-Time Collaboration**:
+  - Concurrent editors per document (max, average)
+  - Conflict resolution rate (how often CRDTs resolve conflicts)
+  - Comment activity (comments per document, response rate)
+- **Edit Patterns**:
+  - Peak editing hours (heatmap)
+  - Average edits per session
+  - Edit velocity (characters typed per minute)
+
+**5. AI Feature Usage**:
+
+- **Auto-Complete**:
+  - Suggestions shown vs accepted (acceptance rate)
+  - Most common completions
+  - Time saved (estimated)
+- **Grammar Check**:
+  - Errors detected and fixed
+  - Most common grammar issues
+  - User correction rate
+- **Summarization**:
+  - Summaries generated
+  - Average document length vs summary length
+  - User feedback (thumbs up/down)
+
+**6. System Capacity Planning** (Predictive AI):
+
+- **Usage Forecast**:
+  - Predict user growth (next 30/90 days)
+  - Predict document storage needs
+  - Estimate WebSocket connection capacity
+- **Scaling Recommendations**:
+  - Suggested server capacity
+  - Database scaling needs
+  - Redis memory requirements
+
+**7. Performance Insights**:
+
+- **Slow Documents**:
+  - Documents with high synchronization latency
+  - Large documents causing performance issues
+  - Optimization suggestions (split document, reduce collaborators)
+- **Network Analysis**:
+  - WebSocket bandwidth usage by user
+  - Reconnection frequency (network stability)
+  - Geographic latency (by region)
+
+#### Implementation:
+
+```sql
+-- Analytics materialized views
+CREATE MATERIALIZED VIEW analytics_daily_documents AS
+SELECT
+  DATE(created_at) as date,
+  COUNT(*) as documents_created,
+  AVG(char_length(content::text)) as avg_document_size
+FROM documents
+WHERE created_at > NOW() - INTERVAL '90 days'
+GROUP BY DATE(created_at);
+
+CREATE MATERIALIZED VIEW analytics_user_activity AS
+SELECT
+  user_id,
+  COUNT(DISTINCT document_id) as documents_edited,
+  COUNT(*) as total_operations,
+  MAX(timestamp) as last_active
+FROM document_operations
+WHERE timestamp > NOW() - INTERVAL '30 days'
+GROUP BY user_id;
+
+-- Refresh hourly
+REFRESH MATERIALIZED VIEW CONCURRENTLY analytics_daily_documents;
+```
+
+```javascript
+// Kafka consumer for real-time analytics
+kafkaConsumer.on("message", async (message) => {
+  const event = JSON.parse(message.value);
+
+  switch (event.event) {
+    case "user_joined":
+      await incrementMetric("active_sessions");
+      await trackUserActivity(event.userId);
+      break;
+
+    case "document_operation":
+      await incrementMetric("operations_per_second");
+      await trackDocumentEdit(event.documentId, event.userId);
+      break;
+
+    case "ai_autocomplete_accepted":
+      await incrementMetric("ai_autocomplete_accepted");
+      break;
+  }
+});
+```
+
+#### Dashboard UI:
+
+**1. Overview Page**:
+
+- Big numbers: Active users, Documents, Operations/sec
+- Real-time charts: Active sessions over time, OPS
+- Alerts: Performance issues, capacity warnings
+- Quick stats: Top documents, Top users
+
+**2. Documents Page**:
+
+- Table of all documents (virtual scrolling)
+- Filters: Date created, owner, size, collaborators
+- Sort: By edits, by size, by collaborators
+- Actions: View, Delete, Export analytics
+
+**3. Users Page**:
+
+- User list with activity metrics
+- Search by name/email
+- User detail view: Documents, Activity timeline, Collaboration network
+- Actions: Suspend, Delete, View documents
+
+**4. Real-Time Monitor**:
+
+- Live feed of document edits (WebSocket stream)
+- Active documents map (show which docs being edited)
+- WebSocket connection status (by server)
+- Performance graphs (auto-refresh every 5 seconds)
+
+**5. Analytics Page**:
+
+- Customizable date range
+- Charts: Document creation trends, User growth, Collaboration rate
+- Export reports (CSV, PDF)
+- Scheduled reports (email daily/weekly)
+
+**6. AI Insights Page**:
+
+- AI feature usage statistics
+- Model performance metrics (latency, accuracy)
+- User feedback on AI suggestions
+- A/B test results (if testing different AI models)
+
+#### API Endpoints:
+
+```javascript
+GET /api/v1/admin/stats/overview
+GET /api/v1/admin/stats/documents?from=X&to=Y
+GET /api/v1/admin/stats/users?from=X&to=Y
+GET /api/v1/admin/stats/collaboration?from=X&to=Y
+GET /api/v1/admin/documents?page=1&sort=edits&filter=...
+GET /api/v1/admin/users?page=1&sort=active&filter=...
+GET /api/v1/admin/real-time/activity
+```
+
+#### Real-Time Dashboard Updates:
+
+```javascript
+// WebSocket for admin dashboard
+io.of("/admin").on("connection", (socket) => {
+  // Verify admin role
+  if (!socket.user.isAdmin) {
+    socket.disconnect();
+    return;
+  }
+
+  // Send real-time metrics every second
+  const interval = setInterval(async () => {
+    const metrics = await getRealTimeMetrics();
+    socket.emit("metrics:update", metrics);
+  }, 1000);
+
+  socket.on("disconnect", () => {
+    clearInterval(interval);
+  });
+});
+```
+
+#### Success Criteria:
+
+- Dashboard loads analytics for 1M documents in < 3 seconds
+- Real-time metrics update within 1 second
+- Admin can identify performance issues quickly
+- Usage analytics provide actionable insights
+- Capacity forecasts achieve 90%+ accuracy
+- Reports export with complete data
+
+---
+
+## Data Volume Simulation Strategy
+
+### Initial Seed:
+
+```javascript
+- 100,000 users
+- 1,000,000 documents
+- Average document: 1,000 words, 5KB
+- 50,000,000 document operations (past 30 days)
+- 10,000,000 comments
+- 5,000,000 revisions
+- Collaboration distribution:
+  - 60% documents: 1 editor (private)
+  - 30% documents: 2-5 editors
+  - 10% documents: 6-20 editors (team documents)
+```
+
+### Realistic Patterns:
+
+- Peak hours: 9am-5pm (80% of activity)
+- Average edits per session: 50-200 operations
+- Average session duration: 15 minutes
+- Comment rate: 1 comment per 500 words
+
+### Load Testing Scenarios:
+
+1. **Normal Load**: 5,000 concurrent users editing
+2. **Single Document Stress**: 100 users editing same document
+3. **Reconnection Storm**: 10,000 users reconnect simultaneously
+4. **Large Document**: 50,000-word document with 10 concurrent editors
+5. **AI Burst**: 1,000 simultaneous auto-complete requests
+
+### Tools:
+
+- Socket.io load testing (artillery-plugin-socketio)
+- Custom WebSocket client simulator
+- k6 for HTTP API testing
+- Database benchmarking
+
+---
+
+## Key Learning Outcomes
+
+1. **Real-Time Collaboration**: WebSocket, operational transform, CRDT
+2. **Conflict Resolution**: Handling concurrent edits, consistency
+3. **Rich Text Editing**: Complex UI state management
+4. **AI Integration**: Auto-complete, grammar checking, summarization
+5. **Performance Optimization**: Efficient synchronization, lazy loading
+6. **Scalability**: Horizontal scaling, load balancing WebSockets
+
+---
+
+## Evaluation Criteria
+
+- **Real-Time Sync**: Changes propagate within 200ms
+- **Conflict Handling**: CRDT resolves 100% of conflicts correctly
+- **Scalability**: Handle 100 concurrent editors per document
+- **AI Features**: Auto-complete acceptance rate > 30%
+- **Performance**: Large documents (10K words) render smoothly
+- **Code Quality**: Clean WebSocket handlers, efficient CRDT usage
+- **Testing**: Unit tests, integration tests, WebSocket load tests
+
+---
+
+---
+
+# Summary of All 10 Projects
+
+You now have a comprehensive catalog of 10 backend-heavy projects, each with 4 progressive tiers that build skills in:
+
+1. **Movie Ticket Booking** - Distributed locks, high-concurrency, event-driven architecture
+2. **WhatsApp Clone** - Real-time messaging, typing indicators, message search
+3. **Instagram Feed (Push)** - Fan-out on write, CDN, image delivery
+4. **Facebook Newsfeed (Pull)** - Fan-in on read, caching, delta computation
+5. **Gaming Leaderboard** - Real-time rankings, Redis sorted sets, time-windowed aggregations
+6. **E-commerce Orders** - Saga pattern, microservices, fraud detection
+7. **Log Aggregation** - Time-series data, stream processing, multi-tenancy
+8. **Task Queue** - Job orchestration, retries, DLQ, distributed systems
+9. **CDN Simulation** - Edge caching, cache invalidation, geographic routing
+10. **Collaborative Editor** - CRDT, real-time sync, operational transform
+
+Each project includes:
+
+- ✅ Progressive tiers (Tier 1 → Tier 4)
+- ✅ AI-powered features
+- ✅ High volume data simulation strategies
+- ✅ Multi-user support with roles
+- ✅ Performant frontend with large datasets
+- ✅ Admin dashboard with analytics
+- ✅ Clear learning outcomes and evaluation criteria
+
+These projects provide hands-on experience with production-grade backend systems and prepare your fellows for real-world software engineering challenges!
