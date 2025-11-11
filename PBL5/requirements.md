@@ -2671,5 +2671,2792 @@ REFRESH MATERIALIZED VIEW admin_order_stats; -- Run hourly via cron
    - False positive rate tracking (review accuracy)
 
 6. **Operational Efficiency**:
+
    - **Order Fulfillment**:
      - Average time
+     - Average time to ship (order placed → shipped)
+     - On-time delivery rate (percentage)
+     - Shipping delays (by carrier, region)
+   - **System Performance**:
+     - API response times (P50, P95, P99)
+     - Database query performance (slow queries)
+     - Kafka consumer lag by topic
+     - Error rates by service (microservices health)
+   - **Payment Analytics**:
+     - Payment method distribution (credit card, PayPal, etc.)
+     - Payment success/failure rates
+     - Average payment processing time
+     - Failed payment reasons (insufficient funds, etc.)
+
+7. **Predictive Analytics** (AI):
+   - Sales forecast (next 7/30/90 days)
+   - Inventory reorder recommendations
+   - Customer churn predictions (likely to stop buying)
+   - Seasonal trend detection
+   - Optimal pricing recommendations
+   - Flash sale impact predictions
+
+#### Implementation:
+
+- **Data Aggregation**:
+
+  ```sql
+  -- Materialized views for fast dashboard queries
+  CREATE MATERIALIZED VIEW analytics_daily_revenue AS
+  SELECT
+    DATE(created_at) as date,
+    status,
+    COUNT(*) as order_count,
+    SUM(total_amount) as revenue,
+    AVG(total_amount) as avg_order_value
+  FROM orders
+  WHERE created_at > NOW() - INTERVAL '1 year'
+  GROUP BY DATE(created_at), status;
+
+  CREATE MATERIALIZED VIEW analytics_product_performance AS
+  SELECT
+    p.id,
+    p.name,
+    p.category,
+    COUNT(oi.id) as units_sold,
+    SUM(oi.quantity * oi.price_at_purchase) as revenue,
+    COUNT(DISTINCT o.user_id) as unique_customers
+  FROM products p
+  LEFT JOIN order_items oi ON oi.product_id = p.id
+  LEFT JOIN orders o ON o.id = oi.order_id
+  WHERE o.status IN ('confirmed', 'shipped', 'delivered')
+    AND o.created_at > NOW() - INTERVAL '90 days'
+  GROUP BY p.id, p.name, p.category;
+
+  CREATE MATERIALIZED VIEW analytics_customer_segments AS
+  SELECT
+    user_id,
+    COUNT(*) as total_orders,
+    SUM(total_amount) as lifetime_value,
+    MAX(created_at) as last_order_date,
+    MIN(created_at) as first_order_date,
+    AVG(total_amount) as avg_order_value
+  FROM orders
+  WHERE status IN ('confirmed', 'shipped', 'delivered')
+  GROUP BY user_id;
+  ```
+
+- **Real-Time Streaming Aggregations**:
+
+  - Kafka Streams for windowed metrics (orders per minute)
+  - Redis for transient metrics (current active carts, checkout sessions)
+  - WebSocket for pushing live updates to dashboard
+
+- **Batch Jobs**:
+  - **Hourly**: Refresh materialized views, compute fraud risk scores
+  - **Daily**: Customer segmentation, inventory reorder calculations, cohort analysis
+  - **Weekly**: Sales forecasts, trend analysis, performance reports
+
+#### Dashboard UI Components:
+
+1. **Executive Summary Page**:
+
+   - Big numbers: Today's revenue, orders, AOV, conversion rate
+   - Mini charts: 7-day trends for key metrics
+   - Alerts: Low stock items, fraud flags, system issues
+   - Quick actions: Process pending orders, view flagged orders
+
+2. **Sales Analytics Page**:
+
+   - Interactive charts (click to drill down)
+   - Date range selector (Today, 7d, 30d, 90d, Custom)
+   - Comparison mode (compare this week vs last week)
+   - Top products table (sortable, searchable)
+   - Export reports as PDF/CSV
+
+3. **Order Management Page**:
+
+   - Order queue with filters (status, date, customer)
+   - Virtual scrolling table (handle 10M+ orders)
+   - Bulk actions toolbar (when rows selected)
+   - Side panel for order details (click row to expand)
+   - Real-time updates (new orders highlighted)
+
+4. **Inventory Management Page**:
+
+   - Product inventory table (current stock, reserved, available)
+   - Low stock alerts (red highlighting)
+   - Reorder recommendations (AI-powered)
+   - Bulk update actions (adjust stock levels)
+   - Import/export CSV for bulk updates
+
+5. **Fraud Review Page**:
+
+   - Queue of flagged orders (sorted by risk score)
+   - Order details with risk factors highlighted
+   - Customer history (previous orders, flags)
+   - Side-by-side comparison (this order vs customer's typical)
+   - Actions: Approve, Reject, Request more info
+   - Audit log (all review actions)
+
+6. **System Health Page**:
+   - Service status indicators (green/yellow/red)
+   - Kafka topic lag charts
+   - Database performance metrics
+   - API endpoint latencies
+   - Error rate graphs
+   - Recent errors log (filterable)
+
+#### Advanced Features:
+
+- **Custom Reports Builder**:
+
+  - Drag-and-drop interface to create custom reports
+  - Select dimensions (date, product, category, region)
+  - Select metrics (revenue, orders, AOV, etc.)
+  - Save and schedule reports (email daily/weekly)
+
+- **Alerts & Notifications**:
+
+  - Configure custom alerts (revenue drops 20%, fraud spike, etc.)
+  - Delivery channels: Email, SMS, Slack, in-app
+  - Alert history and management
+
+- **A/B Testing Dashboard**:
+  - Track experiments (pricing tests, UI changes)
+  - Compare metrics between variants
+  - Statistical significance calculations
+
+#### Success Criteria:
+
+- Dashboard loads analytics for 10M orders in < 3 seconds
+- Real-time metrics update within 1 second
+- Admin can identify issues (stockouts, fraud) within 30 seconds of occurrence
+- AI forecasts achieve 85%+ accuracy (MAPE < 15%)
+- Materialized views refresh without impacting production queries
+- Export large datasets (1M+ rows) completes within 5 minutes
+
+---
+
+## Data Volume Simulation Strategy
+
+### Initial Seed:
+
+```javascript
+- 100,000 users (realistic profiles, addresses)
+- 50,000 products (50 categories, varying prices $5-$500)
+- Inventory:
+  - 70% products: 50-500 units in stock
+  - 20% products: 10-50 units (low stock)
+  - 10% products: 0 units (out of stock)
+- 10,000,000 orders (past 12 months)
+- Order distribution:
+  - 60% delivered successfully
+  - 15% currently in transit
+  - 10% pending/processing
+  - 10% cancelled
+  - 5% payment failed
+- 25,000,000 order items (avg 2.5 items per order)
+- Realistic patterns:
+  - 40% orders during holiday season (Nov-Dec)
+  - Peak hours: 7pm-10pm (30% of daily orders)
+  - Average order value: $75 (lognormal distribution)
+```
+
+### Seasonal Patterns:
+
+- **Holiday Spike**: 5x normal volume during Black Friday/Cyber Monday
+- **Flash Sales**: 50x normal volume for specific products
+- **Hourly Patterns**: 10x difference between peak and off-peak
+
+### Load Testing Scenarios:
+
+1. **Normal Load**: 100 orders/second sustained
+2. **Peak Load**: 500 orders/second (evening rush)
+3. **Flash Sale**: 2,000 orders/second for 1 product (100 units available)
+4. **Payment Failure Storm**: 30% payment failure rate (test rollback)
+5. **Database Failover**: Test system behavior during DB downtime
+
+### Fraud Simulation:
+
+- 2% of orders flagged as high-risk (AI detection)
+- Common patterns: Multiple orders from same IP, rapid address changes, high-value orders from new accounts
+
+### Tools:
+
+- k6 for load testing
+- Custom order generator (Kafka producer)
+- Artillery.io for WebSocket testing
+- PostgreSQL pg_bench for database stress testing
+
+---
+
+## Key Learning Outcomes
+
+1. **Microservices Architecture**: Service decomposition, inter-service communication
+2. **Saga Pattern**: Distributed transaction handling, compensating transactions
+3. **Event-Driven Systems**: Kafka for async processing, event sourcing
+4. **Concurrency Control**: Distributed locks, atomic operations, idempotency
+5. **AI for Business**: Fraud detection, demand forecasting, recommendations
+6. **Data Analytics**: Materialized views, real-time aggregations, BI dashboards
+7. **System Reliability**: Handling failures, rollback mechanisms, monitoring
+
+---
+
+## Evaluation Criteria
+
+- **Architecture**: Clean microservices design, proper event-driven patterns
+- **Performance**: Handle 1000 orders/sec, dashboard loads in < 3s
+- **Reliability**: Saga pattern correctly handles failures (no data loss)
+- **Scalability**: System scales horizontally (add more service instances)
+- **AI Integration**: Fraud detection 90%+ precision, forecasts 85%+ accuracy
+- **Code Quality**: Clean service boundaries, comprehensive testing, monitoring
+- **Documentation**: Architecture diagrams, API docs, runbooks
+
+---
+
+---
+
+# Project 7: Multi-Tenant SaaS Log Aggregation & Monitoring Platform
+
+## Project Overview
+
+Build a multi-tenant log aggregation and monitoring platform similar to Datadog/New Relic. The system collects logs from multiple Node.js microservices (belonging to different tenants), processes them through Kafka streams, stores them efficiently, and provides a powerful search/visualization interface. Focus on handling massive log volumes, efficient time-series queries, and tenant data isolation.
+
+---
+
+## Tech Stack
+
+- **Backend**: Node.js + Express (API) + gRPC (log ingestion)
+- **Database**: PostgreSQL (metadata, tenants) + TimescaleDB (time-series extension) or ClickHouse (columnar database for logs)
+- **Message Queue**: Kafka (log ingestion pipeline, stream processing)
+- **Search**: Elasticsearch (full-text search on logs)
+- **Cache**: Redis (query caching, rate limiting)
+- **AI Integration**: Gemini/OpenAI for anomaly detection, log pattern recognition, and intelligent alerting
+- **Frontend**: React with real-time log streaming and visualization (charts)
+
+---
+
+## Roles
+
+1. **Developer** - Configure log collection, view logs, create dashboards, set up alerts
+2. **Admin** - Manage tenants, monitor system health, view platform analytics
+
+---
+
+## Progressive Tier Requirements
+
+### **Tier 1: Core Log Collection & Storage** (Week 1)
+
+**Backend Focus: Multi-Tenant Log Ingestion**
+
+#### Features:
+
+- Tenant registration and API key management
+- Log ingestion endpoint (HTTP POST)
+- Log parsing and normalization
+- Multi-tenant data isolation
+- Basic log storage (time-series)
+- Simple log query interface (filter by time range, service, level)
+
+#### Multi-Tenant Architecture:
+
+**Tenant Isolation Strategies**:
+
+1. **Shared Database, Separate Schemas** (PostgreSQL)
+2. **Shared Tables with tenant_id Column** (Row-level security)
+3. **Separate Kafka Topics per Tenant** (for high-volume tenants)
+
+#### Database Schema:
+
+```sql
+-- PostgreSQL (metadata)
+tenants (
+  id UUID PRIMARY KEY,
+  name TEXT,
+  api_key TEXT UNIQUE, -- For authentication
+  plan TEXT, -- free/pro/enterprise
+  log_retention_days INT DEFAULT 30,
+  created_at TIMESTAMP
+)
+
+services (
+  id UUID PRIMARY KEY,
+  tenant_id UUID,
+  name TEXT, -- 'auth-service', 'payment-service'
+  environment TEXT, -- 'production', 'staging'
+  created_at TIMESTAMP
+)
+
+-- TimescaleDB (logs) - optimized for time-series queries
+logs (
+  id BIGSERIAL,
+  tenant_id UUID NOT NULL,
+  service_id UUID NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,
+  level TEXT, -- debug/info/warn/error/fatal
+  message TEXT,
+  metadata JSONB, -- Additional structured data
+  trace_id TEXT, -- For distributed tracing
+  PRIMARY KEY (tenant_id, timestamp, id)
+);
+
+-- Hypertable for time-series optimization
+SELECT create_hypertable('logs', 'timestamp',
+  chunk_time_interval => INTERVAL '1 day',
+  partitioning_column => 'tenant_id',
+  number_partitions => 4
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_logs_tenant_time ON logs(tenant_id, timestamp DESC);
+CREATE INDEX idx_logs_service_time ON logs(service_id, timestamp DESC);
+CREATE INDEX idx_logs_level ON logs(tenant_id, level, timestamp DESC);
+CREATE INDEX idx_logs_trace ON logs(trace_id) WHERE trace_id IS NOT NULL;
+```
+
+#### Log Ingestion Flow:
+
+1. Client sends logs via HTTP POST with API key
+2. Authenticate tenant (validate API key)
+3. Publish to Kafka: `logs.raw.{tenant_id}`
+4. **Log Processor** (Kafka consumer):
+   - Parse log format (JSON, plain text, custom)
+   - Extract structured fields (timestamp, level, message)
+   - Enrich with metadata (service name, environment)
+   - Write to TimescaleDB in batches (1000 logs per batch)
+
+#### Log Ingestion API:
+
+```javascript
+POST /api/v1/logs/ingest
+Headers:
+  X-API-Key: <tenant_api_key>
+  Content-Type: application/json
+
+Body:
+{
+  "service": "auth-service",
+  "environment": "production",
+  "logs": [
+    {
+      "timestamp": "2024-01-15T10:30:00Z",
+      "level": "error",
+      "message": "Database connection failed",
+      "metadata": {
+        "error_code": "ECONNREFUSED",
+        "host": "db.example.com"
+      },
+      "trace_id": "abc123"
+    },
+    // ... batch of logs (up to 1000)
+  ]
+}
+```
+
+#### Log Query API:
+
+```javascript
+GET /api/v1/logs?
+  service_id=X&
+  start_time=2024-01-15T00:00:00Z&
+  end_time=2024-01-15T23:59:59Z&
+  level=error&
+  limit=100&
+  cursor=TIMESTAMP_ID
+
+Response:
+{
+  "logs": [...],
+  "nextCursor": "2024-01-15T10:30:00Z_12345",
+  "total": 5000
+}
+```
+
+#### SDK for Log Collection (Node.js):
+
+```javascript
+// @example-monitoring/logger npm package
+const Logger = require("@example-monitoring/logger");
+
+const logger = new Logger({
+  apiKey: process.env.MONITORING_API_KEY,
+  service: "auth-service",
+  environment: "production",
+});
+
+logger.info("User logged in", { userId: 123 });
+logger.error("Payment failed", { orderId: 456, error: err.message });
+
+// Batch sending (send every 5 seconds or 100 logs)
+```
+
+#### Success Criteria:
+
+- Ingest 10,000 logs/second without data loss
+- Query logs with < 1 second latency for 1-hour time range
+- Tenant data properly isolated (no cross-tenant data leakage)
+- SDK collects and batches logs efficiently
+
+---
+
+### **Tier 2: Stream Processing + High Volume Simulation** (Week 2)
+
+**Backend Focus: Kafka Streams, Real-Time Aggregations, Alerting**
+
+#### Kafka Stream Processing:
+
+**Real-Time Aggregations**:
+
+- **Error Rate**: Count errors per service per minute
+- **Log Volume**: Total logs per service per minute
+- **Response Time**: Calculate P50/P95/P99 from log metadata
+- **Top Errors**: Group similar error messages
+
+**Kafka Streams Topology**:
+
+```javascript
+// Stream 1: Error rate calculation
+logs.raw
+  .filter((log) => log.level === "error")
+  .groupBy((log) => `${log.tenant_id}:${log.service_id}`)
+  .windowedBy(TimeWindows.of(Duration.ofMinutes(1)))
+  .count()
+  .toStream()
+  .to("metrics.error_rate");
+
+// Stream 2: Log aggregation by level
+logs.raw
+  .groupBy((log) => `${log.tenant_id}:${log.level}`)
+  .windowedBy(TimeWindows.of(Duration.ofMinutes(5)))
+  .count()
+  .toStream()
+  .to("metrics.log_volume");
+
+// Stream 3: Anomaly detection trigger
+logs.raw
+  .filter((log) => log.level === "error" || log.level === "fatal")
+  .to("logs.critical"); // Separate topic for immediate processing
+```
+
+#### Real-Time Alerting:
+
+**Alert Conditions**:
+
+- Error rate > threshold (e.g., > 10 errors/minute)
+- Service down (no logs received in 5 minutes)
+- Specific error pattern detected (regex match)
+- Anomaly detected (AI-based)
+
+**Alert Schema**:
+
+```sql
+-- PostgreSQL
+alerts (
+  id UUID PRIMARY KEY,
+  tenant_id UUID,
+  service_id UUID,
+  name TEXT,
+  condition JSONB, -- {"type": "error_rate", "threshold": 10, "window": "1m"}
+  channels JSONB, -- ["email", "slack", "webhook"]
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP
+)
+
+alert_incidents (
+  id UUID PRIMARY KEY,
+  alert_id UUID,
+  triggered_at TIMESTAMP,
+  resolved_at TIMESTAMP,
+  severity TEXT, -- warning/critical
+  message TEXT,
+  metadata JSONB
+)
+```
+
+**Alert Evaluation (Kafka Consumer)**:
+
+```javascript
+// Consume metrics.error_rate topic
+kafkaConsumer.on("message", async (message) => {
+  const { tenantId, serviceId, errorCount, window } = JSON.parse(message.value);
+
+  // Fetch active alerts for this tenant/service
+  const alerts = await getActiveAlerts(tenantId, serviceId);
+
+  for (const alert of alerts) {
+    if (shouldTrigger(alert, errorCount)) {
+      await createIncident(alert, errorCount, window);
+      await sendNotification(alert.channels, {
+        title: `High error rate: ${errorCount} errors in ${window}`,
+        service: serviceId,
+        timestamp: new Date(),
+      });
+    }
+  }
+});
+```
+
+#### Log Sampling (for high-volume services):
+
+**Problem**: Service produces 100K logs/second → too expensive to store all
+
+**Solution**: Smart sampling
+
+```javascript
+// Keep all errors/warnings, sample info/debug logs
+function shouldSample(log) {
+  if (log.level === "error" || log.level === "warn") {
+    return true; // Keep 100% of errors/warnings
+  }
+
+  if (log.level === "info") {
+    return Math.random() < 0.1; // Sample 10% of info logs
+  }
+
+  if (log.level === "debug") {
+    return Math.random() < 0.01; // Sample 1% of debug logs
+  }
+}
+```
+
+#### High Volume Data Simulation:
+
+```javascript
+Seed Data:
+- 100 tenants
+- 500 services (5 services per tenant avg)
+- 10 billion logs (past 30 days)
+- Log distribution:
+  - 60% info
+  - 25% debug
+  - 10% warn
+  - 4% error
+  - 1% fatal
+- Temporal patterns:
+  - Peak: 8am-6pm (70% of logs)
+  - Off-peak: 6pm-8am (30% of logs)
+- Service patterns:
+  - 80% services: 100-1000 logs/minute
+  - 15% services: 1K-10K logs/minute
+  - 5% services: 10K-100K logs/minute (high-volume)
+```
+
+#### Data Retention & Compression:
+
+**Automatic Data Expiration**:
+
+```sql
+-- TimescaleDB retention policy
+SELECT add_retention_policy('logs', INTERVAL '30 days');
+
+-- Compress old data (older than 7 days)
+SELECT add_compression_policy('logs', INTERVAL '7 days');
+
+-- Results in 10x+ storage savings
+```
+
+#### Success Criteria:
+
+- Ingest 100,000 logs/second sustained
+- Real-time aggregations (error rate) compute within 10 seconds
+- Alerts trigger within 1 minute of condition being met
+- Log sampling reduces storage by 80% without losing critical data
+- Kafka consumer lag < 5000 messages
+
+---
+
+### **Tier 3: AI-Powered Analysis + Advanced Search** (Week 3)
+
+**AI Integration + Powerful Query Interface**
+
+#### AI-Powered Features:
+
+1. **Anomaly Detection** (Gemini/OpenAI):
+
+   - Detect unusual patterns in log volume, error rates
+   - Use time-series analysis (LSTM, Prophet)
+   - Automatically create incidents for anomalies
+   - Endpoint: Background Kafka consumer, surfaces in UI
+
+2. **Log Pattern Recognition**:
+
+   - Group similar error messages automatically
+   - Example: "Database connection failed to host-1" and "Database connection failed to host-2" → Same issue
+   - Use text embeddings to cluster errors
+   - Endpoint: `GET /api/v1/logs/patterns?service_id=X&time_range=1d`
+   - Shows: Top error patterns, frequency, affected services
+
+3. **Intelligent Alerting** (reduce alert fatigue):
+
+   - AI learns which alerts are actionable vs noise
+   - Suggest alert threshold adjustments
+   - Correlate alerts across services (one root cause → multiple alerts)
+   - Endpoint: `GET /api/v1/alerts/suggestions`
+
+4. **Root Cause Analysis**:
+
+   - Given an error, AI traces related logs (using trace_id)
+   - Builds timeline of events leading to error
+   - Suggests likely root cause
+   - Endpoint: `POST /api/v1/logs/analyze-error` with log_id
+
+5. **Natural Language Queries**:
+   - "Show me errors in payment service in the last hour"
+   - "What caused the spike in response time at 3pm?"
+   - AI converts to structured queries
+   - Endpoint: `POST /api/v1/logs/nl-query` with natural language string
+
+#### Advanced Search with Elasticsearch:
+
+**Why Elasticsearch**: Full-text search, fuzzy matching, complex aggregations
+
+**Data Pipeline**:
+
+```
+Logs → Kafka → [Processor] → TimescaleDB (primary storage)
+                          └→ Elasticsearch (search index)
+```
+
+**Elasticsearch Index**:
+
+```javascript
+// Index template
+{
+  "mappings": {
+    "properties": {
+      "tenant_id": { "type": "keyword" },
+      "service_id": { "type": "keyword" },
+      "timestamp": { "type": "date" },
+      "level": { "type": "keyword" },
+      "message": { "type": "text", "analyzer": "standard" },
+      "metadata": { "type": "object", "enabled": true },
+      "trace_id": { "type": "keyword" }
+    }
+  }
+}
+
+// Index per day: logs-2024-01-15
+// Automatic rollover and deletion (30-day retention)
+```
+
+**Search Queries**:
+
+```javascript
+// Full-text search
+GET /api/v1/logs/search?
+  q=database connection failed&
+  service_id=X&
+  start_time=...&
+  end_time=...
+
+// Field-specific search
+GET /api/v1/logs/search?
+  level=error&
+  metadata.error_code=ECONNREFUSED&
+  trace_id=abc123
+
+// Aggregations (count by level, by service)
+GET /api/v1/logs/aggregate?
+  group_by=level&
+  service_id=X&
+  time_range=1h
+```
+
+#### Frontend: Log Explorer Interface
+
+**Challenge**: Display millions of logs with powerful filtering and real-time updates
+
+**Implementation**:
+
+- **Log Table with Virtual Scrolling**:
+  - Display 100 logs initially
+  - Load more as user scrolls (pagination)
+  - Columns: Timestamp, Level, Service, Message, Metadata
+  - Color-coded by level (red=error, yellow=warn, etc.)
+- **Advanced Filters**:
+  - Time range picker (Last 15min, 1h, 24h, 7d, Custom)
+  - Service selector (dropdown, multi-select)
+  - Log level checkboxes (info, warn, error, etc.)
+  - Full-text search (debounced, 300ms)
+  - Metadata filters (key-value pairs)
+- **Real-Time Log Streaming**:
+  - WebSocket connection to stream new logs
+  - Toggle: "Live tail" (auto-scroll to latest logs)
+  - Pause/resume streaming
+  - Show notification: "42 new logs" (click to load)
+- **Log Details Panel**:
+  - Click log row → Expand side panel
+  - Show full message, metadata (formatted JSON)
+  - Trace ID → Click to see related logs
+  - Actions: Copy, Share permalink, Create alert
+- **Saved Queries**:
+  - Save complex filter combinations
+  - Quick access to common queries
+  - Share queries with team
+
+#### API Optimizations:
+
+```sql
+-- Query with proper indexing
+SELECT * FROM logs
+WHERE tenant_id = $1
+  AND timestamp BETWEEN $2 AND $3
+  AND service_id = $4
+  AND level = $5
+ORDER BY timestamp DESC
+LIMIT 100;
+
+-- Execution plan uses index:
+-- Index Scan using idx_logs_tenant_time (cost=0.56..8.58)
+```
+
+```javascript
+// Cache common queries in Redis (5-minute TTL)
+const cacheKey = `logs:${tenantId}:${serviceId}:${level}:${timeRange}`;
+const cached = await redis.get(cacheKey);
+if (cached) return JSON.parse(cached);
+
+const logs = await queryDatabase(...);
+await redis.setex(cacheKey, 300, JSON.stringify(logs));
+```
+
+#### Success Criteria:
+
+- AI anomaly detection identifies 90%+ of real incidents (low false positive rate)
+- Log pattern recognition groups 80%+ of similar errors correctly
+- Natural language queries convert to accurate structured queries
+- Elasticsearch search returns results in < 500ms for complex queries
+- Log Explorer UI loads 1M logs smoothly (virtual scrolling, 60 FPS)
+- Real-time log streaming updates within 1 second
+
+---
+
+### **Tier 4: Platform Admin Dashboard + Analytics** (Week 4)
+
+**System Monitoring + Tenant Analytics**
+
+#### Platform Admin Dashboard Features:
+
+1. **Real-Time System Health**:
+
+   - Log ingestion rate (logs/second, live chart)
+   - Kafka consumer lag by topic
+   - Database query performance (slow queries)
+   - Elasticsearch cluster health (yellow/green/red)
+   - Storage usage (total logs stored, growth rate)
+   - API response times (P50, P95, P99)
+
+2. **Tenant Analytics**:
+
+   - **Usage Metrics**:
+     - Logs ingested per tenant (today, this month)
+     - Storage consumed per tenant (GB)
+     - API calls per tenant (rate limiting info)
+     - Active services per tenant
+   - **Billing Data** (if monetized):
+     - Revenue by plan (free/pro/enterprise)
+     - Tenants exceeding plan limits
+     - Upgrade opportunities (high-usage free-tier tenants)
+   - **Top Tenants**:
+     - By log volume, by storage, by API calls
+     - Leaderboard for easy identification
+
+3. **Log Analytics (Aggregated)**:
+
+   - **Volume Trends**:
+     - Total logs over time (line chart)
+     - Logs by level distribution (stacked area chart)
+     - Peak hours heatmap (24x7 grid)
+   - **Error Analysis**:
+     - Top error messages across all tenants
+     - Error rate trends (are errors increasing?)
+     - Services with highest error rates
+   - **Performance**:
+     - Average log processing latency
+     - Time from ingestion to queryable
+     - Query response times
+
+4. **Alert Analytics**:
+
+   - Total alerts triggered (today, this week)
+   - Alert resolution time (MTTR)
+   - Most triggered alerts (by tenant, by alert rule)
+   - Alert fatigue indicators (alerts ignored, false positives)
+
+5. **AI Model Performance**:
+
+   - Anomaly detection accuracy (precision, recall)
+   - Pattern recognition effectiveness (manual validation)
+   - Alert suggestion adoption rate (how many suggestions are used)
+   - Model drift detection (performance over time)
+
+6. **Capacity Planning** (Predictive AI):
+   - Forecast storage needs (next 30/90 days)
+   - Predict Kafka scaling requirements
+   - Estimate database growth
+   - Suggest infrastructure optimizations
+
+#### Tenant-Facing Dashboard Features:
+
+1. **Service Overview**:
+
+   - List of services with health status
+   - Log volume per service (bar chart)
+   - Error rate per service (line chart with threshold)
+   - Response time percentiles (if tracked in logs)
+
+2. **Custom Dashboards**:
+
+   - Drag-and-drop dashboard builder
+   - Widgets: Time-series charts, pie charts, tables, big numbers
+   - Query builder: Select metrics, filters, time range
+   - Save and share dashboards with team
+
+3. **Real-Time Monitoring**:
+
+   - Live log feed (filtered by service/level)
+   - Active alerts panel (current incidents)
+   - Service health indicators (green/yellow/red)
+   - Key metrics (requests/sec, error rate, etc.)
+
+4. **Historical Analysis**:
+   - Compare time periods (this week vs last week)
+   - Identify trends (error rate increasing over 30 days?)
+   - Correlation analysis (high traffic → high errors?)
+   - Export data as CSV for external analysis
+
+#### Implementation:
+
+- **Materialized Views**:
+
+  ```sql
+  -- Hourly log volume by tenant
+  CREATE MATERIALIZED VIEW analytics_hourly_logs AS
+  SELECT
+    tenant_id,
+    service_id,
+    date_trunc('hour', timestamp) as hour,
+    level,
+    COUNT(*) as log_count
+  FROM logs
+  WHERE timestamp > NOW() - INTERVAL '30 days'
+  GROUP BY tenant_id, service_id, date_trunc('hour', timestamp), level;
+
+  -- Refresh every hour
+  REFRESH MATERIALIZED VIEW CONCURRENTLY analytics_hourly_logs;
+  ```
+
+- **Continuous Aggregates** (TimescaleDB):
+
+  ```sql
+  CREATE MATERIALIZED VIEW logs_1h
+  WITH (timescaledb.continuous) AS
+  SELECT
+    time_bucket('1 hour', timestamp) AS bucket,
+    tenant_id,
+    service_id,
+    level,
+    COUNT(*) as count
+  FROM logs
+  GROUP BY bucket, tenant_id, service_id, level;
+
+  -- Automatically updated as new data arrives
+  ```
+
+- **Real-Time Streaming**:
+
+  - Kafka consumer writes metrics to Redis (current values)
+  - WebSocket broadcasts updates to connected dashboards
+  - Server-Sent Events for one-way updates (simpler than WebSocket)
+
+- **Batch Processing**:
+  - Hourly: Refresh materialized views, compute aggregations
+  - Daily: Generate reports, clean up old data, update forecasts
+  - Weekly: Tenant usage reports (email), capacity planning
+
+#### Dashboard UI:
+
+- **Admin Platform Dashboard**:
+  - Top navigation: System Health, Tenants, Analytics, Alerts
+  - Real-time metrics with auto-refresh (5 seconds)
+  - Filterable tables (search tenants, services)
+  - Export capabilities (CSV, PDF reports)
+- **Tenant Dashboard**:
+  - Service selector (dropdown)
+  - Time range selector with presets
+  - Custom dashboard builder (drag-and-drop)
+  - Alert configuration interface
+  - Settings: API keys, retention policies, integrations
+
+#### Success Criteria:
+
+- Admin dashboard loads metrics for 100 tenants in < 2 seconds
+- Real-time metrics update within 1 second
+- Custom dashboards render complex queries in < 3 seconds
+- Capacity forecasts achieve 90%+ accuracy (within 10% error)
+- Tenant can build custom dashboard without documentation (intuitive UI)
+
+---
+
+## Data Volume Simulation Strategy
+
+### Initial Seed:
+
+```javascript
+- 100 tenants (mix of free/pro/enterprise plans)
+- 500 services (5 per tenant average)
+- 10,000,000,000 logs (10 billion, past 30 days)
+- Log level distribution:
+  - Debug: 20% (sampled to 1%)
+  - Info: 60% (sampled to 10%)
+  - Warn: 10% (kept 100%)
+  - Error: 8% (kept 100%)
+  - Fatal: 2% (kept 100%)
+- After sampling: ~1 billion logs stored
+- Temporal patterns: Peak 10am-4pm (70% of logs)
+```
+
+### Realistic Service Patterns:
+
+- **Web Services**: High log volume (10K/min), mostly info
+- **Background Jobs**: Low volume (100/min), occasional errors
+- **APIs**: Medium volume (1K/min), structured logs
+
+### Load Testing Scenarios:
+
+1. **Normal Load**: 50,000 logs/second across 100 tenants
+2. **Spike**: One tenant sends 500,000 logs/second (DDoS on their service)
+3. **Query Load**: 10,000 concurrent users querying logs
+4. **Dashboard Load**: 500 users viewing real-time dashboards simultaneously
+
+### Tools:
+
+- k6 for HTTP load testing
+- Custom log generator (Kafka producer, realistic log patterns)
+- Elasticsearch benchmark tools
+- PostgreSQL/TimescaleDB benchmarking
+
+---
+
+## Key Learning Outcomes
+
+1. **Multi-Tenancy**: Data isolation, resource allocation, billing
+2. **Time-Series Data**: Efficient storage, query optimization, retention policies
+3. **Stream Processing**: Kafka Streams, real-time aggregations
+4. **Full-Text Search**: Elasticsearch integration, complex queries
+5. **AI for Monitoring**: Anomaly detection, pattern recognition, intelligent alerting
+6. **Data Visualization**: Building custom dashboards, real-time charts
+7. **Scalability**: Handling billions of logs, horizontal scaling strategies
+
+---
+
+## Evaluation Criteria:
+
+- **Architecture**: Clean multi-tenant design, proper data isolation
+- **Performance**: 100K logs/sec ingestion, < 1s query latency
+- **Scalability**: System scales with tenant count and log volume
+- **AI Integration**: Anomaly detection 90%+ accuracy, useful insights
+- **User Experience**: Intuitive dashboards, powerful search, low latency
+- **Code Quality**: Well-structured services, comprehensive tests, monitoring
+- **Documentation**: Setup guide, API docs, architecture diagrams
+
+---
+
+---
+
+# Project 8: Distributed Task Queue System (Background Job Processor)
+
+## Project Overview
+
+Build a distributed task queue system similar to Celery/Bull/Sidekiq for processing background jobs at scale. The system handles job scheduling, priority queues, retries with exponential backoff, dead letter queues, and provides real-time monitoring of job execution. Perfect for learning about distributed systems, job orchestration, and handling failures gracefully.
+
+---
+
+## Tech Stack
+
+- **Backend**: Node.js + Express (API) + Worker processes
+- **Database**: PostgreSQL (job metadata, results) + Redis (job queues, locks)
+- **Message Queue**: Kafka (job events, audit log) or Redis Streams (simpler alternative)
+- **AI Integration**: Gemini/OpenAI for job optimization, failure prediction, and intelligent retry strategies
+- **Monitoring**: Prometheus + Grafana or custom dashboard
+- **Frontend**: React for job monitoring dashboard
+
+---
+
+## Roles
+
+1. **Developer** - Submit jobs, monitor execution, configure retry policies
+2. **Admin** - System health monitoring, worker management, queue analytics
+
+---
+
+## Progressive Tier Requirements
+
+### **Tier 1: Core Job Queue System** (Week 1)
+
+**Backend Focus: Job Submission, Processing, Basic Queues**
+
+#### Features:
+
+- Job submission API
+- Multiple named queues (email, image-processing, reports, etc.)
+- Worker processes that consume and execute jobs
+- Job status tracking (pending, processing, completed, failed)
+- Basic retry mechanism (fixed number of retries)
+- Job results storage
+- Simple job history
+
+#### Database Schema:
+
+```sql
+-- PostgreSQL (job metadata and results)
+jobs (
+  id UUID PRIMARY KEY,
+  queue_name TEXT NOT NULL,
+  job_type TEXT NOT NULL, -- 'send_email', 'process_image', 'generate_report'
+  payload JSONB NOT NULL,
+  status TEXT NOT NULL, -- 'pending', 'processing', 'completed', 'failed'
+  priority INT DEFAULT 0, -- Higher number = higher priority
+  attempts INT DEFAULT 0,
+  max_attempts INT DEFAULT 3,
+  result JSONB, -- Job output
+  error TEXT, -- Error message if failed
+  created_at TIMESTAMP DEFAULT NOW(),
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  scheduled_for TIMESTAMP DEFAULT NOW(), -- For delayed jobs
+  INDEX idx_jobs_queue_status (queue_name, status, scheduled_for)
+)
+
+-- Redis (active queues - faster than PostgreSQL for queue operations)
+-- ZSET for priority queue
+queue:{queue_name} -> Sorted Set (score = priority * 1000000 + timestamp)
+
+-- Hash for job data (temporary, deleted after processing)
+job:{job_id} -> Hash {payload, metadata}
+
+-- SET for processing jobs (for tracking which jobs are being worked on)
+processing:{worker_id} -> Set of job_ids
+```
+
+#### Job Submission:
+
+```javascript
+POST /api/v1/jobs
+
+Body:
+{
+  "queue": "email",
+  "jobType": "send_welcome_email",
+  "payload": {
+    "userId": 123,
+    "email": "user@example.com"
+  },
+  "priority": 5, // 0-10, default 5
+  "maxAttempts": 3,
+  "scheduledFor": "2024-01-16T10:00:00Z" // Optional: delayed job
+}
+
+Response:
+{
+  "jobId": "abc-123-def",
+  "status": "pending",
+  "queuePosition": 42
+}
+```
+
+#### Worker Architecture:
+
+```javascript
+// Worker process (multiple instances can run concurrently)
+class Worker {
+  constructor(queueName, concurrency = 1) {
+    this.queueName = queueName;
+    this.concurrency = concurrency; // How many jobs to process simultaneously
+    this.processing = new Set();
+  }
+
+  async start() {
+    while (true) {
+      if (this.processing.size < this.concurrency) {
+        const job = await this.fetchJob();
+        if (job) {
+          this.processJob(job); // Non-blocking
+        } else {
+          await this.sleep(1000); // No jobs, wait 1 second
+        }
+      }
+    }
+  }
+
+  async fetchJob() {
+    // 1. Pop highest priority job from Redis
+    const jobId = await redis.zpopmax(`queue:${this.queueName}`);
+    if (!jobId) return null;
+
+    // 2. Mark as processing
+    await redis.sadd(`processing:${this.workerId}`, jobId);
+
+    // 3. Update database
+    await db.query(
+      `UPDATE jobs SET status = 'processing', started_at = NOW()
+       WHERE id = $1`,
+      [jobId]
+    );
+
+    // 4. Fetch job data
+    const job = await db.query(`SELECT * FROM jobs WHERE id = $1`, [jobId]);
+    return job.rows[0];
+  }
+
+  async processJob(job) {
+    this.processing.add(job.id);
+
+    try {
+      // Execute the actual job logic
+      const result = await this.executeJob(job);
+
+      // Mark as completed
+      await this.completeJob(job.id, result);
+    } catch (error) {
+      // Handle failure and retry
+      await this.failJob(job.id, error);
+    } finally {
+      this.processing.delete(job.id);
+      await redis.srem(`processing:${this.workerId}`, job.id);
+    }
+  }
+
+  async executeJob(job) {
+    // Route to appropriate handler based on jobType
+    const handler = jobHandlers[job.job_type];
+    if (!handler) {
+      throw new Error(`Unknown job type: ${job.job_type}`);
+    }
+
+    return await handler(job.payload);
+  }
+
+  async completeJob(jobId, result) {
+    await db.query(
+      `UPDATE jobs
+       SET status = 'completed', result = $1, completed_at = NOW()
+       WHERE id = $2`,
+      [JSON.stringify(result), jobId]
+    );
+  }
+
+  async failJob(jobId, error) {
+    const job = await db.query(`SELECT * FROM jobs WHERE id = $1`, [jobId]);
+    const attempts = job.rows[0].attempts + 1;
+
+    if (attempts < job.rows[0].max_attempts) {
+      // Retry: re-add to queue with delay (exponential backoff)
+      const delay = Math.pow(2, attempts) * 1000; // 2^attempts seconds
+      const retryAt = new Date(Date.now() + delay);
+
+      await db.query(
+        `UPDATE jobs
+         SET status = 'pending', attempts = $1, scheduled_for = $2
+         WHERE id = $3`,
+        [attempts, retryAt, jobId]
+      );
+
+      // Re-add to Redis queue
+      await redis.zadd(
+        `queue:${job.rows[0].queue_name}`,
+        Date.now() + delay,
+        jobId
+      );
+    } else {
+      // Max attempts reached, mark as failed
+      await db.query(
+        `UPDATE jobs
+         SET status = 'failed', error = $1, completed_at = NOW()
+         WHERE id = $2`,
+        [error.message, jobId]
+      );
+    }
+  }
+}
+
+// Start workers
+const emailWorker = new Worker("email", 10); // Process 10 jobs concurrently
+const imageWorker = new Worker("image-processing", 5);
+
+emailWorker.start();
+imageWorker.start();
+```
+
+#### Job Handlers (Example):
+
+```javascript
+const jobHandlers = {
+  async send_welcome_email(payload) {
+    const { userId, email } = payload;
+    // Send email via SendGrid/Mailgun
+    await emailService.send({
+      to: email,
+      subject: "Welcome!",
+      body: "Thanks for signing up!",
+    });
+    return { emailId: "abc123", sentAt: new Date() };
+  },
+
+  async process_image(payload) {
+    const { imageUrl, operations } = payload;
+    // Download image, apply transformations, upload to CDN
+    const processedUrl = await imageProcessor.process(imageUrl, operations);
+    return { processedUrl };
+  },
+};
+```
+
+#### API Endpoints:
+
+- `POST /api/v1/jobs` - Submit job
+- `GET /api/v1/jobs/:id` - Get job status and result
+- `GET /api/v1/jobs?queue=X&status=Y&page=1` - List jobs with filters
+- `DELETE /api/v1/jobs/:id` - Cancel pending job
+- `POST /api/v1/jobs/:id/retry` - Manually retry failed job
+
+#### Success Criteria:
+
+- Jobs submitted and processed correctly
+- Workers handle concurrent jobs (up to concurrency limit)
+- Failed jobs retry with exponential backoff
+- Job status accurately reflects current state
+- No job loss during worker restarts (jobs in Redis + PostgreSQL)
+
+---
+
+### **Tier 2: Advanced Features + High Volume** (Week 2)
+
+**Backend Focus: Priority Queues, Dead Letter Queue, Job Dependencies, Rate Limiting**
+
+#### Advanced Features:
+
+**1. Priority Queues**:
+
+```javascript
+// Jobs with higher priority processed first
+// Redis sorted set score = priority * 1000000 - timestamp
+// This ensures: higher priority first, then FIFO within same priority
+
+const score = job.priority * 1000000 - Date.now();
+await redis.zadd(`queue:${queueName}`, score, jobId);
+```
+
+**2. Dead Letter Queue (DLQ)**:
+
+```javascript
+// Jobs that fail after max retries → Move to DLQ for manual review
+async function moveToDeadLetterQueue(jobId) {
+  await db.query(
+    `UPDATE jobs SET status = 'dead_letter' WHERE id = $1`,
+    [jobId]
+  );
+
+  await redis.zadd('queue:dead_letter', Date.now(), jobId);
+
+  // Alert admins
+  await notifyAdmins({
+    type: 'dead_letter_job',
+    jobId,
+    message: 'Job moved to DLQ after max retries'
+  });
+}
+
+// Admin can manually retry from DLQ
+POST /api/v1/admin/jobs/:id/retry-from-dlq
+```
+
+**3. Job Dependencies (Job Chains)**:
+
+```javascript
+// Job B should only run after Job A completes
+POST /api/v1/jobs
+
+Body:
+{
+  "queue": "reports",
+  "jobType": "generate_pdf_report",
+  "payload": {...},
+  "dependsOn": ["job-a-id"] // Wait for these jobs to complete first
+}
+
+// Worker checks dependencies before processing
+async function canProcessJob(job) {
+  if (!job.depends_on || job.depends_on.length === 0) return true;
+
+  const dependencies = await db.query(
+    `SELECT status FROM jobs WHERE id = ANY($1)`,
+    [job.depends_on]
+  );
+
+  return dependencies.rows.every(dep => dep.status === 'completed');
+}
+```
+
+**4. Job Batching**:
+
+```javascript
+// Submit multiple related jobs as a batch
+// Track batch completion
+POST /api/v1/job-batches
+
+Body:
+{
+  "name": "Monthly Report Generation",
+  "jobs": [
+    { "queue": "reports", "jobType": "generate_pdf", "payload": {...} },
+    { "queue": "reports", "jobType": "send_email", "payload": {...} },
+    // ... 100 jobs
+  ]
+}
+
+// Check batch status
+GET /api/v1/job-batches/:batchId
+Response: { completed: 85, failed: 5, pending: 10, total: 100 }
+```
+
+**5. Rate Limiting (per queue)**:
+
+```javascript
+// Limit jobs processed per second (e.g., API rate limits)
+const rateLimits = {
+  email: { limit: 10, window: 1000 }, // Max 10 emails per second
+  "api-calls": { limit: 100, window: 60000 }, // Max 100 API calls per minute
+};
+
+async function canProcessJobNow(queueName) {
+  const limit = rateLimits[queueName];
+  if (!limit) return true;
+
+  const key = `rate_limit:${queueName}`;
+  const count = await redis.incr(key);
+
+  if (count === 1) {
+    await redis.expire(key, limit.window / 1000);
+  }
+
+  return count <= limit.limit;
+}
+```
+
+**6. Scheduled/Cron Jobs**:
+
+```javascript
+// Recurring jobs (daily reports, weekly cleanups)
+POST /api/v1/scheduled-jobs
+
+Body:
+{
+  "name": "Daily User Report",
+  "queue": "reports",
+  "jobType": "generate_user_report",
+  "payload": {...},
+  "schedule": "0 9 * * *" // Cron format: every day at 9am
+}
+
+// Scheduler process (separate from workers)
+const scheduler = new CronScheduler();
+scheduler.add({
+  schedule: '0 9 * * *',
+  task: async () => {
+    await submitJob({
+      queue: 'reports',
+      jobType: 'generate_user_report',
+      payload: { date: new Date() }
+    });
+  }
+});
+```
+
+#### Kafka Integration:
+
+**Why Kafka**: Audit trail, job events for analytics, worker coordination
+
+**Topics**:
+
+- `jobs.submitted` (all job submissions)
+- `jobs.completed` (successful completions)
+- `jobs.failed` (failures for analysis)
+- `jobs.retries` (retry events)
+
+**Consumers**:
+
+- **Analytics Service**: Aggregate job metrics
+- **Audit Log**: Store all job events for compliance
+- **Alert Service**: Trigger alerts on high failure rates
+
+#### High Volume Data Simulation:
+
+```javascript
+Seed Data:
+- 10 queues (email, sms, image-processing, video-encoding, reports, webhooks, etc.)
+- 100,000,000 jobs (past 30 days)
+- Job distribution:
+  - 70% completed successfully
+  - 15% failed then succeeded on retry
+  - 10% pending/processing
+  - 5% failed permanently (in DLQ)
+- Average job duration:
+  - Fast jobs (< 1s): 60% (email, webhook)
+  - Medium jobs (1-10s): 30% (image processing)
+  - Slow jobs (> 10s): 10% (video encoding, reports)
+```
+
+#### Load Testing:
+
+- Submit 10,000 jobs/second
+- Process 5,000 jobs/second across 50 worker instances
+- Simulate worker crashes (graceful shutdown and recovery)
+- Test queue backlog (1M pending jobs)
+
+#### Success Criteria:
+
+- Priority jobs processed before lower-priority jobs
+- DLQ captures permanently failed jobs correctly
+- Job dependencies enforced (no premature execution)
+- Rate limiting prevents exceeding external API limits
+- Scheduled jobs trigger at correct times
+- System handles 10K job submissions/sec without data loss
+
+---
+
+### **Tier 3: AI-Powered Features + Monitoring Dashboard** (Week 3)
+
+**AI Integration + Observability**
+
+#### AI-Powered Features:
+
+**1. Intelligent Retry Strategy** (AI):
+
+```javascript
+// AI learns which jobs are likely to succeed on retry
+// Suggests optimal retry delays and max attempts
+
+// Features for prediction:
+- job_type
+- error_type (timeout, connection_refused, validation_error)
+- time_of_day (some external services fail more at night)
+- previous_attempts
+- queue_backlog
+
+// Model output:
+- retry_recommended: boolean
+- suggested_delay: milliseconds
+- success_probability: 0-1
+
+// Apply AI recommendations
+if (aiModel.shouldRetry(job, error)) {
+  const delay = aiModel.suggestDelay(job, error);
+  await scheduleRetry(job, delay);
+} else {
+  await moveToDeadLetterQueue(job); // Don't waste retries
+}
+```
+
+**2. Job Failure Prediction** (AI):
+
+```javascript
+// Predict if a job is likely to fail based on historical patterns
+// Endpoint: POST /api/v1/jobs/predict-success
+
+const prediction = await aiModel.predictSuccess({
+  jobType: 'process_large_video',
+  payload: { videoSize: 5GB, duration: 120min },
+  queueBacklog: 5000,
+  workerLoad: 0.85
+});
+
+if (prediction.successProbability < 0.5) {
+  // Warn user: "This job is likely to fail due to timeout"
+  // Suggest: splitting into smaller jobs, increasing timeout
+}
+```
+
+**3. Auto-Scaling Recommendations** (AI):
+
+```javascript
+// AI analyzes queue depth, job duration, worker utilization
+// Suggests optimal worker count
+
+const recommendation = await aiModel.suggestWorkerCount({
+  queue: "image-processing",
+  pendingJobs: 10000,
+  averageJobDuration: 5000, // ms
+  currentWorkers: 10,
+  targetLatency: 60000, // Process within 1 minute
+});
+
+// recommendation: { suggestedWorkers: 25, reasoning: "..." }
+```
+
+**4. Job Optimization Suggestions**:
+
+```javascript
+// AI analyzes slow jobs and suggests optimizations
+GET /api/v1/analytics/slow-jobs
+
+Response:
+{
+  "slowJobs": [
+    {
+      "jobType": "process_image",
+      "avgDuration": 12000, // 12 seconds
+      "suggestion": "Consider using GPU-accelerated processing to reduce duration by 70%"
+    }
+  ]
+}
+```
+
+**5. Anomaly Detection**:
+
+```javascript
+// Detect unusual patterns: sudden spike in failures, slow jobs, etc.
+// Kafka consumer monitors job events in real-time
+
+const anomaly = await detectAnomaly({
+  metric: "failure_rate",
+  queue: "email",
+  currentValue: 0.25, // 25% failure rate
+  historicalAverage: 0.02, // Usually 2%
+});
+
+if (anomaly.detected) {
+  await alertAdmins({
+    type: "anomaly_detected",
+    message: `Email queue failure rate spiked to 25% (normal: 2%)`,
+    possibleCauses: ["SMTP server down", "Rate limit exceeded"],
+  });
+}
+```
+
+#### Monitoring Dashboard (Frontend):
+
+**1. Real-Time Queue Overview**:
+
+- List of all queues with:
+  - Pending jobs count
+  - Processing jobs count
+  - Completed today / Failed today
+  - Average job duration
+  - Worker count (active workers)
+  - Health status (green/yellow/red)
+
+**2. Job Timeline**:
+
+- Gantt chart showing job execution over time
+- Color-coded by status (green=success, red=failed, yellow=processing)
+- Filter by queue, date range
+- Click job to see details
+
+**3. Worker Status Panel**:
+
+- Table of active workers:
+  - Worker ID, Queue, Status (idle/busy), Current job, Uptime
+  - CPU/Memory usage (if tracked)
+- Actions: Restart worker, Increase/decrease workers
+
+**4. Job Details Drawer**:
+
+- Click any job → Side panel opens
+- Shows:
+  - Job ID, Type, Queue, Status
+  - Payload (formatted JSON)
+  - Result (if completed)
+  - Error (if failed)
+  - Timeline: submitted → started → completed/failed
+  - Retry history (all attempts)
+- Actions: Retry, Cancel, View similar jobs
+
+**5. Queue Metrics Charts**:
+
+- Line chart: Jobs processed over time (by queue)
+- Bar chart: Success vs failure rate (by queue)
+- Heatmap: Job submissions by hour of day
+- Histogram: Job duration distribution
+
+**6. DLQ Management Interface**:
+
+- Table of jobs in dead letter queue
+- Filters: error type, job type, date range
+- Bulk actions: Retry all, Delete, Export as CSV
+- Root cause analysis (AI-powered insights)
+
+**7. Alerts Configuration**:
+
+- Create custom alerts:
+  - Condition: "Failure rate > 10% for 5 minutes"
+  - Action: Send email, Slack, webhook
+  - Channels: Multiple recipients
+- Alert history and status
+
+#### API for Monitoring:
+
+```javascript
+GET /api/v1/metrics/queues
+Response: { queues: [{ name, pending, processing, completed, failed }] }
+
+GET /api/v1/metrics/workers
+Response: { workers: [{ id, queue, status, currentJob, uptime }] }
+
+GET /api/v1/metrics/jobs/timeline?from=X&to=Y&queue=Z
+Response: { jobs: [{ id, start, end, status, duration }] }
+
+GET /api/v1/metrics/job-duration-histogram?queue=X
+Response: { buckets: [{ range: '0-1s', count: 1000 }, ...] }
+```
+
+#### Real-Time Updates:
+
+- WebSocket connection to dashboard
+- Server broadcasts events:
+  - `job_completed`: { jobId, queue, duration }
+  - `job_failed`: { jobId, queue, error }
+  - `worker_started`: { workerId, queue }
+  - `queue_backlog`: { queue, pendingCount }
+
+#### Success Criteria:
+
+- AI retry strategy reduces unnecessary retries by 30%+
+- Failure prediction accuracy > 80%
+- Dashboard loads metrics for 100M jobs in < 2 seconds
+- Real-time updates appear within 500ms
+- Workers can be scaled up/down from dashboard
+- DLQ jobs can be bulk-retried efficiently
+
+---
+
+### **Tier 4: Admin Analytics Dashboard** (Week 4)
+
+**Deep Analytics + System Optimization**
+
+#### Admin Analytics Features:
+
+**1. Job Performance Analytics**:
+
+- **Execution Metrics**:
+  - Total jobs processed (by day/week/month)
+  - Success rate trends (line chart)
+  - Average job duration by type (bar chart)
+  - P50/P95/P99 latency percentiles
+  - Slowest jobs (leaderboard with optimization suggestions)
+- **Queue Health**:
+  - Queue depth over time (are queues growing?)
+  - Age of oldest pending job (staleness indicator)
+  - Throughput (jobs/second by queue)
+  - Worker utilization (busy vs idle time)
+
+**2. Failure Analysis**:
+
+- **Error Patterns**:
+  - Most common error types (pie chart)
+  - Error rate trends (increasing/decreasing?)
+  - Jobs with highest failure rate (table)
+  - Time-to-failure distribution (histogram)
+- **Retry Analysis**:
+  - Average retries per job type
+  - Success rate by attempt number (1st, 2nd, 3rd attempt)
+  - Cost of retries (wasted compute time)
+  - AI suggestions for retry policy tuning
+
+**3. Resource Utilization**:
+
+- **Worker Metrics**:
+  - Worker count over time (auto-scaled?)
+  - CPU/Memory usage per worker (if tracked)
+  - Worker idle time (underutilized workers?)
+  - Worker crash rate
+- **Queue Capacity**:
+  - Redis memory usage (queue storage)
+  - PostgreSQL disk usage (job metadata)
+  - Kafka lag (if using Kafka)
+  - Estimated time to clear backlog
+
+**4. Cost Analysis** (if applicable):
+
+- **Compute Costs**:
+  - Worker hours by queue
+  - Cost per job (estimate based on duration)
+  - Most expensive job types
+  - Optimization opportunities (AI-suggested)
+- **Infrastructure**:
+  - Database storage costs (job metadata growth)
+  - Redis memory costs
+  - Network egress (if workers call external APIs)
+
+**5. SLA Monitoring**:
+
+- **Latency SLAs**:
+  - Jobs processed within SLA (e.g., 95% within 5 minutes)
+  - SLA violations by queue
+  - Trends: improving or degrading?
+- **Availability**:
+  - System uptime percentage
+  - Downtime incidents (duration, cause)
+  - MTTR (Mean Time To Recovery)
+
+**6. Predictive Analytics** (AI):
+
+- **Capacity Forecasting**:
+  - Predict job volume for next 7/30 days
+  - Worker capacity needed to meet SLAs
+  - Cost projections
+- **Anomaly Predictions**:
+  - Predict future failure spikes (based on trends)
+  - Identify queues at risk of overload
+  - Suggest preemptive scaling
+
+**7. Job Dependency Visualization**:
+
+- Directed graph showing job dependencies
+- Critical path analysis (which jobs block others?)
+- Identify bottlenecks in job chains
+
+#### Implementation:
+
+```sql
+-- Materialized views for fast analytics
+CREATE MATERIALIZED VIEW analytics_daily_jobs AS
+SELECT
+  DATE(created_at) as date,
+  queue_name,
+  job_type,
+  status,
+  COUNT(*) as count,
+  AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_duration,
+  PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (completed_at - started_at))) as p95_duration
+FROM jobs
+WHERE created_at > NOW() - INTERVAL '90 days'
+GROUP BY DATE(created_at), queue_name, job_type, status;
+
+-- Refresh hourly
+REFRESH MATERIALIZED VIEW CONCURRENTLY analytics_daily_jobs;
+```
+
+#### Dashboard UI:
+
+- **Executive Summary Page**:
+  - Big numbers: Jobs processed today, Success rate, Avg duration
+  - Trend indicators (up/down arrows with percentages)
+  - Top 3 issues requiring attention (AI-identified)
+- **Queue Deep Dive**:
+  - Select queue → Detailed metrics
+  - Compare queues side-by-side
+  - Drill-down to individual job types
+- **Worker Management**:
+  - Auto-scaling configuration (min/max workers, triggers)
+  - Manual scaling controls (+ / - buttons)
+  - Worker logs and health checks
+- **Cost Dashboard** (if applicable):
+  - Monthly cost breakdown
+  - Cost per queue/job type
+  - Optimization recommendations (AI)
+  - Cost trend projections
+
+#### Success Criteria:
+
+- Dashboard loads analytics for 100M jobs in < 3 seconds
+- AI predictions achieve 85%+ accuracy
+- Admins can identify and resolve issues within 5 minutes
+- Cost analysis provides actionable optimization suggestions
+- SLA compliance tracked accurately
+
+---
+
+## Data Volume Simulation Strategy
+
+### Initial Seed:
+
+```javascript
+- 10 queues (email, sms, image, video, reports, webhooks, data-processing, ml-inference, notifications, cleanup)
+- 100,000,000 jobs (past 30 days)
+- Job type distribution:
+  - Fast jobs (< 1s): 60%
+  - Medium jobs (1-10s): 30%
+  - Slow jobs (> 10s): 10%
+- Success rate: 85% (first attempt), 10% succeed on retry, 5% permanent failure
+- Temporal patterns: Peak hours 9am-5pm (70% of jobs)
+```
+
+### Load Testing Scenarios:
+
+1. **Normal Load**: 1,000 jobs/sec submitted, 800 jobs/sec processed
+2. **Spike**: 10,000 jobs/sec for 5 minutes (queue backlog test)
+3. **Worker Crash**: Kill 50% of workers, test recovery
+4. **DLQ Processing**: Retry 10,000 DLQ jobs simultaneously
+5. **Long-Running Jobs**: Submit 1,000 jobs that take 5 minutes each
+
+### Tools:
+
+- k6 for API load testing
+- Custom job submission scripts
+- Redis benchmarking
+- Worker crash simulations (SIGKILL)
+
+---
+
+## Key Learning Outcomes
+
+1. **Distributed Systems**: Worker coordination, distributed locks, failure handling
+2. **Queue Management**: Priority queues, rate limiting, backpressure
+3. **Retry Logic**: Exponential backoff, idempotency, DLQ
+4. **Job Orchestration**: Dependencies, batching, scheduling
+5. **AI for Operations**: Failure prediction, auto-scaling, optimization
+6. **Observability**: Monitoring, alerting, performance analysis
+
+---
+
+## Evaluation Criteria
+
+- **Reliability**: No job loss, even with worker crashes
+- **Performance**: Process 5K jobs/sec, low latency
+- **Scalability**: Horizontal scaling (add workers → increase throughput)
+- **AI Integration**: Intelligent retries, useful predictions
+- **Monitoring**: Comprehensive dashboard, real-time updates
+- **Code Quality**: Clean worker architecture, robust error handling, tests
+
+---
+
+---
+
+# Project 9: Content Delivery Network (CDN) Simulation
+
+## Project Overview
+
+Build a simplified CDN system that demonstrates edge caching, origin server architecture, cache invalidation strategies, and geographic routing. The system serves static assets (images, videos, JavaScript, CSS) from multiple edge locations, implements intelligent caching policies, and provides analytics on cache performance. Focus on understanding cache hit rates, TTLs, and optimizing content delivery at scale.
+
+---
+
+## Tech Stack
+
+- **Backend**: Node.js + Express (origin server + edge servers)
+- **Database**: PostgreSQL (metadata, analytics) + Redis (cache storage)
+- **Storage**: S3/MinIO (origin storage for assets)
+- **Message Queue**: Kafka (cache events, analytics)
+- **AI Integration**: Gemini/OpenAI for intelligent cache preloading, traffic prediction, and content optimization recommendations
+- **Load Balancing**: Geographic DNS routing simulation or simple round-robin
+- **Frontend**: React dashboard for CDN analytics and cache management
+
+---
+
+## Roles
+
+1. **Content Publisher** - Upload assets, configure caching policies, purge cache
+2. **Admin** - Monitor CDN health, analyze traffic, optimize cache strategies
+
+---
+
+## Progressive Tier Requirements
+
+### **Tier 1: Core CDN Architecture** (Week 1)
+
+**Backend Focus: Origin Server + Edge Caching**
+
+#### Features:
+
+- Origin server (stores all assets)
+- Multiple edge servers (simulate different geographic locations)
+- Cache-aside pattern (check cache → miss → fetch from origin → cache)
+- Asset upload to origin
+- Basic TTL-based cache expiration
+- Cache statistics (hits, misses, hit rate)
+
+#### Architecture:
+
+```
+User Request
+    ↓
+[Edge Server (NY)]  ← Cache (Redis)
+    ↓ (cache miss)
+[Origin Server]  ← S3/MinIO storage
+```
+
+#### Database Schema:
+
+```sql
+-- PostgreSQL (metadata)
+assets (
+  id UUID PRIMARY KEY,
+  filename TEXT,
+  content_type TEXT, -- 'image/jpeg', 'video/mp4', 'application/javascript'
+  size_bytes BIGINT,
+  storage_url TEXT, -- S3 URL
+  cache_ttl INT DEFAULT 3600, -- seconds
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  INDEX idx_assets_filename (filename)
+)
+
+cache_policies (
+  id UUID PRIMARY KEY,
+  path_pattern TEXT, -- '/images/*', '/videos/*', '/static/js/*'
+  ttl INT, -- Cache duration in seconds
+  cache_control TEXT, -- 'public, max-age=3600'
+  priority INT DEFAULT 5 -- For cache eviction (LRU with priority)
+)
+
+-- Redis (edge cache)
+cache:{edge_location}:{asset_id} -> Binary data
+cache_metadata:{edge_location}:{asset_id} -> Hash {size, content_type, expires_at, hit_count}
+```
+
+#### Asset Upload (to Origin):
+
+```javascript
+POST /api/v1/assets/upload
+Headers: Content-Type: multipart/form-data
+
+Body: FormData with file
+
+Flow:
+1. Upload file to S3/MinIO
+2. Create database record
+3. Return asset URL: https://cdn.example.com/{edge}/{asset_id}
+```
+
+#### Asset Request (from Edge):
+
+```javascript
+GET /cdn/{edge_location}/{asset_id}
+
+Edge Server Logic:
+1. Check Redis cache: cache:{edge}:{asset_id}
+2. If HIT:
+   - Increment hit_count
+   - Return cached data with proper headers
+3. If MISS:
+   - Fetch from origin server (or S3 directly)
+   - Store in Redis with TTL
+   - Return data to user
+   - Log cache miss event
+```
+
+#### Edge Server Implementation:
+
+```javascript
+// Edge server (multiple instances for different regions)
+class EdgeServer {
+  constructor(location, redisClient) {
+    this.location = location; // 'us-east', 'eu-west', 'asia'
+    this.redis = redisClient;
+  }
+
+  async handleRequest(assetId) {
+    const cacheKey = `cache:${this.location}:${assetId}`;
+    const metadataKey = `cache_metadata:${this.location}:${assetId}`;
+
+    // Check cache
+    const cached = await this.redis.get(cacheKey);
+    const metadata = await this.redis.hgetall(metadataKey);
+
+    if (cached && metadata && Date.now() < metadata.expires_at) {
+      // Cache HIT
+      await this.redis.hincrby(metadataKey, "hit_count", 1);
+      await this.logCacheEvent("hit", assetId);
+
+      return {
+        data: cached,
+        headers: {
+          "Content-Type": metadata.content_type,
+          "Cache-Control": `public, max-age=${metadata.ttl}`,
+          "X-Cache": "HIT",
+        },
+      };
+    }
+
+    // Cache MISS - fetch from origin
+    const asset = await this.fetchFromOrigin(assetId);
+
+    // Store in cache
+    const ttl = asset.cache_ttl || 3600;
+    await this.redis.setex(cacheKey, ttl, asset.data);
+    await this.redis.hmset(metadataKey, {
+      size: asset.size,
+      content_type: asset.content_type,
+      expires_at: Date.now() + ttl * 1000,
+      hit_count: 0,
+    });
+    await this.redis.expire(metadataKey, ttl);
+
+    await this.logCacheEvent("miss", assetId);
+
+    return {
+      data: asset.data,
+      headers: {
+        "Content-Type": asset.content_type,
+        "Cache-Control": `public, max-age=${ttl}`,
+        "X-Cache": "MISS",
+      },
+    };
+  }
+
+  async fetchFromOrigin(assetId) {
+    // Fetch from origin server or directly from S3
+    const response = await fetch(`${ORIGIN_URL}/assets/${assetId}`);
+    const data = await response.buffer();
+
+    // Get metadata from database
+    const metadata = await db.query("SELECT * FROM assets WHERE id = $1", [
+      assetId,
+    ]);
+
+    return {
+      data,
+      size: data.length,
+      content_type: metadata.rows[0].content_type,
+      cache_ttl: metadata.rows[0].cache_ttl,
+    };
+  }
+
+  async logCacheEvent(eventType, assetId) {
+    // Log to Kafka for analytics
+    await kafka.send({
+      topic: "cdn.cache_events",
+      messages: [
+        {
+          value: JSON.stringify({
+            event: eventType,
+            edge: this.location,
+            asset_id: assetId,
+            timestamp: Date.now(),
+          }),
+        },
+      ],
+    });
+  }
+}
+
+// Start edge servers
+const edgeNY = new EdgeServer("us-east", redisNY);
+const edgeLondon = new EdgeServer("eu-west", redisLondon);
+const edgeTokyo = new EdgeServer("asia", redisTokyo);
+```
+
+#### Geographic Routing (Simplified):
+
+```javascript
+// DNS-based routing simulation
+// In reality, this would be done at DNS level (Geo-DNS)
+
+app.get('/cdn/:asset_id', (req, res) => {
+  const clientIP = req.ip;
+  const edge = determineEdgeLocation(clientIP);
+
+  // Route to appropriate edge server
+  const edgeServer = edgeServers[edge];
+  const asset = await edgeServer.handleRequest(req.params.asset_id);
+
+  res.set(asset.headers);
+  res.send(asset.data);
+});
+
+function determineEdgeLocation(ip) {
+  // Simplified geolocation (in real CDN, use MaxMind GeoIP or similar)
+  if (ip.startsWith('192.168.')) return 'us-east'; // Mock
+  if (ip.startsWith('10.0.')) return 'eu-west';
+  return 'asia';
+}
+```
+
+#### API Endpoints:
+
+- `POST /api/v1/assets/upload` - Upload asset to origin
+- `GET /cdn/{asset_id}` - Fetch asset from CDN (with geo-routing)
+- `GET /api/v1/assets/:id` - Get asset metadata
+- `DELETE /api/v1/assets/:id` - Delete asset from origin
+- `GET /api/v1/cache/stats?edge=X` - Get cache statistics
+
+#### Success Criteria:
+
+- Assets cached correctly at edge servers
+- Cache hits return data from Redis (no origin request)
+- Cache misses fetch from origin and populate cache
+- TTL expiration works (stale data not served)
+- Multiple edge locations handle requests independently
+
+---
+
+### **Tier 2: Advanced Caching + High Volume Simulation** (Week 2)
+
+**Backend Focus: Cache Invalidation, Purging, LRU Eviction**
+
+#### Advanced Caching Features:
+
+**1. Manual Cache Purge**:
+
+```javascript
+POST /api/v1/cache/purge
+
+Body:
+{
+  "assetId": "abc-123", // Optional: specific asset
+  "edge": "us-east", // Optional: specific edge, or all edges
+  "pattern": "/images/*" // Optional: purge by path pattern
+}
+
+// Purge asset from all edges
+async function purgeAsset(assetId) {
+  for (const edge of edgeLocations) {
+    await redis[edge].del(`cache:${edge}:${assetId}`);
+    await redis[edge].del(`cache_metadata:${edge}:${assetId}`);
+  }
+
+  await kafka.send({
+    topic: 'cdn.cache_events',
+    messages: [{
+      value: JSON.stringify({
+        event: 'purge',
+        asset_id: assetId,
+        timestamp: Date.now()
+      })
+    }]
+  });
+}
+```
+
+**2. Cache Invalidation Strategies**:
+
+- **TTL-based**: Automatic expiration (already implemented)
+- **Manual purge**: Publisher explicitly purges (API endpoint)
+- **Versioned URLs**: Change asset URL when content updates
+  ```javascript
+  // Instead of /cdn/image.jpg
+  // Use /cdn/image.jpg?v=2 (cache miss due to new URL)
+  ```
+- **Smart invalidation**: Kafka consumer invalidates cache when origin asset updated
+
+**3. Cache Eviction (LRU with Priority)**:
+
+```javascript
+// When Redis reaches memory limit, evict least recently used items
+// But consider priority (don't evict critical assets)
+
+async function evictColdCache(edgeLocation) {
+  // Find least accessed items
+  const keys = await redis.keys(`cache_metadata:${edgeLocation}:*`);
+
+  const items = await Promise.all(
+    keys.map(async (key) => {
+      const metadata = await redis.hgetall(key);
+      return {
+        key,
+        hit_count: parseInt(metadata.hit_count) || 0,
+        size: parseInt(metadata.size) || 0,
+        priority: await getAssetPriority(key), // From cache_policies table
+      };
+    })
+  );
+
+  // Sort by (priority, hit_count) - evict low priority, low hit count first
+  items.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return a.hit_count - b.hit_count;
+  });
+
+  // Evict bottom 10%
+  const toEvict = items.slice(0, Math.ceil(items.length * 0.1));
+  for (const item of toEvict) {
+    const assetId = item.key.split(":")[2];
+    await redis.del(`cache:${edgeLocation}:${assetId}`);
+    await redis.del(item.key);
+  }
+}
+```
+
+**4. Cache Warming (Proactive Preloading)**:
+
+```javascript
+// Preload popular assets to cache before traffic spike
+POST /api/v1/cache/warm
+
+Body:
+{
+  "assetIds": ["id1", "id2", "id3"],
+  "edges": ["us-east", "eu-west"] // Optional: specific edges
+}
+
+async function warmCache(assetIds, edges = allEdges) {
+  for (const edge of edges) {
+    for (const assetId of assetIds) {
+      // Simulate a cache miss to populate cache
+      await edgeServers[edge].handleRequest(assetId);
+    }
+  }
+}
+```
+
+**5. Conditional Requests (ETag / If-Modified-Since)**:
+
+```javascript
+GET /cdn/{asset_id}
+Headers:
+  If-None-Modified: Wed, 15 Jan 2024 10:00:00 GMT
+  OR
+  If-None-Match: "abc123hash"
+
+// Edge server checks if asset changed
+if (asset.updated_at <= req.headers['if-none-modified']) {
+  return res.status(304).send(); // Not Modified
+}
+
+res.set('ETag', asset.etag);
+res.set('Last-Modified', asset.updated_at);
+res.send(asset.data);
+```
+
+**6. Stale-While-Revalidate**:
+
+```javascript
+// Serve stale cached content while fetching fresh copy in background
+Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+// If asset expired but within stale window:
+if (cacheExpired && Date.now() < expiresAt + staleWindow) {
+  // Serve stale data immediately
+  res.send(cachedData);
+
+  // Revalidate in background (non-blocking)
+  refreshCacheInBackground(assetId);
+}
+```
+
+#### High Volume Data Simulation:
+
+```javascript
+Seed Data:
+- 1,000,000 assets (images, videos, JS, CSS)
+- Asset size distribution:
+  - Small (< 100KB): 60% (thumbnails, icons, CSS)
+  - Medium (100KB - 10MB): 30% (images, JS bundles)
+  - Large (> 10MB): 10% (videos, large images)
+- 3 edge locations (US, Europe, Asia)
+- 10 billion requests (past 30 days)
+- Cache hit rate target: 90%+
+```
+
+#### Traffic Patterns:
+
+- **Time-based**: Peak hours 9am-9pm (70% of traffic)
+- **Geographic**: 50% US, 30% Europe, 20% Asia
+- **Content type**: 60% images, 25% videos, 15% JS/CSS
+
+#### Load Testing:
+
+- 100,000 requests/second across all edges
+- Test cache hit rate under load
+- Simulate cache eviction (fill Redis to capacity)
+- Test purge latency (how fast does purge propagate?)
+
+#### Kafka Analytics Pipeline:
+
+```javascript
+// Consume cache events for real-time analytics
+kafkaConsumer.on("message", async (message) => {
+  const event = JSON.parse(message.value);
+
+  // Aggregate cache hit rate by edge
+  await incrementCacheMetric(event.edge, event.event); // 'hit' or 'miss'
+
+  // Track popular assets
+  if (event.event === "hit") {
+    await redis.zincrby("popular_assets", 1, event.asset_id);
+  }
+
+  // Detect hot assets (sudden traffic spike)
+  const recentRequests = await getRecentRequests(event.asset_id);
+  if (recentRequests > THRESHOLD) {
+    await alertAndPrecache(event.asset_id); // Warm cache on all edges
+  }
+});
+```
+
+#### Success Criteria:
+
+- Cache hit rate > 90% under normal load
+- Purge propagates to all edges within 5 seconds
+- Cache eviction maintains high hit rate (evicts cold items)
+- Cache warming preloads assets successfully
+- System handles 100K requests/sec with low latency
+
+---
+
+### **Tier 3: AI-Powered Optimization + Analytics Dashboard** (Week 3)
+
+**AI Integration + CDN Insights**
+
+#### AI-Powered Features:
+
+**1. Intelligent Cache Preloading** (Gemini/OpenAI):
+
+```javascript
+// Predict which assets will be requested soon based on patterns
+// Features: time of day, day of week, historical traffic, trending content
+
+const predictions = await aiModel.predictPopularAssets({
+  time: new Date(),
+  edge: "us-east",
+  recent_popular: topAssets,
+  upcoming_events: ["product_launch", "live_stream"],
+});
+
+// Preload predicted assets
+await warmCache(predictions.assetIds, ["us-east"]);
+```
+
+**2. Traffic Prediction**:
+
+```javascript
+// Forecast traffic volume for capacity planning
+const forecast = await aiModel.forecastTraffic({
+  edge: "us-east",
+  horizon: "7 days",
+});
+
+// forecast: [{ date, predicted_requests, confidence_interval }]
+
+// Auto-scale Redis capacity if needed
+if (forecast.peak > currentCapacity * 0.8) {
+  await alertAdmins("Predicted traffic spike - consider scaling");
+}
+```
+
+**3. Cache Policy Optimization**:
+
+```javascript
+// AI analyzes asset access patterns and suggests optimal TTLs
+GET / api / v1 / analytics / cache - policy - suggestions;
+
+const suggestions = await aiModel.suggestCachePolicies({
+  assets: allAssets,
+  access_patterns: historicalData,
+});
+
+// suggestions: [
+//   { assetId: 'abc', currentTTL: 3600, suggestedTTL: 7200, reasoning: "Low update frequency, high hit rate" },
+//   { assetId: 'def', currentTTL: 3600, suggestedTTL: 600, reasoning: "Frequently updated, serve fresh content" }
+// ]
+```
+
+**4. Content Optimization Recommendations**:
+
+```javascript
+// Analyze assets and suggest optimizations
+const recommendations = await aiModel.analyzeAssets({
+  assetIds: ["image1", "video1", "bundle.js"],
+});
+
+// recommendations: [
+//   { assetId: 'image1', suggestion: 'Convert to WebP format - reduce size by 40%' },
+//   { assetId: 'video1', suggestion: 'Use adaptive bitrate streaming (HLS) - improve playback' },
+//   { assetId: 'bundle.js', suggestion: 'Split into smaller chunks - improve cache hit rate' }
+// ]
+```
+
+**5. Anomaly Detection**:
+
+```javascript
+// Detect unusual traffic patterns: DDoS, bot traffic, cache poisoning
+const anomaly = await detectAnomaly({
+  edge: "us-east",
+  assetId: "image123",
+  currentRequestRate: 100000, // requests/second
+  historicalAverage: 1000,
+});
+
+if (anomaly.detected) {
+  // Could be: DDoS, viral content, bot scraping
+  await mitigateAnomaly(anomaly); // Rate limit, block IPs, etc.
+}
+```
+
+#### Analytics Dashboard (Frontend):
+
+**1. CDN Overview**:
+
+- **Key Metrics** (big numbers):
+  - Total requests today / this month
+  - Cache hit rate (percentage gauge)
+  - Bandwidth served (GB)
+  - Average response time (ms)
+- **Live Traffic Map**:
+  - World map showing request volume by region
+  - Real-time pulsing indicators for active edges
+
+**2. Cache Performance**:
+
+- **Hit Rate Trends** (line chart):
+  - Cache hit rate over time (by edge, by content type)
+  - Target line (e.g., 90% hit rate goal)
+- **Cache Size and Evictions**:
+  - Redis memory usage by edge (bar chart)
+  - Eviction events over time
+- **Top Cached Assets** (table):
+  - Asset, Hit count, Size, Hit rate
+  - Actions: Purge, Adjust TTL
+
+**3. Traffic Analytics**:
+
+- **Requests by Edge Location** (pie chart or bar chart)
+- **Requests by Content Type** (pie chart)
+- **Peak Hours Heatmap** (24x7 grid)
+- **Response Time Distribution** (histogram)
+
+**4. Asset Analytics**:
+
+- **Most Popular Assets** (leaderboard):
+  - Asset name, Requests, Bandwidth, Hit rate
+- **Least Popular Assets** (candidates for eviction)
+- **Largest Assets** (by size, bandwidth consumption)
+
+**5. Cache Management Interface**:
+
+- **Purge Tool**:
+  - Select assets or path patterns
+  - Purge single edge or all edges
+  - Confirm before purging
+- **Cache Warming Tool**:
+  - Upload list of asset IDs
+  - Select target edges
+  - Monitor warming progress
+- **TTL Configuration**:
+  - Edit cache policies (path patterns, TTLs)
+  - Preview impact (estimated hit rate change)
+
+**6. Geographic Performance**:
+
+- **Latency by Region** (world map with color coding)
+- **Bandwidth by Region** (bar chart)
+- **Cache hit rate by edge** (comparison table)
+
+**7. Predictive Insights** (AI):
+
+- **Traffic Forecast** (next 7 days, line chart with confidence bands)
+- **Hot Content Predictions** (assets likely to spike soon)
+- **Optimization Suggestions** (AI-generated, prioritized list)
+
+#### Real-Time Updates:
+
+- WebSocket for live metrics (requests/sec, hit rate)
+- Server-Sent Events for traffic map updates
+- Auto-refresh charts every 10 seconds
+
+#### API Endpoints:
+
+```javascript
+GET /api/v1/analytics/overview
+GET /api/v1/analytics/hit-rate?edge=X&start=Y&end=Z
+GET /api/v1/analytics/traffic-by-edge
+GET /api/v1/analytics/top-assets?limit=100
+GET /api/v1/analytics/response-time-distribution
+POST /api/v1/cache/purge (already defined)
+POST /api/v1/cache/warm (already defined)
+```
+
+#### Success Criteria:
+
+- AI preloading increases hit rate by 5%+
+- Traffic predictions achieve 85%+ accuracy
+- Cache policy suggestions improve performance measurably
+- Dashboard loads analytics for 10B requests in < 3 seconds
+- Real-time metrics update within 1 second
+
+---
+
+### **Tier 4: Admin Platform Dashboard + Advanced Features** (Week 4)
+
+**System Monitoring + Content Delivery Optimization**
+
+#### Admin Platform Features:
+
+**1. System Health Monitoring**:
+
+- **Edge Server Status**:
+  - List of all edge servers (location, status, uptime)
+  - Health checks (ping, response time)
+  - Redis cluster health (memory, CPU, connections)
+  - Actions: Restart server, Drain traffic, Add/remove edge
+- **Origin Server Health**:
+  - Storage usage (S3/MinIO)
+  - API response times
+  - Error rates
+  - Database query performance
+
+**2. Cost Analytics**:
+
+- **Bandwidth Costs**:
+  - Total bandwidth by edge (GB/TB)
+  - Cost per edge (estimated based on pricing)
+  - Trends: increasing or decreasing?
+- **Storage Costs**:
+  - Origin storage (S3)
+  - Cache storage (Redis memory)
+  - Growth rate projections
+- **Optimization Opportunities**:
+  - Large, rarely accessed assets (candidates for deletion)
+  - Inefficient cache policies (high miss rate)
+  - Bandwidth hogs (large assets with high traffic)
+
+**3. Security & Access Control**:
+
+- **Access Logs**:
+  - All asset requests (IP, asset, timestamp, status)
+  - Suspicious activity detection (bot traffic, scraping)
+  - IP blocking interface
+- **DDoS Protection**:
+  - Rate limiting per IP (requests/second)
+  - Geoblocking (block entire regions if needed)
+  - Challenge-response for suspicious traffic (CAPTCHA)
+
+**4. Content Management**:
+
+- **Asset Library**:
+  - Browse all assets (paginated, virtual scrolling)
+  - Filters: content type, size range, upload date
+  - Bulk actions: Delete, Update TTL, Purge cache
+- **Upload History**:
+  - Recent uploads (who, when, size)
+  - Failed uploads (errors, retries)
+- **Version Control**:
+  - Track asset updates (versions)
+  - Rollback to previous version
+  - Compare versions (image diff, code diff)
+
+**5. Performance Benchmarking**:
+
+- **Response Time by Edge**:
+  - Compare all edges side-by-side
+  - Identify slow edges (network issues?)
+  - P50/P95/P99 latency
+- **Cache Efficiency**:
+  - Hit rate by content type
+  - Hit rate by TTL (are longer TTLs better?)
+  - Eviction rate (too aggressive?)
+- **Origin Load**:
+  - Requests reaching origin (cache misses)
+  - Origin response times
+  - Origin bandwidth usage
+
+**6. A/B Testing**:
+
+- **Test Cache Policies**:
+  - Split traffic: 50% uses TTL=3600, 50% uses TTL=7200
+  - Compare hit rates, response times, user satisfaction
+  - Automatically adopt better policy
+- **Test Content Formats**:
+  - Serve WebP to 50% users, JPEG to 50%
+  - Measure performance impact
+
+**7. Advanced Reporting**:
+
+- **Daily/Weekly/Monthly Reports**:
+  - Summary email: total requests, hit rate, bandwidth, costs
+  - Trends and highlights
+  - Action items (optimize these assets, scale these edges)
+- **Custom Reports**:
+  - Query builder (select dimensions, metrics, filters)
+  - Save and schedule reports
+  - Export as PDF/CSV
+
+**8. Alerting & Notifications**:
+
+- **Configure Alerts**:
+  - Condition: "Hit rate < 85% for 10 minutes"
+  - Channels: Email, Slack, PagerDuty, Webhook
+  - Severity: Warning, Critical
+- **Alert History**:
+  - Past alerts with resolution notes
+  - MTTR (Mean Time To Resolution)
+- **Incident Management**:
+  - Create incident from alert
+  - Assign to team member
+  - Track resolution steps
+
+#### Implementation:
+
+```sql
+-- Analytics tables (aggregated from Kafka events)
+CREATE TABLE analytics_hourly_traffic AS
+SELECT
+  date_trunc('hour', timestamp) as hour,
+  edge,
+  content_type,
+  COUNT(*) as requests,
+  SUM(CASE WHEN event = 'hit' THEN 1 ELSE 0 END) as cache_hits,
+  SUM(CASE WHEN event = 'miss' THEN 1 ELSE 0 END) as cache_misses,
+  SUM(response_size) as bandwidth_bytes
+FROM cache_events
+WHERE timestamp > NOW() - INTERVAL '90 days'
+GROUP BY date_trunc('hour', timestamp), edge, content_type;
+
+-- Materialized view for fast dashboard queries
+REFRESH MATERIALIZED VIEW CONCURRENTLY analytics_hourly_traffic;
+```
+
+#### Dashboard UI:
+
+- **Executive Dashboard**:
+  - At-a-glance metrics (requests, hit rate, bandwidth, uptime)
+  - Alerts panel (active incidents)
+  - Quick actions (purge cache, view logs, scale edge)
+- **Edge Management**:
+  - Interactive map with edge locations
+  - Click edge → Detailed metrics
+  - Add new edge (select region, provision resources)
+- **Cost Dashboard**:
+  - Monthly cost breakdown (bandwidth, storage, compute)
+  - Cost trends (increasing/decreasing?)
+  - Savings opportunities (AI-suggested)
+
+#### Success Criteria:
+
+- Admin can diagnose and resolve issues within 5 minutes
+- Cost analytics provides actionable insights (10%+ cost reduction opportunities)
+- Security features detect and mitigate DDoS within 1 minute
+- Performance benchmarking identifies bottlenecks accurately
+- Reports export with all requested data (no missing metrics)
+
+---
+
+## Data Volume Simulation Strategy
+
+### Initial Seed:
+
+```javascript
+- 1,000,000 assets (realistic mix of sizes and types)
+- 3 edge locations (US-East, EU-West, Asia-Pacific)
+- 10,000,000,000 requests (10 billion, past 30 days)
+- Request distribution:
+  - 60% images (thumbnails, photos)
+  - 25% videos (various sizes)
+  - 10% JavaScript/CSS
+  - 5% other (fonts, JSON APIs)
+- Cache hit rate: 85-95% (varies by edge and content type)
+```
+
+### Traffic Patterns:
+
+- **Geographic**: 50% US, 30% Europe, 20% Asia
+- **Temporal**: Peak hours (9am-9pm local time = 70%), off-peak (30%)
+- **Content popularity**: Pareto (20% assets = 80% traffic)
+
+### Load Testing Scenarios:
+
+1. **Normal Load**: 50K requests/sec distributed across edges
+2. **Viral Content**: One asset gets 500K requests/sec (cache warming test)
+3. **Purge Storm**: Purge 10K assets simultaneously (propagation test)
+4. **Cold Start**: All caches empty, sudden 100K requests/sec (origin load)
+
+### Tools:
+
+- k6 for HTTP load testing
+- Custom request generator (simulate geographic distribution)
+- Redis benchmarking
+- S3/MinIO performance testing
+
+---
+
+## Key Learning Outcomes
+
+1. **CDN Architecture**: Edge/origin design, geographic routing
+2. **Caching Strategies**: TTL, LRU, cache invalidation, preloading
+3. **Performance Optimization**: Cache hit rates, response times, bandwidth
+4. **AI for CDN**: Traffic prediction, intelligent preloading, policy optimization
+5. **Content Delivery**: Serving static assets at scale, compression, formats
+6. **Monitoring**: Real-time analytics, performance benchmarking, cost tracking
+
+---
+
+## Evaluation Criteria
+
+- **Cache Hit Rate**: Achieve 90%+ under normal load
+- **Performance**: Edge response time < 50ms (cached), < 200ms (cache miss)
+- **Scalability**: Handle 100K requests/sec across multiple edges
+- **AI Integration**: Predictions improve performance measurably
+- **Code Quality**: Clean edge server architecture, efficient caching logic
+- **Dashboard**: Comprehensive analytics, actionable insights
+
+---
+
+---
+
+# Project 10: Real-Time Collaborative Document Editor (Google Docs Clone)
+
+## Project Overview
+
+Build a real-time collaborative document editor where multiple users can simultaneously edit the same document. The system handles operational transformation (OT) or Conflict-Free Replicated Data Types (CRDTs) for conflict resolution, tracks document revisions, implements presence awareness (see who's online), and provides rich text editing capabilities. Focus on handling concurrent edits, maintaining consistency, and real-time synchronization.
+
+---
+
+## Tech Stack
+
+- **Backend**: Node.js + Express + WebSocket (Socket.io)
+- **Database**: PostgreSQL (documents, users, revisions) + Redis (presence, locks, operational transform queue)
+- **Message Queue**: Kafka (document events, analytics, audit log)
+- **AI Integration**: Gemini/OpenAI for smart suggestions, grammar checking, content summarization, and auto-completion
+- **Frontend**: React with Slate.js or Draft.js (rich text editor) + WebSocket client
+- **CRDT Library**: Yjs or Automerge for conflict-free collaborative editing
+
+---
+
+## Roles
+
+1. **Editor** - Create, edit, and share documents, view collaborators
+2. **Admin** - Monitor system health, view document analytics, manage users
+
+---
+
+## Progressive Tier Requirements
+
+### **Tier 1: Core Document Editor** (Week 1)
+
+**Backend Focus: Basic CRUD + Real-Time Sync**
+
+#### Features:
+
+- User authentication
+- Create, read, update, delete documents
+- Basic rich text editing (bold, italic, headings, lists)
+- Real-time synchronization (multiple users see changes instantly)
+- Presence awareness (show who's currently editing)
+- Document permissions (private, shared with specific users)
+- Simple conflict resolution (last-write-wins or operational transform)
+
+#### Database Schema:
+
+```sql
+-- PostgreSQL
+users (
+  id UUID PRIMARY KEY,
+  name TEXT,
+  email TEXT UNIQUE,
+  avatar_url TEXT,
+  created_at TIMESTAMP
+)
+
+documents (
+  id UUID PRIMARY KEY,
+  title TEXT,
+  content JSONB, -- Document structure (rich text)
+  owner_id UUID,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  INDEX idx_documents_owner (owner_id)
+)
+
+document_collaborators (
+  document_id UUID,
+  user_id UUID,
+  permission TEXT, -- 'view', 'edit', 'admin'
+  added_at TIMESTAMP,
+  PRIMARY KEY (document_id, user_id)
+)
+
+document_revisions (
+  id UUID PRIMARY KEY,
+  document_id UUID,
+  content JSONB,
+  author_id UUID,
+  created_at TIMESTAMP,
+  change_summary TEXT, -- "Added heading, edited paragraph 2"
+  INDEX idx_revisions
+```
