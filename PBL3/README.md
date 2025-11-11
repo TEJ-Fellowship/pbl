@@ -32,6 +32,7 @@ Spindle replaces chaotic group chats with **quick polls**. Users can:
 
 **💡 YC bet:** Micro-polls as a viral group coordination tool.
 
+🌐 **Deployed Site:** [https://quickpick-e70x.onrender.com/](https://quickpick-e70x.onrender.com/)
 ---
 
 ## 3. Lokesh Choudhary & Anjana Budhathoki
