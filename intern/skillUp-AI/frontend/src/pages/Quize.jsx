@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import arrowback from "../../assets/arrow_back.png";
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
+import service from "../services/service";
 
 const Quize = () => {
 
@@ -9,7 +10,9 @@ const Quize = () => {
 
     useEffect(()=>{
       console.log(user, "this is user in quize");
-      
+            console.log(user.id, "this is user id in quize");
+
+      service.quizeGet(user.id);
     },[])
   
   return (
