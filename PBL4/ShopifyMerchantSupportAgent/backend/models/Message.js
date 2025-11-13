@@ -80,9 +80,10 @@ const messageSchema = new mongoose.Schema(
   }
 );
 
-// Strategic indexes for performance optimization (Tier 3)
+// Strategic indexes for performance optimization (Bottleneck #8)
 // Compound indexes for efficient querying
-messageSchema.index({ conversationId: 1, timestamp: -1 }); // Already exists
+messageSchema.index({ conversationId: 1, timestamp: 1 }); // For conversation history (ascending for chronological order)
+messageSchema.index({ conversationId: 1, timestamp: -1 }); // For recent messages (descending)
 messageSchema.index({ role: 1, timestamp: -1 }); // For role-based queries
 messageSchema.index({ timestamp: -1 }); // For global message retrieval
 

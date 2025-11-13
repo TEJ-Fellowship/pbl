@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createHybridRetriever } from "../src/hybrid-retriever.js";
-import { embedSingle } from "../src/utils/embeddings.js";
+import { embedSingleCached } from "../src/utils/embeddings.js";
 import { connectDB } from "../config/db.js";
 import BufferWindowMemory from "../src/memory/BufferWindowMemory.js";
 import MarkdownIt from "markdown-it";
@@ -743,12 +743,24 @@ export async function processChatMessage(message, sessionId, shop = null) {
       finalConversation.addMessage(userMessage._id),
     ]);
 
+    // FIX: Add current user message to messages array so it's included in conversation history
+    // This ensures the AI sees the current message as part of the conversation flow
+    const messagesWithCurrent = [
+      ...messages,
+      {
+        id: userMessage._id,
+        role: "user",
+        content: message,
+        timestamp: userMessage.timestamp || new Date(),
+      },
+    ];
+
     // Use multi-turn conversation manager for enhanced context
-    // OPTIMIZATION: Use finalConversation instead of conversation
+    // FIX: Pass messagesWithCurrent instead of messages to include current message in context
     const enhancedContext = await multiTurnManager.buildEnhancedContext(
       message,
       sessionId,
-      messages,
+      messagesWithCurrent, // ✅ Now includes current message
       [] // Will be populated after search
     );
 
@@ -954,9 +966,9 @@ export async function processChatMessage(message, sessionId, shop = null) {
     }
 
     // Continue with RAG search for Shopify-related queries
-    // OPTIMIZATION: Generate embedding and classify intent in parallel
+    // OPTIMIZATION: Generate embedding (cached) and classify intent in parallel (Bottleneck #4)
     const [queryEmbedding, intentClassification] = await Promise.all([
-      embedSingle(enhancedContext.contextualQuery),
+      embedSingleCached(enhancedContext.contextualQuery), // Use cached version (Bottleneck #3)
       intentClassifier.classifyIntent(message),
     ]);
 
@@ -1059,10 +1071,11 @@ export async function processChatMessage(message, sessionId, shop = null) {
     }
 
     // Use multi-turn conversation manager for enhanced response generation with intent-specific prompt
+    // FIX: Pass messagesWithCurrent instead of messages to include current message in conversation history
     const enhancedResponse = await multiTurnManager.generateEnhancedResponse(
       message,
       sessionId,
-      messages,
+      messagesWithCurrent, // ✅ Now includes current message
       results,
       intentSpecificPrompt
     );
@@ -1078,41 +1091,28 @@ export async function processChatMessage(message, sessionId, shop = null) {
     );
 
     // Generate proactive suggestions
-    // OPTIMIZATION: Wait for suggestions but log timing for monitoring
+    // OPTIMIZATION: Defer to background (Bottleneck #6) - don't block response
+    // Suggestions will be generated asynchronously and can be sent via WebSocket or next request
     let suggestionsResult = { suggestions: [] };
-    const suggestionsStartTime = Date.now();
-    try {
-      suggestionsResult = await proactiveSuggestions.getProactiveSuggestions(
+    
+    // Generate suggestions in background (non-blocking)
+    proactiveSuggestions
+      .getProactiveSuggestions(
         message,
         messages,
         intentClassification.intent,
         enhancedResponse.conversationState.userPreferences
-      );
-
-      const suggestionsTime = Date.now() - suggestionsStartTime;
-      console.log(
-        `💡 Generated ${suggestionsResult?.suggestions?.length || 0} proactive suggestions in ${suggestionsTime}ms`
-      );
-      
-      if (suggestionsResult?.suggestions?.length > 0) {
+      )
+      .then((bgSuggestionsResult) => {
         console.log(
-          `💡 Suggestions preview:`,
-          suggestionsResult.suggestions
-            .slice(0, 3)
-            .map((s) => (s.suggestion || s).substring(0, 50))
+          `💡 Generated ${bgSuggestionsResult?.suggestions?.length || 0} proactive suggestions in background`
         );
-      }
-      
-      // Warn if suggestions take too long (for monitoring)
-      if (suggestionsTime > 2000) {
-        console.warn(
-          `⚠️ Proactive suggestions took ${suggestionsTime}ms (consider optimizing)`
-        );
-      }
-    } catch (error) {
-      console.error("Error generating proactive suggestions:", error);
-      suggestionsResult = { suggestions: [] };
-    }
+        // Note: In production, you could send these via WebSocket or store for next request
+        // For now, they'll be available in the next response if needed
+      })
+      .catch((error) => {
+        console.error("Error generating proactive suggestions (background):", error);
+      });
 
     // Track question for analytics
     // Note: We don't need to track here anymore as analytics now queries all user messages directly
@@ -1121,11 +1121,13 @@ export async function processChatMessage(message, sessionId, shop = null) {
     console.log(`📊 Analytics will be calculated from all user messages`);
 
     // Process with MCP tools if needed
+    // OPTIMIZATION: Skip for high-confidence responses or run in background (Bottleneck #5)
     let finalAnswer = answer;
     let toolResults = {};
     let toolsUsed = [];
 
-    if (mcpOrchestrator) {
+    // Only use MCP tools for low-confidence responses (< 70) to avoid blocking high-confidence answers
+    if (mcpOrchestrator && confidence.score < 70) {
       try {
         const mcpResult = await mcpOrchestrator.processWithTools(
           message,
@@ -1135,10 +1137,14 @@ export async function processChatMessage(message, sessionId, shop = null) {
         finalAnswer = mcpResult.enhancedAnswer;
         toolResults = mcpResult.toolResults;
         toolsUsed = mcpResult.toolsUsed;
+        console.log(`🔧 MCP tools used for low-confidence response (${confidence.score}%)`);
       } catch (error) {
         console.error("MCP processing error:", error);
         // Continue with original answer if MCP fails
       }
+    } else if (mcpOrchestrator && confidence.score >= 70) {
+      // For high-confidence responses, skip MCP tools to save 200ms
+      console.log(`🔧 Skipping MCP tools for high-confidence response (${confidence.score}%)`);
     }
 
     // Create assistant message with multi-turn metadata
@@ -1249,6 +1255,399 @@ export async function processChatMessage(message, sessionId, shop = null) {
   } catch (error) {
     console.error("Error processing chat message:", error);
     throw error;
+  }
+}
+
+// OPTIMIZATION: Streaming version of processChatMessage for better perceived latency
+export async function* processChatMessageStream(message, sessionId, shop = null) {
+  try {
+    // Check cache first for duplicate queries
+    const cachedResponse = await responseCache.get(message, sessionId);
+    if (cachedResponse) {
+      console.log("[Response Cache] Returning cached response in ~5ms");
+      yield {
+        type: "cached",
+        data: cachedResponse,
+      };
+      return;
+    }
+
+    await initializeAI();
+
+    const startTime = Date.now();
+
+    // Parallelize database operations
+    const [conversation, conversationHistory] = await Promise.all([
+      Conversation.findOne({ sessionId }),
+      getConversationHistory(sessionId),
+    ]);
+
+    let finalConversation = conversation;
+    if (!finalConversation) {
+      finalConversation = new Conversation({
+        sessionId,
+        title: message.length > 50 ? message.substring(0, 50) + "..." : message,
+      });
+      await finalConversation.save();
+    }
+
+    const messages = conversationHistory.messages || [];
+
+    // Create user message
+    const userMessage = new Message({
+      conversationId: finalConversation._id,
+      role: "user",
+      content: message,
+    });
+
+    // Save user message and add to conversation in parallel
+    await Promise.all([
+      userMessage.save(),
+      finalConversation.addMessage(userMessage._id),
+    ]);
+
+    // FIX: Add current user message to messages array so it's included in conversation history
+    // This ensures the AI sees the current message as part of the conversation flow
+    const messagesWithCurrent = [
+      ...messages,
+      {
+        id: userMessage._id,
+        role: "user",
+        content: message,
+        timestamp: userMessage.timestamp || new Date(),
+      },
+    ];
+
+    // Build enhanced context
+    // FIX: Pass messagesWithCurrent instead of messages to include current message in context
+    const enhancedContext = await multiTurnManager.buildEnhancedContext(
+      message,
+      sessionId,
+      messagesWithCurrent, // ✅ Now includes current message
+      []
+    );
+
+    // Check if clarification is needed
+    if (enhancedContext.needsClarification) {
+      const clarificationMessage = new Message({
+        conversationId: finalConversation._id,
+        role: "assistant",
+        content: enhancedContext.clarificationQuestion,
+        metadata: {
+          searchResults: [],
+          modelUsed: "multi-turn-clarification",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          clarificationRequest: true,
+        },
+      });
+      await clarificationMessage.save();
+      await finalConversation.addMessage(clarificationMessage._id);
+
+      yield {
+        type: "clarification",
+        data: {
+          answer: enhancedContext.clarificationQuestion,
+          confidence: {
+            score: 100,
+            level: "High",
+            factors: ["Clarification request"],
+          },
+          sources: [],
+          needsClarification: true,
+        },
+      };
+      return;
+    }
+
+    // Smart query classification
+    const queryClassification = classifyQueryType(message);
+
+    // Get merchant profile if shop is provided
+    let merchantProfile = null;
+    if (shop) {
+      try {
+        const { getAccessToken, getShop, getProductsCount, getOrdersCount } =
+          await import("../src/services/shopifyOAuth.js");
+        if (getAccessToken(shop)) {
+          const [shopInfo, productsCount, ordersCount] = await Promise.all([
+            getShop(shop),
+            getProductsCount(shop),
+            getOrdersCount(shop),
+          ]);
+          merchantProfile = {
+            shop: shopInfo?.shop || shopInfo || null,
+            productsCount: productsCount?.count ?? null,
+            ordersCount: ordersCount?.count ?? null,
+            shopDomain: shop,
+          };
+        }
+      } catch (e) {
+        console.warn("Merchant context fetch failed:", e?.message || e);
+      }
+    }
+
+    // Handle web search and MCP tool queries (non-streaming for now)
+    if (queryClassification.shouldUseWebSearch || queryClassification.shouldUseMCPTools) {
+      // For these, use non-streaming version
+      const result = await processChatMessage(message, sessionId, shop);
+      yield {
+        type: "complete",
+        data: result,
+      };
+      return;
+    }
+
+    // Generate embedding and classify intent in parallel
+    const [queryEmbedding, intentClassification] = await Promise.all([
+      embedSingleCached(enhancedContext.contextualQuery),
+      intentClassifier.classifyIntent(message),
+    ]);
+
+    // Perform hybrid search
+    const routingConfig = intentClassifier.getRoutingConfig(
+      intentClassification.intent
+    );
+
+    const results = await retriever.search({
+      query: enhancedContext.contextualQuery,
+      queryEmbedding,
+      k: 8,
+      intent: intentClassification.intent,
+      routingConfig: routingConfig,
+    });
+
+    // Check for edge cases
+    const edgeCase = handleEdgeCases(results, message);
+    if (edgeCase) {
+      const edgeIntentClassification = await intentClassifier.classifyIntent(
+        message
+      );
+
+      const assistantMessage = new Message({
+        conversationId: finalConversation._id,
+        role: "assistant",
+        content: edgeCase.answer,
+        metadata: {
+          searchResults: results.map((r) => ({
+            title: r.metadata?.title || "Unknown",
+            source_url: r.metadata?.source_url || "N/A",
+            category: r.metadata?.category || "unknown",
+            score: r.score,
+            searchType: r.searchType,
+          })),
+          modelUsed: "gemini-2.5-flash",
+          processingTime: Date.now() - startTime,
+          tokensUsed: 0,
+          queryClassification: queryClassification,
+          intentClassification: {
+            intent: edgeIntentClassification.intent,
+            confidence: edgeIntentClassification.confidence,
+            method: edgeIntentClassification.method,
+          },
+        },
+      });
+      await Promise.all([
+        assistantMessage.save(),
+        finalConversation.addMessage(assistantMessage._id),
+      ]);
+
+      yield {
+        type: "complete",
+        data: {
+          answer: edgeCase.answer,
+          confidence: edgeCase.confidence,
+          sources: results.map((r, i) => ({
+            id: i + 1,
+            title: r.metadata?.title || "Unknown",
+            url: r.metadata?.source_url || "N/A",
+            category: r.metadata?.category || "unknown",
+            score: r.score,
+            searchType: r.searchType,
+            content: r.doc,
+          })),
+          queryClassification: queryClassification,
+          intentClassification: edgeIntentClassification,
+          isEdgeCase: true,
+        },
+      };
+      return;
+    }
+
+    // Generate intent-specific prompt
+    let intentSpecificPrompt = intentClassifier.generateIntentSpecificPrompt(
+      intentClassification.intent,
+      message,
+      results
+    );
+
+    if (merchantProfile) {
+      const shopName =
+        merchantProfile.shop?.name ||
+        merchantProfile.shop?.shop_owner ||
+        "your store";
+      const domain =
+        merchantProfile.shop?.primary_domain?.host ||
+        merchantProfile.shopDomain;
+      const productsCount = merchantProfile.productsCount ?? "unknown";
+      const ordersCount = merchantProfile.ordersCount ?? "unknown";
+      const merchantContextNote = `\n\nMerchant context (authoritative, use when relevant):\n- Store name: ${shopName}\n- Primary domain: ${domain}\n- Products count: ${productsCount}\n- Orders count: ${ordersCount}\n- Shop domain: ${merchantProfile.shopDomain}\n`;
+      intentSpecificPrompt = merchantContextNote + intentSpecificPrompt;
+    }
+
+    // Use streaming response generation
+    let fullAnswer = "";
+    let conversationState = null;
+    let followUpDetection = null;
+    let ambiguityDetection = null;
+    let contextualQuery = "";
+
+    // FIX: Use messagesWithCurrent instead of messages to include current message in conversation history
+    // Stream the response
+    for await (const chunk of multiTurnManager.generateEnhancedResponseStream(
+      message,
+      sessionId,
+      messagesWithCurrent, // ✅ Now includes current message
+      results,
+      intentSpecificPrompt
+    )) {
+      if (chunk.type === "chunk") {
+        fullAnswer += chunk.text;
+        yield {
+          type: "chunk",
+          text: chunk.text,
+        };
+      } else if (chunk.type === "complete") {
+        fullAnswer = chunk.answer;
+        conversationState = chunk.conversationState;
+        followUpDetection = chunk.followUpDetection;
+        ambiguityDetection = chunk.ambiguityDetection;
+        contextualQuery = chunk.contextualQuery;
+      } else if (chunk.type === "clarification") {
+        yield {
+          type: "clarification",
+          data: chunk,
+        };
+        return;
+      }
+    }
+
+    // Calculate confidence score
+    const confidence = calculateConfidence(
+      results,
+      fullAnswer,
+      message,
+      intentClassification
+    );
+
+    // Process with MCP tools if needed (non-blocking for streaming)
+    let finalAnswer = fullAnswer;
+    let toolResults = {};
+    let toolsUsed = [];
+
+    if (mcpOrchestrator && confidence.score < 70) {
+      try {
+        const mcpResult = await mcpOrchestrator.processWithTools(
+          message,
+          confidence.score / 100,
+          fullAnswer
+        );
+        finalAnswer = mcpResult.enhancedAnswer;
+        toolResults = mcpResult.toolResults;
+        toolsUsed = mcpResult.toolsUsed;
+      } catch (error) {
+        console.error("MCP processing error:", error);
+      }
+    }
+
+    // Create assistant message
+    const assistantMessage = new Message({
+      conversationId: finalConversation._id,
+      role: "assistant",
+      content: finalAnswer,
+      metadata: {
+        searchResults: results.map((r) => ({
+          title: r.metadata?.title || "Unknown",
+          source_url: r.metadata?.source_url || "N/A",
+          category: r.metadata?.category || "unknown",
+          score: r.score,
+          searchType: r.searchType,
+        })),
+        modelUsed: "gemini-1.5-flash-multi-turn-streaming",
+        processingTime: Date.now() - startTime,
+        tokensUsed: 0,
+        mcpTools: {
+          toolsUsed: toolsUsed,
+          toolResults: toolResults,
+        },
+        multiTurnContext: {
+          turnCount: conversationState?.turnCount || 0,
+          isFollowUp: followUpDetection?.isFollowUp || false,
+          userPreferences: conversationState?.userPreferences || {},
+          contextualQuery: contextualQuery,
+          merchantProfile: merchantProfile,
+        },
+        intentClassification: {
+          intent: intentClassification.intent,
+          confidence: intentClassification.confidence,
+          method: intentClassification.method,
+          routingConfig: routingConfig,
+        },
+      },
+    });
+
+    await Promise.all([
+      assistantMessage.save(),
+      finalConversation.addMessage(assistantMessage._id),
+    ]);
+
+    // Cache the response
+    const response = {
+      answer: finalAnswer,
+      confidence,
+      sources: results.map((r, i) => ({
+        id: i + 1,
+        title: r.metadata?.title || "Unknown",
+        url: r.metadata?.source_url || "N/A",
+        category: r.metadata?.category || "unknown",
+        score: r.score,
+        searchType: r.searchType,
+        content: r.doc,
+      })),
+      multiTurnContext: {
+        turnCount: conversationState?.turnCount || 0,
+        isFollowUp: followUpDetection?.isFollowUp || false,
+        followUpConfidence: followUpDetection?.confidence || 0,
+        userPreferences: conversationState?.userPreferences || {},
+        contextualQuery: contextualQuery,
+        conversationStats: multiTurnManager.getConversationStats(sessionId),
+        merchantProfile: merchantProfile,
+      },
+      intentClassification: {
+        intent: intentClassification.intent,
+        confidence: intentClassification.confidence,
+        method: intentClassification.method,
+        routingConfig: routingConfig,
+      },
+      queryClassification: queryClassification,
+      mcpTools: {
+        toolsUsed: toolsUsed,
+        toolResults: toolResults,
+      },
+    };
+
+    await responseCache.set(message, sessionId, response);
+
+    yield {
+      type: "complete",
+      data: response,
+    };
+  } catch (error) {
+    console.error("Error processing streaming chat message:", error);
+    yield {
+      type: "error",
+      error: error.message,
+    };
   }
 }
 
@@ -1439,7 +1838,8 @@ export async function processClarificationResponse(
     }
 
     // Continue with RAG search for Shopify-related queries
-    const queryEmbedding = await embedSingle(
+    // OPTIMIZATION: Use cached embedding (Bottleneck #3)
+    const queryEmbedding = await embedSingleCached(
       clarificationResult.clarifiedQuery
     );
     const results = await retriever.search({

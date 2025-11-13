@@ -8,11 +8,12 @@
  * - TTL-based expiration (1 hour)
  * - LRU eviction when cache is full
  * - Statistics monitoring
+ * - Uses cached embeddings for faster semantic matching (Bottleneck #1 optimization)
  *
  * Performance impact: Duplicate queries return in ~5ms instead of 3.5s
  */
 import crypto from "crypto";
-import { embedSingle } from "./embeddings.js";
+import { embedSingleCached } from "./embeddings.js";
 
 class ResponseCache {
   constructor(options = {}) {
@@ -102,9 +103,9 @@ class ResponseCache {
 
     // If no exact match, try semantic similarity
     // Only if cache has entries (optimization: skip embedding generation if cache is empty)
-    if (this.queryEmbeddings.size === 0) {
+    if (this.queryEmbeddings.size < 10) {
       console.log(
-        "[Response Cache] MISS - No semantic matches, cache is empty"
+        "[Response Cache] MISS - Skipping semantic matching (cache too small)"
       );
       return null;
     }
@@ -112,13 +113,15 @@ class ResponseCache {
     try {
       console.log("[Response Cache] Trying semantic similarity matching...");
 
-      // OPTIMIZATION: Only generate embedding if we have cached entries to compare
-      // This saves 200-300ms when cache is empty or only has exact matches
-      const queryEmbedding = await embedSingle(message);
+      // OPTIMIZATION: Use cached embedding function
+      // This saves 200-300ms by using cached embeddings when available
+      const queryEmbedding = await embedSingleCached(message);
 
-      // Find most similar cached query
+      // OPTIMIZATION: Early exit if we find a very high similarity match quickly
+      // This avoids checking all entries when we find a near-perfect match
       let bestMatch = null;
       let bestSimilarity = 0;
+      const earlyExitThreshold = 0.95; // If we find 95%+ similarity, use it immediately
 
       for (const [
         cachedKey,
@@ -135,6 +138,14 @@ class ResponseCache {
             key: cachedKey,
             similarity: similarity,
           };
+          
+          // Early exit optimization: if we find a very high similarity match, use it immediately
+          if (similarity >= earlyExitThreshold) {
+            console.log(
+              `[Response Cache] Early exit: Found ${Math.round(similarity * 100)}% similarity match`
+            );
+            break;
+          }
         }
       }
 
@@ -186,8 +197,9 @@ class ResponseCache {
     this.accessTimes.set(key, now);
 
     // Generate and store query embedding for semantic matching
+    // OPTIMIZATION: Use cached embedding function (Bottleneck #1)
     try {
-      const queryEmbedding = await embedSingle(message);
+      const queryEmbedding = await embedSingleCached(message);
       this.queryEmbeddings.set(key, queryEmbedding);
       console.log(
         "[Response Cache] CACHED query with embedding:",

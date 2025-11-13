@@ -6,7 +6,6 @@ const conversationSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      index: true,
     },
     userId: {
       type: String,
@@ -129,8 +128,11 @@ conversationSchema.pre("save", function (next) {
   next();
 });
 
-// Strategic indexes for performance optimization (Tier 3)
+// Strategic indexes for performance optimization (Bottleneck #8)
+// Note: sessionId already has a unique index from unique: true constraint
+// History queries index
 conversationSchema.index({ updatedAt: -1, isActive: 1 }); // For history queries
+// Composite index for session lookups with sorting
 conversationSchema.index({ sessionId: 1, updatedAt: -1 }); // Composite for session lookups
 
 // Method to get recent messages (last 8 messages for sliding window)

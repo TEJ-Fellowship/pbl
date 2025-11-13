@@ -272,9 +272,13 @@ export class MCPOrchestrator {
   async executeTools(toolNames, query, confidence = 0.5) {
     const results = {};
 
-    // Ensure client is initialized
+    // OPTIMIZATION: Initialize client asynchronously if not already done
+    // Don't block on initialization if it's not critical
     if (!this.clientInitialized && !this.mcpClient) {
-      await this.initializeMCPClient();
+      // Start initialization but don't wait for it if tools can run directly
+      this.initializeMCPClient().catch((err) => {
+        console.warn("MCP client initialization failed, using direct calls:", err);
+      });
     }
 
     // Use MCP client if available, otherwise fallback to direct calls
