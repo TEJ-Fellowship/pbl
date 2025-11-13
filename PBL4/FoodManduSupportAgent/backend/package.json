@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
+    "mcp-server": "node src/mcp/mcpServer.js",
+    "mcp-inspect": "npx @modelcontextprotocol/inspector node src/mcp/mcpServer.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

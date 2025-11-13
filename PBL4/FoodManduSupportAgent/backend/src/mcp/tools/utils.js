@@ -53,7 +53,7 @@ export const calculateCurrentStage = (order) => {
   const statusStageMap = {
     order_placed: 0,
     order_preparing: 1,
-    order_ready: 2,
+    order_ready: 2, 
     on_the_way: 3,
     delivered: 4,
   };
