@@ -1,0 +1,31 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "mcp-server": "node src/mcp/mcpServer.js",
+    "mcp-inspect": "npx @modelcontextprotocol/inspector node src/mcp/mcpServer.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@pinecone-database/pinecone": "^6.1.2",
+    "axios": "^1.12.2",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "fs-extra": "^11.3.2",
+    "mongoose": "^8.19.1",
+    "path": "^0.12.7",
+    "pinecone-client": "^2.0.0"
+  }
+}
