@@ -24,15 +24,17 @@ const runMigrations = async () => {
   });
 };
 
-const main = async () => {
+const connectToDatabase = async () => {
   try {
     await sequelize.authenticate();
     await runMigrations();
     console.log("connected to the database");
-    sequelize.close();
-  } catch (error) {
-    console.error("failed to connect to the database:", error);
+  } catch (err) {
+    console.log("failed to connect to the database");
+    return process.exit(1);
   }
+
+  return null;
 };
 
-main();
+module.exports = { connectToDatabase, sequelize };
