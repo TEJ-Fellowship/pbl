@@ -1,22 +1,33 @@
 # 🚀 Deployment Guide
 
-Complete guide for deploying the Stripe Customer Support Agent backend to Render with PostgreSQL.
+Complete guide for deploying the Stripe Customer Support Agent (Backend + Frontend) to Render with PostgreSQL.
 
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
 2. [Render PostgreSQL Setup](#render-postgresql-setup)
-3. [Web Service Deployment](#web-service-deployment)
-4. [Database Schema Setup](#database-schema-setup)
-5. [Environment Variables](#environment-variables)
-6. [Verification](#verification)
-7. [Troubleshooting](#troubleshooting)
+3. [Backend Web Service Deployment](#backend-web-service-deployment)
+4. [Frontend Static Site Deployment](#frontend-static-site-deployment)
+5. [Database Schema Setup](#database-schema-setup)
+6. [Environment Variables](#environment-variables)
+7. [Verification](#verification)
+8. [Troubleshooting](#troubleshooting)
 
 ## Prerequisites
 
 - Render account ([render.com](https://render.com))
 - Git repository (GitHub, GitLab, or Bitbucket)
 - API keys ready (Gemini, Pinecone, etc.)
+
+## Deployment Order
+
+**Recommended deployment sequence:**
+
+1. **PostgreSQL Database** → Create first (needed by backend)
+2. **Backend Web Service** → Deploy second (needed by frontend)
+3. **Frontend Static Site** → Deploy last (depends on backend)
+
+This ensures dependencies are available when each service starts.
 
 ## Render PostgreSQL Setup
 
@@ -40,7 +51,7 @@ Complete guide for deploying the Stripe Customer Support Agent backend to Render
 - **External Database URL**: For local testing (optional)
 - Save these for reference
 
-## Web Service Deployment
+## Backend Web Service Deployment
 
 ### Step 1: Create Web Service
 
@@ -120,12 +131,94 @@ STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 1. Click **"Create Web Service"**
 2. Render will build and deploy automatically
 3. Monitor build logs for any issues
+4. **Note**: Database schema will be created automatically on first startup (no Shell needed!)
+
+## Frontend Static Site Deployment
+
+### Step 1: Create Static Site
+
+1. Go to [Render Dashboard](https://dashboard.render.com/)
+2. Click **"New +"** → **"Static Site"**
+3. Connect your Git repository
+4. Configure:
+   - **Name**: `stripe-support-frontend`
+   - **Branch**: `main` (or your production branch)
+   - **Root Directory**: `Frontend` (if frontend is in Frontend folder)
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `dist`
+
+### Step 2: Set Environment Variables
+
+Add these in **"Environment"** tab:
+
+```env
+# Backend API URL (Required)
+VITE_API_URL=https://your-backend-service.onrender.com
+
+# Optional
+VITE_NODE_ENV=production
+```
+
+**Important**: Replace `your-backend-service.onrender.com` with your actual backend service URL.
+
+### Step 3: Configure Client-Side Routing
+
+Since you're using React Router, you need to configure redirects. The project includes a `_redirects` file in `Frontend/public/` that will be automatically copied to `dist/` during build.
+
+**Automatic (Recommended):**
+
+- The `_redirects` file is already configured in `Frontend/public/_redirects`
+- It will be automatically included in the build
+- Render will use it to handle client-side routing
+
+**Manual (Alternative):**
+If you prefer to configure in the dashboard:
+
+1. In Static Site dashboard → **"Settings"** tab
+2. Scroll to **"Redirects/Rewrites"** section
+3. Add redirect rule:
+   - **Source**: `/*`
+   - **Destination**: `/index.html`
+   - **Status Code**: `200` (not 301/302)
+
+This ensures all routes serve `index.html` for client-side routing.
+
+### Step 4: Deploy
+
+1. Click **"Create Static Site"**
+2. Render will build and deploy automatically
+3. Your frontend will be available at: `https://your-frontend.onrender.com`
+
+### Step 5: Update Backend CORS
+
+After deploying frontend, update backend's `FRONTEND_URL`:
+
+1. Go to Backend Web Service → **"Environment"** tab
+2. Update `FRONTEND_URL`:
+   ```env
+   FRONTEND_URL=https://your-frontend.onrender.com
+   ```
+3. Service will restart automatically
 
 ## Database Schema Setup
 
-After deployment, initialize the database schema:
+**Good News**: Database schema is now **automatically created** on startup! No manual setup needed.
 
-### Option 1: Via Render Shell (Recommended)
+### Automatic Setup (Default)
+
+The application automatically:
+
+1. ✅ Creates all database tables on first startup
+2. ✅ Scrapes initial documents if database is empty
+3. ✅ Ingests documents into chunks (Pinecone + PostgreSQL)
+
+**No action required** - everything happens automatically!
+
+### Manual Setup (Optional)
+
+If you need to manually run setup (e.g., to reset tables):
+
+**Option 1: Via Render Shell** (if available on your plan)
 
 1. Go to Web Service dashboard
 2. Click **"Shell"** tab
@@ -135,23 +228,13 @@ After deployment, initialize the database schema:
 npm run setup:all
 ```
 
-This creates all required tables:
-
-- `raw_documents` - For storing scraped documents
-- `document_chunks` - For storing chunks (BM25 search)
-- `conversation_sessions` - For chat sessions
-- `conversation_messages` - For chat messages
-- `conversation_qa_pairs` - For Q&A pairs
-- `conversation_summaries` - For conversation summaries
-- `memory_retrieval_cache` - For memory cache
-
-### Option 2: Manual SQL Execution
+**Option 2: Manual SQL Execution**
 
 If you prefer to run SQL manually:
 
 ```bash
-# Connect via Render Shell or external client
-psql "your-database-url"
+# Connect via external client using External Database URL
+psql "your-external-database-url"
 
 # Then run the SQL files from utils/ directory
 \i utils/setup_conversation_memory.sql
@@ -182,10 +265,12 @@ The application supports two connection methods:
 
 ## Verification
 
-### Test Database Connection
+### Backend Verification
+
+#### Test Database Connection
 
 ```bash
-# In Render Shell
+# In Render Shell (if available)
 npm run test:render-db
 ```
 
@@ -197,19 +282,9 @@ This will:
 - ✅ List existing tables
 - ✅ Test read/write operations
 
-### Test Setup Script
+#### Check Health Endpoint
 
-```bash
-# Validate setup script (no database required)
-npm run validate:setup
-
-# Full test with database
-npm run test:setup
-```
-
-### Check Health Endpoint
-
-Visit: `https://your-service.onrender.com/api/health`
+Visit: `https://your-backend.onrender.com/api/health`
 
 Should return:
 
@@ -220,6 +295,47 @@ Should return:
   "timestamp": "..."
 }
 ```
+
+#### Check Logs
+
+In Render dashboard → **"Logs"** tab, you should see:
+
+- ✅ Database tables created
+- ✅ Auto-scraping started (if needed)
+- ✅ Auto-ingestion started (if needed)
+
+### Frontend Verification
+
+#### Test Frontend
+
+1. Visit: `https://your-frontend.onrender.com`
+2. Should load the landing page
+3. Check browser console for any errors
+4. Verify API calls are going to correct backend URL
+
+#### Test API Connection
+
+1. Open browser DevTools → Network tab
+2. Try to use the chat feature
+3. Verify requests are going to: `https://your-backend.onrender.com/api/...`
+4. Check for CORS errors (should be none if `FRONTEND_URL` is set correctly)
+
+#### Common Frontend Issues
+
+**Problem**: API calls failing with CORS error
+
+**Solution**:
+
+- Verify `FRONTEND_URL` in backend matches frontend URL exactly
+- Check `VITE_API_URL` in frontend is set correctly
+- Restart backend service after updating `FRONTEND_URL`
+
+**Problem**: Routes not working (404 on refresh)
+
+**Solution**:
+
+- Verify redirect rule is set: `/*` → `/index.html` (status 200)
+- Check `Publish Directory` is set to `dist`
 
 ## Troubleshooting
 
@@ -248,9 +364,12 @@ Should return:
 
 **Solution**:
 
-1. Connect via Render Shell
-2. Run: `npm run setup:all`
-3. Verify with: `npm run test:render-db`
+1. **Automatic Setup**: Tables should be created automatically on startup
+2. **Check Logs**: Look for "Setting up database schema..." in logs
+3. **Manual Setup** (if needed):
+   - Connect via Render Shell (if available)
+   - Run: `npm run setup:all`
+   - Or use external database URL to run setup locally
 
 ### Build Failures
 
@@ -289,16 +408,44 @@ Should return:
 
 ## Post-Deployment
 
-### Initial Data Setup
+### Automatic Data Setup
 
-After deployment and schema setup:
+The application automatically handles data setup on first deployment:
+
+1. **Database Schema**: Created automatically ✅
+2. **Scraping**: Runs automatically if database is empty ✅
+3. **Ingestion**: Runs automatically for unprocessed documents ✅
+
+**No manual steps required!**
+
+### Manual Data Setup (Optional)
+
+If you want to manually control scraping/ingestion:
 
 ```bash
-# Scrape Stripe documentation (optional, can be done later)
+# Scrape all Stripe documentation
 npm run scrape
 
 # Ingest documents into database and Pinecone
 npm run ingest
+
+# Full setup (scrape + ingest + schema)
+npm run setup
+```
+
+### Auto-Setup Configuration
+
+Control auto-setup behavior with environment variables:
+
+```env
+# Enable/disable all auto-setup (default: true in production)
+AUTO_DATA_SETUP=true
+
+# Enable/disable auto-scraping (default: true)
+AUTO_SCRAPE=true
+
+# Enable/disable auto-ingestion (default: true)
+AUTO_INGEST=true
 ```
 
 ### Monitoring
@@ -310,9 +457,10 @@ npm run ingest
 
 ### Updates
 
-1. **Code Changes**: Push to Git, Render auto-deploys
+1. **Code Changes**: Push to Git, Render auto-deploys both services
 2. **Environment Variables**: Update in dashboard, service restarts
-3. **Database Schema**: Run migrations via Shell
+3. **Database Schema**: Auto-updates on startup (if tables missing)
+4. **Frontend Build**: Rebuilds automatically on code changes
 
 ## Quick Reference
 
@@ -334,10 +482,19 @@ npm run check:db
 
 ### Important Files
 
+**Backend:**
+
 - `config/database.js` - Database connection configuration
 - `config/config.js` - Application configuration
 - `utils/setup_all_schemas.js` - Database schema setup script
-- `env.example` - Environment variables template
+- `utils/autoDataSetup.js` - Auto scraping/ingestion setup
+- `index.js` - Main server file with auto-setup
+
+**Frontend:**
+
+- `vite.config.js` - Vite build configuration
+- `src/config/api.js` - API endpoint configuration
+- `package.json` - Build scripts and dependencies
 
 ### Support Resources
 
