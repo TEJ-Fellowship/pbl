@@ -7,11 +7,18 @@ dotenv.config();
 const config = {
   // AI Provider - Hardcoded to Gemini
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-
-  // Database
-  MONGODB_URL: process.env.MONGODB_URL,
-  MONGODB_DB: process.env.MONGODB_DB,
-  MONGODB_URI: process.env.MONGODB_URI,
+  GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2,
+  GEMINI_API_KEY_3: process.env.GEMINI_API_KEY_3,
+  GEMINI_API_MODEL: process.env.GEMINI_API_MODEL || "gemini-2.0-flash",
+  GEMINI_API_MODEL_2: process.env.GEMINI_API_MODEL_2 || "gemini-2.0-flash-lite",
+  GEMINI_API_MODEL_3: process.env.GEMINI_API_MODEL_3 || "gemini-2.5-flash-lite",
+  // PostgreSQL Configuration
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_NAME: process.env.DB_NAME,
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD,
+  DATABASE_URL: process.env.DATABASE_URL,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
@@ -21,8 +28,9 @@ const config = {
   PORT: process.env.PORT,
   HOST: process.env.HOST,
 
-  // Security
+  // Security & Authentication
   JWT_SECRET: process.env.JWT_SECRET,
+  JWT_EXPIRATION: process.env.JWT_EXPIRATION || "7d",
 
   // Frontend
   FRONTEND_URL: process.env.FRONTEND_URL,
@@ -32,11 +40,19 @@ const config = {
   CHUNK_SIZE: process.env.CHUNK_SIZE,
   CHUNK_OVERLAP: process.env.CHUNK_OVERLAP,
   MAX_CHUNKS: process.env.MAX_CHUNKS,
+  MAX_SOURCES: process.env.MAX_SOURCES,
   BATCH_SIZE: process.env.BATCH_SIZE,
+
+  // MCP Integration
+  GOOGLE_SEARCH_API_KEY: process.env.GOOGLE_SEARCH_API_KEY,
+  GOOGLE_SEARCH_ENGINE_ID: process.env.GOOGLE_SEARCH_ENGINE_ID,
 
   // Rate Limiting
   RATE_LIMIT_DELAY: process.env.RATE_LIMIT_DELAY,
   EMBEDDING_DELAY: process.env.EMBEDDING_DELAY,
+
+  // Environment
+  NODE_ENV: process.env.NODE_ENV || "development",
 };
 
 export default config;
