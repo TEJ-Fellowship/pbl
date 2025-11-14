@@ -18,6 +18,7 @@ const config = {
   DB_NAME: process.env.DB_NAME,
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
+  DATABASE_URL: process.env.DATABASE_URL,
 
   // Pinecone Configuration
   PINECONE_API_KEY: process.env.PINECONE_API_KEY,
@@ -49,6 +50,9 @@ const config = {
   // Rate Limiting
   RATE_LIMIT_DELAY: process.env.RATE_LIMIT_DELAY,
   EMBEDDING_DELAY: process.env.EMBEDDING_DELAY,
+
+  // Environment
+  NODE_ENV: process.env.NODE_ENV || "development",
 };
 
 export default config;
