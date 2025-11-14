@@ -180,6 +180,19 @@ GET {{apiUrl}}/theaters?limit=1
 ### Get screens for a theater (to get screen_id)
 GET {{apiUrl}}/screens/theater/{{theater_id}}
 
+### Get showtimes (to get showtime_id for seats endpoint)
+GET {{apiUrl}}/showtimes?limit=1
+
+### ============================================
+### 6. GET /showtimes/{id}/seats - Get Available Seats (Developer B)
+### ============================================
+
+### Get all seats for a showtime (replace {showtime_id})
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+
+### Test with invalid showtime ID
+GET {{apiUrl}}/showtimes/00000000-0000-0000-0000-000000000000/seats
+
 ### ============================================
 ### BONUS: Test Search Endpoint
 ### ============================================

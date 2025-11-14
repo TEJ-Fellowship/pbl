@@ -1,4 +1,11 @@
-const { Showtime, Movie, Screen, Theater } = require("../models");
+const {
+  Showtime,
+  Movie,
+  Screen,
+  Theater,
+  Seat,
+  BookingSeat,
+} = require("../models");
 const { Op } = require("sequelize");
 
 const getAllShowtimes = async (req, res, next) => {
@@ -255,6 +262,106 @@ const deleteShowtime = async (req, res, next) => {
   }
 };
 
+const getShowtimeSeats = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Get showtime with screen information
+    const showtime = await Showtime.findByPk(id, {
+      include: [
+        {
+          model: Screen,
+          as: "screen",
+          attributes: ["id", "screen_number", "total_seats"],
+          include: [
+            {
+              model: Theater,
+              as: "theater",
+              attributes: ["id", "name", "location"],
+            },
+          ],
+        },
+        {
+          model: Movie,
+          as: "movie",
+          attributes: ["id", "title", "duration"],
+        },
+      ],
+    });
+
+    if (!showtime) {
+      return res.status(404).json({ error: "Showtime not found" });
+    }
+
+    // Get all seats for this screen
+    const seats = await Seat.findAll({
+      where: {
+        screen_id: showtime.screen_id,
+      },
+      order: [
+        ["row_number", "ASC"],
+        ["column_number", "ASC"],
+      ],
+    });
+
+    // Get all booked seats for this showtime
+    const bookedSeats = await BookingSeat.findAll({
+      where: {
+        showtime_id: id,
+      },
+      attributes: ["seat_id"],
+    });
+
+    const bookedSeatIds = new Set(
+      bookedSeats.map((bs) => bs.seat_id.toString())
+    );
+
+    // Map seats with availability status
+    const seatsWithAvailability = seats.map((seat) => ({
+      id: seat.id,
+      seat_number: seat.seat_number,
+      row_number: seat.row_number,
+      column_number: seat.column_number,
+      seat_type: seat.seat_type,
+      is_available: !bookedSeatIds.has(seat.id.toString()),
+      created_at: seat.created_at,
+    }));
+
+    // Count available vs booked
+    const availableCount = seatsWithAvailability.filter(
+      (s) => s.is_available
+    ).length;
+    const bookedCount = seatsWithAvailability.filter(
+      (s) => !s.is_available
+    ).length;
+
+    res.json({
+      showtime: {
+        id: showtime.id,
+        show_time: showtime.show_time,
+        price: showtime.price,
+        available_seats: showtime.available_seats,
+        total_seats: showtime.total_seats,
+        status: showtime.status,
+      },
+      movie: showtime.movie,
+      screen: {
+        id: showtime.screen.id,
+        screen_number: showtime.screen.screen_number,
+        theater: showtime.screen.theater,
+      },
+      seats: seatsWithAvailability,
+      summary: {
+        total_seats: seatsWithAvailability.length,
+        available: availableCount,
+        booked: bookedCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllShowtimes,
   getShowtimesByMovie,
@@ -263,4 +370,5 @@ module.exports = {
   createShowtime,
   updateShowtime,
   deleteShowtime,
+  getShowtimeSeats,
 };
