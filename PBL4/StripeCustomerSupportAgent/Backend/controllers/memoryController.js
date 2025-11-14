@@ -28,15 +28,15 @@ class MemoryController {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️  GEMINI_API_KEY not found, using rule-based summarization"
         );
         return;
       }
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
       console.log(
-        "✅ Gemini client initialized for conversation summarization"
+        "✅ Gemini client 3 initialized for conversation summarization"
       );
     } catch (error) {
       console.warn("⚠️  Failed to initialize Gemini client:", error.message);
@@ -113,8 +113,13 @@ class MemoryController {
 
   /**
    * Process assistant response with memory integration
+   * @param {boolean} asyncQAExtraction - If true, Q&A extraction runs in background (faster response)
    */
-  async processAssistantResponse(assistantResponse, metadata = {}) {
+  async processAssistantResponse(
+    assistantResponse,
+    metadata = {},
+    asyncQAExtraction = false
+  ) {
     if (!this.currentSessionId) {
       throw new Error(
         "Memory system not initialized. Call initializeSession() first."
@@ -148,25 +153,43 @@ class MemoryController {
       // IMPORTANT: Always extract Q&A pairs for BOTH conversational and technical queries
       const lastUserMessage = this.bufferMemory.getLastUserMessage();
       if (lastUserMessage) {
-        try {
+        if (asyncQAExtraction) {
+          // Fire-and-forget: Run Q&A extraction in background (non-blocking)
           console.log(
-            `🧠 Extracting Q&A pair for memory: "${lastUserMessage.content.substring(
-              0,
-              100
-            )}..."`
+            `⚡ Q&A extraction queued for background processing (async mode)`
           );
-          await this.queryReformulation.extractQAPairs(
+          this.extractQAPairAsync(
             this.currentSessionId,
             lastUserMessage.content,
             assistantResponse
-          );
-          console.log(`✅ Q&A pair extracted and stored successfully`);
-        } catch (error) {
-          console.error(
-            "❌ Failed to extract Q&A pair (non-critical):",
-            error.message
-          );
-          // Don't throw - Q&A extraction failure shouldn't break the flow
+          ).catch((error) => {
+            console.error(
+              "❌ Background Q&A extraction failed (non-critical):",
+              error.message
+            );
+          });
+        } else {
+          // Synchronous: Wait for Q&A extraction to complete (blocking)
+          try {
+            console.log(
+              `🧠 Extracting Q&A pair for memory: "${lastUserMessage.content.substring(
+                0,
+                100
+              )}..."`
+            );
+            await this.queryReformulation.extractQAPairs(
+              this.currentSessionId,
+              lastUserMessage.content,
+              assistantResponse
+            );
+            console.log(`✅ Q&A pair extracted and stored successfully`);
+          } catch (error) {
+            console.error(
+              "❌ Failed to extract Q&A pair (non-critical):",
+              error.message
+            );
+            // Don't throw - Q&A extraction failure shouldn't break the flow
+          }
         }
       } else {
         console.warn(
@@ -179,6 +202,39 @@ class MemoryController {
     } catch (error) {
       console.error("❌ Failed to process assistant response:", error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Extract Q&A pair asynchronously (background processing)
+   * This method runs without blocking the main response flow
+   */
+  async extractQAPairAsync(sessionId, userMessage, assistantResponse) {
+    try {
+      console.log(
+        `\n🔄 [Background] Extracting Q&A pair for memory: "${userMessage.substring(
+          0,
+          100
+        )}..."`
+      );
+
+      const qaPair = await this.queryReformulation.extractQAPairs(
+        sessionId,
+        userMessage,
+        assistantResponse
+      );
+
+      console.log(
+        `✅ [Background] Q&A pair extracted and stored successfully: ${qaPair?.qa_id}`
+      );
+      return qaPair;
+    } catch (error) {
+      console.error(
+        "❌ [Background] Failed to extract Q&A pair:",
+        error.message
+      );
+      // Don't throw in background processing - just log the error
+      return null;
     }
   }
 
@@ -493,7 +549,7 @@ class MemoryController {
 
       // Get Gemini model
       const model = this.geminiClient.getGenerativeModel({
-        model: config.GEMINI_API_MODEL,
+        model: config.GEMINI_API_MODEL_3,
         generationConfig: {
           temperature: 0.3,
           topK: 40,

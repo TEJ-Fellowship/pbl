@@ -5,6 +5,7 @@ const DASHBOARD = "/dashboard";
 const CUSTOMERS = "/customers";
 const KNOWLEDGE = "/knowledge";
 const LOGIN_ROUTE = "/login";
+const SIGNUP_ROUTE = "/signup";
 
 export {
   LANDING_PAGE,
@@ -14,4 +15,5 @@ export {
   CUSTOMERS,
   KNOWLEDGE,
   LOGIN_ROUTE,
+  SIGNUP_ROUTE,
 };

@@ -1,14 +1,27 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import config from "../config/config.js";
+import HybridCache from "./hybridCache.js";
 
 /**
- * Simple AI-Powered Query Classifier
+ * AI-Powered Query Classifier with Hybrid Caching
  * Decides between MCP tools and hybrid search for optimal response
+ * Uses hybrid caching: exact match → fuzzy match → semantic match
  */
 class QueryClassifier {
-  constructor(agentOrchestrator = null) {
+  constructor(agentOrchestrator = null, embeddings = null) {
     this.geminiClient = null;
     this.agentOrchestrator = agentOrchestrator;
+    this.embeddings = embeddings;
+
+    // Initialize hybrid cache
+    this.cache = new HybridCache({
+      cacheTTL: 10 * 60 * 1000, // 10 minutes
+      fuzzyThreshold: 0.9, // 90% similarity
+      semanticThreshold: 0.85, // 85% similarity
+      embeddings: embeddings, // For semantic matching
+      cleanupThreshold: 100,
+    });
+
     this.initializeGemini();
   }
 
@@ -17,15 +30,15 @@ class QueryClassifier {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️ GEMINI_API_KEY not found. Query classifier will use fallback rules."
         );
         return;
       }
 
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-      console.log("✅ Query Classifier: Gemini AI initialized");
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
+      console.log("✅ Query Classifier: Gemini AI 3 initialized");
     } catch (error) {
       console.error(
         "❌ Query Classifier: Failed to initialize Gemini:",
@@ -36,6 +49,7 @@ class QueryClassifier {
 
   /**
    * Classify query and decide between MCP tools or hybrid search
+   * Uses hybrid caching: exact match → fuzzy match → semantic match → Gemini API
    * @param {string} query - User query
    * @param {number} confidence - Document retrieval confidence (0-1)
    * @param {Array} enabledTools - Array of enabled tool names (optional)
@@ -43,10 +57,37 @@ class QueryClassifier {
    */
   async classifyQuery(query, confidence = 0.5, enabledTools = null) {
     try {
+      // Step 1-3: Check cache using hybrid matching (exact → fuzzy → semantic)
+      const cached = await this.cache.get(query, enabledTools);
+      if (cached) {
+        const classification = cached.value;
+        const latency = cached.metadata?.latency || 0;
+
+        if (cached.matchType === "exact") {
+          console.log(`✅ Exact cache hit (saved ~${latency}ms)`);
+        } else if (cached.matchType === "fuzzy") {
+          console.log(
+            `✅ Fuzzy cache hit: ${(cached.similarity * 100).toFixed(
+              1
+            )}% similarity (saved ~${latency}ms)`
+          );
+        } else if (cached.matchType === "semantic") {
+          console.log(
+            `✅ Semantic cache hit: ${(cached.similarity * 100).toFixed(
+              1
+            )}% similarity (saved ~${latency}ms)`
+          );
+        }
+
+        return classification;
+      }
+
+      // Step 4: Cache MISS - call Gemini API (~450ms)
       if (!this.geminiClient) {
         return this.fallbackClassification(query, confidence, enabledTools);
       }
 
+      const startTime = Date.now();
       console.log(
         `\n🤖 Query Classifier: Analyzing "${query}" (confidence: ${confidence})`
       );
@@ -93,7 +134,9 @@ class QueryClassifier {
           }`;
 
       const result = await this.geminiClient
-        .getGenerativeModel({ model: "gemini-2.5-flash" })
+        .getGenerativeModel({
+          model: config.GEMINI_API_MODEL_2 || "gemini-2.5-flash-lite",
+        })
         .generateContent(prompt);
       const responseText = result.response.text();
 
@@ -103,9 +146,16 @@ class QueryClassifier {
         confidence
       );
 
+      const latency = Date.now() - startTime;
       console.log(
-        `✅ Query Classifier: ${classification.approach} - ${classification.reasoning}`
+        `✅ Query Classifier: ${classification.approach} - ${classification.reasoning} (took ${latency}ms)`
       );
+
+      // Cache the result
+      this.cache.set(query, classification, enabledTools, {
+        latency,
+      });
+
       return classification;
     } catch (error) {
       console.error("❌ Query Classification Error:", error.message);
@@ -163,8 +213,65 @@ class QueryClassifier {
 
       const classification = JSON.parse(jsonMatch[0]);
 
-      // Validate and set defaults
-      if (!classification.approach) {
+      // Validate approach value - normalize any malformed values
+      const validApproaches = [
+        "MCP_TOOLS_ONLY",
+        "HYBRID_SEARCH",
+        "COMBINED",
+        "CONVERSATIONAL",
+      ];
+
+      if (classification.approach) {
+        // Normalize the approach value (handle typos, case issues, etc.)
+        const normalizedApproach = classification.approach.toUpperCase().trim();
+
+        // Check if it's a valid approach
+        if (!validApproaches.includes(normalizedApproach)) {
+          console.warn(
+            `⚠️ Invalid approach from AI: "${classification.approach}"`
+          );
+          console.warn(`   Attempting to normalize...`);
+
+          // Try to fix common issues
+          if (
+            normalizedApproach.includes("MCP") &&
+            normalizedApproach.includes("TOOL")
+          ) {
+            classification.approach = "MCP_TOOLS_ONLY";
+            console.log(`   ✅ Normalized to: MCP_TOOLS_ONLY`);
+          } else if (
+            normalizedApproach.includes("HYBRID") ||
+            normalizedApproach.includes("SEARCH")
+          ) {
+            classification.approach = "HYBRID_SEARCH";
+            console.log(`   ✅ Normalized to: HYBRID_SEARCH`);
+          } else if (
+            normalizedApproach.includes("COMBINED") ||
+            normalizedApproach.includes("BOTH")
+          ) {
+            classification.approach = "COMBINED";
+            console.log(`   ✅ Normalized to: COMBINED`);
+          } else if (
+            normalizedApproach.includes("CONVERSATIONAL") ||
+            normalizedApproach.includes("MEMORY")
+          ) {
+            classification.approach = "CONVERSATIONAL";
+            console.log(`   ✅ Normalized to: CONVERSATIONAL`);
+          } else {
+            // If we can't normalize, use fallback
+            classification.approach = null;
+          }
+        } else {
+          classification.approach = normalizedApproach;
+        }
+      }
+
+      // Validate and set defaults if approach is still invalid
+      if (
+        !classification.approach ||
+        !validApproaches.includes(classification.approach)
+      ) {
+        console.warn(`⚠️ Using fallback classification for invalid approach`);
         // Auto-detect conversational queries first
         const lowerQuery = query.toLowerCase();
         const conversationKeywords = [
@@ -334,7 +441,7 @@ class QueryClassifier {
   }
 
   /**
-   * Get classification statistics
+   * Get classification statistics including cache stats
    * @returns {Object} - Classification stats
    */
   getStats() {
@@ -347,6 +454,7 @@ class QueryClassifier {
         "COMBINED",
         "CONVERSATIONAL",
       ],
+      cache: this.cache.getStats(),
     };
   }
 }

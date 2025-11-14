@@ -160,20 +160,15 @@ const MCPToolsIndicator = ({ mcpToolsUsed, mcpConfidence, classification }) => {
 };
 
 const MessageBubble = ({ message }) => {
+  // Normalize sources to always be an array
+  const normalizedSources = Array.isArray(message.sources) 
+    ? message.sources 
+    : (typeof message.sources === 'number' ? [] : (message.sources || []));
+  
   // Open sources by default if there are sources available
   const [sourcesOpen, setSourcesOpen] = useState(
-    message.sources && message.sources.length > 0
+    normalizedSources && normalizedSources.length > 0
   );
-
-  console.log(
-    "🔍 MessageBubble - message.sources:",
-    message.sources,
-    "Type:",
-    typeof message.sources,
-    "Is Array:",
-    Array.isArray(message.sources)
-  );
-  console.log("🔍 MessageBubble - sourcesOpen:", sourcesOpen);
 
   return (
     <motion.div
@@ -193,7 +188,7 @@ const MessageBubble = ({ message }) => {
       )}
 
       <div
-        className={`p-5 rounded-lg ${
+        className={`p-5 rounded-lg relative ${
           message.sender === "user"
             ? "bg-blue-600/80 text-white rounded-tr-none max-w-3xl"
             : message.isError
@@ -224,11 +219,25 @@ const MessageBubble = ({ message }) => {
               classification={message.classification}
             />
             <SourcePanel
-              sources={Array.isArray(message.sources) ? message.sources : []}
+              sources={normalizedSources}
               isOpen={sourcesOpen}
               onToggle={() => setSourcesOpen(!sourcesOpen)}
             />
           </>
+        )}
+
+        {/* Response Time Indicator - Bottom Right */}
+        {message.sender === "ai" && message.responseTime && (
+          <div className="absolute bottom-2 right-2 text-xs text-gray-500 flex items-center space-x-1">
+            <span className="material-symbols-outlined text-xs">
+              schedule
+            </span>
+            <span>
+              {message.responseTime < 1000
+                ? `${message.responseTime}ms`
+                : `${(message.responseTime / 1000).toFixed(1)}s`}
+            </span>
+          </div>
         )}
       </div>
 

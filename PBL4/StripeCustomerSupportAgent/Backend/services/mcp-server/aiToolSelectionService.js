@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import config from "../../config/config.js";
 
 dotenv.config();
 
@@ -27,9 +28,12 @@ class AIToolSelectionService {
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       this.geminiClient = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: config.GEMINI_API_MODEL_2 || "gemini-2.5-flash-lite",
       });
-      console.log("✅ AI Tool Selection Service: Gemini AI initialized");
+      console.log(
+        "✅ AI Tool Selection Service: Gemini AI initialized with model: ",
+        config.GEMINI_API_MODEL_2
+      );
     } catch (error) {
       console.error(
         "❌ AI Tool Selection Service: Failed to initialize Gemini:",
@@ -293,7 +297,7 @@ Only respond with JSON, nothing else.`;
     return {
       available: !!this.geminiClient,
       geminiAvailable: !!this.geminiClient,
-      model: this.geminiClient ? "gemini-2.5-flash" : "unavailable",
+      model: this.geminiClient ? "gemini-2.0-flash-lite" : "unavailable",
       aiDecisions: this.aiDecisions || 0,
       fallbackDecisions: this.fallbackDecisions || 0,
       totalDecisions: (this.aiDecisions || 0) + (this.fallbackDecisions || 0),

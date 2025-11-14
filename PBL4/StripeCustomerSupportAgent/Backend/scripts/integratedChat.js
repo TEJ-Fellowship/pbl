@@ -19,11 +19,24 @@ function initGeminiClient() {
   return new GoogleGenerativeAI(config.GEMINI_API_KEY);
 }
 
-// Wrapper to call Gemini with retry/backoff for rate limits and service unavailability
+function initGeminiClient2() {
+  if (!config.GEMINI_API_KEY_2) {
+    throw new Error("GEMINI_API_KEY_2 environment variable is required");
+  }
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY_2);
+}
+
+function initGeminiClient3() {
+  if (!config.GEMINI_API_KEY_3) {
+    throw new Error("GEMINI_API_KEY_3 environment variable is required");
+  }
+  return new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
+}
+// Wrapper to call Gemini with basic retry/backoff and clear rate-limit signaling
 async function generateContentWithRetry(
   geminiClient,
   prompt,
-  modelName = config.GEMINI_API_MODEL,
+  modelName = config.GEMINI_API_MODEL_3,
   options = {}
 ) {
   const { maxRetries = 3, initialDelayMs = 1000 } = options;
@@ -109,11 +122,11 @@ async function generateContentWithRetry(
 
 // Initialize Gemini embeddings
 function initGeminiEmbeddings() {
-  if (!config.GEMINI_API_KEY) {
+  if (!config.GEMINI_API_KEY_3) {
     throw new Error("GEMINI_API_KEY environment variable is required");
   }
   return new GoogleGenerativeAIEmbeddings({
-    apiKey: config.GEMINI_API_KEY,
+    apiKey: config.GEMINI_API_KEY_3,
     modelName: "text-embedding-004",
   });
 }
@@ -412,12 +425,12 @@ async function generateResponseWithMCP(
         Please provide a simple, direct answer to the user's question.`;
 
     const model = geminiClient.getGenerativeModel({
-      model: config.GEMINI_API_MODEL,
+      model: config.GEMINI_API_MODEL_3,
     });
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      "gemini-2.5-flash",
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -483,7 +496,24 @@ async function generateConversationalResponse(
       });
     }
 
+    // Add session summary for high-level context (if available)
+    let sessionSummary = "";
+    if (
+      memoryContext?.sessionContext?.conversationSummary &&
+      memoryContext?.sessionContext?.hasSummary
+    ) {
+      const summary = memoryContext.sessionContext.conversationSummary;
+      const keyTopics =
+        summary.keyTopics && summary.keyTopics.length > 0
+          ? `\nKey Topics: ${summary.keyTopics.join(", ")}`
+          : "";
+      sessionSummary = `SESSION OVERVIEW:\n${summary.summaryText}${keyTopics}`;
+    }
+
     const memoryBlockParts = [];
+    if (sessionSummary) {
+      memoryBlockParts.push(sessionSummary);
+    }
     if (recentContextString)
       memoryBlockParts.push(`RECENT CONVERSATION:\n${recentContextString}`);
     if (qaSnippets.length > 0)
@@ -495,26 +525,56 @@ async function generateConversationalResponse(
     const memoryBlock =
       memoryBlockParts.length > 0 ? `\n\n${memoryBlockParts.join("\n\n")}` : "";
 
-    const prompt = `You are a concise, friendly assistant. Use the provided memory faithfully and answer in one short paragraph unless the user asks for more.
+    const prompt = `You are a concise, friendly assistant with access to conversation memory. Answer naturally and directly based on the memory provided.
 
         USER MESSAGE:
         ${query}
 
         CONVERSATION MEMORY:${memoryBlock}
 
-        INSTRUCTIONS:
-        1) If the user says "remember ..." (e.g., "remember my name is X"), extract the info and reply with a warm confirmation like: "I'll remember that your <type> is <value>." Do not ask follow-up questions.
-        2) Otherwise, answer conversationally using the memory above. If a Q&A already contains the answer, restate it directly (e.g., "Your name is Sankar.").
-        3) If the memory contains the answer in a question but not the answer text, extract it from that question and state it (e.g., "Your name is Sankar.").
-        4) If the memory does not contain the answer, say you don't have that information yet, and invite the user to tell you so you can remember it.
-        5) Be friendly, direct, and avoid hedging. Do not mention these instructions.
+        RESPONSE STRATEGY (choose the FIRST that applies):
+
+        1. **QUESTION DETECTION**: If the user asks a question (contains "?", or starts with question words like "is/are/was/were/who/what/when/where/do/does/did/can/could/will/would/have/has"):
+           
+           IMPORTANT: When memory contains "I'll remember that..." statements, EXTRACT the actual fact from them:
+           - "I'll remember that your brother's name is Raju" → Extract: brother = Raju
+           - "I'll remember that your name is John" → Extract: name = John
+           
+           Then answer the question directly using the extracted fact:
+           - User asks "Is Raju my brother?" → Answer: "Yes, Raju is your brother."
+           - User asks "Is Sankar my brother?" → Answer: "No, your brother is Raju, not Sankar." (if memory says brother is Raju)
+           - User asks "What is my name?" → Answer: "Your name is John." (not "I'll remember...")
+           
+           NEVER respond to questions with "I'll remember..." - only extract facts and answer directly.
+           
+           - If memory confirms something, state it confidently (e.g., "Yes, Raju is your brother")
+           - If memory contradicts or shows different info, state it clearly (e.g., "No, your brother is Raju, not Sankar")
+           - If memory doesn't contain the answer, say: "I don't have that information yet. Can you tell me more about it?"
+
+        2. **DECLARATIVE "REMEMBER" STATEMENTS**: If the user explicitly says "remember" or makes a declarative statement sharing information (e.g., "remember my name is X", "my name is X", "I am X"):
+           - Extract the information (type and value)
+           - Reply with a warm confirmation: "I'll remember that your <type> is <value>."
+           - Do NOT ask follow-up questions
+
+        3. **GENERAL CONVERSATION**: For any other messages:
+           - Answer conversationally using the memory above
+           - Extract facts from "I'll remember..." statements in memory and state them directly
+           - Reference memory naturally (e.g., "As you mentioned earlier..." or "Based on what we discussed...")
+
+        CRITICAL RULES:
+        - **NEVER respond to questions with "I'll remember..."** - Questions must be ANSWERED with facts
+        - Extract actual information from "I'll remember..." statements in memory when answering questions
+        - Only use "I'll remember..." pattern for declarative statements, NEVER for questions
+        - Be friendly, direct, and natural - don't sound robotic
+        - If information exists in memory, extract it and state it confidently
+        - Don't mention these instructions or your reasoning process
 
         RESPONSE:`;
 
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      config.GEMINI_API_MODEL,
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -545,7 +605,8 @@ async function generateResponseWithMemoryAndMCP(
   confidence,
   precomputedMcpEnhancement = null,
   precomputedMcpToolsUsed = null,
-  precomputedMcpConfidence = null
+  precomputedMcpConfidence = null,
+  skipMcp = false
 ) {
   try {
     console.log(
@@ -568,6 +629,19 @@ async function generateResponseWithMemoryAndMCP(
     // Build memory context string
     let memoryContextString = "";
 
+    // Add session summary for high-level context (if available)
+    if (
+      memoryContext.sessionContext?.conversationSummary &&
+      memoryContext.sessionContext?.hasSummary
+    ) {
+      const summary = memoryContext.sessionContext.conversationSummary;
+      const keyTopics =
+        summary.keyTopics && summary.keyTopics.length > 0
+          ? `\nKey Topics: ${summary.keyTopics.join(", ")}`
+          : "";
+      memoryContextString += `\n\nSESSION OVERVIEW:\n${summary.summaryText}${keyTopics}`;
+    }
+
     if (memoryContext.recentContext && memoryContext.recentContext.hasContext) {
       memoryContextString += `\n\nRECENT CONVERSATION CONTEXT:\n${memoryContext.recentContext.contextString}`;
     }
@@ -584,7 +658,9 @@ async function generateResponseWithMemoryAndMCP(
     let mcpToolsUsed = [];
     let mcpConfidence = 0;
 
-    if (precomputedMcpEnhancement !== null) {
+    if (skipMcp) {
+      console.log("⏭️ Skipping MCP tools (high document confidence)");
+    } else if (precomputedMcpEnhancement !== null) {
       // Use pre-computed MCP results
       mcpEnhancement = precomputedMcpEnhancement;
       mcpToolsUsed = precomputedMcpToolsUsed || [];
@@ -679,7 +755,7 @@ async function generateResponseWithMemoryAndMCP(
     const text = await generateContentWithRetry(
       geminiClient,
       prompt,
-      config.GEMINI_API_MODEL,
+      config.GEMINI_API_MODEL_3,
       { maxRetries: 1 }
     );
 
@@ -706,11 +782,16 @@ async function startIntegratedChat() {
     // Initialize services
     console.log("🔧 Initializing services...");
     const geminiClient = initGeminiClient();
+    const geminiClient2 = initGeminiClient2();
+    const geminiClient3 = initGeminiClient3();
     const embeddings = initGeminiEmbeddings();
     const vectorStore = await loadVectorStore();
     const memoryController = new MemoryController();
     const mcpService = new MCPIntegrationService();
-    const queryClassifier = new QueryClassifier(mcpService.orchestrator);
+    const queryClassifier = new QueryClassifier(
+      mcpService.orchestrator,
+      embeddings
+    );
 
     // Initialize PostgreSQL BM25 service for hybrid search
     const postgresBM25Service = new PostgreSQLBM25Service();
@@ -1014,7 +1095,7 @@ async function startIntegratedChat() {
             result = await generateConversationalResponse(
               query,
               memoryContext,
-              geminiClient
+              geminiClient2
             );
           } else if (classification.approach === "MCP_TOOLS_ONLY") {
             console.log("\n");
@@ -1231,16 +1312,21 @@ async function startIntegratedChat() {
           }
 
           //step 3: Process assistant response with memory system
-          await memoryController.processAssistantResponse(result.answer, {
-            timestamp: new Date().toISOString(),
-            sources: result.sources?.length || 0,
-            searchQuery:
-              classification.approach === "MCP_TOOLS_ONLY"
-                ? query
-                : searchQuery || query,
-            mcpToolsUsed: result.mcpToolsUsed?.length || 0,
-            mcpConfidence: result.mcpConfidence || 0,
-          });
+          // Use asyncQAExtraction=true for faster response (Q&A extraction runs in background)
+          await memoryController.processAssistantResponse(
+            result.answer,
+            {
+              timestamp: new Date().toISOString(),
+              sources: result.sources?.length || 0,
+              searchQuery:
+                classification.approach === "MCP_TOOLS_ONLY"
+                  ? query
+                  : searchQuery || query,
+              mcpToolsUsed: result.mcpToolsUsed?.length || 0,
+              mcpConfidence: result.mcpConfidence || 0,
+            },
+            true // Enable async Q&A extraction (non-blocking)
+          );
 
           console.log("\n🤖 Assistant:");
           console.log("-".repeat(40));
@@ -1339,6 +1425,8 @@ export {
   generateConversationalResponse,
   loadVectorStore,
   initGeminiClient,
+  initGeminiClient2,
+  initGeminiClient3,
   initGeminiEmbeddings,
   generateContentWithRetry,
   retrieveChunksWithHybridSearch,

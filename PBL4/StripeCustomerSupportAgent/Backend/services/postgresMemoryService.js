@@ -12,6 +12,8 @@ class PostgreSQLMemoryService {
   constructor() {
     this.pool = pool;
     this.geminiClient = null;
+    this.geminiRateLimitBlocked = false;
+    this.geminiRateLimitBlockedUntil = null;
     this.initializeGemini();
   }
 
@@ -20,15 +22,15 @@ class PostgreSQLMemoryService {
    */
   initializeGemini() {
     try {
-      if (!config.GEMINI_API_KEY) {
+      if (!config.GEMINI_API_KEY_3) {
         console.warn(
           "⚠️ GEMINI_API_KEY not found, using regex-based extraction as fallback"
         );
         return;
       }
-      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+      this.geminiClient = new GoogleGenerativeAI(config.GEMINI_API_KEY_3);
       console.log(
-        "✅ PostgreSQLMemoryService: Gemini AI initialized for info extraction"
+        "✅ PostgreSQLMemoryService: Gemini AI 3 initialized for info extraction"
       );
     } catch (error) {
       console.warn(
@@ -46,6 +48,21 @@ class PostgreSQLMemoryService {
   async extractPersonalInfoWithGemini(text) {
     if (!this.geminiClient) {
       return null; // Fallback to regex patterns
+    }
+
+    // Check if we're currently blocked due to rate limits
+    if (this.geminiRateLimitBlocked) {
+      if (
+        this.geminiRateLimitBlockedUntil &&
+        Date.now() < this.geminiRateLimitBlockedUntil
+      ) {
+        // Still in rate limit cooldown period, skip API call
+        return null; // Fallback to regex patterns
+      } else {
+        // Cooldown period expired, reset flag
+        this.geminiRateLimitBlocked = false;
+        this.geminiRateLimitBlockedUntil = null;
+      }
     }
 
     try {
@@ -79,12 +96,23 @@ RESPONSE FORMAT (JSON only, no extra text):
 }`;
 
       const model = this.geminiClient.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: config.GEMINI_API_MODEL_2,
       });
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const textResponse = response.text().trim();
+      // Add timeout wrapper to prevent hanging on rate limits
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("Gemini API request timeout (5s)"));
+        }, 5000); // 5 second timeout
+      });
+
+      const apiPromise = (async () => {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text().trim();
+      })();
+
+      const textResponse = await Promise.race([apiPromise, timeoutPromise]);
 
       // Extract JSON from response (handle markdown code blocks if present)
       let jsonText = textResponse;
@@ -149,7 +177,25 @@ RESPONSE FORMAT (JSON only, no extra text):
 
       return null;
     } catch (error) {
-      console.warn("⚠️ Gemini personal info extraction failed:", error.message);
+      const errorMessage = error?.message || "";
+      const isRateLimited =
+        error?.status === 429 ||
+        /\b429\b/.test(errorMessage) ||
+        errorMessage.includes("Too Many Requests") ||
+        errorMessage.includes("quota") ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("Resource exhausted");
+
+      if (isRateLimited) {
+        // Block further API calls for 30 seconds to avoid repeated rate limit hits
+        this.geminiRateLimitBlocked = true;
+        this.geminiRateLimitBlockedUntil = Date.now() + 30000; // 30 second cooldown
+        // Don't log rate limit errors repeatedly, just skip gracefully
+        // This prevents spamming the console and allows the system to continue
+        return null; // Fallback to regex patterns
+      }
+
+      console.warn("⚠️ Gemini personal info extraction failed:", errorMessage);
       return null; // Fallback to regex patterns
     }
   }
@@ -176,15 +222,56 @@ RESPONSE FORMAT (JSON only, no extra text):
         return existingSession.rows[0];
       }
 
-      // Create new session
+      // Handle anonymous users: check if userId exists in users table
+      // If userId is "anonymous" or doesn't exist in users table, set to NULL
+      let finalUserId = userId;
+      let finalMetadata = { ...metadata };
+
+      if (userId && userId !== "anonymous") {
+        try {
+          // Check if user exists in users table
+          const userCheck = await client.query(
+            "SELECT id FROM users WHERE id = $1",
+            [userId]
+          );
+
+          // If user doesn't exist, it's an anonymous user - set to NULL
+          if (userCheck.rows.length === 0) {
+            console.log(
+              `🔓 Anonymous user detected (UUID: ${userId}), setting user_id to NULL`
+            );
+            finalUserId = null;
+            // Store anonymous UUID in metadata for migration purposes
+            finalMetadata.anonymousUserId = userId;
+          }
+        } catch (error) {
+          // If there's an error checking (e.g., invalid UUID format), treat as anonymous
+          console.log(
+            `🔓 Invalid or anonymous userId (${userId}), setting user_id to NULL`
+          );
+          finalUserId = null;
+          // Store original userId in metadata for migration purposes
+          if (userId !== "anonymous") {
+            finalMetadata.anonymousUserId = userId;
+          }
+        }
+      } else if (userId === "anonymous") {
+        finalUserId = null;
+      }
+
+      // Create new session with NULL user_id for anonymous users
       const newSession = await client.query(
         `INSERT INTO conversation_sessions (session_id, user_id, metadata) 
          VALUES ($1, $2, $3) 
          RETURNING *`,
-        [sessionId, userId, JSON.stringify(metadata)]
+        [sessionId, finalUserId, JSON.stringify(finalMetadata)]
       );
 
-      console.log(`🆕 Created new conversation session: ${sessionId}`);
+      console.log(
+        `🆕 Created new conversation session: ${sessionId}${
+          finalUserId ? ` (user: ${finalUserId})` : " (anonymous)"
+        }`
+      );
       return newSession.rows[0];
     } finally {
       client.release();
@@ -452,6 +539,12 @@ RESPONSE FORMAT (JSON only, no extra text):
             let infoFound = false;
 
             // Try Gemini AI extraction first (more flexible) - works for any personal info statement
+            // Add small delay between API calls to avoid rate limits when processing multiple messages
+            if (!this.geminiRateLimitBlocked) {
+              // Add delay only if not already rate limited (to avoid unnecessary waiting)
+              await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms delay between calls
+            }
+
             try {
               const geminiResult = await this.extractPersonalInfoWithGemini(
                 content
@@ -800,6 +893,11 @@ RESPONSE FORMAT (JSON only, no extra text):
             // Check if this message contains any personal information
             // Process ALL user messages for personal information automatically
             // Try Gemini AI extraction first (more flexible)
+            // Add small delay between API calls to avoid rate limits when processing multiple messages
+            if (!this.geminiRateLimitBlocked) {
+              await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms delay between calls
+            }
+
             try {
               const geminiResult = await this.extractPersonalInfoWithGemini(
                 content
@@ -1371,6 +1469,110 @@ RESPONSE FORMAT (JSON only, no extra text):
       );
 
       return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Transfer sessions from anonymous user to authenticated user
+   * @param {string} anonymousUserId - The anonymous user ID (stored in metadata)
+   * @param {string} authenticatedUserId - The authenticated user ID
+   * @returns {Object} - Transfer result with count of transferred sessions
+   */
+  async transferSessionsToUser(anonymousUserId, authenticatedUserId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Update conversation_sessions
+      // Find sessions where user_id IS NULL and metadata contains the anonymousUserId
+      // Only transfer sessions that match the specific anonymousUserId
+      const sessionsResult = await client.query(
+        `UPDATE conversation_sessions 
+         SET user_id = $1, updated_at = NOW(),
+             metadata = CASE 
+               WHEN metadata IS NULL THEN jsonb_build_object('transferredFrom', $2)
+               WHEN metadata->>'anonymousUserId' = $2 THEN jsonb_set(metadata, '{anonymousUserId}', 'null'::jsonb, true)
+               ELSE metadata
+             END
+         WHERE user_id IS NULL 
+           AND metadata->>'anonymousUserId' = $2
+         RETURNING session_id, user_id, metadata`,
+        [authenticatedUserId, anonymousUserId]
+      );
+
+      const transferredSessions = sessionsResult.rows.map((row) => row.session_id);
+      const transferredCount = sessionsResult.rowCount;
+
+      await client.query("COMMIT");
+
+      if (transferredCount > 0) {
+        console.log(
+          `✅ Transferred ${transferredCount} session(s) from anonymous user ${anonymousUserId} to authenticated user ${authenticatedUserId}`
+        );
+        console.log(`   Session IDs: ${transferredSessions.join(", ")}`);
+      } else {
+        console.log(
+          `ℹ️ No sessions found for anonymous user ${anonymousUserId} to transfer`
+        );
+      }
+
+      return {
+        success: true,
+        transferredCount,
+        sessionIds: transferredSessions,
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("❌ Failed to transfer sessions:", error.message);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Transfer a specific session to a different user
+   * @param {string} sessionId - The session ID to transfer
+   * @param {string} newUserId - The new user ID
+   * @returns {Object} - Transfer result
+   */
+  async transferSessionToUser(sessionId, newUserId) {
+    const client = await this.pool.connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // Update the session's user_id
+      const result = await client.query(
+        `UPDATE conversation_sessions 
+         SET user_id = $1, updated_at = NOW(),
+             metadata = jsonb_set(metadata, '{anonymousUserId}', 'null'::jsonb, true)
+         WHERE session_id = $2
+         RETURNING *`,
+        [newUserId, sessionId]
+      );
+
+      if (result.rows.length === 0) {
+        throw new Error(`Session ${sessionId} not found`);
+      }
+
+      await client.query("COMMIT");
+
+      console.log(
+        `✅ Transferred session ${sessionId} to user ${newUserId}`
+      );
+
+      return {
+        success: true,
+        session: result.rows[0],
+      };
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("❌ Failed to transfer session:", error.message);
+      throw error;
     } finally {
       client.release();
     }

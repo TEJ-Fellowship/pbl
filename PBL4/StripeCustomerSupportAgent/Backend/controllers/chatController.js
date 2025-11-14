@@ -322,4 +322,43 @@ export const chatController = {
       });
     }
   },
+
+  /**
+   * Transfer a specific session to a different user
+   */
+  async transferSession(req, res) {
+    try {
+      const { sessionId, newUserId } = req.body;
+
+      if (!sessionId || !newUserId) {
+        return res.status(400).json({
+          success: false,
+          error: "Session ID and new user ID are required",
+        });
+      }
+
+      console.log(`🔄 Transferring session ${sessionId} to user ${newUserId}`);
+
+      const result = await memoryService.transferSessionToUser(
+        sessionId,
+        newUserId
+      );
+
+      res.json({
+        success: true,
+        data: {
+          sessionId: result.session.session_id,
+          userId: result.session.user_id,
+          message: "Session transferred successfully",
+        },
+      });
+    } catch (error) {
+      console.error("❌ Transfer session error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to transfer session",
+        message: error?.message || String(error) || "Unknown error",
+      });
+    }
+  },
 };

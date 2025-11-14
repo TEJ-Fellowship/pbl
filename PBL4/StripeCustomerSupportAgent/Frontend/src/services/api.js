@@ -45,12 +45,11 @@ class ApiService {
 
   /**
    * Send a message to the chat API
+   * @param {string} message - The message to send
+   * @param {string} sessionId - The session ID (optional)
+   * @param {string} userId - The user ID (required with authentication)
    */
-  async sendMessage(
-    message,
-    sessionId = null,
-    userId = DEFAULT_VALUES.USER_ID
-  ) {
+  async sendMessage(message, sessionId = null, userId = null) {
     return this.request(API_ENDPOINTS.CHAT, {
       method: "POST",
       body: JSON.stringify({
@@ -76,11 +75,10 @@ class ApiService {
 
   /**
    * Create a new chat session
+   * @param {string} userId - The user ID (required with authentication)
+   * @param {object} context - Session context
    */
-  async createSession(
-    userId = DEFAULT_VALUES.USER_ID,
-    context = DEFAULT_VALUES.SESSION_CONTEXT
-  ) {
+  async createSession(userId = null, context = DEFAULT_VALUES.SESSION_CONTEXT) {
     return this.request(API_ENDPOINTS.SESSION, {
       method: "POST",
       body: JSON.stringify({
@@ -134,12 +132,11 @@ class ApiService {
 
   /**
    * Send a message using the integrated chat system (full backend functionality)
+   * @param {string} message - The message to send
+   * @param {string} sessionId - The session ID
+   * @param {string} userId - The user ID (required with authentication)
    */
-  async sendIntegratedMessage(
-    message,
-    sessionId,
-    userId = DEFAULT_VALUES.USER_ID
-  ) {
+  async sendIntegratedMessage(message, sessionId, userId = null) {
     return this.request(API_ENDPOINTS.INTEGRATED_CHAT, {
       method: "POST",
       body: JSON.stringify({
@@ -175,12 +172,20 @@ class ApiService {
 
   /**
    * Get all conversation sessions for a user
+   * @param {string} userId - The user ID (required with authentication)
+   * @param {number} limit - Maximum number of sessions to return
+   * @param {number} offset - Offset for pagination
    */
-  async getAllSessions(
-    userId = DEFAULT_VALUES.USER_ID,
-    limit = 50,
-    offset = 0
-  ) {
+  async getAllSessions(userId = null, limit = 50, offset = 0) {
+    if (!userId) {
+      console.warn(
+        "⚠️ getAllSessions called without userId - returning empty array"
+      );
+      return {
+        success: true,
+        data: { sessions: [], userId: null, totalCount: 0 },
+      };
+    }
     return this.request(
       `${API_ENDPOINTS.SESSIONS}?userId=${userId}&limit=${limit}&offset=${offset}`
     );
@@ -191,6 +196,21 @@ class ApiService {
    */
   async getSessionDetails(sessionId) {
     return this.request(`${API_ENDPOINTS.SESSION_DETAILS}/${sessionId}`);
+  }
+
+  /**
+   * Transfer a session to a different user
+   * @param {string} sessionId - The session ID to transfer
+   * @param {string} newUserId - The new user ID
+   */
+  async transferSession(sessionId, newUserId) {
+    return this.request("/api/chat/transfer-session", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId,
+        newUserId,
+      }),
+    });
   }
 }
 
