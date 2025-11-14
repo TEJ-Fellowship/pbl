@@ -1,5 +1,5 @@
 const { DataTypes, Model } = require("sequelize");
-const { sequelize } = require("../util/db");
+const { sequelize } = require("../src/util/db");
 
 class ScoreSubmission extends Model {}
 
