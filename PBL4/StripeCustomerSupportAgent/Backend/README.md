@@ -958,54 +958,21 @@ node examples/mcpChatExample.js  # Start MCP-enhanced chat
 
 ## 🚀 Deployment
 
-### Production Setup
+For complete deployment instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
-#### 1. Environment Configuration
+### Quick Start
 
-```bash
-# Production environment variables
-NODE_ENV=production
-PORT=5000
-HOST=0.0.0.0
+1. **Create PostgreSQL database on Render**
+2. **Create Web Service and link database**
+3. **Set environment variables**
+4. **Run database setup**: `npm run setup:all` (via Render Shell)
+5. **Deploy and verify**
 
-# Database Configuration
-DB_HOST=your_postgres_host
-DB_PORT=5432
-DB_NAME=stripe_support_prod
-DB_USER=your_prod_username
-DB_PASSWORD=your_secure_password
+### Key Points
 
-# AI Configuration
-GEMINI_API_KEY=your_production_gemini_key
+- **Database**: Render PostgreSQL (automatically configured with `DATABASE_URL`)
+- **SSL**: Automatically enabled for Render databases
+- **Setup**: Run `npm run setup:all` after deployment
+- **Testing**: Use `npm run test:render-db` to verify connection
 
-# Vector Database
-PINECONE_API_KEY=your_production_pinecone_key
-PINECONE_INDEX_NAME=stripe-docs-prod
-
-# Security
-JWT_SECRET=your_secure_jwt_secret
-```
-
-#### 2. Database Setup
-
-```bash
-# Create production database
-createdb stripe_support_prod
-
-# Run migrations
-npm run migrate:postgres
-
-# Setup indexes for performance
-psql -d stripe_support_prod -f scripts/setup_database.sql
-```
-
-#### 3. Data Ingestion
-
-```bash
-# Scrape and ingest documentation
-npm run scrape
-npm run ingest
-
-# Verify data ingestion
-npm run test:postgres
-```
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed step-by-step instructions.

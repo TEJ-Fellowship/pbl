@@ -79,9 +79,8 @@ async function setupMemorySchema() {
   } catch (error) {
     console.error("❌ Failed to setup memory schema:", error.message);
     throw error;
-  } finally {
-    await pool.end();
   }
+  // Note: Don't close the pool here as it's shared across the application
 }
 
 // Run if called directly

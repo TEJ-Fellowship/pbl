@@ -7,7 +7,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
+    "start": "node index.js",
+    "start:dev": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
     "dev": "nodemon index.js",
     "scrape": "node scripts/scraper.js",
     "scrape:latest": "node tests/getLatestScraped.js",
@@ -33,7 +34,9 @@
     "test:improved-bm25": "node scripts/testImprovedBM25.js",
     "migrate:postgres": "node utils/migrate-to-postgres.js",
     "setup:memory": "node utils/setup_memory_schema.js",
-    "setup": "npm run scrape && npm run ingest && npm run setup:memory",
+    "setup:all": "node utils/setup_all_schemas.js",
+    "validate:setup": "node utils/validate_setup.js",
+    "setup": "npm run scrape && npm run ingest && npm run setup:all",
     "test": "npm run test:documents && npm run test:hybrid && npm run test:chat && npm run test:postgres && npm run test:memory && npm run test:gemini-reformulation && npm run test:mcp && npm run test:google-search && npm run test:status-checker && npm run test:ai-tool-selection"
   },
   "dependencies": {
