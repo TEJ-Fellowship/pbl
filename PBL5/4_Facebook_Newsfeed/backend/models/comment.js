@@ -1,11 +1,20 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const Post = sequelize.define('Post', {
+const Comment = sequelize.define('Comment', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+  },
+  post_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'posts',
+      key: 'id',
+    },
+    onDelete: 'CASCADE',
   },
   user_id: {
     type: DataTypes.INTEGER,
@@ -18,22 +27,10 @@ const Post = sequelize.define('Post', {
   },
   content: {
     type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  image_urls: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
-    allowNull: true,
-    defaultValue: [],
-  },
-  likes_count: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
     allowNull: false,
-  },
-  comments_count: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
   },
   created_at: {
     type: DataTypes.DATE,
@@ -46,21 +43,21 @@ const Post = sequelize.define('Post', {
     allowNull: false,
   },
 }, {
-  tableName: 'posts',
+  tableName: 'comments',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updatedAt',
   indexes: [
     {
-      fields: ['user_id', 'created_at'],
-      name: 'idx_user_posts',
+      fields: ['post_id', 'created_at'],
+      name: 'idx_comments_post',
     },
     {
-      fields: ['created_at'],
-      name: 'idx_posts_created_at',
+      fields: ['user_id'],
+      name: 'idx_comments_user',
     },
   ],
 });
 
-module.exports = Post;
+module.exports = Comment;
 
