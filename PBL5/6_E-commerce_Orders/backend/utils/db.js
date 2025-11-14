@@ -1,52 +1,91 @@
 const Sequelize = require("sequelize");
 const { DATABASE_URL1, DATABASE_URL2, DATABASE_URL3 } = require("./config");
 
-// Create three separate Sequelize instances for three PostgreSQL databases
-const sequelize1 = new Sequelize(DATABASE_URL1, {
+// Database connection options
+const dbOptions = {
   dialect: "postgres",
+  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  pool: {
+    max: 20,
+    min: 5,
+    acquire: 30000,
+    idle: 10000
+  },
   dialectOptions: {
     ssl: {
       require: true,
       rejectUnauthorized: false,
     },
   },
+};
+
+// PRIMARY database (Write source of truth)
+const sequelizePrimary = new Sequelize(DATABASE_URL1, dbOptions);
+
+// REPLICA 1 (Read-only)
+const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
+  ...dbOptions,
+  replication: false, // Single connection for read
 });
 
-const sequelize2 = new Sequelize(DATABASE_URL2, {
-  dialect: "postgres",
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
+// REPLICA 2 (Read-only)
+const sequelizeReplica2 = new Sequelize(DATABASE_URL3, {
+  ...dbOptions,
+  replication: false,
 });
 
-const sequelize3 = new Sequelize(DATABASE_URL3, {
-  dialect: "postgres",
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false,
-    },
-  },
-});
+// Round-robin counter for read replicas
+let replicaCounter = 0;
+const replicas = [sequelizeReplica1, sequelizeReplica2];
+
+/**
+ * Get read replica (round-robin)
+ */
+const getReadReplica = () => {
+  replicaCounter = (replicaCounter + 1) % replicas.length;
+  return replicas[replicaCounter];
+};
+
+/**
+ * Get primary database (for writes)
+ */
+const getPrimary = () => sequelizePrimary;
 
 const connectToDatabase = async () => {
   try {
     // Authenticate all three database connections
     await Promise.all([
-      sequelize1.authenticate(),
-      sequelize2.authenticate(),
-      sequelize3.authenticate(),
+      sequelizePrimary.authenticate(),
+      sequelizeReplica1.authenticate(),
+      sequelizeReplica2.authenticate(),
     ]);
-    console.log("✅ Connected to all three PostgreSQL databases");
+    console.log("✅ Connected to PRIMARY PostgreSQL database");
+    console.log("✅ Connected to REPLICA 1 PostgreSQL database");
+    console.log("✅ Connected to REPLICA 2 PostgreSQL database");
   } catch (err) {
-    console.log("⛔ Failed to connect to the databases:", err.message);
+    console.error("⛔ Failed to connect to the databases:", err.message);
     return process.exit(1);
   }
 
   return null;
 };
 
-module.exports = { connectToDatabase, sequelize1, sequelize2, sequelize3 };
+// Legacy exports for backward compatibility
+const sequelize1 = sequelizePrimary;
+const sequelize2 = sequelizeReplica1;
+const sequelize3 = sequelizeReplica2;
+
+module.exports = {
+  connectToDatabase,
+  // Primary (write)
+  sequelizePrimary,
+  getPrimary,
+  // Replicas (read)
+  sequelizeReplica1,
+  sequelizeReplica2,
+  getReadReplica,
+  // Legacy exports
+  sequelize1,
+  sequelize2,
+  sequelize3
+};
