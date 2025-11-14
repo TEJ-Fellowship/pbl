@@ -1,8 +1,16 @@
 const express = require('express');
+const { PORT } = require('./utils/config');
 const sequelize = require('./config/database');
+const app = express();
+
+const userRouter = require('./routes/userRoutes');
+const postRouter = require('./routes/postRoutes');
 const User = require('./models/user');
 
-const app = express();
+app.use(express.json());
+
+app.use('/api/users', userRouter);
+app.use('/api/posts', postRouter);
 
 // Sync database
 sequelize.sync({ alter: true }).then(() => {
@@ -12,7 +20,6 @@ sequelize.sync({ alter: true }).then(() => {
 });
 
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
