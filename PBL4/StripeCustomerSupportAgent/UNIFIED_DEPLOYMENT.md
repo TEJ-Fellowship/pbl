@@ -100,8 +100,16 @@ For production deployment, you can either:
 ### Build Command
 
 ```bash
-cd Frontend && npm install && npm run build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
+cd Frontend && npm install && npx vite build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
 ```
+
+**Alternative (if npx doesn't work):**
+
+```bash
+cd Frontend && npm install && npm run build && cd ../Backend && cp -r ../Frontend/dist dist && npm install
+```
+
+**Note:** If you get "vite: not found", try using `npx vite build` instead of `npm run build`, or ensure `node_modules/.bin` is in your PATH.
 
 ### Start Command
 
