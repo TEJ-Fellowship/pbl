@@ -1,0 +1,2 @@
+// Abstract conversation repository interface
+

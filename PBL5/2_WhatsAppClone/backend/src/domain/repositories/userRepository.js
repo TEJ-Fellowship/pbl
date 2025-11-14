@@ -1,0 +1,2 @@
+// Abstract user repository interface
+
