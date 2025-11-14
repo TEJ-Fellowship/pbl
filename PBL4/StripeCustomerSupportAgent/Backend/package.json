@@ -8,6 +8,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "build:frontend": "node scripts/copy-frontend-dist.js",
+    "build:all": "cd ../Frontend && npm run build && cd ../Backend && npm run build:frontend",
     "start:dev": "npm run scrape && npm run ingest && npm run setup:memory && npm run chat",
     "dev": "nodemon index.js",
     "scrape": "node scripts/scraper.js",

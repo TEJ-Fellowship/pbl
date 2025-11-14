@@ -27,6 +27,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+// CORS configuration
+// In production with same domain, CORS is less critical but kept for development
 app.use(
   cors({
     origin: [
@@ -44,32 +46,32 @@ app.use(express.urlencoded({ extended: true }));
 // Note: This application does not create any response.json files
 app.use(requestLogger);
 
-// Routes
+// API Routes (must come before static file serving)
 app.use("/api/auth", authRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/integrated-chat", integratedChatRoutes);
 
-// Root endpoint
-app.get("/", (req, res) => {
-  console.log("🏠 Root endpoint accessed");
-  res.json({
-    message: "Stripe Support API is running!",
-    version: "2.0.0",
-    endpoints: {
-      auth: "/api/auth",
-      health: "/api/health",
-      chat: "/api/chat",
-      integratedChat: "/api/integrated-chat",
-    },
-  });
+// Serve static files from dist folder (CSS, JS, images, etc.)
+// This serves assets like /assets/index.js, /vite.svg, etc.
+app.use(express.static(join(__dirname, "dist")));
+
+// Serve index.html for all non-API routes (SPA routing)
+// This handles client-side routing for React Router
+app.get("*", (req, res, next) => {
+  // Skip API routes - let them fall through to error handler if not found
+  if (req.path.startsWith("/api")) {
+    return next();
+  }
+  // Serve index.html for all other routes (SPA fallback)
+  res.sendFile(join(__dirname, "dist", "index.html"));
 });
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
-// 404 handler
-app.use("*", (req, res) => {
+// 404 handler for API routes only
+app.use("/api/*", (req, res) => {
   res.status(404).json({
     error: "Route not found",
     message: `Cannot ${req.method} ${req.originalUrl}`,

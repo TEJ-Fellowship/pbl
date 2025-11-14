@@ -1,6 +1,18 @@
 // API Configuration
+// If VITE_API_URL is empty string or not set, use relative paths (same domain)
+// Otherwise, use the provided URL (for development or separate frontend)
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  // Empty string means use relative paths (same domain)
+  if (envUrl === "" || envUrl === undefined) {
+    return ""; // Relative path - same domain
+  }
+  // Use provided URL (for development with separate frontend server)
+  return envUrl;
+};
+
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  BASE_URL: getBaseURL() || "http://localhost:5000",
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
