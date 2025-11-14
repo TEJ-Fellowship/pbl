@@ -15,6 +15,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import config from "./config/config.js";
 import setupAllSchemas from "./utils/setup_all_schemas.js";
+import AutoDataSetup from "./utils/autoDataSetup.js";
 
 // Load environment variables
 dotenv.config();
@@ -206,6 +207,18 @@ async function initializeConnections() {
     console.log("");
     console.log("🎉 Connection tests completed!");
     console.log("=".repeat(60));
+
+    // Auto-setup data (scraping and ingestion) in background
+    if (
+      process.env.NODE_ENV === "production" ||
+      process.env.AUTO_DATA_SETUP !== "false"
+    ) {
+      const autoDataSetup = new AutoDataSetup();
+      // Run in background (don't await)
+      autoDataSetup.runAutoSetup().catch((error) => {
+        console.error("⚠️  Auto data setup failed:", error.message);
+      });
+    }
   } catch (error) {
     console.error("❌ Connection initialization failed:", error);
   }
