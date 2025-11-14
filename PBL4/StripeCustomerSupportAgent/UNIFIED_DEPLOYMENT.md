@@ -99,17 +99,27 @@ For production deployment, you can either:
 
 ### Build Command
 
-```bash
-cd Frontend && npm install && npx vite build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
-```
+**Important:** `vite` is in `devDependencies`, so we need to ensure devDependencies are installed during build.
 
-**Alternative (if npx doesn't work):**
+**Recommended Build Command:**
 
 ```bash
-cd Frontend && npm install && npm run build && cd ../Backend && cp -r ../Frontend/dist dist && npm install
+cd Frontend && npm install --include=dev && npm run build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
 ```
 
-**Note:** If you get "vite: not found", try using `npx vite build` instead of `npm run build`, or ensure `node_modules/.bin` is in your PATH.
+**Alternative 1: Set NODE_ENV for frontend build**
+
+```bash
+cd Frontend && NODE_ENV=development npm install && npm run build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
+```
+
+**Alternative 2: Use npm ci with dev dependencies**
+
+```bash
+cd Frontend && npm ci --include=dev && npm run build && cd ../Backend && cp -r Frontend/dist Backend/dist && npm install
+```
+
+**Note:** The `--include=dev` flag ensures devDependencies (like `vite`) are installed even in production environments. This is required because Vite is needed for the build process.
 
 ### Start Command
 
