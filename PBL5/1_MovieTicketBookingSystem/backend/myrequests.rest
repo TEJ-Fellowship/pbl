@@ -1,0 +1,224 @@
+### Movie Ticket Booking System - Phase 2 Testing
+### Developer A: Movie & Showtime Management
+
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+@movie_id = 3aface9f-1350-41c3-a464-6b3cf208794b
+### ============================================
+### 1. HEALTH CHECK
+### ============================================
+
+GET {{baseUrl}}/health
+
+### ============================================
+### 2. GET /movies - List All Movies
+### ============================================
+
+### Get all movies (basic)
+GET {{apiUrl}}/movies
+
+### Get movies with pagination
+GET {{apiUrl}}/movies?limit=5&offset=0
+
+### Filter by genre
+GET {{apiUrl}}/movies?genre=Action
+
+### Filter by language
+GET {{apiUrl}}/movies?language=English
+
+### Search by title
+GET {{apiUrl}}/movies?search=Iris exploration
+
+### Combined filters
+GET {{apiUrl}}/movies?genre=Action&language=English&search=dark&limit=10
+
+### ============================================
+### 3. GET /movies/{id} - Get Movie Details
+### ============================================
+
+### Get movie by ID (replace {movie_id} with actual ID from step 2)
+GET {{apiUrl}}/movies/{{movie_id}}
+
+### Test with invalid UUID
+GET {{apiUrl}}/movies/invalid-uuid
+
+### Test with non-existent ID
+GET {{apiUrl}}/movies/00000000-0000-0000-0000-000000000000
+
+### ============================================
+### 4. GET /movies/{id}/showtimes - Get Showtimes for Movie
+### ============================================
+
+### Get all showtimes for a movie (replace {movie_id})
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes
+
+### Get showtimes for a specific date
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes?date=2024-12-15
+
+### Get showtimes filtered by theater
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes?theater_id={{theater_id}}
+
+### Combined filters (date + theater)
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes?date=2024-12-15&theater_id={{theater_id}}
+
+### Test with invalid movie ID
+GET {{apiUrl}}/movies/00000000-0000-0000-0000-000000000000/showtimes
+
+### ============================================
+### 5. POST /showtimes - Create Showtime
+### ============================================
+
+### Create a valid showtime (replace IDs with actual values)
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": 12.50
+}
+
+### Create showtime with total_seats specified
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T20:00:00Z",
+  "price": 15.00,
+  "total_seats": 50
+}
+
+### Test: Missing required fields
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}"
+}
+
+### Test: Invalid movie_id
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "00000000-0000-0000-0000-000000000000",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": 12.50
+}
+
+### Test: Invalid screen_id
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "00000000-0000-0000-0000-000000000000",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": 12.50
+}
+
+### Test: Past date (should fail)
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2020-01-01T18:00:00Z",
+  "price": 12.50
+}
+
+### Test: Negative price (should fail)
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": -10.00
+}
+
+### Test: Time conflict (create two showtimes at same screen, overlapping times)
+### First showtime
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": 12.50
+}
+
+### Second showtime (should conflict if same screen, overlapping time)
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T19:00:00Z",
+  "price": 12.50
+}
+
+### ============================================
+### HELPER: Get IDs for testing
+### ============================================
+
+### Get first movie ID (use this in {{movie_id}})
+GET {{apiUrl}}/movies?limit=1
+
+### Get first theater ID (you'll need to check theaters endpoint)
+GET {{apiUrl}}/theaters?limit=1
+
+### Get screens for a theater (to get screen_id)
+GET {{apiUrl}}/screens/theater/{{theater_id}}
+
+### ============================================
+### BONUS: Test Search Endpoint
+### ============================================
+
+### Search movies (alternative endpoint)
+GET {{apiUrl}}/movies/search?title=inception&genre=Action
+
+### ============================================
+### TESTING CHECKLIST
+### ============================================
+### 
+### ✅ GET /movies
+###   - Returns all movies
+###   - Pagination works (limit/offset)
+###   - Genre filter works
+###   - Language filter works
+###   - Search by title works
+###   - Combined filters work
+###
+### ✅ GET /movies/{id}
+###   - Returns movie details
+###   - Returns 404 for invalid ID
+###   - Returns 404 for non-existent ID
+###
+### ✅ GET /movies/{id}/showtimes
+###   - Returns showtimes for movie
+###   - Only future showtimes
+###   - Date filter works
+###   - Theater filter works
+###   - Returns 404 for invalid movie
+###
+### ✅ POST /showtimes
+###   - Creates showtime successfully
+###   - Validates required fields
+###   - Validates movie exists
+###   - Validates screen exists
+###   - Validates future date
+###   - Validates price >= 0
+###   - Detects time conflicts
+###   - Auto-fetches total_seats from screen
+###
+

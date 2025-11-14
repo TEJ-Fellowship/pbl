@@ -6,6 +6,7 @@ const moviesController = require("../controllers/moviesController");
 // Specific routes must come before parameterized routes to avoid conflicts
 router.get("/search", moviesController.searchMovies);
 router.get("/", moviesController.getAllMovies);
+router.get("/:id/showtimes", moviesController.getMovieShowtimes); // Must come before /:id
 router.get("/:id", moviesController.getMovieById);
 router.post("/", moviesController.createMovie);
 router.put("/:id", moviesController.updateMovie);
