@@ -14,6 +14,7 @@ import integratedChatRoutes from "./routes/integratedChat.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import config from "./config/config.js";
+import setupAllSchemas from "./utils/setup_all_schemas.js";
 
 // Load environment variables
 dotenv.config();
@@ -101,13 +102,51 @@ async function initializeConnections() {
     );
     console.log("");
 
-    // Test PostgreSQL connection
+    // Test PostgreSQL connection and auto-setup if needed
     console.log("🗄️ Testing PostgreSQL connection...");
     try {
       const pool = await import("./config/database.js");
       const client = await pool.default.connect();
-      await client.query("SELECT 1 as test");
+
+      // Check if tables exist
+      const tableCheck = await client.query(`
+        SELECT COUNT(*) as count 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name IN (
+          'raw_documents', 
+          'document_chunks', 
+          'conversation_sessions',
+          'conversation_messages',
+          'conversation_qa_pairs',
+          'conversation_summaries',
+          'memory_retrieval_cache'
+        )
+      `);
+
       client.release();
+
+      const tableCount = parseInt(tableCheck.rows[0].count);
+
+      if (tableCount < 7) {
+        console.log(
+          `   ⚠️  Only ${tableCount}/7 tables found. Setting up database schema...`
+        );
+        try {
+          await setupAllSchemas();
+          console.log("   ✅ Database schema setup completed!");
+        } catch (setupError) {
+          console.error("   ❌ Database setup failed:", setupError.message);
+          // Don't exit - let the app continue, tables might partially exist
+        }
+      } else {
+        console.log("   ✅ PostgreSQL: All tables exist");
+      }
+
+      // Test connection
+      const testClient = await pool.default.connect();
+      await testClient.query("SELECT 1 as test");
+      testClient.release();
       console.log("   ✅ PostgreSQL: Connected successfully");
     } catch (error) {
       console.log(`   ❌ PostgreSQL: Connection failed - ${error.message}`);
