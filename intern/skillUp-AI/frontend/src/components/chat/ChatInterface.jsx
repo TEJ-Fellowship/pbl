@@ -92,7 +92,7 @@ const ChatInterface = () => {
 
     localStorage.setItem("topic", JSON.stringify(topic));
     const currentRequest = userRequest.trim();
-    setUserRequest(""); // clear input immediately
+    setUserRequest(""); 
 
     // push user message into conversation
     setMessages((prev) => [...prev, { sender: "user", text: currentRequest }]);
