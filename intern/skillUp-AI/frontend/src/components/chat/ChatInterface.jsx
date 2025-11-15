@@ -258,7 +258,6 @@ const ChatInterface = () => {
           {/* Decorative overlay for textarea */}
           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-          {/* Send button positioned inside textarea at bottom right */}
           <button
             className="absolute bottom-2 right-4 bg-gradient-to-r from-cyan-500 via-violet-500 to-fuchsia-500 hover:from-cyan-600 hover:via-violet-600 hover:to-fuchsia-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-all duration-300 focus:ring-2 focus:ring-violet-400/50 shadow-lg transform hover:scale-105 group text-sm z-10"
             onClick={handleRequest}
