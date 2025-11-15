@@ -19,7 +19,7 @@ router.get("/chats/:userId", async (request, response, next) => {
 
     response.status(200).json({
       data: lastAnswer, 
-      chats: userChats, // full chat documents, not just IDs
+      chats: userChats,
     });
   } catch (error) {
     next(error);
