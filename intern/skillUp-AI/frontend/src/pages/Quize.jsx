@@ -27,7 +27,7 @@ const Quize = () => {
 
   useEffect(() => {
     fetchQuizData();
-  }, [user]);
+  }, []);
 
   const handleOptionSelect = (option) => {
     // Save the selected answer

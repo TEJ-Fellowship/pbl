@@ -61,44 +61,59 @@ router.get("/quize/:userId", async (request, response, next) => {
       .replace(/```\n?/g, "") // Remove ```
       .trim(); // Remove extra whitespace
 
+    let quize;
     try {
-      const quize = JSON.parse(cleanedResponse);
-
-      // Ensure always an array
-      if (!quize.questions || !Array.isArray(quize.questions)) {
-        throw new Error("Invalid quiz format: missing questions array");
-      }
-      // Validate each question
-      quize.questions.forEach((q, index) => {
-        if (
-          !q.question ||
-          !q.options ||
-          !Array.isArray(q.options) ||
-          !q.correctAnswer
-        ) {
-          throw new Error(`Invalid question format at index ${index}`);
-        }
-        if (q.options.length !== 4) {
-          throw new Error(`Question ${index + 1} must have exactly 4 options`);
-        }
-        if (!q.options.includes(q.correctAnswer)) {
-          throw new Error(
-            `Question ${index + 1} correct answer must be one of the options`
-          );
-        }
-      });
-     console.log(quize, "this is response from ai for quize");
-      response.status(200).json({ data: quize });
-      
+      quize = JSON.parse(cleanedResponse);
     } catch (err) {
       console.error("Failed to parse AI response:", err);
-      response.status(500).json({ 
-        error: "Failed to generate valid quiz", 
-        details: err.message 
+      return response.status(500).json({
+        error: "Failed to generate valid quiz",
+        details: err.message,
       });
     }
-  } catch (error) {
-    next(error);
+    // 6. Validate quiz structure
+    if (!quize.questions || !Array.isArray(quize.questions)) {
+      return response.status(500).json({
+        error: "Invalid quiz format: missing questions array",
+      });
+    }
+
+    // Validate each question
+    quize.questions.forEach((q, index) => {
+      if (
+        !q.question ||
+        !q.options ||
+        !Array.isArray(q.options) ||
+        !q.correctAnswer
+      ) {
+        return response.status(500).json({
+          error: `Invalid question format at index ${index}`,
+        });
+      }
+
+      if (q.options.length !== 4) {
+        return response.status(500).json({
+          error: `Question ${index + 1} must have exactly 4 options`,
+        });
+      }
+
+      if (!q.options.includes(q.correctAnswer)) {
+        return response.status(500).json({
+          error: `Question ${
+            index + 1
+          } correct answer must be one of the options`,
+        });
+      }
+    });
+
+    console.log(quize, "this is response from ai for quize");
+    return response.status(200).json({ data: quize });
+  } catch (err) {
+    console.error("Failed to parse AI response:", err);
+    return response.status(500).json({
+      error: "Failed to generate valid quiz",
+      details: err.message,
+    });
   }
 });
 
