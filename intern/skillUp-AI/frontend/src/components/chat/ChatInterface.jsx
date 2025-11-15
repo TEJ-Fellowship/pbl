@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import service from "../../services/service";
 import { Link } from "react-router-dom";
+import FormattedAIResponse from "../FormattedAIResponse"; // Import the new component
+
 
 const url = import.meta.env.VITE_AI_URL;
 
@@ -206,7 +208,7 @@ const ChatInterface = () => {
           {/* <div className="w-20 px-4 py-2 text-sm text-white font-semibold rounded-xl shadow-lg bg-gradient-to-r hover:scale-105 hover:shadow-xl active:scale-95 transform transition duration-300 ease-in-out">Quize</div> */}
         </div>
 
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
+        {/* <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
           {messages.map((msg, index) => (
             <div
               key={index}
@@ -223,12 +225,39 @@ const ChatInterface = () => {
               >
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
                 <p className="text-slate-200 relative z-10">{msg.text}</p>
+              <FormattedAIResponse text={msg.text} />
+              </div>
+            </div>
+          ))}
+          {isLoading && <LoadingAnimation />}
+        </div> */}
+
+ <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4 custom-scrollbar">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`p-4 rounded-xl max-w-4xl relative overflow-hidden ${
+                  msg.sender === "user"
+                    ? "bg-slate-700/50 backdrop-blur-sm border border-slate-600/50"
+                    : "bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-400/30"
+                }`}
+              >
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5"></div>
+                <div className="relative z-10">
+                  {msg.sender === "user" ? (
+                    <p className="text-slate-200">{msg.text}</p>
+                  ) : (
+                    <FormattedAIResponse text={msg.text} />
+                  )}
+                </div>
               </div>
             </div>
           ))}
           {isLoading && <LoadingAnimation />}
         </div>
-
         {/* Input box with send button inside textarea */}
         <div className="relative">
           <textarea
