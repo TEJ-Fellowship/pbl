@@ -29,7 +29,6 @@ const FormattedAIResponse = ({ text }) => {
     return text.split('\n').map((line, index) => {
       const trimmedLine = line.trim();
       
-      // Skip empty lines
       if (!trimmedLine) return null;
       
       if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
