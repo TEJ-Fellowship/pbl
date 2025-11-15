@@ -75,7 +75,6 @@ Remember: The entire response must strictly follow the JSON schema with both "su
     try {
       parsedAnswer = JSON.parse(cleanedResponse);
 
-      // Ensure always an array
       if (!Array.isArray(parsedAnswer)) {
         parsedAnswer = [parsedAnswer];
       }
