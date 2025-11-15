@@ -24,7 +24,6 @@ const FormattedAIResponse = ({ text }) => {
 
   const sections = parseResponse(text);
 
-  // Format text with line breaks and bullet points
   const formatText = (text) => {
     return text.split('\n').map((line, index) => {
       const trimmedLine = line.trim();
