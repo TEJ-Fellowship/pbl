@@ -3,7 +3,6 @@ import service from "../../services/service";
 import { Link } from "react-router-dom";
 import FormattedAIResponse from "../FormattedAIResponse"; // Import the new component
 
-
 const url = import.meta.env.VITE_AI_URL;
 
 const ChatInterface = () => {
