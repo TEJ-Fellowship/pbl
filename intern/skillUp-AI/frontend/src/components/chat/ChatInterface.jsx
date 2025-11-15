@@ -255,7 +255,6 @@ const ChatInterface = () => {
             disabled={isLoading}
           />
 
-          {/* Decorative overlay for textarea */}
           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
           <button
