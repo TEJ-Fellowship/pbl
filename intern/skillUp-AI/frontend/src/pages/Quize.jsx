@@ -237,7 +237,7 @@ const Quize = () => {
                   </div>
                 </div>
 
-                {/* Answer Review / overflow-hidden/ overflow-y-auto  */}
+                {/* Answer Review  */}
                 <div className="space-y-4 mb-1 overflow-y-auto custom-scrollbar max-h-96 pr-2">
                   <h3 className="text-xl font-semibold text-white mb-3 sticky top-0 bg-slate-900/50 backdrop-blur-sm py-2">
                     Answer Review:
@@ -305,6 +305,11 @@ const Quize = () => {
                       Back to Dashboard
                     </button>
                   </Link>
+                   {/* <Link to="/dashboard">
+                    <button className="px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 text-white font-semibold hover:shadow-lg hover:shadow-violet-400/50 transition-all transform hover:scale-105 active:scale-95">
+                      Statistics
+                    </button>
+                  </Link> */}
                 </div>
               </div>
             </div>
