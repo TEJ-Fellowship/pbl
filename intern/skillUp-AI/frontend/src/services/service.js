@@ -11,7 +11,6 @@ const getAll = () => {
     .get(url)
     .then((response) => response.data)
     .catch((error) => {
-      // return error info so component can handle
       return { error: error.response?.data || error.message };
     });
 };
