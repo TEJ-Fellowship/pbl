@@ -32,7 +32,6 @@ const FormattedAIResponse = ({ text }) => {
       // Skip empty lines
       if (!trimmedLine) return null;
       
-      // Check if line starts with a dash or bullet point
       if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
         return (
           <li key={index} className="ml-4 mb-2 text-slate-200">
