@@ -4,7 +4,7 @@ const { sequelize } = require("../util/db");
 
 router.post("/", async (req, res) => {
   const { username, email, password } = req.body;
-  const player = await Player.create({ username, email, password });
+  const player = await Player.create({ username, email });
   res.json(player);
 });
 

@@ -22,6 +22,7 @@ Player.init(
     level: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      defaultValue: 0,
     },
     total_score: {
       type: DataTypes.BIGINT,
