@@ -1,0 +1,150 @@
+### Movie Ticket Booking System - API Testing
+### Step-by-Step Testing Guide
+
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+
+### ============================================
+### VARIABLES - Fill these after running Step 0
+### ============================================
+@user_id = bade38fb-9e97-4f3b-ae6e-ce2b4d0b5a3b
+@movie_id = 8a0c9498-45f8-47c2-956b-141be9a27684
+@showtime_id = c32709a2-9e70-481b-9c4c-34f884d7ce47
+@seat_id1 = 10b0712b-696f-4b8d-975c-98337b018f34
+@seat_id2 = 2f8e45fc-3fc9-49e3-b836-ae4c190096c3
+@theater_id = 
+@screen_id = 
+@booking_id = bad062d7-bc7c-4c1c-bf88-b90d55c10eb6
+
+### ============================================
+### STEP 0: SETUP - Get IDs for Testing
+### Run these in order, copy IDs to variables above
+### ============================================
+
+### 1. Health Check
+GET {{baseUrl}}/health
+
+### 2. Create a user (copy "id" from response → paste in @user_id above)
+POST {{apiUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "testuser@example.com"
+}
+
+### 3. Get existing users (alternative - copy any "id" → paste in @user_id)
+GET {{apiUrl}}/users
+
+### 4. Get a showtime (copy "id" from response → paste in @showtime_id above)
+GET {{apiUrl}}/showtimes?limit=1
+
+### 5. Get seats for showtime (copy "id" of available seats → paste in @seat_id1, @seat_id2)
+### Note: Use showtime_id from step 4, or fill @showtime_id variable first
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats 
+
+### ============================================
+### PHASE 2: Movie & Showtime Management
+### ============================================
+
+### GET /movies - List all movies
+GET {{apiUrl}}/movies
+
+### GET /movies - With filters
+GET {{apiUrl}}/movies?genre=Action&language=English&limit=10
+
+### GET /movies/{id} - Get movie details
+GET {{apiUrl}}/movies/{{movie_id}}
+
+### GET /movies/{id}/showtimes - Get showtimes for movie
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes
+
+### GET /showtimes/{id}/seats - Get available seats
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+
+### POST /showtimes - Create showtime
+POST {{apiUrl}}/showtimes
+Content-Type: application/json
+
+{
+  "movie_id": "{{movie_id}}",
+  "screen_id": "{{screen_id}}",
+  "show_time": "2024-12-20T18:00:00Z",
+  "price": 12.50
+}
+
+### ============================================
+### PHASE 3: Booking Endpoints (Sequential Testing)
+### ============================================
+### Make sure @user_id, @showtime_id, @seat_id1, @seat_id2 are filled from Step 0
+
+### STEP 1: Reserve seats (5-minute hold)
+POST {{apiUrl}}/bookings/reserve
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
+}
+
+### STEP 2: Create booking (copy "id" from response → paste in @booking_id)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
+}
+
+### STEP 3: Get booking details (use booking_id from step 2)
+GET {{apiUrl}}/bookings/{{booking_id}}
+
+### STEP 4: Get all bookings for user
+GET {{apiUrl}}/bookings/user/{{user_id}}
+
+### STEP 5: Get all bookings
+GET {{apiUrl}}/bookings
+
+### ============================================
+### ERROR TESTING (Optional)
+### ============================================
+
+### Test: Missing fields
+POST {{apiUrl}}/bookings/reserve
+Content-Type: application/json
+
+{
+  "showtime_id": "{{showtime_id}}"
+}
+
+### Test: Invalid user
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Test: Empty seat array
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": []
+}
+
+### Test: Invalid showtime
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "00000000-0000-0000-0000-000000000000",
+  "seat_ids": ["{{seat_id1}}"]
+}

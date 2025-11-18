@@ -11,12 +11,12 @@ const sequelize = new Sequelize(DATABASE_URL, {
     },
   },
   logging: false,
-  // pool: {
-  //   max: 10, // Maximum number of connections in pool
-  //   min: 0, // Minimum number of connections in pool
-  //   acquire: 30000, // Maximum time (ms) to wait for connection
-  //   idle: 10000, // Maximum time (ms) a connection can be idle
-  // },
+  pool: {
+    max: 10, // Maximum number of connections in pool
+    min: 0, // Minimum number of connections in pool
+    acquire: 30000, // Maximum time (ms) to wait for connection
+    idle: 10000, // Maximum time (ms) a connection can be idle
+  },
 });
 
 const connectToDatabase = async () => {
