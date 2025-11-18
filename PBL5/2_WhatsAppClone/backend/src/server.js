@@ -7,6 +7,9 @@ import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 // Entry point (HTTP + WS + Kafka consumers)
 import { connectToDatabase } from "./config/postgres.js";
 
+import express from "express";
+import { createServer } from "http";
+
 // Initialize database connection
 const startServer = async () => {
   try {
@@ -24,11 +27,12 @@ const startServer = async () => {
 
     app.use("/api/conversation", messageRoutes);
 
+    httpServer.listen(3000, () => console.log("Node server running...."));
+
     // Connect to PostgreSQL database
     await connectToDatabase();
     console.log("Database initialized successfully");
 
-    // TODO: Initialize Express server
     // TODO: Initialize WebSocket server
     // TODO: Initialize Kafka consumers
 
