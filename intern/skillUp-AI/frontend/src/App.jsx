@@ -32,7 +32,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/quize" element={<Quize />} />
+          <Route path="/quiz" element={<Quize />} />
 
         </Routes>
       </Router>
