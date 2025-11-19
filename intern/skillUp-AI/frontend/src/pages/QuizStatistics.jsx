@@ -11,6 +11,8 @@ const QuizStatistics = () => {
   const fetchQuizStats = async () => {
     setLoading(true);
     try {
+      console.log(user, "this is user in quizStat to check");
+      
       const result = await service.getQuizStats(user.id);
       console.log(result.data, "quiz statistics");
       setStats(result.data);
