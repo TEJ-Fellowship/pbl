@@ -8,19 +8,6 @@ const quizSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-
-  title: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-
-  topic: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-
   // Array of questions
   questions: [
     {
@@ -33,7 +20,7 @@ const quizSchema = new mongoose.Schema({
         required: true,
       },
       correct: {
-        type: Number, // index of correct option (0–3)
+        type: String,
         required: true,
       },
     },
