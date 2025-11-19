@@ -99,13 +99,47 @@ Content-Type: application/json
 }
 
 ### STEP 3: Get booking details (use booking_id from step 2)
+### NEW: Enhanced booking details with receipt format
 GET {{apiUrl}}/bookings/{{booking_id}}
 
 ### STEP 4: Get all bookings for user
 GET {{apiUrl}}/bookings/user/{{user_id}}
 
+### STEP 4a: Enhanced booking history with filters
+### Filter by status
+GET {{apiUrl}}/bookings/user/{{user_id}}?status=pending
+
+### Filter by date range
+GET {{apiUrl}}/bookings/user/{{user_id}}?startDate=2024-01-01&endDate=2024-12-31
+
+### Filter by status AND date range
+GET {{apiUrl}}/bookings/user/{{user_id}}?status=confirmed&startDate=2024-11-01&endDate=2024-11-30
+
 ### STEP 5: Get all bookings
 GET {{apiUrl}}/bookings
+
+### ============================================
+### PHASE 4: Enhanced Booking Management (NEW)
+### ============================================
+### Make sure @booking_id is filled from STEP 2 above
+
+### Enhanced Cancellation with Rules
+### Note: Must cancel at least 2 hours before showtime
+PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
+Content-Type: application/json
+
+{
+  "reason": "Change of plans"
+}
+
+### Test cancellation rules - Try cancelling already cancelled booking
+### (Should fail with 400 error)
+PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
+Content-Type: application/json
+
+{
+  "reason": "Test duplicate cancellation"
+}
 
 ### ============================================
 ### ERROR TESTING (Optional)

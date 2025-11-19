@@ -1,9 +1,26 @@
 const { Movie, Showtime, Screen, Theater } = require("../models");
 const { Op } = require("sequelize");
+const redis = require("../utils/redis");
 
 const getAllMovies = async (req, res, next) => {
   try {
     const { genre, language, search, limit, offset } = req.query;
+
+    // Build cache key based on query parameters
+    const cacheKey = `movies:list:${genre || "all"}:${language || "all"}:${
+      search || "all"
+    }:${limit || "all"}:${offset || "all"}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      // If Redis fails, continue to database query
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
 
     // Build where clause for filtering
     const where = {};
@@ -33,12 +50,22 @@ const getAllMovies = async (req, res, next) => {
     const movies = await Movie.findAll(queryOptions);
     const total = await Movie.count({ where });
 
-    res.json({
+    const response = {
       movies,
       total,
       limit: limit ? parseInt(limit, 10) : null,
       offset: offset ? parseInt(offset, 10) : null,
-    });
+    };
+
+    // Cache the result for 5 minutes (300 seconds)
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), { EX: 300 });
+    } catch (redisError) {
+      // If caching fails, still return response
+      console.warn("Failed to cache movies:", redisError.message);
+    }
+
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -47,10 +74,30 @@ const getAllMovies = async (req, res, next) => {
 const getMovieById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const cacheKey = `movie:${id}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     const movie = await Movie.findByPk(id);
     if (!movie) {
       return res.status(404).json({ error: "Movie not found" });
     }
+
+    // Cache the result for 10 minutes (600 seconds)
+    try {
+      await redis.set(cacheKey, JSON.stringify(movie), { EX: 600 });
+    } catch (redisError) {
+      console.warn("Failed to cache movie:", redisError.message);
+    }
+
     res.json(movie);
   } catch (error) {
     next(error);
@@ -79,6 +126,17 @@ const createMovie = async (req, res, next) => {
       poster_url,
       release_date,
     });
+
+    // Invalidate movies list cache (new movie added)
+    try {
+      const keys = await redis.keys("movies:list:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.status(201).json(movie);
   } catch (error) {
     next(error);
@@ -115,6 +173,17 @@ const updateMovie = async (req, res, next) => {
       release_date,
     });
 
+    // Invalidate cache for this movie and movies list
+    try {
+      await redis.del(`movie:${id}`);
+      const keys = await redis.keys("movies:list:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.json(movie);
   } catch (error) {
     next(error);
@@ -129,6 +198,18 @@ const deleteMovie = async (req, res, next) => {
       return res.status(404).json({ error: "Movie not found" });
     }
     await movie.destroy();
+
+    // Invalidate cache for this movie and movies list
+    try {
+      await redis.del(`movie:${id}`);
+      const keys = await redis.keys("movies:list:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.status(204).send();
   } catch (error) {
     next(error);
