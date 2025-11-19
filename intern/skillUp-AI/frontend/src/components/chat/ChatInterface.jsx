@@ -199,10 +199,10 @@ const ChatInterface = () => {
             </div>
           </div>
            <Link 
-                to="/quize" 
+                to="/quiz" 
                 className="w-20 px-4 py-2 text-sm text-white font-semibold rounded-xl shadow-lg bg-gradient-to-r hover:scale-105 hover:shadow-xl active:scale-95 transform transition duration-300 ease-in-out"
               >
-                Quize
+                Quiz
               </Link>
         </div>
 
