@@ -4,8 +4,9 @@ const {handlePost,handleLike,handleComment} = require("../controllers/postContro
 
 
 router.post("/", handlePost)
-router("/:id/like", handleLike)
-router("/:id/comment", handleComment)
+router.post("/:id/like", handleLike)
+router.post("/:id/comment", handleComment)
+
 
 
 module.exports = router
