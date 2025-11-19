@@ -1,11 +1,12 @@
 const { Sequelize } = require('sequelize');
+const { DATABASE_URL, NODE_ENV } = require('../utils/config');
 require('dotenv').config();
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+const sequelize = new Sequelize(DATABASE_URL, {
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: NODE_ENV === 'development' ? console.log : false,
     dialectOptions: {
-        ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('render.com') ? {
+        ssl: DATABASE_URL && DATABASE_URL.includes('render.com') ? {
             require: true,
             rejectUnauthorized: false
         } : false
