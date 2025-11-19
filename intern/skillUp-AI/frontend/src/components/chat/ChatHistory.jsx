@@ -6,7 +6,7 @@ import service from "../../services/service";
 const ChatHistory = () => {
   const navigate = useNavigate();
 
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { setIsAuthenticated} = useContext(AuthContext);
   const [user, setUser] = useState({});
   const [allChatsSummary, setAllChatsSummary] = useState([]);
 

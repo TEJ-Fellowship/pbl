@@ -29,7 +29,9 @@ router.get("/chats/:userId", async (request, response, next) => {
 router.get("/quiz/:userId", async (request, response, next) => {
   const userId = request.params.userId;
   try {
-    const userChat = await Chat.find({ user: userId }).sort({ _id: 1 });
+    const userChat = await Chat.find({ user: userId })
+  .sort({ _id: -1 })   // latest first
+  .limit(5);           // only last 5
     const chatText = userChat.map((c) => c.answer).join("\n");
     console.log(chatText, " this is all chats of user");
 

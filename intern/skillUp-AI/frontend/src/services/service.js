@@ -57,4 +57,28 @@ const quizeGet = async (userId) => {
     return { error: error.response?.data?.message || error?.message };
   }
 };
-export default { getAll, getAllchats, create, validateToken, quizeGet };
+
+const saveQuizAttempt = async (userId, questions, score) => {
+  try {
+    const response = await axios.post('http://localhost:3001/api/quiz', {
+      userId,
+      questions, 
+      score
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error saving quiz:', error); 
+    return { error: error.response?.data?.message || error?.message };
+  }
+};
+const getQuizStats = async (userId)=>{
+  try{
+    const stats = await axios.get(`http://localhost:3001/api/quiz/${userId}`);
+    return stats;
+  }catch(error){
+    console.error('Error saving quiz:', error); 
+    return { error: error.response?.data?.message || error?.message };
+  }
+
+}
+export default { getAll, getAllchats, create, validateToken, quizeGet, saveQuizAttempt, getQuizStats };

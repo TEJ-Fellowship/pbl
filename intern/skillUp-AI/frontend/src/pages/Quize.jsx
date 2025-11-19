@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import arrowback from "../../assets/arrow_back.png";
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import service from "../services/service";
@@ -11,6 +10,7 @@ const Quize = () => {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [savingScore, setSavingScore] = useState(false);
 
   const fetchQuizData = async () => {
     setLoading(true);
@@ -29,6 +29,38 @@ const Quize = () => {
     fetchQuizData();
   }, []);
 
+
+const calculateScore = (answers) => {
+  if (!answers || !quizData?.questions) return 0;
+  let correct = 0;
+  quizData.questions.forEach((q, index) => {
+    if (answers[index] === q.correctAnswer) {
+      correct++;
+    }
+  });
+  return correct;
+};
+
+const saveQuizAttempt = async (score) => {
+    setSavingScore(true);
+    try {
+       const transformedQuestions = quizData.questions.map((q) => ({
+        question: q.question,
+        options: q.options,
+        correct: q.correctAnswer, // Already the index
+      }));
+
+      await service.saveQuizAttempt(user.id, transformedQuestions, score);
+      
+      console.log("Quiz attempt saved successfully");
+    } catch (error) {
+      console.error("Error saving quiz attempt:", error);
+      // You might want to show an error message to the user
+    } finally {
+      setSavingScore(false);
+    }
+  };
+  
   const handleOptionSelect = (option) => {
     // Save the selected answer
     const newAnswers = [...selectedAnswers];
@@ -40,21 +72,14 @@ const Quize = () => {
       if (currentQuestion < quizData.questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
-        // Last question, show results
+         // Last question, calculate score and save to database
+        const finalScore = calculateScore(newAnswers);
+        saveQuizAttempt(finalScore);
         setShowResults(true);
       }
     }, 300);
   };
 
-  const calculateScore = () => {
-    let correct = 0;
-    quizData.questions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correctAnswer) {
-        correct++;
-      }
-    });
-    return correct;
-  };
 
   const resetQuiz = async () => {
     // Reset all states
@@ -101,13 +126,6 @@ const Quize = () => {
 
       <div className="relative z-10 flex gap-x-7 p-3 h-screen overflow-hidden">
         <div className="bg-slate-800/80 w-full backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden flex flex-col">
-          <Link to="/dashboard" className="relative z-20 inline-block w-fit">
-            <img
-              alt="arrowback"
-              src={arrowback}
-              className="mt-[2px] ml-[2px] hover:opacity-80 transition-opacity"
-            />
-          </Link>
 
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400"></div>
 
@@ -191,7 +209,11 @@ const Quize = () => {
                 <h2 className="text-2xl font-bold text-white mb-3 text-center">
                   Quiz Complete! 🎉
                 </h2>
-
+                 {savingScore && (
+                  <div className="text-center mb-2">
+                    <span className="text-violet-400 text-sm">Saving your score...</span>
+                  </div>
+                )}
                 {/* Score Display */}
 
                 <div className="bg-gradient-to-r from-cyan-400/20 via-violet-400/20 to-fuchsia-400/20 rounded-xl p-2 mb-2 border border-violet-400/30">
@@ -199,11 +221,12 @@ const Quize = () => {
                     {/* Score Display */}
                     <div className="flex items-center gap-2">
                       <p className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent whitespace-nowrap">
-                        {calculateScore()}/{quizData.questions.length}
+                        {calculateScore(selectedAnswers)}/{quizData.questions.length}
+
                       </p>
                       <p className="text-xl text-slate-300 font-medium whitespace-nowrap">
                         {Math.round(
-                          (calculateScore() / quizData.questions.length) * 100
+                          (calculateScore(selectedAnswers) / quizData.questions.length) * 100
                         )}
                         % Score
                       </p>
@@ -211,24 +234,24 @@ const Quize = () => {
 
                     {/* Message Display */}
                     <div>
-                      {calculateScore() === quizData.questions.length && (
+                      {calculateScore(selectedAnswers) === quizData.questions.length && (
                         <p className="text-green-400 text-lg font-semibold whitespace-nowrap">
                           Perfect Score! 🌟
                         </p>
                       )}
-                      {calculateScore() >= quizData.questions.length * 0.8 &&
-                        calculateScore() < quizData.questions.length && (
+                      {calculateScore(selectedAnswers) >= quizData.questions.length * 0.8 &&
+                        calculateScore(selectedAnswers) < quizData.questions.length && (
                           <p className="text-blue-400 text-lg font-semibold whitespace-nowrap">
                             Great Job! 👏
                           </p>
                         )}
-                      {calculateScore() >= quizData.questions.length * 0.6 &&
-                        calculateScore() < quizData.questions.length * 0.8 && (
+                      {calculateScore(selectedAnswers) >= quizData.questions.length * 0.6 &&
+                        calculateScore(selectedAnswers) < quizData.questions.length * 0.8 && (
                           <p className="text-yellow-400 text-lg font-semibold whitespace-nowrap">
                             Good Effort! 💪
                           </p>
                         )}
-                      {calculateScore() < quizData.questions.length * 0.6 && (
+                      {calculateScore(selectedAnswers) < quizData.questions.length * 0.6 && (
                         <p className="text-orange-400 text-lg font-semibold whitespace-nowrap">
                           Keep Practicing! 📚
                         </p>
@@ -305,11 +328,11 @@ const Quize = () => {
                       Back to Dashboard
                     </button>
                   </Link>
-                   {/* <Link to="/dashboard">
+                   <Link to="/stats">
                     <button className="px-8 py-3 rounded-lg bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 text-white font-semibold hover:shadow-lg hover:shadow-violet-400/50 transition-all transform hover:scale-105 active:scale-95">
                       Statistics
                     </button>
-                  </Link> */}
+                  </Link>
                 </div>
               </div>
             </div>
