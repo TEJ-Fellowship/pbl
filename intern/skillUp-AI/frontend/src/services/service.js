@@ -71,4 +71,14 @@ const saveQuizAttempt = async (userId, questions, score) => {
     return { error: error.response?.data?.message || error?.message };
   }
 };
-export default { getAll, getAllchats, create, validateToken, quizeGet, saveQuizAttempt };
+const getQuizStats = async (userId)=>{
+  try{
+    const stats = await axios.get(`http://localhost:3001/api/quiz/${userId}`);
+    return stats;
+  }catch(error){
+    console.error('Error saving quiz:', error); // Added better error logging
+    return { error: error.response?.data?.message || error?.message };
+  }
+
+}
+export default { getAll, getAllchats, create, validateToken, quizeGet, saveQuizAttempt, getQuizStats };
