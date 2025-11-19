@@ -1,27 +1,29 @@
-const express = require("express");
+// index.js
+const express = require('express');
+const { initProducer, sendScoreUpdate } = require('./kafka/producer');
+const { initConsumer } = require('./kafka/consumer');
+
 const app = express();
-
-const { PORT } = require("./util/config");
-const { connectToDatabase } = require("./util/db.js");
-
-// Import controllers
-const leaderboardsRouter = require("./controllers/leaderboards");
-const playersRouter = require("./controllers/players");
-const scoresRouter = require("./controllers/scores");
-const gameModesRouter = require("./controllers/gameModes");
-// Middleware
 app.use(express.json());
 
-// Register routes
-app.use("/api/leaderboard", leaderboardsRouter);
-app.use("/api/players", playersRouter);
-app.use("/api/scores", scoresRouter);
-app.use("/api/gameModes", gameModesRouter);
-const start = async () => {
-  await connectToDatabase();
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-};
+// Simple HTTP endpoint to publish score updates
+app.post('/score', async (req, res) => {
+  try {
+    const { matchId, playerId, score } = req.body;
+    await sendScoreUpdate({ matchId, playerId, score });
+    res.status(200).json({ status: 'ok' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to send score update' });
+  }
+});
 
-start();
+const PORT = process.env.PORT || 3000;
+
+(async () => {
+  await initProducer();
+  await initConsumer(); // just logs messages for now
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+})();
