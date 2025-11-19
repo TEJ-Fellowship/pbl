@@ -2,14 +2,18 @@ const express = require("express");
 const router = express.Router();
 const bookingsController = require("../controllers/bookingsController");
 
-// Booking routes
-// Specific routes must come before parameterized routes to avoid conflicts
+// Route ordering: Specific routes BEFORE parameterized routes
+
+// Collection routes (no parameters)
 router.get("/", bookingsController.getAllBookings);
-router.get("/user/:userId", bookingsController.getBookingsByUser);
 router.post("/", bookingsController.createBooking);
-router.post("/reserve", bookingsController.reserveSeats);
+
+// Nested resource routes (specific patterns)
+router.get("/user/:userId", bookingsController.getBookingsByUser);
 router.post("/confirm/:id", bookingsController.confirmBooking);
-router.put("/:id/cancel", bookingsController.cancelBooking); // Enhanced cancellation with rules
+router.put("/:id/cancel", bookingsController.cancelBooking);
+
+// Resource routes (parameterized - must be last)
 router.get("/:id", bookingsController.getBookingById);
 router.put("/:id", bookingsController.updateBooking);
 router.delete("/:id", bookingsController.cancelBooking); // Keep for backward compatibility

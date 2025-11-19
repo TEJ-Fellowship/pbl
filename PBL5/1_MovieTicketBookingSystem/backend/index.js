@@ -1,12 +1,17 @@
 const express = require("express");
-// const cors = require("cors");
+const cors = require("cors");
 const app = express();
 
 const { PORT } = require("./utils/config");
 const { connectToDatabase } = require("./utils/db.js");
 
 // Middleware
-// app.use(cors());
+app.use(
+  cors({
+    origin: process.env.Frontend_Url || "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Routes
@@ -79,9 +84,9 @@ app.get("/", (req, res) => {
           "GET /user/:userId",
           "GET /:id",
           "POST /",
-          "POST /reserve",
           "POST /confirm/:id",
           "PUT /:id",
+          "PUT /:id/cancel",
           "DELETE /:id",
         ],
       },

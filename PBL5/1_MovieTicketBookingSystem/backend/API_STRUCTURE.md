@@ -87,26 +87,15 @@ GET /api/movies/search?title=avengers&genre=Action
 
 ### 5. Bookings API (`/api/bookings`)
 
-| Method | Endpoint                     | Description               | Status Codes  |
-| ------ | ---------------------------- | ------------------------- | ------------- |
-| GET    | `/api/bookings`              | Get all bookings          | 200           |
-| GET    | `/api/bookings/user/:userId` | Get bookings by user      | 200           |
-| GET    | `/api/bookings/:id`          | Get booking by ID         | 200, 404      |
-| POST   | `/api/bookings`              | Create new booking        | 201, 400, 404 |
-| POST   | `/api/bookings/reserve`      | Reserve seats temporarily | 201, 409      |
-| POST   | `/api/bookings/confirm/:id`  | Confirm booking           | 200, 404      |
-| PUT    | `/api/bookings/:id`          | Update booking status     | 200, 404      |
-| DELETE | `/api/bookings/:id`          | Cancel booking            | 204, 404      |
-
-**Reserve Seats Request Body:**
-
-```json
-{
-  "showtime_id": "uuid",
-  "seat_ids": ["uuid1", "uuid2"],
-  "user_id": "uuid"
-}
-```
+| Method | Endpoint                     | Description           | Status Codes  |
+| ------ | ---------------------------- | --------------------- | ------------- |
+| GET    | `/api/bookings`              | Get all bookings      | 200           |
+| GET    | `/api/bookings/user/:userId` | Get bookings by user  | 200           |
+| GET    | `/api/bookings/:id`          | Get booking by ID     | 200, 404      |
+| POST   | `/api/bookings`              | Create new booking    | 201, 400, 404 |
+| POST   | `/api/bookings/confirm/:id`  | Confirm booking       | 200, 404      |
+| PUT    | `/api/bookings/:id`          | Update booking status | 200, 404      |
+| DELETE | `/api/bookings/:id`          | Cancel booking        | 204, 404      |
 
 **Create Booking Request Body:**
 
@@ -250,7 +239,7 @@ router.get("/search", controller.search); // Never reached!
 
 All routes follow this pattern to avoid conflicts:
 
-1. **Specific routes first** (e.g., `/search`, `/reserve`, `/process`)
+1. **Specific routes first** (e.g., `/search`, `/process`)
 2. **Resource-specific routes** (e.g., `/user/:userId`, `/movie/:movieId`)
 3. **List routes** (e.g., `GET /`)
 4. **Parameterized routes last** (e.g., `GET /:id`)
