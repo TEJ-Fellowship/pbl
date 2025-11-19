@@ -11,6 +11,7 @@ const Quize = () => {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [savingScore, setSavingScore] = useState(false);
 
   const fetchQuizData = async () => {
     setLoading(true);
@@ -29,6 +30,39 @@ const Quize = () => {
     fetchQuizData();
   }, []);
 
+   const calculateScore = () => {
+    if (!selectedAnswers.length || !quizData?.questions) return 0; // ✅ Safety check
+    
+    let correct = 0;
+    quizData.questions.forEach((q, index) => {
+      if (selectedAnswers[index] === q.correctAnswer) {
+        correct++;
+      }
+    });
+    return correct;
+  };
+
+
+const saveQuizAttempt = async (score) => {
+    setSavingScore(true);
+    try {
+       const transformedQuestions = quizData.questions.map((q) => ({
+        question: q.question,
+        options: q.options,
+        correct: q.correctAnswer, // Already the index
+      }));
+
+      await service.saveQuizAttempt(user.id, transformedQuestions, score);
+      
+      console.log("Quiz attempt saved successfully");
+    } catch (error) {
+      console.error("Error saving quiz attempt:", error);
+      // You might want to show an error message to the user
+    } finally {
+      setSavingScore(false);
+    }
+  };
+  
   const handleOptionSelect = (option) => {
     // Save the selected answer
     const newAnswers = [...selectedAnswers];
@@ -40,21 +74,14 @@ const Quize = () => {
       if (currentQuestion < quizData.questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
-        // Last question, show results
+         // Last question, calculate score and save to database
+        const finalScore = calculateScore(newAnswers);
+        saveQuizAttempt(finalScore);
         setShowResults(true);
       }
     }, 300);
   };
 
-  const calculateScore = () => {
-    let correct = 0;
-    quizData.questions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correctAnswer) {
-        correct++;
-      }
-    });
-    return correct;
-  };
 
   const resetQuiz = async () => {
     // Reset all states
@@ -191,7 +218,11 @@ const Quize = () => {
                 <h2 className="text-2xl font-bold text-white mb-3 text-center">
                   Quiz Complete! 🎉
                 </h2>
-
+                 {savingScore && (
+                  <div className="text-center mb-2">
+                    <span className="text-violet-400 text-sm">Saving your score...</span>
+                  </div>
+                )}
                 {/* Score Display */}
 
                 <div className="bg-gradient-to-r from-cyan-400/20 via-violet-400/20 to-fuchsia-400/20 rounded-xl p-2 mb-2 border border-violet-400/30">
