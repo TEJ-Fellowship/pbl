@@ -6,6 +6,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+
 const registerURL = import.meta.env.VITE_REGISTER_URL;
 
 const RegisterForm = () => {
@@ -13,6 +15,8 @@ const RegisterForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -142,10 +146,22 @@ const RegisterForm = () => {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
                   className="w-full px-4 py-2.5 bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50 transition-all duration-300 placeholder-slate-400 text-white hover:bg-slate-700/70 hover:border-slate-500/50"
                 />
+                 <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-white"
+                >
+                  {/* {showPassword ? "🙈" : "👁️"} */}
+                  {showPassword ? (
+        <HiOutlineEyeOff size={22} />
+      ) : (
+        <HiOutlineEye size={22} />
+      )}
+                </button>
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
             </div>
