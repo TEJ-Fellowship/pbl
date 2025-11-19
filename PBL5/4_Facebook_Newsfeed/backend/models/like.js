@@ -40,6 +40,24 @@ const Like = sequelize.define('Like', {
       name: 'idx_likes_user',
     },
   ],
+  hooks: {
+    // After a like is created, increment likes_count on the post
+    afterCreate: async (like, options) => {
+      const Post = require('./Post');
+      await Post.increment('likes_count', {
+        where: { id: like.post_id },
+        transaction: options.transaction
+      });
+    },
+    // After a like is deleted, decrement likes_count on the post
+    afterDestroy: async (like, options) => {
+      const Post = require('./Post');
+      await Post.decrement('likes_count', {
+        where: { id: like.post_id },
+        transaction: options.transaction
+      });
+    }
+  }
 });
 
 module.exports = Like;

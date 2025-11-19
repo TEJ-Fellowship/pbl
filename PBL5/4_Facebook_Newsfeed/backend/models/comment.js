@@ -57,6 +57,24 @@ const Comment = sequelize.define('Comment', {
       name: 'idx_comments_user',
     },
   ],
+  hooks: {
+    // After a comment is created, increment comments_count on the post
+    afterCreate: async (comment, options) => {
+      const Post = require('./Post');
+      await Post.increment('comments_count', {
+        where: { id: comment.post_id },
+        transaction: options.transaction
+      });
+    },
+    // After a comment is deleted, decrement comments_count on the post
+    afterDestroy: async (comment, options) => {
+      const Post = require('./Post');
+      await Post.decrement('comments_count', {
+        where: { id: comment.post_id },
+        transaction: options.transaction
+      });
+    }
+  }
 });
 
 module.exports = Comment;
