@@ -15,7 +15,7 @@
 ### ============================================
 ### VARIABLES - Fill these after running Setup Phase
 ### ============================================
-@user_id = 6e8f7b10-3181-41fd-9ccb-94602d732eff
+@user_id = d15c151f-b4c0-444f-a684-55b85fafbb61
 @movie_id = 8a0c9498-45f8-47c2-956b-141be9a27684
 @showtime_id = c32709a2-9e70-481b-9c4c-34f884d7ce47
 @seat_id1 = 10b0712b-696f-4b8d-975c-98337b018f34
@@ -24,7 +24,8 @@
 # @theater_id = 
 # @screen_id = 
 
-@booking_id = 80942e82-c38b-4ae3-88de-88b18a4652d3
+@booking_id = fbfaf797-3511-4bab-813c-c1b51d097a17
+
 @payment_id = 27dffc31-3913-4f6c-ac28-57d2a68e0254
 
 ### ============================================
@@ -42,8 +43,8 @@ POST {{apiUrl}}/users
 Content-Type: application/json
 
 {
-  "name": "User1",
-  "email": "user@example.com"
+  "name": "User2",
+  "email": "user2@example.com"
 }
 
 ### Option B: Get existing users (copy any "id" → paste in @user_id)
@@ -165,9 +166,6 @@ GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
 GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
 ### Expected: payment.status = "refunded" (if payment existed)
 
-### Step 6.5: Cancel Booking (Alternative Method - DELETE for backward compatibility)
-DELETE {{apiUrl}}/bookings/{{booking_id}}
-### Expected: 204 No Content (same behavior as PUT /cancel)
 
 ### ============================================
 ### PHASE 7: ADVANCED BOOKING OPERATIONS
