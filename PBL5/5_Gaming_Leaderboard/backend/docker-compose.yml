@@ -1,0 +1,90 @@
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: gaming-leaderboard-kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 10
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "timeout 10 bash -c 'cat < /dev/null > /dev/tcp/localhost/9092' || exit 1",
+        ]
+      interval: 20s
+      timeout: 15s
+      retries: 12
+      start_period: 120s
+    networks:
+      - gaming-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: gaming-leaderboard-redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - gaming-network
+
+  backend:
+    image: node:20-alpine
+    container_name: gaming-leaderboard-backend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: gaming-leaderboard-backend
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: ${PORT:-3001}
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    networks:
+      - gaming-network
+
+volumes:
+  kafka_data:
+  redis_data:
+
+networks:
+  gaming-network:
+    driver: bridge
