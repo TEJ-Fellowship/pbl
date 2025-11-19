@@ -62,12 +62,12 @@ const saveQuizAttempt = async (userId, questions, score) => {
   try {
     const response = await axios.post('http://localhost:3001/api/quiz', {
       userId,
-      questions, // Now sending transformed questions array
+      questions, 
       score
     });
     return response.data;
   } catch (error) {
-    console.error('Error saving quiz:', error); // Added better error logging
+    console.error('Error saving quiz:', error); 
     return { error: error.response?.data?.message || error?.message };
   }
 };
@@ -76,7 +76,7 @@ const getQuizStats = async (userId)=>{
     const stats = await axios.get(`http://localhost:3001/api/quiz/${userId}`);
     return stats;
   }catch(error){
-    console.error('Error saving quiz:', error); // Added better error logging
+    console.error('Error saving quiz:', error); 
     return { error: error.response?.data?.message || error?.message };
   }
 
