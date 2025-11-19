@@ -53,22 +53,20 @@ router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const quiz = await Quiz.findOne({ userId }).populate(
-      "userId",
-      "fullName email"
-    ); 
+    const quizzes = await Quiz.find({ userId }); 
 
-    if (!quiz) {
+    if (!quizzes || quizzes.length === 0) {
       return res.status(404).json({ message: "No quiz found for this user" });
     }
 
+    const allAttempts = quizzes.flatMap(q => q.attempts);
+
     res.status(200).json({
-      quiz,
-      totalAttempts: quiz.attempts.length,
+      quizzes,
+      totalAttempts: allAttempts.length,
       averageScore:
-        quiz.attempts.reduce((sum, att) => sum + att.score, 0) /
-        quiz.attempts.length,
-      bestScore: Math.max(...quiz.attempts.map((att) => att.score)),
+        allAttempts.reduce((sum, att) => sum + att.score, 0) / allAttempts.length,
+      bestScore: Math.max(...allAttempts.map(att => att.score)),
     });
   } catch (error) {
     console.error("Error fetching quiz history:", error);
