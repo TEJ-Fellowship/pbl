@@ -9,8 +9,9 @@ router.get("/user/:userId", bookingsController.getBookingsByUser);
 router.post("/", bookingsController.createBooking);
 router.post("/reserve", bookingsController.reserveSeats);
 router.post("/confirm/:id", bookingsController.confirmBooking);
+router.put("/:id/cancel", bookingsController.cancelBooking); // Enhanced cancellation with rules
 router.get("/:id", bookingsController.getBookingById);
 router.put("/:id", bookingsController.updateBooking);
-router.delete("/:id", bookingsController.cancelBooking);
+router.delete("/:id", bookingsController.cancelBooking); // Keep for backward compatibility
 
 module.exports = router;
