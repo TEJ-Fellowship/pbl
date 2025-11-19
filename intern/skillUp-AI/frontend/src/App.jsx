@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import Quize from "./pages/Quize.jsx";
+import QuizStatistics from "./pages/QuizStatistics.jsx";
 
 import {
   BrowserRouter as Router,
@@ -33,7 +34,7 @@ function App() {
             }
           />
           <Route path="/quiz" element={<Quize />} />
-
+          <Route path="stats" element={<QuizStatistics/>}/>
         </Routes>
       </Router>
     </AuthProvider>
