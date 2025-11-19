@@ -1,6 +1,6 @@
-const { DataTypes } = require('sequelize');
+import { DataTypes } from 'sequelize';
 
-module.exports = {
+export default {
     up: async ({ context: queryInterface }) => {
         await queryInterface.createTable('users', {
             user_id: {
@@ -27,4 +27,4 @@ module.exports = {
     down: async ({ context: queryInterface }) => {
         await queryInterface.dropTable('users');
     }
-}
+};

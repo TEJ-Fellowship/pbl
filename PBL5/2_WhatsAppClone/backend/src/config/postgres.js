@@ -1,10 +1,10 @@
 // PostgreSQL database configuration
+import { DATABASE_URL } from './index.js';
 
-const { Sequelize } = require('sequelize');
-const { Umzug, SequelizeStorage } = require('umzug');
+import { Sequelize } from 'sequelize';
+import { Umzug, SequelizeStorage } from 'umzug';
 
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
-    host: process.env.DB_HOST,
+const sequelize = new Sequelize(DATABASE_URL, {
     dialectOptions: {
         ssl: {
             require: true,
@@ -17,7 +17,22 @@ const runMigrations = async () => {
     try {
         const migrator = new Umzug({
             migrations: {
-                glob: 'src/infrastructure/db/migrations/*.js'
+                glob: 'src/infrastructure/db/migrations/*.js',
+                resolve: ({ name, path, context }) => {
+                    // For ES modules, we need to dynamically import
+                    const migration = import(path);
+                    return {
+                        name,
+                        up: async () => {
+                            const m = await migration;
+                            return m.default.up({ context });
+                        },
+                        down: async () => {
+                            const m = await migration;
+                            return m.default.down({ context });
+                        }
+                    };
+                }
             },
             storage: new SequelizeStorage({ sequelize }),
             context: sequelize.getQueryInterface(),
@@ -41,4 +56,4 @@ const connectToDatabase = async () => {
     return sequelize;
 }
 
-module.exports = { connectToDatabase, sequelize };
+export { connectToDatabase, sequelize };
