@@ -26,7 +26,7 @@ router.get("/chats/:userId", async (request, response, next) => {
   }
 });
 
-router.get("/quize/:userId", async (request, response, next) => {
+router.get("/quiz/:userId", async (request, response, next) => {
   const userId = request.params.userId;
   try {
     const userChat = await Chat.find({ user: userId }).sort({ _id: 1 });
