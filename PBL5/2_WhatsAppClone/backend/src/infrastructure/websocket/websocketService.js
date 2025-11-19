@@ -7,7 +7,8 @@ class websocketService {
 
   joinConversation(socket, conversationId) {
     socket.join(conversationId);
-    console.log(socket.id);
+    console.log(`Socket ${socket.id} joined conversation ${conversationId}`); // ✅ Fixed
+    socket.to(conversationId).emit("conversation:join", conversationId);
   }
 
   leaveConversation(socket, conversationId) {
@@ -16,7 +17,7 @@ class websocketService {
   }
 
   sendMessage(conversationId, message) {
-    this.io.to(conversationId).emit("message:receive", message);
+    this.io.to(conversationId).emit("message:send", message);
   }
 
   typingStart(conversationId, userId) {
