@@ -9,8 +9,80 @@ const {
   Screen,
   Theater,
   User,
+  Payment,
 } = require("../models");
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
+
+// Helper Function for reserving part
+const expireOldPendingBookings = async (showtime_id, transaction) => {
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+  // Find pending bookings older than 5 minutes
+  const expiredBookings = await Booking.findAll({
+    where: {
+      showtime_id,
+      status: "pending",
+      created_at: { [Op.lt]: fiveMinutesAgo },
+    },
+    transaction,
+  });
+
+  if (expiredBookings.length === 0) {
+    return 0;
+  }
+
+  // Get all booking seats for expired bookings
+  const expiredBookingIds = expiredBookings.map((b) => b.id);
+  const expiredBookingSeats = await BookingSeat.findAll({
+    where: {
+      booking_id: { [Op.in]: expiredBookingIds },
+    },
+    transaction,
+  });
+
+  // Update booking status to expired
+  await Booking.update(
+    { status: "expired" },
+    {
+      where: {
+        id: { [Op.in]: expiredBookingIds },
+      },
+      transaction,
+    }
+  );
+
+  // Release seat reservations
+  if (expiredBookingSeats.length > 0) {
+    await SeatReservation.update(
+      { status: "expired" },
+      {
+        where: {
+          showtime_id,
+          seat_id: { [Op.in]: expiredBookingSeats.map((bs) => bs.seat_id) },
+          status: "reserved",
+        },
+        transaction,
+      }
+    );
+  }
+
+  // Restore available seats count
+  const showtime = await Showtime.findByPk(showtime_id, {
+    lock: transaction.LOCK.UPDATE,
+    transaction,
+  });
+
+  if (showtime) {
+    await showtime.update(
+      {
+        available_seats: showtime.available_seats + expiredBookingSeats.length,
+      },
+      { transaction }
+    );
+  }
+
+  return expiredBookingSeats.length;
+};
 
 const getAllBookings = async (req, res, next) => {
   try {
@@ -138,205 +210,11 @@ const getBookingById = async (req, res, next) => {
   }
 };
 
-const reserveSeats = async (req, res, next) => {
-  try {
-    const { showtime_id, seat_ids, user_id } = req.body;
-
-    // ============================================
-    // VALIDATION: Required Fields
-    // ============================================
-    if (!showtime_id || !seat_ids || !user_id) {
-      return res.status(400).json({
-        error:
-          "Missing required fields: showtime_id, seat_ids, and user_id are required",
-      });
-    }
-
-    if (!Array.isArray(seat_ids) || seat_ids.length === 0) {
-      return res.status(400).json({
-        error: "seat_ids must be a non-empty array",
-      });
-    }
-
-    // ============================================
-    // CALCULATE EXPIRY: 5 minutes from now
-    // ============================================
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // ============================================
-    // TRANSACTION: Ensure all reservations succeed or fail together
-    // ============================================
-    const transaction = await sequelize.transaction();
-
-    try {
-      // ============================================
-      // VALIDATION: User exists
-      // ============================================
-      const user = await User.findByPk(user_id, { transaction });
-      if (!user) {
-        await transaction.rollback();
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      // ============================================
-      // VALIDATION: Showtime exists and is active
-      // ============================================
-      const showtime = await Showtime.findByPk(showtime_id, {
-        include: [
-          {
-            model: Screen,
-            as: "screen",
-            attributes: ["id"],
-          },
-        ],
-        transaction,
-      });
-
-      if (!showtime) {
-        await transaction.rollback();
-        return res.status(404).json({ error: "Showtime not found" });
-      }
-
-      if (showtime.status !== "active") {
-        await transaction.rollback();
-        return res.status(400).json({
-          error: `Cannot reserve seats for showtime with status: ${showtime.status}`,
-        });
-      }
-
-      // ============================================
-      // VALIDATION: Showtime is in the future
-      // ============================================
-      if (new Date(showtime.show_time) <= new Date()) {
-        await transaction.rollback();
-        return res.status(400).json({
-          error: "Cannot reserve seats for past showtimes",
-        });
-      }
-
-      const screenId = showtime.screen_id;
-      const reservations = [];
-
-      // ============================================
-      // VALIDATION: Check each seat before reserving
-      // ============================================
-      for (const seatId of seat_ids) {
-        // Check seat exists
-        const seat = await Seat.findByPk(seatId, { transaction });
-        if (!seat) {
-          await transaction.rollback();
-          return res.status(404).json({ error: `Seat ${seatId} not found` });
-        }
-
-        // ============================================
-        // VALIDATION: Seat belongs to showtime's screen
-        // ============================================
-        if (seat.screen_id !== screenId) {
-          await transaction.rollback();
-          return res.status(400).json({
-            error: `Seat ${seatId} does not belong to this showtime's screen`,
-          });
-        }
-
-        // ============================================
-        // VALIDATION: Check if seat is already booked
-        // ============================================
-        const existingBooking = await BookingSeat.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-          },
-          transaction,
-        });
-
-        if (existingBooking) {
-          await transaction.rollback();
-          return res.status(409).json({
-            error: `Seat ${seat.seat_number} is already booked`,
-          });
-        }
-
-        // ============================================
-        // VALIDATION: Check if seat is already reserved (not expired)
-        // ============================================
-        const existingReservation = await SeatReservation.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-            status: "reserved",
-            expires_at: { [Op.gt]: new Date() },
-          },
-          transaction,
-        });
-
-        if (existingReservation) {
-          // Allow same user to re-reserve (extend time)
-          if (existingReservation.user_id !== user_id) {
-            await transaction.rollback();
-            return res.status(409).json({
-              error: `Seat ${seat.seat_number} is already reserved by another user`,
-            });
-          }
-          // Same user: update expiry time
-          await existingReservation.update(
-            { expires_at: expiresAt },
-            { transaction }
-          );
-          reservations.push(existingReservation);
-          continue;
-        }
-
-        // ============================================
-        // CREATE RESERVATION: All validations passed
-        // ============================================
-        const reservation = await SeatReservation.create(
-          {
-            showtime_id,
-            seat_id: seatId,
-            user_id,
-            expires_at: expiresAt,
-            status: "reserved",
-          },
-          { transaction }
-        );
-        reservations.push(reservation);
-      }
-
-      // ============================================
-      // COMMIT TRANSACTION: Save all reservations
-      // ============================================
-      await transaction.commit();
-
-      res.status(201).json({
-        message: "Seats reserved successfully",
-        reservations: reservations.map((r) => ({
-          id: r.id,
-          seat_id: r.seat_id,
-          showtime_id: r.showtime_id,
-          expires_at: r.expires_at,
-        })),
-        expires_at: expiresAt,
-        expires_in_seconds: 300, // 5 minutes
-      });
-    } catch (error) {
-      // ============================================
-      // ROLLBACK: Undo all reservations on error
-      // ============================================
-      await transaction.rollback();
-      throw error;
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
 const createBooking = async (req, res, next) => {
   try {
     const { user_id, showtime_id, seat_ids } = req.body;
 
-    // ============================================
     // VALIDATION: Required Fields
-    // ============================================
     if (!user_id || !showtime_id || !seat_ids || !Array.isArray(seat_ids)) {
       return res.status(400).json({
         error:
@@ -350,24 +228,19 @@ const createBooking = async (req, res, next) => {
       });
     }
 
-    // ============================================
     // TRANSACTION: All operations must succeed or fail together
-    // ============================================
-    const transaction = await sequelize.transaction();
-
+    const transaction = await sequelize.transaction({
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    });
     try {
-      // ============================================
       // VALIDATION: User exists
-      // ============================================
       const user = await User.findByPk(user_id, { transaction });
       if (!user) {
         await transaction.rollback();
         return res.status(404).json({ error: "User not found" });
       }
 
-      // ============================================
       // VALIDATION: Showtime exists and is active
-      // ============================================
       const showtime = await Showtime.findByPk(showtime_id, {
         include: [
           {
@@ -391,9 +264,7 @@ const createBooking = async (req, res, next) => {
         });
       }
 
-      // ============================================
       // VALIDATION: Showtime is in the future
-      // ============================================
       if (new Date(showtime.show_time) <= new Date()) {
         await transaction.rollback();
         return res.status(400).json({
@@ -401,9 +272,11 @@ const createBooking = async (req, res, next) => {
         });
       }
 
-      // ============================================
+      // EXPIRY CHECK: Expire old pending bookings (older than 5 minutes)
+      // This releases seats from bookings where payment was not completed
+      await expireOldPendingBookings(showtime_id, transaction);
+
       // VALIDATION: Check seat availability
-      // ============================================
       const basePrice = parseFloat(showtime.price);
       let totalAmount = 0;
       const seatPrices = [];
@@ -417,9 +290,8 @@ const createBooking = async (req, res, next) => {
           return res.status(404).json({ error: `Seat ${seatId} not found` });
         }
 
-        // ============================================
         // VALIDATION: Seat belongs to showtime's screen
-        // ============================================
+
         if (seat.screen_id !== screenId) {
           await transaction.rollback();
           return res.status(400).json({
@@ -427,14 +299,34 @@ const createBooking = async (req, res, next) => {
           });
         }
 
-        // ============================================
         // VALIDATION: Check if seat is already booked
-        // ============================================
+        // Exclude cancelled/expired bookings so seats can be rebooked
+        // Also exclude pending bookings older than 5 minutes (auto-expired)
+
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
         const existingBooking = await BookingSeat.findOne({
           where: {
             showtime_id,
             seat_id: seatId,
           },
+          include: [
+            {
+              model: Booking,
+              as: "booking",
+              where: {
+                status: { [Op.notIn]: ["cancelled", "expired"] },
+                // Exclude pending bookings older than 5 minutes
+                [Op.or]: [
+                  { status: { [Op.ne]: "pending" } },
+                  {
+                    status: "pending",
+                    created_at: { [Op.gt]: fiveMinutesAgo },
+                  },
+                ],
+              },
+              required: true,
+            },
+          ],
           transaction,
         });
 
@@ -445,29 +337,8 @@ const createBooking = async (req, res, next) => {
           });
         }
 
-        // ============================================
-        // VALIDATION: Check if seat is reserved (not expired)
-        // ============================================
-        const activeReservation = await SeatReservation.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-            status: "reserved",
-            expires_at: { [Op.gt]: new Date() },
-          },
-          transaction,
-        });
-
-        if (activeReservation && activeReservation.user_id !== user_id) {
-          await transaction.rollback();
-          return res.status(409).json({
-            error: `Seat ${seat.seat_number} is currently reserved by another user`,
-          });
-        }
-
-        // ============================================
         // PRICE CALCULATION: Based on seat type
-        // ============================================
+
         let seatPrice = basePrice;
         if (seat.seat_type === "premium") seatPrice = basePrice * 1.5;
         if (seat.seat_type === "vip") seatPrice = basePrice * 2;
@@ -476,9 +347,7 @@ const createBooking = async (req, res, next) => {
         seatPrices.push({ seat_id: seatId, price: seatPrice });
       }
 
-      // ============================================
       // VALIDATION: Check if enough seats available
-      // ============================================
       if (showtime.available_seats < seat_ids.length) {
         await transaction.rollback();
         return res.status(400).json({
@@ -486,9 +355,7 @@ const createBooking = async (req, res, next) => {
         });
       }
 
-      // ============================================
       // CREATE BOOKING: All validations passed
-      // ============================================
       const booking = await Booking.create(
         {
           user_id,
@@ -499,9 +366,7 @@ const createBooking = async (req, res, next) => {
         { transaction }
       );
 
-      // ============================================
       // CREATE BOOKING_SEATS: Link seats to booking
-      // ============================================
       for (const { seat_id, price } of seatPrices) {
         await BookingSeat.create(
           {
@@ -514,24 +379,10 @@ const createBooking = async (req, res, next) => {
         );
       }
 
-      // ============================================
-      // UPDATE SHOWTIME: Decrease available seats
-      // ============================================
-      await showtime.update(
-        {
-          available_seats: showtime.available_seats - seat_ids.length,
-        },
-        { transaction }
-      );
-
-      // ============================================
       // COMMIT TRANSACTION: Save all changes
-      // ============================================
       await transaction.commit();
 
-      // ============================================
       // RETURN SUCCESS: Include booking with seats
-      // ============================================
       const bookingWithDetails = await Booking.findByPk(booking.id, {
         include: [
           {
@@ -550,9 +401,7 @@ const createBooking = async (req, res, next) => {
 
       res.status(201).json(bookingWithDetails);
     } catch (error) {
-      // ============================================
       // ROLLBACK: Undo all changes on error
-      // ============================================
       await transaction.rollback();
       throw error;
     }
@@ -564,18 +413,108 @@ const createBooking = async (req, res, next) => {
 const confirmBooking = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { payment_id } = req.body; // Optional: if payment already processed
 
-    const transaction = await sequelize.transaction();
+    const transaction = await sequelize.transaction({
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    });
 
     try {
-      const booking = await Booking.findByPk(id, { transaction });
-      if (!booking || booking.status !== "pending") {
+      // LOCK BOOKING: Prevent concurrent updates
+      const booking = await Booking.findByPk(id, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+        include: [
+          {
+            model: Showtime,
+            as: "showtime",
+            include: [
+              { model: Movie, as: "movie" },
+              {
+                model: Screen,
+                as: "screen",
+                include: [{ model: Theater, as: "theater" }],
+              },
+            ],
+          },
+          { model: User, as: "user" },
+        ],
+      });
+
+      if (!booking) {
         await transaction.rollback();
-        return res
-          .status(404)
-          .json({ error: "Booking not found or already processed" });
+        return res.status(404).json({ error: "Booking not found" });
       }
 
+      // VALIDATION: Check booking status
+      if (booking.status === "confirmed") {
+        await transaction.rollback();
+        // Return existing confirmed booking with receipt
+        const { generateReceipt } = require("./paymentsController");
+        const receipt = await generateReceipt(id);
+        return res.json({
+          message: "Booking already confirmed",
+          booking,
+          receipt,
+        });
+      }
+
+      if (booking.status !== "pending") {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: `Cannot confirm booking with status: ${booking.status}`,
+          current_status: booking.status,
+        });
+      }
+
+      // CHECK PAYMENT: If payment_id provided, verify it
+      if (payment_id) {
+        const { Payment } = require("../models");
+        const payment = await Payment.findOne({
+          where: { id: payment_id, booking_id: id },
+          transaction,
+        });
+
+        if (!payment) {
+          await transaction.rollback();
+          return res
+            .status(404)
+            .json({ error: "Payment not found for this booking" });
+        }
+
+        if (payment.status !== "success") {
+          await transaction.rollback();
+          return res.status(402).json({
+            error: "Payment not successful",
+            payment_status: payment.status,
+            failure_reason: payment.failure_reason,
+          });
+        }
+      } else {
+        // If no payment_id, check if payment exists
+        const { Payment } = require("../models");
+        const payment = await Payment.findOne({
+          where: { booking_id: id, status: "success" },
+          transaction,
+        });
+
+        if (!payment) {
+          await transaction.rollback();
+          return res.status(402).json({
+            error: "Payment required before confirmation",
+            message:
+              "Please process payment first using POST /api/payments/process",
+          });
+        }
+      }
+
+      // GET BOOKING SEATS: For reservation cleanup
+      const bookingSeats = await BookingSeat.findAll({
+        where: { booking_id: id },
+        transaction,
+      });
+
+      // UPDATE BOOKING STATUS
       await booking.update(
         {
           status: "confirmed",
@@ -584,13 +523,13 @@ const confirmBooking = async (req, res, next) => {
         { transaction }
       );
 
-      // Update seat reservations to confirmed
+      // CLEAN UP RESERVATIONS: Mark as confirmed
       await SeatReservation.update(
         { status: "confirmed" },
         {
           where: {
             showtime_id: booking.showtime_id,
-            user_id: booking.user_id,
+            seat_id: { [Op.in]: bookingSeats.map((bs) => bs.seat_id) },
             status: "reserved",
           },
           transaction,
@@ -598,7 +537,46 @@ const confirmBooking = async (req, res, next) => {
       );
 
       await transaction.commit();
-      res.json(booking);
+
+      // GENERATE RECEIPT/TICKET
+      const { generateReceipt } = require("./paymentsController");
+      const receipt = await generateReceipt(id);
+
+      // RETURN CONFIRMED BOOKING WITH RECEIPT
+      const confirmedBooking = await Booking.findByPk(id, {
+        include: [
+          {
+            model: Showtime,
+            as: "showtime",
+            include: [
+              { model: Movie, as: "movie" },
+              {
+                model: Screen,
+                as: "screen",
+                include: [{ model: Theater, as: "theater" }],
+              },
+            ],
+          },
+          { model: User, as: "user" },
+          {
+            model: BookingSeat,
+            as: "bookingSeats",
+            include: [
+              {
+                model: Seat,
+                as: "seat",
+                attributes: ["seat_number", "row_number", "seat_type"],
+              },
+            ],
+          },
+        ],
+      });
+
+      res.json({
+        message: "Booking confirmed successfully",
+        booking: confirmedBooking,
+        receipt,
+      });
     } catch (error) {
       await transaction.rollback();
       throw error;
@@ -608,22 +586,139 @@ const confirmBooking = async (req, res, next) => {
   }
 };
 
+/**
+ * Update booking status with proper state transitions
+ */
 const updateBooking = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ error: "Status is required" });
+    // ============================================
+    // VALIDATION: Valid status values
+    // ============================================
+    const validStatuses = [
+      "pending",
+      "reserved",
+      "confirmed",
+      "cancelled",
+      "expired",
+    ];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: `Invalid status. Must be one of: ${validStatuses.join(", ")}`,
+      });
     }
 
-    const booking = await Booking.findByPk(id);
-    if (!booking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
+    const transaction = await sequelize.transaction({
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    });
 
-    await booking.update({ status });
-    res.json(booking);
+    try {
+      // LOCK BOOKING: Prevent concurrent updates
+      const booking = await Booking.findByPk(id, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
+
+      if (!booking) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      // VALIDATE STATE TRANSITIONS
+      const currentStatus = booking.status;
+      const allowedTransitions = {
+        pending: ["reserved", "confirmed", "cancelled"],
+        reserved: ["confirmed", "cancelled", "expired"],
+        confirmed: ["cancelled"], // Can only cancel confirmed bookings
+        cancelled: [], // Terminal state
+        expired: [], // Terminal state
+      };
+
+      if (!allowedTransitions[currentStatus]?.includes(status)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: `Invalid status transition from ${currentStatus} to ${status}`,
+          current_status: currentStatus,
+          requested_status: status,
+          allowed_transitions: allowedTransitions[currentStatus] || [],
+        });
+      }
+
+      // UPDATE STATUS
+      const updateData = { status };
+      if (status === "confirmed" && !booking.confirmed_at) {
+        updateData.confirmed_at = new Date();
+      }
+
+      await booking.update(updateData, { transaction });
+
+      // HANDLE CANCELLATION: Release seats
+      if (status === "cancelled") {
+        // Release seat reservations
+        const bookingSeats = await BookingSeat.findAll({
+          where: { booking_id: id },
+          transaction,
+        });
+
+        await SeatReservation.update(
+          { status: "expired" },
+          {
+            where: {
+              showtime_id: booking.showtime_id,
+              seat_id: { [Op.in]: bookingSeats.map((bs) => bs.seat_id) },
+              status: { [Op.in]: ["reserved", "confirmed"] },
+            },
+            transaction,
+          }
+        );
+
+        // Restore available seats count
+        const showtime = await Showtime.findByPk(booking.showtime_id, {
+          lock: transaction.LOCK.UPDATE,
+          transaction,
+        });
+
+        if (showtime) {
+          await showtime.update(
+            {
+              available_seats: showtime.available_seats + bookingSeats.length,
+            },
+            { transaction }
+          );
+        }
+      }
+
+      await transaction.commit();
+
+      const updatedBooking = await Booking.findByPk(id, {
+        include: [
+          {
+            model: Showtime,
+            as: "showtime",
+            include: [
+              { model: Movie, as: "movie", attributes: ["title"] },
+              {
+                model: Screen,
+                as: "screen",
+                include: [
+                  { model: Theater, as: "theater", attributes: ["name"] },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      res.json({
+        message: `Booking status updated to ${status}`,
+        booking: updatedBooking,
+      });
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   } catch (error) {
     next(error);
   }
@@ -633,32 +728,144 @@ const cancelBooking = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const transaction = await sequelize.transaction();
-
+    const transaction = await sequelize.transaction({
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.SERIALIZABLE,
+    });
     try {
-      const booking = await Booking.findByPk(id, { transaction });
+      // LOCK BOOKING: Without includes to avoid outer join issue
+      const booking = await Booking.findByPk(id, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
+
       if (!booking) {
         await transaction.rollback();
         return res.status(404).json({ error: "Booking not found" });
       }
 
+      // VALIDATION: Check if booking can be cancelled
+      if (booking.status === "cancelled") {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: "Booking is already cancelled",
+          booking_id: booking.id,
+          current_status: booking.status,
+        });
+      }
+
+      if (booking.status === "expired") {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: "Cannot cancel an expired booking",
+          booking_id: booking.id,
+          current_status: booking.status,
+        });
+      }
+
+      // FETCH SHOWTIME: Separately to avoid outer join in lock
+      const showtime = await Showtime.findByPk(booking.showtime_id, {
+        transaction,
+      });
+
+      if (!showtime) {
+        await transaction.rollback();
+        return res.status(404).json({ error: "Showtime not found" });
+      }
+
+      // VALIDATION: Check if showtime has already started
+      if (new Date(showtime.show_time) <= new Date()) {
+        await transaction.rollback();
+        return res.status(400).json({
+          error: "Cannot cancel booking for showtime that has already started",
+          showtime_date: showtime.show_time,
+        });
+      }
+
+      // GET BOOKING SEATS: For seat release
+      const bookingSeats = await BookingSeat.findAll({
+        where: { booking_id: id },
+        transaction,
+      });
+
+      // UPDATE BOOKING STATUS TO CANCELLED
       await booking.update({ status: "cancelled" }, { transaction });
 
-      // Release seat reservations
-      await SeatReservation.update(
-        { status: "expired" },
-        {
-          where: {
-            showtime_id: booking.showtime_id,
-            user_id: booking.user_id,
-            status: { [Op.in]: ["reserved", "confirmed"] },
+      // RELEASE SEAT RESERVATIONS: Mark as expired
+      if (bookingSeats.length > 0) {
+        await SeatReservation.update(
+          { status: "expired" },
+          {
+            where: {
+              showtime_id: booking.showtime_id,
+              seat_id: { [Op.in]: bookingSeats.map((bs) => bs.seat_id) },
+              status: { [Op.in]: ["reserved", "confirmed"] },
+            },
+            transaction,
+          }
+        );
+      }
+
+      // RESTORE AVAILABLE SEATS COUNT
+      const showtimeForUpdate = await Showtime.findByPk(booking.showtime_id, {
+        lock: transaction.LOCK.UPDATE,
+        transaction,
+      });
+
+      if (showtimeForUpdate) {
+        await showtimeForUpdate.update(
+          {
+            available_seats:
+              showtimeForUpdate.available_seats + bookingSeats.length,
           },
-          transaction,
-        }
-      );
+          { transaction }
+        );
+      }
+
+      // HANDLE PAYMENT REFUND (if payment exists)
+      const payment = await Payment.findOne({
+        where: { booking_id: id },
+        transaction,
+      });
+
+      if (payment && payment.status === "success") {
+        // Update payment status to refunded
+        await payment.update(
+          {
+            status: "refunded", // Call Refund Api later in prod
+          },
+          { transaction }
+        );
+      }
 
       await transaction.commit();
-      res.status(204).send();
+
+      // RETURN CANCELLED BOOKING DETAILS
+      const cancelledBooking = await Booking.findByPk(id, {
+        include: [
+          {
+            model: Showtime,
+            as: "showtime",
+            include: [
+              { model: Movie, as: "movie", attributes: ["title"] },
+              {
+                model: Screen,
+                as: "screen",
+                include: [
+                  { model: Theater, as: "theater", attributes: ["name"] },
+                ],
+              },
+            ],
+          },
+          { model: User, as: "user", attributes: ["name", "email"] },
+        ],
+      });
+
+      res.json({
+        message: "Booking cancelled successfully",
+        booking: cancelledBooking,
+        seats_released: bookingSeats.length,
+        refund_processed: payment?.status === "refunded",
+      });
     } catch (error) {
       await transaction.rollback();
       throw error;
@@ -672,7 +879,6 @@ module.exports = {
   getAllBookings,
   getBookingsByUser,
   getBookingById,
-  reserveSeats,
   createBooking,
   confirmBooking,
   updateBooking,

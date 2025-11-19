@@ -5,6 +5,7 @@ const {
   Theater,
   Seat,
   BookingSeat,
+  Booking,
 } = require("../models");
 const { Op } = require("sequelize");
 
@@ -305,11 +306,33 @@ const getShowtimeSeats = async (req, res, next) => {
     });
 
     // Get all booked seats for this showtime
+    // Exclude cancelled/expired bookings so seats can be rebooked
+    // Also exclude pending bookings older than 5 minutes (auto-expired)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     const bookedSeats = await BookingSeat.findAll({
       where: {
         showtime_id: id,
       },
       attributes: ["seat_id"],
+      include: [
+        {
+          model: Booking,
+          as: "booking",
+          where: {
+            status: { [Op.notIn]: ["cancelled", "expired"] },
+            // Exclude pending bookings older than 5 minutes
+            [Op.or]: [
+              { status: { [Op.ne]: "pending" } },
+              {
+                status: "pending",
+                created_at: { [Op.gt]: fiveMinutesAgo },
+              },
+            ],
+          },
+          required: true,
+          attributes: [], // Don't include booking data, just filter
+        },
+      ],
     });
 
     const bookedSeatIds = new Set(

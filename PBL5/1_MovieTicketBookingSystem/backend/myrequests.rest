@@ -1,94 +1,84 @@
+### ============================================
 ### Movie Ticket Booking System - API Testing
-### Step-by-Step Testing Guide
+### Industry-Standard Booking Flow
+### ============================================
+### This file follows enterprise-grade movie ticket booking flow:
+### 1. Browse & Discovery
+### 2. Seat Selection & Booking Creation
+### 3. Payment Processing
+### 4. Confirmation & Ticket Generation
+### 5. Booking Management (View, Cancel)
 
 @baseUrl = http://localhost:3001
 @apiUrl = {{baseUrl}}/api
 
 ### ============================================
-### VARIABLES - Fill these after running Step 0
+### VARIABLES - Fill these after running Setup Phase
 ### ============================================
-@user_id = bade38fb-9e97-4f3b-ae6e-ce2b4d0b5a3b
+@user_id = 6e8f7b10-3181-41fd-9ccb-94602d732eff
 @movie_id = 8a0c9498-45f8-47c2-956b-141be9a27684
 @showtime_id = c32709a2-9e70-481b-9c4c-34f884d7ce47
 @seat_id1 = 10b0712b-696f-4b8d-975c-98337b018f34
 @seat_id2 = 2f8e45fc-3fc9-49e3-b836-ae4c190096c3
-@theater_id = 
-@screen_id = 
-@booking_id = bad062d7-bc7c-4c1c-bf88-b90d55c10eb6
+
+# @theater_id = 
+# @screen_id = 
+
+@booking_id = 80942e82-c38b-4ae3-88de-88b18a4652d3
+@payment_id = 27dffc31-3913-4f6c-ac28-57d2a68e0254
 
 ### ============================================
-### STEP 0: SETUP - Get IDs for Testing
-### Run these in order, copy IDs to variables above
+### PHASE 0: SETUP & DISCOVERY
 ### ============================================
-
-### 1. Health Check
+### Step 0.1: Health Check
 GET {{baseUrl}}/health
 
-### 2. Create a user (copy "id" from response → paste in @user_id above)
+### Step 0.2: Get API Information
+GET {{baseUrl}}/
+
+### Step 0.3: Create or Get User
+### Option A: Create new user (copy "id" from response → paste in @user_id)
 POST {{apiUrl}}/users
 Content-Type: application/json
 
 {
-  "name": "Test User",
-  "email": "testuser@example.com"
+  "name": "User1",
+  "email": "user@example.com"
 }
 
-### 3. Get existing users (alternative - copy any "id" → paste in @user_id)
+### Option B: Get existing users (copy any "id" → paste in @user_id)
 GET {{apiUrl}}/users
 
-### 4. Get a showtime (copy "id" from response → paste in @showtime_id above)
-GET {{apiUrl}}/showtimes?limit=1
-
-### 5. Get seats for showtime (copy "id" of available seats → paste in @seat_id1, @seat_id2)
-### Note: Use showtime_id from step 4, or fill @showtime_id variable first
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats 
-
-### ============================================
-### PHASE 2: Movie & Showtime Management
-### ============================================
-
-### GET /movies - List all movies
+### Step 0.4: Browse Movies
+### Get all movies with optional filtering
 GET {{apiUrl}}/movies
 
-### GET /movies - With filters
-GET {{apiUrl}}/movies?genre=Action&language=English&limit=10
+### Step 0.5: Search Movies (with filters)
+GET {{apiUrl}}/movies/search?title=You Belong to Me sushi&genre=Horror&language=English
 
-### GET /movies/{id} - Get movie details
+### Step 0.6: Get Movie Details
 GET {{apiUrl}}/movies/{{movie_id}}
 
-### GET /movies/{id}/showtimes - Get showtimes for movie
-GET {{apiUrl}}/movies/{{movie_id}}/showtimes
+### Step 0.7: Get Showtimes for Movie
+GET {{apiUrl}}/showtimes/movie/{{movie_id}}
 
-### GET /showtimes/{id}/seats - Get available seats
+### Step 0.8: Get All Showtimes (with pagination)
+GET {{apiUrl}}/showtimes?limit=10&offset=0
+
+### Step 0.9: Get Showtime Details
+GET {{apiUrl}}/showtimes/{{showtime_id}}
+
+### Step 0.10: Get Available Seats for Showtime
+### IMPORTANT: Copy seat IDs from available seats → paste in @seat_id1, @seat_id2
 GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
 
-### POST /showtimes - Create showtime
-POST {{apiUrl}}/showtimes
-Content-Type: application/json
-
-{
-  "movie_id": "{{movie_id}}",
-  "screen_id": "{{screen_id}}",
-  "show_time": "2024-12-20T18:00:00Z",
-  "price": 12.50
-}
-
 ### ============================================
-### PHASE 3: Booking Endpoints (Sequential Testing)
+### PHASE 2: BOOKING CREATION
 ### ============================================
-### Make sure @user_id, @showtime_id, @seat_id1, @seat_id2 are filled from Step 0
-
-### STEP 1: Reserve seats (5-minute hold)
-POST {{apiUrl}}/bookings/reserve
-Content-Type: application/json
-
-{
-  "user_id": "{{user_id}}",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
-}
-
-### STEP 2: Create booking (copy "id" from response → paste in @booking_id)
+### Industry Standard: Create booking with selected seats
+### Booking status: "pending" (awaiting payment)
+### 
+### Step 2.1: Create Booking
 POST {{apiUrl}}/bookings
 Content-Type: application/json
 
@@ -98,53 +88,107 @@ Content-Type: application/json
   "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
 }
 
-### STEP 3: Get booking details (use booking_id from step 2)
+
+### Step 2.2: Verify Booking Created
 GET {{apiUrl}}/bookings/{{booking_id}}
+### Expected: status = "pending", includes seat details and total_amount
 
-### STEP 4: Get all bookings for user
+### ============================================
+### PHASE 3: PAYMENT PROCESSING
+### ============================================
+
+### Step 3.1: Process Payment
+### IMPORTANT: Replace amount with actual total_amount from booking response
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 29.98,
+  "idempotency_key": "payment-{{booking_id}}-{{$timestamp}}"
+}
+
+
+### Step 3.2: Verify Payment Status
+GET {{apiUrl}}/payments/{{payment_id}}
+### Expected: payment details with status
+
+### Step 3.3: Get Payment by Booking ID (includes receipt if successful)
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+### Expected: payment details + receipt (if payment successful)
+
+### ============================================
+### PHASE 4: BOOKING CONFIRMATION & TICKET
+### ============================================
+
+### Step 4.1: Verify Booking is Confirmed
+GET {{apiUrl}}/bookings/{{booking_id}}
+### Expected: status = "confirmed", confirmed_at timestamp present
+
+### Step 4.2: Get Booking Receipt/Ticket
+### Receipt is included in payment response, or can be retrieved via booking
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+
+### ============================================
+### PHASE 5: BOOKING MANAGEMENT
+### ============================================
+### Step 5.1: Get All Bookings for User
 GET {{apiUrl}}/bookings/user/{{user_id}}
+### Expected: Array of all bookings for the user
 
-### STEP 5: Get all bookings
+### Step 5.2: Get All Bookings (Admin View)
 GET {{apiUrl}}/bookings
+### Expected: Array of all bookings in system
+
+### Step 5.3: Verify Seats are Booked (no longer available)
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+### Expected: Reserved seats show as "booked" or "reserved"
 
 ### ============================================
-### ERROR TESTING (Optional)
+### PHASE 6: BOOKING CANCELLATION
 ### ============================================
+### Step 6.1: Cancel Booking (Recommended Method - PUT)
+PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
+Content-Type: application/json
 
-### Test: Missing fields
-POST {{apiUrl}}/bookings/reserve
+{}
+### Step 6.2: Verify Cancellation
+GET {{apiUrl}}/bookings/{{booking_id}}
+### Expected: status = "cancelled"
+
+### Step 6.3: Verify Seats are Restored (available again)
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+### Expected: Previously booked seats now show as "available"
+
+### Step 6.4: Verify Payment Refund Status
+GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
+### Expected: payment.status = "refunded" (if payment existed)
+
+### Step 6.5: Cancel Booking (Alternative Method - DELETE for backward compatibility)
+DELETE {{apiUrl}}/bookings/{{booking_id}}
+### Expected: 204 No Content (same behavior as PUT /cancel)
+
+### ============================================
+### PHASE 7: ADVANCED BOOKING OPERATIONS
+### ============================================
+### Step 7.1: Update Booking Status (with state transition validation)
+PUT {{apiUrl}}/bookings/{{booking_id}}
 Content-Type: application/json
 
 {
-  "showtime_id": "{{showtime_id}}"
+  "status": "reserved"
 }
 
-### Test: Invalid user
-POST {{apiUrl}}/bookings
+### Step 7.2: Manual Booking Confirmation (if payment processed separately)
+POST {{apiUrl}}/bookings/confirm/{{booking_id}}
 Content-Type: application/json
 
 {
-  "user_id": "00000000-0000-0000-0000-000000000000",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": ["{{seat_id1}}"]
+  "payment_id": "{{payment_id}}"
 }
+### Expected: Booking confirmed manually
+### Note: Usually not needed as payment processing auto-confirms
 
-### Test: Empty seat array
-POST {{apiUrl}}/bookings
-Content-Type: application/json
 
-{
-  "user_id": "{{user_id}}",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": []
-}
 
-### Test: Invalid showtime
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "user_id": "{{user_id}}",
-  "showtime_id": "00000000-0000-0000-0000-000000000000",
-  "seat_ids": ["{{seat_id1}}"]
-}
