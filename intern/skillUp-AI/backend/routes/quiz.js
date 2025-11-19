@@ -43,58 +43,37 @@ router.post("/", async (req, res) => {
     console.error("Error saving quiz attempt:", error);
     res.status(500).json({
       message: "Error saving quiz attempt",
-      error: error.message, //   Include error message for debugging
+      error: error.message, 
     });
   }
 });
 
-//  Get quiz history for a user
-// router.get("/:userId", async (req, res) => {
-//   try {
-//     const { userId } = req.params;
+//  Get quiz stats for a user
+router.get("/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
 
-//     const quiz = await Quiz.findOne({ userId }).populate(
-//       "userId",
-//       "fullName email"
-//     ); // Adjust fields based on your User model
+    const quiz = await Quiz.findOne({ userId }).populate(
+      "userId",
+      "fullName email"
+    ); 
 
-//     if (!quiz) {
-//       return res.status(404).json({ message: "No quiz found for this user" });
-//     }
+    if (!quiz) {
+      return res.status(404).json({ message: "No quiz found for this user" });
+    }
 
-//     res.status(200).json({
-//       quiz,
-//       totalAttempts: quiz.attempts.length,
-//       averageScore:
-//         quiz.attempts.reduce((sum, att) => sum + att.score, 0) /
-//         quiz.attempts.length,
-//       bestScore: Math.max(...quiz.attempts.map((att) => att.score)),
-//     });
-//   } catch (error) {
-//     console.error("Error fetching quiz history:", error);
-//     res.status(500).json({ message: "Error fetching quiz history" });
-//   }
-// });
-
-//  Get all attempts for a user
-// router.get("/:userId/attempts", async (req, res) => {
-//   try {
-//     const { userId } = req.params;
-
-//     const quiz = await Quiz.findOne({ userId });
-
-//     if (!quiz) {
-//       return res.status(404).json({ message: "No quiz found" });
-//     }
-
-//     res.status(200).json({
-//       attempts: quiz.attempts.sort((a, b) => b.date - a.date), // Most recent first
-//       questionCount: quiz.questions.length,
-//     });
-//   } catch (error) {
-//     console.error("Error fetching attempts:", error);
-//     res.status(500).json({ message: "Error fetching attempts" });
-//   }
-// });
+    res.status(200).json({
+      quiz,
+      totalAttempts: quiz.attempts.length,
+      averageScore:
+        quiz.attempts.reduce((sum, att) => sum + att.score, 0) /
+        quiz.attempts.length,
+      bestScore: Math.max(...quiz.attempts.map((att) => att.score)),
+    });
+  } catch (error) {
+    console.error("Error fetching quiz history:", error);
+    res.status(500).json({ message: "Error fetching quiz history" });
+  }
+});
 
 module.exports = router;
