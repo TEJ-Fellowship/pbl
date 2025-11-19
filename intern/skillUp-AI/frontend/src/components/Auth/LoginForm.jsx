@@ -5,15 +5,18 @@ import { useContext } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import service from "../../services/service";
 import { AuthContext } from "../../context/AuthContext.jsx";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
+
 const loginURL = import.meta.env.VITE_LOGIN_URL;
 
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const { isAuthenticated, setIsAuthenticated} = useContext(AuthContext);
+  const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -24,9 +27,9 @@ const LoginForm = () => {
     const loginData = { email: email.trim(), password: password.trim() };
     if ((!email.trim(), !password.trim())) {
       setError("All fields are required");
-      setTimeout(()=>{
+      setTimeout(() => {
         setError("");
-      },500);
+      }, 500);
       return;
     }
     try {
@@ -74,14 +77,18 @@ const LoginForm = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-1">
               SkillUp AI
             </h1>
-            <p className="text-slate-300 text-sm">Welcome back! Please sign in to your account</p>
+            <p className="text-slate-300 text-sm">
+              Welcome back! Please sign in to your account
+            </p>
           </div>
 
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-400/30 rounded-xl backdrop-blur-sm relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-pink-500/5"></div>
-              <p className="text-red-300 text-sm font-medium relative z-10">{error}</p>
+              <p className="text-red-300 text-sm font-medium relative z-10">
+                {error}
+              </p>
             </div>
           )}
 
@@ -89,7 +96,10 @@ const LoginForm = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div className="relative">
-              <label htmlFor="email" className="block text-sm font-medium text-slate-200 mb-1">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-200 mb-1"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -107,7 +117,10 @@ const LoginForm = () => {
 
             {/* Password Field */}
             <div className="relative">
-              <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-200 mb-1"
+              >
                 Password
               </label>
               <div className="relative">
@@ -115,10 +128,23 @@ const LoginForm = () => {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   className="w-full px-4 py-2.5 bg-slate-700/50 backdrop-blur-sm border border-slate-600/50 rounded-xl focus:ring-2 focus:ring-violet-400/50 focus:border-violet-400/50 transition-all duration-300 placeholder-slate-400 text-white hover:bg-slate-700/70 hover:border-slate-500/50"
                 />
+                {/* Eye Icon Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-white"
+                >
+                  {/* {showPassword ? "🙈" : "👁️"} */}
+                  {showPassword ? (
+        <HiOutlineEyeOff size={22} />
+      ) : (
+        <HiOutlineEye size={22} />
+      )}
+                </button>
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400/5 via-violet-400/5 to-fuchsia-400/5 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
             </div>
@@ -137,8 +163,8 @@ const LoginForm = () => {
           <div className="mt-4 text-center">
             <p className="text-slate-300 text-sm">
               Don't have an account?{" "}
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="text-transparent bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text font-semibold hover:from-cyan-300 hover:to-violet-300 transition-all duration-300 underline-offset-2 hover:underline"
               >
                 Sign Up
