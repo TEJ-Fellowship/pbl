@@ -126,13 +126,6 @@ const saveQuizAttempt = async (score) => {
 
       <div className="relative z-10 flex gap-x-7 p-3 h-screen overflow-hidden">
         <div className="bg-slate-800/80 w-full backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 relative overflow-hidden flex flex-col">
-          {/* <Link to="/dashboard" className="relative z-20 inline-block w-fit">
-            <img
-              alt="arrowback"
-              src={arrowback}
-              className="mt-[2px] ml-[2px] hover:opacity-80 transition-opacity"
-            />
-          </Link> */}
 
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400"></div>
 
