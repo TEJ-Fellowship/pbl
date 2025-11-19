@@ -108,7 +108,7 @@ const QuizStatistics = () => {
                       className="bg-slate-900/50 rounded-lg p-2 mb-2 border border-slate-700/50 flex justify-between items-center"
                     >
                       <span className="text-slate-300 font-medium">
-                         - Score:{" "}
+                        - Score:{" "}
                         <span className="text-cyan-400 font-bold">
                           {att.score}
                         </span>
@@ -116,6 +116,28 @@ const QuizStatistics = () => {
                       <span className="text-slate-400 text-sm">
                         {new Date(att.date).toLocaleString()}
                       </span>
+                    </div>
+                  ))}
+                  {quiz.questions.map((q, index) => (
+                    <div
+                      key={index}
+                      className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50"
+                    >
+                      <p className="text-slate-300 mb-3 font-medium">
+                        <span className="text-violet-400 font-bold">
+                          Q{index + 1}:
+                        </span>{" "}
+                        {q.question}
+                      </p>
+                     
+                      <div className="text-sm space-y-1">
+                        <p className="text-slate-400">
+                          Correct answer:{" "}
+                          <span className="text-green-400 font-semibold">
+                            {q.correct}
+                          </span>
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
