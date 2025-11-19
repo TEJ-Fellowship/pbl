@@ -15,7 +15,7 @@ router.post("/", async (req, res) => {
 
     // let quiz = await Quiz.findOne({ userId });
     // if (quiz) {
-      //  User already has a quiz, add new attempt
+    //  User already has a quiz, add new attempt
     //   quiz.attempts.push({ score, date: new Date() });
     //   await quiz.save();
     //   res.status(200).json({
@@ -24,26 +24,26 @@ router.post("/", async (req, res) => {
     //     isNewQuiz: false,
     //   });
     // } else {
-      //  Create new quiz for user
-      const newQuiz = new Quiz({
-        userId,
-        questions, //   Already transformed in frontend
-        attempts: [{ score, date: new Date() }],
-      });
-      const result = await newQuiz.save();
+    //  Create new quiz for user
+    const newQuiz = new Quiz({
+      userId,
+      questions, //   Already transformed in frontend
+      attempts: [{ score, date: new Date() }],
+    });
+    const result = await newQuiz.save();
 
-      res.status(201).json({
-        //   Use 201 for created
-        message: "Quiz created successfully",
-        attempt: result.attempts[0],
-        isNewQuiz: true,
-      });
+    res.status(201).json({
+      //   Use 201 for created
+      message: "Quiz created successfully",
+      attempt: result.attempts[0],
+      isNewQuiz: true,
+    });
     // }
   } catch (error) {
     console.error("Error saving quiz attempt:", error);
     res.status(500).json({
       message: "Error saving quiz attempt",
-      error: error.message, 
+      error: error.message,
     });
   }
 });
@@ -52,21 +52,23 @@ router.post("/", async (req, res) => {
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-
-    const quizzes = await Quiz.find({ userId }); 
+    console.log("userId form backend to check quiz time", userId);
+    
+    const quizzes = await Quiz.find({ userId });
 
     if (!quizzes || quizzes.length === 0) {
       return res.status(404).json({ message: "No quiz found for this user" });
     }
 
-    const allAttempts = quizzes.flatMap(q => q.attempts);
+    const allAttempts = quizzes.flatMap((q) => q.attempts);
 
     res.status(200).json({
       quizzes,
       totalAttempts: allAttempts.length,
       averageScore:
-        allAttempts.reduce((sum, att) => sum + att.score, 0) / allAttempts.length,
-      bestScore: Math.max(...allAttempts.map(att => att.score)),
+        allAttempts.reduce((sum, att) => sum + att.score, 0) /
+        allAttempts.length,
+      bestScore: Math.max(...allAttempts.map((att) => att.score)),
     });
   } catch (error) {
     console.error("Error fetching quiz history:", error);
