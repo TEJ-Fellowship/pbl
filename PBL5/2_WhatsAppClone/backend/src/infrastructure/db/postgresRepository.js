@@ -1,6 +1,6 @@
 // PostgreSQL repository implementation
-const { Model, DataTypes } = require('sequelize');
-const { sequelize } = require('../../config/postgres');
+import { Model, DataTypes } from 'sequelize';
+import { sequelize } from '../../config/postgres.js';
 
 class User extends Model {};
 class Conversation extends Model {};
@@ -108,4 +108,4 @@ Conversation.belongsTo(User, { foreignKey: 'user1_id', as: 'user1' });
 Conversation.belongsTo(User, { foreignKey: 'user2_id', as: 'user2' });
 Conversation.belongsTo(User, { foreignKey: 'last_message_sender_id', as: 'lastMessageSender' });
 
-module.exports = { User, Conversation };
+export { User, Conversation };
