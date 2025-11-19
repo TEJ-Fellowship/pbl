@@ -2,6 +2,7 @@
 
 import client from "../../config/cassandra.js";
 import { IMessageRepository } from "../../domain/repositories/messageRepository.js";
+import { types } from "cassandra-driver";
 
 const TABLE = "messages";
 
@@ -12,16 +13,34 @@ export class CassandraRepository extends IMessageRepository {
 
   async saveMessage({
     conversationId,
-    messageId,
     senderId,
     content,
-    createdAt,
+    messageType = "text",
+    status = "sent",
   }) {
-    const query = `INSERT INTO ${TABLE} (conversation_id, message_id, sender_id, content, created_at)   VALUES ( ?, ?, ?, ?, ?)`;
-    const params = [conversationId, messageId, senderId, content, createdAt];
+    const messageId = types.TimeUuid.now();
+    const createdAt = new Date();
+    const query = `INSERT INTO ${TABLE} (conversation_id, message_id, sender_id, content, message_type, status, created_at)   VALUES ( ?, ?, ?, ?, ?, ?, ?)`;
+    const params = [
+      conversationId,
+      messageId,
+      senderId,
+      content,
+      messageType,
+      status,
+      createdAt,
+    ];
 
     await client.execute(query, params, { prepare: true });
-    return messageId;
+    return {
+      conversationId,
+      messageId,
+      senderId,
+      content,
+      messageType,
+      status,
+      createdAt,
+    };
   }
 
   async getMessages(conversationId, limit = 50) {
