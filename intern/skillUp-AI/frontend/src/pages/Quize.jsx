@@ -30,18 +30,17 @@ const Quize = () => {
     fetchQuizData();
   }, []);
 
-   const calculateScore = () => {
-    if (!selectedAnswers.length || !quizData?.questions) return 0; // ✅ Safety check
-    
-    let correct = 0;
-    quizData.questions.forEach((q, index) => {
-      if (selectedAnswers[index] === q.correctAnswer) {
-        correct++;
-      }
-    });
-    return correct;
-  };
 
+const calculateScore = (answers) => {
+  if (!answers || !quizData?.questions) return 0;
+  let correct = 0;
+  quizData.questions.forEach((q, index) => {
+    if (answers[index] === q.correctAnswer) {
+      correct++;
+    }
+  });
+  return correct;
+};
 
 const saveQuizAttempt = async (score) => {
     setSavingScore(true);
@@ -230,11 +229,12 @@ const saveQuizAttempt = async (score) => {
                     {/* Score Display */}
                     <div className="flex items-center gap-2">
                       <p className="text-3xl font-bold bg-gradient-to-r from-cyan-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent whitespace-nowrap">
-                        {calculateScore()}/{quizData.questions.length}
+                        {calculateScore(selectedAnswers)}/{quizData.questions.length}
+
                       </p>
                       <p className="text-xl text-slate-300 font-medium whitespace-nowrap">
                         {Math.round(
-                          (calculateScore() / quizData.questions.length) * 100
+                          (calculateScore(selectedAnswers) / quizData.questions.length) * 100
                         )}
                         % Score
                       </p>
@@ -242,24 +242,24 @@ const saveQuizAttempt = async (score) => {
 
                     {/* Message Display */}
                     <div>
-                      {calculateScore() === quizData.questions.length && (
+                      {calculateScore(selectedAnswers) === quizData.questions.length && (
                         <p className="text-green-400 text-lg font-semibold whitespace-nowrap">
                           Perfect Score! 🌟
                         </p>
                       )}
-                      {calculateScore() >= quizData.questions.length * 0.8 &&
-                        calculateScore() < quizData.questions.length && (
+                      {calculateScore(selectedAnswers) >= quizData.questions.length * 0.8 &&
+                        calculateScore(selectedAnswers) < quizData.questions.length && (
                           <p className="text-blue-400 text-lg font-semibold whitespace-nowrap">
                             Great Job! 👏
                           </p>
                         )}
-                      {calculateScore() >= quizData.questions.length * 0.6 &&
-                        calculateScore() < quizData.questions.length * 0.8 && (
+                      {calculateScore(selectedAnswers) >= quizData.questions.length * 0.6 &&
+                        calculateScore(selectedAnswers) < quizData.questions.length * 0.8 && (
                           <p className="text-yellow-400 text-lg font-semibold whitespace-nowrap">
                             Good Effort! 💪
                           </p>
                         )}
-                      {calculateScore() < quizData.questions.length * 0.6 && (
+                      {calculateScore(selectedAnswers) < quizData.questions.length * 0.6 && (
                         <p className="text-orange-400 text-lg font-semibold whitespace-nowrap">
                           Keep Practicing! 📚
                         </p>
