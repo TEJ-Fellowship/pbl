@@ -1,5 +1,6 @@
 // kafka/consumer.js
 const { Kafka } = require('kafkajs');
+const { redisClient, initRedis } = require('../redis/redisClient');
 
 const kafka = new Kafka({
   clientId: 'gaming-leaderboard-consumer',
@@ -9,6 +10,7 @@ const kafka = new Kafka({
 const consumer = kafka.consumer({ groupId: 'leaderboard-service' });
 
 async function initConsumer() {
+  await initRedis();       // ensure Redis connected
   await consumer.connect();
   console.log('Kafka consumer connected');
 
@@ -18,10 +20,16 @@ async function initConsumer() {
     eachMessage: async ({ topic, partition, message }) => {
       const value = message.value.toString();
       const event = JSON.parse(value);
+      const { matchId, playerId, score } = event;
 
-      // Here you would normally update your DB and push to clients.
-      // For now, just log it (NO DB as requested).
-      console.log('Received score update:', event);
+      // Store/update score in a Redis sorted set
+      // key: "leaderboard:global", member: playerId, score: numeric score
+      await redisClient.zAdd('leaderboard:global', {
+        score: Number(score),
+        value: playerId,
+      });
+
+      console.log('Updated Redis leaderboard for:', { matchId, playerId, score });
     },
   });
 }
