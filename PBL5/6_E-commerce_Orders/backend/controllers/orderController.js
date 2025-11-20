@@ -1,6 +1,5 @@
 const { Order, OrderItem, Product, Inventory, Payment } = require('../models');
-const { getCart, clearCart } = require('../utils/redis');
-const { reserveInventory, releaseInventory } = require('../utils/redis');
+const { getCart, clearCart, reserveInventory, releaseInventory, syncInventoryToCache, getCachedInventory } = require('../utils/redis');
 const { getPrimary } = require('../utils/db');
 const { v4: uuidv4 } = require('uuid');
 const { Sequelize } = require('sequelize');
@@ -74,17 +73,59 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // Sync inventory to Redis cache before reservation (if not already cached)
+    // This ensures inventory is available in Redis for atomic reservation
+    for (const product of products) {
+      const cartItem = cart[product.id];
+      if (!cartItem) continue;
+
+      // Check if inventory is already cached in Redis
+      const cachedInventory = await getCachedInventory(product.id);
+      
+      // Calculate available quantity from database
+      const available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+      
+      // Always sync to ensure we have the latest value from database
+      // This is safe because the Lua script will handle concurrent reservations atomically
+      const syncSuccess = await syncInventoryToCache(product.id, available);
+      
+      if (!syncSuccess) {
+        console.error(`Failed to sync inventory to cache for product ${product.id}`);
+        await transaction.rollback();
+        return res.status(500).json({
+          success: false,
+          message: `Failed to sync inventory cache for ${product.title}. Please try again.`
+        });
+      }
+      
+      console.log(`Synced inventory for product ${product.id}: ${available} available`);
+    }
+
     // Reserve inventory in Redis (atomic operation)
     const orderId = uuidv4();
     for (const product of products) {
       const cartItem = cart[product.id];
       if (!cartItem) continue;
 
+      // Ensure quantity is a number
+      const quantityToReserve = parseInt(cartItem.quantity, 10);
+      if (isNaN(quantityToReserve) || quantityToReserve <= 0) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: `Invalid quantity for ${product.title}: ${cartItem.quantity}`
+        });
+      }
+      
+      console.log(`Attempting to reserve ${quantityToReserve} units of product ${product.id} for order ${orderId}`);
+      
       const reserveResult = await reserveInventory(
         product.id,
-        cartItem.quantity,
+        quantityToReserve,
         orderId
       );
+
+      console.log(`Reservation result for product ${product.id}:`, JSON.stringify(reserveResult));
 
       if (!reserveResult.success) {
         // Release any already reserved inventory
@@ -94,13 +135,27 @@ const createOrder = async (req, res) => {
           }
         }
         await transaction.rollback();
+        
+        // Provide more detailed error messages
+        let errorMessage = 'Failed to reserve inventory';
+        if (reserveResult.error === 'INSUFFICIENT_STOCK') {
+          errorMessage = `Insufficient stock for ${product.title}. Available: ${reserveResult.available}, Requested: ${quantityToReserve}`;
+        } else if (reserveResult.error === 'INVENTORY_NOT_CACHED') {
+          errorMessage = `Inventory cache error for ${product.title}. Please try again.`;
+        } else if (reserveResult.error === 'UNKNOWN_RESULT_FORMAT') {
+          errorMessage = `Inventory reservation error for ${product.title}. Unexpected result format. Please try again.`;
+          console.error('Unexpected reservation result:', reserveResult.result);
+        } else {
+          errorMessage = `Failed to reserve inventory for ${product.title}: ${reserveResult.error || 'Unknown error'}`;
+        }
+        
         return res.status(400).json({
           success: false,
-          message: reserveResult.error === 'INSUFFICIENT_STOCK' 
-            ? `Insufficient stock for ${product.title}. Available: ${reserveResult.available}`
-            : 'Failed to reserve inventory'
+          message: errorMessage
         });
       }
+      
+      console.log(`Successfully reserved ${quantityToReserve} units of product ${product.id}`);
     }
 
     // Create order in database

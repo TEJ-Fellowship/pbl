@@ -210,10 +210,11 @@ const reserveInventory = async (productId, quantity, orderId) => {
     const inventoryKey = `inventory:${productId}`;
     
     // Lua script for atomic check-and-decrement
+    // Returns: 1 for success, or error code as number
     const luaScript = `
       local available = redis.call('GET', KEYS[1])
       if not available then
-        return {err = 'INVENTORY_NOT_CACHED'}
+        return {0, 'INVENTORY_NOT_CACHED', 0}
       end
       available = tonumber(available)
       local requested = tonumber(ARGV[1])
@@ -221,52 +222,67 @@ const reserveInventory = async (productId, quantity, orderId) => {
         redis.call('DECRBY', KEYS[1], requested)
         redis.call('SADD', KEYS[2], ARGV[2])
         redis.call('EXPIRE', KEYS[2], 600)
-        return {ok = 1, remaining = available - requested}
+        return {1, available - requested}
       else
-        return {err = 'INSUFFICIENT_STOCK', available = available}
+        return {0, 'INSUFFICIENT_STOCK', available}
       end
     `;
+    
+    // Ensure quantity is a number
+    const quantityNum = typeof quantity === 'number' ? quantity : parseInt(quantity, 10);
+    if (isNaN(quantityNum) || quantityNum <= 0) {
+      console.error(`Invalid quantity for reserveInventory: ${quantity}`);
+      return { success: false, error: 'INVALID_QUANTITY' };
+    }
+    
+    console.log(`Reserving inventory: productId=${productId}, quantity=${quantityNum}, orderId=${orderId}`);
+    console.log(`Redis keys: inventoryKey=${inventoryKey}, lockKey=${lockKey}`);
     
     const result = await redisClient.eval(
       luaScript,
       {
         keys: [inventoryKey, lockKey],
-        arguments: [quantity.toString(), orderId]
+        arguments: [quantityNum.toString(), orderId]
       }
     );
     
-    // Handle result (Lua returns as array or object depending on version)
-    if (Array.isArray(result)) {
-      if (result[0] === 'err') {
+    console.log(`Lua script result for product ${productId}:`, result, `Type: ${typeof result}, IsArray: ${Array.isArray(result)}`);
+    
+    // Result format: [success_code, ...]
+    // success_code: 1 = success, 0 = error
+    if (Array.isArray(result) && result.length > 0) {
+      const successCode = result[0];
+      console.log(`Success code: ${successCode}, Type: ${typeof successCode}`);
+      
+      // Handle both string and number success codes
+      if (successCode === 1 || successCode === '1') {
+        // Success: [1, remaining]
+        const remaining = result[1] || 0;
+        console.log(`Reservation successful. Remaining: ${remaining}`);
+        return { 
+          success: true, 
+          remaining: typeof remaining === 'number' ? remaining : parseInt(remaining, 10) || 0
+        };
+      } else if (successCode === 0 || successCode === '0') {
+        // Error: [0, error_type, available]
+        const errorType = result[1] || 'UNKNOWN_ERROR';
+        const available = result[2] || 0;
+        console.log(`Reservation failed. Error: ${errorType}, Available: ${available}`);
         return { 
           success: false, 
-          error: result[1] || 'UNKNOWN_ERROR', 
-          available: result[2] || 0 
+          error: errorType, 
+          available: typeof available === 'number' ? available : parseInt(available, 10) || 0
         };
-      }
-      if (result[0] === 'ok') {
-        return { success: true, remaining: result[1] || 0 };
       }
     }
     
-    // Fallback: try to parse as object
-    if (result && typeof result === 'object') {
-      if (result.err) {
-        return { 
-          success: false, 
-          error: result.err, 
-          available: result.available || 0 
-        };
-      }
-      if (result.ok) {
-        return { success: true, remaining: result.remaining || 0 };
-      }
-    }
-    
-    return { success: false, error: 'UNKNOWN_RESULT' };
+    // If result is not in expected format, log it for debugging
+    console.error(`Unexpected reserveInventory result format for product ${productId}:`, JSON.stringify(result));
+    console.error(`Result type: ${typeof result}, IsArray: ${Array.isArray(result)}, Length: ${Array.isArray(result) ? result.length : 'N/A'}`);
+    return { success: false, error: 'UNKNOWN_RESULT_FORMAT', result: result };
   } catch (error) {
-    console.error(`Inventory reserve error:`, error.message);
-    return { success: false, error: error.message };
+    console.error(`Inventory reserve error for product ${productId}:`, error);
+    return { success: false, error: error.message || 'REDIS_ERROR' };
   }
 };
 
