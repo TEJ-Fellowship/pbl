@@ -1,44 +1,57 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../utils/db");
 
-const Booking = sequelize.define(
-  "Booking",
+const Payment = sequelize.define(
+  "Payment",
   {
     id: {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
-    user_id: {
+    booking_id: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: "users",
+        model: "bookings",
         key: "id",
       },
+      unique: true, // One payment per booking
     },
-    showtime_id: {
-      type: DataTypes.UUID,
+    amount: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
-      references: {
-        model: "showtimes",
-        key: "id",
-      },
+    },
+    payment_method: {
+      type: DataTypes.ENUM("credit_card", "debit_card", "eSewa", "Khalti"),
+      allowNull: false,
     },
     status: {
       type: DataTypes.ENUM(
         "pending",
-        "reserved",
-        "confirmed",
-        "cancelled",
-        "refunded",
-        "expired"
+        "processing",
+        "success",
+        "failed",
+        "refunded"
       ),
       defaultValue: "pending",
     },
-    total_amount: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
+    transaction_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    idempotency_key: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true,
+    },
+    failure_reason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    processed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     created_at: {
       type: DataTypes.DATE,
@@ -50,12 +63,9 @@ const Booking = sequelize.define(
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    confirmed_at: {
-      type: DataTypes.DATE,
-    },
   },
   {
-    tableName: "bookings",
+    tableName: "payments",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
@@ -63,4 +73,4 @@ const Booking = sequelize.define(
   }
 );
 
-module.exports = Booking;
+module.exports = Payment;

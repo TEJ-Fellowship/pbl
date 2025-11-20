@@ -22,10 +22,15 @@ const sequelize = new Sequelize(DATABASE_URL, {
 const connectToDatabase = async () => {
   try {
     await sequelize.authenticate();
+    console.log("✅ Database authenticated");
     await runMigrations();
-    console.log("connected to the database");
+    console.log("✅ connected to the database");
   } catch (err) {
-    console.log("failed to connect to the database");
+    console.error("❌ failed to connect to the database");
+    console.error("Error details:", err.message);
+    if (err.original) {
+      console.error("Original error:", err.original.message);
+    }
     return process.exit(1);
   }
   return null;
@@ -41,11 +46,20 @@ const migrationConf = {
 };
 
 const runMigrations = async () => {
-  const migrator = new Umzug(migrationConf);
-  const migrations = await migrator.up();
-  console.log("Migrations up to date", {
-    files: migrations.map((mig) => mig.name),
-  });
+  try {
+    const migrator = new Umzug(migrationConf);
+    const migrations = await migrator.up();
+    if (migrations.length > 0) {
+      console.log("✅ Migrations applied:", {
+        files: migrations.map((mig) => mig.name),
+      });
+    } else {
+      console.log("✅ Migrations up to date");
+    }
+  } catch (error) {
+    console.error("❌ Migration error:", error.message);
+    throw error;
+  }
 };
 
 const rollbackMigration = async () => {
@@ -54,4 +68,9 @@ const rollbackMigration = async () => {
   await migrator.down();
 };
 
-module.exports = { connectToDatabase, sequelize, rollbackMigration };
+module.exports = {
+  connectToDatabase,
+  sequelize,
+  rollbackMigration,
+  runMigrations,
+};

@@ -2,17 +2,18 @@ const { sequelize } = require("../utils/db");
 const {
   Booking,
   BookingSeat,
-  SeatReservation,
   Showtime,
   Seat,
   Movie,
   Screen,
   Theater,
   User,
+  Payment,
 } = require("../models");
 const { Op } = require("sequelize");
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
+const { expireOldPendingBookings } = require("./paymentsController");
 
 const getAllBookings = async (req, res, next) => {
   try {
@@ -299,251 +300,6 @@ const getBookingById = async (req, res, next) => {
   }
 };
 
-const reserveSeats = async (req, res, next) => {
-  try {
-    const { showtime_id, seat_ids, user_id } = req.body;
-
-    // ============================================
-    // VALIDATION: Required Fields
-    // ============================================
-    if (!showtime_id || !seat_ids || !user_id) {
-      return res.status(400).json({
-        error:
-          "Missing required fields: showtime_id, seat_ids, and user_id are required",
-      });
-    }
-
-    if (!Array.isArray(seat_ids) || seat_ids.length === 0) {
-      return res.status(400).json({
-        error: "seat_ids must be a non-empty array",
-      });
-    }
-
-    // ============================================
-    // CALCULATE EXPIRY: 5 minutes from now
-    // ============================================
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    // ============================================
-    // TRANSACTION: Ensure all reservations succeed or fail together
-    // ============================================
-    const transaction = await sequelize.transaction();
-
-    try {
-      // ============================================
-      // VALIDATION: User exists
-      // ============================================
-      const user = await User.findByPk(user_id, { transaction });
-      if (!user) {
-        await transaction.rollback();
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      // ============================================
-      // VALIDATION: Showtime exists and is active
-      // ============================================
-      const showtime = await Showtime.findByPk(showtime_id, {
-        include: [
-          {
-            model: Screen,
-            as: "screen",
-            attributes: ["id"],
-          },
-        ],
-        transaction,
-      });
-
-      if (!showtime) {
-        await transaction.rollback();
-        return res.status(404).json({ error: "Showtime not found" });
-      }
-
-      if (showtime.status !== "active") {
-        await transaction.rollback();
-        return res.status(400).json({
-          error: `Cannot reserve seats for showtime with status: ${showtime.status}`,
-        });
-      }
-
-      // ============================================
-      // VALIDATION: Showtime is in the future
-      // ============================================
-      if (new Date(showtime.show_time) <= new Date()) {
-        await transaction.rollback();
-        return res.status(400).json({
-          error: "Cannot reserve seats for past showtimes",
-        });
-      }
-
-      const screenId = showtime.screen_id;
-
-      // ============================================
-      // REDIS DISTRIBUTED LOCKING: Acquire locks for all seats
-      // ============================================
-      // Lock key format: seat:{seatId}:showtime:{showtimeId}
-      const lockKeys = seat_ids.map(
-        (seatId) => `seat:${seatId}:showtime:${showtime_id}`
-      );
-      const lockTTL = 300; // 5 minutes (matches reservation expiry)
-
-      const { acquired: locks, failed: failedLocks } = await acquireLocks(
-        lockKeys,
-        lockTTL
-      );
-
-      // If any lock failed, another process is working on these seats
-      if (failedLocks.length > 0) {
-        await transaction.rollback();
-        return res.status(409).json({
-          error:
-            "One or more seats are currently being processed by another user. Please try again.",
-          seats_busy: failedLocks.length,
-        });
-      }
-
-      // All locks acquired - proceed with reservation
-      const reservations = [];
-
-      try {
-        // ============================================
-        // VALIDATION: Check each seat before reserving
-        // ============================================
-        for (const seatId of seat_ids) {
-          // Check seat exists
-          const seat = await Seat.findByPk(seatId, { transaction });
-          if (!seat) {
-            await transaction.rollback();
-            return res.status(404).json({ error: `Seat ${seatId} not found` });
-          }
-
-          // ============================================
-          // VALIDATION: Seat belongs to showtime's screen
-          // ============================================
-          if (seat.screen_id !== screenId) {
-            await transaction.rollback();
-            return res.status(400).json({
-              error: `Seat ${seatId} does not belong to this showtime's screen`,
-            });
-          }
-
-          // ============================================
-          // VALIDATION: Check if seat is already booked
-          // ============================================
-          const existingBooking = await BookingSeat.findOne({
-            where: {
-              showtime_id,
-              seat_id: seatId,
-            },
-            transaction,
-          });
-
-          if (existingBooking) {
-            await transaction.rollback();
-            return res.status(409).json({
-              error: `Seat ${seat.seat_number} is already booked`,
-            });
-          }
-
-          // ============================================
-          // VALIDATION: Check if seat is already reserved (not expired)
-          // ============================================
-          const existingReservation = await SeatReservation.findOne({
-            where: {
-              showtime_id,
-              seat_id: seatId,
-              status: "reserved",
-              expires_at: { [Op.gt]: new Date() },
-            },
-            transaction,
-          });
-
-          if (existingReservation) {
-            // Allow same user to re-reserve (extend time)
-            if (existingReservation.user_id !== user_id) {
-              await transaction.rollback();
-              return res.status(409).json({
-                error: `Seat ${seat.seat_number} is already reserved by another user`,
-              });
-            }
-            // Same user: update expiry time
-            await existingReservation.update(
-              { expires_at: expiresAt },
-              { transaction }
-            );
-            reservations.push(existingReservation);
-            continue;
-          }
-
-          // ============================================
-          // CREATE RESERVATION: All validations passed
-          // ============================================
-          const reservation = await SeatReservation.create(
-            {
-              showtime_id,
-              seat_id: seatId,
-              user_id,
-              expires_at: expiresAt,
-              status: "reserved",
-            },
-            { transaction }
-          );
-          reservations.push(reservation);
-        }
-
-        // ============================================
-        // COMMIT TRANSACTION: Save all reservations
-        // ============================================
-        await transaction.commit();
-
-        // ============================================
-        // RELEASE LOCKS: Reservation successful, release locks
-        // Note: Locks will auto-expire after TTL, but release immediately for efficiency
-        // ============================================
-        await releaseLocks(locks);
-
-        // ============================================
-        // INVALIDATE CACHE: Seat availability changed
-        // ============================================
-        try {
-          await redis.del(`showtime:${showtime_id}:seats`);
-        } catch (redisError) {
-          console.warn("Failed to invalidate cache:", redisError.message);
-        }
-
-        res.status(201).json({
-          message: "Seats reserved successfully",
-          reservations: reservations.map((r) => ({
-            id: r.id,
-            seat_id: r.seat_id,
-            showtime_id: r.showtime_id,
-            expires_at: r.expires_at,
-          })),
-          expires_at: expiresAt,
-          expires_in_seconds: 300, // 5 minutes
-        });
-      } catch (error) {
-        // ============================================
-        // ROLLBACK: Undo all reservations on error
-        // ============================================
-        await transaction.rollback();
-        // Release locks on error
-        await releaseLocks(locks);
-        throw error;
-      }
-    } catch (error) {
-      // ============================================
-      // ROLLBACK: If transaction wasn't started or other error
-      // ============================================
-      if (transaction && !transaction.finished) {
-        await transaction.rollback();
-      }
-      throw error;
-    }
-  } catch (error) {
-    next(error);
-  }
-};
-
 const createBooking = async (req, res, next) => {
   try {
     const { user_id, showtime_id, seat_ids } = req.body;
@@ -616,6 +372,12 @@ const createBooking = async (req, res, next) => {
       }
 
       // ============================================
+      // EXPIRY CHECK: Expire old pending bookings (older than 5 minutes)
+      // This releases seats from bookings where payment was not completed
+      // ============================================
+      await expireOldPendingBookings(showtime_id, transaction);
+
+      // ============================================
       // REDIS DISTRIBUTED LOCKING: Acquire locks for all seats
       // ============================================
       // Lock key format: seat:{seatId}:showtime:{showtimeId}
@@ -669,12 +431,33 @@ const createBooking = async (req, res, next) => {
 
           // ============================================
           // VALIDATION: Check if seat is already booked
+          // Exclude cancelled/expired bookings so seats can be rebooked
+          // Also exclude pending bookings older than 5 minutes (auto-expired)
           // ============================================
+          const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
           const existingBooking = await BookingSeat.findOne({
             where: {
               showtime_id,
               seat_id: seatId,
             },
+            include: [
+              {
+                model: Booking,
+                as: "booking",
+                where: {
+                  status: { [Op.notIn]: ["cancelled", "refunded", "expired"] },
+                  // Exclude pending bookings older than 5 minutes
+                  [Op.or]: [
+                    { status: { [Op.ne]: "pending" } },
+                    {
+                      status: "pending",
+                      created_at: { [Op.gt]: fiveMinutesAgo },
+                    },
+                  ],
+                },
+                required: true,
+              },
+            ],
             transaction,
           });
 
@@ -847,19 +630,6 @@ const confirmBooking = async (req, res, next) => {
         { transaction }
       );
 
-      // Update seat reservations to confirmed
-      await SeatReservation.update(
-        { status: "confirmed" },
-        {
-          where: {
-            showtime_id: booking.showtime_id,
-            user_id: booking.user_id,
-            status: "reserved",
-          },
-          transaction,
-        }
-      );
-
       await transaction.commit();
 
       // ============================================
@@ -956,7 +726,7 @@ const cancelBooking = async (req, res, next) => {
       // ============================================
       const cancellationRules = {
         // Cannot cancel already cancelled bookings
-        cannotCancelStatuses: ["cancelled", "expired"],
+        cannotCancelStatuses: ["cancelled", "refunded", "expired"],
         // Cannot cancel if showtime is in the past
         cannotCancelIfShowtimePast: true,
         // Cancellation window: Can cancel up to 2 hours before showtime
@@ -1001,11 +771,25 @@ const cancelBooking = async (req, res, next) => {
       }
 
       // ============================================
-      // CANCEL BOOKING: All validations passed
+      // CHECK PAYMENT STATUS: Determine if refunded or just cancelled
       // ============================================
+      const payment = await Payment.findOne({
+        where: { booking_id: id },
+        transaction,
+      });
+
+      const hadPayment = payment && payment.status === "success";
+
+      // ============================================
+      // CANCEL BOOKING: Set status based on payment
+      // ============================================
+      // If payment was made → status = "refunded"
+      // If no payment → status = "cancelled"
+      const bookingStatus = hadPayment ? "refunded" : "cancelled";
+
       await booking.update(
         {
-          status: "cancelled",
+          status: bookingStatus,
           // Store cancellation metadata (if you add a cancellation_reason field later)
         },
         { transaction }
@@ -1025,19 +809,6 @@ const cancelBooking = async (req, res, next) => {
         transaction,
       });
 
-      // Release seat reservations
-      await SeatReservation.update(
-        { status: "expired" },
-        {
-          where: {
-            showtime_id: booking.showtime_id,
-            user_id: booking.user_id,
-            status: { [Op.in]: ["reserved", "confirmed"] },
-          },
-          transaction,
-        }
-      );
-
       // ============================================
       // UPDATE SHOWTIME: Increase available seats
       // ============================================
@@ -1050,10 +821,26 @@ const cancelBooking = async (req, res, next) => {
         );
       }
 
+      // ============================================
+      // HANDLE PAYMENT REFUND (if payment exists) - BEFORE COMMIT
+      // ============================================
+      if (hadPayment) {
+        // Update payment status to refunded
+        await payment.update(
+          {
+            status: "refunded", // Call Refund Api later in prod
+          },
+          { transaction }
+        );
+      }
+
+      // ============================================
+      // COMMIT TRANSACTION: All database changes
+      // ============================================
       await transaction.commit();
 
       // ============================================
-      // RELEASE LOCKS: Booking cancelled, release locks
+      // RELEASE LOCKS: Booking cancelled, release locks (after commit)
       // ============================================
       try {
         const lockStorageKey = `booking:${id}:locks`;
@@ -1114,12 +901,15 @@ const cancelBooking = async (req, res, next) => {
 
       // Return cancellation details
       res.json({
-        message: "Booking cancelled successfully",
+        message: hadPayment
+          ? "Booking refunded successfully"
+          : "Booking cancelled successfully",
         booking_id: id,
+        status: bookingStatus,
         cancelled_at: new Date(),
         seats_released: seatCount,
         seats_verified_deleted: remainingBookingSeats === 0,
-        refund_eligible: true, // In real system, check payment status
+        refund_processed: hadPayment,
         cancellation_reason: reason || null,
       });
     } catch (error) {
@@ -1135,7 +925,6 @@ module.exports = {
   getAllBookings,
   getBookingsByUser,
   getBookingById,
-  // reserveSeats, // Removed - route no longer exists, using createBooking instead
   createBooking,
   confirmBooking,
   updateBooking,
