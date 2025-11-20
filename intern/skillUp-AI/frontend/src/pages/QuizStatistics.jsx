@@ -12,7 +12,7 @@ const QuizStatistics = () => {
     setLoading(true);
     try {
       console.log(user, "this is user in quizStat to check");
-      
+
       const result = await service.getQuizStats(user.id);
       console.log(result.data, "quiz statistics");
       setStats(result.data);
@@ -131,7 +131,7 @@ const QuizStatistics = () => {
                         </span>{" "}
                         {q.question}
                       </p>
-                     
+
                       <div className="text-sm space-y-1">
                         <p className="text-slate-400">
                           Correct answer:{" "}
