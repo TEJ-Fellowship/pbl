@@ -249,6 +249,21 @@ const getMovieShowtimes = async (req, res, next) => {
     const { id } = req.params;
     const { date, theater_id } = req.query;
 
+    // Build cache key based on query parameters
+    const cacheKey = `movie:${id}:showtimes:${date || "all"}:${
+      theater_id || "all"
+    }`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     // Check if movie exists
     const movie = await Movie.findByPk(id);
     if (!movie) {
@@ -306,12 +321,21 @@ const getMovieShowtimes = async (req, res, next) => {
       order: [["show_time", "ASC"]],
     });
 
-    res.json({
+    const response = {
       movie_id: id,
       movie_title: movie.title,
       showtimes,
       total: showtimes.length,
-    });
+    };
+
+    // Cache the result for 60 seconds
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), { EX: 60 });
+    } catch (redisError) {
+      console.warn("Failed to cache movie showtimes:", redisError.message);
+    }
+
+    res.json(response);
   } catch (error) {
     next(error);
   }

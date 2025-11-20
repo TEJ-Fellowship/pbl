@@ -7,7 +7,7 @@ const bookingsController = require("../controllers/bookingsController");
 router.get("/", bookingsController.getAllBookings);
 router.get("/user/:userId", bookingsController.getBookingsByUser);
 router.post("/", bookingsController.createBooking);
-router.post("/reserve", bookingsController.reserveSeats);
+// router.post("/reserve", bookingsController.reserveSeats); // Removed - using /bookings for reservations
 router.post("/confirm/:id", bookingsController.confirmBooking);
 router.put("/:id/cancel", bookingsController.cancelBooking); // Enhanced cancellation with rules
 router.get("/:id", bookingsController.getBookingById);

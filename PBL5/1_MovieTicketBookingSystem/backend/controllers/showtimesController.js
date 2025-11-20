@@ -7,9 +7,22 @@ const {
   BookingSeat,
 } = require("../models");
 const { Op } = require("sequelize");
+const redis = require("../utils/redis");
 
 const getAllShowtimes = async (req, res, next) => {
   try {
+    const cacheKey = "showtimes:list:all";
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     const showtimes = await Showtime.findAll({
       include: [
         {
@@ -32,6 +45,14 @@ const getAllShowtimes = async (req, res, next) => {
       ],
       order: [["show_time", "DESC"]],
     });
+
+    // Cache the result for 60 seconds
+    try {
+      await redis.set(cacheKey, JSON.stringify(showtimes), { EX: 60 });
+    } catch (redisError) {
+      console.warn("Failed to cache showtimes:", redisError.message);
+    }
+
     res.json(showtimes);
   } catch (error) {
     next(error);
@@ -41,6 +62,18 @@ const getAllShowtimes = async (req, res, next) => {
 const getShowtimesByMovie = async (req, res, next) => {
   try {
     const { movieId } = req.params;
+    const cacheKey = `showtimes:movie:${movieId}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     const showtimes = await Showtime.findAll({
       where: {
         movie_id: movieId,
@@ -62,6 +95,14 @@ const getShowtimesByMovie = async (req, res, next) => {
       ],
       order: [["show_time", "ASC"]],
     });
+
+    // Cache the result for 60 seconds
+    try {
+      await redis.set(cacheKey, JSON.stringify(showtimes), { EX: 60 });
+    } catch (redisError) {
+      console.warn("Failed to cache showtimes:", redisError.message);
+    }
+
     res.json(showtimes);
   } catch (error) {
     next(error);
@@ -71,6 +112,18 @@ const getShowtimesByMovie = async (req, res, next) => {
 const getShowtimesByTheater = async (req, res, next) => {
   try {
     const { theaterId } = req.params;
+    const cacheKey = `showtimes:theater:${theaterId}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     const showtimes = await Showtime.findAll({
       where: {
         status: "active",
@@ -91,6 +144,14 @@ const getShowtimesByTheater = async (req, res, next) => {
       ],
       order: [["show_time", "ASC"]],
     });
+
+    // Cache the result for 60 seconds
+    try {
+      await redis.set(cacheKey, JSON.stringify(showtimes), { EX: 60 });
+    } catch (redisError) {
+      console.warn("Failed to cache showtimes:", redisError.message);
+    }
+
     res.json(showtimes);
   } catch (error) {
     next(error);
@@ -100,6 +161,18 @@ const getShowtimesByTheater = async (req, res, next) => {
 const getShowtimeById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const cacheKey = `showtime:${id}`;
+
+    // Try to get from cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
+
     const showtime = await Showtime.findByPk(id, {
       include: [
         {
@@ -124,6 +197,14 @@ const getShowtimeById = async (req, res, next) => {
     if (!showtime) {
       return res.status(404).json({ error: "Showtime not found" });
     }
+
+    // Cache the result for 5 minutes (300 seconds)
+    try {
+      await redis.set(cacheKey, JSON.stringify(showtime), { EX: 300 });
+    } catch (redisError) {
+      console.warn("Failed to cache showtime:", redisError.message);
+    }
+
     res.json(showtime);
   } catch (error) {
     next(error);
@@ -221,6 +302,24 @@ const createShowtime = async (req, res, next) => {
       status: "active",
     });
 
+    // Invalidate showtime caches (new showtime added)
+    try {
+      // Invalidate all showtime list caches
+      const keys = await redis.keys("showtimes:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+      // Also invalidate movie showtimes cache
+      const movieShowtimeKeys = await redis.keys(
+        `movie:${movie_id}:showtimes:*`
+      );
+      if (movieShowtimeKeys.length > 0) {
+        await redis.del(movieShowtimeKeys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.status(201).json(showtime);
   } catch (error) {
     next(error);
@@ -242,6 +341,27 @@ const updateShowtime = async (req, res, next) => {
       price,
       status,
     });
+
+    // Invalidate cache for this showtime and related caches
+    try {
+      await redis.del(`showtime:${id}`);
+      await redis.del(`showtime:${id}:seats`);
+      // Invalidate list caches
+      const keys = await redis.keys("showtimes:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+      // Invalidate movie showtimes cache
+      const movieShowtimeKeys = await redis.keys(
+        `movie:${showtime.movie_id}:showtimes:*`
+      );
+      if (movieShowtimeKeys.length > 0) {
+        await redis.del(movieShowtimeKeys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.json(showtime);
   } catch (error) {
     next(error);
@@ -255,7 +375,31 @@ const deleteShowtime = async (req, res, next) => {
     if (!showtime) {
       return res.status(404).json({ error: "Showtime not found" });
     }
+
+    const movieId = showtime.movie_id;
+
     await showtime.destroy();
+
+    // Invalidate cache for this showtime and related caches
+    try {
+      await redis.del(`showtime:${id}`);
+      await redis.del(`showtime:${id}:seats`);
+      // Invalidate list caches
+      const keys = await redis.keys("showtimes:*");
+      if (keys.length > 0) {
+        await redis.del(keys);
+      }
+      // Invalidate movie showtimes cache
+      const movieShowtimeKeys = await redis.keys(
+        `movie:${movieId}:showtimes:*`
+      );
+      if (movieShowtimeKeys.length > 0) {
+        await redis.del(movieShowtimeKeys);
+      }
+    } catch (redisError) {
+      console.warn("Failed to invalidate cache:", redisError.message);
+    }
+
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -265,6 +409,17 @@ const deleteShowtime = async (req, res, next) => {
 const getShowtimeSeats = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const cacheKey = `showtime:${id}:seats`;
+
+    // Try to get from cache first (most critical endpoint - seat availability)
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return res.json(JSON.parse(cached));
+      }
+    } catch (redisError) {
+      console.warn("Redis cache miss, querying database:", redisError.message);
+    }
 
     // Get showtime with screen information
     const showtime = await Showtime.findByPk(id, {
@@ -335,7 +490,7 @@ const getShowtimeSeats = async (req, res, next) => {
       (s) => !s.is_available
     ).length;
 
-    res.json({
+    const response = {
       showtime: {
         id: showtime.id,
         show_time: showtime.show_time,
@@ -356,7 +511,16 @@ const getShowtimeSeats = async (req, res, next) => {
         available: availableCount,
         booked: bookedCount,
       },
-    });
+    };
+
+    // Cache the result for 15 seconds (short TTL because seat availability changes frequently)
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), { EX: 15 });
+    } catch (redisError) {
+      console.warn("Failed to cache seat availability:", redisError.message);
+    }
+
+    res.json(response);
   } catch (error) {
     next(error);
   }

@@ -11,6 +11,8 @@ const {
   User,
 } = require("../models");
 const { Op } = require("sequelize");
+const redis = require("../utils/redis");
+const { acquireLocks, releaseLocks } = require("../utils/redisLock");
 
 const getAllBookings = async (req, res, next) => {
   try {
@@ -374,114 +376,167 @@ const reserveSeats = async (req, res, next) => {
       }
 
       const screenId = showtime.screen_id;
-      const reservations = [];
 
       // ============================================
-      // VALIDATION: Check each seat before reserving
+      // REDIS DISTRIBUTED LOCKING: Acquire locks for all seats
       // ============================================
-      for (const seatId of seat_ids) {
-        // Check seat exists
-        const seat = await Seat.findByPk(seatId, { transaction });
-        if (!seat) {
-          await transaction.rollback();
-          return res.status(404).json({ error: `Seat ${seatId} not found` });
-        }
+      // Lock key format: seat:{seatId}:showtime:{showtimeId}
+      const lockKeys = seat_ids.map(
+        (seatId) => `seat:${seatId}:showtime:${showtime_id}`
+      );
+      const lockTTL = 300; // 5 minutes (matches reservation expiry)
 
-        // ============================================
-        // VALIDATION: Seat belongs to showtime's screen
-        // ============================================
-        if (seat.screen_id !== screenId) {
-          await transaction.rollback();
-          return res.status(400).json({
-            error: `Seat ${seatId} does not belong to this showtime's screen`,
-          });
-        }
+      const { acquired: locks, failed: failedLocks } = await acquireLocks(
+        lockKeys,
+        lockTTL
+      );
 
-        // ============================================
-        // VALIDATION: Check if seat is already booked
-        // ============================================
-        const existingBooking = await BookingSeat.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-          },
-          transaction,
+      // If any lock failed, another process is working on these seats
+      if (failedLocks.length > 0) {
+        await transaction.rollback();
+        return res.status(409).json({
+          error:
+            "One or more seats are currently being processed by another user. Please try again.",
+          seats_busy: failedLocks.length,
         });
-
-        if (existingBooking) {
-          await transaction.rollback();
-          return res.status(409).json({
-            error: `Seat ${seat.seat_number} is already booked`,
-          });
-        }
-
-        // ============================================
-        // VALIDATION: Check if seat is already reserved (not expired)
-        // ============================================
-        const existingReservation = await SeatReservation.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-            status: "reserved",
-            expires_at: { [Op.gt]: new Date() },
-          },
-          transaction,
-        });
-
-        if (existingReservation) {
-          // Allow same user to re-reserve (extend time)
-          if (existingReservation.user_id !== user_id) {
-            await transaction.rollback();
-            return res.status(409).json({
-              error: `Seat ${seat.seat_number} is already reserved by another user`,
-            });
-          }
-          // Same user: update expiry time
-          await existingReservation.update(
-            { expires_at: expiresAt },
-            { transaction }
-          );
-          reservations.push(existingReservation);
-          continue;
-        }
-
-        // ============================================
-        // CREATE RESERVATION: All validations passed
-        // ============================================
-        const reservation = await SeatReservation.create(
-          {
-            showtime_id,
-            seat_id: seatId,
-            user_id,
-            expires_at: expiresAt,
-            status: "reserved",
-          },
-          { transaction }
-        );
-        reservations.push(reservation);
       }
 
-      // ============================================
-      // COMMIT TRANSACTION: Save all reservations
-      // ============================================
-      await transaction.commit();
+      // All locks acquired - proceed with reservation
+      const reservations = [];
 
-      res.status(201).json({
-        message: "Seats reserved successfully",
-        reservations: reservations.map((r) => ({
-          id: r.id,
-          seat_id: r.seat_id,
-          showtime_id: r.showtime_id,
-          expires_at: r.expires_at,
-        })),
-        expires_at: expiresAt,
-        expires_in_seconds: 300, // 5 minutes
-      });
+      try {
+        // ============================================
+        // VALIDATION: Check each seat before reserving
+        // ============================================
+        for (const seatId of seat_ids) {
+          // Check seat exists
+          const seat = await Seat.findByPk(seatId, { transaction });
+          if (!seat) {
+            await transaction.rollback();
+            return res.status(404).json({ error: `Seat ${seatId} not found` });
+          }
+
+          // ============================================
+          // VALIDATION: Seat belongs to showtime's screen
+          // ============================================
+          if (seat.screen_id !== screenId) {
+            await transaction.rollback();
+            return res.status(400).json({
+              error: `Seat ${seatId} does not belong to this showtime's screen`,
+            });
+          }
+
+          // ============================================
+          // VALIDATION: Check if seat is already booked
+          // ============================================
+          const existingBooking = await BookingSeat.findOne({
+            where: {
+              showtime_id,
+              seat_id: seatId,
+            },
+            transaction,
+          });
+
+          if (existingBooking) {
+            await transaction.rollback();
+            return res.status(409).json({
+              error: `Seat ${seat.seat_number} is already booked`,
+            });
+          }
+
+          // ============================================
+          // VALIDATION: Check if seat is already reserved (not expired)
+          // ============================================
+          const existingReservation = await SeatReservation.findOne({
+            where: {
+              showtime_id,
+              seat_id: seatId,
+              status: "reserved",
+              expires_at: { [Op.gt]: new Date() },
+            },
+            transaction,
+          });
+
+          if (existingReservation) {
+            // Allow same user to re-reserve (extend time)
+            if (existingReservation.user_id !== user_id) {
+              await transaction.rollback();
+              return res.status(409).json({
+                error: `Seat ${seat.seat_number} is already reserved by another user`,
+              });
+            }
+            // Same user: update expiry time
+            await existingReservation.update(
+              { expires_at: expiresAt },
+              { transaction }
+            );
+            reservations.push(existingReservation);
+            continue;
+          }
+
+          // ============================================
+          // CREATE RESERVATION: All validations passed
+          // ============================================
+          const reservation = await SeatReservation.create(
+            {
+              showtime_id,
+              seat_id: seatId,
+              user_id,
+              expires_at: expiresAt,
+              status: "reserved",
+            },
+            { transaction }
+          );
+          reservations.push(reservation);
+        }
+
+        // ============================================
+        // COMMIT TRANSACTION: Save all reservations
+        // ============================================
+        await transaction.commit();
+
+        // ============================================
+        // RELEASE LOCKS: Reservation successful, release locks
+        // Note: Locks will auto-expire after TTL, but release immediately for efficiency
+        // ============================================
+        await releaseLocks(locks);
+
+        // ============================================
+        // INVALIDATE CACHE: Seat availability changed
+        // ============================================
+        try {
+          await redis.del(`showtime:${showtime_id}:seats`);
+        } catch (redisError) {
+          console.warn("Failed to invalidate cache:", redisError.message);
+        }
+
+        res.status(201).json({
+          message: "Seats reserved successfully",
+          reservations: reservations.map((r) => ({
+            id: r.id,
+            seat_id: r.seat_id,
+            showtime_id: r.showtime_id,
+            expires_at: r.expires_at,
+          })),
+          expires_at: expiresAt,
+          expires_in_seconds: 300, // 5 minutes
+        });
+      } catch (error) {
+        // ============================================
+        // ROLLBACK: Undo all reservations on error
+        // ============================================
+        await transaction.rollback();
+        // Release locks on error
+        await releaseLocks(locks);
+        throw error;
+      }
     } catch (error) {
       // ============================================
-      // ROLLBACK: Undo all reservations on error
+      // ROLLBACK: If transaction wasn't started or other error
       // ============================================
-      await transaction.rollback();
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
       throw error;
     }
   } catch (error) {
@@ -561,158 +616,207 @@ const createBooking = async (req, res, next) => {
       }
 
       // ============================================
-      // VALIDATION: Check seat availability
+      // REDIS DISTRIBUTED LOCKING: Acquire locks for all seats
       // ============================================
-      const basePrice = parseFloat(showtime.price);
-      let totalAmount = 0;
-      const seatPrices = [];
-      const screenId = showtime.screen_id;
+      // Lock key format: seat:{seatId}:showtime:{showtimeId}
+      const lockKeys = seat_ids.map(
+        (seatId) => `seat:${seatId}:showtime:${showtime_id}`
+      );
+      const lockTTL = 300; // 5 minutes
 
-      for (const seatId of seat_ids) {
-        // Check seat exists
-        const seat = await Seat.findByPk(seatId, { transaction });
-        if (!seat) {
-          await transaction.rollback();
-          return res.status(404).json({ error: `Seat ${seatId} not found` });
-        }
-
-        // ============================================
-        // VALIDATION: Seat belongs to showtime's screen
-        // ============================================
-        if (seat.screen_id !== screenId) {
-          await transaction.rollback();
-          return res.status(400).json({
-            error: `Seat ${seatId} does not belong to this showtime's screen`,
-          });
-        }
-
-        // ============================================
-        // VALIDATION: Check if seat is already booked
-        // ============================================
-        const existingBooking = await BookingSeat.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-          },
-          transaction,
-        });
-
-        if (existingBooking) {
-          await transaction.rollback();
-          return res.status(409).json({
-            error: `Seat ${seat.seat_number} is already booked`,
-          });
-        }
-
-        // ============================================
-        // VALIDATION: Check if seat is reserved (not expired)
-        // ============================================
-        const activeReservation = await SeatReservation.findOne({
-          where: {
-            showtime_id,
-            seat_id: seatId,
-            status: "reserved",
-            expires_at: { [Op.gt]: new Date() },
-          },
-          transaction,
-        });
-
-        if (activeReservation && activeReservation.user_id !== user_id) {
-          await transaction.rollback();
-          return res.status(409).json({
-            error: `Seat ${seat.seat_number} is currently reserved by another user`,
-          });
-        }
-
-        // ============================================
-        // PRICE CALCULATION: Based on seat type
-        // ============================================
-        let seatPrice = basePrice;
-        if (seat.seat_type === "premium") seatPrice = basePrice * 1.5;
-        if (seat.seat_type === "vip") seatPrice = basePrice * 2;
-
-        totalAmount += seatPrice;
-        seatPrices.push({ seat_id: seatId, price: seatPrice });
-      }
-
-      // ============================================
-      // VALIDATION: Check if enough seats available
-      // ============================================
-      if (showtime.available_seats < seat_ids.length) {
-        await transaction.rollback();
-        return res.status(400).json({
-          error: `Not enough seats available. Requested: ${seat_ids.length}, Available: ${showtime.available_seats}`,
-        });
-      }
-
-      // ============================================
-      // CREATE BOOKING: All validations passed
-      // ============================================
-      const booking = await Booking.create(
-        {
-          user_id,
-          showtime_id,
-          status: "pending",
-          total_amount: totalAmount,
-        },
-        { transaction }
+      const { acquired: locks, failed: failedLocks } = await acquireLocks(
+        lockKeys,
+        lockTTL
       );
 
-      // ============================================
-      // CREATE BOOKING_SEATS: Link seats to booking
-      // ============================================
-      for (const { seat_id, price } of seatPrices) {
-        await BookingSeat.create(
+      // If any lock failed, another process is working on these seats
+      if (failedLocks.length > 0) {
+        await transaction.rollback();
+        return res.status(409).json({
+          error:
+            "One or more seats are currently being processed by another user. Please try again.",
+          seats_busy: failedLocks.length,
+        });
+      }
+
+      // All locks acquired - proceed with booking
+      try {
+        // ============================================
+        // VALIDATION: Check seat availability
+        // ============================================
+        const basePrice = parseFloat(showtime.price);
+        let totalAmount = 0;
+        const seatPrices = [];
+        const screenId = showtime.screen_id;
+
+        for (const seatId of seat_ids) {
+          // Check seat exists
+          const seat = await Seat.findByPk(seatId, { transaction });
+          if (!seat) {
+            await transaction.rollback();
+            return res.status(404).json({ error: `Seat ${seatId} not found` });
+          }
+
+          // ============================================
+          // VALIDATION: Seat belongs to showtime's screen
+          // ============================================
+          if (seat.screen_id !== screenId) {
+            await transaction.rollback();
+            return res.status(400).json({
+              error: `Seat ${seatId} does not belong to this showtime's screen`,
+            });
+          }
+
+          // ============================================
+          // VALIDATION: Check if seat is already booked
+          // ============================================
+          const existingBooking = await BookingSeat.findOne({
+            where: {
+              showtime_id,
+              seat_id: seatId,
+            },
+            transaction,
+          });
+
+          if (existingBooking) {
+            await transaction.rollback();
+            return res.status(409).json({
+              error: `Seat ${seat.seat_number} is already booked`,
+            });
+          }
+
+          // ============================================
+          // NOTE: SeatReservation check removed - Redis lock handles concurrency
+          // ============================================
+          // Redis lock already prevents race conditions, so we only need to check
+          // if seat is permanently booked (BookingSeat), not temporarily reserved
+
+          // ============================================
+          // PRICE CALCULATION: Based on seat type
+          // ============================================
+          let seatPrice = basePrice;
+          if (seat.seat_type === "premium") seatPrice = basePrice * 1.5;
+          if (seat.seat_type === "vip") seatPrice = basePrice * 2;
+
+          totalAmount += seatPrice;
+          seatPrices.push({ seat_id: seatId, price: seatPrice });
+        }
+
+        // ============================================
+        // VALIDATION: Check if enough seats available
+        // ============================================
+        if (showtime.available_seats < seat_ids.length) {
+          await transaction.rollback();
+          return res.status(400).json({
+            error: `Not enough seats available. Requested: ${seat_ids.length}, Available: ${showtime.available_seats}`,
+          });
+        }
+
+        // ============================================
+        // CREATE BOOKING: All validations passed
+        // ============================================
+        const booking = await Booking.create(
           {
-            booking_id: booking.id,
-            seat_id,
+            user_id,
             showtime_id,
-            price,
+            status: "pending",
+            total_amount: totalAmount,
           },
           { transaction }
         );
-      }
 
-      // ============================================
-      // UPDATE SHOWTIME: Decrease available seats
-      // ============================================
-      await showtime.update(
-        {
-          available_seats: showtime.available_seats - seat_ids.length,
-        },
-        { transaction }
-      );
+        // ============================================
+        // CREATE BOOKING_SEATS: Link seats to booking
+        // ============================================
+        for (const { seat_id, price } of seatPrices) {
+          await BookingSeat.create(
+            {
+              booking_id: booking.id,
+              seat_id,
+              showtime_id,
+              price,
+            },
+            { transaction }
+          );
+        }
 
-      // ============================================
-      // COMMIT TRANSACTION: Save all changes
-      // ============================================
-      await transaction.commit();
-
-      // ============================================
-      // RETURN SUCCESS: Include booking with seats
-      // ============================================
-      const bookingWithDetails = await Booking.findByPk(booking.id, {
-        include: [
+        // ============================================
+        // UPDATE SHOWTIME: Decrease available seats
+        // ============================================
+        await showtime.update(
           {
-            model: BookingSeat,
-            as: "bookingSeats",
-            include: [
-              {
-                model: Seat,
-                as: "seat",
-                attributes: ["seat_number", "row_number", "seat_type"],
-              },
-            ],
+            available_seats: showtime.available_seats - seat_ids.length,
           },
-        ],
-      });
+          { transaction }
+        );
 
-      res.status(201).json(bookingWithDetails);
+        // ============================================
+        // COMMIT TRANSACTION: Save all changes
+        // ============================================
+        await transaction.commit();
+
+        // ============================================
+        // STORE LOCKS: Keep locks until payment is confirmed or booking is cancelled
+        // ============================================
+        // Store lock tokens in Redis so we can release them later
+        // Lock will auto-expire after 5 minutes (safety net)
+        // But we'll release manually when payment confirms or booking cancels
+        try {
+          const lockStorageKey = `booking:${booking.id}:locks`;
+          await redis.set(lockStorageKey, JSON.stringify(locks), { EX: 300 }); // 5 min TTL
+        } catch (redisError) {
+          console.warn("Failed to store lock tokens:", redisError.message);
+          // If storage fails, release locks immediately (fallback)
+          await releaseLocks(locks);
+        }
+
+        // ============================================
+        // INVALIDATE CACHE: Seat availability changed
+        // ============================================
+        try {
+          await redis.del(`showtime:${showtime_id}:seats`);
+          // Also invalidate showtime details cache
+          await redis.del(`showtime:${showtime_id}`);
+        } catch (redisError) {
+          console.warn("Failed to invalidate cache:", redisError.message);
+        }
+
+        // ============================================
+        // RETURN SUCCESS: Include booking with seats
+        // ============================================
+        const bookingWithDetails = await Booking.findByPk(booking.id, {
+          include: [
+            {
+              model: BookingSeat,
+              as: "bookingSeats",
+              include: [
+                {
+                  model: Seat,
+                  as: "seat",
+                  attributes: ["seat_number", "row_number", "seat_type"],
+                },
+              ],
+            },
+          ],
+        });
+
+        res.status(201).json(bookingWithDetails);
+      } catch (error) {
+        // ============================================
+        // ROLLBACK: Undo all changes on error
+        // ============================================
+        await transaction.rollback();
+        // Release locks on error (booking wasn't created, so release locks)
+        await releaseLocks(locks);
+        throw error;
+      }
     } catch (error) {
       // ============================================
-      // ROLLBACK: Undo all changes on error
+      // ROLLBACK: If transaction wasn't started or other error
       // ============================================
-      await transaction.rollback();
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
       throw error;
     }
   } catch (error) {
@@ -757,6 +861,36 @@ const confirmBooking = async (req, res, next) => {
       );
 
       await transaction.commit();
+
+      // ============================================
+      // RELEASE LOCKS: Payment confirmed, release locks
+      // ============================================
+      try {
+        const lockStorageKey = `booking:${id}:locks`;
+        const storedLocks = await redis.get(lockStorageKey);
+        if (storedLocks) {
+          const locks = JSON.parse(storedLocks);
+          await releaseLocks(locks);
+          // Delete the storage key
+          await redis.del(lockStorageKey);
+        }
+      } catch (redisError) {
+        console.warn(
+          "Failed to release locks on confirmation:",
+          redisError.message
+        );
+      }
+
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed
+      // ============================================
+      try {
+        await redis.del(`showtime:${booking.showtime_id}:seats`);
+        await redis.del(`showtime:${booking.showtime_id}`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
+
       res.json(booking);
     } catch (error) {
       await transaction.rollback();
@@ -882,6 +1016,9 @@ const cancelBooking = async (req, res, next) => {
       // ============================================
       const seatCount = booking.bookingSeats?.length || 0;
 
+      // Extract seat IDs BEFORE deleting BookingSeat records (needed for lock cleanup)
+      const seatIds = booking.bookingSeats?.map((bs) => bs.seat_id) || [];
+
       // Delete booking seats (cascade will handle this, but explicit for clarity)
       await BookingSeat.destroy({
         where: { booking_id: id },
@@ -915,12 +1052,73 @@ const cancelBooking = async (req, res, next) => {
 
       await transaction.commit();
 
+      // ============================================
+      // RELEASE LOCKS: Booking cancelled, release locks
+      // ============================================
+      try {
+        const lockStorageKey = `booking:${id}:locks`;
+        const storedLocks = await redis.get(lockStorageKey);
+        if (storedLocks) {
+          // Release locks using stored tokens (proper way)
+          const locks = JSON.parse(storedLocks);
+          await releaseLocks(locks);
+          // Delete the storage key
+          await redis.del(lockStorageKey);
+        } else {
+          // Fallback: If stored locks don't exist (e.g., booking was already confirmed),
+          // try to release any stale locks by reconstructing lock keys from seat IDs
+          // This handles edge cases where locks might still exist even after confirmation
+          if (seatIds.length > 0 && booking.showtime_id) {
+            const lockKeys = seatIds.map(
+              (seatId) => `seat:${seatId}:showtime:${booking.showtime_id}`
+            );
+            // Try to delete lock keys directly (they should be expired, but clean up just in case)
+            // Note: This is safe because if locks were properly released, keys won't exist
+            // If they do exist, they're stale and should be cleaned up
+            for (const key of lockKeys) {
+              try {
+                const lockKey = `lock:${key}`;
+                await redis.del(lockKey);
+              } catch (err) {
+                // Ignore errors - lock might not exist or already expired
+              }
+            }
+          }
+        }
+      } catch (redisError) {
+        console.warn(
+          "Failed to release locks on cancellation:",
+          redisError.message
+        );
+      }
+
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed
+      // ============================================
+      try {
+        const showtimeId = booking.showtime_id;
+        await redis.del(`showtime:${showtimeId}:seats`);
+        // Also invalidate showtime details cache
+        await redis.del(`showtime:${showtimeId}`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
+
+      // ============================================
+      // VERIFY: Double-check that seats were actually released
+      // ============================================
+      // Verify BookingSeat records were deleted
+      const remainingBookingSeats = await BookingSeat.count({
+        where: { booking_id: id },
+      });
+
       // Return cancellation details
       res.json({
         message: "Booking cancelled successfully",
         booking_id: id,
         cancelled_at: new Date(),
         seats_released: seatCount,
+        seats_verified_deleted: remainingBookingSeats === 0,
         refund_eligible: true, // In real system, check payment status
         cancellation_reason: reason || null,
       });
@@ -937,7 +1135,7 @@ module.exports = {
   getAllBookings,
   getBookingsByUser,
   getBookingById,
-  reserveSeats,
+  // reserveSeats, // Removed - route no longer exists, using createBooking instead
   createBooking,
   confirmBooking,
   updateBooking,
