@@ -1,0 +1,382 @@
+### ============================================
+### E-commerce API Testing - VS Code REST Client
+### ============================================
+### 
+### HOW TO USE THIS FILE:
+### 1. Install "REST Client" extension in VS Code
+###    (Press Ctrl+Shift+X, search "REST Client", install)
+### 2. Make sure backend server is running (npm start)
+### 3. Click "Send Request" above any request below
+### 4. View response in the panel that opens
+### 
+### NO TERMINAL NEEDED - TEST DIRECTLY FROM HERE!
+### ============================================
+
+### Variables - Update these as needed
+@baseUrl = http://localhost:3000/api
+@sessionId = test-session-123
+@productId = 1
+@orderId = 550e8400-e29b-41d4-a716-446655440000
+
+### ============================================
+### HOW TO GET YOUR SESSION ID:
+### ============================================
+### 
+### METHOD 1 (Easiest): Run the first cart request below WITHOUT X-Session-ID header
+###   1. Find "GET YOUR SESSION ID" request in section 3
+###   2. Click "Send Request" 
+###   3. In the response panel, look at the "Response Headers" section
+###   4. Find "Set-Cookie: session_id=YOUR-SESSION-ID-HERE"
+###   5. Copy the session_id value (the UUID after session_id=)
+###   6. Update @sessionId variable above with that value
+### 
+### METHOD 2: Generate your own UUID
+###   - Visit: https://www.uuidgenerator.net/
+###   - Generate a UUID
+###   - Use it as your session ID (update @sessionId above)
+###   - Use it consistently in all requests
+### 
+### METHOD 3: Use any string (for testing)
+###   - You can use any string like "test-123" or "my-session"
+###   - Just make sure to use the SAME value in all requests
+###   - Update @sessionId variable above
+### 
+### TIP: After getting a session ID, you can use {{sessionId}} in all requests below
+### ============================================
+
+### ============================================
+### 1. HEALTH CHECK
+### ============================================
+
+### Health Check
+GET http://localhost:3000/api/health
+
+### ============================================
+### 2. PRODUCTS ENDPOINTS
+### ============================================
+
+### Get All Products (Basic)
+GET http://localhost:3000/api/products
+
+### Get All Products (With Pagination)
+GET http://localhost:3000/api/products?page=1&limit=10
+
+### Get All Products (With Filters)
+GET http://localhost:3000/api/products?minPrice=10&maxPrice=100&search=laptop
+
+### Get All Products (With Sorting)
+GET http://localhost:3000/api/products?sortBy=price&order=ASC
+
+### Get All Products (Combined Filters)
+GET http://localhost:3000/api/products?page=1&limit=20&category=1&minPrice=50&maxPrice=200&search=product&sortBy=price&order=DESC
+
+### Get Product by ID
+GET http://localhost:3000/api/products/73046393-305a-4b31-b7b2-db5ed5cf41c3
+
+### Get All Categories
+GET http://localhost:3000/api/products/categories
+
+### Get Products by Category Slug
+GET http://localhost:3000/api/products/category/electronics
+
+### ============================================
+### 3. CART ENDPOINTS
+### ============================================
+### Note: All cart endpoints require X-Session-ID header
+### Session ID is auto-generated if not provided
+
+### ⭐ GET YOUR SESSION ID - Run this first!
+### This request has NO X-Session-ID header, so server will generate one
+### After running, check the response headers for "Set-Cookie: session_id=..."
+### Copy the session_id value and update @sessionId variable at the top
+GET http://localhost:3000/api/cart
+
+### Get Cart Items (WITH Session ID - Use after getting one above)
+GET http://localhost:3000/api/cart
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+### Add Item to Cart
+POST http://localhost:3000/api/cart/add
+Content-Type: application/json
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+{
+  "productId": "73046393-305a-4b31-b7b2-db5ed5cf41c3",
+  "quantity": 2
+}
+
+### Add Another Item to Cart (Different Product)
+POST http://localhost:3000/api/cart/add
+Content-Type: application/json
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+{
+  "productId": "6f7a07f5-55c9-4bef-8d46-7ffb34f03cc7",
+  "quantity": 1
+}
+
+### View Cart (After Adding Items)
+GET http://localhost:3000/api/cart
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+### Update Cart Item Quantity
+PUT http://localhost:3000/api/cart/update
+Content-Type: application/json
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+{
+  "productId": "da366435-17c2-4e4f-a112-d926cb3a7c42",
+  "quantity": 3
+}
+
+### Remove Item from Cart
+DELETE http://localhost:3000/api/cart/remove/da366435-17c2-4e4f-a112-d926cb3a7c42
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+### Clear Entire Cart
+DELETE http://localhost:3000/api/cart/clear
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+### ============================================
+### 4. ORDERS ENDPOINTS
+### ============================================
+### Note: All order endpoints require X-Session-ID header
+### Make sure cart has items before checkout
+
+### Create Order (Checkout) - Full Address
+POST http://localhost:3000/api/orders/checkout
+Content-Type: application/json
+X-Session-ID: d55ad1c2-2356-4021-9fb1-3a978113c182
+
+{
+  "shippingAddress": {
+    "street": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "country": "USA"
+  },
+  "paymentMethod": "simulated"
+}
+
+### Create Order (Checkout) - Minimal Address
+POST {{baseUrl}}/orders/checkout
+Content-Type: application/json
+X-Session-ID: {{sessionId}}
+
+{
+  "shippingAddress": {
+    "street": "456 Oak Avenue",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zipCode": "90001",
+    "country": "USA"
+  }
+}
+
+### Get Order by ID
+GET {{baseUrl}}/orders/{{orderId}}
+X-Session-ID: {{sessionId}}
+
+### Get All My Orders (by Session)
+GET {{baseUrl}}/orders/my-orders
+X-Session-ID: {{sessionId}}
+
+### Cancel Order
+PUT {{baseUrl}}/orders/{{orderId}}/cancel
+X-Session-ID: {{sessionId}}
+
+### ============================================
+### 5. COMPLETE SHOPPING FLOW TEST
+### ============================================
+### Run these in sequence to test complete flow
+
+### Step 1: Browse Products
+GET {{baseUrl}}/products?limit=5
+
+### Step 2: Get Product Details
+GET {{baseUrl}}/products/1
+
+### Step 3: Get Cart (Generate Session)
+GET {{baseUrl}}/cart
+X-Session-ID: flow-test-session
+
+### Step 4: Add Product to Cart
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: flow-test-session
+
+{
+  "productId": 1,
+  "quantity": 2
+}
+
+### Step 5: View Cart
+GET {{baseUrl}}/cart
+X-Session-ID: flow-test-session
+
+### Step 6: Update Cart Item
+PUT {{baseUrl}}/cart/update
+Content-Type: application/json
+X-Session-ID: flow-test-session
+
+{
+  "productId": 1,
+  "quantity": 3
+}
+
+### Step 7: Checkout (Create Order)
+POST {{baseUrl}}/orders/checkout
+Content-Type: application/json
+X-Session-ID: flow-test-session
+
+{
+  "shippingAddress": {
+    "street": "789 Pine Road",
+    "city": "Chicago",
+    "state": "IL",
+    "zipCode": "60601",
+    "country": "USA"
+  }
+}
+
+### Step 8: View All Orders
+GET {{baseUrl}}/orders/my-orders
+X-Session-ID: flow-test-session
+
+### ============================================
+### 6. ERROR TESTING
+### ============================================
+
+### Test: Invalid Product ID
+GET {{baseUrl}}/products/99999
+
+### Test: Add Non-existent Product to Cart
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: {{sessionId}}
+
+{
+  "productId": 99999,
+  "quantity": 1
+}
+
+### Test: Add Excessive Quantity
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: {{sessionId}}
+
+{
+  "productId": {{productId}},
+  "quantity": 100000
+}
+
+### Test: Checkout with Empty Cart
+POST {{baseUrl}}/orders/checkout
+Content-Type: application/json
+X-Session-ID: empty-cart-session
+
+{
+  "shippingAddress": {
+    "street": "123 Test St",
+    "city": "Test",
+    "state": "TS",
+    "zipCode": "12345",
+    "country": "USA"
+  }
+}
+
+### Test: Checkout Missing Shipping Address
+POST {{baseUrl}}/orders/checkout
+Content-Type: application/json
+X-Session-ID: {{sessionId}}
+
+{
+  "paymentMethod": "simulated"
+}
+
+### Test: Get Non-existent Order
+GET {{baseUrl}}/orders/invalid-order-id
+X-Session-ID: {{sessionId}}
+
+### Test: Cancel Non-existent Order
+PUT {{baseUrl}}/orders/invalid-order-id/cancel
+X-Session-ID: {{sessionId}}
+
+### ============================================
+### 7. SEARCH AND FILTER TESTS
+### ============================================
+
+### Search Products
+GET {{baseUrl}}/products?search=laptop
+
+### Filter by Price Range
+GET {{baseUrl}}/products?minPrice=50&maxPrice=200
+
+### Filter by Category
+GET {{baseUrl}}/products?category=1
+
+### Combined Search and Filters
+GET {{baseUrl}}/products?search=product&minPrice=100&maxPrice=500&page=1&limit=10&sortBy=price&order=ASC
+
+### ============================================
+### 8. MULTIPLE PRODUCTS IN CART TEST
+### ============================================
+
+### Add First Product
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: multi-product-session
+
+{
+  "productId": 1,
+  "quantity": 1
+}
+
+### Add Second Product
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: multi-product-session
+
+{
+  "productId": 2,
+  "quantity": 2
+}
+
+### Add Third Product
+POST {{baseUrl}}/cart/add
+Content-Type: application/json
+X-Session-ID: multi-product-session
+
+{
+  "productId": 3,
+  "quantity": 1
+}
+
+### View Cart with Multiple Products
+GET {{baseUrl}}/cart
+X-Session-ID: multi-product-session
+
+### ============================================
+### 9. CACHE TESTING
+### ============================================
+### Run same request twice to see cache effect
+
+### First Request (Cache Miss)
+GET {{baseUrl}}/products
+
+### Second Request (Cache Hit - should be faster)
+GET {{baseUrl}}/products
+
+### ============================================
+### NOTES:
+### ============================================
+### 1. Update @sessionId variable with actual session ID from responses
+### 2. Update @productId with a valid product ID from your database
+### 3. Update @orderId with actual order ID after creating an order
+### 4. Make sure backend server is running on port 3000
+### 5. Ensure PostgreSQL and Redis are running
+### 6. Install "REST Client" extension in VS Code to use this file
+### 7. Click "Send Request" above each request to execute
+### 8. View responses in VS Code's output panel
+
