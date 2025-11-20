@@ -1,10 +1,17 @@
 // Message routes
 
 import express from "express";
-import { getMessages } from "../controllers/messageController.js";
+import { getMessages, sendMessage, getUserConversations } from "../controllers/messageController.js";
 
 const router = express.Router();
 
+// GET all conversations for a user
+router.get("/user/:userId", getUserConversations);
+
+// GET messages for a conversation
 router.get("/:conversationId", getMessages);
+
+// POST send a new message
+router.post("/send", sendMessage);
 
 export default router;

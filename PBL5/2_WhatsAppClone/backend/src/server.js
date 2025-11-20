@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { handleSocket } from "./infrastructure/websocket/handlers/socketHandler.js";
 import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
+import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
 
 // Initialize database connection
@@ -12,7 +13,6 @@ const startServer = async () => {
     app.use(express.json());
 
     const httpServer = createServer(app);
-
     const io = new Server(httpServer, {
       cors: { origin: "*", methods: ["GET", "POST"] },
     });
@@ -20,6 +20,7 @@ const startServer = async () => {
     handleSocket(io);
     httpServer.listen(3000, () => console.log("Node server running...."));
 
+    app.use("/api/users", userRoutes);
     app.use("/api/conversation", messageRoutes);
 
     // Connect to PostgreSQL database
