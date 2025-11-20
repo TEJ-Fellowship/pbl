@@ -126,4 +126,4 @@ Conversation.belongsTo(User, {
   as: "lastMessageSender",
 });
 
-export { User, Conversation };
+export { User, Conversation, sequelize };
