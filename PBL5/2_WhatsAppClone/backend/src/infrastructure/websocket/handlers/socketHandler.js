@@ -1,28 +1,39 @@
 import websocketService from "../websocketService.js";
 import { CassandraRepository } from "../../db/cassandraRepository.js";
-import { v4 as uuid } from "uuid";
-import { types } from "cassandra-driver";
 
 export const handleSocket = (io) => {
   const wsService = new websocketService(io);
   const messageRepo = new CassandraRepository();
 
   io.on("connection", (socket) => {
-    socket.on("conversation:join", (conversationId) => {
+    socket.on("conversation:join", (data) => {
+      const conversationId =
+        typeof data === "string" ? data : data.conversationId;
+
       wsService.joinConversation(socket, conversationId);
+
+      console.log(`Rooms for socket ${socket.id}:`, socket.rooms); // Should show conversationId
+
+      const room = io.sockets.adapter.rooms.get(conversationId);
+      console.log(`👥 Total sockets in room ${conversationId}:`, room?.size);
     });
 
     socket.on("message:send", async (data) => {
+      console.log("Message received:", data);
       const message = {
         conversationId: data.conversationId,
-        messageId: uuid(),
         senderId: data.senderId,
         content: data.content,
-        createdAt: new Date(),
+        messageType: "text",
+        status: "sent",
       };
 
-      await messageRepo.saveMessage(message);
-      wsService.sendMessage(data.conversationId, message);
+      console.log("Emitting to room:", data.conversationId);
+      const savedMessage = await messageRepo.saveMessage(message);
+
+      const room = io.sockets.adapter.rooms.get(data.conversationId);
+      console.log(`📤 Broadcasting to ${room?.size || 0} sockets`);
+      wsService.sendMessage(data.conversationId, savedMessage);
     });
 
     socket.on("typing:start", (conversationId) => {
