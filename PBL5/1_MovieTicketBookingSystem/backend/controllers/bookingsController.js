@@ -11,6 +11,7 @@ const {
   User,
 } = require("../models");
 const { Op } = require("sequelize");
+const redis = require("../utils/redis");
 
 const getAllBookings = async (req, res, next) => {
   try {
@@ -466,6 +467,15 @@ const reserveSeats = async (req, res, next) => {
       // ============================================
       await transaction.commit();
 
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed (optional, short TTL already helps)
+      // ============================================
+      try {
+        await redis.del(`showtime:${showtime_id}:seats`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
+
       res.status(201).json({
         message: "Seats reserved successfully",
         reservations: reservations.map((r) => ({
@@ -687,6 +697,17 @@ const createBooking = async (req, res, next) => {
       // COMMIT TRANSACTION: Save all changes
       // ============================================
       await transaction.commit();
+
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed
+      // ============================================
+      try {
+        await redis.del(`showtime:${showtime_id}:seats`);
+        // Also invalidate showtime details cache
+        await redis.del(`showtime:${showtime_id}`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
 
       // ============================================
       // RETURN SUCCESS: Include booking with seats
@@ -914,6 +935,18 @@ const cancelBooking = async (req, res, next) => {
       }
 
       await transaction.commit();
+
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed
+      // ============================================
+      try {
+        const showtimeId = booking.showtime_id;
+        await redis.del(`showtime:${showtimeId}:seats`);
+        // Also invalidate showtime details cache
+        await redis.del(`showtime:${showtimeId}`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
 
       // Return cancellation details
       res.json({
