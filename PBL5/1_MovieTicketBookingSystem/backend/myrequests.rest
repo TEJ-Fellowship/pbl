@@ -1,70 +1,214 @@
 ### Movie Ticket Booking System - API Testing
-### Step-by-Step Testing Guide
+### Clean & Structured - Only Actual Routes
 
 @baseUrl = http://localhost:3001
 @apiUrl = {{baseUrl}}/api
+# 8d486488-2906-458d-a34b-e6ab6f2c9787
+# 6c9e9b3e-a8ba-42d5-a792-98451dffe879
+### ============================================
+### VARIABLES - Fill these after running Setup
+### ============================================
+@user_id = 8d486488-2906-458d-a34b-e6ab6f2c9787
 
-### ============================================
-### VARIABLES - Fill these after running Step 0
-### ============================================
-@user_id = 2ec48dbf-eba7-4abe-9cda-d8baf87ab5b6
-@movie_id = 26f828e7-633c-44f8-bc40-10a10b8e9dac
-@showtime_id = 996c8f3d-f58d-4bc1-9c7d-1b5d7b93242e
-@seat_id1 = 6a631a41-9138-4787-93d4-f221592b318b
-@seat_id2 = 8a252f70-f206-4e0b-96fc-16d5cec6ec76
+@movie_id = 8d486488-2906-458d-a34b-e6ab6f2c9787
+@showtime_id = c32709a2-9e70-481b-9c4c-34f884d7ce47
+@seat_id1 = 083822f5-0f64-44a9-8289-2663a2f2b08d
+@seat_id2 = e2f8471c-34c2-49aa-b0f1-d5f36ae04a29
 @theater_id = 
-@screen_id = 9471d361-b414-4e43-a676-a3b126016b62
-@booking_id = e91fcc00-b1ec-44be-be82-7785553f9ac0
-
-@payment_id = pay_1763617184517
+@screen_id = 
+@booking_id = 9062ae67-5804-42c5-b4e3-136dac571b23
 
 ### ============================================
-### STEP 0: SETUP - Get IDs for Testing
-### Run these in order, copy IDs to variables above
+### BASIC USER FLOW - Simple Testing
 ### ============================================
+### Follow these steps in order for basic testing
 
-### 1. Health Check
-GET {{baseUrl}}/health
-
-### 2. Create a user (copy "id" from response → paste in @user_id above)
+### STEP 1: Setup - Create User
+### 1.1: Create or get user
 POST {{apiUrl}}/users
 Content-Type: application/json
 
 {
-  "name": "Test User2",
-  "email": "testuser2example.com"
+  "name": "Test User 56",
+  "email": "testuser56@example.com"
 }
+### Copy "id" from response → paste in @user_id above
 
-### 3. Get existing users (alternative - copy any "id" → paste in @user_id)
-GET {{apiUrl}}/users
-
-### 4. Get a showtime (copy "id" from response → paste in @showtime_id above)
-GET {{apiUrl}}/showtimes?limit=1
-
-### 5. Get seats for showtime (copy "id" of available seats → paste in @seat_id1, @seat_id2)
-### Note: Use showtime_id from step 4, or fill @showtime_id variable first
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats 
-
-### ============================================
-### PHASE 2: Movie & Showtime Management
-### ============================================
-
-### GET /movies - List all movies
+### STEP 2: Browse Movies
+### 2.1: Browse all movies
 GET {{apiUrl}}/movies
 
-### GET /movies - With filters
+### 2.2: Get movie details (pick any movie from step 2.1)
+GET {{apiUrl}}/movies/{{movie_id}}
+### Copy "id" from response → paste in @movie_id above
+
+### STEP 3: Select Showtime
+### 3.1: Get showtimes for selected movie
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes
+### Copy a showtime "id" from response → paste in @showtime_id above
+
+### STEP 4: Check Seats & Book
+### 4.1: Get available seats for showtime
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+### Copy seat "id" values that show "is_available: true" → paste in @seat_id1, @seat_id2 above
+
+### 4.2: Create booking (locks seats, status: pending)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
+}
+### Copy "id" from response → paste in @booking_id above
+
+### STEP 5: View Booking Details
+### 5.1: View booking details (receipt format)
+GET {{apiUrl}}/bookings/{{booking_id}}
+
+### STEP 6: Payment & Confirmation
+### 6.1: Process payment (automatically confirms booking and releases locks)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 44.97
+}
+### Note: Payment automatically confirms booking and releases Redis locks
+
+### 6.2: Verify booking is confirmed
+GET {{apiUrl}}/bookings/{{booking_id}}
+### Expected: status = "confirmed"
+
+### STEP 7: View Bookings
+### 7.1: Get all bookings for user
+GET {{apiUrl}}/bookings/user/{{user_id}}
+
+### 7.2: Get all bookings (admin view)
+GET {{apiUrl}}/bookings
+
+### STEP 8: Cancel Booking (Optional)
+### Note: Must cancel at least 2 hours before showtime
+PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
+Content-Type: application/json
+
+{
+  "reason": "Change of plans"
+}
+
+### 8.1: Verify cancellation
+GET {{apiUrl}}/bookings/{{booking_id}}
+### Expected: status = "cancelled"
+
+### 8.2: Verify seats are freed
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+### Expected: Previously booked seats now show "is_available: true"
+
+### ============================================
+### ALL AVAILABLE ROUTES - Complete Reference
+### ============================================
+
+### ============================================
+### USERS
+### ============================================
+### Get all users
+GET {{apiUrl}}/users
+
+### Get user by ID
+GET {{apiUrl}}/users/{{user_id}}
+
+### Create user
+POST {{apiUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "New User",
+  "email": "newuser@example.com"
+}
+
+### Update user
+PUT {{apiUrl}}/users/{{user_id}}
+Content-Type: application/json
+
+{
+  "name": "Updated Name",
+  "email": "updated@example.com"
+}
+
+### Delete user
+DELETE {{apiUrl}}/users/{{user_id}}
+
+### ============================================
+### MOVIES
+### ============================================
+### Get all movies
+GET {{apiUrl}}/movies
+
+### Get movies with filters
 GET {{apiUrl}}/movies?genre=Action&language=English&limit=10
 
-### GET /movies/{id} - Get movie details
+### Get movie by ID
 GET {{apiUrl}}/movies/{{movie_id}}
 
-### GET /movies/{id}/showtimes - Get showtimes for movie
+### Search movies
+GET {{apiUrl}}/movies/search?title=Avengers&genre=Action
+
+### Get showtimes for movie
 GET {{apiUrl}}/movies/{{movie_id}}/showtimes
 
-### GET /showtimes/{id}/seats - Get available seats
+### Get showtimes with filters
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes?date=2024-12-20
+GET {{apiUrl}}/movies/{{movie_id}}/showtimes?theater_id={{theater_id}}
+
+### Create movie
+POST {{apiUrl}}/movies
+Content-Type: application/json
+
+{
+  "title": "New Movie",
+  "description": "Movie description",
+  "duration": 120,
+  "genre": "Action",
+  "language": "English",
+  "rating": "PG-13",
+  "poster_url": "https://example.com/poster.jpg",
+  "release_date": "2024-12-25"
+}
+
+### Update movie
+PUT {{apiUrl}}/movies/{{movie_id}}
+Content-Type: application/json
+
+{
+  "title": "Updated Movie Title",
+  "price": 15.00
+}
+
+### Delete movie
+DELETE {{apiUrl}}/movies/{{movie_id}}
+
+### ============================================
+### SHOWTIMES
+### ============================================
+### Get all showtimes
+GET {{apiUrl}}/showtimes
+
+### Get showtimes by movie
+GET {{apiUrl}}/showtimes/movie/{{movie_id}}
+
+### Get showtimes by theater
+GET {{apiUrl}}/showtimes/theater/{{theater_id}}
+
+### Get showtime by ID
+GET {{apiUrl}}/showtimes/{{showtime_id}}
+
+### Get seat availability (most important - cached)
 GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
 
-### POST /showtimes - Create showtime
+### Create showtime
 POST {{apiUrl}}/showtimes
 Content-Type: application/json
 
@@ -75,22 +219,36 @@ Content-Type: application/json
   "price": 12.50
 }
 
-### ============================================
-### PHASE 3: Booking Endpoints (Sequential Testing)
-### ============================================
-### Make sure @user_id, @showtime_id, @seat_id1, @seat_id2 are filled from Step 0
-
-### STEP 1: Reserve seats (5-minute hold)
-POST {{apiUrl}}/bookings/reserve
+### Update showtime
+PUT {{apiUrl}}/showtimes/{{showtime_id}}
 Content-Type: application/json
 
 {
-  "user_id": "{{user_id}}",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
+  "price": 15.00,
+  "status": "active"
 }
 
-### STEP 2: Create booking (copy "id" from response → paste in @booking_id)
+### Delete showtime
+DELETE {{apiUrl}}/showtimes/{{showtime_id}}
+
+### ============================================
+### BOOKINGS
+### ============================================
+### Get all bookings (admin)
+GET {{apiUrl}}/bookings
+
+### Get bookings by user
+GET {{apiUrl}}/bookings/user/{{user_id}}
+
+### Get bookings with filters
+GET {{apiUrl}}/bookings/user/{{user_id}}?status=pending
+GET {{apiUrl}}/bookings/user/{{user_id}}?startDate=2024-01-01&endDate=2024-12-31
+GET {{apiUrl}}/bookings/user/{{user_id}}?status=confirmed&startDate=2024-11-01&endDate=2024-11-30
+
+### Get booking by ID
+GET {{apiUrl}}/bookings/{{booking_id}}
+
+### Create booking (locks seats, status: pending)
 POST {{apiUrl}}/bookings
 Content-Type: application/json
 
@@ -100,33 +258,25 @@ Content-Type: application/json
   "seat_ids": ["{{seat_id1}}", "{{seat_id2}}"]
 }
 
-### STEP 3: Get booking details (use booking_id from step 2)
-### NEW: Enhanced booking details with receipt format
-GET {{apiUrl}}/bookings/{{booking_id}}
+### Process payment (automatically confirms booking)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
 
-### STEP 4: Get all bookings for user
-GET {{apiUrl}}/bookings/user/{{user_id}}
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 29.98
+}
 
-### STEP 4a: Enhanced booking history with filters
-### Filter by status
-GET {{apiUrl}}/bookings/user/{{user_id}}?status=pending
+### Update booking status
+PUT {{apiUrl}}/bookings/{{booking_id}}
+Content-Type: application/json
 
-### Filter by date range
-GET {{apiUrl}}/bookings/user/{{user_id}}?startDate=2024-01-01&endDate=2024-12-31
+{
+  "status": "confirmed"
+}
 
-### Filter by status AND date range
-GET {{apiUrl}}/bookings/user/{{user_id}}?status=confirmed&startDate=2024-11-01&endDate=2024-11-30
-
-### STEP 5: Get all bookings
-GET {{apiUrl}}/bookings
-
-### ============================================
-### PHASE 4: Enhanced Booking Management (NEW)
-### ============================================
-### Make sure @booking_id is filled from STEP 2 above
-
-### Enhanced Cancellation with Rules
-### Note: Must cancel at least 2 hours before showtime
+### Cancel booking (PUT method - recommended)
 PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
 Content-Type: application/json
 
@@ -134,21 +284,210 @@ Content-Type: application/json
   "reason": "Change of plans"
 }
 
-### Test cancellation rules - Try cancelling already cancelled booking
-### (Should fail with 400 error)
+### Cancel booking (DELETE method - backward compatibility)
+DELETE {{apiUrl}}/bookings/{{booking_id}}
+
+### ============================================
+### PAYMENTS
+### ============================================
+### Process payment
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+
+### Get payment by ID
+GET {{apiUrl}}/payments/{{payment_id}}
+
+### Get payment by booking ID
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+
+### ============================================
+### THEATERS (Optional - Not in main flow)
+### ============================================
+### Get all theaters
+GET {{apiUrl}}/theaters
+
+### Get theater by ID
+GET {{apiUrl}}/theaters/{{theater_id}}
+
+### Create theater
+POST {{apiUrl}}/theaters
+Content-Type: application/json
+
+{
+  "name": "New Theater",
+  "location": "City Center",
+  "city": "Kathmandu"
+}
+
+### Update theater
+PUT {{apiUrl}}/theaters/{{theater_id}}
+Content-Type: application/json
+
+{
+  "name": "Updated Theater Name"
+}
+
+### Delete theater
+DELETE {{apiUrl}}/theaters/{{theater_id}}
+
+### ============================================
+### SCREENS (Optional - Not in main flow)
+### ============================================
+### Get all screens
+GET {{apiUrl}}/screens
+
+### Get screens by theater
+GET {{apiUrl}}/screens/theater/{{theater_id}}
+
+### Get screen by ID
+GET {{apiUrl}}/screens/{{screen_id}}
+
+### Create screen
+POST {{apiUrl}}/screens
+Content-Type: application/json
+
+{
+  "theater_id": "{{theater_id}}",
+  "screen_number": 1,
+  "total_seats": 100,
+  "seat_layout": "standard"
+}
+
+### Update screen
+PUT {{apiUrl}}/screens/{{screen_id}}
+Content-Type: application/json
+
+{
+  "screen_number": 2,
+  "total_seats": 150
+}
+
+### Delete screen
+DELETE {{apiUrl}}/screens/{{screen_id}}
+
+### ============================================
+### REDIS LOCKING TEST - Concurrent Booking
+### ============================================
+### Test that Redis locks prevent double-booking
+
+### TEST 1: Concurrent Booking - Same Seats
+### Run these TWO requests at the SAME TIME (within 1-2 seconds)
+### Expected: One succeeds (201), one fails (409)
+
+### Request 1: User 1
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Request 2: User 2 (run immediately after Request 1)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Expected: One gets 201 Created, other gets 409 Conflict
+
+### TEST 2: Lock Release After Confirmation
+### Step 1: Create booking
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Step 2: Process payment (automatically confirms booking and releases locks)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 29.98
+}
+
+### Step 3: Try to book same seat (should fail - already booked)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Expected: Step 3 returns 409 "Seat X is already booked"
+
+### TEST 3: Lock Release After Cancellation
+### Step 1: Create booking
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+### Step 2: Cancel booking (releases locks and seats)
 PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
 Content-Type: application/json
 
 {
-  "reason": "Test duplicate cancellation"
+  "reason": "Testing"
 }
 
-### ============================================
-### ERROR TESTING (Optional)
-### ============================================
+### Step 3: Try to book same seat (should work - seat freed)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
 
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id2}}"]
+}
+
+### Expected: Step 3 returns 201 Created (seat available again)
+
+### ============================================
+### REDIS CACHE TEST - Performance
+### ============================================
+### Test cache behavior: First request = DB (slower), Second = Cache (faster)
+
+### Test 1: Seat availability - First (DB)
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+
+### Test 2: Seat availability - Second (Cache - faster)
+GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
+
+### Test 3: All showtimes - First (DB)
+GET {{apiUrl}}/showtimes
+
+### Test 4: All showtimes - Second (Cache - faster)
+GET {{apiUrl}}/showtimes
+
+### ============================================
+### ERROR TESTING - Validation
+### ============================================
 ### Test: Missing fields
-POST {{apiUrl}}/bookings/reserve
+POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
@@ -184,244 +523,3 @@ Content-Type: application/json
   "showtime_id": "00000000-0000-0000-0000-000000000000",
   "seat_ids": ["{{seat_id1}}"]
 }
-
-### ============================================
-### REDIS CACHE TESTING - Showtimes & Seat Availability
-### ============================================
-### Test all cached endpoints and verify cache behavior
-### Note: First request = DB hit (slower), Second request = Cache hit (faster)
-
-### ============================================
-### 1. SHOWTIME ENDPOINTS - Cache Testing
-### ============================================
-
-### GET /showtimes - All showtimes (TTL: 60s)
-### Run this TWICE: First = DB, Second = Cache
-GET {{apiUrl}}/showtimes
-
-### GET /showtimes - Second request (should be cached, faster)
-GET {{apiUrl}}/showtimes
-
-### GET /showtimes/movie/:movieId - Showtimes by movie (TTL: 60s)
-### Run this TWICE: First = DB, Second = Cache
-GET {{apiUrl}}/showtimes/movie/{{movie_id}}
-
-### GET /showtimes/movie/:movieId - Second request (should be cached)
-GET {{apiUrl}}/showtimes/movie/{{movie_id}}
-
-### GET /showtimes/theater/:theaterId - Showtimes by theater (TTL: 60s)
-### Note: Fill @theater_id from a showtime response first
-### Run this TWICE: First = DB, Second = Cache
-GET {{apiUrl}}/showtimes/theater/{{theater_id}}
-
-### GET /showtimes/theater/:theaterId - Second request (should be cached)
-GET {{apiUrl}}/showtimes/theater/{{theater_id}}
-
-### GET /showtimes/:id - Single showtime (TTL: 5min)
-### Run this TWICE: First = DB, Second = Cache
-GET {{apiUrl}}/showtimes/{{showtime_id}}
-
-### GET /showtimes/:id - Second request (should be cached)
-GET {{apiUrl}}/showtimes/{{showtime_id}}
-
-### GET /showtimes/:id/seats - Seat availability (TTL: 15s) - MOST CRITICAL
-### Run this TWICE: First = DB, Second = Cache (should be MUCH faster)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### GET /showtimes/:id/seats - Second request (should be cached, very fast)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### ============================================
-### 2. MOVIE SHOWTIMES ENDPOINT - Cache Testing
-### ============================================
-
-### GET /movies/:id/showtimes - Movie showtimes (TTL: 60s)
-### Run this TWICE: First = DB, Second = Cache
-GET {{apiUrl}}/movies/{{movie_id}}/showtimes
-
-### GET /movies/:id/showtimes - Second request (should be cached)
-GET {{apiUrl}}/movies/{{movie_id}}/showtimes
-
-### GET /movies/:id/showtimes - With date filter
-GET {{apiUrl}}/movies/{{movie_id}}/showtimes?date=2024-12-20
-
-### GET /movies/:id/showtimes - With theater filter
-GET {{apiUrl}}/movies/{{movie_id}}/showtimes?theater_id={{theater_id}}
-
-### ============================================
-### 3. CACHE INVALIDATION TESTING
-### ============================================
-### These operations should invalidate related caches
-
-### Step 1: Get seat availability (cache it)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### Step 2: Create a booking (should invalidate seat availability cache)
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "user_id": "{{user_id}}",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": ["{{seat_id1}}"]
-}
-
-### Step 3: Get seat availability again (should hit DB, not cache, because cache was invalidated)
-### The available seats count should be reduced by 1
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### Step 4: Reserve seats (should invalidate seat availability cache)
-POST {{apiUrl}}/bookings/reserve
-Content-Type: application/json
-
-{
-  "user_id": "{{user_id}}",
-  "showtime_id": "{{showtime_id}}",
-  "seat_ids": ["{{seat_id2}}"]
-}
-
-### Step 5: Get seat availability again (should hit DB, cache invalidated)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### Step 6: Cancel booking (should invalidate seat availability cache)
-### Note: Make sure @booking_id is set from a previous booking
-PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
-Content-Type: application/json
-
-{
-  "reason": "Testing cache invalidation"
-}
-
-### Step 7: Get seat availability again (should hit DB, seats released)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### ============================================
-### 4. SHOWTIME CREATE/UPDATE/DELETE - Cache Invalidation
-### ============================================
-
-### Step 1: Get all showtimes (cache it)
-GET {{apiUrl}}/showtimes
-
-### Step 2: Create a new showtime (should invalidate showtime list cache)
-POST {{apiUrl}}/showtimes
-Content-Type: application/json
-
-{
-  "movie_id": "{{movie_id}}",
-  "screen_id": "{{screen_id}}",
-  "show_time": "2024-12-25T20:00:00Z",
-  "price": 15.00
-}
-
-### Step 3: Get all showtimes again (should hit DB, cache invalidated, new showtime visible)
-GET {{apiUrl}}/showtimes
-
-### Step 4: Update showtime (should invalidate related caches)
-### Note: Replace {id} with actual showtime ID
-PUT {{apiUrl}}/showtimes/{{showtime_id}}
-Content-Type: application/json
-
-{
-  "price": 18.00,
-  "status": "active"
-}
-
-### Step 5: Get showtime by ID (should hit DB, cache invalidated)
-GET {{apiUrl}}/showtimes/{{showtime_id}}
-
-### Step 6: Delete showtime (should invalidate all related caches)
-### Note: Replace {id} with actual showtime ID (use a test showtime, not production data)
-### DELETE {{apiUrl}}/showtimes/{id}
-
-### ============================================
-### 5. PERFORMANCE COMPARISON TEST
-### ============================================
-### Run these requests and compare response times
-### First request (DB): Usually 50-200ms
-### Second request (Cache): Usually 1-10ms
-
-### Test 1: Seat availability - First request (DB hit)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### Test 2: Seat availability - Second request (Cache hit - should be faster)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-
-### Test 3: All showtimes - First request (DB hit)
-GET {{apiUrl}}/showtimes
-
-### Test 4: All showtimes - Second request (Cache hit - should be faster)
-GET {{apiUrl}}/showtimes
-
-
-
-### ============================================
-### PHASE 3: PAYMENT PROCESSING
-### ============================================
-
-### Step 3.1: Process Payment
-### IMPORTANT: Replace amount with actual total_amount from booking response
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "{{booking_id}}",
-  "payment_method": "eSewa",
-  "amount": 37.98,
-  "idempotency_key": "payment-{{booking_id}}-{{$timestamp}}"
-}
-
-
-### Step 3.2: Verify Payment Status
-GET {{apiUrl}}/payments/{{payment_id}}
-### Expected: payment details with status
-
-### Step 3.3: Get Payment by Booking ID (includes receipt if successful)
-GET {{apiUrl}}/payments/booking/{{booking_id}}
-### Expected: payment details + receipt (if payment successful)
-
-### ============================================
-### PHASE 4: BOOKING CONFIRMATION & TICKET
-### ============================================
-
-### Step 4.1: Verify Booking is Confirmed
-GET {{apiUrl}}/bookings/{{booking_id}}
-### Expected: status = "confirmed", confirmed_at timestamp present
-
-### Step 4.2: Get Booking Receipt/Ticket
-### Receipt is included in payment response, or can be retrieved via booking
-GET {{apiUrl}}/payments/booking/{{booking_id}}
-
-### ============================================
-### PHASE 5: BOOKING MANAGEMENT
-### ============================================
-### Step 5.1: Get All Bookings for User
-GET {{apiUrl}}/bookings/user/{{user_id}}
-### Expected: Array of all bookings for the user
-
-### Step 5.2: Get All Bookings (Admin View)
-GET {{apiUrl}}/bookings
-### Expected: Array of all bookings in system
-
-### Step 5.3: Verify Seats are Booked (no longer available)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-### Expected: Reserved seats show as "booked" or "reserved"
-
-### ============================================
-### PHASE 6: BOOKING CANCELLATION
-### ============================================
-### Step 6.1: Cancel Booking (Recommended Method - PUT)
-PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
-Content-Type: application/json
-
-{}
-### Step 6.2: Verify Cancellation
-GET {{apiUrl}}/bookings/{{booking_id}}
-### Expected: status = "cancelled"
-
-### Step 6.3: Verify Seats are Restored (available again)
-GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
-### Expected: Previously booked seats now show as "available"
-
-### Step 6.4: Verify Payment Refund Status
-GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
-### Expected: payment.status = "refunded" (if payment existed)

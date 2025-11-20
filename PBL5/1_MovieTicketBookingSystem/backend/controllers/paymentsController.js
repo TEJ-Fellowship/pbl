@@ -1,4 +1,6 @@
 const { Booking } = require("../models");
+const redis = require("../utils/redis");
+const { releaseLocks } = require("../utils/redisLock");
 
 // Simulated payment processing
 const processPayment = async (req, res, next) => {
@@ -28,6 +30,35 @@ const processPayment = async (req, res, next) => {
         confirmed_at: new Date(),
       });
 
+      // ============================================
+      // RELEASE LOCKS: Payment confirmed, release locks
+      // ============================================
+      try {
+        const lockStorageKey = `booking:${booking_id}:locks`;
+        const storedLocks = await redis.get(lockStorageKey);
+        if (storedLocks) {
+          const locks = JSON.parse(storedLocks);
+          await releaseLocks(locks);
+          // Delete the storage key
+          await redis.del(lockStorageKey);
+        }
+      } catch (redisError) {
+        console.warn(
+          "Failed to release locks on payment confirmation:",
+          redisError.message
+        );
+      }
+
+      // ============================================
+      // INVALIDATE CACHE: Seat availability changed
+      // ============================================
+      try {
+        await redis.del(`showtime:${booking.showtime_id}:seats`);
+        await redis.del(`showtime:${booking.showtime_id}`);
+      } catch (redisError) {
+        console.warn("Failed to invalidate cache:", redisError.message);
+      }
+
       // Create payment record (if you have a payments table)
       // For now, we'll just return success
       res.json({
@@ -37,7 +68,7 @@ const processPayment = async (req, res, next) => {
         status: "success",
         payment_method,
         transaction_id: `txn_${Date.now()}`,
-        message: "Payment processed successfully",
+        message: "Payment processed successfully. Booking confirmed.",
       });
     } else {
       res.status(402).json({
