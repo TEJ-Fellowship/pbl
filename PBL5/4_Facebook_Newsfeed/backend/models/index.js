@@ -1,9 +1,9 @@
 const sequelize = require('../config/database');
-const User = require('./User');
-const Post = require('./Post');
-const Like = require('./Like');
-const Comment = require('./Comment');
-const Follow = require('./Follow');
+const User = require('./user');
+const Post = require('./post');
+const Like = require('./like');
+const Comment = require('./comment');
+const Follow = require('./follow');
 
 // RELATIONSHIP 1: User → Posts (One-to-Many)
 // One user can create many posts
