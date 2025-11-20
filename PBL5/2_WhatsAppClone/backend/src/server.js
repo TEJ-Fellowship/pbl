@@ -14,6 +14,7 @@ const startServer = async () => {
     const httpServer = createServer(app);
 
     const io = new Server(httpServer, {
+      transports: ["websocket", "polling"],
       cors: { origin: "*", methods: ["GET", "POST"] },
     });
 
