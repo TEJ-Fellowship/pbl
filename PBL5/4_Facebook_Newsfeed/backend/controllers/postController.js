@@ -1,4 +1,5 @@
 const { User, Post, Like, Comment } = require("../models/index");
+const { Op } = require('sequelize')
 
 //creating the post by the user
 const handlePost = async (req, res) => {
