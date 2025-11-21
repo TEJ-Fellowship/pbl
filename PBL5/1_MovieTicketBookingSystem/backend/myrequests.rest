@@ -8,15 +8,17 @@
 ### ============================================
 ### VARIABLES - Fill these after running Setup
 ### ============================================
-@user_id = 8d486488-2906-458d-a34b-e6ab6f2c9787
-
-@movie_id = 8d486488-2906-458d-a34b-e6ab6f2c9787
-@showtime_id = c32709a2-9e70-481b-9c4c-34f884d7ce47
-@seat_id1 = 083822f5-0f64-44a9-8289-2663a2f2b08d
-@seat_id2 = e2f8471c-34c2-49aa-b0f1-d5f36ae04a29
+@user_id = 66dcae15-c9c5-4d0b-8a8f-7bd34f7cebf5
+# 9c28d6c9-f1ed-420e-bd1d-4ec50f7b4bde
+# 66dcae15-c9c5-4d0b-8a8f-7bd34f7cebf5
+@movie_id = 97c4a69e-31b2-4c60-af27-17f9ff6c382f
+@showtime_id = e556038a-05a1-4d0d-8099-f68e05e4fac8
+@seat_id1 = b46fb13f-fd98-4e9b-bc73-251dbd8d05c5
+@seat_id2 = 1e20a09b-2905-4171-87b3-66fb04933a60
 @theater_id = 
 @screen_id = 
-@booking_id = 9062ae67-5804-42c5-b4e3-136dac571b23
+@booking_id = 9205b2e1-471b-4fd0-8f82-e4814d42217b
+@payment_id = 52221d22-92a9-46ab-b492-3a2b62c3b9b8
 
 ### ============================================
 ### BASIC USER FLOW - Simple Testing
@@ -29,8 +31,8 @@ POST {{apiUrl}}/users
 Content-Type: application/json
 
 {
-  "name": "Test User 56",
-  "email": "testuser56@example.com"
+  "name": "Test User 76",
+  "email": "testuser76@example.com"
 }
 ### Copy "id" from response → paste in @user_id above
 
@@ -74,14 +76,26 @@ Content-Type: application/json
 
 {
   "booking_id": "{{booking_id}}",
-  "payment_method": "eSewa",
-  "amount": 44.97
+  "payment_method": "Khalti",
+  "amount": 56
 }
-### Note: Payment automatically confirms booking and releases Redis locks
+### Note: 
+### - Payment automatically confirms booking and releases Redis locks
+### - Response includes receipt with ticket number
+### - Copy "payment_id" from response → paste in @payment_id above
+### - Duplicate payments are prevented by booking_id check (can't pay same booking twice)
 
 ### 6.2: Verify booking is confirmed
 GET {{apiUrl}}/bookings/{{booking_id}}
 ### Expected: status = "confirmed"
+
+### 6.3: Get payment details (includes receipt if successful)
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+### Expected: Payment details with receipt (ticket number, customer info, etc.)
+
+### 6.4: Get payment by ID
+GET {{apiUrl}}/payments/{{payment_id}}
+### Expected: Full payment record
 
 ### STEP 7: View Bookings
 ### 7.1: Get all bookings for user
@@ -106,6 +120,10 @@ GET {{apiUrl}}/bookings/{{booking_id}}
 ### 8.2: Verify seats are freed
 GET {{apiUrl}}/showtimes/{{showtime_id}}/seats
 ### Expected: Previously booked seats now show "is_available: true"
+
+### 8.3: Check refund status
+GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
+### Expected: refunded: true (if payment was successful before cancellation)
 
 ### ============================================
 ### ALL AVAILABLE ROUTES - Complete Reference
@@ -299,12 +317,22 @@ Content-Type: application/json
   "payment_method": "eSewa",
   "amount": 25.00
 }
+### Note: 
+### - Duplicate payments are prevented (can't pay same booking twice)
+### - Response includes receipt with ticket number if successful
+### - Optional: idempotency_key can be added for production (handles network retries)
 
 ### Get payment by ID
 GET {{apiUrl}}/payments/{{payment_id}}
+### Returns: Full payment record with booking details
 
-### Get payment by booking ID
+### Get payment by booking ID (includes receipt if successful)
 GET {{apiUrl}}/payments/booking/{{booking_id}}
+### Returns: Payment details + receipt (if payment was successful)
+
+### Get refund status
+GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
+### Returns: Payment refund status (refunded: true/false)
 
 ### ============================================
 ### THEATERS (Optional - Not in main flow)
@@ -523,3 +551,139 @@ Content-Type: application/json
   "showtime_id": "00000000-0000-0000-0000-000000000000",
   "seat_ids": ["{{seat_id1}}"]
 }
+
+### ============================================
+### PAYMENT TESTING - New Features
+### ============================================
+
+### TEST 1: Duplicate Payment Prevention
+### Step 1: Process payment (first attempt)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+### Expected: Creates new payment, returns payment_id
+
+### Step 2: Try to pay same booking again (should be rejected)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+### Expected: 400 error - "Payment already processed successfully for this booking"
+### This prevents double-charging (protected by booking_id check)
+
+### TEST 2: Receipt Generation
+### Step 1: Process successful payment
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+
+### Step 2: Get payment with receipt
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+### Expected: Response includes "receipt" object with ticket_number, customer info, seats, etc.
+
+### TEST 3: Refund Tracking
+### Step 1: Create and pay for booking
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+
+### Step 2: Cancel booking (triggers refund)
+PUT {{apiUrl}}/bookings/{{booking_id}}/cancel
+Content-Type: application/json
+
+{
+  "reason": "Testing refund"
+}
+
+### Step 3: Check refund status
+GET {{apiUrl}}/payments/refund?booking_id={{booking_id}}
+### Expected: refunded: true
+
+### Step 4: Verify payment status is "refunded"
+GET {{apiUrl}}/payments/booking/{{booking_id}}
+### Expected: status = "refunded"
+
+### TEST 4: Booking Expiry (Automatic Cleanup)
+### Step 1: Create booking (status: pending)
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+### Note: Booking expires after 5 minutes if payment not completed
+
+### Step 2: Wait 5+ minutes OR create another booking for same seat
+### The system will automatically expire old pending bookings
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "user_id": "{{user_id}}",
+  "showtime_id": "{{showtime_id}}",
+  "seat_ids": ["{{seat_id1}}"]
+}
+### Expected: Should work (old booking expired, seat freed)
+
+### TEST 5: Payment Amount Validation
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 10.00
+}
+### Expected: 400 error - "Payment amount does not match booking total"
+
+### TEST 6: Payment for Already Confirmed Booking
+### Step 1: Process payment (confirms booking)
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+
+### Step 2: Try to pay again
+POST {{apiUrl}}/payments/process
+Content-Type: application/json
+
+{
+  "booking_id": "{{booking_id}}",
+  "payment_method": "eSewa",
+  "amount": 25.00
+}
+### Expected: 400 error - "Booking is already confirmed"

@@ -7,6 +7,7 @@ const Seat = require("./Seat");
 const SeatReservation = require("./SeatReservation");
 const Booking = require("./Booking");
 const BookingSeat = require("./BookingSeat");
+const Payment = require("./Payment");
 
 // ============================================
 // Define Relationships
@@ -144,6 +145,17 @@ SeatReservation.belongsTo(User, {
   as: "user",
 });
 
+// Payment
+Booking.hasOne(Payment, {
+  foreignKey: "booking_id",
+  as: "payment",
+  onDelete: "CASCADE",
+});
+Payment.belongsTo(Booking, {
+  foreignKey: "booking_id",
+  as: "booking",
+});
+
 module.exports = {
   User,
   Theater,
@@ -154,4 +166,5 @@ module.exports = {
   SeatReservation,
   Booking,
   BookingSeat,
+  Payment,
 };
