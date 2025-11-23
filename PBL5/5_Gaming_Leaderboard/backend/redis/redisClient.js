@@ -1,22 +1,20 @@
-// redisClient.js
+// import { createClient } from 'redis';
 const { createClient } = require('redis');
+const { PASSWORD } = require('../util/config');
 
-const redisClient = createClient({
-  url: 'redis://localhost:6379', // adjust if using Docker with a different host
-});
-
-redisClient.on('error', (err) => {
-  console.error('Redis Client Error', err);
-});
-
-async function initRedis() {
-  if (!redisClient.isOpen) {
-    await redisClient.connect();
-    console.log('Redis connected');
+const client = createClient({
+  username: 'default',
+  password: PASSWORD,
+  socket: {
+      host: 'redis-10155.c212.ap-south-1-1.ec2.cloud.redislabs.com',
+      port: 10155
   }
-}
+});
+
+// client.on('error', err => console.log('Redis Client Error', err));
+
+// await client.connect();
 
 module.exports = {
-  redisClient,
-  initRedis,
+  client,
 };
