@@ -1,50 +1,118 @@
 const redis = require('redis');
-const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD } = require('./config');
+const { REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, NODE_ENV } = require('./config');
 
-// Create Redis client
+// Connection state tracking
+let isConnected = false;
+let connectionAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_DELAY = 2000; // 2 seconds
+
+// Create Redis client optimized for local setup
+// For local Redis/Memurai, we don't need password
 const redisClient = redis.createClient({
   socket: {
     host: REDIS_HOST || 'localhost',
-    port: REDIS_PORT || 6379
+    port: REDIS_PORT || 6379,
+    reconnectStrategy: (retries) => {
+      if (retries > MAX_RECONNECT_ATTEMPTS) {
+        console.error('❌ Redis: Max reconnection attempts reached. Please check if Redis/Memurai is running.');
+        return new Error('Max reconnection attempts reached');
+      }
+      // Exponential backoff: 2s, 4s, 8s, etc., max 10s
+      const delay = Math.min(RECONNECT_DELAY * Math.pow(2, retries), 10000);
+      console.log(`🔄 Redis: Reconnecting in ${delay}ms (attempt ${retries + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
+      return delay;
+    }
   },
+  // Only use password if explicitly provided (for cloud Redis compatibility)
   password: REDIS_PASSWORD || undefined
 });
 
 // Handle connection events
 redisClient.on('connect', () => {
-  console.log('✅ Redis client connecting...');
+  console.log('🔄 Redis: Connecting to local Redis/Memurai...');
+  connectionAttempts = 0;
 });
 
 redisClient.on('error', (err) => {
-  console.error('❌ Redis client error:', err.message);
+  isConnected = false;
+  // Don't spam errors in production, but log in development
+  if (NODE_ENV === 'development') {
+    console.error('❌ Redis client error:', err.message);
+  }
+  // If it's a connection error, provide helpful message
+  if (err.code === 'ECONNREFUSED' || err.message.includes('connect')) {
+    console.error('❌ Redis: Connection refused. Please ensure Memurai/Redis is running on', 
+      `${REDIS_HOST || 'localhost'}:${REDIS_PORT || 6379}`);
+    console.error('💡 Tip: Check if Memurai service is running: Get-Service | Where-Object {$_.Name -like "*memurai*"}');
+  }
 });
 
 redisClient.on('ready', () => {
-  console.log('✅ Redis client ready');
+  isConnected = true;
+  connectionAttempts = 0;
+  console.log('✅ Redis: Connected and ready (local Redis/Memurai)');
 });
 
 redisClient.on('reconnecting', () => {
-  console.log('🔄 Redis client reconnecting...');
+  isConnected = false;
+  connectionAttempts++;
+  console.log(`🔄 Redis: Reconnecting... (attempt ${connectionAttempts})`);
 });
 
-// Connect to Redis
-redisClient.connect().catch((err) => {
-  console.error('❌ Failed to connect to Redis:', err.message);
+redisClient.on('end', () => {
+  isConnected = false;
+  console.log('⚠️  Redis: Connection ended');
 });
+
+// Connect to Redis with error handling
+const connectRedis = async () => {
+  try {
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+  } catch (err) {
+    console.error('❌ Failed to connect to Redis:', err.message);
+    // Don't throw - allow app to continue without Redis (graceful degradation)
+    if (NODE_ENV === 'development') {
+      console.warn('⚠️  Warning: App will continue without Redis caching. Some features may be slower.');
+    }
+  }
+};
+
+// Initialize connection
+connectRedis();
 
 // =====================================================
 // CACHE UTILITIES
 // =====================================================
 
 /**
+ * Check if Redis is connected and ready
+ */
+const isRedisReady = () => {
+  return isConnected && redisClient.isOpen;
+};
+
+/**
  * Get cached value
  */
 const getCache = async (key) => {
   try {
+    // Check connection before attempting operation
+    if (!isRedisReady()) {
+      if (NODE_ENV === 'development') {
+        console.warn(`⚠️  Redis not connected, skipping cache get for key: ${key}`);
+      }
+      return null;
+    }
     const value = await redisClient.get(key);
     return value ? JSON.parse(value) : null;
   } catch (error) {
-    console.error(`Cache get error for key ${key}:`, error.message);
+    // Graceful degradation: if Redis fails, return null (cache miss)
+    if (NODE_ENV === 'development') {
+      console.error(`Cache get error for key ${key}:`, error.message);
+    }
     return null;
   }
 };
@@ -54,10 +122,20 @@ const getCache = async (key) => {
  */
 const setCache = async (key, value, ttlSeconds = 3600) => {
   try {
+    // Check connection before attempting operation
+    if (!isRedisReady()) {
+      if (NODE_ENV === 'development') {
+        console.warn(`⚠️  Redis not connected, skipping cache set for key: ${key}`);
+      }
+      return false;
+    }
     await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
     return true;
   } catch (error) {
-    console.error(`Cache set error for key ${key}:`, error.message);
+    // Graceful degradation: if Redis fails, return false (cache write failed, but app continues)
+    if (NODE_ENV === 'development') {
+      console.error(`Cache set error for key ${key}:`, error.message);
+    }
     return false;
   }
 };
@@ -67,10 +145,15 @@ const setCache = async (key, value, ttlSeconds = 3600) => {
  */
 const deleteCache = async (key) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     await redisClient.del(key);
     return true;
   } catch (error) {
-    console.error(`Cache delete error for key ${key}:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cache delete error for key ${key}:`, error.message);
+    }
     return false;
   }
 };
@@ -80,13 +163,18 @@ const deleteCache = async (key) => {
  */
 const deleteCachePattern = async (pattern) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const keys = await redisClient.keys(pattern);
     if (keys.length > 0) {
       await redisClient.del(keys);
     }
     return true;
   } catch (error) {
-    console.error(`Cache delete pattern error for ${pattern}:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cache delete pattern error for ${pattern}:`, error.message);
+    }
     return false;
   }
 };
@@ -100,6 +188,10 @@ const deleteCachePattern = async (pattern) => {
  */
 const getCart = async (sessionId) => {
   try {
+    if (!isRedisReady()) {
+      // Return empty cart if Redis is not available
+      return {};
+    }
     const cartKey = `cart:${sessionId}`;
     const cart = await redisClient.hGetAll(cartKey);
     if (!cart || Object.keys(cart).length === 0) {
@@ -117,7 +209,9 @@ const getCart = async (sessionId) => {
     }
     return parsedCart;
   } catch (error) {
-    console.error(`Cart get error for session ${sessionId}:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cart get error for session ${sessionId}:`, error.message);
+    }
     return {};
   }
 };
@@ -127,6 +221,9 @@ const getCart = async (sessionId) => {
  */
 const addToCart = async (sessionId, productId, quantity, productData) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const cartKey = `cart:${sessionId}`;
     const item = {
       productId,
@@ -141,7 +238,9 @@ const addToCart = async (sessionId, productId, quantity, productData) => {
     await redisClient.expire(cartKey, 7 * 24 * 60 * 60);
     return true;
   } catch (error) {
-    console.error(`Cart add error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cart add error:`, error.message);
+    }
     return false;
   }
 };
@@ -151,6 +250,9 @@ const addToCart = async (sessionId, productId, quantity, productData) => {
  */
 const updateCartItem = async (sessionId, productId, quantity) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const cartKey = `cart:${sessionId}`;
     if (quantity <= 0) {
       await redisClient.hDel(cartKey, productId);
@@ -164,7 +266,9 @@ const updateCartItem = async (sessionId, productId, quantity) => {
     }
     return true;
   } catch (error) {
-    console.error(`Cart update error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cart update error:`, error.message);
+    }
     return false;
   }
 };
@@ -174,11 +278,16 @@ const updateCartItem = async (sessionId, productId, quantity) => {
  */
 const removeFromCart = async (sessionId, productId) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const cartKey = `cart:${sessionId}`;
     await redisClient.hDel(cartKey, productId);
     return true;
   } catch (error) {
-    console.error(`Cart remove error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cart remove error:`, error.message);
+    }
     return false;
   }
 };
@@ -188,11 +297,16 @@ const removeFromCart = async (sessionId, productId) => {
  */
 const clearCart = async (sessionId) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const cartKey = `cart:${sessionId}`;
     await redisClient.del(cartKey);
     return true;
   } catch (error) {
-    console.error(`Cart clear error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Cart clear error:`, error.message);
+    }
     return false;
   }
 };
@@ -206,6 +320,10 @@ const clearCart = async (sessionId) => {
  */
 const reserveInventory = async (productId, quantity, orderId) => {
   try {
+    if (!isRedisReady()) {
+      return { success: false, error: 'REDIS_NOT_CONNECTED' };
+    }
+    
     const lockKey = `inventory_lock:${productId}`;
     const inventoryKey = `inventory:${productId}`;
     
@@ -235,8 +353,10 @@ const reserveInventory = async (productId, quantity, orderId) => {
       return { success: false, error: 'INVALID_QUANTITY' };
     }
     
-    console.log(`Reserving inventory: productId=${productId}, quantity=${quantityNum}, orderId=${orderId}`);
-    console.log(`Redis keys: inventoryKey=${inventoryKey}, lockKey=${lockKey}`);
+    if (NODE_ENV === 'development') {
+      console.log(`Reserving inventory: productId=${productId}, quantity=${quantityNum}, orderId=${orderId}`);
+      console.log(`Redis keys: inventoryKey=${inventoryKey}, lockKey=${lockKey}`);
+    }
     
     const result = await redisClient.eval(
       luaScript,
@@ -246,19 +366,22 @@ const reserveInventory = async (productId, quantity, orderId) => {
       }
     );
     
-    console.log(`Lua script result for product ${productId}:`, result, `Type: ${typeof result}, IsArray: ${Array.isArray(result)}`);
+    if (NODE_ENV === 'development') {
+      console.log(`Lua script result for product ${productId}:`, result);
+    }
     
     // Result format: [success_code, ...]
     // success_code: 1 = success, 0 = error
     if (Array.isArray(result) && result.length > 0) {
       const successCode = result[0];
-      console.log(`Success code: ${successCode}, Type: ${typeof successCode}`);
       
       // Handle both string and number success codes
       if (successCode === 1 || successCode === '1') {
         // Success: [1, remaining]
         const remaining = result[1] || 0;
-        console.log(`Reservation successful. Remaining: ${remaining}`);
+        if (NODE_ENV === 'development') {
+          console.log(`Reservation successful. Remaining: ${remaining}`);
+        }
         return { 
           success: true, 
           remaining: typeof remaining === 'number' ? remaining : parseInt(remaining, 10) || 0
@@ -267,7 +390,9 @@ const reserveInventory = async (productId, quantity, orderId) => {
         // Error: [0, error_type, available]
         const errorType = result[1] || 'UNKNOWN_ERROR';
         const available = result[2] || 0;
-        console.log(`Reservation failed. Error: ${errorType}, Available: ${available}`);
+        if (NODE_ENV === 'development') {
+          console.log(`Reservation failed. Error: ${errorType}, Available: ${available}`);
+        }
         return { 
           success: false, 
           error: errorType, 
@@ -278,7 +403,6 @@ const reserveInventory = async (productId, quantity, orderId) => {
     
     // If result is not in expected format, log it for debugging
     console.error(`Unexpected reserveInventory result format for product ${productId}:`, JSON.stringify(result));
-    console.error(`Result type: ${typeof result}, IsArray: ${Array.isArray(result)}, Length: ${Array.isArray(result) ? result.length : 'N/A'}`);
     return { success: false, error: 'UNKNOWN_RESULT_FORMAT', result: result };
   } catch (error) {
     console.error(`Inventory reserve error for product ${productId}:`, error);
@@ -291,6 +415,10 @@ const reserveInventory = async (productId, quantity, orderId) => {
  */
 const releaseInventory = async (productId, quantity, orderId) => {
   try {
+    if (!isRedisReady()) {
+      return { success: false, error: 'REDIS_NOT_CONNECTED' };
+    }
+    
     const lockKey = `inventory_lock:${productId}`;
     const inventoryKey = `inventory:${productId}`;
     
@@ -302,7 +430,9 @@ const releaseInventory = async (productId, quantity, orderId) => {
     
     return { success: true };
   } catch (error) {
-    console.error(`Inventory release error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Inventory release error:`, error.message);
+    }
     return { success: false, error: error.message };
   }
 };
@@ -312,11 +442,16 @@ const releaseInventory = async (productId, quantity, orderId) => {
  */
 const syncInventoryToCache = async (productId, quantity) => {
   try {
+    if (!isRedisReady()) {
+      return false;
+    }
     const inventoryKey = `inventory:${productId}`;
     await redisClient.setEx(inventoryKey, 300, quantity.toString()); // 5-minute TTL
     return true;
   } catch (error) {
-    console.error(`Inventory sync error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Inventory sync error:`, error.message);
+    }
     return false;
   }
 };
@@ -326,17 +461,23 @@ const syncInventoryToCache = async (productId, quantity) => {
  */
 const getCachedInventory = async (productId) => {
   try {
+    if (!isRedisReady()) {
+      return null;
+    }
     const inventoryKey = `inventory:${productId}`;
     const quantity = await redisClient.get(inventoryKey);
     return quantity ? parseInt(quantity, 10) : null;
   } catch (error) {
-    console.error(`Inventory get error:`, error.message);
+    if (NODE_ENV === 'development') {
+      console.error(`Inventory get error:`, error.message);
+    }
     return null;
   }
 };
 
 module.exports = {
   redisClient,
+  isRedisReady,
   // Cache utilities
   getCache,
   setCache,

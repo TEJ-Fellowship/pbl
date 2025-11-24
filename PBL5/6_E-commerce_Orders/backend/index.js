@@ -98,9 +98,44 @@ const start = async () => {
     // Initialize database tables (create if they don't exist)
     await initDatabase();
 
-    // Verify Redis connection
-    await redisClient.ping();
-    console.log("✅ Redis connection verified");
+    // Verify Redis connection (with graceful fallback)
+    try {
+      const { isRedisReady } = require('./utils/redis');
+      if (isRedisReady()) {
+        await redisClient.ping();
+        console.log("✅ Redis connection verified (local Redis/Memurai)");
+      } else {
+        console.warn("⚠️  Redis is not connected. App will continue without caching.");
+        console.warn("💡 To enable caching, ensure Memurai/Redis is running on localhost:6379");
+      }
+    } catch (error) {
+      console.warn("⚠️  Could not verify Redis connection:", error.message);
+      console.warn("💡 App will continue without Redis caching. Some features may be slower.");
+    }
+
+    // Check replication health (non-blocking, just warnings)
+    try {
+      const { checkReplicationHealth } = require('./utils/replicationHealth');
+      const replicationHealth = await checkReplicationHealth();
+      
+      if (!replicationHealth.configured) {
+        console.log("\n⚠️  Replication Warning:");
+        replicationHealth.warnings.forEach(warning => console.log(`   ${warning}`));
+        console.log("   💡 To set up automatic replication, run: npm run setup-replication\n");
+      } else if (!replicationHealth.working) {
+        console.log("\n⚠️  Replication Health Check:");
+        replicationHealth.warnings.forEach(warning => console.log(`   ${warning}`));
+        if (replicationHealth.errors.length > 0) {
+          replicationHealth.errors.forEach(error => console.log(`   ❌ ${error}`));
+        }
+        console.log("   💡 Run: npm run check-replication (for detailed diagnostics)\n");
+      } else {
+        console.log("✅ Replication is configured and working\n");
+      }
+    } catch (replicationError) {
+      // Non-fatal: just log and continue
+      console.log("ℹ️  Could not check replication status (non-fatal)");
+    }
 
     // Start server
     app.listen(PORT, () => {
