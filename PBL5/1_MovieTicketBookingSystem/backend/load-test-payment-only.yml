@@ -1,0 +1,22 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 60
+      arrivalRate: 50
+      name: "Payment load test"
+  payload:
+    path: "./booking-ids.csv"
+    fields:
+      - "booking_id"
+
+scenarios:
+  - name: "Payment Only Test"
+    flow:
+      - post:
+          url: "/api/payments/process"
+          json:
+            booking_id: "{{ booking_id }}"
+            amount: 200
+            payment_method: "credit_card"
+          expect:
+            - statusCode: [200, 400, 404]

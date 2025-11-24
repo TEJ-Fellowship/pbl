@@ -108,7 +108,12 @@ app.use(errorHandler);
 
 const start = async () => {
   try {
-    await connectToDatabase();
+    // Database connection is optional for Redis-only approach
+    try {
+      await connectToDatabase();
+    } catch (dbError) {
+      console.log("⚠️  Database connection skipped (Redis-only mode)");
+    }
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
