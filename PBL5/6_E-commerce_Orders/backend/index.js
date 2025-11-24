@@ -113,7 +113,9 @@ const start = async () => {
       console.warn("💡 App will continue without Redis caching. Some features may be slower.");
     }
 
-    // Check replication health (non-blocking, just warnings)
+    // Replication check disabled - not needed for current setup
+    // Uncomment below if you need database replication
+    /*
     try {
       const { checkReplicationHealth } = require('./utils/replicationHealth');
       const replicationHealth = await checkReplicationHealth();
@@ -136,6 +138,7 @@ const start = async () => {
       // Non-fatal: just log and continue
       console.log("ℹ️  Could not check replication status (non-fatal)");
     }
+    */
 
     // Start server
     app.listen(PORT, () => {

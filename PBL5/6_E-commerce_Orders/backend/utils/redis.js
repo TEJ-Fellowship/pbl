@@ -24,7 +24,7 @@ const redisClient = redis.createClient({
       return delay;
     }
   },
-  // Only use password if explicitly provided (for cloud Redis compatibility)
+  // Password is optional (not needed for local Redis/Memurai)
   password: REDIS_PASSWORD || undefined
 });
 

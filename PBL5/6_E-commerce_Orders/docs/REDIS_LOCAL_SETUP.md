@@ -16,7 +16,7 @@ The application is configured to connect to:
 These settings are defined in `backend/utils/config.js` and can be overridden via environment variables:
 - `REDIS_HOST` (default: `localhost`)
 - `REDIS_PORT` (default: `6379`)
-- `REDIS_PASSWORD` (default: `undefined` - only set if using cloud Redis)
+- `REDIS_PASSWORD` (default: `undefined` - not required for local Redis/Memurai)
 
 ## Key Features Implemented
 
@@ -130,13 +130,7 @@ await deleteCachePattern('products:page:*');
 
 ## Performance Benefits
 
-### Before (Cloud Redis)
-- Network latency: 50-200ms per operation
-- Connection overhead
-- Potential network failures
-- Higher costs
-
-### After (Local Redis)
+### Benefits of Local Redis
 - Sub-millisecond latency (< 1ms)
 - No network overhead
 - More reliable (local connection)

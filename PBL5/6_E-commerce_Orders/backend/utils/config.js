@@ -12,7 +12,6 @@ module.exports = {
   
   // Redis (Local Redis/Memurai configuration)
   // For local setup, use localhost:6379 with no password
-  // Set REDIS_PASSWORD only if using cloud Redis
   REDIS_HOST: process.env.REDIS_HOST || 'localhost',
   REDIS_PORT: parseInt(process.env.REDIS_PORT, 10) || 6379,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined, // No password for local Redis/Memurai
