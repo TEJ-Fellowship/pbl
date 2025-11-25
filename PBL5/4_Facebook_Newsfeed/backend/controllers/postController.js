@@ -1,7 +1,13 @@
-const { User, Post, Like, Comment } = require("../models/index");
-const { Op } = require('sequelize')
+const { User, Post, Like, Comment, Follow } = require("../models/index");
+const {
+  getCache,
+  setCache,
+  deleteCache,
+  deletePattern,
+  appendToFeedCache,
+} = require("../utils/cache");
 
-//creating the post by the user
+// Creating the post by the user
 const handlePost = async (req, res) => {
   try {
     const { user_id, content, image_urls } = req.body;
@@ -15,18 +21,71 @@ const handlePost = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    // Create post in database
     const post = await Post.create({
       user_id,
       content,
       image_urls,
     });
-    return res.status(201).json({ message: "Post created successfully", post });
+
+    // Get post with author info for caching
+    const postWithAuthor = await Post.findByPk(post.id, {
+      include: [
+        {
+          model: User,
+          as: "author",
+          attributes: ["id", "username"],
+        },
+      ],
+    });
+
+    const postData = {
+      ...postWithAuthor.toJSON(),
+      likes_count: 0,
+      comments_count: 0,
+    };
+
+    // ============================================
+    // REQUIREMENT 1: Cache post for all followers
+    // ============================================
+    // Get all followers of this user
+    const followers = await Follow.findAll({
+      where: { following_id: user_id },
+      attributes: ["follower_id"],
+    });
+
+    // Incrementally append this post to each follower's feed cache
+    const followerIds = followers.map((f) => f.follower_id);
+
+    const appendPromises = followerIds.map((followerId) => {
+      const feedKey = `feed:user:${followerId}`;
+      return appendToFeedCache(feedKey, postData, 100); 
+    });
+
+    await Promise.all(appendPromises);
+
+    // ============================================
+    // REQUIREMENT 2: Cache the post itself
+    // ============================================
+    await setCache(`post:${post.id}`, postData, 900);
+
+    // ============================================
+    // Invalidate user's own posts cache
+    // ============================================
+    await deletePattern(`posts:user:${user_id}:*`);
+
+    return res.status(201).json({
+      message: "Post created successfully",
+      post: postData,
+    });
   } catch (error) {
+    console.error("Error creating post:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
-//liking the post by the user
+// Liking the post by the user
 const handleLike = async (req, res) => {
   try {
     const post_id = req.params.id;
@@ -49,17 +108,29 @@ const handleLike = async (req, res) => {
     const isliked = await Like.findOne({ where: { user_id, post_id } });
     if (isliked) {
       await isliked.destroy();
+      await post.decrement("likes_count");
+
+      // Invalidate caches
+      await deleteCache(`post:${post_id}`);
+      await deletePattern(`feed:user:*`); // Invalidate all feeds (post appears in feeds)
+
       return res.status(200).json({ message: "Like removed" });
     }
 
     const like = await Like.create({ user_id, post_id });
+    await post.increment("likes_count");
+
+    // Invalidate caches
+    await deleteCache(`post:${post_id}`);
+    await deletePattern(`feed:user:*`); // Invalidate all feeds
+
     return res.status(201).json({ message: "Liked successfully", like });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 };
 
-//commenting on the post by the user
+// Commenting on the post by the user
 const handleComment = async (req, res) => {
   try {
     const post_id = req.params.id;
@@ -82,11 +153,18 @@ const handleComment = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
     const comment = await Comment.create({
       user_id,
       post_id,
       content,
     });
+
+    await post.increment("comments_count");
+
+    // Invalidate caches
+    await deleteCache(`post:${post_id}`);
+    await deletePattern(`posts:user:${post.user_id}:*`);
 
     const commentAuthor = await Comment.findByPk(comment.id, {
       include: [
