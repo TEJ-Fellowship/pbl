@@ -1,0 +1,72 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    # Phase 1: Warm up - gradual ramp up
+    - duration: 10
+      arrivalRate: 10
+      name: "Warm up"
+    # Phase 2: Ramp up load
+    - duration: 20
+      arrivalRate: 50
+      name: "Ramp up"
+    # Phase 3: Sustained high load
+    - duration: 30
+      arrivalRate: 100
+      name: "Sustained load"
+    # Phase 4: Peak load
+    - duration: 20
+      arrivalRate: 200
+      name: "Peak load"
+  processor: "./artillery-processor.js"
+  variables:
+    seatCount: 1000
+
+scenarios:
+  # Scenario 1: Booking creation only (high rate)
+  - name: "Booking Load Test"
+    weight: 70
+    flow:
+      - function: "generateSeatsForRequest"
+      - post:
+          url: "/api/bookings"
+          json:
+            seat_ids: "{{ seatIds }}"
+          capture:
+            - json: "$.id"
+              as: "bookingId"
+              strict: false # Don't fail if field doesn't exist (409 responses won't have id)
+          expect:
+            - statusCode: [201, 409] # 201 = success, 409 = seat conflict (expected)
+            - contentType: json
+
+  # Scenario 2: Full flow (booking + payment)
+  - name: "Booking and Payment Flow"
+    weight: 30
+    flow:
+      - function: "generateSeatsForRequest"
+      # Step 1: Create booking
+      - post:
+          url: "/api/bookings"
+          json:
+            seat_ids: "{{ seatIds }}"
+          capture:
+            - json: "$.id"
+              as: "bookingId"
+              strict: false # Don't fail if field doesn't exist (409 responses won't have id)
+          expect:
+            - statusCode: [201, 409]
+
+      # Step 2: Pay immediately (if booking succeeded)
+      - post:
+          url: "/api/payments/process"
+          json:
+            booking_id: "{{ bookingId }}"
+            amount: 200
+            payment_method: "credit_card"
+          capture:
+            - json: "$.payment_id"
+              as: "paymentId"
+              strict: false # Don't fail if field doesn't exist (error responses won't have payment_id)
+          expect:
+            - statusCode: [200, 400, 404] # 200 = success, 400/404 = booking not found/confirmed
+          if: "{{ bookingId && bookingId !== '' }}"

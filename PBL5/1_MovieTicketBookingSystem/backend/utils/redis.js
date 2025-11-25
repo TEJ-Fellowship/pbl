@@ -6,15 +6,23 @@ const {
   REDIS_PORT,
 } = require("./config");
 
-// Create Redis client with credentials from .env
-const client = createClient({
-  username: REDIS_USERNAME || "default",
-  password: REDIS_PASSWORD,
+// Create Redis client
+// Only use authentication if password is provided (for cloud Redis)
+// For local Redis (Docker), no auth is needed
+const clientConfig = {
   socket: {
     host: REDIS_HOST,
     port: REDIS_PORT,
   },
-});
+};
+
+// Only add authentication if password is provided (cloud Redis)
+if (REDIS_PASSWORD) {
+  clientConfig.username = REDIS_USERNAME || "default";
+  clientConfig.password = REDIS_PASSWORD;
+}
+
+const client = createClient(clientConfig);
 
 // Handle connection events
 client.on("connect", () => {

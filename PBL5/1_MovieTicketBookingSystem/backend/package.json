@@ -8,8 +8,11 @@
     "migrate": "node utils/migrate.js",
     "migration:down": "node utils/rollback.js",
     "seed": "node scripts/seed.js",
+    "seed:redis": "node scripts/seedRedis.js",
     "test": "node test-integration.js",
-    "test:integration": "node test-integration.js"
+    "test:integration": "node test-integration.js",
+    "load-test": "artillery run load-test.yml",
+    "load-test:payment": "artillery run load-test-payment-only.yml"
   },
   "keywords": [],
   "author": "",
