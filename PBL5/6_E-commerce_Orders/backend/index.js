@@ -99,17 +99,33 @@ const start = async () => {
     await initDatabase();
 
     // Verify Redis connection (with graceful fallback)
+    // Always test with actual ping - don't rely on isOpen state which can be stale
     try {
-      const { isRedisReady } = require('./utils/redis');
-      if (isRedisReady()) {
-        await redisClient.ping();
-        console.log("✅ Redis connection verified (local Redis/Memurai)");
-      } else {
-        console.warn("⚠️  Redis is not connected. App will continue without caching.");
-        console.warn("💡 To enable caching, ensure Memurai/Redis is running on localhost:6379");
-      }
+      // Set a timeout for ping to detect if Redis is actually responding
+      const pingPromise = redisClient.ping();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Redis ping timeout - server not responding')), 2000)
+      );
+      
+      await Promise.race([pingPromise, timeoutPromise]);
+      // If ping succeeds, connection is actually working
+      console.log("✅ Redis connection verified (local Redis/Memurai)");
     } catch (error) {
-      console.warn("⚠️  Could not verify Redis connection:", error.message);
+      // Ping failed - Redis is not actually connected (server stopped or unreachable)
+      // Update connection state immediately
+      const { redisClient: rc } = require('./utils/redis');
+      // Force disconnect to clear stale connection
+      try {
+        if (rc.isOpen) {
+          await rc.quit().catch(() => {}); // Ignore errors during quit
+        }
+      } catch (quitError) {
+        // Ignore quit errors
+      }
+      
+      console.warn("⚠️  Redis ping failed - Redis is not connected.");
+      console.warn(`   Error: ${error.message}`);
+      console.warn("💡 To enable caching, ensure Memurai/Redis is running on localhost:6379");
       console.warn("💡 App will continue without Redis caching. Some features may be slower.");
     }
 

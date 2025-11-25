@@ -65,13 +65,49 @@ redisClient.on('end', () => {
   console.log('⚠️  Redis: Connection ended');
 });
 
+// Listen for disconnect event (fires when server stops)
+redisClient.on('disconnect', () => {
+  isConnected = false;
+  console.log('⚠️  Redis: Disconnected from server');
+});
+
+// Listen for socket close (fires when connection is actually closed)
+redisClient.on('close', () => {
+  isConnected = false;
+  console.log('⚠️  Redis: Socket closed');
+});
+
 // Connect to Redis with error handling
 const connectRedis = async () => {
   try {
     if (!redisClient.isOpen) {
       await redisClient.connect();
+      // Verify connection with ping after connecting
+      try {
+        await redisClient.ping();
+        isConnected = true;
+      } catch (pingErr) {
+        // Ping failed immediately after connect - server might be down
+        isConnected = false;
+        if (NODE_ENV === 'development') {
+          console.error('❌ Redis ping failed after connection:', pingErr.message);
+        }
+      }
+    } else {
+      // Connection already open, verify it's actually working
+      try {
+        await redisClient.ping();
+        isConnected = true;
+      } catch (pingErr) {
+        // Connection appears open but ping fails - server stopped
+        isConnected = false;
+        if (NODE_ENV === 'development') {
+          console.warn('⚠️  Redis connection appears open but ping failed - server may be stopped');
+        }
+      }
     }
   } catch (err) {
+    isConnected = false;
     console.error('❌ Failed to connect to Redis:', err.message);
     // Don't throw - allow app to continue without Redis (graceful degradation)
     if (NODE_ENV === 'development') {
@@ -89,9 +125,27 @@ connectRedis();
 
 /**
  * Check if Redis is connected and ready
+ * Checks both socket state and our tracked connection state
+ * Note: This is a synchronous check - for actual verification, use ping()
  */
 const isRedisReady = () => {
-  return isConnected && redisClient.isOpen;
+  try {
+    // Check both: socket must be open AND we must have confirmed connection
+    // When server stops, socket might still appear open until next operation fails
+    // So we check both isOpen AND our isConnected flag (updated on events)
+    if (!redisClient.isOpen) {
+      isConnected = false; // Sync state
+      return false;
+    }
+    // Also verify we're actually connected (not just socket open)
+    // The isConnected flag is updated immediately on disconnect/error events
+    // If flag is false, connection is not ready even if socket appears open
+    return isConnected === true;
+  } catch (error) {
+    // If any error checking state, assume not ready
+    isConnected = false;
+    return false;
+  }
 };
 
 /**
