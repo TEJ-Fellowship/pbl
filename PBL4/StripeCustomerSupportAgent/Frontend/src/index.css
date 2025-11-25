@@ -1,4 +1,3 @@
-/* Tailwind CSS directives */
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+/* Import global styles */
+@import "./styles/globals.css";
+@import "./styles/animations.css";
