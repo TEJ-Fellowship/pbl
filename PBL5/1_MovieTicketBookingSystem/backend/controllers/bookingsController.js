@@ -51,21 +51,21 @@ const createBooking = async (req, res, next) => {
 
     // Acquire Redis locks for all seats (prevent double-booking)
     const lockKeys = seat_ids.map((seatId) => `seat:${seatId}`);
-    const lockTTL = 300; // 5 minutes
+      const lockTTL = 300; // 5 minutes
 
-    const { acquired: locks, failed: failedLocks } = await acquireLocks(
-      lockKeys,
-      lockTTL
-    );
+      const { acquired: locks, failed: failedLocks } = await acquireLocks(
+        lockKeys,
+        lockTTL
+      );
 
-    if (failedLocks.length > 0) {
-      return res.status(409).json({
+      if (failedLocks.length > 0) {
+        return res.status(409).json({
         error: "Seats are currently being processed by another user",
-        seats_busy: failedLocks.length,
-      });
-    }
+          seats_busy: failedLocks.length,
+        });
+      }
 
-    try {
+      try {
       // Generate booking ID
       const bookingId = crypto.randomUUID();
 
@@ -77,7 +77,7 @@ const createBooking = async (req, res, next) => {
       const bookingData = {
         id: bookingId,
         seat_ids: seat_ids,
-        status: "pending",
+                      status: "pending",
         total_amount: totalAmount,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -105,10 +105,10 @@ const createBooking = async (req, res, next) => {
       res.status(201).json({
         id: bookingId,
         seat_ids: seat_ids,
-        status: "pending",
-        total_amount: totalAmount,
+            status: "pending",
+            total_amount: totalAmount,
         created_at: bookingData.created_at,
-      });
+        });
     } catch (error) {
       // Release locks on error
       await releaseLocks(locks);
@@ -130,14 +130,14 @@ const getBookingById = async (req, res, next) => {
 
     if (!redis.isReady) {
       return res.status(503).json({ error: "Redis not ready" });
-    }
+      }
 
     const bookingKey = `booking:${id}`;
     const bookingData = await redis.get(bookingKey);
 
     if (!bookingData) {
       return res.status(404).json({ error: "Booking not found" });
-    }
+      }
 
     res.json(JSON.parse(bookingData));
   } catch (error) {
@@ -192,25 +192,25 @@ const cancelBooking = async (req, res, next) => {
     const bookingData = await redis.get(bookingKey);
 
     if (!bookingData) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
+        return res.status(404).json({ error: "Booking not found" });
+      }
 
     const booking = JSON.parse(bookingData);
 
     // Only allow canceling pending bookings
     if (booking.status !== "pending") {
-      return res.status(400).json({
-        error: `Cannot cancel booking with status: ${booking.status}`,
-      });
-    }
+        return res.status(400).json({
+          error: `Cannot cancel booking with status: ${booking.status}`,
+        });
+      }
 
     // Release locks
-    const lockStorageKey = `booking:${id}:locks`;
-    const storedLocks = await redis.get(lockStorageKey);
-    if (storedLocks) {
-      const locks = JSON.parse(storedLocks);
-      await releaseLocks(locks);
-      await redis.del(lockStorageKey);
+        const lockStorageKey = `booking:${id}:locks`;
+        const storedLocks = await redis.get(lockStorageKey);
+        if (storedLocks) {
+          const locks = JSON.parse(storedLocks);
+          await releaseLocks(locks);
+          await redis.del(lockStorageKey);
     }
 
     // Remove from pending set
@@ -220,16 +220,16 @@ const cancelBooking = async (req, res, next) => {
     const availableSeatsKey = "available_seats";
     if (booking.seat_ids && booking.seat_ids.length > 0) {
       await redis.sAdd(availableSeatsKey, booking.seat_ids);
-    }
+      }
 
     // Delete booking
     await redis.del(bookingKey);
 
     console.log(`✅ Booking ${id} cancelled`);
 
-    res.json({
+      res.json({
       message: "Booking cancelled successfully",
-      booking_id: id,
+        booking_id: id,
     });
   } catch (error) {
     next(error);

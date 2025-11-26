@@ -110,7 +110,7 @@ const start = async () => {
   try {
     // Database connection is optional for Redis-only approach
     try {
-      await connectToDatabase();
+    await connectToDatabase();
     } catch (dbError) {
       console.log("⚠️  Database connection skipped (Redis-only mode)");
     }
