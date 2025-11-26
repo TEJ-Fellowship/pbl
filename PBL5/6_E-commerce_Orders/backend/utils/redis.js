@@ -7,15 +7,15 @@ let connectionAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_DELAY = 2000; // 2 seconds
 
-// Create Redis client optimized for local setup
-// For local Redis/Memurai, we don't need password
+// Create Redis client optimized for Docker Redis setup
+// For Docker Redis, we don't need password by default
 const redisClient = redis.createClient({
   socket: {
     host: REDIS_HOST || 'localhost',
     port: REDIS_PORT || 6379,
     reconnectStrategy: (retries) => {
       if (retries > MAX_RECONNECT_ATTEMPTS) {
-        console.error('❌ Redis: Max reconnection attempts reached. Please check if Redis/Memurai is running.');
+        console.error('❌ Redis: Max reconnection attempts reached. Please check if Docker Redis is running.');
         return new Error('Max reconnection attempts reached');
       }
       // Exponential backoff: 2s, 4s, 8s, etc., max 10s
@@ -24,13 +24,13 @@ const redisClient = redis.createClient({
       return delay;
     }
   },
-  // Password is optional (not needed for local Redis/Memurai)
+  // Password is optional (not needed for Docker Redis by default)
   password: REDIS_PASSWORD || undefined
 });
 
 // Handle connection events
 redisClient.on('connect', () => {
-  console.log('🔄 Redis: Connecting to local Redis/Memurai...');
+  console.log('🔄 Redis: Connecting to Docker Redis...');
   connectionAttempts = 0;
 });
 
@@ -42,16 +42,17 @@ redisClient.on('error', (err) => {
   }
   // If it's a connection error, provide helpful message
   if (err.code === 'ECONNREFUSED' || err.message.includes('connect')) {
-    console.error('❌ Redis: Connection refused. Please ensure Memurai/Redis is running on', 
+    console.error('❌ Redis: Connection refused. Please ensure Docker Redis is running on', 
       `${REDIS_HOST || 'localhost'}:${REDIS_PORT || 6379}`);
-    console.error('💡 Tip: Check if Memurai service is running: Get-Service | Where-Object {$_.Name -like "*memurai*"}');
+    console.error('💡 Tip: Start Redis with: docker compose up -d');
+    console.error('💡 Tip: Check Redis status with: docker ps | grep redis');
   }
 });
 
 redisClient.on('ready', () => {
   isConnected = true;
   connectionAttempts = 0;
-  console.log('✅ Redis: Connected and ready (local Redis/Memurai)');
+  console.log('✅ Redis: Connected and ready (Docker Redis)');
 });
 
 redisClient.on('reconnecting', () => {
@@ -86,6 +87,9 @@ const connectRedis = async () => {
       try {
         await redisClient.ping();
         isConnected = true;
+        if (NODE_ENV === 'development') {
+          console.log('✅ Redis: Connection established and verified');
+        }
       } catch (pingErr) {
         // Ping failed immediately after connect - server might be down
         isConnected = false;
@@ -116,8 +120,10 @@ const connectRedis = async () => {
   }
 };
 
-// Initialize connection
-connectRedis();
+// Initialize connection (non-blocking, but will attempt to connect)
+connectRedis().catch(err => {
+  console.error('❌ Redis connection initialization error:', err.message);
+});
 
 // =====================================================
 // CACHE UTILITIES
@@ -155,10 +161,16 @@ const getCache = async (key) => {
   try {
     // Check connection before attempting operation
     if (!isRedisReady()) {
-      if (NODE_ENV === 'development') {
-        console.warn(`⚠️  Redis not connected, skipping cache get for key: ${key}`);
+      // Try to reconnect if not ready
+      if (!redisClient.isOpen) {
+        await connectRedis();
       }
-      return null;
+      if (!isRedisReady()) {
+        if (NODE_ENV === 'development') {
+          console.warn(`⚠️  Redis not connected, skipping cache get for key: ${key}`);
+        }
+        return null;
+      }
     }
     const value = await redisClient.get(key);
     return value ? JSON.parse(value) : null;
@@ -167,6 +179,8 @@ const getCache = async (key) => {
     if (NODE_ENV === 'development') {
       console.error(`Cache get error for key ${key}:`, error.message);
     }
+    // Try to reconnect on error
+    isConnected = false;
     return null;
   }
 };
@@ -178,18 +192,29 @@ const setCache = async (key, value, ttlSeconds = 3600) => {
   try {
     // Check connection before attempting operation
     if (!isRedisReady()) {
-      if (NODE_ENV === 'development') {
-        console.warn(`⚠️  Redis not connected, skipping cache set for key: ${key}`);
+      // Try to reconnect if not ready
+      if (!redisClient.isOpen) {
+        await connectRedis();
       }
-      return false;
+      if (!isRedisReady()) {
+        if (NODE_ENV === 'development') {
+          console.warn(`⚠️  Redis not connected, skipping cache set for key: ${key}`);
+        }
+        return false;
+      }
     }
     await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
+    if (NODE_ENV === 'development') {
+      console.log(`✅ Cached key: ${key} (TTL: ${ttlSeconds}s)`);
+    }
     return true;
   } catch (error) {
     // Graceful degradation: if Redis fails, return false (cache write failed, but app continues)
     if (NODE_ENV === 'development') {
       console.error(`Cache set error for key ${key}:`, error.message);
     }
+    // Try to reconnect on error
+    isConnected = false;
     return false;
   }
 };
@@ -243,8 +268,17 @@ const deleteCachePattern = async (pattern) => {
 const getCart = async (sessionId) => {
   try {
     if (!isRedisReady()) {
-      // Return empty cart if Redis is not available
-      return {};
+      // Try to reconnect if not ready
+      if (!redisClient.isOpen) {
+        await connectRedis();
+      }
+      if (!isRedisReady()) {
+        // Return empty cart if Redis is not available
+        if (NODE_ENV === 'development') {
+          console.warn(`⚠️  Redis not connected, returning empty cart for session: ${sessionId}`);
+        }
+        return {};
+      }
     }
     const cartKey = `cart:${sessionId}`;
     const cart = await redisClient.hGetAll(cartKey);
@@ -258,14 +292,22 @@ const getCart = async (sessionId) => {
         parsedCart[productId] = JSON.parse(itemJson);
       } catch (e) {
         // Skip invalid JSON
+        if (NODE_ENV === 'development') {
+          console.warn(`⚠️  Invalid cart item JSON for product ${productId}:`, e.message);
+        }
         continue;
       }
+    }
+    if (NODE_ENV === 'development' && Object.keys(parsedCart).length > 0) {
+      console.log(`✅ Retrieved cart for session ${sessionId}: ${Object.keys(parsedCart).length} items`);
     }
     return parsedCart;
   } catch (error) {
     if (NODE_ENV === 'development') {
       console.error(`Cart get error for session ${sessionId}:`, error.message);
     }
+    // Try to reconnect on error
+    isConnected = false;
     return {};
   }
 };
@@ -276,7 +318,16 @@ const getCart = async (sessionId) => {
 const addToCart = async (sessionId, productId, quantity, productData) => {
   try {
     if (!isRedisReady()) {
-      return false;
+      // Try to reconnect if not ready
+      if (!redisClient.isOpen) {
+        await connectRedis();
+      }
+      if (!isRedisReady()) {
+        if (NODE_ENV === 'development') {
+          console.error(`❌ Redis not connected, cannot add to cart for session: ${sessionId}`);
+        }
+        return false;
+      }
     }
     const cartKey = `cart:${sessionId}`;
     const item = {
@@ -290,11 +341,16 @@ const addToCart = async (sessionId, productId, quantity, productData) => {
     await redisClient.hSet(cartKey, productId, JSON.stringify(item));
     // Set TTL to 7 days
     await redisClient.expire(cartKey, 7 * 24 * 60 * 60);
+    if (NODE_ENV === 'development') {
+      console.log(`✅ Added product ${productId} (qty: ${quantity}) to cart for session ${sessionId}`);
+    }
     return true;
   } catch (error) {
     if (NODE_ENV === 'development') {
-      console.error(`Cart add error:`, error.message);
+      console.error(`❌ Cart add error for session ${sessionId}, product ${productId}:`, error.message);
     }
+    // Try to reconnect on error
+    isConnected = false;
     return false;
   }
 };
@@ -529,9 +585,39 @@ const getCachedInventory = async (productId) => {
   }
 };
 
+/**
+ * Ensure Redis is connected (helper function)
+ * Attempts to connect if not already connected
+ */
+const ensureRedisConnected = async () => {
+  if (isRedisReady()) {
+    return true;
+  }
+  
+  if (!redisClient.isOpen) {
+    try {
+      await connectRedis();
+      // Wait a bit for connection to establish
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (isRedisReady()) {
+        return true;
+      }
+    } catch (err) {
+      if (NODE_ENV === 'development') {
+        console.error('❌ Failed to ensure Redis connection:', err.message);
+      }
+      return false;
+    }
+  }
+  
+  return isRedisReady();
+};
+
 module.exports = {
   redisClient,
   isRedisReady,
+  ensureRedisConnected,
+  connectRedis,
   // Cache utilities
   getCache,
   setCache,

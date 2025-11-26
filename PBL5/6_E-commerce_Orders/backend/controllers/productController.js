@@ -1,6 +1,7 @@
 const { Product, Category, Inventory } = require('../models');
 const { getCache, setCache, deleteCachePattern } = require('../utils/redis');
 const { Op } = require('sequelize');
+const { NODE_ENV } = require('../utils/config');
 
 /**
  * Get all products with pagination and filters
@@ -73,9 +74,12 @@ const getProducts = async (req, res) => {
       distinct: true
     });
 
+    // Convert Sequelize instances to plain objects for caching
+    const productsData = products.map(p => p.toJSON ? p.toJSON() : p);
+    
     const result = {
       success: true,
-      products,
+      products: productsData,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -85,9 +89,17 @@ const getProducts = async (req, res) => {
     };
 
     // Cache for 30 minutes
-    await setCache(cacheKey, result, 1800);
+    const cacheSuccess = await setCache(cacheKey, result, 1800);
+    if (NODE_ENV === 'development' && cacheSuccess) {
+      console.log(`✅ Cached products list: ${products.length} products`);
+    }
 
-    res.json(result);
+    res.json({
+      success: true,
+      products,
+      pagination: result.pagination,
+      fromCache: false
+    });
   } catch (error) {
     console.error('Get products error:', error);
     res.status(500).json({
@@ -140,11 +152,15 @@ const getProductById = async (req, res) => {
     }
 
     // Cache for 1 hour
-    await setCache(cacheKey, product.toJSON(), 3600);
+    const cacheSuccess = await setCache(cacheKey, product.toJSON(), 3600);
+    if (NODE_ENV === 'development' && cacheSuccess) {
+      console.log(`✅ Cached product: ${product.id} - ${product.title}`);
+    }
 
     res.json({
       success: true,
-      product
+      product,
+      fromCache: false
     });
   } catch (error) {
     console.error('Get product error:', error);

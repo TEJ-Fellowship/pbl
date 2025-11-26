@@ -137,7 +137,8 @@ const addItemToCart = async (req, res) => {
     if (!success) {
       return res.status(500).json({
         success: false,
-        message: 'Failed to add item to cart'
+        message: 'Failed to add item to cart. Redis may not be available. Please try again.',
+        error: 'REDIS_UNAVAILABLE'
       });
     }
 
