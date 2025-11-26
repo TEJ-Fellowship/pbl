@@ -3,7 +3,7 @@ const { KAFKA_BROKERS } = require("./config");
 
 const createTopics = async () => {
   const admin = kafka.admin();
-  
+
   try {
     await admin.connect();
     console.log("✅ Connected to Kafka admin");
@@ -12,7 +12,7 @@ const createTopics = async () => {
       {
         topic: "score-submitted",
         numPartitions: 10, // For high throughput
-        replicationFactor: 3,
+        replicationFactor: 1, // Single broker setup
         configEntries: [
           { name: "retention.ms", value: "604800000" }, // 7 days
         ],
@@ -20,17 +20,17 @@ const createTopics = async () => {
       {
         topic: "leaderboard-updated",
         numPartitions: 3,
-        replicationFactor: 3,
+        replicationFactor: 1, // Single broker setup
       },
       {
         topic: "cheat-detected",
         numPartitions: 3,
-        replicationFactor: 3,
+        replicationFactor: 1, // Single broker setup
       },
       {
         topic: "player-achievements",
         numPartitions: 3,
-        replicationFactor: 3,
+        replicationFactor: 1, // Single broker setup
       },
     ];
 
@@ -41,7 +41,9 @@ const createTopics = async () => {
 
     console.log("✅ Topics created successfully:");
     topics.forEach((t) => {
-      console.log(`   - ${t.topic} (${t.numPartitions} partitions, ${t.replicationFactor} replicas)`);
+      console.log(
+        `   - ${t.topic} (${t.numPartitions} partitions, ${t.replicationFactor} replicas)`
+      );
     });
 
     await admin.disconnect();

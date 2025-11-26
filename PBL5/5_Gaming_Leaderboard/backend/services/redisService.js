@@ -1,0 +1,261 @@
+const { redis } = require("../util/db");
+
+/**
+ * Redis Service - Handles all Redis operations for leaderboards and player data
+ */
+
+// Player Operations
+const getPlayer = async (playerId) => {
+  const playerData = await redis.hgetall(`player:${playerId}`);
+  if (!playerData || Object.keys(playerData).length === 0) {
+    return null;
+  }
+  return {
+    id: playerId,
+    username: playerData.username,
+    total_score: parseInt(playerData.total_score || 0),
+    games_played: parseInt(playerData.games_played || 0),
+    created_at: playerData.created_at,
+  };
+};
+
+const createOrUpdatePlayer = async (playerId, username) => {
+  const exists = await redis.exists(`player:${playerId}`);
+  const pipeline = redis.pipeline();
+
+  if (!exists) {
+    // New player
+    pipeline.hset(`player:${playerId}`, {
+      username,
+      total_score: 0,
+      games_played: 0,
+      created_at: new Date().toISOString(),
+    });
+  } else {
+    // Update username if changed
+    pipeline.hset(`player:${playerId}`, "username", username);
+  }
+
+  await pipeline.exec();
+};
+
+const updatePlayerScore = async (playerId, score) => {
+  const pipeline = redis.pipeline();
+  pipeline.hincrby(`player:${playerId}`, "total_score", score);
+  pipeline.hincrby(`player:${playerId}`, "games_played", 1);
+  await pipeline.exec();
+};
+
+// Leaderboard Operations
+const updateGlobalLeaderboard = async (gameMode, playerId, score) => {
+  await redis.zincrby(`leaderboard:${gameMode}:global`, score, playerId);
+};
+
+const updateDailyLeaderboard = async (gameMode, playerId, score) => {
+  const today = new Date().toISOString().split("T")[0];
+  const key = `leaderboard:${gameMode}:daily:${today}`;
+  
+  await redis.zincrby(key, score, playerId);
+  // Set expiration (7 days)
+  await redis.expire(key, 7 * 24 * 60 * 60);
+};
+
+const getLeaderboard = async (gameMode, type = "global", limit = 100, offset = 0) => {
+  let key;
+  if (type === "daily") {
+    const today = new Date().toISOString().split("T")[0];
+    key = `leaderboard:${gameMode}:daily:${today}`;
+  } else {
+    key = `leaderboard:${gameMode}:global`;
+  }
+
+  // Get top players with scores (sorted descending)
+  const results = await redis.zrevrange(key, offset, offset + limit - 1, "WITHSCORES");
+  
+  // Convert to array of {playerId, score}
+  const leaderboard = [];
+  for (let i = 0; i < results.length; i += 2) {
+    leaderboard.push({
+      playerId: results[i],
+      score: parseInt(results[i + 1]),
+    });
+  }
+
+  // Batch fetch usernames
+  if (leaderboard.length > 0) {
+    const playerIds = leaderboard.map((entry) => entry.playerId);
+    const usernames = await batchGetUsernames(playerIds);
+
+    // Combine with ranks
+    return leaderboard.map((entry, index) => ({
+      rank: offset + index + 1,
+      playerId: entry.playerId,
+      username: usernames[entry.playerId] || "Unknown",
+      score: entry.score,
+    }));
+  }
+
+  return [];
+};
+
+const getPlayerRank = async (gameMode, playerId, type = "global") => {
+  let key;
+  if (type === "daily") {
+    const today = new Date().toISOString().split("T")[0];
+    key = `leaderboard:${gameMode}:daily:${today}`;
+  } else {
+    key = `leaderboard:${gameMode}:global`;
+  }
+
+  const rank = await redis.zrevrank(key, playerId);
+  const score = await redis.zscore(key, playerId);
+
+  if (rank === null || score === null) {
+    return null;
+  }
+
+  return {
+    rank: rank + 1, // 0-indexed to 1-indexed
+    score: parseInt(score),
+  };
+};
+
+const getPlayerScore = async (gameMode, playerId, type = "global") => {
+  let key;
+  if (type === "daily") {
+    const today = new Date().toISOString().split("T")[0];
+    key = `leaderboard:${gameMode}:daily:${today}`;
+  } else {
+    key = `leaderboard:${gameMode}:global`;
+  }
+
+  const score = await redis.zscore(key, playerId);
+  return score ? parseInt(score) : 0;
+};
+
+// Batch operations for performance
+const batchGetUsernames = async (playerIds) => {
+  if (playerIds.length === 0) return {};
+
+  const pipeline = redis.pipeline();
+  playerIds.forEach((playerId) => {
+    pipeline.hget(`player:${playerId}`, "username");
+  });
+
+  const results = await pipeline.exec();
+  const usernames = {};
+
+  results.forEach((result, index) => {
+    if (result[1]) {
+      usernames[playerIds[index]] = result[1];
+    }
+  });
+
+  return usernames;
+};
+
+// Rate Limiting
+const checkRateLimit = async (playerId, minIntervalSeconds = 60) => {
+  const key = `player:${playerId}:last_submission`;
+  const lastSubmission = await redis.get(key);
+
+  if (lastSubmission) {
+    const lastTime = new Date(lastSubmission).getTime();
+    const now = Date.now();
+    const elapsed = (now - lastTime) / 1000;
+
+    if (elapsed < minIntervalSeconds) {
+      return {
+        allowed: false,
+        remainingSeconds: Math.ceil(minIntervalSeconds - elapsed),
+      };
+    }
+  }
+
+  // Update last submission time
+  await redis.setex(key, minIntervalSeconds, new Date().toISOString());
+
+  return { allowed: true };
+};
+
+// Game Modes Operations
+const getGameMode = async (gameModeId) => {
+  const gameModeData = await redis.hget("game_modes", gameModeId);
+  if (!gameModeData) {
+    return null;
+  }
+  return JSON.parse(gameModeData);
+};
+
+const getAllGameModes = async () => {
+  const gameModes = await redis.hgetall("game_modes");
+  const result = [];
+
+  for (const [id, data] of Object.entries(gameModes)) {
+    result.push({
+      id: parseInt(id),
+      ...JSON.parse(data),
+    });
+  }
+
+  return result.sort((a, b) => a.id - b.id);
+};
+
+const initializeGameModes = async () => {
+  const exists = await redis.exists("game_modes");
+  if (exists) {
+    return; // Already initialized
+  }
+
+  const gameModes = [
+    {
+      id: 1,
+      name: "Deathmatch",
+      max_score_per_game: 15000,
+      avg_game_duration_minutes: 10,
+    },
+    {
+      id: 2,
+      name: "Capture the Flag",
+      max_score_per_game: 20000,
+      avg_game_duration_minutes: 15,
+    },
+    {
+      id: 3,
+      name: "Raid",
+      max_score_per_game: 25000,
+      avg_game_duration_minutes: 20,
+    },
+  ];
+
+  const pipeline = redis.pipeline();
+  gameModes.forEach((mode) => {
+    pipeline.hset("game_modes", mode.id, JSON.stringify(mode));
+  });
+  await pipeline.exec();
+
+  console.log("✅ Game modes initialized");
+};
+
+module.exports = {
+  // Player operations
+  getPlayer,
+  createOrUpdatePlayer,
+  updatePlayerScore,
+
+  // Leaderboard operations
+  updateGlobalLeaderboard,
+  updateDailyLeaderboard,
+  getLeaderboard,
+  getPlayerRank,
+  getPlayerScore,
+
+  // Rate limiting
+  checkRateLimit,
+
+  // Game modes
+  getGameMode,
+  getAllGameModes,
+  initializeGameModes,
+};
+

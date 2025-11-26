@@ -5,7 +5,15 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch index.js",
-    "setup-topics": "node util/setup-kafka-topics.js"
+    "setup-topics": "node util/setup-kafka-topics.js",
+    "kafka:list": "docker exec gaming-leaderboard-kafka sh -c \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list\"",
+    "kafka:describe": "docker exec gaming-leaderboard-kafka sh -c \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe\"",
+    "test:api": "bash scripts/test-api.sh",
+    "benchmark": "node scripts/benchmark-response-time.js",
+    "load-test": "node scripts/load-test.js",
+    "throughput-test": "node scripts/test-score-throughput.js",
+    "monitor:redis": "node scripts/monitor-redis.js",
+    "perf:all": "npm run benchmark && npm run load-test && npm run monitor:redis"
   },
   "keywords": [],
   "author": "",
