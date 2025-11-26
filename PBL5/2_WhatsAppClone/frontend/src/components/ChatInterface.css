@@ -1,0 +1,91 @@
+.chat-interface {
+  display: flex;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.chat-sidebar {
+  width: 350px;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e4e6eb;
+}
+
+.sidebar-header {
+  padding: 1rem;
+  background-color: #f0f2f5;
+  border-bottom: 1px solid #e4e6eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.current-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.current-user-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.logout-btn {
+  padding: 0.5rem 1rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #c82333;
+}
+
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #efeae2;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4d4d4' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.no-conversation {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-conversation-content {
+  text-align: center;
+  color: #666;
+}
+
+.no-conversation-content h2 {
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.no-conversation-content p {
+  color: #999;
+}
+

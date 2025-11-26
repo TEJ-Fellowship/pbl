@@ -1,53 +1,5 @@
-#root {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-  height: 800px;
-}
-
-.main-container {
-  display: flex;
-  flex-direction: row;
-  background-color: beige;
-}
-
-.left-container {
-  width: 50rem;
-  height: 40rem;
-  display: flex;
-  border-right: 1px solid black;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.right-container {
-  width: 50rem;
-  height: 40rem;
+.app {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-}
-
-.heading {
-  border: 1px solid black;
-  color: black;
-}
-
-.action {
-  border: 1px solid black;
-  height: 3rem;
-  display: flex;
-  justify-content: end;
-  align-items: center;
-  padding-right: 0.3rem;
-}
-
-input {
-  height: 2rem;
-  width: 100%;
-  padding: 0.3rem;
-  background-color: bisque;
-  border: none;
-  outline: none;
 }
