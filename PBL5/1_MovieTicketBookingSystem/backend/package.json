@@ -28,6 +28,6 @@
     "umzug": "^3.8.2"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.1.0"
+    "artillery": "^2.0.27"
   }
 }
