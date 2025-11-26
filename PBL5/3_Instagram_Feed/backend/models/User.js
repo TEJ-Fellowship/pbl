@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../config/database.js";
+import { sequelize } from "../config/db.js";
 
 const User = sequelize.define(
   "User",
@@ -25,10 +25,6 @@ const User = sequelize.define(
         isEmail: true,
       },
     },
-    // password_hash: {
-    //   type: DataTypes.TEXT,
-    //   allowNull: false,
-    // },
     bio: {
       type: DataTypes.TEXT,
       allowNull: true,

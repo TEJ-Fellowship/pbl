@@ -8,7 +8,6 @@ export const createUser = async (req, res) => {
   try {
     const { username, email, bio, avatar_url } = req.body;
 
-    // Validate required fields
     if (!username || !email) {
       return res.status(400).json({
         success: false,
@@ -16,7 +15,6 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       where: {
         email: email,
@@ -30,7 +28,6 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Check if username is taken
     const existingUsername = await User.findOne({
       where: {
         username: username,
@@ -44,7 +41,6 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Create new user
     const newUser = await User.create({
       username,
       email,
@@ -89,10 +85,6 @@ export const getAllUsers = async (req, res) => {
     });
 
     res.status(200).json({
-      // success: true,
-      // message: "Users fetched successfully",
-      // count: users.length,
-      // data: users,
       users,
     });
   } catch (error) {
@@ -113,7 +105,6 @@ export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ID is a number
     if (isNaN(id)) {
       return res.status(400).json({
         success: false,
@@ -161,10 +152,9 @@ export const getUserById = async (req, res) => {
  */
 export const followUser = async (req, res) => {
   try {
-    const { id } = req.params; // User being followed (following_id)
-    const { follower_id } = req.body; // User who is following
+    const { id } = req.params;
+    const { follower_id } = req.body;
 
-    // Validate follower_id is provided
     if (!follower_id) {
       return res.status(400).json({
         success: false,
@@ -172,7 +162,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Validate IDs are numbers
     if (isNaN(id) || isNaN(follower_id)) {
       return res.status(400).json({
         success: false,
@@ -180,7 +169,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Prevent self-follow
     if (parseInt(id) === parseInt(follower_id)) {
       return res.status(400).json({
         success: false,
@@ -188,7 +176,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Check if both users exist
     const userToFollow = await User.findByPk(id);
     const follower = await User.findByPk(follower_id);
 
@@ -206,7 +193,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Check if already following
     const existingFollow = await Follow.findOne({
       where: {
         follower_id: follower_id,
@@ -221,13 +207,11 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Create follow relationship
     const follow = await Follow.create({
       follower_id: follower_id,
       following_id: id,
     });
 
-    // Update follower counts
     await User.increment("following_count", {
       where: { id: follower_id },
     });
@@ -236,11 +220,9 @@ export const followUser = async (req, res) => {
       where: { id: id },
     });
 
-    // Reload users to get updated counts
     await follower.reload();
     await userToFollow.reload();
 
-    // Check if user should be marked as celebrity (10K+ followers)
     if (userToFollow.followers_count >= 10000 && !userToFollow.is_celebrity) {
       await userToFollow.update({ is_celebrity: true });
     }
@@ -279,10 +261,9 @@ export const followUser = async (req, res) => {
  */
 export const unfollowUser = async (req, res) => {
   try {
-    const { id } = req.params; // User being unfollowed (following_id)
-    const { follower_id } = req.body; // User who is unfollowing
+    const { id } = req.params;
+    const { follower_id } = req.body;
 
-    // Validate follower_id is provided
     if (!follower_id) {
       return res.status(400).json({
         success: false,
@@ -290,7 +271,6 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    // Validate IDs are numbers
     if (isNaN(id) || isNaN(follower_id)) {
       return res.status(400).json({
         success: false,
@@ -298,7 +278,6 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    // Check if both users exist
     const userToUnfollow = await User.findByPk(id);
     const follower = await User.findByPk(follower_id);
 
@@ -316,7 +295,6 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    // Check if follow relationship exists
     const existingFollow = await Follow.findOne({
       where: {
         follower_id: follower_id,
@@ -331,10 +309,8 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    // Delete follow relationship
     await existingFollow.destroy();
 
-    // Update follower counts (decrement, but don't go below 0)
     await User.decrement("following_count", {
       where: { id: follower_id },
     });
@@ -343,11 +319,9 @@ export const unfollowUser = async (req, res) => {
       where: { id: id },
     });
 
-    // Reload users to get updated counts
     await follower.reload();
     await userToUnfollow.reload();
 
-    // Check if user should be unmarked as celebrity (< 10K followers)
     if (userToUnfollow.followers_count < 10000 && userToUnfollow.is_celebrity) {
       await userToUnfollow.update({ is_celebrity: false });
     }

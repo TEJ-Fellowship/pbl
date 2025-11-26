@@ -1,64 +1,92 @@
+import { Sequelize } from "sequelize";
 import cassandra from "cassandra-driver";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 
-// Get the directory name for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-// Load .env file from the parent directory (backend/)
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
+const sequelize = new Sequelize(
+  process.env.DB_NAME || "demo",
+  process.env.DB_USER || "postgres",
+  process.env.DB_PASSWORD || "0987",
+  {
+    host: process.env.DB_HOST || "localhost",
+    port: process.env.DB_PORT || 5432,
+    dialect: "postgres",
+    logging: process.env.NODE_ENV === "development" ? console.log : false,
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+  }
+);
 
 const { Client } = cassandra;
 
-async function run() {
-  // Validate environment variables
-  const username = process.env.ASTRA_DB_USERNAME;
-  const password = process.env.ASTRA_CLIENT_SECRET;
-  const secureConnectBundle = process.env.ASTRA_SECURE_CONNECT_BUNDLE;
+const username = process.env.ASTRA_DB_USERNAME;
+const password = process.env.ASTRA_CLIENT_SECRET;
+const secureConnectBundle = process.env.ASTRA_SECURE_CONNECT_BUNDLE;
 
-  if (!username || typeof username !== "string") {
-    throw new Error(
-      "ASTRA_DB_USERNAME environment variable is not set or is not a string. Please check your .env file."
-    );
-  }
+const cassandraClient = new Client({
+  cloud: {
+    secureConnectBundle: secureConnectBundle,
+  },
+  credentials: {
+    username: username,
+    password: password,
+  },
+});
 
-  if (!password || typeof password !== "string") {
-    throw new Error(
-      "ASTRA_CLIENT_SECRET environment variable is not set or is not a string. Please check your .env file."
-    );
-  }
-
-  const client = new Client({
-    cloud: {
-      secureConnectBundle: secureConnectBundle,
-      // your path here
-    },
-    credentials: {
-      username: username,
-      password: password,
-    },
-  });
-
+const initializeCassandra = async () => {
   try {
-    await client.connect();
-    console.log("Connected to Astra DB successfully!");
+    if (!username || typeof username !== "string") {
+      throw new Error(
+        "ASTRA_DB_USERNAME environment variable is not set or is not a string. Please check your .env file."
+      );
+    }
 
-    // Example query: check cluster
-    const rs = await client.execute("SELECT release_version FROM system.local");
-    console.log("Cassandra release version:", rs.rows[0].release_version);
+    if (!password || typeof password !== "string") {
+      throw new Error(
+        "ASTRA_CLIENT_SECRET environment variable is not set or is not a string. Please check your .env file."
+      );
+    }
 
-    // Query your posts table
-    const posts = await client.execute(
-      "SELECT * FROM instagram.posts LIMIT 10"
-    );
-    console.log("Posts:", posts.rows);
-  } catch (err) {
-    console.error("Error connecting/querying:", err);
-  } finally {
-    await client.shutdown();
+    if (!secureConnectBundle) {
+      throw new Error(
+        "ASTRA_SECURE_CONNECT_BUNDLE environment variable is not set. Please check your .env file."
+      );
+    }
+
+    await cassandraClient.connect();
+    console.log("✅ Connected to Cassandra/AstraDB successfully.");
+
+    try {
+      const rs = await cassandraClient.execute(
+        "SELECT release_version FROM system.local"
+      );
+      console.log("📊 Cassandra release version:", rs.rows[0].release_version);
+    } catch (queryError) {
+      console.warn(
+        "⚠️ Could not query system.local (this is usually fine):",
+        queryError.message
+      );
+    }
+
+    return cassandraClient;
+  } catch (error) {
+    console.error("❌ Unable to connect to Cassandra:", error);
+    throw error;
   }
-}
+};
 
-run();
+const closeCassandra = async () => {
+  try {
+    await cassandraClient.shutdown();
+    console.log("✓ Cassandra connection closed");
+  } catch (error) {
+    console.error("Error closing Cassandra:", error);
+  }
+};
+
+export { sequelize, cassandraClient, initializeCassandra, closeCassandra };
