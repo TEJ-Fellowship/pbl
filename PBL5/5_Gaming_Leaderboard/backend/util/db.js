@@ -51,6 +51,8 @@ redis.on("connect", () => {
   console.log("Redis connected");
 });
 
+// ... existing code ...
+
 // Connect to all services
 const connectToDatabase = async () => {
   try {
@@ -62,6 +64,34 @@ const connectToDatabase = async () => {
     // Connect Kafka producer
     await producer.connect();
     console.log("✅ Kafka producer connected");
+
+    // Create topics if they don't exist
+    const admin = kafka.admin();
+    await admin.connect();
+    try {
+      await admin.createTopics({
+        topics: [
+          {
+            topic: "score-submitted",
+            numPartitions: 10,
+            replicationFactor: 1,
+          },
+          {
+            topic: "leaderboard-updated",
+            numPartitions: 3,
+            replicationFactor: 1,
+          },
+        ],
+        waitForLeaders: true,
+      });
+      console.log("✅ Kafka topics created/verified");
+    } catch (err) {
+      // Topic might already exist, which is fine
+      if (!err.message?.includes("already exists")) {
+        console.warn("⚠️ Topic creation warning:", err.message);
+      }
+    }
+    await admin.disconnect();
 
     // Connect Kafka consumer
     await consumer.connect();
@@ -80,6 +110,8 @@ const connectToDatabase = async () => {
     process.exit(1);
   }
 };
+
+// ... rest of the code ...
 
 // Graceful shutdown
 const disconnect = async () => {
