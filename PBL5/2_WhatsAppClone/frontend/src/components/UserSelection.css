@@ -1,0 +1,153 @@
+.user-selection {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.user-selection-container {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.user-selection-container h1 {
+  color: #25d366;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.user-selection-container > p {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.users-list {
+  margin-bottom: 1.5rem;
+}
+
+.users-list h2 {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 0.5rem;
+}
+
+.user-card:hover {
+  background-color: #f0f2f5;
+}
+
+.user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-right: 1rem;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.user-phone {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.create-user-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #25d366;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.create-user-btn:hover {
+  background-color: #20ba5a;
+}
+
+.create-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.create-user-form input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.create-user-form input:focus {
+  outline: none;
+  border-color: #25d366;
+}
+
+.form-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.form-buttons button {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.form-buttons button[type="submit"] {
+  background-color: #25d366;
+  color: white;
+}
+
+.form-buttons button[type="submit"]:hover {
+  background-color: #20ba5a;
+}
+
+.form-buttons button[type="button"] {
+  background-color: #e4e6eb;
+  color: #333;
+}
+
+.form-buttons button[type="button"]:hover {
+  background-color: #d0d2d6;
+}
+
