@@ -4,6 +4,8 @@ import {
   sequelize,
   initializeCassandra,
   cassandraClient,
+  initializeRedis,
+  redisClient, // Add this
 } from "./config/db.js";
 import { initializeSchema, KEYSPACE } from "./config/cassandra-schema.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -90,12 +92,43 @@ app.get("/api/cassandra/tables/:tableName", async (req, res) => {
   }
 });
 
+app.get("/api/redis/test", async (req, res) => {
+  try {
+    // Import redisClient directly (it's already imported at the top)
+    const { redisClient } = await import("./config/db.js");
+
+    // Test SET and GET operations
+    await redisClient.set("test:key", "Hello Redis!");
+    const value = await redisClient.get("test:key");
+
+    // Get Redis info
+    const info = await redisClient.info("server");
+
+    res.json({
+      success: true,
+      message: "Redis connection is working!",
+      test: {
+        key: "test:key",
+        value: value,
+      },
+      info: info.split("\n").slice(0, 5), // First few lines of info
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Redis connection failed",
+      error: error.message,
+    });
+  }
+});
+
 async function startServer() {
   try {
     await sequelize.authenticate();
     await sequelize.sync({ alter: false });
     await initializeCassandra();
     await initializeSchema();
+    await initializeRedis(); // Add this line
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);

@@ -1,7 +1,5 @@
-import { cassandraClient } from "../config/db.js";
-import { KEYSPACE } from "../config/cassandra-schema.js";
-import { types } from "cassandra-driver";
-import { randomUUID } from "crypto";
+import * as postService from "../services/postService.js";
+import * as feedService from "../services/feedService.js";
 
 /**
  * Create a new post
@@ -18,56 +16,36 @@ export const createPost = async (req, res) => {
       });
     }
 
-    // Validate user_id is a number
-    const userId = parseInt(user_id);
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        message: "user_id must be a valid number",
-      });
+    // Create post using service
+    const post = await postService.createPost({
+      user_id,
+      caption,
+      image_url,
+      created_at,
+    });
+
+    // Fan-out to followers' feeds
+    try {
+      const followersCount = await feedService.fanOutToFollowers(
+        post.user_id,
+        post.id,
+        post.created_at
+      );
+      console.log(
+        `✅ Post ${post.id} added to ${followersCount} followers' feeds`
+      );
+    } catch (fanOutError) {
+      // Log error but don't fail the post creation
+      console.error(
+        "⚠️ Error during fan-out (post still created):",
+        fanOutError
+      );
     }
-
-    // Auto-generate UUID as string
-    const postIdString = randomUUID();
-    const postId = types.Uuid.fromString(postIdString);
-    const createdAt = created_at ? new Date(created_at) : new Date();
-
-    // Insert into posts table with prepared statement
-    const insertPostQuery = `
-      INSERT INTO ${KEYSPACE}.posts (id, user_id, caption, image_url, likes_count, comments_count, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    await cassandraClient.execute(
-      insertPostQuery,
-      [postId, userId, caption || null, image_url, 0, 0, createdAt],
-      { prepare: true }
-    );
-
-    // Insert into posts_by_user table with prepared statement
-    const insertPostByUserQuery = `
-      INSERT INTO ${KEYSPACE}.posts_by_user (user_id, created_at, id, caption, image_url, likes_count, comments_count)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    await cassandraClient.execute(
-      insertPostByUserQuery,
-      [userId, createdAt, postId, caption || null, image_url, 0, 0],
-      { prepare: true }
-    );
 
     res.status(201).json({
       success: true,
       message: "Post created successfully",
-      post: {
-        id: postIdString,
-        user_id: userId,
-        caption: caption || null,
-        image_url,
-        likes_count: 0,
-        comments_count: 0,
-        created_at: createdAt,
-      },
+      post,
     });
   } catch (error) {
     console.error("Error creating post:", error);
@@ -86,31 +64,18 @@ export const createPost = async (req, res) => {
 export const getPostById = async (req, res) => {
   try {
     const { id } = req.params;
+    const post = await postService.getPostById(id);
 
-    const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id = ?`;
-    const result = await cassandraClient.execute(query, [id], {
-      prepare: true,
-    });
-
-    if (result.rows.length === 0) {
+    if (!post) {
       return res.status(404).json({
         success: false,
         message: "Post not found",
       });
     }
 
-    const post = result.rows[0];
     res.status(200).json({
       success: true,
-      post: {
-        id: post.id.toString(),
-        user_id: post.user_id,
-        caption: post.caption,
-        image_url: post.image_url,
-        likes_count: post.likes_count,
-        comments_count: post.comments_count,
-        created_at: post.created_at,
-      },
+      post,
     });
   } catch (error) {
     console.error("Error fetching post:", error);
@@ -129,29 +94,7 @@ export const getPostById = async (req, res) => {
 export const getPostsByUser = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const userId = parseInt(user_id);
-
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid user_id",
-      });
-    }
-
-    const query = `SELECT * FROM ${KEYSPACE}.posts_by_user WHERE user_id = ?`;
-    const result = await cassandraClient.execute(query, [userId], {
-      prepare: true,
-    });
-
-    const posts = result.rows.map((row) => ({
-      id: row.id.toString(),
-      user_id: row.user_id,
-      caption: row.caption,
-      image_url: row.image_url,
-      likes_count: row.likes_count,
-      comments_count: row.comments_count,
-      created_at: row.created_at,
-    }));
+    const posts = await postService.getPostsByUser(user_id);
 
     res.status(200).json({
       success: true,
@@ -175,21 +118,7 @@ export const getPostsByUser = async (req, res) => {
 export const getAllPosts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
-
-    const query = `SELECT * FROM ${KEYSPACE}.posts LIMIT ?`;
-    const result = await cassandraClient.execute(query, [limit], {
-      prepare: true,
-    });
-
-    const posts = result.rows.map((row) => ({
-      id: row.id.toString(),
-      user_id: row.user_id,
-      caption: row.caption,
-      image_url: row.image_url,
-      likes_count: row.likes_count,
-      comments_count: row.comments_count,
-      created_at: row.created_at,
-    }));
+    const posts = await postService.getAllPosts(limit);
 
     res.status(200).json({
       success: true,
@@ -201,6 +130,62 @@ export const getAllPosts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching posts",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get user's feed
+ * GET /api/posts/feed/:user_id
+ */
+export const getUserFeed = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const limit = parseInt(req.query.limit) || 20;
+
+    // Validate user_id
+    const userIdInt = parseInt(user_id);
+    if (isNaN(userIdInt)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user_id",
+      });
+    }
+
+    // Get post IDs from feed
+    const feedItems = await feedService.getFeed(user_id, limit);
+
+    // If no posts in feed, return empty array
+    if (feedItems.length === 0) {
+      return res.status(200).json({
+        success: true,
+        feed: [],
+        count: 0,
+        message: "No posts in feed",
+      });
+    }
+
+    // Get full post details for each post ID
+    const postIds = feedItems.map((item) => item.post_id);
+    const posts = await postService.getPostsByIds(postIds);
+
+    // Sort posts by created_at (most recent first) to match feed order
+    const postsMap = new Map(posts.map((post) => [post.id, post]));
+    const sortedPosts = feedItems
+      .map((item) => postsMap.get(item.post_id))
+      .filter((post) => post !== undefined);
+
+    res.status(200).json({
+      success: true,
+      feed: sortedPosts,
+      count: sortedPosts.length,
+    });
+  } catch (error) {
+    console.error("Error fetching user feed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user feed",
       error: error.message,
     });
   }

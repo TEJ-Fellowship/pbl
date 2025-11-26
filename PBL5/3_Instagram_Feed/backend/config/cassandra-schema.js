@@ -96,6 +96,31 @@ const createPostsByUserTable = async () => {
 };
 
 /**
+ * Creates the feeds_by_user table
+ * This table stores posts in each user's feed (fan-out architecture)
+ * Partitioned by user_id, ordered by created_at DESC
+ * Allows efficient querying of a user's personalized feed
+ */
+const createFeedsByUserTable = async () => {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS feeds_by_user (
+        user_id INT,
+        created_at TIMESTAMP,
+        post_id UUID,
+        PRIMARY KEY (user_id, created_at, post_id)
+      ) WITH CLUSTERING ORDER BY (created_at DESC)
+    `;
+
+    await cassandraClient.execute(createTableQuery);
+    console.log("✅ Table 'feeds_by_user' created or already exists.");
+  } catch (error) {
+    console.error("❌ Error creating 'feeds_by_user' table:", error);
+    throw error;
+  }
+};
+
+/**
  * Initializes the Cassandra schema
  * Creates keyspace and all required tables
  */
@@ -104,6 +129,7 @@ const initializeSchema = async () => {
     await createKeyspace();
     await createPostsTable();
     await createPostsByUserTable();
+    await createFeedsByUserTable();
     console.log("✅ Cassandra schema initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing Cassandra schema:", error);
