@@ -12,9 +12,9 @@ export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const limit = parseInt(req.query.limit) || 50; // Allow custom limit via query parameter
-    
+
     const messages = await messageRepo.getMessages(conversationId, limit);
-    
+
     // Format messages for better readability
     const formattedMessages = messages.map((msg) => ({
       messageId: msg.message_id?.toString(),
@@ -34,7 +34,9 @@ export const getMessages = async (req, res) => {
     });
   } catch (error) {
     console.error("Error getting messages:", error);
-    res.status(500).json({ error: "Failed to get messages", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to get messages", details: error.message });
   }
 };
 
@@ -42,14 +44,11 @@ export const getMessages = async (req, res) => {
 export const getUserConversations = async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     // Find conversations where user is either user1 or user2
     const conversations = await Conversation.findAll({
       where: {
-        [sequelize.Op.or]: [
-          { user1_id: userId },
-          { user2_id: userId },
-        ],
+        [Op.or]: [{ user1_id: userId }, { user2_id: userId }],
       },
       order: [["last_message_time", "DESC"]], // Most recent conversations first
     });
@@ -82,7 +81,8 @@ export const getUserConversations = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    let { conversationId, senderId, content, messageType, status, receiverId } = req.body;
+    let { conversationId, senderId, content, messageType, status, receiverId } =
+      req.body;
 
     // Validate required fields
     if (!senderId || !content || !receiverId) {
