@@ -20,13 +20,14 @@ class websocketService {
     this.io.to(conversationId).emit("message:send", message);
   }
 
-  typingStart(conversationId, userId) {
-    this.io.to(conversationId).emit("typing:start", userId);
+  typingStart(socket, conversationId, userId) {
+    socket.to(conversationId).emit("typing:start", userId);
   }
 
-  typingStop(conversationId, userId) {
-    this.io.to(conversationId).emit("typing:stop", userId);
+  typingStop(socket, conversationId, userId) {
+    socket.to(conversationId).emit("typing:stop", userId);
   }
+  1;
 
   statusUpdate(conversationId, messageId, status) {
     this.io.to(conversationId).emit("status:update", { messageId, status });

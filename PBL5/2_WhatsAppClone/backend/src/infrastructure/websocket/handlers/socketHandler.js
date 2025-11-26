@@ -36,12 +36,12 @@ export const handleSocket = (io) => {
       wsService.sendMessage(data.conversationId, savedMessage);
     });
 
-    socket.on("typing:start", (conversationId) => {
-      wsService.typingStart(conversationId, socket.id);
+    socket.on("typing:start", (conversationId, userId) => {
+      wsService.typingStart(socket, conversationId, userId);
     });
 
-    socket.on("typing:stop", (conversationId) => {
-      wsService.typingStop(conversationId, socket.id);
+    socket.on("typing:stop", (conversationId, userId) => {
+      wsService.typingStop(socket, conversationId, userId);
     });
   });
 };
