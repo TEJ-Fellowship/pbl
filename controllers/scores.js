@@ -7,7 +7,11 @@ const producer = kafka.producer();
 producer.connect();
 
 const consumer = kafka.consumer({ groupId: 'leaderboard-consumer' });
-consumer.connect();
+
+// Initialize consumer connection in an async function
+(async () => {
+  await consumer.connect();
+})();
 
 router.post("/submit", async (req, res) => {
   const { score } = req.body;
@@ -22,22 +26,23 @@ router.post("/submit", async (req, res) => {
     messages: [{ value: JSON.stringify(message) }],
   });
   res.json({ message: 'Score submitted successfully' });
-  await consumer.subscribe({ topic: 'submit-score', fromBeginning: true });
-  await consumer.run({
+  await producer.disconnect();
+  consumer.subscribe({ topic: 'submit-score', fromBeginning: true });
+  consumer.run({
     eachMessage: async ({ topic, partition, message }) => {
       const value = message.value.toString();
       const data = JSON.parse(value);
       console.log(data);
+      await client.zAdd('leaderboard:global', {
+        score: data.score,
+        member: data.playerId,
+      });
     }
   });
-  await client.connect();
   await client.zAdd('leaderboard:global', {
     score: data.score,
     member: data.playerId,
-    });
-  await producer.disconnect();
-  await consumer.disconnect();
-
+  });
   console.log('Kafka producer disconnected'); 
 });
 
@@ -46,7 +51,6 @@ router.get("/leaderboard", async (req, res) => {
   const leaderboard = await client.zRevRange('leaderboard:global', 0, 99);
   res.json({ leaderboard });
 });   
-
 
 
 module.exports = router;

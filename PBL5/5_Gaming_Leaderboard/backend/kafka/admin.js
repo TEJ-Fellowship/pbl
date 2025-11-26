@@ -1,19 +1,28 @@
-import { Kafka } from "kafkajs";
-
-const kafka = new Kafka({
-  clientId: "kafka-service",
-  brokers: ["localhost:9092"],
-});
+const kafka = require('./client');
 
 const admin = kafka.admin();
 
-const run = async () => {
-  await admin.connect();
-  await admin.createTopics({
-    topics: [
-      { topic: "submit-score" },
-    ],
-  });
+const createTopic = async (topicName) => {
+
+await admin.connect();
+console.log(`Connected to Kafka broker - 📪`);
+
+const topicsToCreate = [{
+   topic: topicName,
+   numPartitions: 1,
+   replicationFactor: 1,
+}];
+
+await admin.createTopics({
+   topics: topicsToCreate,
+});
+console.log(`Topic "${topicName}" created successfully - 📁`);
+
+await admin.disconnect();
+ console.log(`Disconnected from Kafka broker`);
+
 };
 
-run();
+const topicName = 'submit-score';
+
+createTopic(topicName).catch(console.error);

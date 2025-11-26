@@ -15,6 +15,4 @@ const client = createClient({
 
 // await client.connect();
 
-module.exports = {
-  client,
-};
+module.exports = client;
