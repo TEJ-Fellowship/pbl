@@ -32,8 +32,8 @@ async function run() {
 
   const client = new Client({
     cloud: {
-      secureConnectBundle:secureConnectBundle
-         // your path here
+      secureConnectBundle: secureConnectBundle,
+      // your path here
     },
     credentials: {
       username: username,

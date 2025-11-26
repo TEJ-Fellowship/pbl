@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Backend for Instagram-style feed with fan-out architecture",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node server.js",
     "dev": "node --watch server.js"
   },
   "keywords": [],
