@@ -69,4 +69,28 @@ scenarios:
               strict: false # Don't fail if field doesn't exist (error responses won't have payment_id)
           expect:
             - statusCode: [200, 400, 404] # 200 = success, 400/404 = booking not found/confirmed
-          if: "{{ bookingId && bookingId !== '' }}"
+          if:
+            "{{ bookingId && bookingId !== '' }}"
+
+            # Scenario 3: Multi-seat Atomicity Stress Test
+  - name: "Atomic Multi-seat Locking Stress Test"
+    weight: 15
+    flow:
+      # Generate seat sets that intentionally overlap
+      - function: "generateAtomicitySeatSets"
+
+      # Users aggressively try to book overlapping seats
+      - post:
+          url: "/api/bookings"
+          json:
+            seat_ids: "{{ atomicSeatIds }}"
+          capture:
+            - json: "$.id"
+              as: "bookingId"
+              strict: false
+            - json: "$.unavailable_seats"
+              as: "unavailableSeats"
+              strict: false
+          expect:
+            - statusCode: [201, 409] # 201 = success, 409 = conflict (expected for atomicity)
+            - contentType: json

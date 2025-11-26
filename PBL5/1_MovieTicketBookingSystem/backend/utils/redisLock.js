@@ -130,7 +130,8 @@ async function acquireLocks(seatKeys, ttlSeconds = 300) {
     return {1}
   `;
 
-  const args = [ttlSeconds, ...tokens];
+  // Convert all arguments to strings (Redis v5 requirement)
+  const args = [String(ttlSeconds), ...tokens];
   try {
     const result = await redis.eval(luaScript, {
       keys: lockKeys,
