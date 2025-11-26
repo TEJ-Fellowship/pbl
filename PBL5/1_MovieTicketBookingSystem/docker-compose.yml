@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: movie-booking-redis
+    ports:
+      - "6380:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: always
+
+volumes:
+  redis-data:
+    driver: local
