@@ -36,43 +36,43 @@ scenarios:
               as: "bookingId"
               strict: false # Don't fail if field doesn't exist (409 responses won't have id)
           expect:
-            - statusCode: [201, 409] # 201 = success, 409 = seat conflict (expected)
+            - statusCode: [201, 202, 409] # 201 = direct mode success, 202 = kafka mode queued, 409 = seat conflict (expected)
             - contentType: json
 
-  # Scenario 2: Full flow (booking + payment)
-  - name: "Booking and Payment Flow"
-    weight: 30
-    flow:
-      - function: "generateSeatsForRequest"
-      # Step 1: Create booking
-      - post:
-          url: "/api/bookings"
-          json:
-            seat_ids: "{{ seatIds }}"
-          capture:
-            - json: "$.id"
-              as: "bookingId"
-              strict: false # Don't fail if field doesn't exist (409 responses won't have id)
-          expect:
-            - statusCode: [201, 409]
+  # Scenario 2: Full flow (booking + payment) - COMMENTED OUT FOR BOOKING-ONLY TESTING
+  # - name: "Booking and Payment Flow"
+  #   weight: 30
+  #   flow:
+  #     - function: "generateSeatsForRequest"
+  #     # Step 1: Create booking
+  #     - post:
+  #         url: "/api/bookings"
+  #         json:
+  #           seat_ids: "{{ seatIds }}"
+  #         capture:
+  #           - json: "$.id"
+  #             as: "bookingId"
+  #             strict: false # Don't fail if field doesn't exist (409 responses won't have id)
+  #         expect:
+  #           - statusCode: [201, 409]
+  #
+  #     # Step 2: Pay immediately (if booking succeeded)
+  #     - post:
+  #         url: "/api/payments/process"
+  #         json:
+  #           booking_id: "{{ bookingId }}"
+  #           amount: 200
+  #           payment_method: "credit_card"
+  #         capture:
+  #           - json: "$.payment_id"
+  #             as: "paymentId"
+  #             strict: false # Don't fail if field doesn't exist (error responses won't have payment_id)
+  #         expect:
+  #           - statusCode: [200, 400, 404] # 200 = success, 400/404 = booking not found/confirmed
+  #         if:
+  #           "{{ bookingId && bookingId !== '' }}"
 
-      # Step 2: Pay immediately (if booking succeeded)
-      - post:
-          url: "/api/payments/process"
-          json:
-            booking_id: "{{ bookingId }}"
-            amount: 200
-            payment_method: "credit_card"
-          capture:
-            - json: "$.payment_id"
-              as: "paymentId"
-              strict: false # Don't fail if field doesn't exist (error responses won't have payment_id)
-          expect:
-            - statusCode: [200, 400, 404] # 200 = success, 400/404 = booking not found/confirmed
-          if:
-            "{{ bookingId && bookingId !== '' }}"
-
-            # Scenario 3: Multi-seat Atomicity Stress Test
+  # Scenario 3: Multi-seat Atomicity Stress Test
   - name: "Atomic Multi-seat Locking Stress Test"
     weight: 15
     flow:
@@ -92,5 +92,5 @@ scenarios:
               as: "unavailableSeats"
               strict: false
           expect:
-            - statusCode: [201, 409] # 201 = success, 409 = conflict (expected for atomicity)
+            - statusCode: [201, 202, 409] # 201 = direct mode success, 202 = kafka mode queued, 409 = conflict (expected for atomicity)
             - contentType: json

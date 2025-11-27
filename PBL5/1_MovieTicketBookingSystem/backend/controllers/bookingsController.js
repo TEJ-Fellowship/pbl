@@ -2,20 +2,61 @@
  * Simplified Redis-Only Booking Controller
  * Seat-only approach for load testing and scaling
  * No PostgreSQL dependencies
+ * Supports both direct processing and Kafka queueing modes
  */
 
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
 const crypto = require("crypto");
+const config = require("../utils/config");
+const { sendBookingRequest } = require("../services/kafkaProducer");
 
 /**
  * Create booking - Redis-only, seat-only
  * POST /api/bookings
  * Body: { "seat_ids": ["seat1", "seat2", ...] }
+ *
+ * Mode:
+ * - 'direct': Process booking immediately (default)
+ * - 'kafka': Queue booking request to Kafka for async processing
  */
 const createBooking = async (req, res, next) => {
   try {
     const { seat_ids } = req.body;
+
+    // If Kafka mode is enabled, send to queue and return immediately
+    if (config.KAFKA_MODE === "kafka") {
+      try {
+        const requestId = crypto.randomUUID();
+        const result = await sendBookingRequest({
+          seat_ids,
+          request_id: requestId,
+          metadata: {
+            user_agent: req.get("user-agent"),
+            ip: req.ip,
+          },
+        });
+
+        // Return 202 Accepted (request queued, processing asynchronously)
+        return res.status(202).json({
+          message: "Booking request queued for processing",
+          request_id: requestId,
+          kafka: {
+            partition: result.partition,
+            offset: result.offset,
+          },
+          note: "Check booking status using GET /api/bookings/:id after processing",
+        });
+      } catch (kafkaError) {
+        console.error(
+          "Kafka error, falling back to direct processing:",
+          kafkaError
+        );
+        // Fall through to direct processing if Kafka fails
+      }
+    }
+
+    // Direct processing mode (original logic)
 
     // Validation
     if (!seat_ids || !Array.isArray(seat_ids) || seat_ids.length === 0) {
