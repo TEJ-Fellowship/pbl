@@ -110,12 +110,30 @@ const start = async () => {
   try {
     // Database connection is optional for Redis-only approach
     try {
-    await connectToDatabase();
+      await connectToDatabase();
     } catch (dbError) {
       console.log("⚠️  Database connection skipped (Redis-only mode)");
     }
+
+    // Start Kafka consumer if Kafka mode is enabled
+    const config = require("./utils/config");
+    if (config.KAFKA_MODE === "kafka") {
+      try {
+        const { startBookingConsumer } = require("./services/kafkaConsumer");
+        await startBookingConsumer();
+        console.log("✅ Kafka consumer started successfully");
+      } catch (kafkaError) {
+        console.error(
+          "⚠️  Failed to start Kafka consumer:",
+          kafkaError.message
+        );
+        console.log("⚠️  Server will continue without Kafka consumer");
+      }
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Kafka mode: ${config.KAFKA_MODE}`);
     });
   } catch (error) {
     console.log(`Failed to start server:`, error.message);
