@@ -29,18 +29,46 @@ const username = process.env.ASTRA_DB_USERNAME;
 const password = process.env.ASTRA_CLIENT_SECRET;
 const secureConnectBundle = process.env.ASTRA_SECURE_CONNECT_BUNDLE;
 
-const cassandraClient = new Client({
-  cloud: {
-    secureConnectBundle: secureConnectBundle,
-  },
-  credentials: {
-    username: username,
-    password: password,
-  },
-});
+// Only create Cassandra client if all required environment variables are present and valid
+let cassandraClient = null;
+
+if (
+  username &&
+  password &&
+  secureConnectBundle &&
+  typeof secureConnectBundle === "string"
+) {
+  try {
+    cassandraClient = new Client({
+      cloud: {
+        secureConnectBundle: secureConnectBundle,
+      },
+      credentials: {
+        username: username,
+        password: password,
+      },
+    });
+  } catch (error) {
+    console.warn(
+      "⚠️ Warning: Could not initialize Cassandra client:",
+      error.message
+    );
+    cassandraClient = null;
+  }
+} else {
+  console.log(
+    "ℹ️ Cassandra client not initialized (missing environment variables)"
+  );
+}
 
 const initializeCassandra = async () => {
   try {
+    if (!cassandraClient) {
+      throw new Error(
+        "Cassandra client is not initialized. Please check your ASTRA_DB_USERNAME, ASTRA_CLIENT_SECRET, and ASTRA_SECURE_CONNECT_BUNDLE environment variables."
+      );
+    }
+
     if (!username || typeof username !== "string") {
       throw new Error(
         "ASTRA_DB_USERNAME environment variable is not set or is not a string. Please check your .env file."
@@ -83,8 +111,10 @@ const initializeCassandra = async () => {
 
 const closeCassandra = async () => {
   try {
-    await cassandraClient.shutdown();
-    console.log("✓ Cassandra connection closed");
+    if (cassandraClient) {
+      await cassandraClient.shutdown();
+      console.log("✓ Cassandra connection closed");
+    }
   } catch (error) {
     console.error("Error closing Cassandra:", error);
   }
