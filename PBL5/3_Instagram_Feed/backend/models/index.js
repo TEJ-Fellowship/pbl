@@ -1,9 +1,8 @@
 import User from "./User.js";
-import Post from "./Post.js";
 import Follow from "./Follow.js";
 
-User.hasMany(Post, { foreignKey: "user_id", as: "posts" });
-Post.belongsTo(User, { foreignKey: "user_id", as: "user" });
+// Post model has been moved to Cassandra
+// Removed Sequelize associations for Post
 
 User.belongsToMany(User, {
   through: Follow,
@@ -19,4 +18,4 @@ User.belongsToMany(User, {
   as: "followers",
 });
 
-export { User, Post, Follow };
+export { User, Follow };

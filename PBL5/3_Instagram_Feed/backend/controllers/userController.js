@@ -1,4 +1,10 @@
 import { User, Follow } from "../models/index.js";
+import * as userCacheService from "../services/userCacheService.js";
+import {
+  invalidateFeedCache,
+  backfillFeedOnFollow,
+  removePostsFromFeedOnUnfollow,
+} from "../services/feedService.js";
 
 /**
  * Create a new user
@@ -212,6 +218,7 @@ export const followUser = async (req, res) => {
       following_id: id,
     });
 
+    // Update counts in database
     await User.increment("following_count", {
       where: { id: follower_id },
     });
@@ -219,6 +226,18 @@ export const followUser = async (req, res) => {
     await User.increment("followers_count", {
       where: { id: id },
     });
+
+    // Update counts in Redis cache
+    await userCacheService.incrementFollowingCount(follower_id);
+    await userCacheService.incrementFollowersCount(id);
+
+    // Backfill existing posts from the followed user to the follower's feed
+    try {
+      await backfillFeedOnFollow(follower_id, id);
+    } catch (backfillError) {
+      // Log but don't fail - feed will be populated on next post
+      console.error("⚠️ Error backfilling feed on follow:", backfillError);
+    }
 
     await follower.reload();
     await userToFollow.reload();
@@ -311,6 +330,7 @@ export const unfollowUser = async (req, res) => {
 
     await existingFollow.destroy();
 
+    // Update counts in database
     await User.decrement("following_count", {
       where: { id: follower_id },
     });
@@ -318,6 +338,22 @@ export const unfollowUser = async (req, res) => {
     await User.decrement("followers_count", {
       where: { id: id },
     });
+
+    // Update counts in Redis cache
+    await userCacheService.decrementFollowingCount(follower_id);
+    await userCacheService.decrementFollowersCount(id);
+
+    // Remove all posts from the unfollowed user from the follower's feed
+    try {
+      await removePostsFromFeedOnUnfollow(follower_id, id);
+    } catch (removeError) {
+      // Log but don't fail - at least invalidate cache as fallback
+      console.error(
+        "⚠️ Error removing posts from feed on unfollow:",
+        removeError
+      );
+      await invalidateFeedCache(follower_id).catch(console.error);
+    }
 
     await follower.reload();
     await userToUnfollow.reload();

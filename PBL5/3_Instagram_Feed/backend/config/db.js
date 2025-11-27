@@ -1,5 +1,6 @@
 import { Sequelize } from "sequelize";
 import cassandra from "cassandra-driver";
+import { createClient } from "redis";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -89,4 +90,61 @@ const closeCassandra = async () => {
   }
 };
 
-export { sequelize, cassandraClient, initializeCassandra, closeCassandra };
+// Redis Client Setup
+const redisClient = createClient({
+  host: process.env.REDIS_HOST || "localhost",
+  port: process.env.REDIS_PORT || 6379,
+  password: process.env.REDIS_PASSWORD || undefined,
+});
+
+// Redis connection event handlers
+redisClient.on("error", (err) => {
+  console.error("❌ Redis Client Error:", err);
+});
+
+redisClient.on("connect", () => {
+  console.log("🔄 Connecting to Redis...");
+});
+
+redisClient.on("ready", () => {
+  console.log("✅ Redis Client is ready");
+});
+
+redisClient.on("reconnecting", () => {
+  console.log("🔄 Redis Client reconnecting...");
+});
+
+const initializeRedis = async () => {
+  try {
+    await redisClient.connect();
+    console.log("✅ Connected to Redis successfully.");
+
+    // Test the connection with a simple ping
+    const pong = await redisClient.ping();
+    console.log("📊 Redis PING response:", pong);
+
+    return redisClient;
+  } catch (error) {
+    console.error("❌ Unable to connect to Redis:", error);
+    throw error;
+  }
+};
+
+const closeRedis = async () => {
+  try {
+    await redisClient.quit();
+    console.log("✓ Redis connection closed");
+  } catch (error) {
+    console.error("Error closing Redis:", error);
+  }
+};
+
+export {
+  sequelize,
+  cassandraClient,
+  initializeCassandra,
+  closeCassandra,
+  redisClient,
+  initializeRedis,
+  closeRedis,
+};
