@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
-import ConversationList from './ConversationList'
-import ChatWindow from './ChatWindow'
-import './ChatInterface.css'
+import { useState, useEffect } from "react";
+import ConversationList from "./ConversationList";
+import ChatWindow from "./ChatWindow";
+import "./ChatInterface.css";
 
-const API_BASE = 'http://localhost:3000/api'
+const API_BASE = "http://localhost:3000/api";
 
 function ChatInterface({
   currentUser,
@@ -12,32 +12,34 @@ function ChatInterface({
   onNewConversation,
   onLogout,
 }) {
-  const [selectedConversation, setSelectedConversation] = useState(null)
-  const [messages, setMessages] = useState([])
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     if (selectedConversation) {
-      fetchMessages(selectedConversation.conversationId)
+      fetchMessages(selectedConversation.conversationId);
     }
-  }, [selectedConversation])
+  }, [selectedConversation]);
 
   const fetchMessages = async (conversationId) => {
     try {
-      const response = await fetch(`${API_BASE}/conversation/${conversationId}`)
+      const response = await fetch(
+        `${API_BASE}/conversation/${conversationId}`
+      );
       if (response.ok) {
-        const data = await response.json()
-        setMessages(data.data || [])
+        const data = await response.json();
+        setMessages(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error)
-      setMessages([])
+      console.error("Error fetching messages:", error);
+      setMessages([]);
     }
-  }
+  };
 
   const startNewConversation = async (receiverId) => {
     // Find receiver user info
-    const receiver = users.find((u) => u.user_id === receiverId)
-    if (!receiver) return
+    const receiver = users.find((u) => u.user_id === receiverId);
+    if (!receiver) return;
 
     // Create a new conversation object (will be created when first message is sent)
     const newConversation = {
@@ -45,26 +47,26 @@ function ChatInterface({
       user1Id: currentUser.user_id,
       user2Id: receiverId,
       receiver: receiver,
-      lastMessageText: '',
+      lastMessageText: "",
       lastMessageTime: new Date(),
-    }
+    };
 
-    setSelectedConversation(newConversation)
-  }
+    setSelectedConversation(newConversation);
+  };
 
   const handleConversationSelect = (conversation) => {
     // Get the other user's info
     const otherUserId =
       conversation.user1Id === currentUser.user_id
         ? conversation.user2Id
-        : conversation.user1Id
-    const otherUser = users.find((u) => u.user_id === otherUserId)
+        : conversation.user1Id;
+    const otherUser = users.find((u) => u.user_id === otherUserId);
 
     setSelectedConversation({
       ...conversation,
       receiver: otherUser,
-    })
-  }
+    });
+  };
 
   const handleMessageSent = (newMessage) => {
     // Update conversation if it was new
@@ -72,19 +74,19 @@ function ChatInterface({
       const updatedConversation = {
         ...selectedConversation,
         conversationId: newMessage.conversationId,
-      }
-      setSelectedConversation(updatedConversation)
-      onNewConversation(updatedConversation)
+      };
+      setSelectedConversation(updatedConversation);
+      onNewConversation(updatedConversation);
     }
 
     // Add message to local state
-    setMessages([...messages, newMessage])
-  }
+    setMessages([...messages, newMessage]);
+  };
 
   const getOtherUser = () => {
-    if (!selectedConversation) return null
-    return selectedConversation.receiver
-  }
+    if (!selectedConversation) return null;
+    return selectedConversation.receiver;
+  };
 
   return (
     <div className="chat-interface">
@@ -129,8 +131,7 @@ function ChatInterface({
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default ChatInterface
-
+export default ChatInterface;

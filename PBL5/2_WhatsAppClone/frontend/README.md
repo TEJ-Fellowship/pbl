@@ -5,12 +5,14 @@ A simple React frontend for the WhatsApp Clone application.
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 cd frontend
 npm install
 ```
 
 2. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -39,4 +41,3 @@ Make sure your backend is running on `http://localhost:3000` with the following 
 ## Note
 
 If some API endpoints are not available, you may need to add them to your backend routes.
-

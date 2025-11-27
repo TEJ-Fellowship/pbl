@@ -1,86 +1,76 @@
-import { useState, useEffect } from 'react'
-import UserSelection from './components/UserSelection'
-import ChatInterface from './components/ChatInterface'
-import './App.css'
+import { useState, useEffect } from "react";
+import UserSelection from "./components/UserSelection";
+import ChatInterface from "./components/ChatInterface";
+import { SocketProvider } from "./context/SocketContext.jsx";
+import "./App.css";
 
-const API_BASE = 'http://localhost:3000/api'
+const API_BASE = "http://localhost:3000/api";
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null)
-  const [users, setUsers] = useState([])
-  const [conversations, setConversations] = useState([])
+  const [currentUser, setCurrentUser] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [conversations, setConversations] = useState([]);
 
-  // Fetch all users on mount
   useEffect(() => {
-    fetchUsers()
-  }, [])
+    fetchUsers();
+  }, []);
 
-  // Fetch conversations when user is selected
   useEffect(() => {
-    if (currentUser) {
-      fetchConversations()
-    }
-  }, [currentUser])
+    if (currentUser) fetchConversations();
+  }, [currentUser]);
 
   const fetchUsers = async () => {
     try {
-      // First, try to get existing users
-      // For now, we'll create users if they don't exist
-      // In a real app, you'd have a proper user management system
-      const response = await fetch(`${API_BASE}/users`)
+      const response = await fetch(`${API_BASE}/users`);
       if (response.ok) {
-        const data = await response.json()
-        setUsers(data.data || [])
+        const data = await response.json();
+        setUsers(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching users:', error)
+      console.error("Error fetching users:", error);
     }
-  }
+  };
 
   const fetchConversations = async () => {
-    if (!currentUser?.user_id) return
-    
+    if (!currentUser?.user_id) return;
     try {
-      const response = await fetch(`${API_BASE}/conversation/user/${currentUser.user_id}`)
+      const response = await fetch(
+        `${API_BASE}/conversation/user/${currentUser.user_id}`
+      );
       if (response.ok) {
-        const data = await response.json()
-        setConversations(data.data || [])
+        const data = await response.json();
+        setConversations(data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error)
-      setConversations([])
+      console.error("Error fetching conversations:", error);
+      setConversations([]);
     }
-  }
+  };
 
   const createUser = async (name, phone) => {
     try {
       const response = await fetch(`${API_BASE}/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone }),
-      })
-      
+      });
       if (response.ok) {
-        const data = await response.json()
-        const newUser = data.data
-        setUsers([...users, newUser])
-        return newUser
+        const data = await response.json();
+        const newUser = data.data;
+        setUsers([...users, newUser]);
+        return newUser;
       }
     } catch (error) {
-      console.error('Error creating user:', error)
+      console.error("Error creating user:", error);
     }
-    return null
-  }
+    return null;
+  };
 
-  const handleUserSelect = (user) => {
-    setCurrentUser(user)
-  }
+  const handleUserSelect = (user) => setCurrentUser(user);
 
   const handleNewConversation = (conversation) => {
-    setConversations([conversation, ...conversations])
-  }
+    setConversations([conversation, ...conversations]);
+  };
 
   if (!currentUser) {
     return (
@@ -89,19 +79,20 @@ function App() {
         onUserSelect={handleUserSelect}
         onCreateUser={createUser}
       />
-    )
+    );
   }
 
   return (
-    <ChatInterface
-      currentUser={currentUser}
-      conversations={conversations}
-      users={users}
-      onNewConversation={handleNewConversation}
-      onLogout={() => setCurrentUser(null)}
-    />
-  )
+    <SocketProvider currentUser={currentUser}>
+      <ChatInterface
+        currentUser={currentUser}
+        conversations={conversations}
+        users={users}
+        onNewConversation={handleNewConversation}
+        onLogout={() => setCurrentUser(null)}
+      />
+    </SocketProvider>
+  );
 }
 
-export default App
-
+export default App;
