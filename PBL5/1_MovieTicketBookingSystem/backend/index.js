@@ -18,9 +18,28 @@ app.use("/api/bookings", require("./routes/bookings"));
 app.use("/api/payments", require("./routes/payments"));
 app.use("/api/users", require("./routes/users"));
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+// Health check endpoint with Redis monitoring
+const { getHealthStatus, getMemoryInfo } = require("./utils/redisMonitor");
+app.get("/health", async (req, res) => {
+  const redisHealth = await getHealthStatus();
+  res.json({
+    status: "ok",
+    message: "Server is running",
+    redis: redisHealth,
+  });
+});
+
+// Dedicated Redis monitoring endpoint
+app.get("/api/redis/monitor", async (req, res) => {
+  try {
+    const memoryInfo = await getMemoryInfo();
+    res.json({
+      timestamp: new Date().toISOString(),
+      memory: memoryInfo,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Root endpoint

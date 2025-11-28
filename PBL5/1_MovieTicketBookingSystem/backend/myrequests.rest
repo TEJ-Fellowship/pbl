@@ -222,3 +222,17 @@ Content-Type: application/json
   "payment_method": "credit_card"
 }
 ### Expected: 400 Bad Request - "Booking is already confirmed"
+
+### ============================================
+### PIPELINE TEST - Check server logs for pipeline messages
+### ============================================
+
+POST {{apiUrl}}/bookings
+Content-Type: application/json
+
+{
+  "seat_ids": ["seat1", "seat2", "seat3"]
+}
+### Expected: 202 Accepted (Kafka mode) or 201 Created (Direct mode)
+### Check server console for: "📦 Pipeline: Executed 4 commands in batch"
+### Check server console for: "⚡ Pipeline executed 4 commands in Xms"

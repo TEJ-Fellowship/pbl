@@ -7,6 +7,7 @@ const { getConsumer, ensureTopics } = require("../utils/kafka");
 const config = require("../utils/config");
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
+const { batchWrite } = require("../utils/redisPipeline");
 const crypto = require("crypto");
 
 /**
@@ -95,20 +96,25 @@ async function processBookingRequest(bookingRequest) {
         request_id, // Store original request ID for tracking
       };
 
-      // Store booking in Redis
+      // Store booking in Redis using pipeline (batch all writes together)
       const bookingKey = `booking:${bookingId}`;
-      await redis.setEx(bookingKey, 300, JSON.stringify(bookingData)); // 5 min TTL for pending
-
-      // Add to pending bookings set
-      await redis.sAdd("booking:pending", bookingId);
-      await redis.expire("booking:pending", 300);
-
-      // Store lock tokens for later release
       const lockStorageKey = `booking:${bookingId}:locks`;
-      await redis.setEx(lockStorageKey, 300, JSON.stringify(locks));
 
-      // Remove seats from available_seats
-      await redis.sRem(availableSeatsKey, seat_ids);
+      // Batch all Redis writes into a single pipeline (much faster!)
+      // Instead of 4 separate network calls, we send all commands at once!
+      const pipelineStart = Date.now();
+
+      // Build sRem args: [key, ...members] - spread seat_ids when calling
+      const sRemArgs = [availableSeatsKey, ...seat_ids];
+
+      await batchWrite([
+        { type: "setEx", args: [bookingKey, 300, JSON.stringify(bookingData)] }, // Store booking (5 min TTL)
+        { type: "sAdd", args: ["booking:pending", bookingId] }, // Add to pending set
+        { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
+        { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
+      ]);
+      const pipelineTime = Date.now() - pipelineStart;
+      console.log(`⚡ Pipeline executed ${4} commands in ${pipelineTime}ms`);
 
       console.log(
         `✅ Booking ${bookingId} processed from Kafka (request: ${request_id})`

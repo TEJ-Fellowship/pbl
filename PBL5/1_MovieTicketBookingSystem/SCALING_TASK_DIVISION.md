@@ -58,7 +58,7 @@
 
 ### **Swikar**
 
-**Phase 1: Kafka Integration (Priority)**
+**Phase 1: Kafka Integration (Priority)** ✅
 
 - Docker Kafka setup
 - Kafka producer for booking requests
