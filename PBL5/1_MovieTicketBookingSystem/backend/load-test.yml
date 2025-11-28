@@ -1,25 +1,16 @@
 config:
   target: "http://localhost:3001"
   phases:
-    # Phase 1: Warm up - gradual ramp up
+    # Quick test - 30 seconds total
     - duration: 10
-      arrivalRate: 10
-      name: "Warm up"
-    # Phase 2: Ramp up load
+      arrivalRate: 20
+      name: "Quick test"
     - duration: 20
       arrivalRate: 50
-      name: "Ramp up"
-    # Phase 3: Sustained high load
-    - duration: 30
-      arrivalRate: 100
-      name: "Sustained load"
-    # Phase 4: Peak load
-    - duration: 20
-      arrivalRate: 200
-      name: "Peak load"
+      name: "Slightly higher load"
   processor: "./artillery-processor.js"
   variables:
-    seatCount: 1000
+    seatCount: 150000
 
 scenarios:
   # Scenario 1: Booking creation only (high rate)

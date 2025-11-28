@@ -39,16 +39,61 @@ async function processBookingRequest(bookingRequest) {
     }
 
     // Check seat availability in Redis
+    // OPTIMIZED: Use pipeline to check individual seats (much faster than sMembers for large sets!)
     const availableSeatsKey = "available_seats";
     const bookedSeatsKey = "booked_seats";
 
-    const availableSeats = await redis.sMembers(availableSeatsKey);
-    const availableSeatsSet = new Set(availableSeats);
+    // Check all seats in parallel using pipeline (fastest approach!)
+    const pipeline = redis.multi();
+    seat_ids.forEach((seatId) => {
+      pipeline.sIsMember(availableSeatsKey, seatId);
+    });
+    const results = await pipeline.exec();
 
-    // Check if all requested seats are available
-    const unavailableSeats = seat_ids.filter(
-      (seatId) => !availableSeatsSet.has(seatId)
-    );
+    // Extract unavailable seats from pipeline results
+    // Redis pipeline.exec() returns: [error, result] or just the result value
+    const unavailableSeats = [];
+    if (results && Array.isArray(results)) {
+      results.forEach((result, index) => {
+        let isAvailable = false;
+
+        // Handle different result formats
+        if (Array.isArray(result) && result.length >= 2) {
+          // Format: [error, value]
+          const error = result[0];
+          const value = result[1];
+          if (error) {
+            console.error(`Error checking seat ${seat_ids[index]}:`, error);
+            unavailableSeats.push(seat_ids[index]);
+            return;
+          }
+          // value is 1 if member exists, 0 if not
+          isAvailable = value === 1 || value === true || value === "1";
+        } else if (typeof result === "number") {
+          // Format: direct value (1 = exists, 0 = doesn't exist)
+          isAvailable = result === 1;
+        } else if (result === true || result === "1") {
+          // Format: boolean or string "1"
+          isAvailable = true;
+        } else {
+          // Unexpected format, treat as unavailable
+          console.warn(
+            `Unexpected result format for seat ${seat_ids[index]}:`,
+            result,
+            `(type: ${typeof result})`
+          );
+          unavailableSeats.push(seat_ids[index]);
+          return;
+        }
+
+        if (!isAvailable) {
+          unavailableSeats.push(seat_ids[index]);
+        }
+      });
+    } else {
+      console.error("Pipeline results are not in expected format:", results);
+      throw new Error("Failed to check seat availability");
+    }
 
     if (unavailableSeats.length > 0) {
       return {
@@ -114,10 +159,13 @@ async function processBookingRequest(bookingRequest) {
         { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
       ]);
       const pipelineTime = Date.now() - pipelineStart;
-      console.log(`⚡ Pipeline executed ${4} commands in ${pipelineTime}ms`);
+      if (process.env.NODE_ENV !== "production" && pipelineTime > 50) {
+        console.log(`⚡ Pipeline executed ${4} commands in ${pipelineTime}ms`);
+      }
 
+      // Always log successful bookings for now (to verify it's working)
       console.log(
-        `✅ Booking ${bookingId} processed from Kafka (request: ${request_id})`
+        `✅ Booking ${bookingId} created successfully (request: ${request_id}, seats: ${seat_ids.length})`
       );
 
       return {
@@ -157,29 +205,68 @@ async function startBookingConsumer(onMessage = null) {
     const consumer = await getConsumer();
 
     // Subscribe to booking requests topic
+    // fromBeginning: true to process all messages (including queued ones from load tests)
+    // This ensures messages sent before consumer starts are also processed
     await consumer.subscribe({
       topic: config.KAFKA_TOPIC_BOOKINGS,
-      fromBeginning: false, // Only process new messages
+      fromBeginning: true, // Process ALL messages (including queued ones)
     });
 
     console.log(`✅ Subscribed to Kafka topic: ${config.KAFKA_TOPIC_BOOKINGS}`);
 
-    // Process messages
+    // Process messages - simplified for now to verify it works
+    console.log("🔄 Starting message consumption...");
+    console.log(
+      "⚠️  IMPORTANT: Check server logs to see if messages are being processed!"
+    );
+
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
+        const startTime = Date.now();
+        console.log(
+          `\n🔔 CONSUMER ACTIVITY: Received message at offset ${message.offset} (partition: ${partition})`
+        );
+
         try {
-          const messageKey = message.key?.toString();
-          const messageValue = message.value?.toString();
+          if (!message.value) {
+            console.warn(
+              `⚠️ Empty message at partition ${partition}, offset ${message.offset}`
+            );
+            return;
+          }
+
+          const messageKey = message.key?.toString() || "no-key";
+          const messageValue = message.value.toString();
 
           console.log(
-            `📨 Received booking request from Kafka: ${messageKey} (partition: ${partition}, offset: ${message.offset})`
+            `📨 Processing message: ${messageKey} (partition: ${partition}, offset: ${message.offset})`
+          );
+          console.log(
+            `   Message value preview: ${messageValue.substring(0, 100)}...`
           );
 
           // Parse booking request
-          const bookingRequest = JSON.parse(messageValue);
+          let bookingRequest;
+          try {
+            bookingRequest = JSON.parse(messageValue);
+          } catch (parseError) {
+            console.error(
+              `❌ Failed to parse message at offset ${message.offset}:`,
+              parseError
+            );
+            console.error("Message value:", messageValue);
+            return;
+          }
 
           // Process booking
+          console.log(`🔄 Processing booking request:`, {
+            request_id: bookingRequest.request_id,
+            seat_ids: bookingRequest.seat_ids,
+            seat_count: bookingRequest.seat_ids?.length,
+          });
+
           const result = await processBookingRequest(bookingRequest);
+          const processingTime = Date.now() - startTime;
 
           // Call optional callback
           if (onMessage) {
@@ -192,16 +279,26 @@ async function startBookingConsumer(onMessage = null) {
 
           if (result.success) {
             console.log(
-              `✅ Successfully processed booking: ${result.booking_id} (request: ${result.request_id})`
+              `✅ Booking ${result.booking_id} processed in ${processingTime}ms (partition: ${partition}, offset: ${message.offset})`
             );
+            console.log(`   Seats booked: ${result.seat_ids?.join(", ")}`);
           } else {
             console.warn(
-              `⚠️ Failed to process booking request: ${result.request_id} - ${result.error}`
+              `⚠️ Failed booking ${result.request_id}: ${result.error} (${processingTime}ms)`
             );
+            if (result.unavailable_seats) {
+              console.warn(
+                `   Unavailable seats: ${result.unavailable_seats.join(", ")}`
+              );
+            }
           }
         } catch (error) {
-          console.error("❌ Error processing Kafka message:", error);
-          // Note: In production, you might want to send failed messages to a DLQ (Dead Letter Queue)
+          const processingTime = Date.now() - startTime;
+          console.error(
+            `❌ Error processing message (partition: ${partition}, offset: ${message.offset}, time: ${processingTime}ms):`,
+            error
+          );
+          console.error("Error stack:", error.stack);
         }
       },
     });

@@ -1,9 +1,12 @@
 /**
  * Seed Redis with dummy seats for load testing
+ * Also clears Kafka topic to remove old booking requests
  * Run: node backend/scripts/seedRedis.js
  */
 
 const redis = require("../utils/redis");
+const { kafka } = require("../utils/kafka");
+const config = require("../utils/config");
 
 async function seedRedis() {
   try {
@@ -22,22 +25,77 @@ async function seedRedis() {
 
     console.log("✅ Redis connected");
 
-    // Generate dummy seats (e.g., seat1, seat2, ..., seat1000)
-    const totalSeats = 1000;
+    // Clear Kafka topic to remove old booking requests (prevents blocking new messages)
+    console.log("🧹 Clearing Kafka topic...");
+    try {
+      const admin = kafka.admin();
+      await admin.connect();
+
+      const topicName = config.KAFKA_TOPIC_BOOKINGS;
+      const existingTopics = await admin.listTopics();
+
+      if (existingTopics.includes(topicName)) {
+        await admin.deleteTopics({
+          topics: [topicName],
+          timeout: 5000,
+        });
+        console.log(`✅ Deleted Kafka topic: ${topicName}`);
+        console.log(
+          "   (Topic will be auto-created when first message arrives)"
+        );
+      } else {
+        console.log(
+          `ℹ️  Kafka topic ${topicName} doesn't exist (nothing to delete)`
+        );
+      }
+
+      await admin.disconnect();
+    } catch (kafkaError) {
+      console.warn(
+        "⚠️  Could not delete Kafka topic (Kafka might not be running):",
+        kafkaError.message
+      );
+      console.log("   Continuing with Redis seeding...");
+    }
+
+    // Generate dummy seats (e.g., seat1, seat2, ..., seat150000)
+    // 150,000 seats ensures full booking flow testing (not just conflict checks)
+    const totalSeats = 150000;
     const seatIds = [];
     for (let i = 1; i <= totalSeats; i++) {
       seatIds.push(`seat${i}`);
     }
 
+    console.log(`📦 Generated ${seatIds.length} seat IDs`);
+
     // Clear existing data (optional - comment out if you want to keep existing)
+    console.log("🧹 Clearing existing data...");
     await redis.del("available_seats");
     await redis.del("booked_seats");
     await redis.del("booking:pending");
     await redis.del("booking:confirmed");
 
-    // Add all seats to available_seats SET
+    // Add all seats to available_seats SET using chunks (faster for large datasets)
     if (seatIds.length > 0) {
-      await redis.sAdd("available_seats", seatIds);
+      console.log(
+        `📥 Adding ${seatIds.length} seats to available_seats (using chunks)...`
+      );
+      const chunkSize = 1000; // Add 1000 seats at a time
+      let added = 0;
+      const totalSeatsCount = seatIds.length;
+
+      for (let i = 0; i < seatIds.length; i += chunkSize) {
+        const chunk = seatIds.slice(i, i + chunkSize);
+        await redis.sAdd("available_seats", chunk);
+        added += chunk.length;
+        // Show progress every 10,000 seats
+        if (added % 10000 === 0 || added === totalSeatsCount) {
+          const percent = ((added / totalSeatsCount) * 100).toFixed(1);
+          console.log(
+            `   Progress: ${added}/${totalSeatsCount} seats added (${percent}%)`
+          );
+        }
+      }
       console.log(`✅ Added ${seatIds.length} seats to available_seats`);
     }
 
@@ -50,7 +108,11 @@ async function seedRedis() {
 
     console.log("\n🎉 Redis seeded successfully!");
     console.log(`   - ${availableCount} seats available for booking`);
-    console.log("   - Ready for load testing\n");
+    console.log("   - Kafka topic cleared (old messages removed)");
+    console.log("   - Ready for load testing");
+    console.log(
+      "\n⚠️  Note: Restart your server to reconnect consumer to the new topic\n"
+    );
 
     process.exit(0);
   } catch (error) {
@@ -60,4 +122,3 @@ async function seedRedis() {
 }
 
 seedRedis();
-

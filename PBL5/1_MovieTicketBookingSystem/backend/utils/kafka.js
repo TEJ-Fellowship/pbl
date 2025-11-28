@@ -44,7 +44,16 @@ async function getProducer() {
  */
 async function getConsumer(groupId = config.KAFKA_GROUP_ID) {
   if (!consumer) {
-    consumer = kafka.consumer({ groupId });
+    consumer = kafka.consumer({
+      groupId,
+      // Performance optimizations
+      sessionTimeout: 30000, // 30 seconds
+      heartbeatInterval: 3000, // 3 seconds
+      maxInFlightRequests: 1, // Process one batch at a time per partition
+      minBytes: 1, // Minimum bytes to fetch (lower = faster response)
+      maxBytes: 10485760, // 10MB max batch size
+      maxWaitTimeInMs: 5000, // Wait max 5s for batch
+    });
     await consumer.connect();
     console.log(`✅ Kafka consumer connected (group: ${groupId})`);
   }

@@ -236,3 +236,7 @@ Content-Type: application/json
 ### Expected: 202 Accepted (Kafka mode) or 201 Created (Direct mode)
 ### Check server console for: "📦 Pipeline: Executed 4 commands in batch"
 ### Check server console for: "⚡ Pipeline executed 4 commands in Xms"
+
+   curl -X POST http://localhost:3001/api/bookings \
+     -H "Content-Type: application/json" \
+     -d '{"seat_ids":["seat1","seat2"]}'
