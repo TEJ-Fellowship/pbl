@@ -5,6 +5,7 @@ import { handleSocket } from "./infrastructure/websocket/handlers/socketHandler.
 import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
+import redis from './config/redis.js';
 
 // Initialize database connection
 const startServer = async () => {
@@ -18,6 +19,9 @@ const startServer = async () => {
       cors: { origin: "*", methods: ["GET", "POST"] },
     });
 
+    redis.on('connect', () => {
+      console.log('Connected to Redis');
+    });
     handleSocket(io);
     httpServer.listen(3000, () => console.log("Node server running...."));
 
