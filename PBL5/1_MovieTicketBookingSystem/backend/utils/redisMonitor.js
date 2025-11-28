@@ -28,8 +28,16 @@ async function getMemoryInfo() {
     for (const line of lines) {
       if (line.includes(":")) {
         const [key, value] = line.split(":");
+        // Parse used_memory fields
         if (key.startsWith("used_memory")) {
-          memoryStats[key] = parseInt(value) || 0;
+          memoryStats[key] = key.includes("human")
+            ? value
+            : parseInt(value) || 0;
+        }
+        // Parse maxmemory fields
+        if (key === "maxmemory" || key === "maxmemory_human") {
+          memoryStats[key] =
+            key === "maxmemory_human" ? value : parseInt(value) || 0;
         }
       }
     }
