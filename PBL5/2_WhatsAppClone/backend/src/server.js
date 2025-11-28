@@ -10,13 +10,12 @@ const startServer = async () => {
   try {
     const app = express();
     app.use(express.json());
-
+    
     const io = new Server(httpServer, {
       cors: { origin: "*", methods: ["GET", "POST"] },
     });
-
+    
     const httpServer = createServer(app);
-
     handleSocket(io);
     httpServer.listen(3000, () => console.log("Node server running...."));
 
