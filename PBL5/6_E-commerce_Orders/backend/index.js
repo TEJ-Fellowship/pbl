@@ -99,14 +99,8 @@ const start = async () => {
     await initDatabase();
 
     // Verify Redis connection (with graceful fallback)
-    // Always test with actual ping - don't rely on isOpen state which can be stale
+    // ioredis handles connection automatically, just verify with ping
     try {
-      // Ensure Redis client is connected
-      if (!redisClient.isOpen) {
-        console.log("🔄 Attempting to connect to Redis...");
-        await redisClient.connect();
-      }
-      
       // Set a timeout for ping to detect if Redis is actually responding
       const pingPromise = redisClient.ping();
       const timeoutPromise = new Promise((_, reject) => 
@@ -115,25 +109,15 @@ const start = async () => {
       
       await Promise.race([pingPromise, timeoutPromise]);
       // If ping succeeds, connection is actually working
-      console.log("✅ Redis connection verified (Docker Redis)");
+      console.log("✅ Redis connection verified (ioredis with connection pooling)");
       console.log("✅ Redis is ready for caching operations");
     } catch (error) {
       // Ping failed - Redis is not actually connected (server stopped or unreachable)
-      // Update connection state immediately
-      const { redisClient: rc } = require('./utils/redis');
-      // Force disconnect to clear stale connection
-      try {
-        if (rc.isOpen) {
-          await rc.quit().catch(() => {}); // Ignore errors during quit
-        }
-      } catch (quitError) {
-        // Ignore quit errors
-      }
-      
       console.warn("⚠️  Redis ping failed - Redis is not connected.");
       console.warn(`   Error: ${error.message}`);
       console.warn("💡 To enable caching, start Docker Redis with: docker compose up -d");
       console.warn("💡 App will continue without Redis caching. Some features may be slower.");
+      console.warn("💡 Cart operations will use in-memory fallback.");
     }
 
     // Replication check disabled - not needed for current setup

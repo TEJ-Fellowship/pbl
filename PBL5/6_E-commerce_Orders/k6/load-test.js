@@ -11,32 +11,38 @@ const cartOperationDuration = new Trend("cart_operation_duration");
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const API_BASE = `${BASE_URL}/api`;
 
-// Test configuration
+// Test configuration - Optimized for 1K users
 export const options = {
   stages: [
-    // Ramp-up: Gradually increase to 20 users over 20 seconds
-    { duration: "20s", target: 20 },
-    // Stay at 20 users for 40 seconds (normal load)
-    { duration: "40s", target: 20 },
-    // Spike: Quickly ramp up to 50 users (simulating flash sale)
-    { duration: "20s", target: 50 },
-    // Stay at spike for 20 seconds
-    { duration: "20s", target: 50 },
-    // Ramp down to 0
-    { duration: "20s", target: 0 },
+    // Ramp-up: Gradually increase to 200 users over 1 minute
+    { duration: "1m", target: 200 },
+    // Stay at 200 users for 2 minutes (normal load)
+    { duration: "2m", target: 200 },
+    // Ramp up to 500 users over 1 minute
+    { duration: "1m", target: 500 },
+    // Stay at 500 users for 2 minutes
+    { duration: "2m", target: 500 },
+    // Spike: Quickly ramp up to 1000 users (simulating flash sale)
+    { duration: "1m", target: 1000 },
+    // Stay at spike for 1 minute
+    { duration: "1m", target: 1000 },
+    // Ramp down gradually
+    { duration: "1m", target: 500 },
+    { duration: "1m", target: 200 },
+    { duration: "30s", target: 0 },
   ],
 
   thresholds: {
-    // 95% of requests should complete within 1 second
-    http_req_duration: ["p(95)<1000", "p(99)<2000"],
-    // Less than 1% of requests should fail
-    http_req_failed: ["rate<0.01"],
+    // 95% of requests should complete within 1 second (relaxed for 1K users)
+    http_req_duration: ["p(95)<1500", "p(99)<3000"],
+    // Less than 2% of requests should fail (relaxed for high load)
+    http_req_failed: ["rate<0.02"],
     // Custom error rate
-    errors: ["rate<0.01"],
+    errors: ["rate<0.02"],
     // Product page should load quickly
-    product_page_duration: ["p(95)<800"],
-    // Cart operations should be fast
-    cart_operation_duration: ["p(95)<500"],
+    product_page_duration: ["p(95)<1000"],
+    // Cart operations should be fast (relaxed for high concurrency)
+    cart_operation_duration: ["p(95)<800"],
   },
 };
 

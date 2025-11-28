@@ -1,15 +1,15 @@
 const Sequelize = require("sequelize");
 const { DATABASE_URL1, DATABASE_URL2, DATABASE_URL3 } = require("./config");
 
-// Database connection options
+// Database connection options - Optimized for 1K users
 const dbOptions = {
   dialect: "postgres",
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 20,
-    min: 5,
-    acquire: 30000,
-    idle: 10000
+    max: 100,        // Increased from 20 to handle 1K concurrent users
+    min: 10,          // Increased from 5 for better connection availability
+    acquire: 30000,   // 30 second timeout
+    idle: 10000       // 10 second idle timeout
   },
   dialectOptions: {
     ssl: {
@@ -22,15 +22,25 @@ const dbOptions = {
 // PRIMARY database (Write source of truth)
 const sequelizePrimary = new Sequelize(DATABASE_URL1, dbOptions);
 
-// REPLICA 1 (Read-only)
+// REPLICA 1 (Read-only) - Optimized pool for reads
 const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
   ...dbOptions,
-  replication: false, // Single connection for read
+  pool: {
+    ...dbOptions.pool,
+    max: 50,  // Read replicas can have smaller pools
+    min: 5
+  },
+  replication: false,
 });
 
-// REPLICA 2 (Read-only)
+// REPLICA 2 (Read-only) - Optimized pool for reads
 const sequelizeReplica2 = new Sequelize(DATABASE_URL3, {
   ...dbOptions,
+  pool: {
+    ...dbOptions.pool,
+    max: 50,  // Read replicas can have smaller pools
+    min: 5
+  },
   replication: false,
 });
 

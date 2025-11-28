@@ -1,4 +1,4 @@
-const { getCart, addToCart, updateCartItem, removeFromCart, clearCart } = require('../utils/redis');
+const { getCart, addToCart, updateCartItem, removeFromCart, clearCart, getCachedInventory, syncInventoryToCache } = require('../utils/redis');
 const { Product, Inventory } = require('../models');
 const { getPrimary } = require('../utils/db');
 
@@ -99,16 +99,19 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Get product from primary (might need to check inventory)
-    const product = await Product.findByPk(productId, {
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
-    });
+    // Parallelize: Get product and check cached inventory simultaneously
+    const [product, cachedInventory] = await Promise.all([
+      Product.findByPk(productId, {
+        include: [
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ]
+      }),
+      getCachedInventory(productId) // Try Redis cache first
+    ]);
 
     if (!product) {
       return res.status(404).json({
@@ -117,8 +120,22 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Check availability
-    const available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+    // Check availability - use cached inventory if available, otherwise use DB
+    let available;
+    if (cachedInventory !== null) {
+      // Use cached inventory (faster)
+      available = cachedInventory;
+    } else {
+      // Fallback to DB inventory
+      available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+      // Cache it for next time
+      if (product.inventory) {
+        syncInventoryToCache(productId, available).catch(() => {
+          // Ignore cache sync errors
+        });
+      }
+    }
+
     if (available < qty) {
       return res.status(400).json({
         success: false,
@@ -126,7 +143,7 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Add to cart
+    // Add to cart (now has fallback, so should always succeed)
     const success = await addToCart(sessionId, productId, qty, {
       title: product.title,
       price: product.price,
@@ -134,11 +151,12 @@ const addItemToCart = async (req, res) => {
       image_url: product.image_url
     });
 
+    // With fallback mechanism, this should rarely fail
     if (!success) {
       return res.status(500).json({
         success: false,
-        message: 'Failed to add item to cart. Redis may not be available. Please try again.',
-        error: 'REDIS_UNAVAILABLE'
+        message: 'Failed to add item to cart. Please try again.',
+        error: 'CART_ERROR'
       });
     }
 
@@ -191,16 +209,19 @@ const updateCartItemQuantity = async (req, res) => {
       });
     }
 
-    // Check stock availability
-    const product = await Product.findByPk(productId, {
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
-    });
+    // Parallelize: Get product and check cached inventory
+    const [product, cachedInventory] = await Promise.all([
+      Product.findByPk(productId, {
+        include: [
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ]
+      }),
+      getCachedInventory(productId)
+    ]);
 
     if (!product) {
       return res.status(404).json({
@@ -209,7 +230,20 @@ const updateCartItemQuantity = async (req, res) => {
       });
     }
 
-    const available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+    // Check availability - use cached inventory if available
+    let available;
+    if (cachedInventory !== null) {
+      available = cachedInventory;
+    } else {
+      available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+      // Cache it for next time
+      if (product.inventory) {
+        syncInventoryToCache(productId, available).catch(() => {
+          // Ignore cache sync errors
+        });
+      }
+    }
+
     if (available < qty) {
       return res.status(400).json({
         success: false,
