@@ -5,7 +5,7 @@
  */
 
 const redis = require("../utils/redis");
-const { kafka } = require("../utils/kafka");
+const { recreateTopic } = require("../utils/kafka");
 const config = require("../utils/config");
 
 async function seedRedis() {
@@ -25,34 +25,16 @@ async function seedRedis() {
 
     console.log("✅ Redis connected");
 
-    // Clear Kafka topic to remove old booking requests (prevents blocking new messages)
-    console.log("🧹 Clearing Kafka topic...");
+    // Recreate Kafka topic with correct partition count (removes old messages)
+    console.log("🧹 Recreating Kafka topic with new partition count...");
     try {
-      const admin = kafka.admin();
-      await admin.connect();
-
-      const topicName = config.KAFKA_TOPIC_BOOKINGS;
-      const existingTopics = await admin.listTopics();
-
-      if (existingTopics.includes(topicName)) {
-        await admin.deleteTopics({
-          topics: [topicName],
-          timeout: 5000,
-        });
-        console.log(`✅ Deleted Kafka topic: ${topicName}`);
-        console.log(
-          "   (Topic will be auto-created when first message arrives)"
-        );
-      } else {
-        console.log(
-          `ℹ️  Kafka topic ${topicName} doesn't exist (nothing to delete)`
-        );
-      }
-
-      await admin.disconnect();
+      await recreateTopic(config.KAFKA_TOPIC_BOOKINGS, config.KAFKA_PARTITIONS);
+      console.log(
+        `✅ Kafka topic recreated with ${config.KAFKA_PARTITIONS} partitions`
+      );
     } catch (kafkaError) {
       console.warn(
-        "⚠️  Could not delete Kafka topic (Kafka might not be running):",
+        "⚠️  Could not recreate Kafka topic (Kafka might not be running):",
         kafkaError.message
       );
       console.log("   Continuing with Redis seeding...");

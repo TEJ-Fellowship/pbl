@@ -3,7 +3,7 @@
  * Processes booking requests from Kafka queue
  */
 
-const { getConsumer, ensureTopics } = require("../utils/kafka");
+const { getConsumer, ensureTopics, recreateTopic } = require("../utils/kafka");
 const config = require("../utils/config");
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
@@ -193,57 +193,44 @@ async function processBookingRequest(bookingRequest) {
 }
 
 /**
- * Start Kafka consumer to process booking requests
+ * Start a single Kafka consumer instance
+ * @param {number} instanceId - Unique instance ID
  * @param {Function} onMessage - Optional callback for each processed message
  */
-async function startBookingConsumer(onMessage = null) {
+async function startConsumerInstance(instanceId, onMessage = null) {
   try {
-    // Ensure topic exists
-    await ensureTopics([config.KAFKA_TOPIC_BOOKINGS]);
-
-    // Get consumer
-    const consumer = await getConsumer();
+    // Get consumer instance
+    const consumer = await getConsumer(config.KAFKA_GROUP_ID, instanceId);
 
     // Subscribe to booking requests topic
     // fromBeginning: true to process all messages (including queued ones from load tests)
-    // This ensures messages sent before consumer starts are also processed
     await consumer.subscribe({
       topic: config.KAFKA_TOPIC_BOOKINGS,
       fromBeginning: true, // Process ALL messages (including queued ones)
     });
 
-    console.log(`✅ Subscribed to Kafka topic: ${config.KAFKA_TOPIC_BOOKINGS}`);
-
-    // Process messages - simplified for now to verify it works
-    console.log("🔄 Starting message consumption...");
     console.log(
-      "⚠️  IMPORTANT: Check server logs to see if messages are being processed!"
+      `✅ Consumer ${instanceId} subscribed to Kafka topic: ${config.KAFKA_TOPIC_BOOKINGS}`
     );
 
+    // Process messages
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         const startTime = Date.now();
-        console.log(
-          `\n🔔 CONSUMER ACTIVITY: Received message at offset ${message.offset} (partition: ${partition})`
-        );
+
+        // Reduced logging for multiple consumers (only log every 100th message to avoid spam)
+        if (instanceId === 0 && message.offset % 100 === 0) {
+          console.log(
+            `🔔 Consumer ${instanceId}: Processing offset ${message.offset} (partition: ${partition})`
+          );
+        }
 
         try {
           if (!message.value) {
-            console.warn(
-              `⚠️ Empty message at partition ${partition}, offset ${message.offset}`
-            );
             return;
           }
 
-          const messageKey = message.key?.toString() || "no-key";
           const messageValue = message.value.toString();
-
-          console.log(
-            `📨 Processing message: ${messageKey} (partition: ${partition}, offset: ${message.offset})`
-          );
-          console.log(
-            `   Message value preview: ${messageValue.substring(0, 100)}...`
-          );
 
           // Parse booking request
           let bookingRequest;
@@ -251,20 +238,13 @@ async function startBookingConsumer(onMessage = null) {
             bookingRequest = JSON.parse(messageValue);
           } catch (parseError) {
             console.error(
-              `❌ Failed to parse message at offset ${message.offset}:`,
+              `❌ Consumer ${instanceId}: Failed to parse message at offset ${message.offset}:`,
               parseError
             );
-            console.error("Message value:", messageValue);
             return;
           }
 
           // Process booking
-          console.log(`🔄 Processing booking request:`, {
-            request_id: bookingRequest.request_id,
-            seat_ids: bookingRequest.seat_ids,
-            seat_count: bookingRequest.seat_ids?.length,
-          });
-
           const result = await processBookingRequest(bookingRequest);
           const processingTime = Date.now() - startTime;
 
@@ -274,38 +254,74 @@ async function startBookingConsumer(onMessage = null) {
               topic,
               partition,
               offset: message.offset,
+              instanceId,
             });
           }
 
-          if (result.success) {
+          // Log only successful bookings or errors (reduce noise)
+          if (result.success && instanceId === 0 && message.offset % 50 === 0) {
             console.log(
-              `✅ Booking ${result.booking_id} processed in ${processingTime}ms (partition: ${partition}, offset: ${message.offset})`
+              `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed in ${processingTime}ms (partition: ${partition})`
             );
-            console.log(`   Seats booked: ${result.seat_ids?.join(", ")}`);
-          } else {
+          } else if (
+            !result.success &&
+            result.error !== "Some seats are not available"
+          ) {
+            // Log non-availability errors (but skip "seats not available" as it's expected)
             console.warn(
-              `⚠️ Failed booking ${result.request_id}: ${result.error} (${processingTime}ms)`
+              `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error} (${processingTime}ms)`
             );
-            if (result.unavailable_seats) {
-              console.warn(
-                `   Unavailable seats: ${result.unavailable_seats.join(", ")}`
-              );
-            }
           }
         } catch (error) {
           const processingTime = Date.now() - startTime;
           console.error(
-            `❌ Error processing message (partition: ${partition}, offset: ${message.offset}, time: ${processingTime}ms):`,
-            error
+            `❌ Consumer ${instanceId}: Error processing message (partition: ${partition}, offset: ${message.offset}, time: ${processingTime}ms):`,
+            error.message
           );
-          console.error("Error stack:", error.stack);
         }
       },
     });
 
-    console.log("✅ Kafka booking consumer started and running");
+    console.log(`✅ Consumer ${instanceId} started and running`);
   } catch (error) {
-    console.error("❌ Error starting Kafka consumer:", error);
+    console.error(`❌ Error starting consumer ${instanceId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Start multiple Kafka consumer instances for parallel processing
+ * @param {Function} onMessage - Optional callback for each processed message
+ */
+async function startBookingConsumer(onMessage = null) {
+  try {
+    const numConsumers = config.KAFKA_CONSUMER_INSTANCES;
+    const numPartitions = config.KAFKA_PARTITIONS;
+
+    console.log(
+      `🚀 Starting ${numConsumers} consumer instances for ${numPartitions} partitions...`
+    );
+
+    // Ensure topic exists with correct partition count
+    await ensureTopics([config.KAFKA_TOPIC_BOOKINGS], numPartitions);
+
+    // Start all consumer instances in parallel
+    const consumerPromises = [];
+    for (let i = 0; i < numConsumers; i++) {
+      consumerPromises.push(startConsumerInstance(i, onMessage));
+    }
+
+    await Promise.all(consumerPromises);
+
+    console.log(`✅ All ${numConsumers} Kafka consumers started and running`);
+    console.log(
+      `📊 Expected parallelism: ${Math.min(
+        numConsumers,
+        numPartitions
+      )} partitions being processed simultaneously`
+    );
+  } catch (error) {
+    console.error("❌ Error starting Kafka consumers:", error);
     throw error;
   }
 }

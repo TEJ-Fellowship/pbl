@@ -16,4 +16,11 @@ module.exports = {
   KAFKA_TOPIC_BOOKINGS: process.env.KAFKA_TOPIC_BOOKINGS || "booking-requests",
   // Kafka Mode: 'direct' (process immediately) or 'kafka' (queue via Kafka)
   KAFKA_MODE: process.env.KAFKA_MODE || "direct",
+  // Kafka scaling configuration
+  KAFKA_PARTITIONS: process.env.KAFKA_PARTITIONS
+    ? parseInt(process.env.KAFKA_PARTITIONS)
+    : 20,
+  KAFKA_CONSUMER_INSTANCES: process.env.KAFKA_CONSUMER_INSTANCES
+    ? parseInt(process.env.KAFKA_CONSUMER_INSTANCES)
+    : 20,
 };

@@ -26,34 +26,34 @@ const createBooking = async (req, res, next) => {
 
     // If Kafka mode is enabled, send to queue and return immediately
     if (config.KAFKA_MODE === "kafka") {
-      try {
-        const requestId = crypto.randomUUID();
-        const result = await sendBookingRequest({
-          seat_ids,
-          request_id: requestId,
-          metadata: {
-            user_agent: req.get("user-agent"),
-            ip: req.ip,
-          },
-        });
+      const requestId = crypto.randomUUID();
 
-        // Return 202 Accepted (request queued, processing asynchronously)
-        return res.status(202).json({
-          message: "Booking request queued for processing",
-          request_id: requestId,
-          kafka: {
-            partition: result.partition,
-            offset: result.offset,
-          },
-          note: "Check booking status using GET /api/bookings/:id after processing",
+      // Fire-and-forget: Don't block HTTP response waiting for Kafka
+      // This is how production systems handle async message queues
+      sendBookingRequest({
+        seat_ids,
+        request_id: requestId,
+        metadata: {
+          user_agent: req.get("user-agent"),
+          ip: req.ip,
+        },
+      }).catch((kafkaError) => {
+        // Log error but don't block response
+        // In production, you'd also send this to monitoring/alerting
+        console.error(`[Kafka Error] Failed to queue booking ${requestId}:`, {
+          error: kafkaError.message,
+          seat_ids,
+          timestamp: new Date().toISOString(),
         });
-      } catch (kafkaError) {
-        console.error(
-          "Kafka error, falling back to direct processing:",
-          kafkaError
-        );
-        // Fall through to direct processing if Kafka fails
-      }
+      });
+
+      // Return immediately - Kafka processes in background
+      // This prevents request timeouts under heavy load
+      return res.status(202).json({
+        message: "Booking request queued for processing",
+        request_id: requestId,
+        note: "Check booking status using GET /api/bookings/:id after processing",
+      });
     }
 
     // Direct processing mode (original logic)
