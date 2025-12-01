@@ -87,73 +87,36 @@ function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingUsers]);
 
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!inputMessage.trim() || !receiver) return;
 
     const messageContent = inputMessage.trim();
     setInputMessage("");
     setIsTyping(false);
 
-    // Stop typing indicator
-    if (socket && conversation?.conversationId) {
+    // stop typing
+    if (socket) {
       socket.emit("typing:stop", conversation.conversationId);
     }
 
-    if (!conversation.conversationId) {
-      try {
-        // 1️⃣ Create conversation + message via API
-        const response = await fetch(`${API_BASE}/conversation/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            senderId: currentUser.user_id,
-            receiverId: receiver.user_id,
-            content: messageContent,
-          }),
-        });
+    // 🚀 Emit message directly to socket
+    socket.emit("message:send", {
+      conversationId: conversation.conversationId,
+      senderId: currentUser.user_id,
+      receiverId: receiver.user_id,
+      content: messageContent,
+    });
 
-        if (response.ok) {
-          const data = await response.json();
-          const newMessage = data.data;
+    // ⚡ Optimistic UI
+    // const tempMessage = {
+    //   messageId: `temp-${Date.now()}`,
+    //   conversationId: conversation.conversationId,
+    //   senderId: currentUser.user_id,
+    //   content: messageContent,
+    //   createdAt: new Date(),
+    // };
 
-          // 2️⃣ Update conversation state
-          onMessageSent(newMessage);
-
-          // 3️⃣ Join the socket room
-          if (socket && newMessage.conversationId) {
-            socket.emit("conversation:join", newMessage.conversationId);
-
-            // 4️⃣ Emit the message via socket immediately
-            socket.emit("message:send", {
-              conversationId: newMessage.conversationId,
-              senderId: currentUser.user_id,
-              content: messageContent,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
-    } else {
-      // Existing conversation: send via socket
-      if (socket) {
-        socket.emit("message:send", {
-          conversationId: conversation.conversationId,
-          senderId: currentUser.user_id,
-          content: messageContent,
-        });
-
-        // Optimistic UI
-        const tempMessage = {
-          messageId: `temp-${Date.now()}`,
-          conversationId: conversation.conversationId,
-          senderId: currentUser.user_id,
-          content: messageContent,
-          createdAt: new Date(),
-        };
-        onMessagesUpdate((prev) => [...prev, tempMessage]);
-      }
-    }
+    // onMessagesUpdate((prev) => [...prev, tempMessage]);
   };
 
   const handleInputChange = (e) => {
