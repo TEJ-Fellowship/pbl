@@ -1,4 +1,4 @@
-const { User, Post, Like, Comment, Follow } = require("../models/index");
+const { User, Post, Follow } = require("../models/index");
 const {
   getCache,
   setCache,
@@ -41,8 +41,8 @@ const handleGetFeed = async (req, res) => {
         return res.status(200).json({
           posts: [],
           hasMore: false,
-          isRefresh: true,        // KEEP THIS
-          newPostsCount: 0,       // KEEP THIS
+          isRefresh: true, // KEEP THIS
+          newPostsCount: 0, // KEEP THIS
         });
       }
 
@@ -62,6 +62,7 @@ const handleGetFeed = async (req, res) => {
         whereClause.created_at[Op.gte] = oneDayAgo;
       }
 
+      console.time('⏱️ Database Query Time (Refresh)')
       const newPosts = await Post.findAll({
         where: whereClause,
         include: [
@@ -74,29 +75,30 @@ const handleGetFeed = async (req, res) => {
         order: [["created_at", "DESC"]],
         limit: 100,
       });
+      console.timeEnd('⏱️ Database Query Time (Refresh)')
+      console.log(`📊 Found ${newPosts.length} new posts`);
 
-      const newPostsWithCounts = await Promise.all(
-        newPosts.map(async (post) => {
-          const likesCount = await Like.count({ where: { post_id: post.id } });
-          const commentsCount = await Comment.count({ where: { post_id: post.id } });
-          return {
-            ...post.toJSON(),
-            likes_count: likesCount,
-            comments_count: commentsCount,
-          };
-        })
-      );
+      // Use likes_count and comments_count directly from Post model (already maintained)
+      // This eliminates N+1 queries - no need to count likes/comments separately
+      const newPostsWithCounts = newPosts.map((post) => ({
+        ...post.toJSON(),
+        likes_count: post.likes_count || 0,
+        comments_count: post.comments_count || 0,
+      }));
 
       if (newPostsWithCounts.length > 0) {
+        console.time('⏱️ Cache Write Time (Refresh)')
         await appendMultipleToFeedCache(feedKey, newPostsWithCounts, 100, 300);
+        console.timeEnd('⏱️ Cache Write Time (Refresh)')
       }
 
+      console.time('⏱️ Last Fetch Time Set (Last Fetch)')
       await setLastFetchTime(user_id, 300);
-
+      console.timeEnd('⏱️ Last Fetch Time Set (Last Fetch)')
       return res.status(200).json({
         posts: newPostsWithCounts,
         hasMore: false,
-        isRefresh: true,              // KEEP THIS
+        isRefresh: true, // KEEP THIS
         newPostsCount: newPostsWithCounts.length, // KEEP THIS
         fromCache: false,
       });
@@ -107,17 +109,22 @@ const handleGetFeed = async (req, res) => {
     // ============================================
     // Check cache first (only if no cursor - first page)
     if (!cursor) {
+      console.time('⏱️ Cache Read Time')
       const cachedFeed = await getCache(feedKey);
+      console.timeEnd('⏳ Cache Read Time')
+      console.log(`📦 Cache result:`, cachedFeed ? 'HIT ✅' : 'MISS ❌')
+
       if (cachedFeed && cachedFeed.posts) {
         const limitedPosts = cachedFeed.posts.slice(0, limit);
-        const nextCursor = limitedPosts.length > 0 
-          ? limitedPosts[limitedPosts.length - 1].created_at 
-          : null;
-        
+        const nextCursor =
+          limitedPosts.length > 0
+            ? limitedPosts[limitedPosts.length - 1].created_at
+            : null;
+
         return res.status(200).json({
           posts: limitedPosts,
           hasMore: cachedFeed.posts.length > limit,
-          nextCursor: nextCursor,  // ADD THIS
+          nextCursor: nextCursor, // ADD THIS
           fromCache: true,
           isRefresh: false,
         });
@@ -133,11 +140,17 @@ const handleGetFeed = async (req, res) => {
     const followingIds = following.map((f) => f.following_id);
 
     if (followingIds.length === 0) {
-      await setCache(feedKey, { posts: [], lastUpdated: new Date().toISOString() }, 300);
+      console.time('⏱️ Cache Write Time (Empty Feed)')
+      await setCache(
+        feedKey,
+        { posts: [], lastUpdated: new Date().toISOString() },
+        300
+      );
+      console.timeEnd('⏱️ Cache Write Time (Empty Feed)')
       return res.status(200).json({
         posts: [],
         hasMore: false,
-        nextCursor: null,  // ADD THIS
+        nextCursor: null, // ADD THIS
         fromCache: false,
         isRefresh: false,
       });
@@ -159,6 +172,7 @@ const handleGetFeed = async (req, res) => {
       whereClause.created_at = { [Op.gte]: sevenDaysAgo };
     }
 
+    console.time('⏱️ Database Query Time (Normal Feed)')
     const posts = await Post.findAll({
       where: whereClause,
       include: [
@@ -171,42 +185,48 @@ const handleGetFeed = async (req, res) => {
       order: [["created_at", "DESC"]],
       limit: limit + 1, // Fetch one extra to check if there's more
     });
+    console.timeEnd('⏱️ Database Query Time (Normal Feed)')
+    console.log(`📊 Found ${posts.length} posts`);
 
-    const postsWithCounts = await Promise.all(
-      posts.map(async (post) => {
-        const likesCount = await Like.count({ where: { post_id: post.id } });
-        const commentsCount = await Comment.count({ where: { post_id: post.id } });
-        return {
-          ...post.toJSON(),
-          likes_count: likesCount,
-          comments_count: commentsCount,
-        };
-      })
-    );
+    // Use likes_count and comments_count directly from Post model (already maintained)
+    // This eliminates N+1 queries - no need to count likes/comments separately
+    const postsWithCounts = posts.map((post) => ({
+      ...post.toJSON(),
+      likes_count: post.likes_count || 0,
+      comments_count: post.comments_count || 0,
+    }));
 
     // Check if there are more posts
     const hasMore = postsWithCounts.length > limit;
-    const postsToReturn = hasMore ? postsWithCounts.slice(0, limit) : postsWithCounts;
+    const postsToReturn = hasMore
+      ? postsWithCounts.slice(0, limit)
+      : postsWithCounts;
 
     // Get next cursor (timestamp of last post)
-    const nextCursor = postsToReturn.length > 0 
-      ? postsToReturn[postsToReturn.length - 1].created_at 
-      : null;
+    const nextCursor =
+      postsToReturn.length > 0
+        ? postsToReturn[postsToReturn.length - 1].created_at
+        : null;
 
     // Cache only first page (no cursor)
     if (!cursor) {
+      console.time('⏱️ Cache Write Time')
       await setCache(
         feedKey,
         { posts: postsWithCounts, lastUpdated: new Date().toISOString() },
         300
       );
+      console.timeEnd('⏱️ Cache Write Time')
+
+      console.time('⏱️ Cache Write Time (Last Fetch)')
       await setLastFetchTime(user_id, 300);
+      console.timeEnd('⏱️ Cache Write Time (Last Fetch)')
     }
 
     return res.status(200).json({
       posts: postsToReturn,
       hasMore: hasMore,
-      nextCursor: nextCursor,  // ADD THIS
+      nextCursor: nextCursor, // ADD THIS
       fromCache: false,
       isRefresh: false,
     });
@@ -217,5 +237,5 @@ const handleGetFeed = async (req, res) => {
 };
 
 module.exports = {
-  handleGetFeed
+  handleGetFeed,
 };
