@@ -16,15 +16,33 @@ function ChatWindow({
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState(new Set());
+  const [receiverStatus, setReceiverStatus] = useState("offline");
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!socket) return;
 
+    const handleStatusUpdate = ({ userId, status }) => {
+      console.log(userId, status);
+      if (userId === receiver.user_id) {
+        setReceiverStatus(status);
+      }
+      console.log(receiverStatus);
+    };
+
+    socket.on("user:status", handleStatusUpdate);
+
+    const interval = setInterval(() => {
+      socket.emit("heartbeat");
+    }, 10000); // every 10 seconds
+
     // Join conversation room
-    if (conversation?.conversationId) {
-      socket.emit("conversation:join", conversation.conversationId);
+    if (conversation?.conversationId && receiver?.user_id) {
+      socket.emit("conversation:join", {
+        conversationId: conversation.conversationId,
+        receiver: { user_id: receiver.user_id },
+      });
     }
 
     socket.on("message:send", (message) => {
@@ -54,11 +72,14 @@ function ChatWindow({
       socket.off("message:send");
       socket.off("typing:start");
       socket.off("typing:stop");
+      socket.off("user:status", handleStatusUpdate);
+      clearInterval(interval);
     };
   }, [
     socket,
     conversation?.conversationId,
     currentUser.user_id,
+    receiver.user_id,
     onMessagesUpdate,
   ]);
 
@@ -184,7 +205,7 @@ function ChatWindow({
           <div className="chat-header-info">
             <div className="chat-header-name">{receiver.name}</div>
             <div className="chat-header-status">
-              {typingUsers.size > 0 ? "typing..." : "online"}
+              {typingUsers.size > 0 ? "typing..." : receiverStatus}
             </div>
           </div>
         </div>
