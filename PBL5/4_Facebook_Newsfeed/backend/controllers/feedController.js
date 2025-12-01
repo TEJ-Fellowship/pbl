@@ -111,7 +111,7 @@ const handleGetFeed = async (req, res) => {
     if (!cursor) {
       console.time('⏱️ Cache Read Time')
       const cachedFeed = await getCache(feedKey);
-      console.timeEnd('⏳ Cache Read Time')
+      console.timeEnd('⏱️ Cache Read Time')
       console.log(`📦 Cache result:`, cachedFeed ? 'HIT ✅' : 'MISS ❌')
 
       if (cachedFeed && cachedFeed.posts) {
