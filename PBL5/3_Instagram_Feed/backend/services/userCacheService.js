@@ -1,5 +1,10 @@
 import { redisClient } from "../config/db.js";
 import { User } from "../models/index.js";
+import {
+  getCountWithTTL,
+  incrementCountWithTTL,
+  decrementCountWithTTL,
+} from "./redisLuaScripts.js";
 
 // Redis key patterns
 const FOLLOWERS_COUNT_KEY = (userId) => `user:${userId}:followers_count`;
@@ -14,14 +19,14 @@ const COUNT_TTL = 60 * 60; // 1 hour in seconds
 export const getFollowersCount = async (userId) => {
   try {
     const redisKey = FOLLOWERS_COUNT_KEY(userId);
-    const cached = await redisClient.get(redisKey);
+    // Use LUA script for atomic GET + EXPIRE
+    const cached = await getCountWithTTL(redisKey, COUNT_TTL);
 
     if (cached !== null) {
-      // Cache hit - refresh TTL
+      // Cache hit - TTL already refreshed by LUA script
       console.log(
         `✅ [CACHE HIT] Followers count for user ${userId}: ${cached}`
       );
-      await redisClient.expire(redisKey, COUNT_TTL);
       return parseInt(cached, 10);
     }
 
@@ -69,14 +74,14 @@ export const getFollowersCount = async (userId) => {
 export const getFollowingCount = async (userId) => {
   try {
     const redisKey = FOLLOWING_COUNT_KEY(userId);
-    const cached = await redisClient.get(redisKey);
+    // Use LUA script for atomic GET + EXPIRE
+    const cached = await getCountWithTTL(redisKey, COUNT_TTL);
 
     if (cached !== null) {
-      // Cache hit - refresh TTL
+      // Cache hit - TTL already refreshed by LUA script
       console.log(
         `✅ [CACHE HIT] Following count for user ${userId}: ${cached}`
       );
-      await redisClient.expire(redisKey, COUNT_TTL);
       return parseInt(cached, 10);
     }
 
@@ -123,9 +128,8 @@ export const getFollowingCount = async (userId) => {
 export const incrementFollowersCount = async (userId) => {
   try {
     const redisKey = FOLLOWERS_COUNT_KEY(userId);
-    // Increment in Redis
-    await redisClient.incr(redisKey);
-    await redisClient.expire(redisKey, COUNT_TTL);
+    // Use LUA script for atomic INCR + EXPIRE
+    await incrementCountWithTTL(redisKey, COUNT_TTL);
   } catch (error) {
     console.error(
       `⚠️ Error incrementing followers count in Redis for user ${userId}:`,
@@ -141,12 +145,8 @@ export const incrementFollowersCount = async (userId) => {
 export const decrementFollowersCount = async (userId) => {
   try {
     const redisKey = FOLLOWERS_COUNT_KEY(userId);
-    // Decrement in Redis (don't go below 0)
-    const newValue = await redisClient.decr(redisKey);
-    if (newValue < 0) {
-      await redisClient.set(redisKey, "0");
-    }
-    await redisClient.expire(redisKey, COUNT_TTL);
+    // Use LUA script for atomic DECR + bounds check + EXPIRE
+    await decrementCountWithTTL(redisKey, COUNT_TTL);
   } catch (error) {
     console.error(
       `⚠️ Error decrementing followers count in Redis for user ${userId}:`,
@@ -162,9 +162,8 @@ export const decrementFollowersCount = async (userId) => {
 export const incrementFollowingCount = async (userId) => {
   try {
     const redisKey = FOLLOWING_COUNT_KEY(userId);
-    // Increment in Redis
-    await redisClient.incr(redisKey);
-    await redisClient.expire(redisKey, COUNT_TTL);
+    // Use LUA script for atomic INCR + EXPIRE
+    await incrementCountWithTTL(redisKey, COUNT_TTL);
   } catch (error) {
     console.error(
       `⚠️ Error incrementing following count in Redis for user ${userId}:`,
@@ -180,12 +179,8 @@ export const incrementFollowingCount = async (userId) => {
 export const decrementFollowingCount = async (userId) => {
   try {
     const redisKey = FOLLOWING_COUNT_KEY(userId);
-    // Decrement in Redis (don't go below 0)
-    const newValue = await redisClient.decr(redisKey);
-    if (newValue < 0) {
-      await redisClient.set(redisKey, "0");
-    }
-    await redisClient.expire(redisKey, COUNT_TTL);
+    // Use LUA script for atomic DECR + bounds check + EXPIRE
+    await decrementCountWithTTL(redisKey, COUNT_TTL);
   } catch (error) {
     console.error(
       `⚠️ Error decrementing following count in Redis for user ${userId}:`,

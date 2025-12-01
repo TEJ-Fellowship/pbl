@@ -2,6 +2,11 @@ import { cassandraClient } from "../config/db.js";
 import { KEYSPACE } from "../config/cassandra-schema.js";
 import { types } from "cassandra-driver";
 import { randomUUID } from "crypto";
+import {
+  getPostsFromCache,
+  batchCachePosts,
+  cachePost,
+} from "./redisLuaScripts.js";
 
 /**
  * Create a new post
@@ -49,7 +54,7 @@ export const createPost = async (postData) => {
     { prepare: true }
   );
 
-  return {
+  const post = {
     id: postIdString,
     user_id: userId,
     caption: caption || null,
@@ -58,14 +63,30 @@ export const createPost = async (postData) => {
     comments_count: 0,
     created_at: createdAt,
   };
+
+  // Cache the post immediately in Redis
+  await cachePost(postIdString, post).catch((err) =>
+    console.error("Failed to cache new post:", err)
+  );
+
+  return post;
 };
 
 /**
- * Get post by ID
+ * Get post by ID (with Redis cache)
  * @param {string} postId - UUID string
  * @returns {Object|null} Post object or null if not found
  */
 export const getPostById = async (postId) => {
+  // Try cache first
+  const cachedPosts = await getPostsFromCache([postId]);
+  if (cachedPosts[0]) {
+    console.log(`✅ [CACHE HIT] Post ${postId} from Redis cache`);
+    return cachedPosts[0];
+  }
+
+  // Cache miss - fetch from Cassandra
+  console.log(`❌ [CACHE MISS] Post ${postId} - fetching from Cassandra`);
   const postIdUuid = types.Uuid.fromString(postId);
   const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id = ?`;
   const result = await cassandraClient.execute(query, [postIdUuid], {
@@ -77,7 +98,7 @@ export const getPostById = async (postId) => {
   }
 
   const post = result.rows[0];
-  return {
+  const postData = {
     id: post.id.toString(),
     user_id: post.user_id,
     caption: post.caption,
@@ -86,6 +107,13 @@ export const getPostById = async (postId) => {
     comments_count: post.comments_count,
     created_at: post.created_at,
   };
+
+  // Cache the post for next time
+  await cachePost(postId, postData).catch((err) =>
+    console.error("Failed to cache post:", err)
+  );
+
+  return postData;
 };
 
 /**
@@ -116,7 +144,7 @@ export const getPostsByUser = async (userId) => {
 };
 
 /**
- * Get multiple posts by their IDs (batch fetch)
+ * Get multiple posts by their IDs (batch fetch with Redis cache)
  * @param {Array<string>} postIds - Array of UUID strings
  * @returns {Array} Array of posts
  */
@@ -125,18 +153,39 @@ export const getPostsByIds = async (postIds) => {
     return [];
   }
 
-  // Convert string UUIDs to UUID types
-  const uuidPostIds = postIds.map((id) => types.Uuid.fromString(id));
+  // Try Redis cache first
+  const cachedPosts = await getPostsFromCache(postIds);
+  const cachedMap = new Map();
+  const missingIds = [];
 
-  // Use IN clause for batch fetch
-  const placeholders = postIds.map(() => "?").join(",");
+  cachedPosts.forEach((post, index) => {
+    if (post) {
+      cachedMap.set(postIds[index], post);
+    } else {
+      missingIds.push(postIds[index]);
+    }
+  });
+
+  // If all posts are cached, return them
+  if (missingIds.length === 0) {
+    console.log(`✅ [CACHE HIT] All ${postIds.length} posts from Redis cache`);
+    return postIds.map((id) => cachedMap.get(id));
+  }
+
+  // Fetch missing posts from Cassandra
+  console.log(
+    `⚠️ [CACHE PARTIAL] ${cachedMap.size}/${postIds.length} posts cached, fetching ${missingIds.length} from Cassandra`
+  );
+
+  const uuidPostIds = missingIds.map((id) => types.Uuid.fromString(id));
+  const placeholders = missingIds.map(() => "?").join(",");
   const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id IN (${placeholders})`;
 
   const result = await cassandraClient.execute(query, uuidPostIds, {
     prepare: true,
   });
 
-  return result.rows.map((row) => ({
+  const fetchedPosts = result.rows.map((row) => ({
     id: row.id.toString(),
     user_id: row.user_id,
     caption: row.caption,
@@ -145,6 +194,16 @@ export const getPostsByIds = async (postIds) => {
     comments_count: row.comments_count,
     created_at: row.created_at,
   }));
+
+  // Cache the fetched posts
+  if (fetchedPosts.length > 0) {
+    await batchCachePosts(fetchedPosts);
+  }
+
+  // Merge cached and fetched posts
+  fetchedPosts.forEach((post) => cachedMap.set(post.id, post));
+
+  return postIds.map((id) => cachedMap.get(id));
 };
 
 /**

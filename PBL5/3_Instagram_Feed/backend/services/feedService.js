@@ -3,6 +3,16 @@ import { KEYSPACE } from "../config/cassandra-schema.js";
 import { types } from "cassandra-driver";
 import { Follow } from "../models/index.js";
 import * as postService from "./postService.js"; // Add this import
+import {
+  addPostToFeedWithLua,
+  getFeedWithTTL,
+  removePostsFromFeedWithLua,
+  warmUpFeedCacheWithLua,
+  batchAddPostToFeeds,
+  getFeedWithPosts,
+  getCachedFeedResponse,
+  cacheFeedResponse,
+} from "./redisLuaScripts.js";
 
 // Redis key patterns
 const FEED_KEY = (userId) => `feed:user:${userId}`;
@@ -40,17 +50,14 @@ export const addPostToFeedRedis = async (userId, postId, createdAt) => {
     const redisKey = FEED_KEY(userId);
     const score = createdAt.getTime(); // Convert to milliseconds for sorting
 
-    // Add to sorted set
-    await redisClient.zAdd(redisKey, {
-      score: score,
-      value: postId,
-    });
-
-    // Trim to keep only last MAX_FEED_SIZE posts (remove oldest)
-    await redisClient.zRemRangeByRank(redisKey, 0, -(MAX_FEED_SIZE + 1));
-
-    // Set TTL (refresh on each write)
-    await redisClient.expire(redisKey, FEED_TTL);
+    // Use LUA script for atomic ZADD + ZREMRANGEBYRANK + EXPIRE
+    await addPostToFeedWithLua(
+      redisKey,
+      score,
+      postId,
+      MAX_FEED_SIZE,
+      FEED_TTL
+    );
   } catch (error) {
     // Log but don't fail - Redis is cache, Cassandra is source of truth
     console.error(
@@ -84,13 +91,39 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
     addPostToFeed(follow.follower_id, postId, createdAt)
   );
 
-  // Add post to each follower's feed in Redis (cache)
-  const redisPromises = followers.map((follow) =>
-    addPostToFeedRedis(follow.follower_id, postId, createdAt)
+  // Use Redis pipelining for batch writes (much faster!)
+  const score = createdAt.getTime();
+  const feedKeys = followers.map((follow) => FEED_KEY(follow.follower_id));
+
+  console.time(`[PIPELINE] Batch add to ${feedKeys.length} feeds`);
+  try {
+    await batchAddPostToFeeds(feedKeys, score, postId, MAX_FEED_SIZE, FEED_TTL);
+    console.timeEnd(`[PIPELINE] Batch add to ${feedKeys.length} feeds`);
+  } catch (error) {
+    console.error("⚠️ Error in Redis pipelining:", error.message);
+    // Fallback to individual writes if pipelining fails
+    console.log("⚠️ Falling back to individual Redis writes...");
+    const redisPromises = followers.map((follow) =>
+      addPostToFeedRedis(follow.follower_id, postId, createdAt)
+    );
+    await Promise.all(redisPromises);
+  }
+
+  // Execute Cassandra writes in parallel
+  await Promise.all(cassandraPromises);
+
+  // IMPORTANT: Invalidate all followers' response caches so new post appears immediately
+  // This ensures cached responses are cleared and feed will be rebuilt with new post
+  const invalidationPromises = followers.map((follow) =>
+    invalidateFeedCache(follow.follower_id).catch((err) =>
+      console.error(
+        `⚠️ Failed to invalidate cache for follower ${follow.follower_id}:`,
+        err.message
+      )
+    )
   );
 
-  // Execute both in parallel
-  await Promise.all([...cassandraPromises, ...redisPromises]);
+  await Promise.all(invalidationPromises);
 
   return followers.length;
 };
@@ -127,8 +160,11 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
 
     await Promise.all([...cassandraPromises, ...redisPromises]);
 
+    // IMPORTANT: Invalidate cached response so new posts appear immediately
+    await invalidateFeedCache(followerId);
+
     console.log(
-      `✅ Backfilled ${existingPosts.length} posts to user ${followerId}'s feed`
+      `✅ Backfilled ${existingPosts.length} posts to user ${followerId}'s feed and invalidated response cache`
     );
 
     return existingPosts.length;
@@ -188,15 +224,16 @@ export const removePostsFromFeedOnUnfollow = async (
 
     await Promise.all(deletePromises);
 
-    // Remove posts from Redis cache
+    // Remove posts from Redis cache using LUA script (atomic batch operation)
     const redisKey = FEED_KEY(followerId);
-    const redisPromises = postIds.map((postId) =>
-      redisClient.zRem(redisKey, postId)
-    );
-    await Promise.all(redisPromises);
+    await removePostsFromFeedWithLua(redisKey, postIds);
+
+    // IMPORTANT: Also invalidate the cached response to prevent stale data
+    // The cached response still contains the old posts, so we need to delete it
+    await invalidateFeedCache(followerId);
 
     console.log(
-      `✅ Removed ${postsToRemove.length} posts from user ${followerId}'s feed`
+      `✅ Removed ${postsToRemove.length} posts from user ${followerId}'s feed and invalidated response cache`
     );
 
     return postsToRemove.length;
@@ -220,22 +257,16 @@ export const getFeedFromRedis = async (userId, limit = 20) => {
     const redisKey = FEED_KEY(userId);
     const limitInt = parseInt(limit);
 
-    // Get top N posts (most recent first) with scores - ZREVRANGE with WITHSCORES
-    const result = await redisClient.zRange(redisKey, 0, limitInt - 1, {
-      REV: true,
-      WITHSCORES: true,
-    });
+    // Use LUA script for atomic ZREVRANGE + EXPIRE
+    const result = await getFeedWithTTL(redisKey, 0, limitInt - 1, FEED_TTL);
 
     if (result && result.length > 0) {
-      // Cache hit!
+      // Cache hit! TTL already refreshed by LUA script
       console.log(
         `✅ [CACHE HIT] Feed cache for user ${userId} - ${
           result.length / 2
         } posts found`
       );
-
-      // Refresh TTL on access
-      await redisClient.expire(redisKey, FEED_TTL);
 
       // Parse result: [value1, score1, value2, score2, ...]
       const feedItems = [];
@@ -296,24 +327,8 @@ export const warmUpCache = async (userId, feedItems) => {
 
   try {
     const redisKey = FEED_KEY(userId);
-    const pipeline = redisClient.multi();
-
-    // Add all posts to sorted set
-    feedItems.forEach((item) => {
-      const score = item.created_at.getTime();
-      pipeline.zAdd(redisKey, {
-        score: score,
-        value: item.post_id,
-      });
-    });
-
-    // Trim to MAX_FEED_SIZE
-    pipeline.zRemRangeByRank(redisKey, 0, -(MAX_FEED_SIZE + 1));
-
-    // Set TTL
-    pipeline.expire(redisKey, FEED_TTL);
-
-    await pipeline.exec();
+    // Use LUA script for atomic batch operation (ZADD + ZREMRANGEBYRANK + EXPIRE)
+    await warmUpFeedCacheWithLua(redisKey, FEED_TTL, MAX_FEED_SIZE, feedItems);
   } catch (error) {
     console.error(`⚠️ Cache warm-up error for user ${userId}:`, error.message);
   }
@@ -361,14 +376,95 @@ export const getFeed = async (userId, limit = 20) => {
 };
 
 /**
+ * Get feed with post details in one optimized LUA operation (atomic)
+ * This reduces 2 network round-trips to 1 by combining feed retrieval and post fetching
+ * @param {number} userId - User ID
+ * @param {number} limit - Maximum number of posts to return
+ * @returns {Object} { feedItems: [...], postsMap: Map<postId, post> }
+ */
+export const getFeedWithPostsFromRedis = async (userId, limit = 20) => {
+  try {
+    const redisKey = FEED_KEY(userId);
+    const limitInt = parseInt(limit);
+
+    // Use combined LUA script for atomic feed + posts retrieval
+    const { feedItems, posts } = await getFeedWithPosts(
+      redisKey,
+      0,
+      limitInt - 1,
+      FEED_TTL
+    );
+
+    if (feedItems && feedItems.length > 0) {
+      console.log(
+        `✅ [CACHE HIT] Feed + Posts for user ${userId} - ${feedItems.length} posts found in single LUA call`
+      );
+
+      // Create posts map for quick lookup
+      const postsMap = new Map(posts.map((post) => [post.id, post]));
+
+      return {
+        feedItems,
+        postsMap,
+      };
+    }
+
+    return { feedItems: [], postsMap: new Map() };
+  } catch (error) {
+    console.error(
+      `⚠️ Redis feed+posts read error for user ${userId}:`,
+      error.message
+    );
+    return { feedItems: [], postsMap: new Map() };
+  }
+};
+
+/**
+ * Get cached feed response (pre-serialized JSON) - fastest path
+ * @param {number} userId - User ID
+ * @param {number} limit - Maximum number of posts (for logging)
+ * @returns {Array|null} Cached feed posts array or null if not cached
+ */
+export const getFeedResponseFromCache = async (userId, limit = 20) => {
+  try {
+    const redisKey = FEED_KEY(userId);
+    const cached = await getCachedFeedResponse(redisKey, FEED_TTL);
+
+    if (cached) {
+      console.log(
+        `✅ [CACHE HIT] Complete feed response for user ${userId} (fastest path)`
+      );
+      return JSON.parse(cached);
+    }
+
+    return null;
+  } catch (error) {
+    console.error(
+      `⚠️ Error getting cached feed response for user ${userId}:`,
+      error.message
+    );
+    return null;
+  }
+};
+
+/**
  * Invalidate user's feed cache (e.g., on unfollow)
  * @param {number} userId - User ID
  */
 export const invalidateFeedCache = async (userId) => {
   try {
     const redisKey = FEED_KEY(userId);
-    await redisClient.del(redisKey);
-    console.log(`🗑️ Invalidated feed cache for user ${userId}`);
+    const cachedResponseKey = `${redisKey}:response`;
+
+    // Delete both feed cache and response cache
+    await Promise.all([
+      redisClient.del(redisKey),
+      redisClient.del(cachedResponseKey),
+    ]);
+
+    console.log(
+      `🗑️ Invalidated feed cache and response cache for user ${userId}`
+    );
   } catch (error) {
     console.error(
       `⚠️ Cache invalidation error for user ${userId}:`,

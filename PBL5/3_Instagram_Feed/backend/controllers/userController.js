@@ -234,9 +234,15 @@ export const followUser = async (req, res) => {
     // Backfill existing posts from the followed user to the follower's feed
     try {
       await backfillFeedOnFollow(follower_id, id);
+      // Cache invalidation is handled inside backfillFeedOnFollow
     } catch (backfillError) {
       // Log but don't fail - feed will be populated on next post
       console.error("⚠️ Error backfilling feed on follow:", backfillError);
+      // IMPORTANT: Still invalidate cache even if backfill fails
+      // This ensures next feed request will fetch fresh data
+      await invalidateFeedCache(follower_id).catch((err) =>
+        console.error("Failed to invalidate cache:", err)
+      );
     }
 
     await follower.reload();

@@ -8,6 +8,7 @@ import {
   redisClient, // Add this
 } from "./config/db.js";
 import { initializeSchema, KEYSPACE } from "./config/cassandra-schema.js";
+import { loadLuaScripts } from "./services/redisLuaScripts.js";
 import userRoutes from "./routes/userRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import "./models/index.js";
@@ -128,7 +129,9 @@ async function startServer() {
     await sequelize.sync({ alter: false });
     await initializeCassandra();
     await initializeSchema();
-    await initializeRedis(); // Add this line
+    await initializeRedis();
+    // Load LUA scripts for optimized Redis operations
+    await loadLuaScripts();
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);

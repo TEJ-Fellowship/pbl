@@ -1,5 +1,6 @@
 import * as postService from "../services/postService.js";
 import * as feedService from "../services/feedService.js";
+import { cacheFeedResponse } from "../services/redisLuaScripts.js";
 
 /**
  * Create a new post
@@ -153,28 +154,76 @@ export const getUserFeed = async (req, res) => {
       });
     }
 
-    // Get post IDs from feed
-    const feedItems = await feedService.getFeed(user_id, limit);
-
-    // If no posts in feed, return empty array
-    if (feedItems.length === 0) {
+    // OPTIMIZATION: Try cached complete response first (fastest path - single GET + parse)
+    const cachedResponse = await feedService.getFeedResponseFromCache(
+      user_id,
+      limit
+    );
+    if (cachedResponse) {
       return res.status(200).json({
         success: true,
-        feed: [],
-        count: 0,
-        message: "No posts in feed",
+        feed: cachedResponse,
+        count: cachedResponse.length,
       });
     }
 
-    // Get full post details for each post ID
-    const postIds = feedItems.map((item) => item.post_id);
-    const posts = await postService.getPostsByIds(postIds);
+    // Fallback to LUA script method
+    const { feedItems, postsMap } = await feedService.getFeedWithPostsFromRedis(
+      user_id,
+      limit
+    );
 
-    // Sort posts by created_at (most recent first) to match feed order
-    const postsMap = new Map(posts.map((post) => [post.id, post]));
-    const sortedPosts = feedItems
-      .map((item) => postsMap.get(item.post_id))
-      .filter((post) => post !== undefined);
+    let sortedPosts = [];
+    const redisKey = `feed:user:${user_id}`;
+    const FEED_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+
+    if (feedItems.length > 0 && postsMap.size === feedItems.length) {
+      // All posts cached - use optimized result
+      sortedPosts = feedItems
+        .map((item) => postsMap.get(item.post_id))
+        .filter((post) => post !== undefined);
+
+      // Cache the complete response for next time (fastest path)
+      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
+    } else if (feedItems.length > 0) {
+      // Feed cached but some posts missing - fetch missing posts
+      const postIds = feedItems.map((item) => item.post_id);
+      const posts = await postService.getPostsByIds(postIds);
+
+      // Merge with cached posts
+      const allPostsMap = new Map(posts.map((post) => [post.id, post]));
+      postsMap.forEach((post, id) => allPostsMap.set(id, post));
+
+      sortedPosts = feedItems
+        .map((item) => allPostsMap.get(item.post_id))
+        .filter((post) => post !== undefined);
+
+      // Cache the complete response for next time
+      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
+    } else {
+      // Cache miss - fallback to old method
+      const fallbackFeedItems = await feedService.getFeed(user_id, limit);
+
+      if (fallbackFeedItems.length === 0) {
+        return res.status(200).json({
+          success: true,
+          feed: [],
+          count: 0,
+          message: "No posts in feed",
+        });
+      }
+
+      const postIds = fallbackFeedItems.map((item) => item.post_id);
+      const posts = await postService.getPostsByIds(postIds);
+
+      const fallbackPostsMap = new Map(posts.map((post) => [post.id, post]));
+      sortedPosts = fallbackFeedItems
+        .map((item) => fallbackPostsMap.get(item.post_id))
+        .filter((post) => post !== undefined);
+
+      // Cache the complete response for next time
+      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
+    }
 
     res.status(200).json({
       success: true,
