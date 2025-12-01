@@ -1,16 +1,16 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getPrimary, getReadReplica, getPoolStats } = require('../utils/db');
-const { redisClient, isRedisReady } = require('../utils/redis');
-const { kafka } = require('../utils/kafka');
+const { getPrimary, getReadReplica, getPoolStats } = require("../utils/db");
+const { redisClient, isRedisReady } = require("../utils/redis");
+const { kafka } = require("../utils/kafka");
 
 /**
  * Health check endpoint
  * Returns system health status with dependency checks
  */
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   const health = {
-    status: 'healthy',
+    status: "healthy",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     services: {},
@@ -23,7 +23,7 @@ router.get('/', async (req, res) => {
     await getPrimary().authenticate();
     const poolStats = getPoolStats();
     health.services.database = {
-      status: 'ok',
+      status: "ok",
       primary: {
         connected: true,
         pool: poolStats.primary,
@@ -40,7 +40,7 @@ router.get('/', async (req, res) => {
   } catch (error) {
     isHealthy = false;
     health.services.database = {
-      status: 'error',
+      status: "error",
       error: error.message,
     };
   }
@@ -50,21 +50,21 @@ router.get('/', async (req, res) => {
     if (isRedisReady()) {
       await redisClient.ping();
       health.services.redis = {
-        status: 'ok',
+        status: "ok",
         connected: true,
       };
     } else {
       isHealthy = false;
       health.services.redis = {
-        status: 'error',
+        status: "error",
         connected: false,
-        message: 'Redis not ready',
+        message: "Redis not ready",
       };
     }
   } catch (error) {
     isHealthy = false;
     health.services.redis = {
-      status: 'error',
+      status: "error",
       error: error.message,
     };
   }
@@ -76,22 +76,22 @@ router.get('/', async (req, res) => {
     const topics = await admin.listTopics();
     await admin.disconnect();
     health.services.kafka = {
-      status: 'ok',
+      status: "ok",
       connected: true,
       topics: topics.length,
     };
   } catch (error) {
     // Kafka failure is not critical for basic health
     health.services.kafka = {
-      status: 'warning',
+      status: "warning",
       connected: false,
       error: error.message,
-      message: 'Kafka unavailable - payment processing may be affected',
+      message: "Kafka unavailable - payment processing may be affected",
     };
   }
 
   // Overall health status
-  health.status = isHealthy ? 'healthy' : 'degraded';
+  health.status = isHealthy ? "healthy" : "degraded";
 
   // Return appropriate status code
   const statusCode = isHealthy ? 200 : 503;
@@ -101,25 +101,25 @@ router.get('/', async (req, res) => {
 /**
  * Readiness probe - checks if service is ready to accept traffic
  */
-router.get('/ready', async (req, res) => {
+router.get("/ready", async (req, res) => {
   try {
     // Check critical dependencies
     await getPrimary().authenticate();
-    
+
     if (!isRedisReady()) {
       return res.status(503).json({
-        status: 'not ready',
-        message: 'Redis not available',
+        status: "not ready",
+        message: "Redis not available",
       });
     }
 
     res.json({
-      status: 'ready',
+      status: "ready",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
     res.status(503).json({
-      status: 'not ready',
+      status: "not ready",
       error: error.message,
     });
   }
@@ -128,13 +128,12 @@ router.get('/ready', async (req, res) => {
 /**
  * Liveness probe - checks if service is alive
  */
-router.get('/live', (req, res) => {
+router.get("/live", (req, res) => {
   res.json({
-    status: 'alive',
+    status: "alive",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
 });
 
 module.exports = router;
-
