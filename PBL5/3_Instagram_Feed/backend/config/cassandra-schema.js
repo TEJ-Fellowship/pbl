@@ -17,15 +17,10 @@ const createKeyspace = async () => {
     `;
 
     await cassandraClient.execute(createKeyspaceQuery);
-    console.log(`✅ Keyspace '${KEYSPACE}' created or already exists.`);
   } catch (error) {
     // If permission denied (common in managed Cassandra/AstraDB), keyspace likely already exists
     // Error code 8448 = Missing correct permission
-    if (error.code === 8448 || error.message?.includes("permission")) {
-      console.log(
-        `ℹ️  Cannot create keyspace (permission denied). Assuming '${KEYSPACE}' already exists.`
-      );
-    } else {
+    if (error.code !== 8448 && !error.message?.includes("permission")) {
       console.error(`❌ Error creating keyspace '${KEYSPACE}':`, error);
       throw error;
     }
@@ -34,7 +29,6 @@ const createKeyspace = async () => {
   // Use the keyspace (whether we created it or it already exists)
   try {
     await cassandraClient.execute(`USE ${KEYSPACE}`);
-    console.log(`✅ Using keyspace '${KEYSPACE}'.`);
   } catch (error) {
     console.error(`❌ Error using keyspace '${KEYSPACE}':`, error);
     throw error;
@@ -60,7 +54,6 @@ const createPostsTable = async () => {
     `;
 
     await cassandraClient.execute(createTableQuery);
-    console.log("✅ Table 'posts' created or already exists.");
   } catch (error) {
     console.error("❌ Error creating 'posts' table:", error);
     throw error;
@@ -88,7 +81,6 @@ const createPostsByUserTable = async () => {
     `;
 
     await cassandraClient.execute(createTableQuery);
-    console.log("✅ Table 'posts_by_user' created or already exists.");
   } catch (error) {
     console.error("❌ Error creating 'posts_by_user' table:", error);
     throw error;
@@ -113,7 +105,6 @@ const createFeedsByUserTable = async () => {
     `;
 
     await cassandraClient.execute(createTableQuery);
-    console.log("✅ Table 'feeds_by_user' created or already exists.");
   } catch (error) {
     console.error("❌ Error creating 'feeds_by_user' table:", error);
     throw error;
@@ -130,7 +121,6 @@ const initializeSchema = async () => {
     await createPostsTable();
     await createPostsByUserTable();
     await createFeedsByUserTable();
-    console.log("✅ Cassandra schema initialized successfully.");
   } catch (error) {
     console.error("❌ Error initializing Cassandra schema:", error);
     throw error;

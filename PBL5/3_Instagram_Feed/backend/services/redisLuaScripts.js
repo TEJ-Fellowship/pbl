@@ -172,6 +172,25 @@ const GET_CACHED_FEED_RESPONSE_SCRIPT = `
   return nil
 `;
 
+// Script 10: Batch invalidate response caches for multiple users (atomic operation)
+// ARGV[1...N] = user IDs
+// Deletes feed:user:{userId}:response for each user
+// Note: We only invalidate response cache, not feed cache (which is already updated)
+// Returns: number of keys deleted
+const BATCH_INVALIDATE_RESPONSE_CACHES_SCRIPT = `
+  local deleted = 0
+  for i = 1, #ARGV do
+    local userId = ARGV[i]
+    local responseKey = 'feed:user:' .. userId .. ':response'
+    
+    -- Delete response cache key
+    if redis.call('DEL', responseKey) == 1 then
+      deleted = deleted + 1
+    end
+  end
+  return deleted
+`;
+
 // Load scripts and cache SHA1 hashes for performance
 let scriptHashes = {};
 
@@ -201,8 +220,11 @@ export const loadLuaScripts = async () => {
       getCachedFeedResponse: await redisClient.scriptLoad(
         GET_CACHED_FEED_RESPONSE_SCRIPT
       ),
+      batchInvalidateResponseCaches: await redisClient.scriptLoad(
+        BATCH_INVALIDATE_RESPONSE_CACHES_SCRIPT
+      ),
     };
-    console.log("✅ LUA scripts loaded successfully");
+    // LUA scripts loaded
     return scriptHashes;
   } catch (error) {
     console.error("❌ Error loading LUA scripts:", error);
@@ -224,6 +246,7 @@ const getScriptSource = (scriptName) => {
     warmUpFeedCache: WARM_UP_FEED_CACHE_SCRIPT,
     getFeedWithPosts: GET_FEED_WITH_POSTS_SCRIPT,
     getCachedFeedResponse: GET_CACHED_FEED_RESPONSE_SCRIPT,
+    batchInvalidateResponseCaches: BATCH_INVALIDATE_RESPONSE_CACHES_SCRIPT,
   };
   return scripts[scriptName];
 };
@@ -538,6 +561,36 @@ export const cacheFeedResponse = async (feedKey, sortedPosts, ttl = 3600) => {
     await redisClient.setEx(cachedResponseKey, ttl, value);
   } catch (error) {
     console.error("⚠️ Error caching feed response:", error.message);
+  }
+};
+
+/**
+ * Batch invalidate response caches for multiple users (atomic operation)
+ * This is much more efficient than individual DEL operations
+ * Only invalidates response cache, not feed cache (which is already updated)
+ * @param {Array<number>} userIds - Array of user IDs
+ * @returns {number} Number of keys deleted
+ */
+export const batchInvalidateResponseCaches = async (userIds) => {
+  if (!userIds || userIds.length === 0) {
+    return 0;
+  }
+
+  try {
+    // Convert user IDs to strings for Lua script
+    const args = userIds.map((id) => id.toString());
+    const deleted = await executeScript(
+      "batchInvalidateResponseCaches",
+      [],
+      args
+    );
+    return deleted;
+  } catch (error) {
+    console.error(
+      "❌ Error batch invalidating response caches:",
+      error.message
+    );
+    throw error;
   }
 };
 

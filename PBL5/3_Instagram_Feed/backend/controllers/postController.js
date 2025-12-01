@@ -1,6 +1,7 @@
 import * as postService from "../services/postService.js";
 import * as feedService from "../services/feedService.js";
 import { cacheFeedResponse } from "../services/redisLuaScripts.js";
+import { publishPostCreated } from "../services/kafkaProducer.js";
 
 /**
  * Create a new post
@@ -25,22 +26,47 @@ export const createPost = async (req, res) => {
       created_at,
     });
 
-    // Fan-out to followers' feeds
+    // Publish post created event to Kafka (asynchronous fan-out)
+    // The consumer will handle the fan-out operation
     try {
-      const followersCount = await feedService.fanOutToFollowers(
-        post.user_id,
-        post.id,
-        post.created_at
-      );
-      console.log(
-        `✅ Post ${post.id} added to ${followersCount} followers' feeds`
-      );
-    } catch (fanOutError) {
-      // Log error but don't fail the post creation
-      console.error(
-        "⚠️ Error during fan-out (post still created):",
-        fanOutError
-      );
+      const result = await publishPostCreated(post);
+      if (result.success) {
+        console.log(
+          `✅ Post ${post.id} event published to Kafka (partition: ${result.partition}, offset: ${result.offset})`
+        );
+      } else {
+        console.warn(
+          `⚠️ Failed to publish post event to Kafka: ${result.error}`
+        );
+        // Fallback to synchronous fan-out if Kafka is unavailable
+        try {
+          const followersCount = await feedService.fanOutToFollowers(
+            post.user_id,
+            post.id,
+            post.created_at
+          );
+          console.log(
+            `✅ Post ${post.id} added to ${followersCount} followers' feeds (fallback mode)`
+          );
+        } catch (fanOutError) {
+          console.error("⚠️ Error during fallback fan-out:", fanOutError);
+        }
+      }
+    } catch (kafkaError) {
+      console.error("⚠️ Error publishing to Kafka:", kafkaError);
+      // Fallback to synchronous fan-out if Kafka fails
+      try {
+        const followersCount = await feedService.fanOutToFollowers(
+          post.user_id,
+          post.id,
+          post.created_at
+        );
+        console.log(
+          `✅ Post ${post.id} added to ${followersCount} followers' feeds (fallback mode)`
+        );
+      } catch (fanOutError) {
+        console.error("⚠️ Error during fallback fan-out:", fanOutError);
+      }
     }
 
     res.status(201).json({
@@ -154,12 +180,18 @@ export const getUserFeed = async (req, res) => {
       });
     }
 
-    // OPTIMIZATION: Try cached complete response first (fastest path - single GET + parse)
+    // OPTIMIZATION: Try cached complete response first (fastest path - < 10ms)
+    // Only use cache if it has enough posts (at least 80% of limit or >= limit)
+    const minCachedPosts = Math.max(1, Math.floor(limit * 0.8));
     const cachedResponse = await feedService.getFeedResponseFromCache(
       user_id,
       limit
     );
-    if (cachedResponse) {
+
+    if (cachedResponse && cachedResponse.length >= minCachedPosts) {
+      console.log(
+        `⚡ [CACHE HIT] Returning ${cachedResponse.length} cached posts for user ${user_id} (< 10ms)`
+      );
       return res.status(200).json({
         success: true,
         feed: cachedResponse,
@@ -167,62 +199,86 @@ export const getUserFeed = async (req, res) => {
       });
     }
 
-    // Fallback to LUA script method
-    const { feedItems, postsMap } = await feedService.getFeedWithPostsFromRedis(
-      user_id,
-      limit
+    // Cache miss or incomplete - fetch from Cassandra
+    console.log(
+      `📊 [FEED] Cache miss/incomplete for user ${user_id}, fetching from Cassandra (limit: ${limit})`
     );
+
+    // Get feed items directly from Cassandra (source of truth)
+    let feedItems = await feedService.getFeedFromCassandra(user_id, limit);
+    console.log(
+      `📊 [FEED] Retrieved ${feedItems.length} feed items from Cassandra`
+    );
+
+    // If we got fewer than expected, check if backfill is needed
+    if (feedItems.length < limit) {
+      console.warn(
+        `⚠️ Only ${feedItems.length}/${limit} posts found. Checking if backfill needed...`
+      );
+      // Ensure all posts from followed users are in the feed
+      const backfilled = await feedService.ensureAllPostsInFeed(user_id);
+      if (backfilled > 0) {
+        console.log(
+          `✅ Backfilled ${backfilled} posts. Re-fetching from Cassandra...`
+        );
+        // Re-fetch after backfill
+        feedItems = await feedService.getFeedFromCassandra(user_id, limit);
+        console.log(`📊 [FEED] After backfill: ${feedItems.length} feed items`);
+      }
+    }
+
+    // Warm up Redis cache with the feed items we found
+    if (feedItems.length > 0) {
+      await feedService
+        .warmUpCache(user_id, feedItems)
+        .catch((err) => console.error(`Error warming cache:`, err));
+    }
 
     let sortedPosts = [];
     const redisKey = `feed:user:${user_id}`;
     const FEED_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
 
-    if (feedItems.length > 0 && postsMap.size === feedItems.length) {
-      // All posts cached - use optimized result
-      sortedPosts = feedItems
-        .map((item) => postsMap.get(item.post_id))
-        .filter((post) => post !== undefined);
+    // Always fetch post details if we have feedItems
+    if (feedItems.length > 0) {
+      console.log(
+        `📊 [FEED] User ${user_id}: Found ${feedItems.length} feed items, fetching post details...`
+      );
 
-      // Cache the complete response for next time (fastest path)
-      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
-    } else if (feedItems.length > 0) {
-      // Feed cached but some posts missing - fetch missing posts
+      // Get all post IDs
       const postIds = feedItems.map((item) => item.post_id);
+      console.log(`📊 [FEED] Post IDs to fetch: ${postIds.length}`);
+
+      // Fetch all post details
       const posts = await postService.getPostsByIds(postIds);
+      console.log(
+        `📊 [FEED] Fetched ${posts.length} post details from database`
+      );
 
-      // Merge with cached posts
+      // Create map for quick lookup
       const allPostsMap = new Map(posts.map((post) => [post.id, post]));
-      postsMap.forEach((post, id) => allPostsMap.set(id, post));
 
+      // Build sorted posts array
       sortedPosts = feedItems
         .map((item) => allPostsMap.get(item.post_id))
-        .filter((post) => post !== undefined);
+        .filter((post) => post !== undefined)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Sort by newest first
 
-      // Cache the complete response for next time
-      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
-    } else {
-      // Cache miss - fallback to old method
-      const fallbackFeedItems = await feedService.getFeed(user_id, limit);
+      console.log(`📊 [FEED] Final sorted posts count: ${sortedPosts.length}`);
 
-      if (fallbackFeedItems.length === 0) {
-        return res.status(200).json({
-          success: true,
-          feed: [],
-          count: 0,
-          message: "No posts in feed",
-        });
+      // Cache the complete response for next time (enables < 10ms response on next request)
+      if (sortedPosts.length > 0) {
+        await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
+        console.log(
+          `💾 [CACHE] Cached ${sortedPosts.length} posts for user ${user_id} (next request will be < 10ms)`
+        );
       }
-
-      const postIds = fallbackFeedItems.map((item) => item.post_id);
-      const posts = await postService.getPostsByIds(postIds);
-
-      const fallbackPostsMap = new Map(posts.map((post) => [post.id, post]));
-      sortedPosts = fallbackFeedItems
-        .map((item) => fallbackPostsMap.get(item.post_id))
-        .filter((post) => post !== undefined);
-
-      // Cache the complete response for next time
-      await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
+    } else {
+      return res.status(200).json({
+        success: true,
+        feed: [],
+        count: 0,
+        message: "No posts in feed",
+      });
     }
 
     res.status(200).json({

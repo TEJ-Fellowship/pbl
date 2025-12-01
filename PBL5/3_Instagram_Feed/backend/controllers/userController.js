@@ -5,6 +5,10 @@ import {
   backfillFeedOnFollow,
   removePostsFromFeedOnUnfollow,
 } from "../services/feedService.js";
+import {
+  publishUserFollowed,
+  publishUserUnfollowed,
+} from "../services/kafkaProducer.js";
 
 /**
  * Create a new user
@@ -231,7 +235,18 @@ export const followUser = async (req, res) => {
     await userCacheService.incrementFollowingCount(follower_id);
     await userCacheService.incrementFollowersCount(id);
 
+    // Publish follow event to Kafka (async processing)
+    try {
+      await publishUserFollowed(follower_id, id);
+    } catch (kafkaError) {
+      console.error(
+        "⚠️ Error publishing follow event to Kafka:",
+        kafkaError.message
+      );
+    }
+
     // Backfill existing posts from the followed user to the follower's feed
+    // This can be done synchronously for immediate feed update, or moved to Kafka consumer
     try {
       await backfillFeedOnFollow(follower_id, id);
       // Cache invalidation is handled inside backfillFeedOnFollow
@@ -349,7 +364,18 @@ export const unfollowUser = async (req, res) => {
     await userCacheService.decrementFollowingCount(follower_id);
     await userCacheService.decrementFollowersCount(id);
 
+    // Publish unfollow event to Kafka (async processing)
+    try {
+      await publishUserUnfollowed(follower_id, id);
+      console.log(
+        `📤 [KAFKA] User ${follower_id} unfollowed user ${id} event published`
+      );
+    } catch (kafkaError) {
+      console.error("⚠️ Error publishing unfollow event to Kafka:", kafkaError);
+    }
+
     // Remove all posts from the unfollowed user from the follower's feed
+    // This can be done synchronously for immediate feed update, or moved to Kafka consumer
     try {
       await removePostsFromFeedOnUnfollow(follower_id, id);
     } catch (removeError) {

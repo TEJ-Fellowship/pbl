@@ -3,7 +3,7 @@ import cassandra from "cassandra-driver";
 import { createClient } from "redis";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || "demo",
@@ -49,16 +49,9 @@ if (
       },
     });
   } catch (error) {
-    console.warn(
-      "⚠️ Warning: Could not initialize Cassandra client:",
-      error.message
-    );
+    console.warn("⚠️ Could not initialize Cassandra client:", error.message);
     cassandraClient = null;
   }
-} else {
-  console.log(
-    "ℹ️ Cassandra client not initialized (missing environment variables)"
-  );
 }
 
 const initializeCassandra = async () => {
@@ -88,19 +81,7 @@ const initializeCassandra = async () => {
     }
 
     await cassandraClient.connect();
-    console.log("✅ Connected to Cassandra/AstraDB successfully.");
-
-    try {
-      const rs = await cassandraClient.execute(
-        "SELECT release_version FROM system.local"
-      );
-      console.log("📊 Cassandra release version:", rs.rows[0].release_version);
-    } catch (queryError) {
-      console.warn(
-        "⚠️ Could not query system.local (this is usually fine):",
-        queryError.message
-      );
-    }
+    console.log("✅ Connected to Cassandra/AstraDB");
 
     return cassandraClient;
   } catch (error) {
@@ -113,7 +94,6 @@ const closeCassandra = async () => {
   try {
     if (cassandraClient) {
       await cassandraClient.shutdown();
-      console.log("✓ Cassandra connection closed");
     }
   } catch (error) {
     console.error("Error closing Cassandra:", error);
@@ -132,27 +112,15 @@ redisClient.on("error", (err) => {
   console.error("❌ Redis Client Error:", err);
 });
 
-redisClient.on("connect", () => {
-  console.log("🔄 Connecting to Redis...");
-});
-
-redisClient.on("ready", () => {
-  console.log("✅ Redis Client is ready");
-});
-
+// Redis event handlers - silent for cleaner logs
 redisClient.on("reconnecting", () => {
-  console.log("🔄 Redis Client reconnecting...");
+  // Silent reconnection
 });
 
 const initializeRedis = async () => {
   try {
     await redisClient.connect();
-    console.log("✅ Connected to Redis successfully.");
-
-    // Test the connection with a simple ping
-    const pong = await redisClient.ping();
-    console.log("📊 Redis PING response:", pong);
-
+    console.log("✅ Connected to Redis");
     return redisClient;
   } catch (error) {
     console.error("❌ Unable to connect to Redis:", error);
@@ -163,7 +131,6 @@ const initializeRedis = async () => {
 const closeRedis = async () => {
   try {
     await redisClient.quit();
-    console.log("✓ Redis connection closed");
   } catch (error) {
     console.error("Error closing Redis:", error);
   }

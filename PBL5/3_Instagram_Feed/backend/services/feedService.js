@@ -12,6 +12,7 @@ import {
   getFeedWithPosts,
   getCachedFeedResponse,
   cacheFeedResponse,
+  batchInvalidateResponseCaches,
 } from "./redisLuaScripts.js";
 
 // Redis key patterns
@@ -114,16 +115,32 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
 
   // IMPORTANT: Invalidate all followers' response caches so new post appears immediately
   // This ensures cached responses are cleared and feed will be rebuilt with new post
-  const invalidationPromises = followers.map((follow) =>
-    invalidateFeedCache(follow.follower_id).catch((err) =>
+  // OPTIMIZATION: Only invalidate response cache (not feed cache which is already updated)
+  // Use batch invalidation for better performance (single Lua script vs N individual DELs)
+  if (followers.length > 0) {
+    try {
+      const followerIds = followers.map((follow) => follow.follower_id);
+      const deletedCount = await batchInvalidateResponseCaches(followerIds);
+      console.log(
+        `🗑️ Batch invalidated ${deletedCount} response cache keys for ${followers.length} followers`
+      );
+    } catch (error) {
       console.error(
-        `⚠️ Failed to invalidate cache for follower ${follow.follower_id}:`,
-        err.message
-      )
-    )
-  );
-
-  await Promise.all(invalidationPromises);
+        `⚠️ Failed to batch invalidate response caches:`,
+        error.message
+      );
+      // Fallback to individual invalidation if batch fails
+      const invalidationPromises = followers.map((follow) =>
+        invalidateFeedCache(follow.follower_id).catch((err) =>
+          console.error(
+            `⚠️ Failed to invalidate cache for follower ${follow.follower_id}:`,
+            err.message
+          )
+        )
+      );
+      await Promise.all(invalidationPromises);
+    }
+  }
 
   return followers.length;
 };
@@ -148,13 +165,35 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
       `📥 Backfilling ${existingPosts.length} posts from user ${followingId} to follower ${followerId}'s feed`
     );
 
-    // Add all posts to follower's feed in Cassandra
-    const cassandraPromises = existingPosts.map((post) =>
+    // Get current feed to check which posts are already there
+    const currentFeed = await getFeedFromCassandra(followerId, 1000); // Get all posts
+    const existingPostIds = new Set(
+      currentFeed.map((item) => item.post_id.toString())
+    );
+
+    // Filter out posts that are already in the feed
+    const postsToAdd = existingPosts.filter(
+      (post) => !existingPostIds.has(post.id.toString())
+    );
+
+    if (postsToAdd.length === 0) {
+      console.log(
+        `ℹ️ All posts from user ${followingId} are already in follower ${followerId}'s feed`
+      );
+      return 0;
+    }
+
+    console.log(
+      `📥 Adding ${postsToAdd.length} missing posts from user ${followingId} to follower ${followerId}'s feed`
+    );
+
+    // Add missing posts to follower's feed in Cassandra
+    const cassandraPromises = postsToAdd.map((post) =>
       addPostToFeed(followerId, post.id, post.created_at)
     );
 
-    // Add all posts to follower's feed in Redis
-    const redisPromises = existingPosts.map((post) =>
+    // Add missing posts to follower's feed in Redis
+    const redisPromises = postsToAdd.map((post) =>
       addPostToFeedRedis(followerId, post.id, post.created_at)
     );
 
@@ -164,16 +203,119 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
     await invalidateFeedCache(followerId);
 
     console.log(
-      `✅ Backfilled ${existingPosts.length} posts to user ${followerId}'s feed and invalidated response cache`
+      `✅ Backfilled ${postsToAdd.length} posts to user ${followerId}'s feed and invalidated response cache`
     );
 
-    return existingPosts.length;
+    return postsToAdd.length;
   } catch (error) {
     console.error(
       `⚠️ Error backfilling feed for follower ${followerId}:`,
       error.message
     );
     throw error;
+  }
+};
+
+/**
+ * Ensure all posts from all followed users are in the feed
+ * This is called when retrieving a feed to ensure completeness
+ * @param {number} userId - User ID whose feed to check
+ * @returns {number} Number of posts backfilled
+ */
+export const ensureAllPostsInFeed = async (userId) => {
+  try {
+    // Get all users that this user follows
+    const following = await Follow.findAll({
+      where: {
+        follower_id: userId,
+      },
+      attributes: ["following_id"],
+    });
+
+    if (following.length === 0) {
+      return 0;
+    }
+
+    // Get current feed to see what's already there
+    const currentFeed = await getFeedFromCassandra(userId, 1000); // Get all posts
+    const existingPostIds = new Set(
+      currentFeed.map((item) => item.post_id.toString())
+    );
+
+    let totalBackfilled = 0;
+
+    // For each followed user, check if all their posts are in the feed
+    for (const follow of following) {
+      const followingId = follow.following_id;
+
+      // Get all posts from this followed user
+      const userPosts = await postService.getPostsByUser(followingId);
+
+      if (userPosts.length === 0) {
+        continue;
+      }
+
+      // Find posts that are missing from the feed
+      const missingPosts = userPosts.filter(
+        (post) => !existingPostIds.has(post.id.toString())
+      );
+
+      if (missingPosts.length > 0) {
+        console.log(
+          `📥 Found ${missingPosts.length} missing posts from user ${followingId} in user ${userId}'s feed, backfilling...`
+        );
+
+        // Add missing posts to feed
+        const cassandraPromises = missingPosts.map((post) =>
+          addPostToFeed(userId, post.id, post.created_at)
+        );
+
+        const redisPromises = missingPosts.map((post) =>
+          addPostToFeedRedis(userId, post.id, post.created_at)
+        );
+
+        await Promise.all([...cassandraPromises, ...redisPromises]);
+
+        // Update existingPostIds to avoid duplicates in next iteration
+        missingPosts.forEach((post) => existingPostIds.add(post.id.toString()));
+
+        totalBackfilled += missingPosts.length;
+      }
+    }
+
+    if (totalBackfilled > 0) {
+      console.log(
+        `✅ Backfilled ${totalBackfilled} missing posts to user ${userId}'s feed`
+      );
+      // Invalidate cache so new posts appear
+      await invalidateFeedCache(userId);
+
+      // IMPORTANT: Rebuild Redis cache with all posts from Cassandra
+      // This ensures Redis has the complete feed after backfill
+      try {
+        const allFeedItems = await getFeedFromCassandra(userId, MAX_FEED_SIZE);
+        if (allFeedItems.length > 0) {
+          await warmUpCache(userId, allFeedItems);
+          console.log(
+            `✅ Rebuilt Redis cache for user ${userId} with ${allFeedItems.length} posts`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `⚠️ Error rebuilding Redis cache after backfill:`,
+          error.message
+        );
+      }
+    }
+
+    return totalBackfilled;
+  } catch (error) {
+    console.error(
+      `⚠️ Error ensuring all posts in feed for user ${userId}:`,
+      error.message
+    );
+    // Don't throw - just log, so feed retrieval can continue
+    return 0;
   }
 };
 
@@ -300,10 +442,17 @@ export const getFeedFromCassandra = async (userId, limit = 20) => {
   const userIdInt = parseInt(userId);
   const limitInt = parseInt(limit);
 
+  console.log(
+    `🔍 [CASSANDRA] Querying feed for user ${userId} with limit ${limitInt}`
+  );
+
+  // Note: ORDER BY is not needed because table has CLUSTERING ORDER BY (created_at DESC)
+  // But we'll add it explicitly for clarity and to ensure correct ordering
   const query = `
     SELECT post_id, created_at 
     FROM ${KEYSPACE}.feeds_by_user 
     WHERE user_id = ? 
+    ORDER BY created_at DESC
     LIMIT ?
   `;
 
@@ -311,10 +460,42 @@ export const getFeedFromCassandra = async (userId, limit = 20) => {
     prepare: true,
   });
 
-  return result.rows.map((row) => ({
+  console.log(
+    `🔍 [CASSANDRA] Query returned ${result.rows.length} rows for user ${userId}`
+  );
+
+  const feedItems = result.rows.map((row) => ({
     post_id: row.post_id.toString(),
     created_at: row.created_at,
   }));
+
+  console.log(
+    `📊 [CASSANDRA] Retrieved ${feedItems.length} feed items for user ${userId} from Cassandra`
+  );
+
+  // If we got fewer than limit, check total count (without limit)
+  if (feedItems.length < limitInt) {
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM ${KEYSPACE}.feeds_by_user 
+      WHERE user_id = ?
+    `;
+    try {
+      const countResult = await cassandraClient.execute(
+        countQuery,
+        [userIdInt],
+        { prepare: true }
+      );
+      const total = countResult.rows[0]?.total?.toNumber() || 0;
+      console.log(
+        `🔍 [CASSANDRA] Total posts in feed for user ${userId}: ${total} (returned ${feedItems.length})`
+      );
+    } catch (err) {
+      console.error(`Error getting total count:`, err.message);
+    }
+  }
+
+  return feedItems;
 };
 
 /**
@@ -349,6 +530,10 @@ export const getFeed = async (userId, limit = 20) => {
     console.log(
       `✅ [CACHE HIT] User ${userId} feed - returning ${cachedFeed.length} posts from Redis`
     );
+    // Still check and backfill missing posts asynchronously (don't block response)
+    ensureAllPostsInFeed(userId).catch((err) =>
+      console.error(`Background backfill failed:`, err)
+    );
     return cachedFeed;
   }
 
@@ -362,6 +547,9 @@ export const getFeed = async (userId, limit = 20) => {
       `❌ [CACHE MISS] User ${userId} feed - fetching from Cassandra`
     );
   }
+
+  // Ensure all posts from followed users are in the feed before retrieving
+  await ensureAllPostsInFeed(userId);
 
   const feedItems = await getFeedFromCassandra(userId, limit);
 
