@@ -1,0 +1,119 @@
+config:
+  name: "Realistic Facebook Newsfeed Scaling Test - 120 Active Users (10% of 1200)"
+  target: "http://localhost:3000"
+  payload:
+    path: "./data/feed_requests.csv"
+    fields:
+      - "user_id"
+    order: "random"
+  phases:
+    # Phase 1: Warm-up - Gradually start, warm up caches
+    - duration: 60
+      arrivalRate: 4
+      name: "Warm-up: 4 req/s (system initialization)"
+    # Phase 2: Normal Load - Typical daily usage pattern
+    - duration: 300
+      arrivalRate: 7
+      name: "Normal Load: 7 req/s (baseline - typical usage)"
+    # Phase 3: Active Load - High engagement period (lunch break, evening)
+    - duration: 180
+      arrivalRate: 11
+      name: "Active Load: 11 req/s (high engagement period)"
+    # Phase 4: Peak Load - Maximum realistic load (viral post, trending topic)
+    - duration: 180
+      arrivalRate: 16
+      name: "Peak Load: 16 req/s (peak usage time)"
+    # Phase 5: Stress Test - Push beyond normal to find breaking point
+    - duration: 120
+      arrivalRate: 28
+      name: "Stress Test: 28 req/s (find system limits)"
+    # Phase 6: Slow Down - Gradual decrease
+    - duration: 120
+      arrivalRate: 8
+      name: "Slow Down: 8 req/s (gradual decrease)"
+    # Phase 7: Cool-down - Final phase, system recovery
+    - duration: 60
+      arrivalRate: 3
+      name: "Cool-down: 3 req/s (system recovery)"
+  plugins:
+    expect: {}
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  # Feed fetching (65% of traffic) - Most common activity (users browsing/reading)
+  - name: "Get Feed"
+    weight: 65
+    flow:
+      - get:
+          url: "/api/feed/{{ user_id }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+          capture:
+            - json: "$.posts[*].id"
+              as: "postIds"
+      - think: 3  # Simulate user reading time (3 seconds - realistic browsing)
+
+  # Create Post (12% of traffic) - Less frequent (only 5-10% of users actively post)
+  - name: "Create Post"
+    weight: 12
+    payload:
+      path: "./data/posts.csv"
+      fields:
+        - "user_id"
+        - "content"
+      order: "random"
+    flow:
+      - post:
+          url: "/api/posts"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ content }}"
+            image_urls: []
+          expect:
+            - statusCode: [201, 200]
+          capture:
+            - json: "$.post.id"
+              as: "createdPostId"
+      - think: 2  # Simulate user posting time
+
+  # Like Post (18% of traffic) - Common quick interaction
+  - name: "Like Post"
+    weight: 18
+    payload:
+      path: "./data/likes.csv"
+      fields:
+        - "user_id"
+        - "post_id"
+      order: "random"
+    flow:
+      - post:
+          url: "/api/posts/{{ post_id }}/like"
+          json:
+            user_id: "{{ user_id }}"
+          expect:
+            - statusCode: [200, 201]
+      - think: 1  # Quick action
+
+  # Comment on Post (5% of traffic) - Least common (requires more engagement)
+  - name: "Comment on Post"
+    weight: 5
+    payload:
+      path: "./data/comments.csv"
+      fields:
+        - "user_id"
+        - "post_id"
+        - "content"
+      order: "random"
+    flow:
+      - post:
+          url: "/api/posts/{{ post_id }}/comment"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ content }}"
+          expect:
+            - statusCode: [200, 201]
+      - think: 2  # Simulate typing comment time
+

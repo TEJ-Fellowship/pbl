@@ -4,8 +4,8 @@ import Feed from './components/Feed';
 
 function App() {
   // For demo purposes, using user ID 1. In a real app, this would come from authentication
-  const [currentUserId] = useState(500);
-  const [feedUserId] = useState(500)
+  const [currentUserId] = useState(5);
+  const [feedUserId] = useState(5)
 
  // User whose feed we're viewing
 
