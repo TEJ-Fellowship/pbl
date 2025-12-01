@@ -1,15 +1,18 @@
 /**
- * Query Retry Utility with Exponential Backoff
+ * Query Retry Utility with Exponential Backoff and Circuit Breaker
  * Handles transient database connection failures gracefully
  */
 
+const { checkCircuitBreaker, recordCircuitBreakerFailure, recordCircuitBreakerSuccess } = require('./db');
+
 /**
- * Retry a database query with exponential backoff
+ * Retry a database query with exponential backoff and circuit breaker
  * @param {Function} queryFn - Async function that performs the query
  * @param {Object} options - Retry options
  * @param {number} options.maxRetries - Maximum number of retries (default: 3)
  * @param {number} options.baseDelay - Base delay in milliseconds (default: 100)
  * @param {number} options.maxDelay - Maximum delay in milliseconds (default: 5000)
+ * @param {string} options.dbType - Database type for circuit breaker tracking (default: 'primary')
  * @returns {Promise} - Result of the query function
  */
 const retryQuery = async (queryFn, options = {}) => {
@@ -17,18 +20,28 @@ const retryQuery = async (queryFn, options = {}) => {
     maxRetries = 3,
     baseDelay = 100,
     maxDelay = 5000,
+    dbType = 'primary', // Track which DB we're using
   } = options;
+
+  // Check circuit breaker first
+  if (!checkCircuitBreaker(dbType)) {
+    throw new Error(`Circuit breaker is OPEN for ${dbType}. Service temporarily unavailable.`);
+  }
 
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await queryFn();
+      const result = await queryFn();
+      // Success - reset circuit breaker
+      recordCircuitBreakerSuccess(dbType);
+      return result;
     } catch (error) {
       lastError = error;
 
       // Don't retry on last attempt
       if (attempt === maxRetries) {
+        recordCircuitBreakerFailure(dbType);
         break;
       }
 

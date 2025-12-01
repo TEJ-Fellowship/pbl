@@ -36,6 +36,11 @@ const monitorPools = () => {
         `Waiting: ${primaryWaiting}`
       );
       lastWarning.primary = now;
+      
+      // Auto-scale suggestion
+      if (primaryWaiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing primary pool max connections');
+      }
     } else if (primaryUsage >= WARNING_THRESHOLD && now - lastWarning.primary > WARNING_INTERVAL) {
       console.warn('⚠️  WARNING: Primary DB pool at', 
         Math.round(primaryUsage * 100) + '%', 
@@ -49,6 +54,11 @@ const monitorPools = () => {
         `${primaryWaiting} requests waiting for connections`
       );
       lastWarning.primary = now;
+      
+      // Auto-scale suggestion
+      if (primaryWaiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing primary pool max connections');
+      }
     }
   }
 
@@ -64,6 +74,11 @@ const monitorPools = () => {
         `Waiting: ${replica1Waiting}`
       );
       lastWarning.replica1 = now;
+      
+      // Auto-scale suggestion
+      if (replica1Waiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing replica 1 pool max connections');
+      }
     } else if (replica1Usage >= WARNING_THRESHOLD && now - lastWarning.replica1 > WARNING_INTERVAL) {
       console.warn('⚠️  WARNING: Replica 1 DB pool at', 
         Math.round(replica1Usage * 100) + '%', 
@@ -77,6 +92,11 @@ const monitorPools = () => {
         `${replica1Waiting} requests waiting for connections`
       );
       lastWarning.replica1 = now;
+      
+      // Auto-scale suggestion
+      if (replica1Waiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing replica 1 pool max connections');
+      }
     }
   }
 
@@ -92,6 +112,11 @@ const monitorPools = () => {
         `Waiting: ${replica2Waiting}`
       );
       lastWarning.replica2 = now;
+      
+      // Auto-scale suggestion
+      if (replica2Waiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing replica 2 pool max connections');
+      }
     } else if (replica2Usage >= WARNING_THRESHOLD && now - lastWarning.replica2 > WARNING_INTERVAL) {
       console.warn('⚠️  WARNING: Replica 2 DB pool at', 
         Math.round(replica2Usage * 100) + '%', 
@@ -105,6 +130,11 @@ const monitorPools = () => {
         `${replica2Waiting} requests waiting for connections`
       );
       lastWarning.replica2 = now;
+      
+      // Auto-scale suggestion
+      if (replica2Waiting > 50) {
+        console.error('💡 SUGGESTION: Consider increasing replica 2 pool max connections');
+      }
     }
   }
 };

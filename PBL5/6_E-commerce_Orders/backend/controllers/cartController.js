@@ -37,7 +37,7 @@ const getCartItems = async (req, res) => {
           }
         ]
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     const items = [];
     let total = 0;
@@ -123,7 +123,7 @@ const addItemToCart = async (req, res) => {
             }
           ]
         });
-      }),
+      }, { dbType: 'replica1' }), // Pass dbType for circuit breaker
       getCachedInventory(productId) // Try Redis cache first
     ]);
 
@@ -240,7 +240,7 @@ const updateCartItemQuantity = async (req, res) => {
             }
           ]
         });
-      }),
+      }, { dbType: 'replica1' }), // Pass dbType for circuit breaker
       getCachedInventory(productId)
     ]);
 

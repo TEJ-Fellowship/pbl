@@ -80,7 +80,7 @@ const getProducts = async (req, res) => {
         transaction: null,
         subQuery: false,
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     // Convert Sequelize instances to plain objects for caching
     const productsData = products.map(p => p.toJSON ? p.toJSON() : p);
@@ -156,7 +156,7 @@ const getProductById = async (req, res) => {
         ],
         transaction: null,
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     if (!product) {
       return res.status(404).json({
@@ -207,7 +207,7 @@ const getProductsByCategory = async (req, res) => {
         where: { slug: categorySlug },
         transaction: null,
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     if (!category) {
       return res.status(404).json({
@@ -234,7 +234,7 @@ const getProductsByCategory = async (req, res) => {
         transaction: null,
         subQuery: false,
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     res.json({
       success: true,
@@ -282,7 +282,7 @@ const getCategories = async (req, res) => {
         order: [['name', 'ASC']],
         transaction: null,
       });
-    });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     // Cache for 1 hour
     await setCache(cacheKey, categories.map(c => c.toJSON()), 3600);

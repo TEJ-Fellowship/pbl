@@ -19,8 +19,8 @@ const redisClient = new Redis({
   host: REDIS_HOST || "localhost",
   port: REDIS_PORT || 6379,
   password: REDIS_PASSWORD || undefined,
-  // Connection pool settings for high concurrency (1K users) - Optimized
-  maxRetriesPerRequest: 5,  // Increased from 3 for better resilience
+  // Connection pool settings for high concurrency (1K users) - Optimized for fail-fast
+  maxRetriesPerRequest: 3,  // Reduced from 5 to fail faster under load
   retryStrategy: (times) => {
     if (times > MAX_RECONNECT_ATTEMPTS) {
       console.error("❌ Redis: Max reconnection attempts reached.");
@@ -35,10 +35,10 @@ const redisClient = new Redis({
     }
     return delay;
   },
-  // Enable offline queue for better resilience
-  enableOfflineQueue: true,
-  // Connection options optimized for 1K users - Enhanced
-  connectTimeout: 15000,  // Increased from 10000 for better connection stability
+  // Disable offline queue to fail fast instead of queuing
+  enableOfflineQueue: false,
+  // Connection options optimized for 1K users - Enhanced for faster failure detection
+  connectTimeout: 10000,  // Reduced from 15000 for faster failure detection
   lazyConnect: false,
   // Keep alive settings - Enhanced
   keepAlive: 30000,
@@ -48,9 +48,11 @@ const redisClient = new Redis({
   // Enable command queue for better throughput
   enableReadyCheck: true,
   // Optimize for high throughput - Enhanced
-  maxLoadingTimeout: 5000,
+  maxLoadingTimeout: 3000, // Reduced from 5000 for faster failure detection
   // Additional optimizations for high concurrency
   enableAutoPipelining: true, // Enable automatic pipelining for better performance
+  // Fail fast on connection errors
+  showFriendlyErrorStack: false,
 });
 
 // Handle connection events
