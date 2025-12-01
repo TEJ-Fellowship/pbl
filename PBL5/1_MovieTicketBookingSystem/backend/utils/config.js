@@ -20,7 +20,9 @@ module.exports = {
   KAFKA_PARTITIONS: process.env.KAFKA_PARTITIONS
     ? parseInt(process.env.KAFKA_PARTITIONS)
     : 20,
+  // Consumer instances per PM2 worker (not total)
+  // With 4 PM2 workers and 20 partitions: 5 consumers per worker = 20 total consumers
   KAFKA_CONSUMER_INSTANCES: process.env.KAFKA_CONSUMER_INSTANCES
     ? parseInt(process.env.KAFKA_CONSUMER_INSTANCES)
-    : 20,
+    : 5, // 5 per worker × 4 workers = 20 total (matches 20 partitions)
 };

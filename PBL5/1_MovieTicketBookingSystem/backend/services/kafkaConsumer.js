@@ -213,71 +213,112 @@ async function startConsumerInstance(instanceId, onMessage = null) {
       `✅ Consumer ${instanceId} subscribed to Kafka topic: ${config.KAFKA_TOPIC_BOOKINGS}`
     );
 
-    // Process messages
+    // Process messages in batches for better throughput
     await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
+      eachBatch: async ({
+        batch,
+        resolveOffset,
+        heartbeat,
+        isRunning,
+        isStale,
+      }) => {
+        const { topic, partition } = batch;
         const startTime = Date.now();
+        const batchSize = batch.messages.length;
 
-        // Reduced logging for multiple consumers (only log every 100th message to avoid spam)
-        if (instanceId === 0 && message.offset % 100 === 0) {
-          console.log(
-            `🔔 Consumer ${instanceId}: Processing offset ${message.offset} (partition: ${partition})`
-          );
+        // Reduced logging for multiple consumers
+        if (instanceId === 0 && batch.messages.length > 0) {
+          const firstOffset = batch.messages[0].offset;
+          if (firstOffset % 100 === 0) {
+            console.log(
+              `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
+            );
+          }
         }
 
-        try {
-          if (!message.value) {
-            return;
-          }
-
-          const messageValue = message.value.toString();
-
-          // Parse booking request
-          let bookingRequest;
+        // Process all messages in batch in parallel
+        const processingPromises = batch.messages.map(async (message) => {
           try {
-            bookingRequest = JSON.parse(messageValue);
-          } catch (parseError) {
+            if (!message.value) {
+              return;
+            }
+
+            const messageValue = message.value.toString();
+
+            // Parse booking request
+            let bookingRequest;
+            try {
+              bookingRequest = JSON.parse(messageValue);
+            } catch (parseError) {
+              console.error(
+                `❌ Consumer ${instanceId}: Failed to parse message at offset ${message.offset}:`,
+                parseError
+              );
+              return null;
+            }
+
+            // Process booking
+            const result = await processBookingRequest(bookingRequest);
+
+            // Call optional callback
+            if (onMessage) {
+              await onMessage(result, {
+                topic,
+                partition,
+                offset: message.offset,
+                instanceId,
+              });
+            }
+
+            // Mark message as processed
+            resolveOffset(message.offset);
+
+            // Send heartbeat to keep consumer alive
+            await heartbeat();
+
+            // Log only successful bookings or errors (reduce noise)
+            if (
+              result.success &&
+              instanceId === 0 &&
+              message.offset % 50 === 0
+            ) {
+              console.log(
+                `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed (partition: ${partition})`
+              );
+            } else if (
+              !result.success &&
+              result.error !== "Some seats are not available"
+            ) {
+              // Log non-availability errors (but skip "seats not available" as it's expected)
+              console.warn(
+                `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error}`
+              );
+            }
+
+            return result;
+          } catch (error) {
             console.error(
-              `❌ Consumer ${instanceId}: Failed to parse message at offset ${message.offset}:`,
-              parseError
+              `❌ Consumer ${instanceId}: Error processing message (partition: ${partition}, offset: ${message.offset}):`,
+              error.message
             );
-            return;
+            // Still mark as processed to avoid reprocessing
+            resolveOffset(message.offset);
+            await heartbeat();
+            return null;
           }
+        });
 
-          // Process booking
-          const result = await processBookingRequest(bookingRequest);
-          const processingTime = Date.now() - startTime;
+        // Wait for all messages in batch to be processed
+        await Promise.all(processingPromises);
 
-          // Call optional callback
-          if (onMessage) {
-            await onMessage(result, {
-              topic,
-              partition,
-              offset: message.offset,
-              instanceId,
-            });
-          }
-
-          // Log only successful bookings or errors (reduce noise)
-          if (result.success && instanceId === 0 && message.offset % 50 === 0) {
+        const processingTime = Date.now() - startTime;
+        if (instanceId === 0 && batchSize > 0) {
+          const firstOffset = batch.messages[0].offset;
+          if (firstOffset % 100 === 0) {
             console.log(
-              `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed in ${processingTime}ms (partition: ${partition})`
-            );
-          } else if (
-            !result.success &&
-            result.error !== "Some seats are not available"
-          ) {
-            // Log non-availability errors (but skip "seats not available" as it's expected)
-            console.warn(
-              `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error} (${processingTime}ms)`
+              `✅ Consumer ${instanceId}: Batch of ${batchSize} messages processed in ${processingTime}ms (partition: ${partition})`
             );
           }
-        } catch (error) {
-          const processingTime = Date.now() - startTime;
-          console.error(
-            `❌ Consumer ${instanceId}: Error processing message (partition: ${partition}, offset: ${message.offset}, time: ${processingTime}ms):`,
-            error.message
-          );
         }
       },
     });

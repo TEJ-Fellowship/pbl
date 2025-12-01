@@ -9,7 +9,7 @@ const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
 const crypto = require("crypto");
 const config = require("../utils/config");
-const { sendBookingRequest } = require("../services/kafkaProducer");
+const { addToBatch } = require("../services/messageBatcher");
 
 /**
  * Create booking - Redis-only, seat-only
@@ -28,9 +28,9 @@ const createBooking = async (req, res, next) => {
     if (config.KAFKA_MODE === "kafka") {
       const requestId = crypto.randomUUID();
 
-      // Fire-and-forget: Don't block HTTP response waiting for Kafka
-      // This is how production systems handle async message queues
-      sendBookingRequest({
+      // Add to smart batcher (batches messages for efficient Kafka throughput)
+      // Works for both low load (sends after 100ms) and high load (sends when batch full)
+      addToBatch({
         seat_ids,
         request_id: requestId,
         metadata: {

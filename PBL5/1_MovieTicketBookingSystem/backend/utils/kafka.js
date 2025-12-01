@@ -49,13 +49,13 @@ async function getConsumer(groupId = config.KAFKA_GROUP_ID, instanceId = 0) {
   if (!consumers.has(consumerKey)) {
     const consumer = kafka.consumer({
       groupId,
-      // Performance optimizations
+      // Performance optimizations for batch processing
       sessionTimeout: 30000, // 30 seconds
       heartbeatInterval: 3000, // 3 seconds
       maxInFlightRequests: 1, // Process one batch at a time per partition
-      minBytes: 1, // Minimum bytes to fetch (lower = faster response)
+      minBytes: 1024, // 1KB minimum bytes (better for batching)
       maxBytes: 10485760, // 10MB max batch size
-      maxWaitTimeInMs: 5000, // Wait max 5s for batch
+      maxWaitTimeInMs: 100, // Wait max 100ms for batch (lower latency)
     });
     await consumer.connect();
     console.log(
