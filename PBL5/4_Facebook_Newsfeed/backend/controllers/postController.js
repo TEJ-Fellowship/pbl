@@ -10,6 +10,7 @@ const {
 // Creating the post by the user
 const handlePost = async (req, res) => {
   try {
+    console.time('Post Creation');
     const { user_id, content, image_urls } = req.body;
     if (!user_id) {
       return res.status(400).json({ error: "Invalid user ID" });
@@ -28,7 +29,7 @@ const handlePost = async (req, res) => {
       content,
       image_urls,
     });
-
+    console.timeEnd('Post Creation');
     // Get post with author info for caching
     const postWithAuthor = await Post.findByPk(post.id, {
       include: [

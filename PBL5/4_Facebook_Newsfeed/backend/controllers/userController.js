@@ -67,8 +67,15 @@ const handleGetPosts = async (req, res) => {
     }
 
     // Check cache
+    console.log(`🔍 Checking cache for user_id: ${user_id}, page: ${page}`);
+    console.time('🕒cache time');
     const cacheKey = `posts:user:${user_id}:page:${page}`;
     const cachedPosts = await getCache(cacheKey);
+    console.timeEnd('🕒cache time');
+
+    console.log(`📦 Cache result:`, cachedPosts ? 'HIT ✅' : 'MISS ❌');
+    console.log(`📦 Cached data:`, cachedPosts ? `${cachedPosts.length} posts` : 'null');
+
 
     if (cachedPosts) {
       return res.status(200).json({
@@ -79,6 +86,8 @@ const handleGetPosts = async (req, res) => {
       });
     }
 
+    console.log('❌ Cache MISS - querying database...');
+    console.time('🕒Database Query');
     // Cache miss - query database
     const posts = await Post.findAll({
       where: { user_id },
@@ -93,22 +102,25 @@ const handleGetPosts = async (req, res) => {
       limit,
       offset,
     });
+    console.timeEnd('🕒Database Query');
+    console.log(`📊 Found ${posts.length} posts`);
+    
 
     // Format posts with counts
-    const postsWithCounts = await Promise.all(
-      posts.map(async (post) => {
-        const likesCount = await Like.count({ where: { post_id: post.id } });
-        const commentsCount = await Comment.count({ where: { post_id: post.id } });
-        return {
-          ...post.toJSON(),
-          likes_count: likesCount,
-          comments_count: commentsCount,
-        };
-      })
-    );
+    console.time('🕒Map Operation');
+    const postsWithCounts = posts.map(post => ({
+      ...post.toJSON(),
+      like_count: post.likes_count,
+      comment_count: post.comments_count,
+    }));
+    console.timeEnd('🕒Map Operation');
 
     // Cache the result
-    await setCache(cacheKey, postsWithCounts, 600); // 10 min TTL
+    console.log(`✅ Cache MISS - writing to cache: ${cacheKey}`);
+    console.time('🕒Cache Write');
+    const cacheResult = await setCache(cacheKey, postsWithCounts, 600); // 10 min TTL
+    console.timeEnd('🕒Cache Write');
+    console.log(`💾 Cache write result:`, cacheResult ? 'SUCCESS ✅' : 'FAILED ❌');
 
     return res.status(200).json({
       posts: postsWithCounts,

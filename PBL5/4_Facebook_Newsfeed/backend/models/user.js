@@ -16,14 +16,6 @@ const User = sequelize.define('User', {
       len: [3, 50],
     },
   },
-  password: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-    validate: {
-      notEmpty: true,
-      len: [5, 20],
-    },
-  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
