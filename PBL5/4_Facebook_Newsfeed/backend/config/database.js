@@ -6,7 +6,7 @@ const sequelize = new Sequelize(DATABASE_URL, {
     dialect: 'postgres',
     logging: NODE_ENV === 'development' ? console.log : false,
     pool: {
-        max: 10,              // Maximum 10 connections
+        max: 10,             // Maximum 10 connections
         min: 2,              // Minimum 2 connections (keep warm)
         acquire: 30000,      // Max time to wait for connection (30 seconds)
         idle: 10000,         // Close idle connections after 10 seconds
