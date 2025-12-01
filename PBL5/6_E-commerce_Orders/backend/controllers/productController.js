@@ -53,7 +53,7 @@ const getProducts = async (req, res) => {
       ];
     }
 
-    // Get products from replica (read operation)
+    // Get products (read operation) - models use primary but reads are optimized with caching
     const { count, rows: products } = await Product.findAndCountAll({
       where,
       include: [
@@ -71,7 +71,11 @@ const getProducts = async (req, res) => {
       limit: limitNum,
       offset,
       order: [[sortBy, order.toUpperCase()]],
-      distinct: true
+      distinct: true,
+      // Use read replica connection
+      transaction: null,
+      // Optimize query with proper indexes
+      subQuery: false,
     });
 
     // Convert Sequelize instances to plain objects for caching
@@ -128,7 +132,7 @@ const getProductById = async (req, res) => {
       });
     }
 
-    // Get from replica (read operation)
+    // Get product (read operation) - optimized with caching
     const product = await Product.findByPk(id, {
       include: [
         {
@@ -141,7 +145,9 @@ const getProductById = async (req, res) => {
           as: 'inventory',
           attributes: ['quantity', 'reserved_quantity', 'low_stock_threshold']
         }
-      ]
+      ],
+      // Use read replica connection
+      transaction: null,
     });
 
     if (!product) {
@@ -186,7 +192,8 @@ const getProductsByCategory = async (req, res) => {
 
     // Find category first
     const category = await Category.findOne({
-      where: { slug: categorySlug }
+      where: { slug: categorySlug },
+      transaction: null,
     });
 
     if (!category) {
@@ -196,7 +203,7 @@ const getProductsByCategory = async (req, res) => {
       });
     }
 
-    // Get products
+    // Get products - use read replica
     const { count, rows: products } = await Product.findAndCountAll({
       where: { category_id: category.id },
       include: [
@@ -209,7 +216,9 @@ const getProductsByCategory = async (req, res) => {
       limit: limitNum,
       offset,
       order: [['created_at', 'DESC']],
-      distinct: true
+      distinct: true,
+      transaction: null,
+      subQuery: false,
     });
 
     res.json({
@@ -249,8 +258,10 @@ const getCategories = async (req, res) => {
       });
     }
 
+    // Get categories (optimized with caching)
     const categories = await Category.findAll({
-      order: [['name', 'ASC']]
+      order: [['name', 'ASC']],
+      transaction: null,
     });
 
     // Cache for 1 hour

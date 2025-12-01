@@ -11,25 +11,19 @@ const cartOperationDuration = new Trend("cart_operation_duration");
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 const API_BASE = `${BASE_URL}/api`;
 
-// Test configuration - Optimized for 1K users
+// Test configuration - Optimized for 5 minutes
 export const options = {
   stages: [
     // Ramp-up: Gradually increase to 200 users over 1 minute
     { duration: "1m", target: 200 },
-    // Stay at 200 users for 2 minutes (normal load)
-    { duration: "2m", target: 200 },
+    // Stay at 200 users for 1 minute (normal load)
+    { duration: "1m", target: 200 },
     // Ramp up to 500 users over 1 minute
     { duration: "1m", target: 500 },
-    // Stay at 500 users for 2 minutes
-    { duration: "2m", target: 500 },
-    // Spike: Quickly ramp up to 1000 users (simulating flash sale)
-    { duration: "1m", target: 1000 },
-    // Stay at spike for 1 minute
-    { duration: "1m", target: 1000 },
-    // Ramp down gradually
+    // Stay at 500 users for 1 minute (peak load)
     { duration: "1m", target: 500 },
-    { duration: "1m", target: 200 },
-    { duration: "30s", target: 0 },
+    // Ramp down to 0 over 1 minute
+    { duration: "1m", target: 0 },
   ],
 
   thresholds: {

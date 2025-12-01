@@ -1,45 +1,64 @@
 const Sequelize = require("sequelize");
 const { DATABASE_URL1, DATABASE_URL2, DATABASE_URL3 } = require("./config");
 
-// Database connection options - Optimized for 1K users
+// Database connection options - Optimized for 1K concurrent users
+// Connection pool sizing: For 1K concurrent users, we need:
+// - Primary: 200 connections (handles writes, checkouts, cart operations)
+// - Replicas: 100 each (handles reads, product browsing, order history)
+// Total: 400 connections across 3 databases
 const dbOptions = {
   dialect: "postgres",
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 100,        // Increased from 20 to handle 1K concurrent users
-    min: 10,          // Increased from 5 for better connection availability
-    acquire: 30000,   // 30 second timeout
-    idle: 10000       // 10 second idle timeout
+    max: 200,        // Increased for 1K concurrent users (was 100)
+    min: 20,         // Increased for better connection availability (was 10)
+    acquire: 30000,  // 30 second timeout for acquiring connection
+    idle: 10000,     // 10 second idle timeout
+    evict: 1000,     // Check for idle connections every 1 second
   },
   dialectOptions: {
     ssl: {
       require: true,
       rejectUnauthorized: false,
     },
+    // Connection keep-alive settings
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10000,
+  },
+  // Query timeout to prevent long-running queries from blocking
+  query: {
+    timeout: 10000, // 10 seconds for queries
   },
 };
 
 // PRIMARY database (Write source of truth)
+// Handles: order creation, cart writes, inventory updates, payment processing
 const sequelizePrimary = new Sequelize(DATABASE_URL1, dbOptions);
 
 // REPLICA 1 (Read-only) - Optimized pool for reads
+// Handles: product browsing, order history, category listings
 const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
   ...dbOptions,
   pool: {
-    ...dbOptions.pool,
-    max: 50,  // Read replicas can have smaller pools
-    min: 5
+    max: 100,  // Increased for 1K users (was 50)
+    min: 10,   // Increased (was 5)
+    acquire: 30000,
+    idle: 10000,
+    evict: 1000,
   },
   replication: false,
 });
 
 // REPLICA 2 (Read-only) - Optimized pool for reads
+// Handles: product browsing, order history, category listings
 const sequelizeReplica2 = new Sequelize(DATABASE_URL3, {
   ...dbOptions,
   pool: {
-    ...dbOptions.pool,
-    max: 50,  // Read replicas can have smaller pools
-    min: 5
+    max: 100,  // Increased for 1K users (was 50)
+    min: 10,   // Increased (was 5)
+    acquire: 30000,
+    idle: 10000,
+    evict: 1000,
   },
   replication: false,
 });
@@ -50,10 +69,44 @@ const replicas = [sequelizeReplica1, sequelizeReplica2];
 
 /**
  * Get read replica (round-robin)
+ * Optimized for load balancing across replicas
  */
 const getReadReplica = () => {
   replicaCounter = (replicaCounter + 1) % replicas.length;
   return replicas[replicaCounter];
+};
+
+/**
+ * Get connection pool statistics for monitoring
+ */
+const getPoolStats = () => {
+  const primaryPool = sequelizePrimary.connectionManager.pool;
+  const replica1Pool = sequelizeReplica1.connectionManager.pool;
+  const replica2Pool = sequelizeReplica2.connectionManager.pool;
+
+  return {
+    primary: {
+      size: primaryPool.size,
+      available: primaryPool.available,
+      using: primaryPool.using,
+      waiting: primaryPool.waiting,
+      max: primaryPool.max,
+    },
+    replica1: {
+      size: replica1Pool.size,
+      available: replica1Pool.available,
+      using: replica1Pool.using,
+      waiting: replica1Pool.waiting,
+      max: replica1Pool.max,
+    },
+    replica2: {
+      size: replica2Pool.size,
+      available: replica2Pool.available,
+      using: replica2Pool.using,
+      waiting: replica2Pool.waiting,
+      max: replica2Pool.max,
+    },
+  };
 };
 
 /**
@@ -94,6 +147,8 @@ module.exports = {
   sequelizeReplica1,
   sequelizeReplica2,
   getReadReplica,
+  // Monitoring
+  getPoolStats,
   // Legacy exports
   sequelize1,
   sequelize2,
