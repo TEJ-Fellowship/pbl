@@ -2,16 +2,16 @@ const Sequelize = require("sequelize");
 const { DATABASE_URL1, DATABASE_URL2, DATABASE_URL3 } = require("./config");
 
 // Database connection options - Optimized for 1K concurrent users
-// Connection pool sizing: For 1K concurrent users, we need:
-// - Primary: 200 connections (handles writes, checkouts, cart operations)
-// - Replicas: 100 each (handles reads, product browsing, order history)
-// Total: 400 connections across 3 databases
+// Connection pool sizing: For 1K concurrent users with proper read/write split:
+// - Primary: 300 connections (handles writes, checkouts, cart operations)
+// - Replicas: 150 each (handles reads, product browsing, order history)
+// Total: 600 connections across 3 databases
 const dbOptions = {
   dialect: "postgres",
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 200,        // Increased for 1K concurrent users (was 100)
-    min: 20,         // Increased for better connection availability (was 10)
+    max: 300,        // Increased for 1K concurrent users (was 200)
+    min: 30,         // Increased for better connection availability (was 20)
     acquire: 30000,  // 30 second timeout for acquiring connection
     idle: 10000,     // 10 second idle timeout
     evict: 1000,     // Check for idle connections every 1 second
@@ -40,8 +40,8 @@ const sequelizePrimary = new Sequelize(DATABASE_URL1, dbOptions);
 const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
   ...dbOptions,
   pool: {
-    max: 100,  // Increased for 1K users (was 50)
-    min: 10,   // Increased (was 5)
+    max: 150,  // Increased for 1K users with read/write split (was 100)
+    min: 15,   // Increased (was 10)
     acquire: 30000,
     idle: 10000,
     evict: 1000,
@@ -54,8 +54,8 @@ const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
 const sequelizeReplica2 = new Sequelize(DATABASE_URL3, {
   ...dbOptions,
   pool: {
-    max: 100,  // Increased for 1K users (was 50)
-    min: 10,   // Increased (was 5)
+    max: 150,  // Increased for 1K users with read/write split (was 100)
+    min: 15,   // Increased (was 10)
     acquire: 30000,
     idle: 10000,
     evict: 1000,

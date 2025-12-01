@@ -19,8 +19,8 @@ const redisClient = new Redis({
   host: REDIS_HOST || "localhost",
   port: REDIS_PORT || 6379,
   password: REDIS_PASSWORD || undefined,
-  // Connection pool settings for high concurrency (1K users)
-  maxRetriesPerRequest: 3,
+  // Connection pool settings for high concurrency (1K users) - Optimized
+  maxRetriesPerRequest: 5,  // Increased from 3 for better resilience
   retryStrategy: (times) => {
     if (times > MAX_RECONNECT_ATTEMPTS) {
       console.error("❌ Redis: Max reconnection attempts reached.");
@@ -37,18 +37,20 @@ const redisClient = new Redis({
   },
   // Enable offline queue for better resilience
   enableOfflineQueue: true,
-  // Connection options optimized for 1K users
-  connectTimeout: 10000,
+  // Connection options optimized for 1K users - Enhanced
+  connectTimeout: 15000,  // Increased from 10000 for better connection stability
   lazyConnect: false,
-  // Keep alive settings
+  // Keep alive settings - Enhanced
   keepAlive: 30000,
   // Connection pool size (ioredis manages this automatically, but we can hint)
   // For 1K concurrent users, ioredis will create multiple connections as needed
   family: 4, // Use IPv4
   // Enable command queue for better throughput
   enableReadyCheck: true,
-  // Optimize for high throughput
+  // Optimize for high throughput - Enhanced
   maxLoadingTimeout: 5000,
+  // Additional optimizations for high concurrency
+  enableAutoPipelining: true, // Enable automatic pipelining for better performance
 });
 
 // Handle connection events

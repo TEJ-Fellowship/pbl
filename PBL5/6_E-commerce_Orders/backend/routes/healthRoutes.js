@@ -8,7 +8,7 @@ const { kafka } = require('../utils/kafka');
  * Health check endpoint
  * Returns system health status with dependency checks
  */
-router.get('/health', async (req, res) => {
+router.get('/', async (req, res) => {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),

@@ -1,7 +1,8 @@
-const { Product, Category, Inventory } = require('../models');
+const { getModelsFromRequest } = require('../utils/modelFactory');
 const { getCache, setCache, deleteCachePattern } = require('../utils/redis');
 const { Op } = require('sequelize');
 const { NODE_ENV } = require('../utils/config');
+const { retryQuery } = require('../utils/queryRetry');
 
 /**
  * Get all products with pagination and filters
@@ -53,29 +54,32 @@ const getProducts = async (req, res) => {
       ];
     }
 
-    // Get products (read operation) - models use primary but reads are optimized with caching
-    const { count, rows: products } = await Product.findAndCountAll({
-      where,
-      include: [
-        {
-          model: Category,
-          as: 'category',
-          attributes: ['id', 'name', 'slug']
-        },
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ],
-      limit: limitNum,
-      offset,
-      order: [[sortBy, order.toUpperCase()]],
-      distinct: true,
-      // Use read replica connection
-      transaction: null,
-      // Optimize query with proper indexes
-      subQuery: false,
+    // Get models bound to req.db (from dbRouter middleware - uses read replica for GET)
+    const { Product, Category, Inventory } = getModelsFromRequest(req);
+
+    // Get products (read operation) - now uses read replica via req.db
+    const { count, rows: products } = await retryQuery(async () => {
+      return await Product.findAndCountAll({
+        where,
+        include: [
+          {
+            model: Category,
+            as: 'category',
+            attributes: ['id', 'name', 'slug']
+          },
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ],
+        limit: limitNum,
+        offset,
+        order: [[sortBy, order.toUpperCase()]],
+        distinct: true,
+        transaction: null,
+        subQuery: false,
+      });
     });
 
     // Convert Sequelize instances to plain objects for caching
@@ -132,22 +136,26 @@ const getProductById = async (req, res) => {
       });
     }
 
-    // Get product (read operation) - optimized with caching
-    const product = await Product.findByPk(id, {
-      include: [
-        {
-          model: Category,
-          as: 'category',
-          attributes: ['id', 'name', 'slug']
-        },
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity', 'low_stock_threshold']
-        }
-      ],
-      // Use read replica connection
-      transaction: null,
+    // Get models bound to req.db (from dbRouter middleware - uses read replica for GET)
+    const { Product, Category, Inventory } = getModelsFromRequest(req);
+
+    // Get product (read operation) - now uses read replica via req.db
+    const product = await retryQuery(async () => {
+      return await Product.findByPk(id, {
+        include: [
+          {
+            model: Category,
+            as: 'category',
+            attributes: ['id', 'name', 'slug']
+          },
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity', 'low_stock_threshold']
+          }
+        ],
+        transaction: null,
+      });
     });
 
     if (!product) {
@@ -190,10 +198,15 @@ const getProductsByCategory = async (req, res) => {
     const limitNum = parseInt(limit, 10);
     const offset = (pageNum - 1) * limitNum;
 
+    // Get models bound to req.db (from dbRouter middleware - uses read replica for GET)
+    const { Product, Category, Inventory } = getModelsFromRequest(req);
+
     // Find category first
-    const category = await Category.findOne({
-      where: { slug: categorySlug },
-      transaction: null,
+    const category = await retryQuery(async () => {
+      return await Category.findOne({
+        where: { slug: categorySlug },
+        transaction: null,
+      });
     });
 
     if (!category) {
@@ -203,22 +216,24 @@ const getProductsByCategory = async (req, res) => {
       });
     }
 
-    // Get products - use read replica
-    const { count, rows: products } = await Product.findAndCountAll({
-      where: { category_id: category.id },
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ],
-      limit: limitNum,
-      offset,
-      order: [['created_at', 'DESC']],
-      distinct: true,
-      transaction: null,
-      subQuery: false,
+    // Get products - now uses read replica via req.db
+    const { count, rows: products } = await retryQuery(async () => {
+      return await Product.findAndCountAll({
+        where: { category_id: category.id },
+        include: [
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ],
+        limit: limitNum,
+        offset,
+        order: [['created_at', 'DESC']],
+        distinct: true,
+        transaction: null,
+        subQuery: false,
+      });
     });
 
     res.json({
@@ -258,10 +273,15 @@ const getCategories = async (req, res) => {
       });
     }
 
-    // Get categories (optimized with caching)
-    const categories = await Category.findAll({
-      order: [['name', 'ASC']],
-      transaction: null,
+    // Get models bound to req.db (from dbRouter middleware - uses read replica for GET)
+    const { Category } = getModelsFromRequest(req);
+
+    // Get categories - now uses read replica via req.db
+    const categories = await retryQuery(async () => {
+      return await Category.findAll({
+        order: [['name', 'ASC']],
+        transaction: null,
+      });
     });
 
     // Cache for 1 hour

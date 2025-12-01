@@ -7,6 +7,7 @@ const { PORT } = require("./utils/config");
 const routes = require("./routes");
 const { ensureTopicExists, disconnectProducer } = require("./utils/kafka");
 const { startPaymentWorker } = require("./services/paymentWorker");
+const { startPoolMonitoring } = require("./middleware/poolMonitor");
 
 const app = express();
 
@@ -112,6 +113,10 @@ const start = async () => {
 
     // Initialize database tables (create if they don't exist)
     await initDatabase();
+
+    // Start database connection pool monitoring
+    startPoolMonitoring();
+    console.log("📊 Database connection pool monitoring started");
 
     // Verify Redis connection (with graceful fallback)
     // ioredis handles connection automatically, just verify with ping

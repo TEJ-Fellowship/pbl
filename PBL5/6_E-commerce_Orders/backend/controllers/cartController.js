@@ -1,6 +1,7 @@
 const { getCart, addToCart, updateCartItem, removeFromCart, clearCart, getCachedInventory, syncInventoryToCache } = require('../utils/redis');
-const { Product, Inventory } = require('../models');
+const { getModelsFromRequest } = require('../utils/modelFactory');
 const { getPrimary } = require('../utils/db');
+const { retryQuery } = require('../utils/queryRetry');
 
 /**
  * Get user's cart
@@ -20,17 +21,22 @@ const getCartItems = async (req, res) => {
       });
     }
 
-    // Get product details for items in cart
+    // Get models bound to req.db (for GET requests, uses read replica)
+    const { Product, Inventory } = getModelsFromRequest(req);
+
+    // Get product details for items in cart - uses read replica
     const productIds = Object.keys(cart);
-    const products = await Product.findAll({
-      where: { id: productIds },
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
+    const products = await retryQuery(async () => {
+      return await Product.findAll({
+        where: { id: productIds },
+        include: [
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ]
+      });
     });
 
     const items = [];
@@ -99,16 +105,24 @@ const addItemToCart = async (req, res) => {
       });
     }
 
+    // Get models bound to req.db (for POST requests, uses primary, but we can read from replica)
+    // For product lookup, we'll use read replica via getReadReplica
+    const { getReadReplica } = require('../utils/db');
+    const { getModels } = require('../utils/modelFactory');
+    const readModels = getModels(getReadReplica());
+
     // Parallelize: Get product and check cached inventory simultaneously
     const [product, cachedInventory] = await Promise.all([
-      Product.findByPk(productId, {
-        include: [
-          {
-            model: Inventory,
-            as: 'inventory',
-            attributes: ['quantity', 'reserved_quantity']
-          }
-        ]
+      retryQuery(async () => {
+        return await readModels.Product.findByPk(productId, {
+          include: [
+            {
+              model: readModels.Inventory,
+              as: 'inventory',
+              attributes: ['quantity', 'reserved_quantity']
+            }
+          ]
+        });
       }),
       getCachedInventory(productId) // Try Redis cache first
     ]);
@@ -209,16 +223,23 @@ const updateCartItemQuantity = async (req, res) => {
       });
     }
 
+    // Get models bound to read replica for product lookup
+    const { getReadReplica } = require('../utils/db');
+    const { getModels } = require('../utils/modelFactory');
+    const readModels = getModels(getReadReplica());
+
     // Parallelize: Get product and check cached inventory
     const [product, cachedInventory] = await Promise.all([
-      Product.findByPk(productId, {
-        include: [
-          {
-            model: Inventory,
-            as: 'inventory',
-            attributes: ['quantity', 'reserved_quantity']
-          }
-        ]
+      retryQuery(async () => {
+        return await readModels.Product.findByPk(productId, {
+          include: [
+            {
+              model: readModels.Inventory,
+              as: 'inventory',
+              attributes: ['quantity', 'reserved_quantity']
+            }
+          ]
+        });
       }),
       getCachedInventory(productId)
     ]);
