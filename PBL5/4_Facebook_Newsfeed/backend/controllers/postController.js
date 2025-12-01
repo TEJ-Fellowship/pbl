@@ -1,10 +1,9 @@
 const { User, Post, Like, Comment, Follow } = require("../models/index");
 const {
-  getCache,
   setCache,
   deleteCache,
   deletePattern,
-  appendToFeedCache,
+  batchAppendToFeedCache,
 } = require("../utils/cache");
 
 // Creating the post by the user
@@ -59,13 +58,9 @@ const handlePost = async (req, res) => {
     // Incrementally append this post to each follower's feed cache
     const followerIds = followers.map((f) => f.follower_id);
 
-    const appendPromises = followerIds.map((followerId) => {
-      const feedKey = `feed:user:${followerId}`;
-      return appendToFeedCache(feedKey, postData, 100); 
-    });
-
-    await Promise.all(appendPromises);
-
+    console.time('⏱️ Append to Feed Cache Time');
+    await batchAppendToFeedCache(followerIds, postData, 100, 300);
+    console.timeEnd('⏱️ Append to Feed Cache Time');
     // ============================================
     // REQUIREMENT 2: Cache the post itself
     // ============================================
