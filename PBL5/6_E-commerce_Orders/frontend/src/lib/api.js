@@ -128,6 +128,11 @@ export const ordersApi = {
     const response = await apiClient.put(`/orders/${id}/cancel`);
     return response.data;
   },
+  
+  getPaymentStatus: async (correlationId) => {
+    const response = await apiClient.get(`/orders/payment-status/${correlationId}`);
+    return response.data;
+  },
 };
 
 // Health check
