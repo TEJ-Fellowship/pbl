@@ -1,0 +1,29 @@
+config:
+  name: "Follow Creation Test - Batch 2"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 1680  # 28 minutes = 1,680 seconds
+      arrivalCount: 15000  # Batch 2: 600 users (600-1200) * 25 follows = 15,000 follows
+      name: "Batch 2: Create 15,000 follows in 28 minutes (~9 req/sec)"
+  payload:
+    path: "../dummyData/follow.csv"
+    fields:
+      - "follower_id"
+      - "following_id"
+    order: "sequence"  # Process CSV in order
+  processor: "./follow.js"
+
+scenarios:
+  - name: "Create Follow"
+    flow:
+      - post:
+          url: "/api/users/{{ following_id }}/follow"
+          headers:
+            Content-Type: "application/json"
+          json:
+            follower_id: "{{ follower_id }}"
+          capture:
+            - json: "$.message"
+              as: "message"
+      - log: "User {{ follower_id }} followed user {{ following_id }}"
+

@@ -1,0 +1,32 @@
+config:
+  name: "Like Creation Test - 15000 Likes"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 1680  # 28 minutes = 1,680 seconds
+      arrivalCount: 15000  # 15000 likes total, randomly distributed across posts 1-9714, users 1-1200
+      name: "Create 15,000 likes in 28 minutes (~9 req/sec)"
+  payload:
+    path: "../dummyData/like.csv"
+    fields:
+      - "user_id"
+      - "post_id"
+    order: "sequence"  # Process CSV in order
+  processor: "./like.js"
+
+scenarios:
+  - name: "Create Like"
+    flow:
+      - function: "generateLike"
+      - post:
+          url: "/api/posts/{{ post_id }}/like"
+          headers:
+            Content-Type: "application/json"
+          json:
+            user_id: "{{ user_id }}"
+          capture:
+            - json: "$.message"
+              as: "message"
+            - json: "$.like"
+              as: "like"
+      - log: "Liked post: {{ post_id }} by user: {{ user_id }}"
+

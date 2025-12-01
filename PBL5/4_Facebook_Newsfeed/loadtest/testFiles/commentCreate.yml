@@ -1,0 +1,33 @@
+config:
+  name: "Comment Creation Test"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 120  # Create all comments within 120 seconds
+      arrivalCount: 700  # Approximate: 200 posts * 70% * 3.5 avg = ~490, but we'll use actual count from CSV
+      name: "Create all comments in 120 seconds"
+  payload:
+    path: "../dummyData/comment.csv"
+    fields:
+      - "post_id"
+      - "user_id"
+      - "content"
+    order: "sequence"  # Process CSV in order
+  processor: "./comment.js"
+
+scenarios:
+  - name: "Create Comment"
+    flow:
+      - post:
+          url: "/api/posts/{{ post_id }}/comment"
+          headers:
+            Content-Type: "application/json"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ content }}"
+          capture:
+            - json: "$.comment.id"
+              as: "commentId"
+            - json: "$.message"
+              as: "message"
+      - log: "Commented on post: {{ post_id }} by user: {{ user_id }}"
+

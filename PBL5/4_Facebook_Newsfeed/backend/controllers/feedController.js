@@ -155,7 +155,7 @@ const handleGetFeed = async (req, res) => {
     } else {
       // First page: get recent posts (last 7 days)
       const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() -7);
       whereClause.created_at = { [Op.gte]: sevenDaysAgo };
     }
 

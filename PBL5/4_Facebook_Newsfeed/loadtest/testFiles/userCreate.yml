@@ -1,0 +1,30 @@
+config:
+  name: "User Creation Test - All 69 Users in 60 Seconds"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalCount: 69 
+      name: "Create all 69 users in 60 seconds"
+  payload:
+    path: "../dummyData/user.csv"
+    fields:
+      - "username"
+    order: "sequence"  # Process CSV in order
+  processor: "./user.js"
+
+scenarios:
+  - name: "Create User"
+    flow:
+      - post:
+          url: "/api/users"
+          headers:
+            Content-Type: "application/json"
+          json:
+            username: "{{ username }}"
+          capture:
+            - json: "$.user.id"
+              as: "userId"
+            - json: "$.message"
+              as: "message"
+      - log: "Created user: {{ username }} with ID: {{ userId }}"
+

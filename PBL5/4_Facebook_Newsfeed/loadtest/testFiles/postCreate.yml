@@ -1,0 +1,33 @@
+config:
+  name: "Post Creation Test - Batch 2"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 1680  # 28 minutes = 1,680 seconds
+      arrivalCount: 15000  # Batch 2: 600 users (600-1200) * 25 posts = 15,000 posts
+      name: "Batch 2: Create 15,000 posts in 28 minutes (~9 req/sec)"
+  payload:
+    path: "../dummyData/post.csv"
+    fields:
+      - "user_id"
+      - "content"
+    order: "sequence"  # Process CSV in order
+  processor: "./post.js"
+
+scenarios:
+  - name: "Create Post"
+    flow:
+      - post:
+          url: "/api/posts"
+          headers:
+            Content-Type: "application/json"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ content }}"
+            image_urls: []
+          capture:
+            - json: "$.post.id"
+              as: "postId"
+            - json: "$.message"
+              as: "message"
+      - log: "Created post: {{ postId }} by user: {{ user_id }}"
+

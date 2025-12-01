@@ -1,0 +1,31 @@
+# quickRpsTest.yml
+config:
+  name: "Quick RPS Test"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "5 req/s"
+    - duration: 30
+      arrivalRate: 10
+      name: "10 req/s"
+    - duration: 30
+      arrivalRate: 20
+      name: "20 req/s"
+    - duration: 30
+      arrivalRate: 30
+      name: "30 req/s"
+    - duration: 30
+      arrivalRate: 50
+      name: "50 req/s"
+  processor: "./user.js"
+
+scenarios:
+  - name: "Create User"
+    flow:
+      - post:
+          url: "/api/users"
+          headers:
+            Content-Type: "application/json"
+          json:
+            username: "{{ username }}"

@@ -54,6 +54,50 @@ const handleFollow = async (req, res) => {
   }
 };
 
+// Create a new user
+const handleCreateUser = async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username || username.trim() === "") {
+      return res.status(400).json({ error: "Username is required" });
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({
+      where: { username: username.trim() },
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+
+    // Create new user
+    const user = await User.create({
+      username: username.trim(),
+    });
+
+    return res.status(201).json({
+      message: "User created successfully",
+      user: {
+        id: user.id,
+        username: user.username,
+        created_at: user.created_at,
+      },
+    });
+  } catch (error) {
+    // Handle Sequelize validation errors
+    if (error.name === "SequelizeValidationError") {
+      return res.status(400).json({ error: error.errors[0].message });
+    }
+    // Handle unique constraint violation
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // Get user's posts
 const handleGetPosts = async (req, res) => {
   try {
@@ -123,6 +167,7 @@ const handleGetPosts = async (req, res) => {
 
 
 module.exports = {
+  handleCreateUser,
   handleFollow,
   handleGetPosts,
 };
