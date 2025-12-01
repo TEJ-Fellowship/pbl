@@ -6,8 +6,8 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { useCart } from '../contexts/CartContext';
 import { formatPrice } from '../lib/utils';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../components/ui/Modal';
 import { ordersApi } from '../lib/api';
 
@@ -25,12 +25,60 @@ export function Cart() {
     country: '',
   });
   const [errors, setErrors] = useState({});
+  const [paymentStatus, setPaymentStatus] = useState(null);
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef(null);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleQuantityChange = async (productId, newQuantity) => {
     if (newQuantity <= 0) {
       await removeFromCart(productId);
     } else {
       await updateQuantity(productId, newQuantity);
+    }
+  };
+
+  const pollPaymentStatus = async (correlationId, orderId) => {
+    try {
+      const result = await ordersApi.getPaymentStatus(correlationId);
+      if (result.success && result.payment) {
+        const status = result.payment.status;
+        setPaymentStatus(result.payment);
+
+        if (status === 'succeeded') {
+          // Payment succeeded - stop polling and navigate
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsPolling(false);
+          setShowCheckout(false);
+          // Small delay to show success message
+          setTimeout(() => {
+            navigate(`/orders/${orderId}`);
+          }, 1500);
+        } else if (status === 'failed') {
+          // Payment failed - stop polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsPolling(false);
+          alert(result.payment.error || 'Payment failed. Please try again.');
+        }
+        // If status is 'pending' or 'processing', continue polling
+      }
+    } catch (error) {
+      console.error('Error polling payment status:', error);
+      // Continue polling on error (might be transient)
     }
   };
 
@@ -51,17 +99,56 @@ export function Cart() {
 
     setErrors({});
     setCheckoutLoading(true);
+    setPaymentStatus(null);
 
     try {
       const result = await ordersApi.checkout(shippingAddress);
+      
       if (result.success) {
-        navigate(`/orders/${result.order.id}`);
+        // Check if payment is async (202 response with correlationId)
+        if (result.payment && result.payment.correlationId) {
+          const { correlationId, status } = result.payment;
+          const orderId = result.order.id;
+
+          setPaymentStatus({ status, correlationId });
+          setIsPolling(true);
+          setCheckoutLoading(false);
+
+          // Start polling for payment status
+          // Poll every 2 seconds for up to 60 seconds (30 attempts)
+          let pollCount = 0;
+          const maxPolls = 30;
+
+          pollingIntervalRef.current = setInterval(() => {
+            pollCount++;
+            if (pollCount >= maxPolls) {
+              // Timeout - stop polling
+              clearInterval(pollingIntervalRef.current);
+              pollingIntervalRef.current = null;
+              setIsPolling(false);
+              alert('Payment is taking longer than expected. Please check your order status.');
+              navigate(`/orders/${orderId}`);
+            } else {
+              pollPaymentStatus(correlationId, orderId);
+            }
+          }, 2000);
+
+          // Initial poll
+          pollPaymentStatus(correlationId, orderId);
+        } else {
+          // Synchronous payment (legacy or immediate success)
+          navigate(`/orders/${result.order.id}`);
+        }
       }
     } catch (error) {
       console.error('Checkout error:', error);
       alert(error.response?.data?.message || 'Failed to process checkout');
-    } finally {
       setCheckoutLoading(false);
+      setIsPolling(false);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
     }
   };
 
@@ -297,21 +384,75 @@ export function Cart() {
               required
             />
           </div>
+          {/* Payment Status Display */}
+          {paymentStatus && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                {paymentStatus.status === 'pending' && (
+                  <>
+                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    <div>
+                      <p className="font-semibold text-blue-900">Payment Processing</p>
+                      <p className="text-sm text-blue-700">Your payment is being processed...</p>
+                    </div>
+                  </>
+                )}
+                {paymentStatus.status === 'processing' && (
+                  <>
+                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                    <div>
+                      <p className="font-semibold text-blue-900">Processing Payment</p>
+                      <p className="text-sm text-blue-700">Please wait while we process your payment...</p>
+                    </div>
+                  </>
+                )}
+                {paymentStatus.status === 'succeeded' && (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-semibold text-green-900">Payment Successful!</p>
+                      <p className="text-sm text-green-700">Redirecting to your order...</p>
+                    </div>
+                  </>
+                )}
+                {paymentStatus.status === 'failed' && (
+                  <>
+                    <XCircle className="w-5 h-5 text-red-600" />
+                    <div>
+                      <p className="font-semibold text-red-900">Payment Failed</p>
+                      <p className="text-sm text-red-700">{paymentStatus.error || 'Please try again'}</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-4 pt-4">
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setShowCheckout(false)}
+              onClick={() => {
+                setShowCheckout(false);
+                setPaymentStatus(null);
+                setIsPolling(false);
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+              }}
+              disabled={isPolling}
             >
-              Cancel
+              {isPolling ? 'Processing...' : 'Cancel'}
             </Button>
             <Button
               variant="primary"
               className="flex-1"
               onClick={handleCheckout}
-              loading={checkoutLoading}
+              loading={checkoutLoading && !isPolling}
+              disabled={isPolling}
             >
-              Complete Order
+              {isPolling ? 'Processing Payment...' : 'Complete Order'}
             </Button>
           </div>
         </div>

@@ -5,6 +5,9 @@ const { initDatabase } = require("./utils/initDatabase");
 const { redisClient } = require("./utils/redis");
 const { PORT } = require("./utils/config");
 const routes = require("./routes");
+const { ensureTopicExists, disconnectProducer } = require("./utils/kafka");
+const { startPaymentWorker } = require("./services/paymentWorker");
+const { startPoolMonitoring } = require("./middleware/poolMonitor");
 
 const app = express();
 
@@ -44,8 +47,21 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request timeout middleware (60 seconds - increased for high load)
+app.use((req, res, next) => {
+  req.setTimeout(60000, () => {
+    if (!res.headersSent) {
+      res.status(504).json({
+        success: false,
+        message: 'Request timeout',
+      });
+    }
+  });
+  next();
+});
 
 // Request logging (development only)
 if (process.env.NODE_ENV === "development") {
@@ -98,6 +114,10 @@ const start = async () => {
     // Initialize database tables (create if they don't exist)
     await initDatabase();
 
+    // Start database connection pool monitoring
+    startPoolMonitoring();
+    console.log("📊 Database connection pool monitoring started");
+
     // Verify Redis connection (with graceful fallback)
     // ioredis handles connection automatically, just verify with ping
     try {
@@ -120,32 +140,26 @@ const start = async () => {
       console.warn("💡 Cart operations will use in-memory fallback.");
     }
 
-    // Replication check disabled - not needed for current setup
-    // Uncomment below if you need database replication
-    /*
+    // Initialize Kafka topics (non-blocking, will retry if Kafka is not ready)
     try {
-      const { checkReplicationHealth } = require('./utils/replicationHealth');
-      const replicationHealth = await checkReplicationHealth();
-      
-      if (!replicationHealth.configured) {
-        console.log("\n⚠️  Replication Warning:");
-        replicationHealth.warnings.forEach(warning => console.log(`   ${warning}`));
-        console.log("   💡 To set up automatic replication, run: npm run setup-replication\n");
-      } else if (!replicationHealth.working) {
-        console.log("\n⚠️  Replication Health Check:");
-        replicationHealth.warnings.forEach(warning => console.log(`   ${warning}`));
-        if (replicationHealth.errors.length > 0) {
-          replicationHealth.errors.forEach(error => console.log(`   ❌ ${error}`));
-        }
-        console.log("   💡 Run: npm run check-replication (for detailed diagnostics)\n");
-      } else {
-        console.log("✅ Replication is configured and working\n");
-      }
-    } catch (replicationError) {
-      // Non-fatal: just log and continue
-      console.log("ℹ️  Could not check replication status (non-fatal)");
+      await ensureTopicExists('payments', 3);
+      await ensureTopicExists('payments-dlq', 3); // Dead Letter Queue
+    } catch (kafkaError) {
+      console.warn("⚠️  Kafka topic initialization failed (non-fatal):", kafkaError.message);
+      console.warn("💡 Make sure Kafka is running: docker compose up -d");
+      console.warn("💡 Payment processing will be unavailable until Kafka is ready");
     }
-    */
+
+    // Start payment worker (Kafka consumer) - non-blocking
+    let paymentWorker = null;
+    try {
+      paymentWorker = await startPaymentWorker();
+      console.log("✅ Payment worker started");
+    } catch (workerError) {
+      console.warn("⚠️  Payment worker failed to start:", workerError.message);
+      console.warn("💡 Make sure Kafka is running: docker compose up -d");
+      console.warn("💡 Payment processing will be unavailable until Kafka is ready");
+    }
 
     // Start server
     app.listen(PORT, () => {
@@ -160,16 +174,18 @@ const start = async () => {
 };
 
 // Graceful shutdown
-process.on("SIGTERM", async () => {
-  console.log("SIGTERM received, shutting down gracefully...");
-  await redisClient.quit();
+const gracefulShutdown = async () => {
+  console.log("Shutting down gracefully...");
+  try {
+    await disconnectProducer();
+    await redisClient.quit();
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+  }
   process.exit(0);
-});
+};
 
-process.on("SIGINT", async () => {
-  console.log("SIGINT received, shutting down gracefully...");
-  await redisClient.quit();
-  process.exit(0);
-});
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 start();

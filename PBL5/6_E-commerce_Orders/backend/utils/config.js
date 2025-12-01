@@ -18,4 +18,7 @@ module.exports = {
   
   // Security
   SECRET: process.env.SECRET || "my-secret",
+  
+  // Kafka
+  KAFKA_BROKER: process.env.KAFKA_BROKER || 'localhost:9092',
 };
