@@ -2,6 +2,7 @@ import { Sequelize } from "sequelize";
 import cassandra from "cassandra-driver";
 import { createClient } from "redis";
 import dotenv from "dotenv";
+import { DB_CONFIG } from "./constants.js";
 
 dotenv.config({ quiet: true });
 
@@ -15,10 +16,10 @@ const sequelize = new Sequelize(
     dialect: "postgres",
     logging: process.env.NODE_ENV === "development" ? console.log : false,
     pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000,
+      max: DB_CONFIG.POSTGRES.POOL_MAX,
+      min: DB_CONFIG.POSTGRES.POOL_MIN,
+      acquire: DB_CONFIG.POSTGRES.POOL_ACQUIRE,
+      idle: DB_CONFIG.POSTGRES.POOL_IDLE,
     },
   }
 );
@@ -46,6 +47,15 @@ if (
       credentials: {
         username: username,
         password: password,
+      },
+      // Connection pooling configuration
+      pooling: {
+        coreConnectionsPerHost: {
+          [cassandra.types.distance.local]: DB_CONFIG.CASSANDRA.POOL_SIZE,
+          [cassandra.types.distance.remote]: 1,
+        },
+        maxRequestsPerConnection:
+          DB_CONFIG.CASSANDRA.MAX_REQUESTS_PER_CONNECTION,
       },
     });
   } catch (error) {
@@ -105,6 +115,14 @@ const redisClient = createClient({
   host: process.env.REDIS_HOST || "localhost",
   port: process.env.REDIS_PORT || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
+  socket: {
+    reconnectStrategy: (retries) => {
+      if (retries > DB_CONFIG.REDIS.MAX_RETRIES) {
+        return new Error("Max Redis reconnection retries exceeded");
+      }
+      return DB_CONFIG.REDIS.RETRY_DELAY * retries;
+    },
+  },
 });
 
 // Redis connection event handlers

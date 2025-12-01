@@ -116,15 +116,26 @@ export async function initializeKafka() {
     // Get list of existing topics
     const existingTopics = await admin.listTopics();
 
-    // Create topics if they don't exist
-    const topicsToCreate = Object.values(TOPICS).map((topicName) => ({
+    // Create topics if they don't exist (including DLQ topics)
+    const allTopics = [
+      ...Object.values(TOPICS),
+      // Dead-letter queue topics
+      `${TOPICS.POST_CREATED}-dlq`,
+      `${TOPICS.USER_FOLLOWED}-dlq`,
+      `${TOPICS.USER_UNFOLLOWED}-dlq`,
+    ];
+
+    const topicsToCreate = allTopics.map((topicName) => ({
       topic: topicName,
       numPartitions: 3, // 3 partitions for parallel processing
       replicationFactor: 1, // 1 replica (single broker setup)
       configEntries: [
         {
           name: "retention.ms",
-          value: "604800000", // 7 days retention
+          // DLQ topics have longer retention for investigation
+          value: topicName.includes("-dlq")
+            ? "2592000000" // 30 days for DLQ
+            : "604800000", // 7 days for regular topics
         },
         // Note: compression.type is set to "producer" by default
         // This means the broker will use whatever compression the producer sends

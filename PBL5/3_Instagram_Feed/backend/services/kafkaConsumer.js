@@ -6,6 +6,8 @@ import {
 } from "../config/kafka.js";
 import * as feedService from "./feedService.js";
 import { Follow } from "../models/index.js";
+import { KAFKA_CONFIG } from "../config/constants.js";
+import { producer } from "./kafkaProducer.js";
 
 /**
  * Kafka Consumer Service
@@ -55,6 +57,114 @@ const feedConsumer = kafka.consumer({
 
 let isRunning = false;
 
+// Retry tracking (in-memory for simplicity, could use Redis for distributed systems)
+const retryCounts = new Map();
+const MAX_RETRY_DELAY = KAFKA_CONFIG.MAX_RETRY_DELAY || 60000;
+
+/**
+ * Get retry count for a message
+ */
+function getRetryCount(messageKey) {
+  return retryCounts.get(messageKey) || 0;
+}
+
+/**
+ * Increment retry count for a message
+ */
+function incrementRetryCount(messageKey) {
+  const count = getRetryCount(messageKey);
+  retryCounts.set(messageKey, count + 1);
+  return count + 1;
+}
+
+/**
+ * Clear retry count for a message
+ */
+function clearRetryCount(messageKey) {
+  retryCounts.delete(messageKey);
+}
+
+/**
+ * Retry a function with exponential backoff
+ */
+async function retryWithBackoff(event, processFn, messageKey) {
+  const retryCount = incrementRetryCount(messageKey);
+
+  if (retryCount > KAFKA_CONFIG.MAX_RETRIES) {
+    return false; // Max retries exceeded
+  }
+
+  // Calculate delay with exponential backoff
+  const delay = Math.min(
+    KAFKA_CONFIG.INITIAL_RETRY_DELAY *
+      Math.pow(KAFKA_CONFIG.RETRY_MULTIPLIER, retryCount - 1),
+    MAX_RETRY_DELAY
+  );
+
+  console.log(
+    `🔄 [KAFKA] Retrying message (attempt ${retryCount}/${KAFKA_CONFIG.MAX_RETRIES}) after ${delay}ms`
+  );
+
+  // Wait before retrying
+  await new Promise((resolve) => setTimeout(resolve, delay));
+
+  try {
+    await processFn(event);
+    clearRetryCount(messageKey);
+    return true; // Success
+  } catch (error) {
+    console.error(
+      `❌ [KAFKA] Retry attempt ${retryCount} failed:`,
+      error.message
+    );
+    // If we've hit max retries, return false
+    if (retryCount >= KAFKA_CONFIG.MAX_RETRIES) {
+      return false;
+    }
+    // Otherwise, recursively retry
+    return await retryWithBackoff(event, processFn, messageKey);
+  }
+}
+
+/**
+ * Send message to Dead-Letter Queue (DLQ)
+ */
+async function sendToDLQ(event, originalError, retryCount) {
+  try {
+    const dlqTopic = `${TOPICS.POST_CREATED}${KAFKA_CONFIG.DLQ_TOPIC_SUFFIX}`;
+    const dlqMessage = {
+      originalEvent: event,
+      originalError: {
+        message: originalError.message,
+        stack: originalError.stack,
+      },
+      retryCount,
+      timestamp: new Date().toISOString(),
+      reason: "Max retries exceeded",
+    };
+
+    await producer.send({
+      topic: dlqTopic,
+      messages: [
+        {
+          key: event.userId || event.postId || "unknown",
+          value: JSON.stringify(dlqMessage),
+          headers: {
+            "content-type": "application/json",
+            "x-original-topic": TOPICS.POST_CREATED,
+            "x-retry-count": String(retryCount),
+          },
+        },
+      ],
+    });
+
+    console.log(`📮 [DLQ] Message sent to ${dlqTopic}`);
+  } catch (error) {
+    console.error(`❌ [DLQ] Failed to send message to DLQ:`, error.message);
+    // Don't throw - we don't want DLQ failures to crash the consumer
+  }
+}
+
 /**
  * Initialize and start the feed consumer
  *
@@ -88,6 +198,9 @@ export async function startFeedConsumer() {
       // This function is called for each batch of messages
       eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
         for (const message of batch.messages) {
+          let processed = false;
+          const messageKey = `${message.partition}:${message.offset}`;
+
           try {
             // Parse the message value
             const event = JSON.parse(message.value.toString());
@@ -95,7 +208,11 @@ export async function startFeedConsumer() {
             // Process based on event type
             await processEvent(event);
 
-            // Mark message as processed (commit offset)
+            // Clear retry count on success
+            clearRetryCount(messageKey);
+            processed = true;
+
+            // Mark message as processed (commit offset) - ONLY on success
             resolveOffset(message.offset);
 
             // Send heartbeat to keep consumer alive
@@ -103,17 +220,54 @@ export async function startFeedConsumer() {
           } catch (error) {
             console.error(
               `❌ [KAFKA] Error processing message at offset ${message.offset}:`,
-              error
+              error.message
             );
 
-            // In production, you might want to:
-            // 1. Send to a dead-letter queue
-            // 2. Retry with exponential backoff
-            // 3. Alert monitoring system
+            // Try to parse event for retry logic
+            let event = null;
+            try {
+              event = JSON.parse(message.value.toString());
+            } catch (parseError) {
+              console.error(
+                `❌ [KAFKA] Failed to parse message, sending to DLQ:`,
+                parseError.message
+              );
+              // Can't retry if we can't parse - send to DLQ
+              await sendToDLQ(
+                { raw: message.value.toString() },
+                error,
+                getRetryCount(messageKey)
+              );
+              // Don't commit - let it retry or move to DLQ
+              continue;
+            }
 
-            // For now, we'll still commit to avoid blocking
-            // (You might want to change this behavior)
-            resolveOffset(message.offset);
+            // Retry with exponential backoff
+            const success = await retryWithBackoff(
+              event,
+              processEvent,
+              messageKey
+            );
+
+            if (success) {
+              // Successfully processed after retry
+              processed = true;
+              resolveOffset(message.offset);
+            } else {
+              // Max retries exceeded - send to DLQ
+              console.error(
+                `📮 [DLQ] Sending message to dead-letter queue after ${KAFKA_CONFIG.MAX_RETRIES} failed retries`
+              );
+              await sendToDLQ(event, error, KAFKA_CONFIG.MAX_RETRIES);
+
+              // Only commit after sending to DLQ to prevent infinite retries
+              // The message is now in DLQ for manual investigation
+              resolveOffset(message.offset);
+              clearRetryCount(messageKey);
+            }
+
+            // Send heartbeat to keep consumer alive
+            await heartbeat();
           }
         }
       },
@@ -171,14 +325,15 @@ async function processEvent(event) {
 async function handlePostCreated(event) {
   const { postId, userId, createdAt } = event;
 
-  try {
-    // Perform fan-out to followers' feeds
-    await feedService.fanOutToFollowers(userId, postId, new Date(createdAt));
-  } catch (error) {
-    console.error(`❌ [KAFKA] Error processing POST_CREATED event:`, error);
-    // Don't re-throw - just log the error to prevent consumer crash
-    // The offset will still be committed, preventing infinite retries
+  if (!postId || !userId || !createdAt) {
+    throw new Error(
+      `Invalid POST_CREATED event: missing required fields. postId: ${postId}, userId: ${userId}, createdAt: ${createdAt}`
+    );
   }
+
+  // Perform fan-out to followers' feeds
+  // Errors will be caught by the retry mechanism above
+  await feedService.fanOutToFollowers(userId, postId, new Date(createdAt));
 }
 
 /**

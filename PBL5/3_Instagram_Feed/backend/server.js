@@ -20,9 +20,11 @@ import {
   startFeedConsumer,
   stopFeedConsumer,
 } from "./services/kafkaConsumer.js";
+import { startFallbackWorker } from "./services/fallbackQueue.js";
 import userRoutes from "./routes/userRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import "./models/index.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 dotenv.config({ quiet: true });
 
@@ -38,6 +40,33 @@ app.use("/api/posts", postRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "Instagram Feed API is running!" });
 });
+
+// Health check and metrics endpoint
+app.get("/api/health", async (req, res) => {
+  try {
+    const { getMetrics, getRedisMemoryInfo } = await import(
+      "./services/monitoring.js"
+    );
+    const metrics = getMetrics();
+    const redisMemory = await getRedisMemoryInfo();
+
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      metrics,
+      redis: redisMemory,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "unhealthy",
+      error: error.message,
+    });
+  }
+});
+
+// Error handling middleware (must be last)
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Helper endpoint to view Cassandra tables
 app.get("/api/cassandra/tables", async (req, res) => {
@@ -191,6 +220,9 @@ async function startServer() {
     await initializeRedis();
     await loadLuaScripts();
 
+    // Start fallback queue worker for async fan-out when Kafka is unavailable
+    startFallbackWorker();
+
     // Initialize Kafka
     console.log("🔌 Connecting to Kafka...");
     try {
@@ -218,7 +250,7 @@ async function startServer() {
 }
 
 // Graceful shutdown
-async function gracefulShutdown() {
+async function gracefulShutdown(exitCode = 0) {
   console.log("🛑 Shutting down gracefully...");
 
   try {
@@ -233,8 +265,25 @@ async function gracefulShutdown() {
     console.error("❌ Error during Kafka shutdown:", error);
   }
 
-  process.exit(0);
+  process.exit(exitCode);
 }
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Promise Rejection:", reason);
+  console.error("Promise:", promise);
+  // Don't exit the process, just log the error
+  // The error should be handled by the error middleware
+  // In production, you might want to send this to a logging service
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", async (error) => {
+  console.error("❌ Uncaught Exception:", error);
+  console.error("Stack:", error.stack);
+  // For uncaught exceptions, we should exit gracefully with error code
+  await gracefulShutdown(1);
+});
 
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);

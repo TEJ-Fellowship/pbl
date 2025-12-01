@@ -2,6 +2,7 @@ import * as postService from "../services/postService.js";
 import * as feedService from "../services/feedService.js";
 import { cacheFeedResponse } from "../services/redisLuaScripts.js";
 import { publishPostCreated } from "../services/kafkaProducer.js";
+import { enqueueFanOutTask } from "../services/fallbackQueue.js";
 
 /**
  * Create a new post
@@ -38,34 +39,34 @@ export const createPost = async (req, res) => {
         console.warn(
           `⚠️ Failed to publish post event to Kafka: ${result.error}`
         );
-        // Fallback to synchronous fan-out if Kafka is unavailable
+        // Fallback to async queue (non-blocking)
         try {
-          const followersCount = await feedService.fanOutToFollowers(
-            post.user_id,
-            post.id,
-            post.created_at
-          );
+          await enqueueFanOutTask({
+            userId: post.user_id,
+            postId: post.id,
+            createdAt: post.created_at,
+          });
           console.log(
-            `✅ Post ${post.id} added to ${followersCount} followers' feeds (fallback mode)`
+            `📥 Post ${post.id} enqueued for async fan-out (Kafka unavailable)`
           );
-        } catch (fanOutError) {
-          console.error("⚠️ Error during fallback fan-out:", fanOutError);
+        } catch (queueError) {
+          console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
         }
       }
     } catch (kafkaError) {
       console.error("⚠️ Error publishing to Kafka:", kafkaError);
-      // Fallback to synchronous fan-out if Kafka fails
+      // Fallback to async queue (non-blocking)
       try {
-        const followersCount = await feedService.fanOutToFollowers(
-          post.user_id,
-          post.id,
-          post.created_at
-        );
+        await enqueueFanOutTask({
+          userId: post.user_id,
+          postId: post.id,
+          createdAt: post.created_at,
+        });
         console.log(
-          `✅ Post ${post.id} added to ${followersCount} followers' feeds (fallback mode)`
+          `📥 Post ${post.id} enqueued for async fan-out (Kafka error)`
         );
-      } catch (fanOutError) {
-        console.error("⚠️ Error during fallback fan-out:", fanOutError);
+      } catch (queueError) {
+        console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
       }
     }
 
@@ -210,21 +211,17 @@ export const getUserFeed = async (req, res) => {
       `📊 [FEED] Retrieved ${feedItems.length} feed items from Cassandra`
     );
 
-    // If we got fewer than expected, check if backfill is needed
+    // If we got fewer than expected, trigger async backfill (non-blocking)
     if (feedItems.length < limit) {
       console.warn(
-        `⚠️ Only ${feedItems.length}/${limit} posts found. Checking if backfill needed...`
+        `⚠️ Only ${feedItems.length}/${limit} posts found. Triggering async backfill...`
       );
-      // Ensure all posts from followed users are in the feed
-      const backfilled = await feedService.ensureAllPostsInFeed(user_id);
-      if (backfilled > 0) {
-        console.log(
-          `✅ Backfilled ${backfilled} posts. Re-fetching from Cassandra...`
+      // Run backfill asynchronously to avoid blocking the response
+      feedService
+        .ensureAllPostsInFeed(user_id)
+        .catch((err) =>
+          console.error("Background backfill error:", err.message)
         );
-        // Re-fetch after backfill
-        feedItems = await feedService.getFeedFromCassandra(user_id, limit);
-        console.log(`📊 [FEED] After backfill: ${feedItems.length} feed items`);
-      }
     }
 
     // Warm up Redis cache with the feed items we found
