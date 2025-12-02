@@ -81,12 +81,10 @@ export const getPostById = async (postId) => {
   // Try cache first
   const cachedPosts = await getPostsFromCache([postId]);
   if (cachedPosts[0]) {
-    console.log(`✅ [CACHE HIT] Post ${postId} from Redis cache`);
     return cachedPosts[0];
   }
 
   // Cache miss - fetch from Cassandra
-  console.log(`❌ [CACHE MISS] Post ${postId} - fetching from Cassandra`);
   const postIdUuid = types.Uuid.fromString(postId);
   const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id = ?`;
   const result = await cassandraClient.execute(query, [postIdUuid], {
@@ -168,14 +166,10 @@ export const getPostsByIds = async (postIds) => {
 
   // If all posts are cached, return them
   if (missingIds.length === 0) {
-    console.log(`✅ [CACHE HIT] All ${postIds.length} posts from Redis cache`);
     return postIds.map((id) => cachedMap.get(id));
   }
 
   // Fetch missing posts from Cassandra
-  console.log(
-    `⚠️ [CACHE PARTIAL] ${cachedMap.size}/${postIds.length} posts cached, fetching ${missingIds.length} from Cassandra`
-  );
 
   const uuidPostIds = missingIds.map((id) => types.Uuid.fromString(id));
   const placeholders = missingIds.map(() => "?").join(",");

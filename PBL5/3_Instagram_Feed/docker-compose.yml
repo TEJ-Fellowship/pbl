@@ -2,16 +2,16 @@ version: "3.8"
 
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    hostname: zookeeper
+    image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
+    restart: always
     ports:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - kafka-network
+      - kafka-net
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "2181"]
       interval: 10s
@@ -19,9 +19,9 @@ services:
       retries: 5
 
   kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    hostname: kafka
+    image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
+    restart: always
     depends_on:
       zookeeper:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
-      - kafka-network
+      - kafka-net
     healthcheck:
       test:
         [
@@ -53,5 +53,5 @@ services:
       retries: 5
 
 networks:
-  kafka-network:
+  kafka-net:
     driver: bridge

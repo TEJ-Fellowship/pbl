@@ -100,9 +100,6 @@ export const addPostToFeed = async (
   if (!skipIdempotencyCheck) {
     const exists = await isPostInFeed(userId, postId);
     if (exists) {
-      console.log(
-        `ℹ️ Post ${postId} already in feed for user ${userId}, skipping (idempotency)`
-      );
       return;
     }
   }
@@ -158,106 +155,120 @@ export const addPostToFeedRedis = async (userId, postId, createdAt) => {
  * @param {Date} createdAt - Post creation timestamp
  */
 export const fanOutToFollowers = async (userId, postId, createdAt) => {
-  // Get all followers of the user who posted
-  const followers = await Follow.findAll({
-    where: {
-      following_id: userId, // People who follow this user
-    },
-    attributes: ["follower_id"],
-  });
-
-  console.log(
-    `📤 Fan-out: Adding post ${postId} to ${followers.length} followers' feeds`
-  );
-
-  // Transaction-like approach: Write to Cassandra first (source of truth)
-  // Then update Redis cache. If Redis fails, Cassandra still has the data.
-  // This ensures data consistency (Cassandra is always correct)
-
-  // Add post to each follower's feed in Cassandra (source of truth)
-  // Skip idempotency check for individual writes to avoid N queries
-  const cassandraPromises = followers.map(
-    (follow) => addPostToFeed(follow.follower_id, postId, createdAt, true) // Skip check for performance
-  );
-
-  // Execute Cassandra writes first (source of truth)
-  // If this fails, we don't update Redis (transaction boundary)
   try {
-    await Promise.all(cassandraPromises);
-    console.log(
-      `✅ [CASSANDRA] Added post ${postId} to ${followers.length} feeds (source of truth)`
-    );
-  } catch (cassandraError) {
-    console.error(
-      `❌ [CASSANDRA] Failed to write to source of truth:`,
-      cassandraError.message
-    );
-    // Don't update Redis if Cassandra fails - maintain consistency
-    throw cassandraError;
-  }
-
-  // Only update Redis cache if Cassandra writes succeeded
-  // Redis is cache, so it's okay if it fails (we can rebuild from Cassandra)
-  const score = createdAt.getTime();
-  const feedKeys = followers.map((follow) => FEED_KEY(follow.follower_id));
-
-  console.time(`[PIPELINE] Batch add to ${feedKeys.length} feeds`);
-  try {
-    await batchAddPostToFeeds(feedKeys, score, postId, MAX_FEED_SIZE, FEED_TTL);
-    console.timeEnd(`[PIPELINE] Batch add to ${feedKeys.length} feeds`);
-  } catch (error) {
-    console.error("⚠️ Error in Redis pipelining:", error.message);
-    // Fallback to individual writes if pipelining fails
-    console.log("⚠️ Falling back to individual Redis writes...");
-    const redisPromises = followers.map((follow) =>
-      addPostToFeedRedis(follow.follower_id, postId, createdAt)
-    );
-    // Don't await - let it run in background, Redis is just cache
-    Promise.all(redisPromises).catch((err) =>
-      console.error("⚠️ Redis cache update failed (non-critical):", err.message)
-    );
-  }
-
-  // Mark all as added for idempotency tracking (batch operation)
-  if (followers.length > 0) {
-    const markPromises = followers.map((follow) =>
-      markPostAdded(follow.follower_id, postId)
-    );
-    await Promise.all(markPromises).catch((err) =>
-      console.error("⚠️ Error marking posts as added:", err.message)
-    );
-  }
-
-  // IMPORTANT: Invalidate all followers' response caches so new post appears immediately
-  // This ensures cached responses are cleared and feed will be rebuilt with new post
-  // OPTIMIZATION: Only invalidate response cache (not feed cache which is already updated)
-  // Use batch invalidation for better performance (single Lua script vs N individual DELs)
-  if (followers.length > 0) {
-    try {
-      const followerIds = followers.map((follow) => follow.follower_id);
-      const deletedCount = await batchInvalidateResponseCaches(followerIds);
-      console.log(
-        `🗑️ Batch invalidated ${deletedCount} response cache keys for ${followers.length} followers`
-      );
-    } catch (error) {
-      console.error(
-        `⚠️ Failed to batch invalidate response caches:`,
-        error.message
-      );
-      // Fallback to individual invalidation if batch fails
-      const invalidationPromises = followers.map((follow) =>
-        invalidateFeedCache(follow.follower_id).catch((err) =>
-          console.error(
-            `⚠️ Failed to invalidate cache for follower ${follow.follower_id}:`,
-            err.message
-          )
-        )
-      );
-      await Promise.all(invalidationPromises);
+    // Validate inputs
+    if (!userId || !postId) {
+      throw new Error("userId and postId are required");
     }
-  }
 
-  return followers.length;
+    // Validate and normalize createdAt
+    let validCreatedAt;
+    if (createdAt instanceof Date) {
+      validCreatedAt = createdAt;
+    } else if (typeof createdAt === "string") {
+      validCreatedAt = new Date(createdAt);
+    } else {
+      validCreatedAt = new Date();
+    }
+
+    // Check if date is valid
+    if (isNaN(validCreatedAt.getTime())) {
+      console.error(
+        `⚠️ Invalid createdAt date: ${createdAt}, using current time`
+      );
+      validCreatedAt = new Date();
+    }
+
+    // Get all followers of the user who posted
+    const followers = await Follow.findAll({
+      where: {
+        following_id: userId,
+      },
+      attributes: ["follower_id"],
+    });
+
+    if (followers.length === 0) {
+      return;
+    }
+
+    // Calculate score safely
+    const score = validCreatedAt.getTime();
+    if (!Number.isFinite(score) || score < 0) {
+      console.error(
+        `⚠️ Invalid score calculated: ${score}, using current time`
+      );
+      const now = Date.now();
+      validCreatedAt = new Date(now);
+    }
+
+    const followerIds = followers.map((follow) => follow.follower_id);
+    const feedKeys = followerIds.map((id) => FEED_KEY(id));
+
+    // OPTIMIZATION: Do all operations in parallel batches
+    // 1. Cassandra writes (source of truth)
+    // 2. Redis cache updates
+    // 3. Idempotency markers
+    // 4. Cache invalidation
+
+    const cassandraPromises = followerIds.map((followerId) =>
+      addPostToFeed(followerId, postId, validCreatedAt, true).catch((err) => {
+        console.error(
+          `⚠️ Failed to add post to feed for follower ${followerId}:`,
+          err.message
+        );
+        // Don't throw - continue with other followers
+      })
+    );
+
+    // Execute all operations in parallel
+    const [cassandraResults] = await Promise.allSettled([
+      Promise.all(cassandraPromises),
+    ]);
+
+    // Check if any critical failures occurred
+    if (cassandraResults.status === "rejected") {
+      console.error(
+        `❌ [CASSANDRA] Critical failure in fan-out:`,
+        cassandraResults.reason?.message
+      );
+      throw cassandraResults.reason;
+    }
+
+    // Update Redis cache in parallel (non-blocking)
+    Promise.all([
+      // Batch Redis update
+      batchAddPostToFeeds(
+        feedKeys,
+        score,
+        postId,
+        MAX_FEED_SIZE,
+        FEED_TTL
+      ).catch((err) => {
+        console.error("⚠️ Redis batch update failed:", err.message);
+        // Fallback to individual writes
+        return Promise.allSettled(
+          followerIds.map((followerId) =>
+            addPostToFeedRedis(followerId, postId, validCreatedAt)
+          )
+        );
+      }),
+      // Mark idempotency (non-critical)
+      Promise.allSettled(
+        followerIds.map((followerId) => markPostAdded(followerId, postId))
+      ),
+      // Invalidate response caches
+      batchInvalidateResponseCaches(followerIds).catch((err) => {
+        console.error("⚠️ Cache invalidation failed:", err.message);
+        return Promise.resolve(0);
+      }),
+    ]).catch((err) => {
+      // Log but don't fail - these are cache operations
+      console.error("⚠️ Non-critical cache operations failed:", err.message);
+    });
+  } catch (error) {
+    console.error(`❌ [FAN-OUT] Critical error:`, error.message, error.stack);
+    throw error; // Re-throw so Kafka retry mechanism can handle it
+  }
 };
 
 /**
@@ -272,13 +283,8 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
     const existingPosts = await postService.getPostsByUser(followingId);
 
     if (existingPosts.length === 0) {
-      console.log(`ℹ️ No existing posts to backfill for user ${followingId}`);
       return 0;
     }
-
-    console.log(
-      `📥 Backfilling ${existingPosts.length} posts from user ${followingId} to follower ${followerId}'s feed`
-    );
 
     // Get current feed to check which posts are already there
     const currentFeed = await getFeedFromCassandra(followerId, 1000); // Get all posts
@@ -292,15 +298,8 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
     );
 
     if (postsToAdd.length === 0) {
-      console.log(
-        `ℹ️ All posts from user ${followingId} are already in follower ${followerId}'s feed`
-      );
       return 0;
     }
-
-    console.log(
-      `📥 Adding ${postsToAdd.length} missing posts from user ${followingId} to follower ${followerId}'s feed`
-    );
 
     // Add missing posts to follower's feed in Cassandra
     const cassandraPromises = postsToAdd.map((post) =>
@@ -316,10 +315,6 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
 
     // IMPORTANT: Invalidate cached response so new posts appear immediately
     await invalidateFeedCache(followerId);
-
-    console.log(
-      `✅ Backfilled ${postsToAdd.length} posts to user ${followerId}'s feed and invalidated response cache`
-    );
 
     return postsToAdd.length;
   } catch (error) {
@@ -448,9 +443,6 @@ export const ensureAllPostsInFeed = async (userId, force = false) => {
     totalBackfilled = results.reduce((sum, count) => sum + count, 0);
 
     if (totalBackfilled > 0) {
-      console.log(
-        `✅ Backfilled ${totalBackfilled} missing posts to user ${userId}'s feed`
-      );
       // Invalidate cache so new posts appear
       await invalidateFeedCache(userId);
 
@@ -497,13 +489,8 @@ export const removePostsFromFeedOnUnfollow = async (
     const postsToRemove = await postService.getPostsByUser(unfollowedId);
 
     if (postsToRemove.length === 0) {
-      console.log(`ℹ️ No posts to remove for user ${unfollowedId}`);
       return 0;
     }
-
-    console.log(
-      `🗑️ Removing ${postsToRemove.length} posts from user ${unfollowedId} in follower ${followerId}'s feed`
-    );
 
     const followerIdInt = parseInt(followerId);
     const postIds = postsToRemove.map((post) => post.id);
@@ -537,10 +524,6 @@ export const removePostsFromFeedOnUnfollow = async (
     // The cached response still contains the old posts, so we need to delete it
     await invalidateFeedCache(followerId);
 
-    console.log(
-      `✅ Removed ${postsToRemove.length} posts from user ${followerId}'s feed and invalidated response cache`
-    );
-
     return postsToRemove.length;
   } catch (error) {
     console.error(
@@ -567,12 +550,6 @@ export const getFeedFromRedis = async (userId, limit = 20) => {
 
     if (result && result.length > 0) {
       // Cache hit! TTL already refreshed by LUA script
-      console.log(
-        `✅ [CACHE HIT] Feed cache for user ${userId} - ${
-          result.length / 2
-        } posts found`
-      );
-
       // Parse result: [value1, score1, value2, score2, ...]
       const feedItems = [];
       for (let i = 0; i < result.length; i += 2) {
@@ -605,10 +582,6 @@ export const getFeedFromCassandra = async (userId, limit = 20) => {
   const userIdInt = parseInt(userId);
   const limitInt = parseInt(limit);
 
-  console.log(
-    `🔍 [CASSANDRA] Querying feed for user ${userId} with limit ${limitInt}`
-  );
-
   // Note: ORDER BY is not needed because table has CLUSTERING ORDER BY (created_at DESC)
   // But we'll add it explicitly for clarity and to ensure correct ordering
   const query = `
@@ -623,18 +596,10 @@ export const getFeedFromCassandra = async (userId, limit = 20) => {
     prepare: true,
   });
 
-  console.log(
-    `🔍 [CASSANDRA] Query returned ${result.rows.length} rows for user ${userId}`
-  );
-
   const feedItems = result.rows.map((row) => ({
     post_id: row.post_id.toString(),
     created_at: row.created_at,
   }));
-
-  console.log(
-    `📊 [CASSANDRA] Retrieved ${feedItems.length} feed items for user ${userId} from Cassandra`
-  );
 
   // Removed COUNT(*) query - it's a Cassandra anti-pattern
   // COUNT(*) requires scanning all rows and is very expensive
@@ -672,9 +637,6 @@ export const getFeed = async (userId, limit = 20) => {
 
   if (cachedFeed && cachedFeed.length >= limit) {
     // Cache hit - return from Redis
-    console.log(
-      `✅ [CACHE HIT] User ${userId} feed - returning ${cachedFeed.length} posts from Redis`
-    );
     // Still check and backfill missing posts asynchronously (don't block response)
     ensureAllPostsInFeed(userId).catch((err) =>
       console.error(`Background backfill failed:`, err)
@@ -683,16 +645,6 @@ export const getFeed = async (userId, limit = 20) => {
   }
 
   // Cache miss or partial - get from Cassandra
-  if (cachedFeed && cachedFeed.length > 0) {
-    console.log(
-      `⚠️ [CACHE PARTIAL] User ${userId} feed - only ${cachedFeed.length}/${limit} posts in cache, fetching from Cassandra`
-    );
-  } else {
-    console.log(
-      `❌ [CACHE MISS] User ${userId} feed - fetching from Cassandra`
-    );
-  }
-
   // Ensure all posts from followed users are in the feed before retrieving
   await ensureAllPostsInFeed(userId);
 
@@ -729,10 +681,6 @@ export const getFeedWithPostsFromRedis = async (userId, limit = 20) => {
     );
 
     if (feedItems && feedItems.length > 0) {
-      console.log(
-        `✅ [CACHE HIT] Feed + Posts for user ${userId} - ${feedItems.length} posts found in single LUA call`
-      );
-
       // Create posts map for quick lookup
       const postsMap = new Map(posts.map((post) => [post.id, post]));
 
@@ -764,9 +712,6 @@ export const getFeedResponseFromCache = async (userId, limit = 20) => {
     const cached = await getCachedFeedResponse(redisKey, FEED_TTL);
 
     if (cached) {
-      console.log(
-        `✅ [CACHE HIT] Complete feed response for user ${userId} (fastest path)`
-      );
       return JSON.parse(cached);
     }
 
@@ -794,10 +739,6 @@ export const invalidateFeedCache = async (userId) => {
       redisClient.del(redisKey),
       redisClient.del(cachedResponseKey),
     ]);
-
-    console.log(
-      `🗑️ Invalidated feed cache and response cache for user ${userId}`
-    );
   } catch (error) {
     console.error(
       `⚠️ Cache invalidation error for user ${userId}:`,

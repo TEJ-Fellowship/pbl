@@ -24,16 +24,10 @@ export const getFollowersCount = async (userId) => {
 
     if (cached !== null) {
       // Cache hit - TTL already refreshed by LUA script
-      console.log(
-        `✅ [CACHE HIT] Followers count for user ${userId}: ${cached}`
-      );
       return parseInt(cached, 10);
     }
 
     // Cache miss - get from database
-    console.log(
-      `❌ [CACHE MISS] Followers count for user ${userId} - fetching from database`
-    );
     const user = await User.findByPk(userId, {
       attributes: ["followers_count"],
     });
@@ -47,9 +41,6 @@ export const getFollowersCount = async (userId) => {
       redisKey,
       COUNT_TTL,
       user.followers_count.toString()
-    );
-    console.log(
-      `📥 [CACHE WARM] Followers count for user ${userId}: ${user.followers_count} cached`
     );
 
     return user.followers_count;
@@ -79,16 +70,10 @@ export const getFollowingCount = async (userId) => {
 
     if (cached !== null) {
       // Cache hit - TTL already refreshed by LUA script
-      console.log(
-        `✅ [CACHE HIT] Following count for user ${userId}: ${cached}`
-      );
       return parseInt(cached, 10);
     }
 
     // Cache miss - get from database
-    console.log(
-      `❌ [CACHE MISS] Following count for user ${userId} - fetching from database`
-    );
     const user = await User.findByPk(userId, {
       attributes: ["following_count"],
     });
@@ -102,9 +87,6 @@ export const getFollowingCount = async (userId) => {
       redisKey,
       COUNT_TTL,
       user.following_count.toString()
-    );
-    console.log(
-      `📥 [CACHE WARM] Following count for user ${userId}: ${user.following_count} cached`
     );
 
     return user.following_count;
@@ -197,7 +179,6 @@ export const invalidateCountCache = async (userId) => {
   try {
     await redisClient.del(FOLLOWERS_COUNT_KEY(userId));
     await redisClient.del(FOLLOWING_COUNT_KEY(userId));
-    console.log(`🗑️ Invalidated count cache for user ${userId}`);
   } catch (error) {
     console.error(
       `⚠️ Error invalidating count cache for user ${userId}:`,

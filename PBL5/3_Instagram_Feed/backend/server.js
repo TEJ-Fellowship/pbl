@@ -26,6 +26,10 @@ import postRoutes from "./routes/postRoutes.js";
 import "./models/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = "development";
+}
+
 dotenv.config({ quiet: true });
 
 const app = express();
@@ -273,15 +277,39 @@ process.on("unhandledRejection", (reason, promise) => {
   // The error should be handled by the error middleware
   // In production, you might want to send this to a logging service
   // DO NOT exit or throw - just log
+
+  // Additional safety: log stack trace if available
+  if (reason && reason.stack) {
+    console.error("Stack:", reason.stack);
+  }
 });
 
 // Handle uncaught exceptions
 process.on("uncaughtException", async (error) => {
   console.error("❌ Uncaught Exception:", error);
   console.error("Stack:", error.stack);
-  // For uncaught exceptions, we should exit gracefully with error code
-  // But only for truly fatal errors
-  await gracefulShutdown(1);
+  console.error("Error name:", error.name);
+  console.error("Error message:", error.message);
+
+  // ALWAYS log but NEVER exit in development
+  // This prevents nodemon from restarting on every error
+  if (process.env.NODE_ENV !== "production") {
+    console.error(
+      "⚠️ Uncaught exception in development mode - server will continue"
+    );
+    console.error("   Fix the error to prevent potential issues");
+    // Log to monitoring service if available
+    return;
+  }
+
+  // In production, only exit for truly fatal errors
+  // Most errors should be handled gracefully
+  if (error.name === "FatalError" || error.code === "EADDRINUSE") {
+    console.error("❌ Fatal error detected, shutting down...");
+    await gracefulShutdown(1);
+  } else {
+    console.error("⚠️ Non-fatal uncaught exception, continuing...");
+  }
 });
 
 process.on("SIGTERM", gracefulShutdown);

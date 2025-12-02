@@ -31,7 +31,6 @@ export async function enqueueFanOutTask(taskData) {
   // Set expiration on queue key (7 days)
   await redisClient.expire(FALLBACK_QUEUE_KEY, 7 * 24 * 60 * 60);
 
-  console.log(`📥 [FALLBACK QUEUE] Enqueued fan-out task: ${taskId}`);
   return taskId;
 }
 
@@ -62,8 +61,6 @@ export async function processFanOutTask() {
         new Date(task.createdAt)
       );
 
-      console.log(`✅ [FALLBACK QUEUE] Processed fan-out task: ${task.id}`);
-
       // Remove processing marker
       await redisClient.del(processingKey);
       return true;
@@ -80,9 +77,6 @@ export async function processFanOutTask() {
       if (!task.retryCount || task.retryCount < 1) {
         task.retryCount = (task.retryCount || 0) + 1;
         await redisClient.lPush(FALLBACK_QUEUE_KEY, JSON.stringify(task));
-        console.log(
-          `🔄 [FALLBACK QUEUE] Re-enqueued task ${task.id} for retry`
-        );
       } else {
         console.error(
           `❌ [FALLBACK QUEUE] Task ${task.id} exceeded max retries, dropping`

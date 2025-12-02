@@ -40,8 +40,8 @@ import { producer } from "./kafkaProducer.js";
 const feedConsumer = kafka.consumer({
   groupId: CONSUMER_GROUPS.FEED_PROCESSOR,
   // Consumer configuration - optimized for faster startup
-  sessionTimeout: 10000, // Reduced from 30s to 10s
-  heartbeatInterval: 3000, // 3 seconds
+  sessionTimeout: 30000, // Increased to 30s for stability
+  heartbeatInterval: 10000, // 10 seconds
   maxBytesPerPartition: 1048576, // 1MB per partition
   minBytes: 1,
   maxBytes: 10485760, // 10MB total
@@ -94,15 +94,22 @@ async function retryWithBackoff(event, processFn, messageKey) {
   }
 
   // Calculate delay with exponential backoff
-  const delay = Math.min(
-    KAFKA_CONFIG.INITIAL_RETRY_DELAY *
-      Math.pow(KAFKA_CONFIG.RETRY_MULTIPLIER, retryCount - 1),
-    MAX_RETRY_DELAY
+  let delay = Math.max(
+    0,
+    Math.min(
+      KAFKA_CONFIG.INITIAL_RETRY_DELAY *
+        Math.pow(KAFKA_CONFIG.RETRY_MULTIPLIER, retryCount - 1),
+      MAX_RETRY_DELAY
+    )
   );
 
-  console.log(
-    `🔄 [KAFKA] Retrying message (attempt ${retryCount}/${KAFKA_CONFIG.MAX_RETRIES}) after ${delay}ms`
-  );
+  // Safety check: ensure delay is never negative or invalid
+  if (!Number.isFinite(delay) || delay < 0) {
+    console.error(
+      `⚠️ [KAFKA] Invalid delay calculated: ${delay}, using default 1000ms`
+    );
+    delay = 1000;
+  }
 
   // Wait before retrying
   await new Promise((resolve) => setTimeout(resolve, delay));
@@ -161,8 +168,6 @@ async function sendToDLQ(
         },
       ],
     });
-
-    console.log(`📮 [DLQ] Message sent to ${dlqTopic}`);
   } catch (error) {
     console.error(`❌ [DLQ] Failed to send message to DLQ:`, error.message);
     // Don't throw - we don't want DLQ failures to crash the consumer
@@ -218,90 +223,59 @@ export async function startFeedConsumer() {
     // Start consuming messages
     await feedConsumer.run({
       eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
-        for (const message of batch.messages) {
-          const messageKey = `${message.partition}:${message.offset}`;
+        // Wrap entire batch in try-catch to prevent crashes
+        try {
+          for (const message of batch.messages) {
+            const messageKey = `${message.partition}:${message.offset}`;
 
-          try {
-            // Parse the message value
-            const event = JSON.parse(message.value.toString());
-
-            // Determine topic from event type
-            const eventTopic = getTopicFromEventType(event.eventType);
-
-            // Process based on event type - wrap in try-catch to prevent crashes
             try {
-              await processEvent(event);
-            } catch (processError) {
-              console.error(
-                `❌ [KAFKA] Error in processEvent:`,
-                processError.message
-              );
-              // Don't throw - let retry logic handle it
-              throw processError;
-            }
+              // Parse the message value
+              const event = JSON.parse(message.value.toString());
 
-            // Clear retry count on success
-            clearRetryCount(messageKey);
-            resolveOffset(message.offset);
+              // Determine topic from event type
+              const eventTopic = getTopicFromEventType(event.eventType);
 
-            // Mark message as processed (commit offset) - ONLY on success
-            await heartbeat();
-          } catch (error) {
-            console.error(
-              `❌ [KAFKA] Error processing message at offset ${message.offset}:`,
-              error.message
-            );
-
-            // Try to parse event for retry logic
-            let event = null;
-            let eventTopic = TOPICS.POST_CREATED; // Default
-            try {
-              event = JSON.parse(message.value.toString());
-              eventTopic = getTopicFromEventType(event.eventType);
-            } catch (parseError) {
-              console.error(
-                `❌ [KAFKA] Failed to parse message, sending to DLQ:`,
-                parseError.message
-              );
-              // Can't retry if we can't parse - send to DLQ
+              // Process based on event type
               try {
-                await sendToDLQ(
-                  { raw: message.value.toString() },
-                  error,
-                  getRetryCount(messageKey),
-                  eventTopic
+                await processEvent(event);
+              } catch (processError) {
+                console.error(
+                  `❌ [KAFKA] Error in processEvent:`,
+                  processError.message
                 );
-              } catch (dlqError) {
-                console.error("❌ [KAFKA] DLQ send failed:", dlqError.message);
-                // Even if DLQ fails, commit to prevent infinite retries
+                // Don't throw - let retry logic handle it
+                throw processError;
               }
-              resolveOffset(message.offset);
-              clearRetryCount(messageKey);
-              await heartbeat();
-              continue;
-            }
 
-            // Retry with exponential backoff
-            try {
-              const success = await retryWithBackoff(
-                event,
-                processEvent,
-                messageKey
+              // Clear retry count on success
+              clearRetryCount(messageKey);
+              resolveOffset(message.offset);
+
+              // Mark message as processed (commit offset) - ONLY on success
+              await heartbeat();
+            } catch (error) {
+              console.error(
+                `❌ [KAFKA] Error processing message at offset ${message.offset}:`,
+                error.message
               );
 
-              if (success) {
-                // Successfully processed after retry
-                resolveOffset(message.offset);
-              } else {
-                // Max retries exceeded - send to DLQ
+              // Try to parse event for retry logic
+              let event = null;
+              let eventTopic = TOPICS.POST_CREATED; // Default
+              try {
+                event = JSON.parse(message.value.toString());
+                eventTopic = getTopicFromEventType(event.eventType);
+              } catch (parseError) {
                 console.error(
-                  `📮 [DLQ] Sending message to dead-letter queue after ${KAFKA_CONFIG.MAX_RETRIES} failed retries`
+                  `❌ [KAFKA] Failed to parse message, sending to DLQ:`,
+                  parseError.message
                 );
+                // Can't retry if we can't parse - send to DLQ
                 try {
                   await sendToDLQ(
-                    event,
+                    { raw: message.value.toString() },
                     error,
-                    KAFKA_CONFIG.MAX_RETRIES,
+                    getRetryCount(messageKey),
                     eventTopic
                   );
                 } catch (dlqError) {
@@ -309,31 +283,102 @@ export async function startFeedConsumer() {
                     "❌ [KAFKA] DLQ send failed:",
                     dlqError.message
                   );
+                  // Even if DLQ fails, commit to prevent infinite retries
                 }
+                resolveOffset(message.offset);
+                clearRetryCount(messageKey);
+                await heartbeat();
+                continue;
+              }
 
-                // Only commit after sending to DLQ to prevent infinite retries
+              // Retry with exponential backoff
+              try {
+                const success = await retryWithBackoff(
+                  event,
+                  processEvent,
+                  messageKey
+                );
+
+                if (success) {
+                  // Successfully processed after retry
+                  resolveOffset(message.offset);
+                } else {
+                  // Max retries exceeded - send to DLQ
+                  console.error(
+                    `📮 [DLQ] Sending message to dead-letter queue after ${KAFKA_CONFIG.MAX_RETRIES} failed retries`
+                  );
+                  try {
+                    await sendToDLQ(
+                      event,
+                      error,
+                      KAFKA_CONFIG.MAX_RETRIES,
+                      eventTopic
+                    );
+                  } catch (dlqError) {
+                    console.error(
+                      "❌ [KAFKA] DLQ send failed:",
+                      dlqError.message
+                    );
+                  }
+
+                  // Only commit after sending to DLQ to prevent infinite retries
+                  resolveOffset(message.offset);
+                  clearRetryCount(messageKey);
+                }
+              } catch (retryError) {
+                // If retry mechanism itself fails, commit and move on
+                console.error(
+                  `❌ [KAFKA] Retry mechanism failed:`,
+                  retryError.message
+                );
                 resolveOffset(message.offset);
                 clearRetryCount(messageKey);
               }
-            } catch (retryError) {
-              // If retry mechanism itself fails, commit and move on
-              console.error(
-                `❌ [KAFKA] Retry mechanism failed:`,
-                retryError.message
-              );
-              resolveOffset(message.offset);
-              clearRetryCount(messageKey);
-            }
 
-            // Send heartbeat to keep consumer alive
-            await heartbeat();
+              // Send heartbeat to keep consumer alive
+              await heartbeat();
+            }
           }
+        } catch (batchError) {
+          // Catch any errors that escape the message loop
+          console.error(
+            `❌ [KAFKA] Fatal error in batch processing:`,
+            batchError.message,
+            batchError.stack
+          );
+          // Send heartbeat to keep consumer alive even on batch errors
+          try {
+            await heartbeat();
+          } catch (heartbeatError) {
+            console.error(
+              `❌ [KAFKA] Heartbeat failed after batch error:`,
+              heartbeatError.message
+            );
+          }
+          // Don't rethrow - we want to continue processing
         }
       },
     });
 
     isRunning = true;
     console.log("✅ Kafka consumer started");
+
+    // Add error handlers to prevent crashes
+    feedConsumer.on("consumer.crash", ({ error }) => {
+      console.error("❌ [KAFKA] Consumer crashed:", error);
+      isRunning = false;
+      // Don't throw - let the server continue
+      // The consumer will attempt to reconnect
+    });
+
+    feedConsumer.on("consumer.disconnect", () => {
+      console.warn("⚠️ [KAFKA] Consumer disconnected");
+      isRunning = false;
+    });
+
+    feedConsumer.on("consumer.network.request_timeout", ({ payload }) => {
+      console.warn("⚠️ [KAFKA] Network request timeout:", payload);
+    });
   } catch (error) {
     isRunning = false;
     const errorMessage =
@@ -409,9 +454,6 @@ async function handleUserFollowed(event) {
 
   // Backfill feed is already handled synchronously in userController
   // This handler can be used for additional async processing if needed
-  console.log(
-    `📥 [KAFKA] USER_FOLLOWED event received: ${followerId} -> ${followingId}`
-  );
   // Additional async processing can be added here if needed
 }
 
@@ -429,9 +471,6 @@ async function handleUserUnfollowed(event) {
 
   // Post removal is already handled synchronously in userController
   // This handler can be used for additional async processing if needed
-  console.log(
-    `📥 [KAFKA] USER_UNFOLLOWED event received: ${followerId} -> ${followingId}`
-  );
   // Additional async processing can be added here if needed
 }
 

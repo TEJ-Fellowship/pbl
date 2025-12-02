@@ -35,9 +35,6 @@ export const createPost = async (req, res) => {
           postId: post.id,
           createdAt: post.created_at,
         });
-        console.log(
-          `📥 Post ${post.id} enqueued for async fan-out (Kafka unavailable)`
-        );
       } catch (queueError) {
         console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
       }
@@ -47,11 +44,7 @@ export const createPost = async (req, res) => {
     setImmediate(async () => {
       try {
         const result = await publishPostCreated(post);
-        if (result.success) {
-          console.log(
-            `✅ Post ${post.id} event published to Kafka (partition: ${result.partition}, offset: ${result.offset})`
-          );
-        } else {
+        if (!result.success) {
           console.warn(
             `⚠️ Failed to publish post event to Kafka: ${result.error}`
           );
@@ -184,9 +177,6 @@ export const getUserFeed = async (req, res) => {
     );
 
     if (cachedResponse && cachedResponse.length >= minCachedPosts) {
-      console.log(
-        `⚡ [CACHE HIT] Returning ${cachedResponse.length} cached posts for user ${user_id} (< 10ms)`
-      );
       return res.status(200).json({
         success: true,
         feed: cachedResponse,
@@ -195,15 +185,8 @@ export const getUserFeed = async (req, res) => {
     }
 
     // Cache miss or incomplete - fetch from Cassandra
-    console.log(
-      `📊 [FEED] Cache miss/incomplete for user ${user_id}, fetching from Cassandra (limit: ${limit})`
-    );
-
     // Get feed items directly from Cassandra (source of truth)
     let feedItems = await feedService.getFeedFromCassandra(user_id, limit);
-    console.log(
-      `📊 [FEED] Retrieved ${feedItems.length} feed items from Cassandra`
-    );
 
     // If we got fewer than expected, trigger async backfill (non-blocking)
     if (feedItems.length < limit) {
@@ -231,19 +214,11 @@ export const getUserFeed = async (req, res) => {
 
     // Always fetch post details if we have feedItems
     if (feedItems.length > 0) {
-      console.log(
-        `📊 [FEED] User ${user_id}: Found ${feedItems.length} feed items, fetching post details...`
-      );
-
       // Get all post IDs
       const postIds = feedItems.map((item) => item.post_id);
-      console.log(`📊 [FEED] Post IDs to fetch: ${postIds.length}`);
 
       // Fetch all post details
       const posts = await postService.getPostsByIds(postIds);
-      console.log(
-        `📊 [FEED] Fetched ${posts.length} post details from database`
-      );
 
       // Create map for quick lookup
       const allPostsMap = new Map(posts.map((post) => [post.id, post]));
@@ -254,14 +229,9 @@ export const getUserFeed = async (req, res) => {
         .filter((post) => post !== undefined)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)); // Sort by newest first
 
-      console.log(`📊 [FEED] Final sorted posts count: ${sortedPosts.length}`);
-
       // Cache the complete response for next time (enables < 10ms response on next request)
       if (sortedPosts.length > 0) {
         await cacheFeedResponse(redisKey, sortedPosts, FEED_TTL);
-        console.log(
-          `💾 [CACHE] Cached ${sortedPosts.length} posts for user ${user_id} (next request will be < 10ms)`
-        );
       }
     } else {
       return res.status(200).json({
