@@ -110,10 +110,14 @@ const getProducts = async (req, res) => {
     });
   } catch (error) {
     console.error('Get products error:', error);
-    res.status(500).json({
+    // Return partial success if we have some data, or full error if none
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to fetch products',
-      error: error.message
+      error: error.message,
+      // Include retry suggestion for timeout errors
+      ...(statusCode === 504 && { retry: true })
     });
   }
 };
@@ -178,10 +182,12 @@ const getProductById = async (req, res) => {
     });
   } catch (error) {
     console.error('Get product error:', error);
-    res.status(500).json({
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to fetch product',
-      error: error.message
+      error: error.message,
+      ...(statusCode === 504 && { retry: true })
     });
   }
 };

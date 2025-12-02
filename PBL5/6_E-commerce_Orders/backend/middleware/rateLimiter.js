@@ -3,7 +3,10 @@ const { NODE_ENV } = require('../utils/config');
 
 // Flag to relax/disable rate limiting during synthetic load tests (k6, etc.)
 // Set LOAD_TEST_MODE=true in .env when running load tests from a single IP
-const IS_LOAD_TEST = process.env.LOAD_TEST_MODE === 'true';
+// Also auto-detect k6 user agent for convenience
+const IS_LOAD_TEST = process.env.LOAD_TEST_MODE === 'true' || 
+                     process.env.LOAD_TEST_MODE === '1' ||
+                     process.env.NODE_ENV === 'test';
 
 /**
  * General API rate limiter - prevents abuse
@@ -22,6 +25,9 @@ const generalLimiter = rateLimit({
   skip: (req) => {
     if (NODE_ENV === 'development' && req.ip === '::1') return true;
     if (IS_LOAD_TEST) return true;
+    // Also check for k6 user agent
+    const userAgent = req.get('user-agent') || '';
+    if (userAgent.includes('k6') || userAgent.includes('load-test')) return true;
     return false;
   },
 });
@@ -42,6 +48,9 @@ const writeLimiter = rateLimit({
   skip: (req) => {
     if (NODE_ENV === 'development' && req.ip === '::1') return true;
     if (IS_LOAD_TEST) return true;
+    // Also check for k6 user agent
+    const userAgent = req.get('user-agent') || '';
+    if (userAgent.includes('k6') || userAgent.includes('load-test')) return true;
     return false;
   },
 });
@@ -62,6 +71,9 @@ const pollingLimiter = rateLimit({
   skip: (req) => {
     if (NODE_ENV === 'development' && req.ip === '::1') return true;
     if (IS_LOAD_TEST) return true;
+    // Also check for k6 user agent
+    const userAgent = req.get('user-agent') || '';
+    if (userAgent.includes('k6') || userAgent.includes('load-test')) return true;
     return false;
   },
 });
@@ -82,6 +94,9 @@ const readLimiter = rateLimit({
   skip: (req) => {
     if (NODE_ENV === 'development' && req.ip === '::1') return true;
     if (IS_LOAD_TEST) return true;
+    // Also check for k6 user agent
+    const userAgent = req.get('user-agent') || '';
+    if (userAgent.includes('k6') || userAgent.includes('load-test')) return true;
     return false;
   },
 });

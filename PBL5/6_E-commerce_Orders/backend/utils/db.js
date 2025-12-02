@@ -1,19 +1,19 @@
 const Sequelize = require("sequelize");
 const { DATABASE_URL1, DATABASE_URL2, DATABASE_URL3 } = require("./config");
 
-// Database connection options - Optimized for 1K concurrent users
-// Connection pool sizing: For 1K concurrent users with proper read/write split:
-// - Primary: 500 connections (handles writes, checkouts, cart operations)
-// - Replicas: 250 each (handles reads, product browsing, order history)
-// Total: 1000 connections across 3 databases
+// Database connection options - Optimized for high load (500+ VUs)
+// Connection pool sizing: For high concurrent load with proper read/write split:
+// - Primary: 750 connections (handles writes, checkouts, cart operations)
+// - Replicas: 400 each (handles reads, product browsing, order history)
+// Total: 1550 connections across 3 databases
 const dbOptions = {
   dialect: "postgres",
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 500,        // Increased for 1K concurrent users (was 300)
-    min: 50,         // Increased for better connection availability (was 30)
-    acquire: 60000,  // Increased to 60 seconds for connection acquire timeout
-    idle: 20000,     // Increased to 20 seconds idle timeout
+    max: 750,        // Increased for high load scenarios (was 500)
+    min: 100,        // Increased for better connection availability (was 50)
+    acquire: 90000,  // Increased to 90 seconds for connection acquire timeout (was 60)
+    idle: 30000,     // Increased to 30 seconds idle timeout (was 20)
     evict: 1000,     // Check for idle connections every 1 second
   },
   dialectOptions: {
@@ -27,7 +27,7 @@ const dbOptions = {
   },
   // Query timeout to prevent long-running queries from blocking
   query: {
-    timeout: 30000, // Increased from 10 to 30 seconds for queries
+    timeout: 60000, // Increased to 60 seconds for queries under high load (was 30)
   },
 };
 
@@ -40,10 +40,10 @@ const sequelizePrimary = new Sequelize(DATABASE_URL1, dbOptions);
 const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
   ...dbOptions,
   pool: {
-    max: 250,  // Increased for 1K users with read/write split (was 150)
-    min: 30,   // Increased (was 15)
-    acquire: 60000,  // Increased to 60 seconds
-    idle: 20000,
+    max: 400,  // Increased for high load scenarios (was 250)
+    min: 60,   // Increased for better availability (was 30)
+    acquire: 90000,  // Increased to 90 seconds (was 60)
+    idle: 30000,      // Increased to 30 seconds (was 20)
     evict: 1000,
   },
   replication: false,
@@ -54,10 +54,10 @@ const sequelizeReplica1 = new Sequelize(DATABASE_URL2, {
 const sequelizeReplica2 = new Sequelize(DATABASE_URL3, {
   ...dbOptions,
   pool: {
-    max: 250,  // Increased for 1K users with read/write split (was 150)
-    min: 30,   // Increased (was 15)
-    acquire: 60000,  // Increased to 60 seconds
-    idle: 20000,
+    max: 400,  // Increased for high load scenarios (was 250)
+    min: 60,   // Increased for better availability (was 30)
+    acquire: 90000,  // Increased to 90 seconds (was 60)
+    idle: 30000,      // Increased to 30 seconds (was 20)
     evict: 1000,
   },
   replication: false,
@@ -74,8 +74,10 @@ const circuitBreakerState = {
   replica2: { open: false, failures: 0, lastFailure: 0 },
 };
 
-const CIRCUIT_BREAKER_THRESHOLD = 10; // Open after 10 consecutive failures
-const CIRCUIT_BREAKER_RESET_TIME = 30000; // Reset after 30 seconds
+// Circuit breaker thresholds - Less aggressive for high load scenarios
+// Increased threshold to prevent premature circuit opening under load
+const CIRCUIT_BREAKER_THRESHOLD = 25; // Open after 25 consecutive failures (was 10)
+const CIRCUIT_BREAKER_RESET_TIME = 15000; // Reset after 15 seconds (was 30) - faster recovery
 
 /**
  * Check if circuit breaker should allow request

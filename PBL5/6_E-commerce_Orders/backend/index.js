@@ -50,9 +50,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Limit request body size
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Request timeout middleware (60 seconds - increased for high load)
+// Request timeout middleware (90 seconds - increased for high load scenarios)
 app.use((req, res, next) => {
-  req.setTimeout(60000, () => {
+  req.setTimeout(90000, () => {
     if (!res.headersSent) {
       res.status(504).json({
         success: false,

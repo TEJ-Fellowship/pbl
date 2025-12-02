@@ -66,8 +66,4 @@ services:
 
 volumes:
   redis-data:
-<<<<<<< HEAD
   kafka-data:
-=======
-  kafka-data:
->>>>>>> f464f3f8bbf82a235ea29ac5b73dbdb64b6dac7a

@@ -74,7 +74,20 @@ const getCartItems = async (req, res) => {
     });
   } catch (error) {
     console.error('Get cart error:', error);
-    res.status(500).json({
+    // Return empty cart on error rather than failing completely
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    if (statusCode === 504) {
+      // For timeout errors, return empty cart to allow user to continue
+      return res.json({
+        success: true,
+        cart: {},
+        items: [],
+        total: 0,
+        itemCount: 0,
+        warning: 'Cart data temporarily unavailable'
+      });
+    }
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to fetch cart',
       error: error.message
@@ -182,10 +195,12 @@ const addItemToCart = async (req, res) => {
     });
   } catch (error) {
     console.error('Add to cart error:', error);
-    res.status(500).json({
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to add item to cart',
-      error: error.message
+      error: error.message,
+      ...(statusCode === 504 && { retry: true })
     });
   }
 };

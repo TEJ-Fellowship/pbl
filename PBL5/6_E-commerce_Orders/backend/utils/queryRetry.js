@@ -17,9 +17,9 @@ const { checkCircuitBreaker, recordCircuitBreakerFailure, recordCircuitBreakerSu
  */
 const retryQuery = async (queryFn, options = {}) => {
   const {
-    maxRetries = 3,
-    baseDelay = 100,
-    maxDelay = 5000,
+    maxRetries = 5,  // Increased from 3 to 5 for better resilience
+    baseDelay = 50,   // Reduced from 100ms for faster retries
+    maxDelay = 3000,  // Reduced from 5000ms for faster failure detection
     dbType = 'primary', // Track which DB we're using
   } = options;
 
@@ -45,17 +45,22 @@ const retryQuery = async (queryFn, options = {}) => {
         break;
       }
 
-      // Only retry on connection/timeout errors
+      // Only retry on connection/timeout errors - expanded list for better coverage
       const isRetriableError = 
         error.name === 'SequelizeConnectionError' ||
         error.name === 'SequelizeConnectionRefusedError' ||
         error.name === 'SequelizeTimeoutError' ||
+        error.name === 'SequelizeConnectionAcquireTimeoutError' ||
         error.message?.includes('timeout') ||
         error.message?.includes('ECONNREFUSED') ||
         error.message?.includes('Connection lost') ||
         error.message?.includes('pool') ||
+        error.message?.includes('Connection pool') ||
+        error.message?.includes('Unable to acquire') ||
         error.code === 'ETIMEDOUT' ||
-        error.code === 'ECONNREFUSED';
+        error.code === 'ECONNREFUSED' ||
+        error.code === 'ECONNRESET' ||
+        error.code === 'ENOTFOUND';
 
       if (!isRetriableError) {
         // Don't retry non-retriable errors (validation, not found, etc.)
