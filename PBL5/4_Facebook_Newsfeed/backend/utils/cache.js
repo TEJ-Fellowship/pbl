@@ -161,6 +161,197 @@ const setLastFetchTime = async (userId, ttl = 300) => {
   }
 };
 
+  
+// Lua script defined once (not recreated every call)
+const BATCH_APPEND_LUA_SCRIPT = `
+  local postData = ARGV[1]
+  local maxLength = tonumber(ARGV[2])
+  local ttl = tonumber(ARGV[3])
+  local currentTime = ARGV[4]
+  local updatedCount = 0
+  
+  -- Parse post data ONCE (outside the loop)
+  local newPost = cjson.decode(postData)
+  local postId = tostring(newPost.id)
+  
+  -- Loop through all follower IDs (starting from ARGV[5])
+  for i = 5, #ARGV do
+    local followerId = ARGV[i]
+    local feedKey = "feed:user:" .. followerId
+    
+    -- Get existing feed
+    local existingFeedJson = redis.call("GET", feedKey)
+    local feedData
+    
+    if existingFeedJson then
+      feedData = cjson.decode(existingFeedJson)
+    else
+      feedData = {posts = {}, lastUpdated = currentTime}
+    end
+    
+    -- Ensure posts array exists
+    if not feedData.posts then
+      feedData.posts = {}
+    end
+    
+    -- Check if post already exists (prevent duplicates)
+    local exists = false
+    for j, post in ipairs(feedData.posts) do
+      if tostring(post.id) == postId then
+        exists = true
+        break
+      end
+    end
+    
+    -- If post doesn't exist, add it
+    if not exists then
+      -- Prepend new post to beginning (newest first)
+      table.insert(feedData.posts, 1, newPost)
+      
+      -- Trim to maxLength if needed
+      if #feedData.posts > maxLength then
+        -- Remove oldest posts (keep only first maxLength)
+        local trimmed = {}
+        for k = 1, maxLength do
+          table.insert(trimmed, feedData.posts[k])
+        end
+        feedData.posts = trimmed
+      end
+      
+      -- Update timestamp
+      feedData.lastUpdated = currentTime
+      
+      -- Save back to Redis
+      local updatedFeedJson = cjson.encode(feedData)
+      redis.call("SETEX", feedKey, ttl, updatedFeedJson)
+      updatedCount = updatedCount + 1
+    end
+  end
+  
+  return updatedCount
+`;
+
+// Cache for script SHA (loaded once)
+let scriptSha = null;
+
+/**
+ * Load or get cached script SHA for EVALSHA
+ */
+const getScriptSha = async () => {
+  if (scriptSha) return scriptSha;
+  
+  try {
+    // Load script into Redis and get SHA
+    scriptSha = await redisClient.scriptLoad(BATCH_APPEND_LUA_SCRIPT);
+    console.log(`📜 Lua script loaded with SHA: ${scriptSha.substring(0, 8)}...`);
+    return scriptSha;
+  } catch (error) {
+    console.error('Error loading Lua script:', error);
+    return null;
+  }
+};
+
+/**
+ * Batch append post to multiple follower feeds using Lua script (optimized with EVALSHA)
+ * This is much faster than individual appendToFeedCache calls
+ * 
+ * @param {Array<number>} followerIds - Array of follower user IDs
+ * @param {Object} newPost - New post to append to all feeds
+ * @param {number} maxLength - Maximum number of posts to keep (default: 100)
+ * @param {number} ttl - Time to live in seconds (default: 300)
+ */
+const batchAppendToFeedCache = async (followerIds, newPost, maxLength = 100, ttl = REDIS_TTL_DEFAULT) => {
+  try {
+    if (!redisClient.isOpen || followerIds.length === 0) {
+      return false;
+    }
+
+    const startTime = Date.now();
+
+    // Get script SHA (loads once, then cached)
+    const sha = await getScriptSha();
+    if (!sha) {
+      // Fallback to EVAL if script loading fails
+      console.warn('⚠️ Falling back to EVAL (script load failed)');
+      return await batchAppendToFeedCacheWithEval(followerIds, newPost, maxLength, ttl);
+    }
+
+    // Prepare arguments for Lua script
+    const args = [
+      JSON.stringify(newPost),  // ARGV[1] - post data
+      maxLength.toString(),      // ARGV[2] - max length
+      ttl.toString(),            // ARGV[3] - TTL
+      new Date().toISOString(),  // ARGV[4] - current timestamp
+      ...followerIds.map(id => id.toString()) // ARGV[5+] - follower IDs
+    ];
+
+    // Execute using EVALSHA (much faster - script already cached in Redis)
+    let result;
+    try {
+      result = await redisClient.evalSha(sha, {
+        keys: [],
+        arguments: args
+      });
+    } catch (evalShaError) {
+      // If script not found (e.g., Redis restarted), reload it
+      if (evalShaError.message && evalShaError.message.includes('NOSCRIPT')) {
+        console.log('🔄 Script not found, reloading...');
+        scriptSha = null; // Reset cache
+        const newSha = await getScriptSha();
+        if (newSha) {
+          result = await redisClient.evalSha(newSha, {
+            keys: [],
+            arguments: args
+          });
+        } else {
+          throw evalShaError;
+        }
+      } else {
+        throw evalShaError;
+      }
+    }
+
+    const endTime = Date.now();
+    const executionTime = endTime - startTime;
+    
+    if (executionTime > 5) {
+      console.log(`⏱️ Lua script (EVALSHA) took: ${executionTime}ms for ${followerIds.length} followers`);
+    }
+    
+    return result > 0; // Return true if at least one feed was updated
+  } catch (error) {
+    console.error(`❌ Batch append to feed cache error:`, error);
+    // Fallback to regular EVAL if EVALSHA fails
+    console.log('⚠️ Falling back to EVAL');
+    return await batchAppendToFeedCacheWithEval(followerIds, newPost, maxLength, ttl);
+  }
+};
+
+/**
+ * Fallback function using EVAL (if EVALSHA fails)
+ */
+const batchAppendToFeedCacheWithEval = async (followerIds, newPost, maxLength = 100, ttl = REDIS_TTL_DEFAULT) => {
+  try {
+    const args = [
+      JSON.stringify(newPost),
+      maxLength.toString(),
+      ttl.toString(),
+      new Date().toISOString(),
+      ...followerIds.map(id => id.toString())
+    ];
+
+    const result = await redisClient.eval(BATCH_APPEND_LUA_SCRIPT, {
+      keys: [],
+      arguments: args
+    });
+
+    return result > 0;
+  } catch (error) {
+    console.error(`❌ EVAL fallback error:`, error);
+    return false;
+  }
+};
+
 module.exports = {
   getCache,
   setCache,
@@ -168,6 +359,7 @@ module.exports = {
   deletePattern,
   appendToFeedCache,
   appendMultipleToFeedCache,
+  batchAppendToFeedCache,  
   getLastFetchTime,
   setLastFetchTime,
 };
