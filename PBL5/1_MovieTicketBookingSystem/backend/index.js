@@ -1,12 +1,12 @@
 const express = require("express");
-// const cors = require("cors");
+
 const app = express();
 
 const { PORT } = require("./utils/config");
 const { connectToDatabase } = require("./utils/db.js");
 
 // Middleware
-// app.use(cors());
+
 app.use(express.json());
 
 // Request timeout middleware (production best practice)
