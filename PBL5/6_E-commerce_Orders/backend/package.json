@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --watch index.js",
+    "start:worker": "node scripts/startPaymentWorker.js",
     "seed": "node scripts/seedProducts.js",
     "check-replication": "node scripts/checkReplication.js",
     "sync-replicas": "node scripts/syncReplicas.js",
@@ -13,7 +14,8 @@
     "setup-replication": "node scripts/setupReplication.js",
     "find-postgres-config": "node scripts/findPostgresConfig.js",
     "generate-replication-sql": "node scripts/generateReplicationSQL.js",
-    "setup-cron": "node scripts/setupCronSync.js"
+    "setup-cron": "node scripts/setupCronSync.js",
+    "apply-indexes": "node scripts/applyIndexes.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +25,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.4.1",
+    "ioredis": "^5.8.2",
+    "kafkajs": "^2.2.4",
     "mongoose": "^8.19.3",
+    "opossum": "^7.0.0",
     "pg": "^8.16.3",
     "redis": "^4.7.0",
     "sequelize": "^6.37.7",

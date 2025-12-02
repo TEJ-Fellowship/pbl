@@ -3,20 +3,15 @@ const router = express.Router();
 const productRoutes = require('./productRoutes');
 const cartRoutes = require('./cartRoutes');
 const orderRoutes = require('./orderRoutes');
+const healthRoutes = require('./healthRoutes');
 
-// API routes
+// Health check routes (no rate limiting - needed for load balancer health checks)
+router.use('/health', healthRoutes);
+
+// API routes (rate limiting applied per route)
 router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
-
-// Health check
-router.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is healthy',
-    timestamp: new Date().toISOString()
-  });
-});
 
 module.exports = router;
 

@@ -1,6 +1,7 @@
-const { getCart, addToCart, updateCartItem, removeFromCart, clearCart } = require('../utils/redis');
-const { Product, Inventory } = require('../models');
+const { getCart, addToCart, updateCartItem, removeFromCart, clearCart, getCachedInventory, syncInventoryToCache } = require('../utils/redis');
+const { getModelsFromRequest } = require('../utils/modelFactory');
 const { getPrimary } = require('../utils/db');
+const { retryQuery } = require('../utils/queryRetry');
 
 /**
  * Get user's cart
@@ -20,18 +21,23 @@ const getCartItems = async (req, res) => {
       });
     }
 
-    // Get product details for items in cart
+    // Get models bound to req.db (for GET requests, uses read replica)
+    const { Product, Inventory } = getModelsFromRequest(req);
+
+    // Get product details for items in cart - uses read replica
     const productIds = Object.keys(cart);
-    const products = await Product.findAll({
-      where: { id: productIds },
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
-    });
+    const products = await retryQuery(async () => {
+      return await Product.findAll({
+        where: { id: productIds },
+        include: [
+          {
+            model: Inventory,
+            as: 'inventory',
+            attributes: ['quantity', 'reserved_quantity']
+          }
+        ]
+      });
+    }, { dbType: req.dbType || 'replica1' }); // Pass dbType for circuit breaker
 
     const items = [];
     let total = 0;
@@ -68,7 +74,20 @@ const getCartItems = async (req, res) => {
     });
   } catch (error) {
     console.error('Get cart error:', error);
-    res.status(500).json({
+    // Return empty cart on error rather than failing completely
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    if (statusCode === 504) {
+      // For timeout errors, return empty cart to allow user to continue
+      return res.json({
+        success: true,
+        cart: {},
+        items: [],
+        total: 0,
+        itemCount: 0,
+        warning: 'Cart data temporarily unavailable'
+      });
+    }
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to fetch cart',
       error: error.message
@@ -99,16 +118,27 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Get product from primary (might need to check inventory)
-    const product = await Product.findByPk(productId, {
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
-    });
+    // Get models bound to req.db (for POST requests, uses primary, but we can read from replica)
+    // For product lookup, we'll use read replica via getReadReplica
+    const { getReadReplica } = require('../utils/db');
+    const { getModels } = require('../utils/modelFactory');
+    const readModels = getModels(getReadReplica());
+
+    // Parallelize: Get product and check cached inventory simultaneously
+    const [product, cachedInventory] = await Promise.all([
+      retryQuery(async () => {
+        return await readModels.Product.findByPk(productId, {
+          include: [
+            {
+              model: readModels.Inventory,
+              as: 'inventory',
+              attributes: ['quantity', 'reserved_quantity']
+            }
+          ]
+        });
+      }, { dbType: 'replica1' }), // Pass dbType for circuit breaker
+      getCachedInventory(productId) // Try Redis cache first
+    ]);
 
     if (!product) {
       return res.status(404).json({
@@ -117,8 +147,22 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Check availability
-    const available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+    // Check availability - use cached inventory if available, otherwise use DB
+    let available;
+    if (cachedInventory !== null) {
+      // Use cached inventory (faster)
+      available = cachedInventory;
+    } else {
+      // Fallback to DB inventory
+      available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+      // Cache it for next time
+      if (product.inventory) {
+        syncInventoryToCache(productId, available).catch(() => {
+          // Ignore cache sync errors
+        });
+      }
+    }
+
     if (available < qty) {
       return res.status(400).json({
         success: false,
@@ -126,7 +170,7 @@ const addItemToCart = async (req, res) => {
       });
     }
 
-    // Add to cart
+    // Add to cart (now has fallback, so should always succeed)
     const success = await addToCart(sessionId, productId, qty, {
       title: product.title,
       price: product.price,
@@ -134,10 +178,12 @@ const addItemToCart = async (req, res) => {
       image_url: product.image_url
     });
 
+    // With fallback mechanism, this should rarely fail
     if (!success) {
       return res.status(500).json({
         success: false,
-        message: 'Failed to add item to cart'
+        message: 'Failed to add item to cart. Please try again.',
+        error: 'CART_ERROR'
       });
     }
 
@@ -149,10 +195,12 @@ const addItemToCart = async (req, res) => {
     });
   } catch (error) {
     console.error('Add to cart error:', error);
-    res.status(500).json({
+    const statusCode = error.name?.includes('Timeout') || error.message?.includes('timeout') ? 504 : 500;
+    res.status(statusCode).json({
       success: false,
       message: 'Failed to add item to cart',
-      error: error.message
+      error: error.message,
+      ...(statusCode === 504 && { retry: true })
     });
   }
 };
@@ -190,16 +238,26 @@ const updateCartItemQuantity = async (req, res) => {
       });
     }
 
-    // Check stock availability
-    const product = await Product.findByPk(productId, {
-      include: [
-        {
-          model: Inventory,
-          as: 'inventory',
-          attributes: ['quantity', 'reserved_quantity']
-        }
-      ]
-    });
+    // Get models bound to read replica for product lookup
+    const { getReadReplica } = require('../utils/db');
+    const { getModels } = require('../utils/modelFactory');
+    const readModels = getModels(getReadReplica());
+
+    // Parallelize: Get product and check cached inventory
+    const [product, cachedInventory] = await Promise.all([
+      retryQuery(async () => {
+        return await readModels.Product.findByPk(productId, {
+          include: [
+            {
+              model: readModels.Inventory,
+              as: 'inventory',
+              attributes: ['quantity', 'reserved_quantity']
+            }
+          ]
+        });
+      }, { dbType: 'replica1' }), // Pass dbType for circuit breaker
+      getCachedInventory(productId)
+    ]);
 
     if (!product) {
       return res.status(404).json({
@@ -208,7 +266,20 @@ const updateCartItemQuantity = async (req, res) => {
       });
     }
 
-    const available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+    // Check availability - use cached inventory if available
+    let available;
+    if (cachedInventory !== null) {
+      available = cachedInventory;
+    } else {
+      available = (product.inventory?.quantity || 0) - (product.inventory?.reserved_quantity || 0);
+      // Cache it for next time
+      if (product.inventory) {
+        syncInventoryToCache(productId, available).catch(() => {
+          // Ignore cache sync errors
+        });
+      }
+    }
+
     if (available < qty) {
       return res.status(400).json({
         success: false,

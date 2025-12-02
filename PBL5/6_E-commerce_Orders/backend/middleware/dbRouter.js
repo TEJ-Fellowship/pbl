@@ -19,9 +19,17 @@ const dbRouter = (req, res, next) => {
   const isReadOperation = READ_METHODS.includes(method);
   
   if (isReadOperation) {
-    // Use read replica (round-robin)
-    req.db = getReadReplica();
-    req.dbType = 'replica';
+    // Use read replica (round-robin with circuit breaker)
+    const replica = getReadReplica();
+    req.db = replica;
+    // Determine which replica was selected for circuit breaker tracking
+    if (replica === sequelizeReplica1) {
+      req.dbType = 'replica1';
+    } else if (replica === sequelizeReplica2) {
+      req.dbType = 'replica2';
+    } else {
+      req.dbType = 'primary'; // Fallback to primary
+    }
   } else {
     // Use primary database for writes
     req.db = getPrimary();
@@ -35,8 +43,16 @@ const dbRouter = (req, res, next) => {
  * Force read from replica (for specific routes that need fresh data)
  */
 const forceReadReplica = (req, res, next) => {
-  req.db = getReadReplica();
-  req.dbType = 'replica';
+  const replica = getReadReplica();
+  req.db = replica;
+  // Determine which replica was selected for circuit breaker tracking
+  if (replica === sequelizeReplica1) {
+    req.dbType = 'replica1';
+  } else if (replica === sequelizeReplica2) {
+    req.dbType = 'replica2';
+  } else {
+    req.dbType = 'primary'; // Fallback to primary
+  }
   next();
 };
 
