@@ -19,10 +19,10 @@ module.exports = {
   // Kafka scaling configuration
   KAFKA_PARTITIONS: process.env.KAFKA_PARTITIONS
     ? parseInt(process.env.KAFKA_PARTITIONS)
-    : 20,
+    : 30, // Increased from 20 to test partition scaling
   // Consumer instances per PM2 worker (not total)
-  // With 4 PM2 workers and 20 partitions: 5 consumers per worker = 20 total consumers
+  // With 4 PM2 workers and 30 partitions: 8 consumers per worker = 32 total consumers
   KAFKA_CONSUMER_INSTANCES: process.env.KAFKA_CONSUMER_INSTANCES
     ? parseInt(process.env.KAFKA_CONSUMER_INSTANCES)
-    : 5, // 5 per worker × 4 workers = 20 total (matches 20 partitions)
+    : 8, // 8 per worker × 4 workers = 32 total (slightly more than 30 partitions is fine)
 };
