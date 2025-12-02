@@ -69,6 +69,9 @@ const getLeaderboard = async (gameMode, type = "global", limit = 100, offset = 0
     key = `leaderboard:${gameMode}:global`;
   }
 
+  // Get total count of players in leaderboard
+  const totalCount = await redis.zcard(key);
+
   // Get top players with scores (sorted descending)
   const results = await redis.zrevrange(key, offset, offset + limit - 1, "WITHSCORES");
   
@@ -82,12 +85,13 @@ const getLeaderboard = async (gameMode, type = "global", limit = 100, offset = 0
   }
 
   // Batch fetch usernames
+  let leaderboardWithRanks = [];
   if (leaderboard.length > 0) {
     const playerIds = leaderboard.map((entry) => entry.playerId);
     const usernames = await batchGetUsernames(playerIds);
 
     // Combine with ranks
-    return leaderboard.map((entry, index) => ({
+    leaderboardWithRanks = leaderboard.map((entry, index) => ({
       rank: offset + index + 1,
       playerId: entry.playerId,
       username: usernames[entry.playerId] || "Unknown",
@@ -95,7 +99,11 @@ const getLeaderboard = async (gameMode, type = "global", limit = 100, offset = 0
     }));
   }
 
-  return [];
+  // Return both leaderboard data and total count
+  return {
+    leaderboard: leaderboardWithRanks,
+    totalCount: totalCount || 0,
+  };
 };
 
 const getPlayerRank = async (gameMode, playerId, type = "global") => {
@@ -237,6 +245,47 @@ const initializeGameModes = async () => {
   console.log("✅ Game modes initialized");
 };
 
+/**
+ * Check if leaderboards need to be rebuilt (Redis is empty or missing data)
+ * Returns true if leaderboards should be rebuilt from Kafka
+ */
+const needsRebuild = async () => {
+  try {
+    // Check if any global leaderboards exist
+    const gameModes = await getAllGameModes();
+    
+    if (gameModes.length === 0) {
+      // Game modes not initialized, will be initialized separately
+      // Check if there are any players instead
+      const keys = await redis.keys("player:*");
+      // Filter out rate limit keys
+      const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+      return playerKeys.length === 0;
+    }
+
+    // Check if at least one global leaderboard has data
+    for (const mode of gameModes) {
+      const leaderboardKey = `leaderboard:${mode.id}:global`;
+      const count = await redis.zcard(leaderboardKey);
+      if (count > 0) {
+        // At least one leaderboard has data, no rebuild needed
+        return false;
+      }
+    }
+
+    // Check if there are any players
+    const keys = await redis.keys("player:*");
+    const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+    
+    // If no leaderboards and no players, we need to rebuild
+    return playerKeys.length === 0;
+  } catch (error) {
+    console.error("❌ Error checking if rebuild is needed:", error);
+    // If we can't check, assume rebuild is needed (safer option)
+    return true;
+  }
+};
+
 module.exports = {
   // Player operations
   getPlayer,
@@ -257,5 +306,8 @@ module.exports = {
   getGameMode,
   getAllGameModes,
   initializeGameModes,
+
+  // Recovery
+  needsRebuild,
 };
 

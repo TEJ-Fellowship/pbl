@@ -28,15 +28,25 @@ router.get("/:gameMode", async (req, res) => {
     }
 
     // Get leaderboard from Redis
-    const leaderboard = await redisService.getLeaderboard(gameMode, type, limit, offset);
+    const { leaderboard, totalCount } = await redisService.getLeaderboard(gameMode, type, limit, offset);
+
+    // Calculate pagination metadata
+    const hasMore = offset + limit < totalCount;
+    const nextOffset = hasMore ? offset + limit : null;
+    const prevOffset = offset > 0 ? Math.max(0, offset - limit) : null;
 
     res.json({
       gameMode,
       gameModeName: gameModeData.name,
       type,
-      limit,
-      offset,
-      total: leaderboard.length,
+      pagination: {
+        limit,
+        offset,
+        total: totalCount,
+        hasMore,
+        nextOffset,
+        prevOffset,
+      },
       leaderboard,
     });
   } catch (error) {

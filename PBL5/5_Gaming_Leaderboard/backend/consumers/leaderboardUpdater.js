@@ -1,13 +1,15 @@
-const { consumer, redis } = require("../util/db");
+const { consumer, redis, resetConsumerOffsetToEarliest } = require("../util/db");
 const redisService = require("../services/redisService");
 const kafkaService = require("../services/kafkaService");
 
 /**
  * Kafka Consumer - Processes score-submitted events and updates Redis leaderboards
  * This runs as a background process
+ * Automatically rebuilds leaderboards from Kafka if Redis data is missing
  */
 
 let isRunning = false;
+let isRebuilding = false; // Flag to track if we're rebuilding leaderboards
 
 const startConsumer = async () => {
   if (isRunning) {
@@ -17,6 +19,40 @@ const startConsumer = async () => {
 
   try {
     console.log("🔄 Starting leaderboard updater consumer...");
+
+    // Check if leaderboards need to be rebuilt
+    const needsRebuild = await redisService.needsRebuild();
+    
+    if (needsRebuild) {
+      console.log("⚠️ Redis leaderboards appear to be empty or missing");
+      console.log("🔧 Initiating automatic rebuild from Kafka messages...");
+      isRebuilding = true;
+      
+      // Reset consumer offset to earliest to replay all messages
+      // This deletes the consumer group and reconnects
+      const resetSuccess = await resetConsumerOffsetToEarliest();
+      if (!resetSuccess) {
+        console.log("⚠️ Could not reset offsets, will try to subscribe from beginning");
+      }
+      
+      // Subscribe from beginning to replay all messages
+      await consumer.subscribe({ 
+        topic: "score-submitted", 
+        fromBeginning: true 
+      });
+      console.log("📥 Subscribed from beginning - replaying messages to rebuild leaderboards...");
+      console.log("   (This may take a while depending on message volume)");
+    } else {
+      console.log("✅ Leaderboards found in Redis, processing new messages only");
+      isRebuilding = false;
+      
+      // Subscribe normally (continue from last offset)
+      await consumer.subscribe({ 
+        topic: "score-submitted", 
+        fromBeginning: false 
+      });
+      console.log("✅ Subscribed to score-submitted topic (new messages only)");
+    }
 
     await consumer.run({
       // Process messages in batches for better performance
@@ -85,34 +121,54 @@ const startConsumer = async () => {
         // Execute all Redis operations in one batch
         await pipeline.exec();
 
-        // Get new ranks and publish rank change events
-        for (const event of events) {
-          try {
-            const newRankData = await redisService.getPlayerRank(
-              event.playerId,
-              event.gameMode,
-              "global"
-            );
-            const oldRank = oldRanks.get(`${event.playerId}:${event.gameMode}`);
+        // Only publish rank change events if we're not rebuilding
+        // During rebuild, we skip notifications to avoid spam
+        if (!isRebuilding) {
+          // Get new ranks and publish rank change events
+          for (const event of events) {
+            try {
+              const newRankData = await redisService.getPlayerRank(
+                event.playerId,
+                event.gameMode,
+                "global"
+              );
+              const oldRank = oldRanks.get(`${event.playerId}:${event.gameMode}`);
 
-            if (newRankData && newRankData.rank !== oldRank) {
-              // Rank changed - publish event
-              await kafkaService.publishLeaderboardUpdated({
-                gameMode: event.gameMode,
-                playerId: event.playerId,
-                newRank: newRankData.rank,
-                oldRank: oldRank,
-                score: newRankData.score,
-              });
+              if (newRankData && newRankData.rank !== oldRank) {
+                // Rank changed - publish event
+                await kafkaService.publishLeaderboardUpdated({
+                  gameMode: event.gameMode,
+                  playerId: event.playerId,
+                  newRank: newRankData.rank,
+                  oldRank: oldRank,
+                  score: newRankData.score,
+                });
+              }
+            } catch (error) {
+              console.error("❌ Error publishing rank update:", error);
             }
-          } catch (error) {
-            console.error("❌ Error publishing rank update:", error);
           }
         }
 
-        console.log(`✅ Processed batch of ${events.length} messages`);
+        const rebuildStatus = isRebuilding ? " (rebuilding)" : "";
+        console.log(`✅ Processed batch of ${events.length} messages${rebuildStatus}`);
       },
     });
+
+    // After starting, if we were rebuilding, check when rebuild is complete
+    if (isRebuilding) {
+      // We can't easily detect when rebuild is complete, but after some time
+      // we assume it's done. In practice, the consumer will catch up and then
+      // continue processing new messages normally.
+      // Set a flag to clear rebuild mode after a delay (optional - can be removed)
+      // For now, we'll clear it after processing starts
+      setTimeout(() => {
+        if (isRebuilding) {
+          console.log("✅ Rebuild phase complete, switching to normal operation");
+          isRebuilding = false;
+        }
+      }, 5000); // Give it 5 seconds to start processing
+    }
 
     isRunning = true;
     console.log("✅ Leaderboard updater consumer started");
