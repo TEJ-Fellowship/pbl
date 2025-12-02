@@ -135,9 +135,6 @@ app.get("/api/cassandra/tables/:tableName", async (req, res) => {
 
 app.get("/api/redis/test", async (req, res) => {
   try {
-    // Import redisClient directly (it's already imported at the top)
-    const { redisClient } = await import("./config/db.js");
-
     // Test SET and GET operations
     await redisClient.set("test:key", "Hello Redis!");
     const value = await redisClient.get("test:key");
@@ -152,7 +149,7 @@ app.get("/api/redis/test", async (req, res) => {
         key: "test:key",
         value: value,
       },
-      info: info.split("\n").slice(0, 5), // First few lines of info
+      info: info.split("\n").slice(0, 5),
     });
   } catch (error) {
     res.status(500).json({
@@ -272,9 +269,10 @@ async function gracefulShutdown(exitCode = 0) {
 process.on("unhandledRejection", (reason, promise) => {
   console.error("❌ Unhandled Promise Rejection:", reason);
   console.error("Promise:", promise);
-  // Don't exit the process, just log the error
+  // Log the error but don't crash
   // The error should be handled by the error middleware
   // In production, you might want to send this to a logging service
+  // DO NOT exit or throw - just log
 });
 
 // Handle uncaught exceptions
@@ -282,6 +280,7 @@ process.on("uncaughtException", async (error) => {
   console.error("❌ Uncaught Exception:", error);
   console.error("Stack:", error.stack);
   // For uncaught exceptions, we should exit gracefully with error code
+  // But only for truly fatal errors
   await gracefulShutdown(1);
 });
 

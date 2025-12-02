@@ -29,7 +29,7 @@ const producer = kafka.producer({
   idempotent: true, // Prevent duplicate messages
   transactionTimeout: 30000, // 30 seconds
   retry: {
-    retries: 3, // Allow unlimited retries for idempotent producer (EoS guarantee)
+    retries: 10, // Increased from 3 for better reliability
     initialRetryTime: 100,
     multiplier: 2,
     maxRetryTime: 30000,
@@ -103,6 +103,7 @@ export async function sendMessage(topic, message, key = null, headers = {}) {
     try {
       await connectProducer();
     } catch (error) {
+      // Don't throw - return error object instead
       return {
         success: false,
         error: "Producer connection failed",
@@ -116,8 +117,8 @@ export async function sendMessage(topic, message, key = null, headers = {}) {
       topic: topic,
       messages: [
         {
-          key: key ? String(key) : null, // Partition key (optional)
-          value: JSON.stringify(message), // Message value (must be string)
+          key: key ? String(key) : null,
+          value: JSON.stringify(message),
           headers: {
             ...headers,
             "content-type": "application/json",
@@ -144,6 +145,7 @@ export async function sendMessage(topic, message, key = null, headers = {}) {
       `❌ [KAFKA] Error sending message to topic "${topic}":`,
       errorMessage
     );
+    // NEVER throw - always return error object
     return {
       success: false,
       error: errorMessage,
@@ -219,40 +221,6 @@ export async function publishUserUnfollowed(followerId, followingId) {
   };
 
   return await sendMessage(TOPICS.USER_UNFOLLOWED, event, followerId);
-}
-
-/**
- * Publish a post liked event
- *
- * @param {string} postId - Post ID
- * @param {number} userId - User who liked the post
- */
-export async function publishPostLiked(postId, userId) {
-  const event = {
-    eventType: "POST_LIKED",
-    postId,
-    userId,
-    timestamp: new Date().toISOString(),
-  };
-
-  return await sendMessage(TOPICS.POST_LIKED, event, postId);
-}
-
-/**
- * Publish a post unliked event
- *
- * @param {string} postId - Post ID
- * @param {number} userId - User who unliked the post
- */
-export async function publishPostUnliked(postId, userId) {
-  const event = {
-    eventType: "POST_UNLIKED",
-    postId,
-    userId,
-    timestamp: new Date().toISOString(),
-  };
-
-  return await sendMessage(TOPICS.POST_UNLIKED, event, postId);
 }
 
 // Export producer instance for advanced usage

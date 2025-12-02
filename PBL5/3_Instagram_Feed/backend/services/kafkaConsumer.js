@@ -5,7 +5,6 @@ import {
   isKafkaAvailable,
 } from "../config/kafka.js";
 import * as feedService from "./feedService.js";
-import { Follow } from "../models/index.js";
 import { KAFKA_CONFIG } from "../config/constants.js";
 import { producer } from "./kafkaProducer.js";
 
@@ -129,9 +128,14 @@ async function retryWithBackoff(event, processFn, messageKey) {
 /**
  * Send message to Dead-Letter Queue (DLQ)
  */
-async function sendToDLQ(event, originalError, retryCount) {
+async function sendToDLQ(
+  event,
+  originalError,
+  retryCount,
+  originalTopic = TOPICS.POST_CREATED
+) {
   try {
-    const dlqTopic = `${TOPICS.POST_CREATED}${KAFKA_CONFIG.DLQ_TOPIC_SUFFIX}`;
+    const dlqTopic = `${originalTopic}${KAFKA_CONFIG.DLQ_TOPIC_SUFFIX}`;
     const dlqMessage = {
       originalEvent: event,
       originalError: {
@@ -151,7 +155,7 @@ async function sendToDLQ(event, originalError, retryCount) {
           value: JSON.stringify(dlqMessage),
           headers: {
             "content-type": "application/json",
-            "x-original-topic": TOPICS.POST_CREATED,
+            "x-original-topic": originalTopic,
             "x-retry-count": String(retryCount),
           },
         },
@@ -162,6 +166,24 @@ async function sendToDLQ(event, originalError, retryCount) {
   } catch (error) {
     console.error(`❌ [DLQ] Failed to send message to DLQ:`, error.message);
     // Don't throw - we don't want DLQ failures to crash the consumer
+  }
+}
+
+/**
+ * Get topic name from event type
+ * @param {string} eventType - Event type string
+ * @returns {string} Topic name
+ */
+function getTopicFromEventType(eventType) {
+  switch (eventType) {
+    case "POST_CREATED":
+      return TOPICS.POST_CREATED;
+    case "USER_FOLLOWED":
+      return TOPICS.USER_FOLLOWED;
+    case "USER_UNFOLLOWED":
+      return TOPICS.USER_UNFOLLOWED;
+    default:
+      return TOPICS.POST_CREATED; // Default fallback
   }
 }
 
@@ -190,32 +212,39 @@ export async function startFeedConsumer() {
         TOPICS.USER_FOLLOWED,
         TOPICS.USER_UNFOLLOWED,
       ],
-      fromBeginning: false, // Only read new messages (not historical)
+      fromBeginning: false,
     });
 
     // Start consuming messages
     await feedConsumer.run({
-      // This function is called for each batch of messages
       eachBatch: async ({ batch, resolveOffset, heartbeat }) => {
         for (const message of batch.messages) {
-          let processed = false;
           const messageKey = `${message.partition}:${message.offset}`;
 
           try {
             // Parse the message value
             const event = JSON.parse(message.value.toString());
 
-            // Process based on event type
-            await processEvent(event);
+            // Determine topic from event type
+            const eventTopic = getTopicFromEventType(event.eventType);
+
+            // Process based on event type - wrap in try-catch to prevent crashes
+            try {
+              await processEvent(event);
+            } catch (processError) {
+              console.error(
+                `❌ [KAFKA] Error in processEvent:`,
+                processError.message
+              );
+              // Don't throw - let retry logic handle it
+              throw processError;
+            }
 
             // Clear retry count on success
             clearRetryCount(messageKey);
-            processed = true;
-
-            // Mark message as processed (commit offset) - ONLY on success
             resolveOffset(message.offset);
 
-            // Send heartbeat to keep consumer alive
+            // Mark message as processed (commit offset) - ONLY on success
             await heartbeat();
           } catch (error) {
             console.error(
@@ -225,43 +254,73 @@ export async function startFeedConsumer() {
 
             // Try to parse event for retry logic
             let event = null;
+            let eventTopic = TOPICS.POST_CREATED; // Default
             try {
               event = JSON.parse(message.value.toString());
+              eventTopic = getTopicFromEventType(event.eventType);
             } catch (parseError) {
               console.error(
                 `❌ [KAFKA] Failed to parse message, sending to DLQ:`,
                 parseError.message
               );
               // Can't retry if we can't parse - send to DLQ
-              await sendToDLQ(
-                { raw: message.value.toString() },
-                error,
-                getRetryCount(messageKey)
-              );
-              // Don't commit - let it retry or move to DLQ
+              try {
+                await sendToDLQ(
+                  { raw: message.value.toString() },
+                  error,
+                  getRetryCount(messageKey),
+                  eventTopic
+                );
+              } catch (dlqError) {
+                console.error("❌ [KAFKA] DLQ send failed:", dlqError.message);
+                // Even if DLQ fails, commit to prevent infinite retries
+              }
+              resolveOffset(message.offset);
+              clearRetryCount(messageKey);
+              await heartbeat();
               continue;
             }
 
             // Retry with exponential backoff
-            const success = await retryWithBackoff(
-              event,
-              processEvent,
-              messageKey
-            );
-
-            if (success) {
-              // Successfully processed after retry
-              processed = true;
-              resolveOffset(message.offset);
-            } else {
-              // Max retries exceeded - send to DLQ
-              console.error(
-                `📮 [DLQ] Sending message to dead-letter queue after ${KAFKA_CONFIG.MAX_RETRIES} failed retries`
+            try {
+              const success = await retryWithBackoff(
+                event,
+                processEvent,
+                messageKey
               );
-              await sendToDLQ(event, error, KAFKA_CONFIG.MAX_RETRIES);
 
-              // Only commit after sending to DLQ to prevent infinite retries
-              // The message is now in DLQ for manual investigation
+              if (success) {
+                // Successfully processed after retry
+                resolveOffset(message.offset);
+              } else {
+                // Max retries exceeded - send to DLQ
+                console.error(
+                  `📮 [DLQ] Sending message to dead-letter queue after ${KAFKA_CONFIG.MAX_RETRIES} failed retries`
+                );
+                try {
+                  await sendToDLQ(
+                    event,
+                    error,
+                    KAFKA_CONFIG.MAX_RETRIES,
+                    eventTopic
+                  );
+                } catch (dlqError) {
+                  console.error(
+                    "❌ [KAFKA] DLQ send failed:",
+                    dlqError.message
+                  );
+                }
+
+                // Only commit after sending to DLQ to prevent infinite retries
+                resolveOffset(message.offset);
+                clearRetryCount(messageKey);
+              }
+            } catch (retryError) {
+              // If retry mechanism itself fails, commit and move on
+              console.error(
+                `❌ [KAFKA] Retry mechanism failed:`,
+                retryError.message
+              );
               resolveOffset(message.offset);
               clearRetryCount(messageKey);
             }
@@ -282,7 +341,7 @@ export async function startFeedConsumer() {
         ? "Connection refused - Kafka broker is not available"
         : error.message;
     console.error("❌ Error starting feed consumer:", errorMessage);
-    throw error;
+    // Don't throw - let server continue without Kafka
   }
 }
 
@@ -338,40 +397,42 @@ async function handlePostCreated(event) {
 
 /**
  * Handle USER_FOLLOWED event
- *
- * When user A follows user B, we need to:
- * 1. Backfill user A's feed with user B's recent posts
- *
- * This ensures new followers see recent content immediately.
  */
 async function handleUserFollowed(event) {
   const { followerId, followingId } = event;
 
-  try {
-    // TODO: Implement feed backfill
-  } catch (error) {
-    console.error(`❌ [KAFKA] Error processing USER_FOLLOWED event:`, error);
-    // Don't throw - just log
+  if (!followerId || !followingId) {
+    throw new Error(
+      `Invalid USER_FOLLOWED event: missing required fields. followerId: ${followerId}, followingId: ${followingId}`
+    );
   }
+
+  // Backfill feed is already handled synchronously in userController
+  // This handler can be used for additional async processing if needed
+  console.log(
+    `📥 [KAFKA] USER_FOLLOWED event received: ${followerId} -> ${followingId}`
+  );
+  // Additional async processing can be added here if needed
 }
 
 /**
  * Handle USER_UNFOLLOWED event
- *
- * When user A unfollows user B, we need to:
- * 1. Remove user B's posts from user A's feed
- *
- * This keeps feeds clean and relevant.
  */
 async function handleUserUnfollowed(event) {
   const { followerId, followingId } = event;
 
-  try {
-    // TODO: Implement post removal from feed
-  } catch (error) {
-    console.error(`❌ [KAFKA] Error processing USER_UNFOLLOWED event:`, error);
-    // Don't throw - just log
+  if (!followerId || !followingId) {
+    throw new Error(
+      `Invalid USER_UNFOLLOWED event: missing required fields. followerId: ${followerId}, followingId: ${followingId}`
+    );
   }
+
+  // Post removal is already handled synchronously in userController
+  // This handler can be used for additional async processing if needed
+  console.log(
+    `📥 [KAFKA] USER_UNFOLLOWED event received: ${followerId} -> ${followingId}`
+  );
+  // Additional async processing can be added here if needed
 }
 
 /**
@@ -385,9 +446,11 @@ export async function stopFeedConsumer() {
   try {
     await feedConsumer.disconnect();
     isRunning = false;
+    console.log("✅ Kafka consumer stopped");
   } catch (error) {
     console.error("❌ Error stopping feed consumer:", error);
-    throw error;
+    isRunning = false; // Mark as stopped even on error
+    // Don't throw - graceful shutdown
   }
 }
 

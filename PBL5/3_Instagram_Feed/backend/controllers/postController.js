@@ -27,35 +27,8 @@ export const createPost = async (req, res) => {
       created_at,
     });
 
-    // Publish post created event to Kafka (asynchronous fan-out)
-    // The consumer will handle the fan-out operation
-    try {
-      const result = await publishPostCreated(post);
-      if (result.success) {
-        console.log(
-          `✅ Post ${post.id} event published to Kafka (partition: ${result.partition}, offset: ${result.offset})`
-        );
-      } else {
-        console.warn(
-          `⚠️ Failed to publish post event to Kafka: ${result.error}`
-        );
-        // Fallback to async queue (non-blocking)
-        try {
-          await enqueueFanOutTask({
-            userId: post.user_id,
-            postId: post.id,
-            createdAt: post.created_at,
-          });
-          console.log(
-            `📥 Post ${post.id} enqueued for async fan-out (Kafka unavailable)`
-          );
-        } catch (queueError) {
-          console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
-        }
-      }
-    } catch (kafkaError) {
-      console.error("⚠️ Error publishing to Kafka:", kafkaError);
-      // Fallback to async queue (non-blocking)
+    // Helper function to handle fallback queue
+    const enqueueFallback = async () => {
       try {
         await enqueueFanOutTask({
           userId: post.user_id,
@@ -63,12 +36,33 @@ export const createPost = async (req, res) => {
           createdAt: post.created_at,
         });
         console.log(
-          `📥 Post ${post.id} enqueued for async fan-out (Kafka error)`
+          `📥 Post ${post.id} enqueued for async fan-out (Kafka unavailable)`
         );
       } catch (queueError) {
         console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
       }
-    }
+    };
+
+    // Publish post created event to Kafka (completely non-blocking)
+    setImmediate(async () => {
+      try {
+        const result = await publishPostCreated(post);
+        if (result.success) {
+          console.log(
+            `✅ Post ${post.id} event published to Kafka (partition: ${result.partition}, offset: ${result.offset})`
+          );
+        } else {
+          console.warn(
+            `⚠️ Failed to publish post event to Kafka: ${result.error}`
+          );
+          await enqueueFallback();
+        }
+      } catch (kafkaError) {
+        // Catch ALL errors - never let this crash the server
+        console.error("⚠️ Error publishing to Kafka:", kafkaError.message);
+        await enqueueFallback();
+      }
+    });
 
     res.status(201).json({
       success: true,
