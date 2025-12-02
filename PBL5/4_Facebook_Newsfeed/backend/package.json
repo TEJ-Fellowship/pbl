@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node --watch server.js",
+    "seed": "node scripts/seed.js",
     "check-users": "node check-users.js",
     "run-sql": "node run-sql.js",
     "test": "echo \"Error: no test specified\" && exit 1"

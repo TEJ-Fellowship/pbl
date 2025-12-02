@@ -11,12 +11,6 @@ const sequelize = new Sequelize(DATABASE_URL, {
         acquire: 30000,      // Max time to wait for connection (30 seconds)
         idle: 10000,         // Close idle connections after 10 seconds
         evict: 1000          // Check for idle connections every 1 second
-    },
-    dialectOptions: {
-        ssl: DATABASE_URL && DATABASE_URL.includes('render.com') ? {
-            require: true,
-            rejectUnauthorized: false
-        } : false
     }
 });
 

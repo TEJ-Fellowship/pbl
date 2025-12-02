@@ -38,13 +38,88 @@ const deleteCache = async (key) => {
 const deletePattern = async (pattern) => {
   try {
     if (!redisClient.isOpen) return false;
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-    }
-    return true;
+    
+    // BETTER: Use SCAN instead of KEYS (non-blocking)
+    const stream = redisClient.scanStream({
+      match: pattern,
+      count: 100
+    });
+    
+    const keysToDelete = [];
+    
+    stream.on('data', (keys) => {
+      keysToDelete.push(...keys);
+    });
+    
+    return new Promise((resolve, reject) => {
+      stream.on('end', async () => {
+        if (keysToDelete.length > 0) {
+          // Delete in batches to avoid blocking
+          const batchSize = 100;
+          for (let i = 0; i < keysToDelete.length; i += batchSize) {
+            const batch = keysToDelete.slice(i, i + batchSize);
+            await redisClient.del(batch);
+          }
+        }
+        resolve(true);
+      });
+      stream.on('error', reject);
+    });
   } catch (error) {
     console.error(`Cache delete pattern error for ${pattern}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Track which cache keys exist for a user's posts
+ * Uses Redis SET to efficiently track all cache keys for a user
+ * 
+ * @param {number} user_id - User ID
+ * @param {number} page - Page number
+ * @param {number} ttl - Time to live in seconds (default: 600)
+ */
+
+const addUserPostCacheKey = async (user_id, page, ttl = 600) => {
+  try {
+    if (!redisClient.isOpen) return false;
+    
+    const key = `posts:user:${user_id}:page:${page}`;
+    const setKey = `user_posts_cache:${user_id}`;
+    
+    // Add to set tracking all cache keys for this user
+    await redisClient.sAdd(setKey, key);
+    await redisClient.expire(setKey, ttl);
+    
+    return true;
+  } catch (error) {
+    console.error(`Error adding user post cache key for user ${user_id}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Efficiently delete all cached posts for a user using tracking set
+ * Much faster than pattern matching with KEYS or SCAN!
+ * 
+ * @param {number} user_id - User ID
+ */
+const deleteUserPostsCache = async (user_id) => {
+  try {
+    if (!redisClient.isOpen) return false;
+    
+    const setKey = `user_posts_cache:${user_id}`;
+    const keys = await redisClient.sMembers(setKey);
+    
+    if (keys && keys.length > 0) {
+      // Delete all cached post pages + the tracking set itself
+      await redisClient.del([...keys, setKey]);
+      console.log(`🗑️ Deleted ${keys.length} cached post keys for user ${user_id}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error deleting user posts cache for user ${user_id}:`, error);
     return false;
   }
 };
@@ -362,4 +437,6 @@ module.exports = {
   batchAppendToFeedCache,  
   getLastFetchTime,
   setLastFetchTime,
+  addUserPostCacheKey,
+  deleteUserPostsCache,
 };
