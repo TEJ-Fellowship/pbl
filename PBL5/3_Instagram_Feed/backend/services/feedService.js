@@ -22,6 +22,7 @@ const IDEMPOTENCY_KEY = (userId, postId) =>
   `fanout:idempotency:${userId}:${postId}`;
 const MAX_FEED_SIZE = FEED_CONFIG.MAX_FEED_SIZE;
 const FEED_TTL = FEED_CONFIG.FEED_TTL;
+const FANOUT_BATCH_SIZE = FEED_CONFIG.FANOUT_BATCH_SIZE;
 
 /**
  * Check if a post is already in a user's feed (idempotency check)
@@ -202,69 +203,89 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
     }
 
     const followerIds = followers.map((follow) => follow.follower_id);
-    const feedKeys = followerIds.map((id) => FEED_KEY(id));
+    const totalFollowers = followerIds.length;
 
-    // OPTIMIZATION: Do all operations in parallel batches
-    // 1. Cassandra writes (source of truth)
-    // 2. Redis cache updates
-    // 3. Idempotency markers
-    // 4. Cache invalidation
-
-    const cassandraPromises = followerIds.map((followerId) =>
-      addPostToFeed(followerId, postId, validCreatedAt, true).catch((err) => {
-        console.error(
-          `⚠️ Failed to add post to feed for follower ${followerId}:`,
-          err.message
-        );
-        // Don't throw - continue with other followers
-      })
-    );
-
-    // Execute all operations in parallel
-    const [cassandraResults] = await Promise.allSettled([
-      Promise.all(cassandraPromises),
-    ]);
-
-    // Check if any critical failures occurred
-    if (cassandraResults.status === "rejected") {
-      console.error(
-        `❌ [CASSANDRA] Critical failure in fan-out:`,
-        cassandraResults.reason?.message
-      );
-      throw cassandraResults.reason;
+    // Process in batches to prevent OOM with large follower lists
+    const batches = [];
+    for (let i = 0; i < followerIds.length; i += FANOUT_BATCH_SIZE) {
+      batches.push(followerIds.slice(i, i + FANOUT_BATCH_SIZE));
     }
 
-    // Update Redis cache in parallel (non-blocking)
-    Promise.all([
-      // Batch Redis update
-      batchAddPostToFeeds(
-        feedKeys,
-        score,
-        postId,
-        MAX_FEED_SIZE,
-        FEED_TTL
-      ).catch((err) => {
-        console.error("⚠️ Redis batch update failed:", err.message);
-        // Fallback to individual writes
-        return Promise.allSettled(
-          followerIds.map((followerId) =>
-            addPostToFeedRedis(followerId, postId, validCreatedAt)
+    console.log(
+      `📊 [FAN-OUT] Processing ${totalFollowers} followers in ${batches.length} batches`
+    );
+
+    // Process each batch sequentially to prevent memory issues
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      const feedKeys = batch.map((id) => FEED_KEY(id));
+
+      try {
+        // 1. Cassandra writes (source of truth) - parallel within batch
+        const cassandraPromises = batch.map((followerId) =>
+          addPostToFeed(followerId, postId, validCreatedAt, true).catch(
+            (err) => {
+              console.error(
+                `⚠️ Failed to add post to feed for follower ${followerId}:`,
+                err.message
+              );
+              // Don't throw - continue with other followers
+            }
           )
         );
-      }),
-      // Mark idempotency (non-critical)
-      Promise.allSettled(
-        followerIds.map((followerId) => markPostAdded(followerId, postId))
-      ),
-      // Invalidate response caches
-      batchInvalidateResponseCaches(followerIds).catch((err) => {
-        console.error("⚠️ Cache invalidation failed:", err.message);
-        return Promise.resolve(0);
-      }),
-    ]).catch((err) => {
-      // Log but don't fail - these are cache operations
-      console.error("⚠️ Non-critical cache operations failed:", err.message);
-    });
+
+        await Promise.all(cassandraPromises);
+
+        // 2. Redis cache updates - batch operation
+        await batchAddPostToFeeds(
+          feedKeys,
+          score,
+          postId,
+          MAX_FEED_SIZE,
+          FEED_TTL
+        ).catch((err) => {
+          console.error(
+            `⚠️ Redis batch update failed for batch ${batchIndex + 1}:`,
+            err.message
+          );
+          // Fallback to individual writes
+          return Promise.allSettled(
+            batch.map((followerId) =>
+              addPostToFeedRedis(followerId, postId, validCreatedAt)
+            )
+          );
+        });
+
+        // 3. Mark idempotency (non-critical) - parallel within batch
+        await Promise.allSettled(
+          batch.map((followerId) => markPostAdded(followerId, postId))
+        );
+
+        // 4. Invalidate response caches - batch operation
+        await batchInvalidateResponseCaches(batch).catch((err) => {
+          console.error(
+            `⚠️ Cache invalidation failed for batch ${batchIndex + 1}:`,
+            err.message
+          );
+        });
+
+        console.log(
+          `✅ [FAN-OUT] Batch ${batchIndex + 1}/${batches.length} completed (${
+            batch.length
+          } followers)`
+        );
+      } catch (error) {
+        console.error(
+          `❌ [FAN-OUT] Error processing batch ${batchIndex + 1}:`,
+          error.message
+        );
+        // Continue with next batch - don't fail entire fan-out
+      }
+    }
+
+    console.log(
+      `✅ [FAN-OUT] Completed fan-out to ${totalFollowers} followers`
+    );
   } catch (error) {
     console.error(`❌ [FAN-OUT] Critical error:`, error.message, error.stack);
     throw error; // Re-throw so Kafka retry mechanism can handle it

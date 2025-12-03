@@ -11,6 +11,7 @@ export const FEED_CONFIG = {
   RESPONSE_CACHE_TTL: 7 * 24 * 60 * 60, // 7 days in seconds
   MIN_CACHED_POSTS_RATIO: 0.8, // 80% of requested limit must be cached
   BACKFILL_BATCH_SIZE: 1000, // Process backfill in batches
+  FANOUT_BATCH_SIZE: 500, // Process fan-out in batches to prevent OOM
 };
 
 // Kafka Configuration
