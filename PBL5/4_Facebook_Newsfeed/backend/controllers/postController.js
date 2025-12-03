@@ -4,12 +4,13 @@ const {
   deleteCache,
   deletePattern,
   batchAppendToFeedCache,
+  deleteUserPostsCache,
 } = require("../utils/cache");
 
 // Creating the post by the user
 const handlePost = async (req, res) => {
   try {
-    console.time('Post Creation');
+    console.time("Post Creation");
     const { user_id, content, image_urls } = req.body;
     if (!user_id) {
       return res.status(400).json({ error: "Invalid user ID" });
@@ -17,31 +18,36 @@ const handlePost = async (req, res) => {
     if (!content || content.trim() === "") {
       return res.status(400).json({ error: "Content is required" });
     }
-    const user = await User.findByPk(user_id);
+
+    // OPTIMIZATION: Run user and followers queries in parallel
+    console.time("⏱️ DB Queries (User + Followers)");
+    const [user, followers] = await Promise.all([
+      User.findByPk(user_id, { attributes: ["id", "username"] }),
+      Follow.findAll({
+        where: { following_id: user_id },
+        attributes: ["follower_id"],
+      }),
+    ]);
+    console.timeEnd("⏱️ DB Queries (User + Followers)");
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
     // Create post in database
+    console.time("⏱️ Create Post in DB");
     const post = await Post.create({
       user_id,
       content,
       image_urls,
     });
-    console.timeEnd('Post Creation');
-    // Get post with author info for caching
-    const postWithAuthor = await Post.findByPk(post.id, {
-      include: [
-        {
-          model: User,
-          as: "author",
-          attributes: ["id", "username"],
-        },
-      ],
-    });
-
+    console.timeEnd("⏱️ Create Post in DB");
+    // Build postData manually (no extra query needed)
     const postData = {
-      ...postWithAuthor.toJSON(),
+      ...post.toJSON(),
+      author: {
+        id: user.id,
+        username: user.username,
+      },
       likes_count: 0,
       comments_count: 0,
     };
@@ -49,27 +55,29 @@ const handlePost = async (req, res) => {
     // ============================================
     // REQUIREMENT 1: Cache post for all followers
     // ============================================
-    // Get all followers of this user
-    const followers = await Follow.findAll({
-      where: { following_id: user_id },
-      attributes: ["follower_id"],
-    });
 
     // Incrementally append this post to each follower's feed cache
     const followerIds = followers.map((f) => f.follower_id);
 
-    console.time('⏱️ Append to Feed Cache Time');
-    await batchAppendToFeedCache(followerIds, postData, 100, 300);
-    console.timeEnd('⏱️ Append to Feed Cache Time');
+    console.time("⏱️ Append to Feed Cache Time");
+    if (followerIds.length > 0) {
+      await batchAppendToFeedCache(followerIds, postData, 100, 300);
+    }
+    console.timeEnd("⏱️ Append to Feed Cache Time");
     // ============================================
     // REQUIREMENT 2: Cache the post itself
     // ============================================
+    console.time("⏱️ Cache Post");
     await setCache(`post:${post.id}`, postData, 900);
-
+    console.timeEnd("⏱️ Cache Post");
     // ============================================
     // Invalidate user's own posts cache
     // ============================================
-    await deletePattern(`posts:user:${user_id}:*`);
+
+    console.time("⏱️ Delete User Posts Cache");
+    await deleteUserPostsCache(user_id);
+    console.timeEnd("⏱️ Delete User Posts Cache");
+    console.timeEnd("Post Creation");
 
     return res.status(201).json({
       message: "Post created successfully",
