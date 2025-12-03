@@ -1,228 +1,426 @@
-# ✅ **SPRINT 0 — Repo + Infra Bootstrap**
+# ✅ **Pharmonico — Updated Sprint Plan (Final Version)**
 
-### **TASK-0.1:** Initialize monorepo
+This sprint plan includes **Redis caching**, **Kafka event workflow**, **MinIO**, **Stripe shipping**, **NCPDP intake**, and **worker system improvements**.
 
-* Structure: `backend-go/`, `frontend-react/`, `infra/`, `scripts/`, `docs/`.
+Copy and paste directly.
 
-### **TASK-0.2:** Create Docker Compose Dev Environment
+---
 
-Services:
+# 🚀 **SPRINT 0 — Monorepo + Infra Bootstrap**
 
-* golang-api
-* react-app
-* mongodb
-* postgres
-* minio
-* maildev
-* nginx reverse proxy (optional)
-* worker container (placeholder)
+### **TASK-0.1: Monorepo Initialization**
 
-### **TASK-0.3:** Add README + Development Run Scripts
+* Create project structure:
 
-* `make dev`
-* `make seed`
-* `make test`
-* Architecture overview
+  ```
+  backend-go/
+  frontend-react/
+  infra/
+  docs/
+  scripts/
+  ```
+* Add `.editorconfig`, `.gitignore`, and base folder scaffolding.
 
-### **TASK-0.4:** Seed Scripts
+---
 
-* Mongo seeds: pharmacies, sample prescriptions
-* Postgres seeds: job queue schema, audit log schema
+### **TASK-0.2: Docker Compose Developer Environment**
 
-### **TASK-0.5:** CI Skeleton
+Provision core infra:
+
+**Services**
+
+* `golang-api` (Go API server)
+* `worker` (background processing; Kafka consumer)
+* `react-app`
+* `mongodb`
+* `postgres`
+* `redis`
+* `kafka + zookeeper`
+* `minio`
+* `maildev`
+* `nginx` (optional reverse proxy)
+
+Provide:
+
+* Health checks
+* Volume mounts
+* Hot reload
+
+---
+
+### **TASK-0.3: Bootstrap Scripts + README**
+
+* Add development scripts:
+
+  * `make dev`
+  * `make dev-down`
+  * `make seed`
+  * `make test`
+* Add updated **architecture diagram**, including Kafka + Redis
+* Add onboarding instructions in `README.md`
+
+---
+
+### **TASK-0.4: Seed Scripts**
+
+* MongoDB seeds:
+
+  * pharmacies
+  * patients
+  * sample prescriptions
+* PostgreSQL seeds:
+
+  * job queue schema (`jobs` table)
+  * audit logs table
+* Insert test data to validate flows.
+
+---
+
+### **TASK-0.5: CI Pipeline Skeleton**
 
 * GitHub Actions:
 
-  * Go tests
-  * React tests
-  * Linters
-  * Build checks
+  * Go Build + Test
+  * React Build + Test
+  * Linting (Go + JS)
+  * Docker build check
+* Cache dependencies
 
 ---
 
-# ✅ **SPRINT 1 — Intake + Validation Worker**
+<br>
 
-### **TASK-1.1:** Implement POST `/api/intake`
+# 🚀 **SPRINT 1 — Intake + Validation Worker (+ Kafka Routing)**
 
-* Accept NCPDP-like data
-* Store in MongoDB with `status: "received"`
-* Link to patient if exists
-  **Requirements:** Intake workflow, prescription data structure
+### **TASK-1.1: POST `/api/intake`**
 
-### **TASK-1.2:** Create PostgreSQL Jobs Table + Minimal Enqueuer
+* Accept NCPDP-like payload
+* Store in MongoDB
+* Mark as `received`
+* Link patient or auto-create patient record
+* Publish `intake_received` Kafka event
 
-* Schema for jobs: `pending/processing/failed/succeeded`
-* Enqueue `validate_prescription` on intake
-  **Requirements:** Job queue + background work system
-
-### **TASK-1.3:** Implement Validation Worker (Go)
-
-* Poll jobs table
-* Validate prescription: NPI, NDC, dosage, demographics
-* Update Mongo: `validated` OR `validation_issue`
-  **Requirements:** NCPDP validation rules
-
-### **TASK-1.4:** Basic Ops UI
-
-* Two tabs in React:
-
-  * **Intake**
-  * **Validation**
-* Display statuses, details, errors
+**Requirements:**
+*NCPDP SCRIPT intake structure + validation rules*
 
 ---
 
-# ✅ **SPRINT 2 — Enrollment Flow + Magic Links**
+### **TASK-1.2: Kafka Event Topics + Minimal Job Enqueuer**
 
-### **TASK-2.1:** Magic Link Generator Endpoint
+Topics:
+
+* `intake_received`
+* `validate_prescription`
+
+Steps:
+
+* When intake happens → publish Kafka event
+* Create fallback enqueue to PostgreSQL job queue (resilience)
+
+---
+
+### **TASK-1.3: Validation Worker (Go)**
+
+Worker responsibilities:
+
+* Consume `validate_prescription` from Kafka
+* Validate:
+
+  * NPI
+  * NDC
+  * dosage form
+  * duplicate check
+  * patient demographics
+* Update Mongo:
+
+  * `validated`
+  * OR `validation_issue`
+
+**Requirements:**
+*NCPDP validation rules, prescription structure*
+
+---
+
+### **TASK-1.4: Basic Ops UI**
+
+React dashboard:
+
+* **Intake Tab:**
+
+  * Show all received intake items
+  * Status: `received`, `validated`, `validation_issue`
+* **Validation Tab:**
+
+  * Show errors, warnings, metadata
+  * Click item → detail drawer
+
+---
+
+<br>
+
+# 🚀 **SPRINT 2 — Enrollment Flow + Magic Links + Redis**
+
+### **TASK-2.1: Magic Link API (Token via Redis)**
+
+Endpoint:
 
 * `/api/enrollment/start`
-* Create token + expiry in Mongo
-* Store patient reference
-  **Requirements:** Patient onboarding & authorization process
+  Process:
+* Create Redis token (TTL: 30 mins)
+* Attach patient + prescription ID
+* Generate magic link URL
+* Store audit entry
 
-### **TASK-2.2:** Email/SMS Integration (Dev Mode)
+---
 
-* Maildev for email previews
-* SMS mock or Twilio test mode
-* Magic link deep link
+### **TASK-2.2: Email/SMS Integration**
 
-### **TASK-2.3:** Enrollment SPA (React)
+* Use Maildev for local email
+* Twilio test mode for SMS (or mock)
+* Templates:
+
+  * “Start Enrollment”
+  * “Verify Insurance”
+  * “Upload Insurance Card”
+
+---
+
+### **TASK-2.3: Enrollment SPA**
 
 Routes:
 
-* `/enroll/:token` → verify token
-  Forms:
-* Insurance details
-* Consent checkboxes
-* File upload: insurance card → MinIO
-  **Requirements:** Enrollment workflow
+* `/enroll/:token`
+  Features:
+* Token validation (Redis lookup)
+* Pages:
 
-### **TASK-2.4:** Enrollment Worker
+  * Insurance details
+  * Consent form
+  * File upload → MinIO storage
+* On success:
 
-* Detect enrollment completion
-* Validate insurance info
-* Move prescription to next stage
-* Enqueue `pharmacy_recommendation` job
-  **Requirements:** Post-enrollment state transitions
+  * Update Mongo → `enrollment_completed`
+  * Publish Kafka event `enrollment_completed`
+
+**Requirements:**
+*Enrollment workflow, authorization rules*
 
 ---
 
-# ✅ **SPRINT 3 — Pharmacy Routing + Adjudication**
+### **TASK-2.4: Enrollment Worker**
 
-### **TASK-3.1:** Implement Pharmacy Scoring Engine
+Responsibilities:
 
-Factors:
+* Consume `enrollment_completed` topic
+* Verify insurance submission
+* Validate insurance data format
+* Update Mongo → `ready_for_routing`
+* Publish `pharmacy_recommendation_requested`
 
-* Distance
+---
+
+<br>
+
+# 🚀 **SPRINT 3 — Pharmacy Routing + Adjudication Engine**
+
+### **TASK-3.1: Pharmacy Scoring Engine**
+
+Inputs:
+
+* Distance (zip/county)
+* Specialty match (e.g., Oncology)
 * Current load/capacity
-* Accepted insurers
-* Specialty match
-  **Requirements:** Pharmacy routing and load balancing
+* Insurance acceptance
+* Working hours (optional)
 
-### **TASK-3.2:** Ops UI — Pharmacy Selection
+Outputs:
 
-* Show ranked pharmacies
-* Manual override
-* Update Mongo with selected pharmacy
-
-### **TASK-3.3:** Mock Adjudication API
-
-* Fake claim simulation
-* Results: copay, coupon, reimbursement
-* Save adjudication record
-  **Requirements:** Insurance adjudication simulation
-
-### **TASK-3.4:** Adjudication Worker
-
-* Process `run_adjudication` jobs
-* Attach results to prescription
-* Enqueue `create_payment_link`
+* Sorted pharmacy list
+* Embed scores + metadata
 
 ---
 
-# ✅ **SPRINT 4 — Payments + Shipping + Webhooks + Audits + Notifications + Testing**
+### **TASK-3.2: Ops UI — Pharmacy Selection**
 
-### **TASK-4.1:** Stripe Payment Link Integration
+Add to React UI:
+
+* Ranked list with scores
+* Manual override button
+* Save selected pharmacy
+* Publish Kafka event `pharmacy_selected`
+
+---
+
+### **TASK-3.3: Mock Adjudication API**
+
+Simulate:
+
+* claim submission
+* copay calculation
+* coupon discount
+* reimbursement
+
+Store adjudication data in Mongo:
+
+* copay
+* plan paid
+* patient responsibility
+
+---
+
+### **TASK-3.4: Adjudication Worker**
+
+When event `run_adjudication` fires:
+
+* Trigger mock adjudication
+* Update Mongo: `adjudicated`
+* Publish `payment_link_required`
+
+---
+
+<br>
+
+# 🚀 **SPRINT 4 — Payments + Shipping + Webhooks + Notifications + Audit + Observability**
+
+### **TASK-4.1: Stripe Payment Link**
+
+Endpoint:
 
 * `/api/payments/create-link`
-* Save Stripe session ID
-* Return payment URL
-  **Requirements:** Payment processing flow
 
-### **TASK-4.2:** Stripe Webhook Handler
+Flow:
+
+* Create Stripe checkout session
+* Save session ID → Mongo
+* Return payment URL
+* Publish `awaiting_payment`
+
+---
+
+### **TASK-4.2: Stripe Webhook Handler**
+
+Endpoint:
 
 * `/webhook/stripe`
-* Validate signature
-* On payment success: update status → `paid`
-* Enqueue `start_shipping` job
+  Includes:
+* Signature verification
+* On payment success:
 
-### **TASK-4.3:** Shipping Integration (Shippo)
+  * Mark as `paid`
+  * Publish `start_shipping`
 
+---
+
+### **TASK-4.3: Shippo Shipping Integration**
+
+Workflow:
+
+* Create shipment
 * Generate label
-* Save tracking number
-* Update prescription to `shipped`
-  **Requirements:** Fulfillment + logistics
+* Save tracking number → Mongo
+* Publish `shipping_created`
 
-### **TASK-4.4:** Delivery Tracking Worker
+---
 
-* Poll Shippo test API
-* Mark as `delivered` when confirmed
-* Notify patient (email/SMS)
+### **TASK-4.4: Delivery Tracking Worker**
 
-### **TASK-4.5:** Audit Log System
+* Poll Shippo API (test mode)
+* Status updates:
 
-* Postgres `audit_logs` table
-* Every state change → log entry
-* Ops UI → Audit Log Viewer
-  **Requirements:** Audit + compliance
+  * `in_transit`
+  * `out_for_delivery`
+  * `delivered`
+* Notification logic
+* Audit logs for updates
 
-### **TASK-4.6:** Notification System
+---
 
-* Email templates:
+### **TASK-4.5: Audit Log System**
 
-  * Enrollment started
-  * Payment link
-  * Shipping confirmation
-  * Delivery confirmation
-* SMS optional
+PostgreSQL tables:
 
-### **TASK-4.7:** Ops Dashboard Finalization
+* `audit_logs`
+  Log every state transition:
+* user
+* timestamp
+* event source
+* metadata
 
-* Full workflow timeline
-* Search (patient name, Rx ID)
+UI addition:
+
+* Audit Log viewer in Ops Dashboard
+
+---
+
+### **TASK-4.6: Notification System**
+
+Email:
+
+* enrollment started
+* payment link
+* shipping
+* delivery
+  SMS (optional):
+* short alerts
+  Use Maildev + Twilio mock
+
+---
+
+### **TASK-4.7: Ops Dashboard Finalization**
+
+Add:
+
+* Search (patient, Rx ID)
 * Filters (status, pharmacy, insurance)
+* Workflow timeline component
+* Job failure view
 
-### **TASK-4.8:** Observability
+---
 
-* Logging (Zap or Logrus)
-* Basic metrics `/metrics` endpoint
-* Track job failures / retry counts
+### **TASK-4.8: Observability**
 
-### **TASK-4.9:** E2E Testing
+* Structured logs (Zap or Logrus)
+* `/metrics` endpoint (Prometheus format)
+* Worker failure counters
+* Kafka lag monitor (optional)
+
+---
+
+### **TASK-4.9: E2E Testing**
+
+Test full pipeline:
 
 * Intake → Validation
 * Enrollment → Routing
-* Adjudication → Payment
-* Shipping → Delivery
-* Worker reliability tests
-
-### **TASK-4.10:** Deployment Preparation (Optional)
-
-* Dockerfile optimizations
-* Production `docker-compose.prod.yml`
-* Environment variable templates
+* Routing → Adjudication
+* Payment → Shipping
+* Delivery + Notifications
+* Worker retries + crash recovery
 
 ---
 
-# 🚀 **FINAL STRUCTURE (SPRINTS 0–4)**
+### **TASK-4.10: Deployment Prep**
 
-| Sprint       | Focus Area                                                             |
-| ------------ | ---------------------------------------------------------------------- |
-| **Sprint 0** | Infra, Monorepo, Docker, Seeds, CI                                     |
-| **Sprint 1** | Intake, Validation Worker, Ops Intake UI                               |
-| **Sprint 2** | Enrollment, Magic Links, Insurance, Enrollment Worker                  |
-| **Sprint 3** | Pharmacy Routing, Adjudication, Ops Routing UI                         |
-| **Sprint 4** | Payments, Shipping, Delivery, Webhooks, Audits, Notifications, Testing |
+Optional but recommended:
 
+* Multi-stage Dockerfiles
+* `docker-compose.prod.yml`
+* Environment templates:
+
+  * `.env.example`
+  * `infra/env/*`
+
+---
+
+# 📦 **SPRINT SUMMARY TABLE**
+
+| Sprint       | Focus Area                                                                  |
+| ------------ | --------------------------------------------------------------------------- |
+| **Sprint 0** | Infra, Monorepo, Docker, Seeds, CI                                          |
+| **Sprint 1** | Intake, Validation Worker, Kafka Events, Ops Intake UI                      |
+| **Sprint 2** | Enrollment, Magic Links (Redis), Insurance, Enrollment Worker               |
+| **Sprint 3** | Pharmacy Routing, Scoring Engine, Adjudication Pipeline                     |
+| **Sprint 4** | Payments, Shipping, Notifications, Webhooks, Audits, Observability, Testing |
+
+---
 
