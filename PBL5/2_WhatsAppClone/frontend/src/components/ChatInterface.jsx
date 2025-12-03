@@ -37,21 +37,41 @@ function ChatInterface({
   };
 
   const startNewConversation = async (receiverId) => {
-    // Find receiver user info
     const receiver = users.find((u) => u.user_id === receiverId);
     if (!receiver) return;
 
-    // Create a new conversation object (will be created when first message is sent)
-    const newConversation = {
-      conversationId: null, // Will be generated on first message
-      user1Id: currentUser.user_id,
-      user2Id: receiverId,
-      receiver: receiver,
-      lastMessageText: "",
-      lastMessageTime: new Date(),
-    };
+    try {
+      // 1️⃣ Create conversation on backend
+      const res = await fetch(`${API_BASE}/conversation/initiate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderId: currentUser.user_id,
+          receiverId: receiverId,
+        }),
+      });
 
-    setSelectedConversation(newConversation);
+      const data = await res.json();
+      const conversationId = data.data.conversationId;
+
+      // 2️⃣ Create conversation object for frontend
+      const newConversation = {
+        conversationId,
+        user1Id: currentUser.user_id,
+        user2Id: receiverId,
+        receiver: receiver,
+        lastMessageText: "",
+        lastMessageTime: new Date(),
+      };
+
+      // 3️⃣ Add to sidebar list immediately
+      onNewConversation(newConversation);
+
+      // 4️⃣ Select the conversation
+      setSelectedConversation(newConversation);
+    } catch (err) {
+      console.error("Error starting conversation:", err);
+    }
   };
 
   const handleConversationSelect = (conversation) => {

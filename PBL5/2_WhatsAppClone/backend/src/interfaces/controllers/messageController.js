@@ -8,6 +8,50 @@ import { Op } from "sequelize";
 
 const messageRepo = new CassandraRepository();
 
+export const initiateConversation = async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.body;
+
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ error: "Missing senderId or receiverId" });
+    }
+
+    // Sort user IDs to guarantee uniqueness
+    const [user1, user2] = [senderId, receiverId].sort();
+
+    // Check if conversation already exists between them
+    let conversation = await Conversation.findOne({
+      where: {
+        [Op.or]: [
+          { user1_id: user1, user2_id: user2 },
+          { user1_id: user2, user2_id: user1 },
+        ],
+      },
+    });
+
+    // Create if not found
+    if (!conversation) {
+      conversation = await Conversation.create({
+        conversation_id: uuid(),
+        user1_id: user1,
+        user2_id: user2,
+      });
+    }
+
+    res.json({
+      message: "Conversation ready",
+      data: {
+        conversationId: conversation.conversation_id,
+        user1Id: conversation.user1_id,
+        user2Id: conversation.user2_id,
+      },
+    });
+  } catch (err) {
+    console.error("Initiate conversation error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
@@ -81,24 +125,43 @@ export const getUserConversations = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    let { conversationId, senderId, content, messageType, status, receiverId } =
+    let { conversationId, senderId, receiverId, content, messageType, status } =
       req.body;
 
-    // Validate required fields
-    if (!senderId || !content || !receiverId) {
+    if (!senderId || !receiverId || !content) {
       return res.status(400).json({
         error: "Missing required fields",
-        required: ["senderId", "content", "receiverId"],
-        optional: ["conversationId"], // conversationId is optional, will be auto-generated if not provided
+        required: ["senderId", "receiverId", "content"],
+        optional: ["conversationId"],
       });
     }
 
-    // Auto-generate conversationId if not provided
+    // If no conversationId → find or create it
     if (!conversationId) {
-      conversationId = uuid();
+      const [user1, user2] = [senderId, receiverId].sort();
+
+      let existing = await Conversation.findOne({
+        where: {
+          [Op.or]: [
+            { user1_id: user1, user2_id: user2 },
+            { user1_id: user2, user2_id: user1 },
+          ],
+        },
+      });
+
+      if (existing) {
+        conversationId = existing.conversation_id;
+      } else {
+        conversationId = uuid();
+        await Conversation.create({
+          conversation_id: conversationId,
+          user1_id: user1,
+          user2_id: user2,
+        });
+      }
     }
 
-    // Save message to Cassandra
+    // Save message in Cassandra
     const savedMessage = await messageRepo.saveMessage({
       conversationId,
       senderId,
@@ -107,61 +170,30 @@ export const sendMessage = async (req, res) => {
       status: status || "sent",
     });
 
-    // Convert messageId (TimeUuid) to string for PostgreSQL
-    const messageIdString = savedMessage.messageId.toString();
+    const messageId = savedMessage.messageId.toString();
 
-    // Find or create conversation in PostgreSQL
-    // Ensure consistent ordering: smaller UUID string first
-    const sortedUserIds = [senderId, receiverId].sort();
-    const [conversation, created] = await Conversation.findOrCreate({
-      where: {
-        conversation_id: conversationId,
-      },
-      defaults: {
-        conversation_id: conversationId,
-        user1_id: sortedUserIds[0],
-        user2_id: sortedUserIds[1],
-        last_message_id: messageIdString,
-        last_message_text: savedMessage.content,
+    // Update conversation metadata in Postgres
+    await Conversation.update(
+      {
+        last_message_id: messageId,
+        last_message_text: content,
         last_message_time: savedMessage.createdAt,
-        last_message_sender_id: savedMessage.senderId,
+        last_message_sender_id: senderId,
       },
-    });
+      { where: { conversation_id: conversationId } }
+    );
 
-    // If conversation already existed, update its metadata
-    if (!created) {
-      await Conversation.update(
-        {
-          last_message_id: messageIdString,
-          last_message_text: savedMessage.content,
-          last_message_time: savedMessage.createdAt,
-          last_message_sender_id: savedMessage.senderId,
-        },
-        {
-          where: {
-            conversation_id: conversationId,
-          },
-        }
-      );
-    }
-
-    // Return the saved message with receiver_id if provided
-    const response = {
-      ...savedMessage,
-      conversationId: conversationId, // Include conversationId (may be auto-generated)
-      messageId: messageIdString,
-      receiverId: receiverId,
-    };
-
-    res.status(201).json({
+    res.json({
       message: "Message sent successfully",
-      data: response,
+      data: {
+        ...savedMessage,
+        messageId,
+        conversationId,
+        receiverId,
+      },
     });
   } catch (error) {
     console.error("Error sending message:", error);
-    res.status(500).json({
-      error: "Failed to send message",
-      details: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 };

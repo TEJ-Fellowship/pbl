@@ -3,6 +3,7 @@
 class websocketService {
   constructor(io) {
     this.io = io;
+    this.localSockets = {};
   }
 
   joinConversation(socket, conversationId) {
@@ -29,8 +30,20 @@ class websocketService {
   }
   1;
 
-  statusUpdate(conversationId, messageId, status) {
-    this.io.to(conversationId).emit("status:update", { messageId, status });
+  statusUpdate(userId, status) {
+    if (status === "online") {
+      this.localSockets[userId] = this.localSockets[userId] || new Set();
+    }
+    this.io.emit("user:status", { userId, status });
+  }
+
+  removeUserSocket(userId, socketId) {
+    if (this.localSockets[userId]) {
+      this.localSockets[userId].delete(socketId);
+      if (this.localSockets[userId].size === 0) {
+        delete this.localSockets[userId];
+      }
+    }
   }
 }
 

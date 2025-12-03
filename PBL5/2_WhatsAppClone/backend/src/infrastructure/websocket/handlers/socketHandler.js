@@ -1,18 +1,55 @@
 import websocketService from "../websocketService.js";
 import { CassandraRepository } from "../../db/cassandraRepository.js";
+import Redis from "ioredis";
 
 export const handleSocket = (io) => {
   const wsService = new websocketService(io);
   const messageRepo = new CassandraRepository();
 
-  io.on("connection", (socket) => {
-    socket.on("conversation:join", (data) => {
-      const conversationId =
-        typeof data === "string" ? data : data.conversationId;
+  const redis = new Redis();
+  const pub = new Redis();
+  const sub = new Redis();
 
+  const HEARTBEAT_TTL = 30;
+
+  sub.subscribe("user_status");
+
+  sub.on("message", (channel, message) => {
+    const data = JSON.parse(message);
+    console.log("status", data);
+    wsService.statusUpdate(data.userId, data.status);
+  });
+
+  io.on("connection", async (socket) => {
+    const { userId } = socket.handshake.query;
+
+    //stores online status on redis
+    await redis.set(`online:${userId}`, "server-1", "EX", HEARTBEAT_TTL);
+    //publish online status
+    await pub.publish(
+      "user_status",
+      JSON.stringify({ userId, status: "online" })
+    );
+
+    socket.on("heartbeat", async () => {
+      await redis.set(`online:${userId}`, "server-1", "EX", HEARTBEAT_TTL);
+    });
+
+    socket.on("conversation:join", async ({ conversationId, receiver }) => {
+      // const conversationId =
+      //   typeof data === "object" ? data.conversationId : data;
       wsService.joinConversation(socket, conversationId);
 
-      console.log(`Rooms for socket ${socket.id}:`, socket.rooms); // Should show conversationId
+      const isOnline = await redis.exists(`online:${receiver.user_id}`);
+      const status = isOnline ? "online" : "offline";
+
+      socket.emit("user:status", { userId: receiver.user_id, status });
+      console.log(`initial status of ${receiver.user_id}: `, status);
+      console.log(
+        `Rooms for socket ${socket.id}:`,
+
+        socket.rooms
+      ); // Should show conversationId
 
       const room = io.sockets.adapter.rooms.get(conversationId);
       console.log(`👥 Total sockets in room ${conversationId}:`, room?.size);
@@ -42,6 +79,15 @@ export const handleSocket = (io) => {
 
     socket.on("typing:stop", (conversationId, userId) => {
       wsService.typingStop(socket, conversationId, userId);
+    });
+
+    socket.on("disconnect", async () => {
+      await redis.del(`online:${userId}`);
+      await pub.publish(
+        "user_status",
+        JSON.stringify({ userId, status: "offline" })
+      );
+      wsService.removeUserSocket(userId, socket.id);
     });
   });
 };
