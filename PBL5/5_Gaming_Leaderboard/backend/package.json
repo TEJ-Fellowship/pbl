@@ -13,6 +13,7 @@
     "load-test": "node scripts/load-test.js",
     "throughput-test": "node scripts/test-score-throughput.js",
     "monitor:redis": "node scripts/monitor-redis.js",
+    "test:latency": "node scripts/test-read-write-latency.js",
     "perf:all": "npm run benchmark && npm run load-test && npm run monitor:redis"
   },
   "keywords": [],

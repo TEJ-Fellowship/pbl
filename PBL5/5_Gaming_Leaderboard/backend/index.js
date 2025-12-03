@@ -32,6 +32,7 @@ app.get("/", (req, res) => {
     endpoints: {
       scores: "POST /api/scores/submit",
       leaderboard: "GET /api/leaderboard/:gameMode",
+      leaderboardTop100: "GET /api/leaderboard/:gameMode/top100",
       playerRank: "GET /api/players/:id/rank/:gameMode",
       playerStats: "GET /api/players/:id/stats",
       gameModes: "GET /api/game-modes",
