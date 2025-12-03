@@ -55,50 +55,50 @@ Pharmonico now uses an **event-driven microservices-inspired** pipeline supporte
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                                Frontend (React)                             │
-│  ┌──────────────────────────────┐    ┌────────────────────────────────────┐ │
-│  │   Operations Dashboard        │    │   Patient Enrollment Portal        │ │
-│  └──────────────────────────────┘    └────────────────────────────────────┘ │
+│                                Frontend (React)                            │
+│  ┌──────────────────────────────┐    ┌────────────────────────────────────┐│
+│  │   Operations Dashboard       │    │   Patient Enrollment Portal        ││
+│  └──────────────────────────────┘    └────────────────────────────────────┘│
 └────────────────────────────────────────────────────────────────────────────┘
                                        │
                                  ┌─────▼─────┐
-                                 │   Nginx    │ (optional reverse proxy)
+                                 │   Nginx   │ (optional reverse proxy)
                                  └─────┬─────┘
                                        │
 ┌──────────────────────────────────────┼──────────────────────────────────────┐
 │                                      ▼                                      │
-│       ┌──────────────────────────────────────────────────────────────────┐   │
-│       │                     Go API Server (:8080)                         │   │
-│       │  • NCPDP Intake                                                   │   │
-│       │  • Enrollment + Insurance APIs                                     │   │
-│       │  • Redis: caching, tokens, sessions                                │   │
-│       │  • Kafka: event publishing                                         │   │
-│       │  • Stripe/Webhook handler                                          │   │
-│       └──────────────────────────────────────────────────────────────────┘   │
-│                                                                              │
-│       ┌──────────────────────────────────────────────────────────────────┐   │
-│       │                      Worker Services                              │   │
-│       │  • Validation Worker          • Payment Worker                      │   │
-│       │  • Enrollment Worker          • Shipping Worker                     │   │
-│       │  • Kafka Consumers (primary queue)                                  │   │
-│       │  • Postgres Job Queue (fallback)                                    │   │
-│       └──────────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────┬───────────────────────────────────┘
+│       ┌──────────────────────────────────────────────────────────────────┐  │
+│       │                     Go API Server (:8080)                        │  │
+│       │  • NCPDP Intake                                                  │  │
+│       │  • Enrollment + Insurance APIs                                   │  │
+│       │  • Redis: caching, tokens, sessions                              │  │
+│       │  • Kafka: event publishing                                       │  │
+│       │  • Stripe/Webhook handler                                        │  │
+│       └──────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│       ┌──────────────────────────────────────────────────────────────────┐  │
+│       │                      Worker Services                             │  │
+│       │  • Validation Worker          • Payment Worker                   │  │
+│       │  • Enrollment Worker          • Shipping Worker                  │  │
+│       │  • Kafka Consumers (primary queue)                               │  │
+│       │  • Postgres Job Queue (fallback)                                 │  │
+│       └──────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────┬──────────────────────────────────┘
                                            │
                      ┌─────────────────────┼────────────────────────────┐
                      ▼                     ▼                            ▼
        ┌──────────────────┐     ┌──────────────────────┐       ┌──────────────────┐
-       │     MongoDB       │     │     PostgreSQL       │       │      MinIO        │
-       │  • Prescriptions  │     │  • Job Queue (backup)│       │  • Insurance files│
-       │  • Patients       │     │  • Audit Logs        │       │  • Shipping labels│
-       │  • Pharmacies     │     └──────────────────────┘       └──────────────────┘
+       │     MongoDB      │     │     PostgreSQL       │       │     MinIO        │
+       │  • Prescriptions │     │  • Job Queue (backup)│       │ • Insurance files│
+       │  • Patients      │     │  • Audit Logs        │       │ • Shipping labels│
+       │  • Pharmacies    │     └──────────────────────┘       └──────────────────┘
        └──────────────────┘
                      ┌────────────────────┬──────────────────────┬────────────────────┐
                      ▼                    ▼                      ▼                    ▼
            ┌─────────────┐    ┌────────────────┐      ┌─────────────────┐   ┌───────────────┐
-           │    Redis     │    │     Kafka       │      │    Stripe API   │   │   Shippo API    │
-           │  • Magic link│    │  • Event bus    │      │  • Payments     │   │  • Labels        │
-           │  • Cache     │    │  • Worker queue │      │  • Webhooks     │   │  • Tracking      │
+           │   Redis     │    │    Kafka       │      │    Stripe API   │   │ Shippo API    │
+           │ • Magic link│    │ • Event bus    │      │  • Payments     │   │• Labels       │
+           │ • Cache     │    │ • Worker queue │      │  • Webhooks     │   │• Tracking     │
            └─────────────┘    └────────────────┘      └─────────────────┘   └───────────────┘
 ```
 
