@@ -25,6 +25,13 @@ import userRoutes from "./routes/userRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import "./models/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import {
+  markServiceReady,
+  markServiceNotReady,
+  getServiceStatus,
+  areCriticalServicesReady,
+} from "./config/serviceStatus.js";
+import { requireServicesReady } from "./middleware/serviceReady.js";
 
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = "development";
@@ -45,7 +52,20 @@ app.get("/", (req, res) => {
   res.json({ message: "Instagram Feed API is running!" });
 });
 
-// Health check and metrics endpoint
+// Add readiness endpoint BEFORE other routes
+app.get("/api/ready", (req, res) => {
+  const status = getServiceStatus();
+  const ready = areCriticalServicesReady();
+
+  res.status(ready ? 200 : 503).json({
+    ready,
+    status: status.services,
+    errors: status.errors,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Enhanced health check with service status
 app.get("/api/health", async (req, res) => {
   try {
     const { getMetrics, getRedisMemoryInfo } = await import(
@@ -53,10 +73,12 @@ app.get("/api/health", async (req, res) => {
     );
     const metrics = getMetrics();
     const redisMemory = await getRedisMemoryInfo();
+    const serviceStatus = getServiceStatus();
 
     res.json({
-      status: "healthy",
+      status: areCriticalServicesReady() ? "healthy" : "degraded",
       timestamp: new Date().toISOString(),
+      services: serviceStatus.services,
       metrics,
       redis: redisMemory,
     });
@@ -67,6 +89,11 @@ app.get("/api/health", async (req, res) => {
     });
   }
 });
+
+// Apply service readiness check to critical endpoints
+// Only apply to endpoints that need all services
+app.use("/api/posts", requireServicesReady);
+app.use("/api/users", requireServicesReady);
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
@@ -210,43 +237,110 @@ app.get("/api/kafka/test", async (req, res) => {
 });
 
 async function startServer() {
+  // Start HTTP server IMMEDIATELY
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log("⏳ Services initializing in background...");
+    console.log("   Check /api/ready endpoint for service status");
+  });
+
+  // Initialize services in background with status tracking
+  initializeServices().catch((error) => {
+    console.error("❌ Error during service initialization:", error);
+    // Don't exit - server is already running
+  });
+
+  return server;
+}
+
+async function initializeServices() {
   try {
-    // Initialize databases
     console.log("🔌 Connecting to databases...");
-    await sequelize.authenticate();
-    console.log("✅ Connected to PostgreSQL");
-    await sequelize.sync({ alter: false });
-    await initializeCassandra();
-    await initializeSchema();
-    await initializeRedis();
-    await loadLuaScripts();
 
-    // Start fallback queue worker for async fan-out when Kafka is unavailable
-    startFallbackWorker();
-
-    // Initialize Kafka
-    console.log("🔌 Connecting to Kafka...");
+    // PostgreSQL
     try {
-      await initializeKafka();
-      await connectProducer();
-      await startFeedConsumer();
-      console.log("✅ Kafka initialized and consumer started");
-    } catch (kafkaError) {
-      console.warn(
-        "⚠️ Kafka initialization failed, continuing without Kafka:",
-        kafkaError.message
-      );
-      console.warn(
-        "   The application will continue to run, but Kafka features will be disabled."
-      );
+      await sequelize.authenticate();
+      markServiceReady("postgresql");
+      console.log("✅ Connected to PostgreSQL");
+      await sequelize.sync({ alter: false });
+    } catch (error) {
+      markServiceNotReady("postgresql", error);
+      console.error("❌ PostgreSQL initialization failed:", error.message);
+      throw error; // Critical service - fail fast
     }
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    // Cassandra
+    try {
+      await initializeCassandra();
+      markServiceReady("cassandra");
+      console.log("✅ Connected to Cassandra/AstraDB");
+      await initializeSchema();
+    } catch (error) {
+      markServiceNotReady("cassandra", error);
+      console.error("❌ Cassandra initialization failed:", error.message);
+      throw error; // Critical service - fail fast
+    }
+
+    // Redis
+    try {
+      await initializeRedis();
+      markServiceReady("redis");
+      console.log("✅ Connected to Redis");
+      await loadLuaScripts();
+    } catch (error) {
+      markServiceNotReady("redis", error);
+      console.error("❌ Redis initialization failed:", error.message);
+      throw error; // Critical service - fail fast
+    }
+
+    // Start fallback queue worker
+    startFallbackWorker();
+
+    // Kafka (optional - has fallback) - Start in background
+    console.log("🔌 Connecting to Kafka...");
+
+    // Don't await - let Kafka initialize in background
+    initializeKafkaAsync().catch((error) => {
+      markServiceNotReady("kafka", error);
+      console.warn("⚠️ Kafka initialization failed:", error.message);
     });
+
+    // Final status check
+    const status = getServiceStatus();
+    if (status.criticalReady) {
+      console.log("\n✅ All critical services are ready!");
+      console.log("   Services status:", status.services);
+    } else {
+      console.warn("\n⚠️ Some critical services are not ready");
+      console.warn("   Services status:", status.services);
+    }
   } catch (error) {
-    console.error("❌ Unable to start server:", error);
-    process.exit(1);
+    console.error("❌ Error during service initialization:", error);
+    throw error;
+  }
+}
+
+// Separate async function for Kafka initialization
+async function initializeKafkaAsync() {
+  try {
+    await initializeKafka();
+    await connectProducer();
+
+    // Start consumer in background (non-blocking)
+    startFeedConsumer()
+      .then(() => {
+        markServiceReady("kafka");
+        console.log("✅ Kafka initialized and consumer started");
+      })
+      .catch((error) => {
+        markServiceNotReady("kafka", error);
+        throw error;
+      });
+
+    // Don't wait for consumer to fully join - it will join in background
+  } catch (kafkaError) {
+    markServiceNotReady("kafka", kafkaError);
+    throw kafkaError;
   }
 }
 

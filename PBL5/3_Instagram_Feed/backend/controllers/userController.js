@@ -222,49 +222,48 @@ export const followUser = async (req, res) => {
       following_id: id,
     });
 
-    // Update counts in database
-    await User.increment("following_count", {
-      where: { id: follower_id },
+    // Update counts in database (can be parallel)
+    await Promise.all([
+      User.increment("following_count", { where: { id: follower_id } }),
+      User.increment("followers_count", { where: { id: id } }),
+    ]);
+
+    // Update counts in Redis cache (can be parallel)
+    await Promise.all([
+      userCacheService.incrementFollowingCount(follower_id),
+      userCacheService.incrementFollowersCount(id),
+    ]);
+
+    // Publish follow event to Kafka (non-blocking)
+    setImmediate(async () => {
+      try {
+        await publishUserFollowed(follower_id, id);
+      } catch (kafkaError) {
+        console.error(
+          "⚠️ Error publishing follow event to Kafka:",
+          kafkaError.message
+        );
+      }
     });
 
-    await User.increment("followers_count", {
-      where: { id: id },
+    // FIX: Make backfill asynchronous (non-blocking)
+    // This is the main bottleneck - don't wait for it
+    setImmediate(async () => {
+      try {
+        await backfillFeedOnFollow(follower_id, id);
+        console.log(`✅ Backfilled feed for follower ${follower_id}`);
+      } catch (backfillError) {
+        console.error("⚠️ Error backfilling feed on follow:", backfillError);
+        await invalidateFeedCache(follower_id).catch((err) =>
+          console.error("Failed to invalidate cache:", err)
+        );
+      }
     });
 
-    // Update counts in Redis cache
-    await userCacheService.incrementFollowingCount(follower_id);
-    await userCacheService.incrementFollowersCount(id);
-
-    // Publish follow event to Kafka (async processing)
-    try {
-      await publishUserFollowed(follower_id, id);
-    } catch (kafkaError) {
-      console.error(
-        "⚠️ Error publishing follow event to Kafka:",
-        kafkaError.message
-      );
-    }
-
-    // Backfill existing posts from the followed user to the follower's feed
-    // This can be done synchronously for immediate feed update, or moved to Kafka consumer
-    try {
-      await backfillFeedOnFollow(follower_id, id);
-      // Cache invalidation is handled inside backfillFeedOnFollow
-    } catch (backfillError) {
-      // Log but don't fail - feed will be populated on next post
-      console.error("⚠️ Error backfilling feed on follow:", backfillError);
-      // IMPORTANT: Still invalidate cache even if backfill fails
-      // This ensures next feed request will fetch fresh data
-      await invalidateFeedCache(follower_id).catch((err) =>
-        console.error("Failed to invalidate cache:", err)
-      );
-    }
-
-    await follower.reload();
-    await userToFollow.reload();
+    await Promise.all([follower.reload(), userToFollow.reload()]);
 
     if (userToFollow.followers_count >= 10000 && !userToFollow.is_celebrity) {
-      await userToFollow.update({ is_celebrity: true });
+      userToFollow.update({ is_celebrity: true }).catch(console.error);
     }
 
     res.status(201).json({
@@ -351,47 +350,52 @@ export const unfollowUser = async (req, res) => {
 
     await existingFollow.destroy();
 
-    // Update counts in database
-    await User.decrement("following_count", {
-      where: { id: follower_id },
+    // Update counts in parallel
+    await Promise.all([
+      User.decrement("following_count", { where: { id: follower_id } }),
+      User.decrement("followers_count", { where: { id: id } }),
+    ]);
+
+    // Update counts in Redis cache in parallel
+    await Promise.all([
+      userCacheService.decrementFollowingCount(follower_id),
+      userCacheService.decrementFollowersCount(id),
+    ]);
+
+    // Publish unfollow event to Kafka (non-blocking)
+    setImmediate(async () => {
+      try {
+        await publishUserUnfollowed(follower_id, id);
+        console.log(
+          `📤 [KAFKA] User ${follower_id} unfollowed user ${id} event published`
+        );
+      } catch (kafkaError) {
+        console.error(
+          "⚠️ Error publishing unfollow event to Kafka:",
+          kafkaError
+        );
+      }
     });
 
-    await User.decrement("followers_count", {
-      where: { id: id },
+    // FIX: Make post removal asynchronous (non-blocking)
+    // This is the main bottleneck - don't wait for it
+    setImmediate(async () => {
+      try {
+        await removePostsFromFeedOnUnfollow(follower_id, id);
+        console.log(`✅ Removed posts from feed for follower ${follower_id}`);
+      } catch (removeError) {
+        console.error(
+          "⚠️ Error removing posts from feed on unfollow:",
+          removeError
+        );
+        await invalidateFeedCache(follower_id).catch(console.error);
+      }
     });
 
-    // Update counts in Redis cache
-    await userCacheService.decrementFollowingCount(follower_id);
-    await userCacheService.decrementFollowersCount(id);
-
-    // Publish unfollow event to Kafka (async processing)
-    try {
-      await publishUserUnfollowed(follower_id, id);
-      console.log(
-        `📤 [KAFKA] User ${follower_id} unfollowed user ${id} event published`
-      );
-    } catch (kafkaError) {
-      console.error("⚠️ Error publishing unfollow event to Kafka:", kafkaError);
-    }
-
-    // Remove all posts from the unfollowed user from the follower's feed
-    // This can be done synchronously for immediate feed update, or moved to Kafka consumer
-    try {
-      await removePostsFromFeedOnUnfollow(follower_id, id);
-    } catch (removeError) {
-      // Log but don't fail - at least invalidate cache as fallback
-      console.error(
-        "⚠️ Error removing posts from feed on unfollow:",
-        removeError
-      );
-      await invalidateFeedCache(follower_id).catch(console.error);
-    }
-
-    await follower.reload();
-    await userToUnfollow.reload();
+    await Promise.all([follower.reload(), userToUnfollow.reload()]);
 
     if (userToUnfollow.followers_count < 10000 && userToUnfollow.is_celebrity) {
-      await userToUnfollow.update({ is_celebrity: false });
+      userToUnfollow.update({ is_celebrity: false }).catch(console.error);
     }
 
     res.status(200).json({

@@ -31,7 +31,7 @@ export const DB_CONFIG = {
     POOL_IDLE: 10000,
   },
   CASSANDRA: {
-    POOL_SIZE: parseInt(process.env.CASSANDRA_POOL_SIZE || "10"),
+    POOL_SIZE: parseInt(process.env.CASSANDRA_POOL_SIZE || "20"), // Increase from 10 to 20
     MAX_REQUESTS_PER_CONNECTION: 32768,
   },
   REDIS: {
@@ -42,10 +42,10 @@ export const DB_CONFIG = {
 
 // Rate Limiting Configuration
 export const RATE_LIMIT_CONFIG = {
-  WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-  MAX_REQUESTS: 100, // Max requests per window
-  POST_CREATE_LIMIT: 10, // Max posts per window
-  FEED_FETCH_LIMIT: 60, // Max feed fetches per window
+  WINDOW_MS: 60 * 1000, // 1 minute instead of 15 minutes
+  MAX_REQUESTS: 1000, // Much higher limit
+  POST_CREATE_LIMIT: 1000, // Much higher limit
+  FEED_FETCH_LIMIT: 1000, // Much higher limit
 };
 
 // Error Handling Configuration

@@ -2,6 +2,8 @@ import { Sequelize } from "sequelize";
 import cassandra from "cassandra-driver";
 import { createClient } from "redis";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import { DB_CONFIG } from "./constants.js";
 
 dotenv.config({ quiet: true });
@@ -28,7 +30,25 @@ const { Client } = cassandra;
 
 const username = process.env.ASTRA_DB_USERNAME;
 const password = process.env.ASTRA_CLIENT_SECRET;
-const secureConnectBundle = process.env.ASTRA_SECURE_CONNECT_BUNDLE;
+// Normalize the path - remove quotes and handle Windows paths
+let secureConnectBundle = process.env.ASTRA_SECURE_CONNECT_BUNDLE;
+if (secureConnectBundle) {
+  // Remove surrounding quotes if present
+  secureConnectBundle = secureConnectBundle.replace(/^["']|["']$/g, "");
+  // Convert backslashes to forward slashes (works on both Windows and Unix)
+  secureConnectBundle = secureConnectBundle.replace(/\\/g, "/");
+  // Resolve to absolute path if relative
+  if (!path.isAbsolute(secureConnectBundle)) {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    secureConnectBundle = path.resolve(
+      __dirname,
+      "..",
+      "..",
+      secureConnectBundle
+    );
+  }
+}
 
 // Only create Cassandra client if all required environment variables are present and valid
 let cassandraClient = null;
@@ -52,10 +72,24 @@ if (
       pooling: {
         coreConnectionsPerHost: {
           [cassandra.types.distance.local]: DB_CONFIG.CASSANDRA.POOL_SIZE,
-          [cassandra.types.distance.remote]: 1,
+          [cassandra.types.distance.remote]: DB_CONFIG.CASSANDRA.POOL_SIZE,
         },
         maxRequestsPerConnection:
           DB_CONFIG.CASSANDRA.MAX_REQUESTS_PER_CONNECTION,
+      },
+      // Add socket options for timeout
+      socketOptions: {
+        connectTimeout: 10000, // 10 seconds
+        readTimeout: 10000, // 10 seconds
+      },
+      // Add retry policy
+      policies: {
+        retry: new cassandra.policies.retry.RetryPolicy(),
+        reconnection:
+          new cassandra.policies.reconnection.ExponentialReconnectionPolicy(
+            100,
+            30000
+          ),
       },
     });
   } catch (error) {
@@ -69,24 +103,6 @@ const initializeCassandra = async () => {
     if (!cassandraClient) {
       throw new Error(
         "Cassandra client is not initialized. Please check your ASTRA_DB_USERNAME, ASTRA_CLIENT_SECRET, and ASTRA_SECURE_CONNECT_BUNDLE environment variables."
-      );
-    }
-
-    if (!username || typeof username !== "string") {
-      throw new Error(
-        "ASTRA_DB_USERNAME environment variable is not set or is not a string. Please check your .env file."
-      );
-    }
-
-    if (!password || typeof password !== "string") {
-      throw new Error(
-        "ASTRA_CLIENT_SECRET environment variable is not set or is not a string. Please check your .env file."
-      );
-    }
-
-    if (!secureConnectBundle) {
-      throw new Error(
-        "ASTRA_SECURE_CONNECT_BUNDLE environment variable is not set. Please check your .env file."
       );
     }
 

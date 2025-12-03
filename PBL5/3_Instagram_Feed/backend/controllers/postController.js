@@ -30,10 +30,15 @@ export const createPost = async (req, res) => {
     // Helper function to handle fallback queue
     const enqueueFallback = async () => {
       try {
+        const createdAt =
+          post.created_at instanceof Date
+            ? post.created_at
+            : new Date(post.created_at);
+
         await enqueueFanOutTask({
           userId: post.user_id,
           postId: post.id,
-          createdAt: post.created_at,
+          createdAt: createdAt,
         });
       } catch (queueError) {
         console.error("⚠️ Error enqueueing fallback fan-out:", queueError);
@@ -53,7 +58,12 @@ export const createPost = async (req, res) => {
       } catch (kafkaError) {
         // Catch ALL errors - never let this crash the server
         console.error("⚠️ Error publishing to Kafka:", kafkaError.message);
-        await enqueueFallback();
+        // Fix: Wrap fallback in try-catch to prevent crashes
+        try {
+          await enqueueFallback();
+        } catch (fallbackError) {
+          console.error("⚠️ Error in fallback handler:", fallbackError.message);
+        }
       }
     });
 

@@ -18,10 +18,17 @@ const MAX_PROCESSING_TIME = 300000; // 5 minutes
  */
 export async function enqueueFanOutTask(taskData) {
   const taskId = `${taskData.userId}:${taskData.postId}:${Date.now()}`;
+
+  // Fix: Ensure createdAt is a Date object before calling toISOString()
+  const createdAt =
+    taskData.createdAt instanceof Date
+      ? taskData.createdAt
+      : new Date(taskData.createdAt);
+
   const task = {
     id: taskId,
     ...taskData,
-    createdAt: taskData.createdAt.toISOString(),
+    createdAt: createdAt.toISOString(),
     enqueuedAt: new Date().toISOString(),
   };
 
@@ -103,12 +110,16 @@ export function startFallbackWorker() {
         setImmediate(processQueue);
       } else {
         // Queue empty, wait before checking again
-        setTimeout(processQueue, 1000); // Check every second
+        // Fix: Ensure timeout is always positive
+        const delay = 1000; // Check every second
+        setTimeout(processQueue, delay);
       }
     } catch (error) {
       console.error(`❌ [FALLBACK QUEUE] Worker error:`, error.message);
       // Wait before retrying on error
-      setTimeout(processQueue, 5000); // Wait 5 seconds on error
+      // Fix: Ensure timeout is always positive
+      const delay = 5000; // Wait 5 seconds on error
+      setTimeout(processQueue, delay);
     }
   };
 

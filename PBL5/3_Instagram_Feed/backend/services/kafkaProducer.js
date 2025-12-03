@@ -166,11 +166,17 @@ export async function sendMessage(topic, message, key = null, headers = {}) {
  * @param {Date} postData.created_at - Post creation timestamp
  */
 export async function publishPostCreated(postData) {
+  // Fix: Ensure created_at is a Date object before calling toISOString()
+  const createdAt =
+    postData.created_at instanceof Date
+      ? postData.created_at
+      : new Date(postData.created_at);
+
   const event = {
     eventType: "POST_CREATED",
     postId: postData.id,
     userId: postData.user_id,
-    createdAt: postData.created_at.toISOString(),
+    createdAt: createdAt.toISOString(),
     timestamp: new Date().toISOString(),
   };
 

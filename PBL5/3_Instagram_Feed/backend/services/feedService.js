@@ -301,9 +301,11 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
       return 0;
     }
 
-    // Add missing posts to follower's feed in Cassandra
-    const cassandraPromises = postsToAdd.map((post) =>
-      addPostToFeed(followerId, post.id, post.created_at)
+    // FIX: Skip idempotency check during backfill
+    // This ensures posts are re-added even if idempotency markers still exist
+    // (which can happen if user unfollowed and followed back)
+    const cassandraPromises = postsToAdd.map(
+      (post) => addPostToFeed(followerId, post.id, post.created_at, true) // Skip idempotency check
     );
 
     // Add missing posts to follower's feed in Redis
@@ -519,6 +521,22 @@ export const removePostsFromFeedOnUnfollow = async (
     // Remove posts from Redis cache using LUA script (atomic batch operation)
     const redisKey = FEED_KEY(followerId);
     await removePostsFromFeedWithLua(redisKey, postIds);
+
+    // FIX: Clear idempotency markers for removed posts
+    // This ensures they can be re-added if user follows back
+    const idempotencyDeletePromises = postIds.map(async (postId) => {
+      try {
+        const idempotencyKey = IDEMPOTENCY_KEY(followerId, postId);
+        await redisClient.del(idempotencyKey);
+      } catch (error) {
+        // Non-critical - log but don't fail
+        console.error(
+          `⚠️ Error clearing idempotency marker for post ${postId}:`,
+          error.message
+        );
+      }
+    });
+    await Promise.allSettled(idempotencyDeletePromises);
 
     // IMPORTANT: Also invalidate the cached response to prevent stale data
     // The cached response still contains the old posts, so we need to delete it

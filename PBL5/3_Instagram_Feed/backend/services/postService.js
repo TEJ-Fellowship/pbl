@@ -8,6 +8,19 @@ import {
   cachePost,
 } from "./redisLuaScripts.js";
 
+const executeWithRetry = async (query, params, options, maxRetries = 2) => {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await cassandraClient.execute(query, params, options);
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+      await new Promise((resolve) =>
+        setTimeout(resolve, 100 * Math.pow(2, attempt))
+      );
+    }
+  }
+};
+
 /**
  * Create a new post
  * @param {Object} postData - { user_id, caption, image_url, created_at }
@@ -25,34 +38,38 @@ export const createPost = async (postData) => {
     throw new Error("user_id must be a valid number");
   }
 
-  // Auto-generate UUID as string
   const postIdString = randomUUID();
   const postId = types.Uuid.fromString(postIdString);
   const createdAt = created_at ? new Date(created_at) : new Date();
 
-  // Insert into posts table
   const insertPostQuery = `
     INSERT INTO ${KEYSPACE}.posts (id, user_id, caption, image_url, likes_count, comments_count, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  await cassandraClient.execute(
-    insertPostQuery,
-    [postId, userId, caption || null, image_url, 0, 0, createdAt],
-    { prepare: true }
-  );
-
-  // Insert into posts_by_user table
   const insertPostByUserQuery = `
     INSERT INTO ${KEYSPACE}.posts_by_user (user_id, created_at, id, caption, image_url, likes_count, comments_count)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
 
-  await cassandraClient.execute(
-    insertPostByUserQuery,
-    [userId, createdAt, postId, caption || null, image_url, 0, 0],
-    { prepare: true }
-  );
+  await Promise.all([
+    executeWithRetry(
+      insertPostQuery,
+      [postId, userId, caption || null, image_url, 0, 0, createdAt],
+      {
+        prepare: true,
+        timeout: 5000,
+      }
+    ),
+    executeWithRetry(
+      insertPostByUserQuery,
+      [userId, createdAt, postId, caption || null, image_url, 0, 0],
+      {
+        prepare: true,
+        timeout: 5000,
+      }
+    ),
+  ]);
 
   const post = {
     id: postIdString,
@@ -64,7 +81,6 @@ export const createPost = async (postData) => {
     created_at: createdAt,
   };
 
-  // Cache the post immediately in Redis
   await cachePost(postIdString, post).catch((err) =>
     console.error("Failed to cache new post:", err)
   );
@@ -78,13 +94,11 @@ export const createPost = async (postData) => {
  * @returns {Object|null} Post object or null if not found
  */
 export const getPostById = async (postId) => {
-  // Try cache first
   const cachedPosts = await getPostsFromCache([postId]);
   if (cachedPosts[0]) {
     return cachedPosts[0];
   }
 
-  // Cache miss - fetch from Cassandra
   const postIdUuid = types.Uuid.fromString(postId);
   const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id = ?`;
   const result = await cassandraClient.execute(query, [postIdUuid], {
@@ -106,7 +120,6 @@ export const getPostById = async (postId) => {
     created_at: post.created_at,
   };
 
-  // Cache the post for next time
   await cachePost(postId, postData).catch((err) =>
     console.error("Failed to cache post:", err)
   );
@@ -151,7 +164,6 @@ export const getPostsByIds = async (postIds) => {
     return [];
   }
 
-  // Try Redis cache first
   const cachedPosts = await getPostsFromCache(postIds);
   const cachedMap = new Map();
   const missingIds = [];
@@ -164,12 +176,9 @@ export const getPostsByIds = async (postIds) => {
     }
   });
 
-  // If all posts are cached, return them
   if (missingIds.length === 0) {
     return postIds.map((id) => cachedMap.get(id));
   }
-
-  // Fetch missing posts from Cassandra
 
   const uuidPostIds = missingIds.map((id) => types.Uuid.fromString(id));
   const placeholders = missingIds.map(() => "?").join(",");
@@ -189,12 +198,10 @@ export const getPostsByIds = async (postIds) => {
     created_at: row.created_at,
   }));
 
-  // Cache the fetched posts
   if (fetchedPosts.length > 0) {
     await batchCachePosts(fetchedPosts);
   }
 
-  // Merge cached and fetched posts
   fetchedPosts.forEach((post) => cachedMap.set(post.id, post));
 
   return postIds.map((id) => cachedMap.get(id));
