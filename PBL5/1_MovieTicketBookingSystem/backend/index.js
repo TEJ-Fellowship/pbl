@@ -1,13 +1,29 @@
 const express = require("express");
-// const cors = require("cors");
+
 const app = express();
 
 const { PORT } = require("./utils/config");
 const { connectToDatabase } = require("./utils/db.js");
 
 // Middleware
-// app.use(cors());
+
 app.use(express.json());
+
+// Request timeout middleware (production best practice)
+// Prevents requests from hanging indefinitely
+// 5s timeout for true capacity testing (standard production value)
+const REQUEST_TIMEOUT = process.env.REQUEST_TIMEOUT
+  ? parseInt(process.env.REQUEST_TIMEOUT)
+  : 5000;
+app.use((req, res, next) => {
+  req.setTimeout(REQUEST_TIMEOUT, () => {
+    if (!res.headersSent) {
+      res.status(504).json({ error: "Request timeout" });
+    }
+  });
+  res.setTimeout(REQUEST_TIMEOUT);
+  next();
+});
 
 // Routes
 app.use("/api/movies", require("./routes/movies"));
@@ -134,19 +150,21 @@ const start = async () => {
       console.log("⚠️  Database connection skipped (Redis-only mode)");
     }
 
-    // Start Kafka consumer if Kafka mode is enabled
+    // Start Kafka consumers if Kafka mode is enabled
     const config = require("./utils/config");
     if (config.KAFKA_MODE === "kafka") {
       try {
         const { startBookingConsumer } = require("./services/kafkaConsumer");
         await startBookingConsumer();
-        console.log("✅ Kafka consumer started successfully");
+        console.log(
+          `✅ All ${config.KAFKA_CONSUMER_INSTANCES} Kafka consumers started successfully`
+        );
       } catch (kafkaError) {
         console.error(
-          "⚠️  Failed to start Kafka consumer:",
+          "⚠️  Failed to start Kafka consumers:",
           kafkaError.message
         );
-        console.log("⚠️  Server will continue without Kafka consumer");
+        console.log("⚠️  Server will continue without Kafka consumers");
       }
     }
 

@@ -1,13 +1,10 @@
 config:
   target: "http://localhost:3001"
   phases:
-    # Quick test - 30 seconds total
-    - duration: 10
-      arrivalRate: 20
-      name: "Quick test"
-    - duration: 20
-      arrivalRate: 50
-      name: "Slightly higher load"
+    # Capacity test - 500 req/s (testing with clean resources)
+    - duration: 120
+      arrivalRate: 500
+      name: "500 req/s capacity test (30 partitions, 32 consumers)"
   processor: "./artillery-processor.js"
   variables:
     seatCount: 150000

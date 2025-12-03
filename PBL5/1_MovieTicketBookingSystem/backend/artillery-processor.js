@@ -6,8 +6,9 @@ module.exports = {
   /**
    * Generate random seat IDs for booking
    * Returns array of 1-3 random seats
+   * @param {number} maxSeats - Maximum seat number (defaults to 150000)
    */
-  generateSeatIds: () => {
+  generateSeatIds: (maxSeats = 150000) => {
     const numSeats = Math.floor(Math.random() * 3) + 1; // 1-3 seats
     const seatIds = [];
     const usedSeats = new Set();
@@ -15,7 +16,7 @@ module.exports = {
     for (let i = 0; i < numSeats; i++) {
       let seatNum;
       do {
-        seatNum = Math.floor(Math.random() * 1000) + 1; // 1-1000
+        seatNum = Math.floor(Math.random() * maxSeats) + 1; // 1 to maxSeats
       } while (usedSeats.has(seatNum));
 
       usedSeats.add(seatNum);
@@ -34,8 +35,10 @@ module.exports = {
     if (!context.vars) {
       context.vars = {};
     }
+    // Get seatCount from load test config (defaults to 150000)
+    const maxSeats = context.vars.seatCount || 150000;
     // Generate seat IDs and set as variable for use in templates
-    const seatIds = module.exports.generateSeatIds();
+    const seatIds = module.exports.generateSeatIds(maxSeats);
     context.vars.seatIds = seatIds;
     return done();
   },
