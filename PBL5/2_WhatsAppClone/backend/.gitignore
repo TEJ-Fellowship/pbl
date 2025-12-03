@@ -1,2 +1,9 @@
 **/node_modules/
 .env
+
+# DataStax Astra DB Secure Connect Bundles (contain sensitive credentials)
+*.zip
+scb_*.zip
+secure-connect-*.zip
+**/secure-connect-*.zip
+**/scb_*.zip
