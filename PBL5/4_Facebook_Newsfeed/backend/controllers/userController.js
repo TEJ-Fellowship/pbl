@@ -4,6 +4,7 @@ const {
   setCache,
   deleteCache,
   deletePattern,
+  addUserPostCacheKey,
 } = require("../utils/cache");
 
 // Follow/Unfollow user
@@ -122,6 +123,8 @@ const handleGetPosts = async (req, res) => {
     console.log(`✅ Cache MISS - writing to cache: ${cacheKey}`);
     console.time("🕒Cache Write");
     const cacheResult = await setCache(cacheKey, postsWithCounts, 600); // 10 min TTL
+    
+    await addUserPostCacheKey(user_id, page, 600);
     console.timeEnd("🕒Cache Write");
     console.log(
       `💾 Cache write result:`,
