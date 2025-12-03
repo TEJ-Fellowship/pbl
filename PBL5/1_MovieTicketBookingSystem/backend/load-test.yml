@@ -14,6 +14,11 @@ scenarios:
   - name: "Booking Load Test"
     weight: 70
     flow:
+      # Simulate different IP addresses for rate limiting tests
+      # Each virtual user gets a unique IP (192.168.x.x format)
+      - set:
+          headers:
+            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
       - function: "generateSeatsForRequest"
       - post:
           url: "/api/bookings"
@@ -24,7 +29,7 @@ scenarios:
               as: "bookingId"
               strict: false # Don't fail if field doesn't exist (409 responses won't have id)
           expect:
-            - statusCode: [201, 202, 409] # 201 = direct mode success, 202 = kafka mode queued, 409 = seat conflict (expected)
+            - statusCode: [201, 202, 409, 429] # 201 = direct mode success, 202 = kafka mode queued, 409 = seat conflict, 429 = rate limited (expected)
             - contentType: json
 
   # Scenario 2: Full flow (booking + payment) - COMMENTED OUT FOR BOOKING-ONLY TESTING
@@ -64,6 +69,10 @@ scenarios:
   - name: "Atomic Multi-seat Locking Stress Test"
     weight: 15
     flow:
+      # Simulate different IP addresses
+      - set:
+          headers:
+            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
       # Generate seat sets that intentionally overlap
       - function: "generateAtomicitySeatSets"
 
@@ -80,5 +89,5 @@ scenarios:
               as: "unavailableSeats"
               strict: false
           expect:
-            - statusCode: [201, 202, 409] # 201 = direct mode success, 202 = kafka mode queued, 409 = conflict (expected for atomicity)
+            - statusCode: [201, 202, 409, 429] # 201 = direct mode success, 202 = kafka mode queued, 409 = conflict, 429 = rate limited
             - contentType: json

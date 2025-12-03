@@ -9,6 +9,11 @@ const { connectToDatabase } = require("./utils/db.js");
 
 app.use(express.json());
 
+// Rate limiting middleware (prevents abuse)
+const { rateLimiters } = require("./middleware/rateLimiter");
+// Apply general rate limiting to all API routes (100 requests per minute)
+app.use("/api", rateLimiters.general);
+
 // Request timeout middleware (production best practice)
 // Prevents requests from hanging indefinitely
 // 5s timeout for true capacity testing (standard production value)

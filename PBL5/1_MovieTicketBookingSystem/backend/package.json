@@ -20,6 +20,8 @@
     "seed:redis": "node scripts/seedRedis.js",
     "test": "node test-integration.js",
     "test:integration": "node test-integration.js",
+    "test:rate-limit": "node tests/test-rate-limit.js",
+    "test:rate-limit:multi": "node tests/test-rate-limit-multi-ip.js",
     "load-test": "artillery run load-test.yml",
     "load-test:payment": "artillery run load-test-payment-only.yml"
   },
