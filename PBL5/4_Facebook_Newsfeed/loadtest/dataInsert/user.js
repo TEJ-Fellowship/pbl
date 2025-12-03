@@ -4,8 +4,8 @@ const path = require('path');
 
 // Generate realistic usernames and write to CSV
 const generateUsernamesToCSV = () => {
-  const csvPath = path.join(__dirname, '../dummyData/user.csv');
-  const numUsernames = 500; // Generate 200 usernames
+  const csvPath = path.join(__dirname, 'dummyData/user.csv');
+  const numUsernames = 700; // Generate 700 usernames
   
   // Array to store generated usernames
   const usernames = [];

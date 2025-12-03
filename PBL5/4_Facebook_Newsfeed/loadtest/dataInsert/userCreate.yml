@@ -1,12 +1,12 @@
 config:
-  name: "User Creation Test - All 69 Users in 60 Seconds"
+  name: "User Creation Test - All 700 Users in 2 Minutes"
   target: "http://localhost:3000"
   phases:
-    - duration: 60
-      arrivalCount: 69 
-      name: "Create all 69 users in 60 seconds"
+    - duration: 120
+      arrivalCount: 700 
+      name: "Create all 700 users in 2 minutes"
   payload:
-    path: "../dummyData/user.csv"
+    path: "./dummyData/user.csv"
     fields:
       - "username"
     order: "sequence"  # Process CSV in order

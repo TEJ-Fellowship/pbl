@@ -1,0 +1,85 @@
+config:
+  name: "Parallel Test - All Routes Simultaneously"
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Parallel test - 5 req/s (all routes running simultaneously)"
+  # Combined payload at config level - all scenarios use this
+  payload:
+    path: "./data/all_data.csv"
+    fields:
+      - "username"
+      - "user_id"
+      - "post_id"
+      - "post_content"
+      - "comment_content"
+    order: "random"
+    skipHeader: true
+    cast: true
+  plugins:
+    expect: {}
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  # All scenarios run in parallel with equal weights (20% each)
+  # This simulates real-world concurrent traffic
+  
+  # Test 1: Create User
+  - name: "Create User"
+    weight: 20  # 20% of traffic
+    flow:
+      - post:
+          url: "/api/users"
+          json:
+            username: "{{ username }}"
+          expect:
+            - statusCode: [201, 409]  # 201 created, 409 if username exists
+
+  # Test 2: Create Post
+  - name: "Create Post"
+    weight: 20  # 20% of traffic
+    flow:
+      - post:
+          url: "/api/posts"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ post_content }}"
+          expect:
+            - statusCode: [201, 200]
+
+  # Test 3: Like Post
+  - name: "Like Post"
+    weight: 20  # 20% of traffic
+    flow:
+      - post:
+          url: "/api/posts/{{ post_id }}/like"
+          json:
+            user_id: "{{ user_id }}"
+          expect:
+            - statusCode: [200, 201]
+
+  # Test 4: Comment on Post
+  - name: "Comment on Post"
+    weight: 20  # 20% of traffic
+    flow:
+      - post:
+          url: "/api/posts/{{ post_id }}/comment"
+          json:
+            user_id: "{{ user_id }}"
+            content: "{{ comment_content }}"
+          expect:
+            - statusCode: [200, 201]
+
+  # Test 5: Get Feed
+  - name: "Get Feed"
+    weight: 20  # 20% of traffic
+    flow:
+      - get:
+          url: "/api/feed/{{ user_id }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+

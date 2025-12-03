@@ -1,4 +1,5 @@
 const sequelize = require('./database');
+require("../models/index")
 
 // Test database connection
 const connectDB = async () => {
