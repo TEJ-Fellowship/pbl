@@ -5,6 +5,7 @@ const {
   appendMultipleToFeedCache,
   getLastFetchTime,
   setLastFetchTime,
+  addFeedCacheKey,
 } = require("../utils/cache");
 const { Op } = require("sequelize");
 
@@ -62,7 +63,7 @@ const handleGetFeed = async (req, res) => {
         whereClause.created_at[Op.gte] = oneDayAgo;
       }
 
-      console.time('⏱️ Database Query Time (Refresh)')
+      console.time("⏱️ Database Query Time (Refresh)");
       const newPosts = await Post.findAll({
         where: whereClause,
         include: [
@@ -75,7 +76,7 @@ const handleGetFeed = async (req, res) => {
         order: [["created_at", "DESC"]],
         limit: 100,
       });
-      console.timeEnd('⏱️ Database Query Time (Refresh)')
+      console.timeEnd("⏱️ Database Query Time (Refresh)");
       console.log(`📊 Found ${newPosts.length} new posts`);
 
       // Use likes_count and comments_count directly from Post model (already maintained)
@@ -87,14 +88,17 @@ const handleGetFeed = async (req, res) => {
       }));
 
       if (newPostsWithCounts.length > 0) {
-        console.time('⏱️ Cache Write Time (Refresh)')
+        console.time("⏱️ Cache Write Time (Refresh)");
         await appendMultipleToFeedCache(feedKey, newPostsWithCounts, 100, 300);
-        console.timeEnd('⏱️ Cache Write Time (Refresh)')
+        //track the feed cache key
+        await addFeedCacheKey(user_id, 300);
+
+        console.timeEnd("⏱️ Cache Write Time (Refresh)");
       }
 
-      console.time('⏱️ Last Fetch Time Set (Last Fetch)')
+      console.time("⏱️ Last Fetch Time Set (Last Fetch)");
       await setLastFetchTime(user_id, 300);
-      console.timeEnd('⏱️ Last Fetch Time Set (Last Fetch)')
+      console.timeEnd("⏱️ Last Fetch Time Set (Last Fetch)");
       return res.status(200).json({
         posts: newPostsWithCounts,
         hasMore: false,
@@ -109,10 +113,10 @@ const handleGetFeed = async (req, res) => {
     // ============================================
     // Check cache first (only if no cursor - first page)
     if (!cursor) {
-      console.time('⏱️ Cache Read Time')
+      console.time("⏱️ Cache Read Time");
       const cachedFeed = await getCache(feedKey);
-      console.timeEnd('⏱️ Cache Read Time')
-      console.log(`📦 Cache result:`, cachedFeed ? 'HIT ✅' : 'MISS ❌')
+      console.timeEnd("⏱️ Cache Read Time");
+      console.log(`📦 Cache result:`, cachedFeed ? "HIT ✅" : "MISS ❌");
 
       if (cachedFeed && cachedFeed.posts) {
         const limitedPosts = cachedFeed.posts.slice(0, limit);
@@ -140,13 +144,15 @@ const handleGetFeed = async (req, res) => {
     const followingIds = following.map((f) => f.following_id);
 
     if (followingIds.length === 0) {
-      console.time('⏱️ Cache Write Time (Empty Feed)')
+      console.time("⏱️ Cache Write Time (Empty Feed)");
       await setCache(
         feedKey,
         { posts: [], lastUpdated: new Date().toISOString() },
         300
       );
-      console.timeEnd('⏱️ Cache Write Time (Empty Feed)')
+      //track the feed cache key
+      await addFeedCacheKey(user_id, 300);
+      console.timeEnd("⏱️ Cache Write Time (Empty Feed)");
       return res.status(200).json({
         posts: [],
         hasMore: false,
@@ -172,7 +178,7 @@ const handleGetFeed = async (req, res) => {
       whereClause.created_at = { [Op.gte]: sevenDaysAgo };
     }
 
-    console.time('⏱️ Database Query Time (Normal Feed)')
+    console.time("⏱️ Database Query Time (Normal Feed)");
     const posts = await Post.findAll({
       where: whereClause,
       include: [
@@ -185,7 +191,7 @@ const handleGetFeed = async (req, res) => {
       order: [["created_at", "DESC"]],
       limit: limit + 1, // Fetch one extra to check if there's more
     });
-    console.timeEnd('⏱️ Database Query Time (Normal Feed)')
+    console.timeEnd("⏱️ Database Query Time (Normal Feed)");
     console.log(`📊 Found ${posts.length} posts`);
 
     // Use likes_count and comments_count directly from Post model (already maintained)
@@ -210,23 +216,25 @@ const handleGetFeed = async (req, res) => {
 
     // Cache only first page (no cursor)
     if (!cursor) {
-      console.time('⏱️ Cache Write Time')
+      console.time("⏱️ Cache Write Time");
       await setCache(
         feedKey,
         { posts: postsWithCounts, lastUpdated: new Date().toISOString() },
         300
       );
-      console.timeEnd('⏱️ Cache Write Time')
+      //track the feed cache key
+      await addFeedCacheKey(user_id, 300);
+      console.timeEnd("⏱️ Cache Write Time");
 
-      console.time('⏱️ Cache Write Time (Last Fetch)')
+      console.time("⏱️ Cache Write Time (Last Fetch)");
       await setLastFetchTime(user_id, 300);
-      console.timeEnd('⏱️ Cache Write Time (Last Fetch)')
+      console.timeEnd("⏱️ Cache Write Time (Last Fetch)");
     }
 
     return res.status(200).json({
       posts: postsToReturn,
       hasMore: hasMore,
-      nextCursor: nextCursor, // ADD THIS
+      nextCursor: nextCursor,
       fromCache: false,
       isRefresh: false,
     });

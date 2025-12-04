@@ -2,10 +2,11 @@ const { User, Post, Like, Comment, Follow } = require("../models/index");
 const {
   setCache,
   deleteCache,
-  deletePattern,
+  deleteFeedCache,
   batchAppendToFeedCache,
   deleteUserPostsCache,
 } = require("../utils/cache");
+const kafkaProducer = require("../services/kafkaProducer");
 
 // Creating the post by the user
 const handlePost = async (req, res) => {
@@ -19,16 +20,13 @@ const handlePost = async (req, res) => {
       return res.status(400).json({ error: "Content is required" });
     }
 
-    // OPTIMIZATION: Run user and followers queries in parallel
-    console.time("⏱️ DB Queries (User + Followers)");
-    const [user, followers] = await Promise.all([
-      User.findByPk(user_id, { attributes: ["id", "username"] }),
-      Follow.findAll({
-        where: { following_id: user_id },
-        attributes: ["follower_id"],
-      }),
-    ]);
-    console.timeEnd("⏱️ DB Queries (User + Followers)");
+    // ✅ OPTIMIZED: Only fetch user, NOT followers (worker will fetch them)
+    console.time("⏱️ DB Query (User Only)");
+    const user = await User.findByPk(user_id, {
+      attributes: ["id", "username"],
+    });
+    console.timeEnd("⏱️ DB Query (User Only)");
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -41,6 +39,7 @@ const handlePost = async (req, res) => {
       image_urls,
     });
     console.timeEnd("⏱️ Create Post in DB");
+
     // Build postData manually (no extra query needed)
     const postData = {
       ...post.toJSON(),
@@ -56,14 +55,40 @@ const handlePost = async (req, res) => {
     // REQUIREMENT 1: Cache post for all followers
     // ============================================
 
-    // Incrementally append this post to each follower's feed cache
-    const followerIds = followers.map((f) => f.follower_id);
+    // ============================================
+    // KAFKA INTEGRATION: Send to Kafka for async processing
+    // ============================================
 
-    console.time("⏱️ Append to Feed Cache Time");
-    if (followerIds.length > 0) {
-      await batchAppendToFeedCache(followerIds, postData, 100, 300);
+    // ✅ OPTIMIZED: Send to Kafka immediately (no follower fetch needed)
+    console.time("⏱️ Send to Kafka");
+    try {
+      await kafkaProducer.sendPostCreatedEvent({
+        ...postData,
+      });
+      console.timeEnd("⏱️ Send to Kafka");
+      console.log(`📤 Post ${post.id} sent to Kafka for async fan-out`);
+    } catch (kafkaError) {
+      console.error(
+        "❌ Kafka error, falling back to synchronous fan-out:",
+        kafkaError
+      );
+      // Fallback to synchronous processing if Kafka fails
+      console.time("⏱️ Fallback: Fetch Followers");
+      const followers = await Follow.findAll({
+        where: { following_id: user_id },
+        attributes: ["follower_id"],
+      });
+      const followerIds = followers.map((f) => f.follower_id);
+      console.timeEnd("⏱️ Fallback: Fetch Followers");
+
+      // Append to Feed Cache
+      console.time("⏱️ Fallback: Append to Feed Cache");
+      if (followerIds.length > 0) {
+        await batchAppendToFeedCache(followerIds, postData, 100, 300);
+      }
+      console.timeEnd("⏱️ Fallback: Append to Feed Cache");
     }
-    console.timeEnd("⏱️ Append to Feed Cache Time");
+
     // ============================================
     // REQUIREMENT 2: Cache the post itself
     // ============================================
@@ -116,7 +141,17 @@ const handleLike = async (req, res) => {
 
       // Invalidate caches
       await deleteCache(`post:${post_id}`);
-      await deletePattern(`feed:user:*`); // Invalidate all feeds (post appears in feeds)
+
+      //Get all users who follow this post's author to invalidate their feeds
+      const followers = await Follow.findAll({
+        where: { following_id: post.user_id },
+        attributes: ["follower_id"],
+      });
+      const followerIds = followers.map((f) => f.follower_id);
+      if (followerIds.length > 0) {
+        const deletePromises = followerIds.map((fid) => deleteFeedCache(fid));
+        await Promise.all(deletePromises);
+      }
 
       return res.status(200).json({ message: "Like removed" });
     }
@@ -124,9 +159,18 @@ const handleLike = async (req, res) => {
     const like = await Like.create({ user_id, post_id });
     await post.increment("likes_count");
 
-    // Invalidate caches
+    // Invalidate caches using tracking
     await deleteCache(`post:${post_id}`);
-    await deletePattern(`feed:user:*`); // Invalidate all feeds
+    // Get all users who follow this post's author to invalidate their feeds
+    const followers = await Follow.findAll({
+      where: { following_id: post.user_id },
+      attributes: ["follower_id"],
+    });
+    const followerIds = followers.map((f) => f.follower_id);
+    if (followerIds.length > 0) {
+      const deletePromises = followerIds.map((fid) => deleteFeedCache(fid));
+      await Promise.all(deletePromises);
+    }
 
     return res.status(201).json({ message: "Liked successfully", like });
   } catch (error) {
@@ -168,8 +212,18 @@ const handleComment = async (req, res) => {
 
     // Invalidate caches
     await deleteCache(`post:${post_id}`);
-    await deletePattern(`posts:user:${post.user_id}:*`);
+    await deleteUserPostsCache(post.user_id);
 
+    // Get all users who follow this post's author to invalidate their feeds
+    const followers = await Follow.findAll({
+      where: { following_id: post.user_id },
+      attributes: ["follower_id"],
+    });
+    const followerIds = followers.map((f) => f.follower_id);
+    if (followerIds.length > 0) {
+      const deletePromises = followerIds.map((fid) => deleteFeedCache(fid));
+      await Promise.all(deletePromises);
+    }
     const commentAuthor = await Comment.findByPk(comment.id, {
       include: [
         {
