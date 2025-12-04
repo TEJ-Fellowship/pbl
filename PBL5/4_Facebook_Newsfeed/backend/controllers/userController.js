@@ -5,6 +5,7 @@ const {
   deleteCache,
   deletePattern,
   addUserPostCacheKey,
+  deleteFeedCache,
 } = require("../utils/cache");
 
 // Follow/Unfollow user
@@ -36,8 +37,8 @@ const handleFollow = async (req, res) => {
       // ============================================
       await deleteCache(`followers:user:${following_id}`);
       await deleteCache(`following:user:${follower_id}`);
-      await deletePattern(`feed:user:${follower_id}*`); // Invalidate feed
-
+      await deleteFeedCache(follower_id);
+      
       return res.status(200).json({ message: "Unfollowed successfully" });
     }
 
@@ -49,7 +50,7 @@ const handleFollow = async (req, res) => {
     // ============================================
     await deleteCache(`followers:user:${following_id}`);
     await deleteCache(`following:user:${follower_id}`);
-    await deletePattern(`feed:user:${follower_id}*`); // Invalidate feed (new posts will appear)
+    await deleteFeedCache(follower_id);
 
     return res.status(201).json({ message: "Followed successfully" });
   } catch (error) {

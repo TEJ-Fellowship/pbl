@@ -9,6 +9,9 @@ const REDIS_PORT = process.env.REDIS_PORT||6379;
 const REDIS_TTL = parseInt(process.env.REDIS_TTL||60);
 const REDIS_TTL_DEFAULT = parseInt(process.env.REDIS_TTL_DEFAULT||600);
 
+const KAFKA_BROKERS = process.env.KAFKA_BROKERS 
+const KAFKA_CLIENT_ID = process.env.KAFKA_CLIENT_ID 
+
 
 module.exports = {
     PORT,
@@ -17,5 +20,7 @@ module.exports = {
     REDIS_HOST,
     REDIS_PORT,
     REDIS_TTL,
-    REDIS_TTL_DEFAULT
+    REDIS_TTL_DEFAULT,
+    KAFKA_BROKERS,
+    KAFKA_CLIENT_ID
 }
