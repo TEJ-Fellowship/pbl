@@ -38,89 +38,137 @@ async function processBookingRequest(bookingRequest) {
       };
     }
 
-    // Check seat availability in Redis
-    // OPTIMIZED: Use pipeline to check individual seats (much faster than sMembers for large sets!)
+    // OPTIMIZED: Atomic check-and-lock operation using Lua script
+    // This combines availability check and lock acquisition in a single atomic operation
+    // Reduces from 2 Redis round trips to 1, and ensures atomicity
     const availableSeatsKey = "available_seats";
-    const bookedSeatsKey = "booked_seats";
-
-    // Check all seats in parallel using pipeline (fastest approach!)
-    const pipeline = redis.multi();
-    seat_ids.forEach((seatId) => {
-      pipeline.sIsMember(availableSeatsKey, seatId);
-    });
-    const results = await pipeline.exec();
-
-    // Extract unavailable seats from pipeline results
-    // Redis pipeline.exec() returns: [error, result] or just the result value
-    const unavailableSeats = [];
-    if (results && Array.isArray(results)) {
-      results.forEach((result, index) => {
-        let isAvailable = false;
-
-        // Handle different result formats
-        if (Array.isArray(result) && result.length >= 2) {
-          // Format: [error, value]
-          const error = result[0];
-          const value = result[1];
-          if (error) {
-            console.error(`Error checking seat ${seat_ids[index]}:`, error);
-            unavailableSeats.push(seat_ids[index]);
-            return;
-          }
-          // value is 1 if member exists, 0 if not
-          isAvailable = value === 1 || value === true || value === "1";
-        } else if (typeof result === "number") {
-          // Format: direct value (1 = exists, 0 = doesn't exist)
-          isAvailable = result === 1;
-        } else if (result === true || result === "1") {
-          // Format: boolean or string "1"
-          isAvailable = true;
-        } else {
-          // Unexpected format, treat as unavailable
-          console.warn(
-            `Unexpected result format for seat ${seat_ids[index]}:`,
-            result,
-            `(type: ${typeof result})`
-          );
-          unavailableSeats.push(seat_ids[index]);
-          return;
-        }
-
-        if (!isAvailable) {
-          unavailableSeats.push(seat_ids[index]);
-        }
-      });
-    } else {
-      console.error("Pipeline results are not in expected format:", results);
-      throw new Error("Failed to check seat availability");
-    }
-
-    if (unavailableSeats.length > 0) {
-      return {
-        success: false,
-        error: "Some seats are not available",
-        unavailable_seats: unavailableSeats,
-        request_id,
-      };
-    }
-
-    // Acquire Redis locks for all seats
     const lockKeys = seat_ids.map((seatId) => `seat:${seatId}`);
     const lockTTL = 300; // 5 minutes
 
-    const { acquired: locks, failed: failedLocks } = await acquireLocks(
-      lockKeys,
-      lockTTL
-    );
+    // Generate lock tokens
+    const tokens = lockKeys.map(() => crypto.randomUUID());
+    const lockRedisKeys = lockKeys.map((key) => `lock:${key}`);
 
-    if (failedLocks.length > 0) {
+    // Lua script: Atomically check availability AND acquire locks
+    // Returns: [success, status, ...data]
+    // success: 1 = all good, 0 = failed
+    // status: "ok", "unavailable", or "locked"
+    const checkAndLockScript = `
+      local availableKey = KEYS[1]
+      local ttl = tonumber(ARGV[1])
+      local numSeats = tonumber(ARGV[2])
+      
+      -- Extract seat IDs and tokens from ARGV
+      local seatIds = {}
+      local tokens = {}
+      for i = 3, 3 + numSeats - 1 do
+        table.insert(seatIds, ARGV[i])
+      end
+      for i = 3 + numSeats, 3 + numSeats * 2 - 1 do
+        table.insert(tokens, ARGV[i])
+      end
+      
+      -- Check availability for all seats
+      local unavailable = {}
+      for i = 1, numSeats do
+        if redis.call("SISMEMBER", availableKey, seatIds[i]) == 0 then
+          table.insert(unavailable, seatIds[i])
+        end
+      end
+      
+      -- If any seat unavailable, return early
+      if #unavailable > 0 then
+        return {0, "unavailable", unpack(unavailable)}
+      end
+      
+      -- Try to acquire all locks atomically
+      -- Lock keys format: lock:seat:seatId (matching the lockKeys format)
+      local lockKeys = {}
+      for i = 1, numSeats do
+        table.insert(lockKeys, "lock:seat:" .. seatIds[i])
+      end
+      
+      local acquired = {}
+      local failed = {}
+      for i = 1, numSeats do
+        local result = redis.call("SET", lockKeys[i], tokens[i], "NX", "EX", ttl)
+        if result then
+          table.insert(acquired, i)
+        else
+          table.insert(failed, seatIds[i])
+        end
+      end
+      
+      -- If any lock failed, release all acquired locks (rollback)
+      if #failed > 0 then
+        for _, idx in ipairs(acquired) do
+          if redis.call("GET", lockKeys[idx]) == tokens[idx] then
+            redis.call("DEL", lockKeys[idx])
+          end
+        end
+        return {0, "locked", unpack(failed)}
+      end
+      
+      -- All checks passed and locks acquired
+      return {1, "ok", unpack(tokens)}
+    `;
+
+    const scriptArgs = [
+      String(lockTTL),
+      String(seat_ids.length),
+      ...seat_ids,
+      ...tokens,
+    ];
+
+    let checkAndLockResult;
+    try {
+      checkAndLockResult = await redis.eval(checkAndLockScript, {
+        keys: [availableSeatsKey],
+        arguments: scriptArgs,
+      });
+    } catch (error) {
+      console.error("Error in check-and-lock script:", error);
       return {
         success: false,
-        error: "Seats are currently being processed by another user",
-        seats_busy: failedLocks.length,
+        error: "Failed to check availability and acquire locks",
         request_id,
       };
     }
+
+    // Parse result: [success, status, ...data]
+    if (!checkAndLockResult || checkAndLockResult[0] !== 1) {
+      const status = checkAndLockResult?.[1] || "unknown";
+      const failedSeats = checkAndLockResult?.slice(2) || seat_ids;
+
+      if (status === "unavailable") {
+        return {
+          success: false,
+          error: "Some seats are not available",
+          unavailable_seats: failedSeats,
+          request_id,
+        };
+      } else if (status === "locked") {
+        return {
+          success: false,
+          error: "Seats are currently being processed by another user",
+          seats_busy: failedSeats.length,
+          request_id,
+        };
+      } else {
+        return {
+          success: false,
+          error: "Failed to acquire seats",
+          request_id,
+        };
+      }
+    }
+
+    // All locks acquired successfully - build lock objects
+    const acquiredTokens = checkAndLockResult.slice(2);
+    const locks = lockKeys.map((key, i) => ({
+      key,
+      token: acquiredTokens[i],
+    }));
 
     try {
       // Generate booking ID
@@ -141,31 +189,29 @@ async function processBookingRequest(bookingRequest) {
         request_id, // Store original request ID for tracking
       };
 
-      // Store booking in Redis using pipeline (batch all writes together)
+      // OPTIMIZED: Batch ALL Redis writes into a single pipeline
+      // Includes: booking data, pending set, locks, seat removal, expiry storage
       const bookingKey = `booking:${bookingId}`;
       const lockStorageKey = `booking:${bookingId}:locks`;
+      const seatsKey = `booking:${bookingId}:seats`; // For expiry tracking
 
-      // Batch all Redis writes into a single pipeline (much faster!)
-      // Instead of 4 separate network calls, we send all commands at once!
       const pipelineStart = Date.now();
 
-      // Build sRem args: [key, ...members] - spread seat_ids when calling
+      // Build sRem args: [key, ...members]
       const sRemArgs = [availableSeatsKey, ...seat_ids];
 
+      // Batch all writes: booking, pending, locks, seat removal, AND expiry storage
       await batchWrite([
         { type: "setEx", args: [bookingKey, 300, JSON.stringify(bookingData)] }, // Store booking (5 min TTL)
         { type: "sAdd", args: ["booking:pending", bookingId] }, // Add to pending set
         { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
-        { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
+        { type: "sRem", args: sRemArgs }, // Remove seats from available
+        { type: "setEx", args: [seatsKey, 310, JSON.stringify(seat_ids)] }, // Store seats for expiry (310s > 300s booking TTL)
       ]);
-
-      // Store seat_ids separately for expiry tracking (with slightly longer TTL)
-      const { storeSeatsForExpiry } = require("./bookingExpiryHandler");
-      await storeSeatsForExpiry(bookingId, seat_ids);
 
       const pipelineTime = Date.now() - pipelineStart;
       if (process.env.NODE_ENV !== "production" && pipelineTime > 50) {
-        console.log(`⚡ Pipeline executed ${4} commands in ${pipelineTime}ms`);
+        console.log(`⚡ Pipeline executed 5 commands in ${pipelineTime}ms`);
       }
 
       // Always log successful bookings for now (to verify it's working)

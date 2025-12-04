@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "movie-booking-api",
       script: "./index.js",
-      instances: 4, // Use 4 cores (leaves 4 cores for OS, Redis, Kafka, and your device)
+      instances: 6, // Use 6 cores for better parallelism (I/O-bound workload benefits from more workers)
       exec_mode: "cluster", // Enable cluster mode
       env: {
         NODE_ENV: "development",
