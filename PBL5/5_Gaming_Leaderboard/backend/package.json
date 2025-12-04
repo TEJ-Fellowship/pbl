@@ -13,7 +13,8 @@
     "load-test": "node scripts/load-test.js",
     "throughput-test": "node scripts/test-score-throughput.js",
     "monitor:redis": "node scripts/monitor-redis.js",
-    "perf:all": "npm run benchmark && npm run load-test && npm run monitor:redis"
+    "perf:all": "npm run benchmark && npm run load-test && npm run monitor:redis",
+    "start:full": "docker compose up -d && sleep 5 && npm run setup-topics && npm run dev"
   },
   "keywords": [],
   "author": "",

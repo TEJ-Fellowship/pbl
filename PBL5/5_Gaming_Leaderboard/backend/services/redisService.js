@@ -1,4 +1,5 @@
 const { redis } = require("../util/db");
+const crypto = require("crypto");
 
 /**
  * Redis Service - Handles all Redis operations for leaderboards and player data
@@ -248,6 +249,7 @@ const initializeGameModes = async () => {
 /**
  * Check if leaderboards need to be rebuilt (Redis is empty or missing data)
  * Returns true if leaderboards should be rebuilt from Kafka
+ * Optimized to use SCAN instead of KEYS for better performance
  */
 const needsRebuild = async () => {
   try {
@@ -256,11 +258,9 @@ const needsRebuild = async () => {
     
     if (gameModes.length === 0) {
       // Game modes not initialized, will be initialized separately
-      // Check if there are any players instead
-      const keys = await redis.keys("player:*");
-      // Filter out rate limit keys
-      const playerKeys = keys.filter(key => !key.includes(":last_submission"));
-      return playerKeys.length === 0;
+      // Check if there are any players using SCAN (non-blocking, faster)
+      const hasPlayers = await checkIfPlayersExist();
+      return !hasPlayers;
     }
 
     // Check if at least one global leaderboard has data
@@ -273,17 +273,238 @@ const needsRebuild = async () => {
       }
     }
 
-    // Check if there are any players
-    const keys = await redis.keys("player:*");
-    const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+    // Check if there are any players using SCAN (non-blocking, faster)
+    const hasPlayers = await checkIfPlayersExist();
     
     // If no leaderboards and no players, we need to rebuild
-    return playerKeys.length === 0;
+    return !hasPlayers;
   } catch (error) {
     console.error("❌ Error checking if rebuild is needed:", error);
     // If we can't check, assume rebuild is needed (safer option)
     return true;
   }
+};
+
+/**
+ * Check if any players exist using SCAN (non-blocking, much faster than KEYS)
+ * Returns true if at least one player key is found
+ */
+const checkIfPlayersExist = async () => {
+  try {
+    // Use SCAN with a small cursor to quickly check if any player keys exist
+    // This is much faster than KEYS and doesn't block Redis
+    const stream = redis.scanStream({
+      match: "player:*",
+      count: 100, // Process in batches
+    });
+
+    // Set a timeout to avoid waiting too long
+    const timeout = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout")), 1000); // 1 second max
+    });
+
+    const checkPromise = new Promise((resolve) => {
+      let foundPlayer = false;
+      
+      stream.on("data", (keys) => {
+        // Filter out rate limit keys
+        const playerKeys = keys.filter(key => 
+          key.startsWith("player:") && !key.includes(":last_submission")
+        );
+        
+        if (playerKeys.length > 0) {
+          foundPlayer = true;
+          stream.destroy(); // Stop scanning once we find a player
+          resolve(true);
+        }
+      });
+
+      stream.on("end", () => {
+        resolve(foundPlayer);
+      });
+
+      stream.on("error", () => {
+        resolve(false); // On error, assume no players (safer for rebuild)
+      });
+    });
+
+    // Race between the scan and timeout
+    return await Promise.race([checkPromise, timeout]);
+  } catch (error) {
+    // If timeout or error, assume no players exist (safer to rebuild)
+    return false;
+  }
+};
+
+/**
+ * Encode cursor from score and playerId
+ */
+const encodeCursor = (score, playerId) => {
+  const data = JSON.stringify({ score, playerId });
+  return Buffer.from(data).toString("base64url");
+};
+
+/**
+ * Decode cursor to score and playerId
+ */
+const decodeCursor = (cursor) => {
+  try {
+    const data = Buffer.from(cursor, "base64url").toString("utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * Get leaderboard with cursor-based pagination
+ * @param {number} gameMode - Game mode ID
+ * @param {string} type - "global" | "daily"
+ * @param {number} limit - Number of results (default: 100, max: 1000)
+ * @param {string|null} cursor - Base64 encoded cursor (score:playerId)
+ * @param {string} direction - "next" | "prev" (default: "next")
+ */
+const getLeaderboardWithCursor = async (
+  gameMode,
+  type = "global",
+  limit = 100,
+  cursor = null,
+  direction = "next"
+) => {
+  let key;
+  if (type === "daily") {
+    const today = new Date().toISOString().split("T")[0];
+    key = `leaderboard:${gameMode}:daily:${today}`;
+  } else {
+    key = `leaderboard:${gameMode}:global`;
+  }
+
+  // Get total count
+  const totalCount = await redis.zcard(key);
+
+  // Validate and clamp limit
+  const clampedLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 1000);
+  const queryLimit = clampedLimit + 1; // Fetch one extra to check if there's more
+
+  let results = [];
+  let startRank = 0;
+
+  if (!cursor) {
+    // First page - get top players
+    results = await redis.zrevrange(key, 0, queryLimit - 1, "WITHSCORES");
+    startRank = 0;
+  } else {
+    // Decode cursor
+    const cursorData = decodeCursor(cursor);
+    if (!cursorData) {
+      throw new Error("Invalid cursor");
+    }
+
+    const { score: cursorScore, playerId: cursorPlayerId } = cursorData;
+
+    if (direction === "next") {
+      // Get players with score < cursorScore (lower scores = lower ranks)
+      // Use ZREVRANGEBYSCORE to get players below the cursor
+      results = await redis.zrevrangebyscore(
+        key,
+        `(${cursorScore}`, // Less than cursor score (exclusive)
+        "-inf", // All the way to bottom
+        "WITHSCORES",
+        "LIMIT",
+        0,
+        queryLimit
+      );
+
+      // Get rank of cursor player to calculate start rank
+      const cursorRank = await redis.zrevrank(key, cursorPlayerId);
+      if (cursorRank !== null) {
+        startRank = cursorRank + 1; // Start after cursor
+      }
+    } else {
+      // Previous page - get players with score > cursorScore (higher scores = higher ranks)
+      results = await redis.zrevrangebyscore(
+        key,
+        "+inf", // All the way to top
+        `(${cursorScore}`, // Greater than cursor score (exclusive)
+        "WITHSCORES",
+        "LIMIT",
+        0,
+        queryLimit
+      );
+
+      // Reverse results for prev direction (we want descending order)
+      results = results.reverse();
+
+      // Calculate start rank
+      const cursorRank = await redis.zrevrank(key, cursorPlayerId);
+      if (cursorRank !== null) {
+        startRank = Math.max(0, cursorRank - clampedLimit);
+      }
+    }
+  }
+
+  // Check if there are more results
+  const hasMore = results.length > clampedLimit;
+  if (hasMore) {
+    results = results.slice(0, clampedLimit);
+  }
+
+  // Convert to array of {playerId, score}
+  const leaderboard = [];
+  for (let i = 0; i < results.length; i += 2) {
+    leaderboard.push({
+      playerId: results[i],
+      score: parseInt(results[i + 1]),
+    });
+  }
+
+  // Batch fetch usernames
+  let leaderboardWithRanks = [];
+  if (leaderboard.length > 0) {
+    const playerIds = leaderboard.map((entry) => entry.playerId);
+    const usernames = await batchGetUsernames(playerIds);
+
+    // Calculate actual ranks
+    const firstPlayerId = leaderboard[0].playerId;
+    const firstRank = await redis.zrevrank(key, firstPlayerId);
+    const actualStartRank = firstRank !== null ? firstRank + 1 : startRank + 1;
+
+    // Combine with ranks
+    leaderboardWithRanks = leaderboard.map((entry, index) => ({
+      rank: actualStartRank + index,
+      playerId: entry.playerId,
+      username: usernames[entry.playerId] || "Unknown",
+      score: entry.score,
+    }));
+  }
+
+  // Generate cursors
+  let nextCursor = null;
+  let prevCursor = null;
+
+  if (leaderboard.length > 0) {
+    const lastEntry = leaderboard[leaderboard.length - 1];
+    const firstEntry = leaderboard[0];
+
+    if (hasMore || (cursor && direction === "next")) {
+      nextCursor = encodeCursor(lastEntry.score, lastEntry.playerId);
+    }
+
+    if (cursor || (startRank > 0 && direction === "prev")) {
+      prevCursor = encodeCursor(firstEntry.score, firstEntry.playerId);
+    }
+  }
+
+  return {
+    leaderboard: leaderboardWithRanks,
+    totalCount: totalCount || 0,
+    pagination: {
+      hasMore,
+      nextCursor,
+      prevCursor,
+      limit: clampedLimit,
+    },
+  };
 };
 
 module.exports = {
@@ -295,7 +516,8 @@ module.exports = {
   // Leaderboard operations
   updateGlobalLeaderboard,
   updateDailyLeaderboard,
-  getLeaderboard,
+  getLeaderboard, // Keep for backward compatibility
+  getLeaderboardWithCursor, // New cursor-based method
   getPlayerRank,
   getPlayerScore,
 

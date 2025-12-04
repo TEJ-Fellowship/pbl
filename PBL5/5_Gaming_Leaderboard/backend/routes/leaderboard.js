@@ -4,19 +4,21 @@ const redisService = require("../services/redisService");
 
 /**
  * GET /api/leaderboard/:gameMode
- * Get leaderboard for a specific game mode
+ * Get leaderboard for a specific game mode with cursor-based pagination
  * 
  * Query params:
  * - type: "global" | "daily" (default: "global")
  * - limit: number (default: 100, max: 1000)
- * - offset: number (default: 0)
+ * - cursor: string (base64 encoded cursor for pagination)
+ * - direction: "next" | "prev" (default: "next")
  */
 router.get("/:gameMode", async (req, res) => {
   try {
     const gameMode = parseInt(req.params.gameMode);
     const type = req.query.type || "global";
-    const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
-    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const limit = parseInt(req.query.limit) || 100;
+    const cursor = req.query.cursor || null;
+    const direction = req.query.direction || "next";
 
     // Validate game mode
     const gameModeData = await redisService.getGameMode(gameMode);
@@ -27,27 +29,34 @@ router.get("/:gameMode", async (req, res) => {
       });
     }
 
-    // Get leaderboard from Redis
-    const { leaderboard, totalCount } = await redisService.getLeaderboard(gameMode, type, limit, offset);
+    // Validate direction
+    if (direction !== "next" && direction !== "prev") {
+      return res.status(400).json({
+        error: "Invalid direction. Must be 'next' or 'prev'",
+      });
+    }
 
-    // Calculate pagination metadata
-    const hasMore = offset + limit < totalCount;
-    const nextOffset = hasMore ? offset + limit : null;
-    const prevOffset = offset > 0 ? Math.max(0, offset - limit) : null;
+    // Get leaderboard from Redis with cursor pagination
+    const result = await redisService.getLeaderboardWithCursor(
+      gameMode,
+      type,
+      limit,
+      cursor,
+      direction
+    );
 
     res.json({
       gameMode,
       gameModeName: gameModeData.name,
       type,
       pagination: {
-        limit,
-        offset,
-        total: totalCount,
-        hasMore,
-        nextOffset,
-        prevOffset,
+        limit: result.pagination.limit,
+        total: result.totalCount,
+        hasMore: result.pagination.hasMore,
+        nextCursor: result.pagination.nextCursor,
+        prevCursor: result.pagination.prevCursor,
       },
-      leaderboard,
+      leaderboard: result.leaderboard,
     });
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
@@ -59,4 +68,3 @@ router.get("/:gameMode", async (req, res) => {
 });
 
 module.exports = router;
-

@@ -61,13 +61,18 @@ const start = async () => {
     // Initialize game modes in Redis (if not exists)
     await redisService.initializeGameModes();
 
-    // Start Kafka consumer (background process)
-    await startConsumer();
-
-    // Start Express server
+    // Start Express server immediately (don't wait for consumer)
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 API available at http://localhost:${PORT}`);
+    });
+
+    // Start Kafka consumer in background (non-blocking)
+    // This allows the server to start serving requests immediately
+    startConsumer().catch((err) => {
+      console.error("⚠️ Failed to start consumer (will retry):", err);
+      // Consumer failure shouldn't crash the server
+      // It can be restarted manually or via health checks
     });
   } catch (err) {
     console.error("Failed to start server:", err);
