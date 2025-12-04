@@ -19,14 +19,14 @@ const processPayment = async (req, res, next) => {
 
     // Validation
     if (!booking_id || !amount || !payment_method) {
-    return res.status(400).json({
+      return res.status(400).json({
         error: "booking_id, amount, and payment_method are required",
       });
     }
 
     if (!redis.isReady) {
       return res.status(503).json({ error: "Redis not ready" });
-  }
+    }
 
     // Get booking from Redis
     const bookingKey = `booking:${booking_id}`;
@@ -59,14 +59,14 @@ const processPayment = async (req, res, next) => {
       if (existingPayment) {
         const payment = JSON.parse(existingPayment);
         if (payment.status === "success") {
-        return res.json({
+          return res.json({
             payment_id: payment.id,
             booking_id: payment.booking_id,
             amount: payment.amount,
             status: payment.status,
-          message: "Payment already processed successfully",
-        });
-      }
+            message: "Payment already processed successfully",
+          });
+        }
       }
     }
 
@@ -88,7 +88,7 @@ const processPayment = async (req, res, next) => {
     const paymentData = {
       id: paymentId,
       booking_id: booking_id,
-        amount: parseFloat(amount),
+      amount: parseFloat(amount),
       payment_method: payment_method,
       status: paymentStatus,
       transaction_id: transactionId,
@@ -108,10 +108,10 @@ const processPayment = async (req, res, next) => {
       );
     }
 
-      // Update booking status to confirmed
+    // Update booking status to confirmed
     const updatedBooking = {
       ...booking,
-          status: "confirmed",
+      status: "confirmed",
       confirmed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -133,23 +133,26 @@ const processPayment = async (req, res, next) => {
     }
 
     // Release locks (payment confirmed)
-        const lockStorageKey = `booking:${booking_id}:locks`;
-        const storedLocks = await redis.get(lockStorageKey);
-        if (storedLocks) {
-          const locks = JSON.parse(storedLocks);
-          await releaseLocks(locks);
-          await redis.del(lockStorageKey);
-        }
+    const lockStorageKey = `booking:${booking_id}:locks`;
+    const storedLocks = await redis.get(lockStorageKey);
+    if (storedLocks) {
+      const locks = JSON.parse(storedLocks);
+      await releaseLocks(locks);
+      await redis.del(lockStorageKey);
+    }
+
+    // Delete seat mapping key (no longer needed - booking is confirmed)
+    await redis.del(`booking:${booking_id}:seats`);
 
     console.log(`✅ Payment processed for booking ${booking_id}`);
 
     res.json({
       payment_id: paymentId,
       booking_id: booking_id,
-        amount: parseFloat(amount),
+      amount: parseFloat(amount),
       status: paymentStatus,
       payment_method: payment_method,
-        transaction_id: transactionId,
+      transaction_id: transactionId,
       receipt: {
         booking_id: booking_id,
         seats: booking.seat_ids,

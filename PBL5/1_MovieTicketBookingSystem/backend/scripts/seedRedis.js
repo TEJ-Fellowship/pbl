@@ -52,10 +52,87 @@ async function seedRedis() {
 
     // Clear existing data (optional - comment out if you want to keep existing)
     console.log("🧹 Clearing existing data...");
+
+    // Clear sets
     await redis.del("available_seats");
     await redis.del("booked_seats");
     await redis.del("booking:pending");
     await redis.del("booking:confirmed");
+
+    // Clear all individual booking keys using SCAN (non-blocking)
+    console.log("   Clearing all booking keys...");
+    let cursor = "0"; // SCAN cursor must be string in Redis v5
+    let deletedCount = 0;
+    do {
+      const result = await redis.scan(cursor, {
+        MATCH: "booking:*",
+        COUNT: "100", // Must be string in Redis v5
+      });
+      cursor = String(result.cursor || result[0] || "0");
+      const keys = result.keys || result[1] || [];
+
+      if (keys.length > 0) {
+        // Filter out set keys (we already deleted those)
+        const keysToDelete = keys.filter(
+          (key) =>
+            key !== "booking:pending" &&
+            key !== "booking:confirmed" &&
+            !key.startsWith("booking:pending") &&
+            !key.startsWith("booking:confirmed")
+        );
+
+        if (keysToDelete.length > 0) {
+          await redis.del(keysToDelete);
+          deletedCount += keysToDelete.length;
+        }
+      }
+    } while (cursor !== "0");
+
+    // Clear all lock keys
+    console.log("   Clearing all lock keys...");
+    cursor = "0";
+    let lockDeletedCount = 0;
+    do {
+      const result = await redis.scan(cursor, {
+        MATCH: "lock:*",
+        COUNT: "100", // Must be string in Redis v5
+      });
+      cursor = String(result.cursor || result[0] || "0");
+      const keys = result.keys || result[1] || [];
+
+      if (keys.length > 0) {
+        await redis.del(keys);
+        lockDeletedCount += keys.length;
+      }
+    } while (cursor !== "0");
+
+    // Clear rate limiting keys (optional - comment out if you want to keep rate limit counters)
+    console.log("   Clearing rate limiting keys...");
+    cursor = "0";
+    let rateLimitDeletedCount = 0;
+    do {
+      const result = await redis.scan(cursor, {
+        MATCH: "ratelimit:*",
+        COUNT: "100", // Must be string in Redis v5
+      });
+      cursor = String(result.cursor || result[0] || "0");
+      const keys = result.keys || result[1] || [];
+
+      if (keys.length > 0) {
+        await redis.del(keys);
+        rateLimitDeletedCount += keys.length;
+      }
+    } while (cursor !== "0");
+
+    if (deletedCount > 0) {
+      console.log(`   ✅ Deleted ${deletedCount} booking keys`);
+    }
+    if (lockDeletedCount > 0) {
+      console.log(`   ✅ Deleted ${lockDeletedCount} lock keys`);
+    }
+    if (rateLimitDeletedCount > 0) {
+      console.log(`   ✅ Deleted ${rateLimitDeletedCount} rate limiting keys`);
+    }
 
     // Add all seats to available_seats SET using chunks (faster for large datasets)
     if (seatIds.length > 0) {

@@ -7,8 +7,8 @@
 ### ============================================
 ### VARIABLES - Fill these after creating booking
 ### ============================================
-@booking_id = ae035006-0422-4a52-acaa-b6a8bc5f674b
-@payment_id = f9bc64e0-a1e4-4c89-a59b-2e1ec2a85133
+@booking_id = d74d4241-e2b8-457c-bb49-49f1431bf9b9
+@payment_id = 31d335c4-c4eb-4a72-9b05-e717e1f5e770
 
 ### ============================================
 ### STEP 1: CREATE BOOKING
@@ -20,7 +20,7 @@ POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
-  "seat_ids": ["seat1", "seat2", "seat3"]
+  "seat_ids": ["seat113", "seat223", "seat334"]
 }
 ### Expected: 201 Created
 ### Response includes: id, seat_ids, status: "pending", total_amount
@@ -231,7 +231,7 @@ POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
-  "seat_ids": ["seat1", "seat2", "seat3"]
+  "seat_ids": ["seat5"]
 }
 ### Expected: 202 Accepted (Kafka mode) or 201 Created (Direct mode)
 ### Check server console for: "📦 Pipeline: Executed 4 commands in batch"

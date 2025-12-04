@@ -173,6 +173,23 @@ const start = async () => {
       }
     }
 
+    // Start expired booking cleanup service
+    try {
+      const {
+        setupExpiredBookingCleanup,
+      } = require("./services/expiredBookingCleanup");
+      await setupExpiredBookingCleanup();
+      console.log("✅ Expired booking cleanup service started");
+    } catch (cleanupError) {
+      console.error(
+        "⚠️  Failed to start expired booking cleanup:",
+        cleanupError.message
+      );
+      console.log(
+        "⚠️  Server will continue, but expired bookings won't be auto-cleaned"
+      );
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Kafka mode: ${config.KAFKA_MODE}`);

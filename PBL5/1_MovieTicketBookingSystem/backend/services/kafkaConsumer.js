@@ -144,9 +144,10 @@ async function processBookingRequest(bookingRequest) {
       // Store booking in Redis using pipeline (batch all writes together)
       const bookingKey = `booking:${bookingId}`;
       const lockStorageKey = `booking:${bookingId}:locks`;
+      const seatMappingKey = `booking:${bookingId}:seats`; // Store seat IDs separately for expiration cleanup
 
       // Batch all Redis writes into a single pipeline (much faster!)
-      // Instead of 4 separate network calls, we send all commands at once!
+      // Instead of 5 separate network calls, we send all commands at once!
       const pipelineStart = Date.now();
 
       // Build sRem args: [key, ...members] - spread seat_ids when calling
@@ -154,6 +155,10 @@ async function processBookingRequest(bookingRequest) {
 
       await batchWrite([
         { type: "setEx", args: [bookingKey, 300, JSON.stringify(bookingData)] }, // Store booking (5 min TTL)
+        {
+          type: "setEx",
+          args: [seatMappingKey, 310, JSON.stringify(seat_ids)],
+        }, // Store seat IDs (310s TTL - slightly longer than booking for cleanup)
         { type: "sAdd", args: ["booking:pending", bookingId] }, // Add to pending set
         { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
         { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
@@ -276,23 +281,30 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             // Send heartbeat to keep consumer alive
             await heartbeat();
 
-            // Log only successful bookings or errors (reduce noise)
-            if (
-              result.success &&
-              instanceId === 0 &&
-              message.offset % 50 === 0
-            ) {
+            // Log all bookings (single requests and batches)
+            if (result.success) {
               console.log(
-                `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed (partition: ${partition})`
+                `✅ Consumer ${instanceId}: Booking ${
+                  result.booking_id
+                } created (request: ${result.request_id}, seats: ${
+                  result.seat_ids?.length || 0
+                }, partition: ${partition})`
               );
-            } else if (
-              !result.success &&
-              result.error !== "Some seats are not available"
-            ) {
-              // Log non-availability errors (but skip "seats not available" as it's expected)
-              console.warn(
-                `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error}`
-              );
+            } else if (!result.success) {
+              // Log all failures including duplicate bookings
+              if (result.error === "Some seats are not available") {
+                console.log(
+                  `❌ Consumer ${instanceId}: Duplicate booking rejected (request: ${
+                    result.request_id
+                  }, unavailable seats: ${
+                    result.unavailable_seats?.join(", ") || "N/A"
+                  }, partition: ${partition})`
+                );
+              } else {
+                console.warn(
+                  `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error}`
+                );
+              }
             }
 
             return result;

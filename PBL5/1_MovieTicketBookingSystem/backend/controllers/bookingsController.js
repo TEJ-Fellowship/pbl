@@ -126,7 +126,9 @@ const createBooking = async (req, res, next) => {
 
       // Store booking in Redis
       const bookingKey = `booking:${bookingId}`;
+      const seatMappingKey = `booking:${bookingId}:seats`; // Store seat IDs separately for expiration cleanup
       await redis.setEx(bookingKey, 300, JSON.stringify(bookingData)); // 5 min TTL for pending
+      await redis.setEx(seatMappingKey, 310, JSON.stringify(seat_ids)); // Store seat IDs (310s TTL - slightly longer than booking for cleanup)
 
       // Add to pending bookings set
       await redis.sAdd("booking:pending", bookingId);
@@ -189,6 +191,7 @@ const getBookingById = async (req, res, next) => {
 /**
  * Get all bookings - Redis-only (for testing)
  * GET /api/bookings
+ * Uses SCAN instead of KEYS to avoid blocking Redis
  */
 const getAllBookings = async (req, res, next) => {
   try {
@@ -196,15 +199,35 @@ const getAllBookings = async (req, res, next) => {
       return res.status(503).json({ error: "Redis not ready" });
     }
 
-    // Get all booking keys
-    const bookingKeys = await redis.keys("booking:*");
+    // Get all booking keys using SCAN (non-blocking, safe for production)
+    const bookingKeys = [];
+    let cursor = "0"; // SCAN cursor must be string in Redis v5
+
+    do {
+      const result = await redis.scan(cursor, {
+        MATCH: "booking:*",
+        COUNT: "100", // Process 100 keys at a time (must be string in Redis v5)
+      });
+      cursor = String(result.cursor || result[0] || "0");
+      const keys = result.keys || result[1] || [];
+      bookingKeys.push(...keys);
+    } while (cursor !== "0");
+
+    // Filter out set keys, lock storage keys, and seat mapping keys
     const bookingIds = bookingKeys
       .filter((key) => {
-        // Exclude SET keys (booking:pending, booking:confirmed) and lock storage keys
+        // Exclude:
+        // - SET keys (booking:pending, booking:confirmed)
+        // - Lock storage keys (booking:xxx:locks)
+        // - Seat mapping keys (booking:xxx:seats)
+        // - Only include actual booking keys (booking:xxx with exactly one colon)
+        const colonCount = (key.match(/:/g) || []).length;
         return (
           key !== "booking:pending" &&
           key !== "booking:confirmed" &&
-          !key.includes(":locks")
+          !key.includes(":locks") &&
+          !key.includes(":seats") &&
+          colonCount === 1 // booking:abc-123 (1 colon) vs booking:abc-123:locks (2 colons)
         );
       })
       .map((key) => key.replace("booking:", ""));
@@ -270,8 +293,9 @@ const cancelBooking = async (req, res, next) => {
       await redis.sAdd(availableSeatsKey, booking.seat_ids);
     }
 
-    // Delete booking
+    // Delete booking and seat mapping
     await redis.del(bookingKey);
+    await redis.del(`booking:${id}:seats`); // Delete the seat mapping key
 
     console.log(`✅ Booking ${id} cancelled`);
 
