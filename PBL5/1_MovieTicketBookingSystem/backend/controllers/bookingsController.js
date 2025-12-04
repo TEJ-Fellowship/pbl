@@ -28,6 +28,13 @@ const createBooking = async (req, res, next) => {
     if (config.KAFKA_MODE === "kafka") {
       const requestId = crypto.randomUUID();
 
+      // Log the queued request
+      console.log(
+        `📤 Queuing booking request ${requestId} for seats: ${seat_ids.join(
+          ", "
+        )}`
+      );
+
       // Add to smart batcher (batches messages for efficient Kafka throughput)
       // Works for both low load (sends after 100ms) and high load (sends when batch full)
       addToBatch({
@@ -141,6 +148,12 @@ const createBooking = async (req, res, next) => {
       // If payment fails or booking expires, seats will be released back
       await redis.sRem(availableSeatsKey, seat_ids);
 
+      // Store seat_ids separately for expiry tracking (with slightly longer TTL)
+      const {
+        storeSeatsForExpiry,
+      } = require("../services/bookingExpiryHandler");
+      await storeSeatsForExpiry(bookingId, seat_ids);
+
       console.log(`✅ Booking ${bookingId} created in Redis`);
 
       res.status(201).json({
@@ -200,11 +213,12 @@ const getAllBookings = async (req, res, next) => {
     const bookingKeys = await redis.keys("booking:*");
     const bookingIds = bookingKeys
       .filter((key) => {
-        // Exclude SET keys (booking:pending, booking:confirmed) and lock storage keys
+        // Exclude SET keys (booking:pending, booking:confirmed), lock storage keys, and seat storage keys
         return (
           key !== "booking:pending" &&
           key !== "booking:confirmed" &&
-          !key.includes(":locks")
+          !key.includes(":locks") &&
+          !key.includes(":seats") // Exclude seat storage keys used for expiry tracking
         );
       })
       .map((key) => key.replace("booking:", ""));

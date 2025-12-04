@@ -57,6 +57,19 @@ async function seedRedis() {
     await redis.del("booking:pending");
     await redis.del("booking:confirmed");
 
+    // Clear all individual booking keys (booking:*, booking:*:locks, booking:*:seats)
+    console.log("🧹 Clearing all booking keys...");
+    const bookingKeys = await redis.keys("booking:*");
+    if (bookingKeys.length > 0) {
+      // Delete in chunks to avoid blocking Redis
+      const chunkSize = 100;
+      for (let i = 0; i < bookingKeys.length; i += chunkSize) {
+        const chunk = bookingKeys.slice(i, i + chunkSize);
+        await redis.del(chunk);
+      }
+      console.log(`   Deleted ${bookingKeys.length} booking-related keys`);
+    }
+
     // Add all seats to available_seats SET using chunks (faster for large datasets)
     if (seatIds.length > 0) {
       console.log(

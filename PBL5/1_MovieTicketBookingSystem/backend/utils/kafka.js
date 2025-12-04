@@ -53,7 +53,7 @@ async function getConsumer(groupId = config.KAFKA_GROUP_ID, instanceId = 0) {
       sessionTimeout: 30000, // 30 seconds
       heartbeatInterval: 3000, // 3 seconds
       maxInFlightRequests: 1, // Process one batch at a time per partition
-      minBytes: 1024, // 1KB minimum bytes (better for batching)
+      minBytes: 1, // Allow even single messages to be processed (was 1024, too high for single bookings)
       maxBytes: 10485760, // 10MB max batch size
       maxWaitTimeInMs: 100, // Wait max 100ms for batch (lower latency)
     });
@@ -96,19 +96,25 @@ async function ensureTopics(topics, numPartitions = config.KAFKA_PARTITIONS) {
       );
     } else {
       // Check if existing topic needs partition increase
+      let topicMetadata = null;
       try {
         const metadata = await admin.fetchTopicMetadata({ topics });
-        for (const topicMetadata of metadata.topics) {
-          const topicName = topicMetadata.name;
-          const partitionCount = topicMetadata.partitions.length;
+        for (const tm of metadata.topics) {
+          const topicName = tm.name;
+          const partitionCount = tm.partitions.length;
+          topicMetadata = { name: topicName, partitionCount };
 
           if (partitionCount < numPartitions) {
             console.log(
               `⚠️  Topic ${topicName} has ${partitionCount} partitions, but ${numPartitions} requested.`
             );
             console.log(
-              `   Note: Kafka doesn't support reducing partitions. Delete and recreate topic to change partition count.`
+              `   Auto-recreating topic with ${numPartitions} partitions...`
             );
+            // Auto-recreate topic with correct partition count
+            await admin.disconnect();
+            await recreateTopic(topicName, numPartitions);
+            topicMetadata = { name: topicName, partitionCount: numPartitions };
           } else {
             console.log(
               `✅ Topic ${topicName} exists with ${partitionCount} partitions`
@@ -121,9 +127,13 @@ async function ensureTopics(topics, numPartitions = config.KAFKA_PARTITIONS) {
           `ℹ️  Could not fetch topic metadata: ${metadataError.message}`
         );
       }
+
+      await admin.disconnect();
+      return topicMetadata;
     }
 
     await admin.disconnect();
+    return null;
   } catch (error) {
     console.error("❌ Error ensuring Kafka topics:", error);
     throw error;
@@ -156,12 +166,13 @@ async function recreateTopic(
     }
 
     // Wait a bit for deletion to complete
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     console.log(
       `🆕 Creating topic ${topicName} with ${numPartitions} partitions...`
     );
     await admin.createTopics({
+      waitForLeaders: true,
       topics: [
         {
           topic: topicName,
@@ -173,6 +184,12 @@ async function recreateTopic(
     console.log(
       `✅ Created topic: ${topicName} with ${numPartitions} partitions`
     );
+
+    // Verify creation
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const metadata = await admin.fetchTopicMetadata({ topics: [topicName] });
+    const actualPartitions = metadata.topics[0]?.partitions?.length || 0;
+    console.log(`✅ Verified: Topic has ${actualPartitions} partitions`);
 
     await admin.disconnect();
   } catch (error) {

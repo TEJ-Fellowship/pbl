@@ -10,9 +10,10 @@ const { connectToDatabase } = require("./utils/db.js");
 app.use(express.json());
 
 // Rate limiting middleware (prevents abuse)
-const { rateLimiters } = require("./middleware/rateLimiter");
+// DISABLED FOR NOW - will be re-enabled later
+// const { rateLimiters } = require("./middleware/rateLimiter");
 // Apply general rate limiting to all API routes (100 requests per minute)
-app.use("/api", rateLimiters.general);
+// app.use("/api", rateLimiters.general);
 
 // Request timeout middleware (production best practice)
 // Prevents requests from hanging indefinitely
@@ -173,10 +174,56 @@ const start = async () => {
       }
     }
 
+    // Start booking expiry handler (uses Redis keyspace notifications)
+    try {
+      const {
+        initializeExpiryHandler,
+      } = require("./services/bookingExpiryHandler");
+      await initializeExpiryHandler();
+    } catch (expiryError) {
+      console.error(
+        "⚠️  Failed to start booking expiry handler:",
+        expiryError.message
+      );
+      console.log(
+        "⚠️  Server will continue without expiry handler (seats won't auto-release on expiry)"
+      );
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Kafka mode: ${config.KAFKA_MODE}`);
     });
+
+    // Graceful shutdown handling
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n${signal} received, shutting down gracefully...`);
+
+      try {
+        // Disconnect expiry handler
+        const {
+          disconnect: disconnectExpiryHandler,
+        } = require("./services/bookingExpiryHandler");
+        await disconnectExpiryHandler();
+
+        // Disconnect Kafka clients
+        const { disconnect: disconnectKafka } = require("./utils/kafka");
+        await disconnectKafka();
+
+        // Close Redis connection
+        const redis = require("./utils/redis");
+        await redis.quit();
+
+        console.log("✅ All connections closed");
+        process.exit(0);
+      } catch (error) {
+        console.error("❌ Error during shutdown:", error);
+        process.exit(1);
+      }
+    };
+
+    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
   } catch (error) {
     console.log(`Failed to start server:`, error.message);
     process.exit(1);

@@ -158,6 +158,11 @@ async function processBookingRequest(bookingRequest) {
         { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
         { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
       ]);
+
+      // Store seat_ids separately for expiry tracking (with slightly longer TTL)
+      const { storeSeatsForExpiry } = require("./bookingExpiryHandler");
+      await storeSeatsForExpiry(bookingId, seat_ids);
+
       const pipelineTime = Date.now() - pipelineStart;
       if (process.env.NODE_ENV !== "production" && pipelineTime > 50) {
         console.log(`⚡ Pipeline executed ${4} commands in ${pipelineTime}ms`);
@@ -226,14 +231,12 @@ async function startConsumerInstance(instanceId, onMessage = null) {
         const startTime = Date.now();
         const batchSize = batch.messages.length;
 
-        // Reduced logging for multiple consumers
-        if (instanceId === 0 && batch.messages.length > 0) {
+        // Log all batches for debugging (especially for single messages)
+        if (batch.messages.length > 0) {
           const firstOffset = batch.messages[0].offset;
-          if (firstOffset % 100 === 0) {
-            console.log(
-              `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
-            );
-          }
+          console.log(
+            `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} message(s) (partition: ${partition}, offset: ${firstOffset})`
+          );
         }
 
         // Process all messages in batch in parallel
@@ -276,14 +279,18 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             // Send heartbeat to keep consumer alive
             await heartbeat();
 
-            // Log only successful bookings or errors (reduce noise)
-            if (
-              result.success &&
-              instanceId === 0 &&
-              message.offset % 50 === 0
-            ) {
+            // Log all successful bookings (not just every 50th)
+            if (result.success) {
               console.log(
-                `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed (partition: ${partition})`
+                `✅ Consumer ${instanceId}: Booking ${
+                  result.booking_id
+                } processed successfully (request: ${
+                  result.request_id
+                }, seats: ${
+                  result.seat_ids?.length ||
+                  bookingRequest.seat_ids?.length ||
+                  0
+                }, partition: ${partition})`
               );
             } else if (
               !result.success &&
@@ -343,7 +350,7 @@ async function startBookingConsumer(onMessage = null) {
       `🚀 Starting ${numConsumers} consumer instances for ${numPartitions} partitions...`
     );
 
-    // Ensure topic exists with correct partition count
+    // Ensure topic exists with correct partition count (auto-recreates if needed)
     await ensureTopics([config.KAFKA_TOPIC_BOOKINGS], numPartitions);
 
     // Start all consumer instances in parallel

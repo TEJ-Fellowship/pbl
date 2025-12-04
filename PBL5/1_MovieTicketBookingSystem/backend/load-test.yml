@@ -14,11 +14,6 @@ scenarios:
   - name: "Booking Load Test"
     weight: 70
     flow:
-      # Simulate different IP addresses for rate limiting tests
-      # Each virtual user gets a unique IP (192.168.x.x format)
-      - set:
-          headers:
-            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
       - function: "generateSeatsForRequest"
       - post:
           url: "/api/bookings"
@@ -69,13 +64,8 @@ scenarios:
   - name: "Atomic Multi-seat Locking Stress Test"
     weight: 15
     flow:
-      # Simulate different IP addresses
-      - set:
-          headers:
-            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
       # Generate seat sets that intentionally overlap
       - function: "generateAtomicitySeatSets"
-
       # Users aggressively try to book overlapping seats
       - post:
           url: "/api/bookings"
