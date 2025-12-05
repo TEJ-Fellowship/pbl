@@ -7,6 +7,7 @@ const {
   setLastFetchTime,
   addFeedCacheKey,
 } = require("../utils/cache");
+const {redisClient} = require("../config/redis");
 const { Op } = require("sequelize");
 
 // Get user's newsfeed with refresh/delta support
@@ -21,10 +22,25 @@ const handleGetFeed = async (req, res) => {
       return res.status(400).json({ error: "User ID is required" });
     }
 
+        // ============================================
+    // PURE PULL MODEL: Mark user as active
+    // Track users who view their feed (for selective cache invalidation)
+    // ============================================
+    try {
+      if (redisClient.isOpen) {
+        await redisClient.setEx(`active_users:${user_id}`, 300, "1");
+        // TTL 300 seconds = 5 minutes
+        // This marks the user as "active" - they viewed their feed
+      }
+    } catch (redisError) {
+      // Don't fail the request if Redis tracking fails
+      console.warn("⚠️ Failed to mark user as active:", redisError);
+    }
+
     const feedKey = `feed:user:${user_id}`;
 
     // ============================================
-    // REQUIREMENT 4: Handle refresh scenario (delta/incremental)
+    //  Handle refresh scenario (delta/incremental)
     // ============================================
     if (isRefresh) {
       // KEEP ALL EXISTING REFRESH LOGIC - DON'T CHANGE THIS
@@ -42,8 +58,8 @@ const handleGetFeed = async (req, res) => {
         return res.status(200).json({
           posts: [],
           hasMore: false,
-          isRefresh: true, // KEEP THIS
-          newPostsCount: 0, // KEEP THIS
+          isRefresh: true, 
+          newPostsCount: 0, 
         });
       }
 
@@ -80,7 +96,6 @@ const handleGetFeed = async (req, res) => {
       console.log(`📊 Found ${newPosts.length} new posts`);
 
       // Use likes_count and comments_count directly from Post model (already maintained)
-      // This eliminates N+1 queries - no need to count likes/comments separately
       const newPostsWithCounts = newPosts.map((post) => ({
         ...post.toJSON(),
         likes_count: post.likes_count || 0,
@@ -99,11 +114,12 @@ const handleGetFeed = async (req, res) => {
       console.time("⏱️ Last Fetch Time Set (Last Fetch)");
       await setLastFetchTime(user_id, 300);
       console.timeEnd("⏱️ Last Fetch Time Set (Last Fetch)");
+
       return res.status(200).json({
         posts: newPostsWithCounts,
         hasMore: false,
-        isRefresh: true, // KEEP THIS
-        newPostsCount: newPostsWithCounts.length, // KEEP THIS
+        isRefresh: true, 
+        newPostsCount: newPostsWithCounts.length, 
         fromCache: false,
       });
     }
@@ -113,6 +129,7 @@ const handleGetFeed = async (req, res) => {
     // ============================================
     // Check cache first (only if no cursor - first page)
     if (!cursor) {
+      // This eliminates N+1 queries - no need to count likes/comments separately
       console.time("⏱️ Cache Read Time");
       const cachedFeed = await getCache(feedKey);
       console.timeEnd("⏱️ Cache Read Time");
@@ -156,7 +173,7 @@ const handleGetFeed = async (req, res) => {
       return res.status(200).json({
         posts: [],
         hasMore: false,
-        nextCursor: null, // ADD THIS
+        nextCursor: null, 
         fromCache: false,
         isRefresh: false,
       });
@@ -195,7 +212,6 @@ const handleGetFeed = async (req, res) => {
     console.log(`📊 Found ${posts.length} posts`);
 
     // Use likes_count and comments_count directly from Post model (already maintained)
-    // This eliminates N+1 queries - no need to count likes/comments separately
     const postsWithCounts = posts.map((post) => ({
       ...post.toJSON(),
       likes_count: post.likes_count || 0,
