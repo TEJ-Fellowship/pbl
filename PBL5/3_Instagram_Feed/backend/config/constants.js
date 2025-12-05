@@ -31,10 +31,6 @@ export const DB_CONFIG = {
     POOL_ACQUIRE: 30000,
     POOL_IDLE: 10000,
   },
-  CASSANDRA: {
-    POOL_SIZE: parseInt(process.env.CASSANDRA_POOL_SIZE || "20"), // Increase from 10 to 20
-    MAX_REQUESTS_PER_CONNECTION: 32768,
-  },
   REDIS: {
     MAX_RETRIES: 3,
     RETRY_DELAY: 1000,

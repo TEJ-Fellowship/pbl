@@ -5,26 +5,24 @@
 
 let serviceStatus = {
   postgresql: false,
-  cassandra: false,
   redis: false,
   kafka: false,
 };
 
 let serviceErrors = {
   postgresql: null,
-  cassandra: null,
   redis: null,
   kafka: null,
 };
 
 /**
  * Check if all critical services are ready
- * Critical services: PostgreSQL, Cassandra, Redis
+ * Critical services: PostgreSQL, Redis
  * Kafka is optional (has fallback queue)
  */
 export function areCriticalServicesReady() {
   return (
-    serviceStatus.postgresql && serviceStatus.cassandra && serviceStatus.redis
+    serviceStatus.postgresql && serviceStatus.redis
   );
 }
 
@@ -34,7 +32,6 @@ export function areCriticalServicesReady() {
 export function areAllServicesReady() {
   return (
     serviceStatus.postgresql &&
-    serviceStatus.cassandra &&
     serviceStatus.redis &&
     serviceStatus.kafka
   );

@@ -1,25 +1,12 @@
-import { cassandraClient } from "../config/db.js";
-import { KEYSPACE } from "../config/cassandra-schema.js";
-import { types } from "cassandra-driver";
+import { Post } from "../models/index.js"; // Use Sequelize Post model
 import { randomUUID } from "crypto";
+import { sendMessage } from "./kafkaProducer.js";
+import { TOPICS } from "../config/kafka.js";
 import {
   getPostsFromCache,
   batchCachePosts,
   cachePost,
 } from "./redisLuaScripts.js";
-
-const executeWithRetry = async (query, params, options, maxRetries = 2) => {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await cassandraClient.execute(query, params, options);
-    } catch (error) {
-      if (attempt === maxRetries) throw error;
-      await new Promise((resolve) =>
-        setTimeout(resolve, 100 * Math.pow(2, attempt))
-      );
-    }
-  }
-};
 
 /**
  * Create a new post
@@ -38,80 +25,73 @@ export const createPost = async (postData) => {
     throw new Error("user_id must be a valid number");
   }
 
-  const postIdString = randomUUID();
-  const postId = types.Uuid.fromString(postIdString);
+  // STEP 1: Generate UUID client-side (before any DB operation)
+  const postId = randomUUID();
   const createdAt = created_at ? new Date(created_at) : new Date();
 
-  const insertPostQuery = `
-    INSERT INTO ${KEYSPACE}.posts (id, user_id, caption, image_url, likes_count, comments_count, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const insertPostByUserQuery = `
-    INSERT INTO ${KEYSPACE}.posts_by_user (user_id, created_at, id, caption, image_url, likes_count, comments_count)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  await Promise.all([
-    executeWithRetry(
-      insertPostQuery,
-      [postId, userId, caption || null, image_url, 0, 0, createdAt],
-      {
-        prepare: true,
-        timeout: 5000,
-      }
-    ),
-    executeWithRetry(
-      insertPostByUserQuery,
-      [userId, createdAt, postId, caption || null, image_url, 0, 0],
-      {
-        prepare: true,
-        timeout: 5000,
-      }
-    ),
-  ]);
-
-  const post = {
-    id: postIdString,
+  // STEP 2: Start PostgreSQL write AND Kafka publish in PARALLEL
+  const postgresPromise = Post.create({
+    id: postId,
     user_id: userId,
     caption: caption || null,
-    image_url,
+    image_url: image_url,
+    likes_count: 0,
+    comments_count: 0,
+    created_at: createdAt,
+  });
+
+  // Start Kafka publish immediately (parallel, non-blocking)
+  const kafkaPromise = sendMessage(
+    TOPICS.POST_CREATED,
+    {
+      eventType: "POST_CREATED",
+      postId: postId,
+      userId: userId,
+      createdAt: createdAt.toISOString(),
+    },
+    userId.toString() // Key for partitioning
+  ).catch((error) => {
+    // Log but don't throw - Kafka failure shouldn't break post creation
+    console.error("⚠️ Failed to publish post to Kafka:", error.message);
+  });
+
+  // STEP 3: Wait ONLY for PostgreSQL success (Kafka continues in background)
+  const post = await postgresPromise;
+
+  // STEP 4: Return response immediately after PostgreSQL success
+  // User gets success response faster, Kafka publish continues in background
+  return {
+    id: postId,
+    user_id: userId,
+    caption: caption || null,
+    image_url: image_url,
     likes_count: 0,
     comments_count: 0,
     created_at: createdAt,
   };
-
-  await cachePost(postIdString, post).catch((err) =>
-    console.error("Failed to cache new post:", err)
-  );
-
-  return post;
 };
 
 /**
- * Get post by ID (with Redis cache)
+ * Get post by ID (from PostgreSQL with Redis cache)
  * @param {string} postId - UUID string
  * @returns {Object|null} Post object or null if not found
  */
 export const getPostById = async (postId) => {
+  // Check Redis cache first
   const cachedPosts = await getPostsFromCache([postId]);
   if (cachedPosts[0]) {
     return cachedPosts[0];
   }
 
-  const postIdUuid = types.Uuid.fromString(postId);
-  const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id = ?`;
-  const result = await cassandraClient.execute(query, [postIdUuid], {
-    prepare: true,
-  });
+  // Query PostgreSQL
+  const post = await Post.findByPk(postId);
 
-  if (result.rows.length === 0) {
+  if (!post) {
     return null;
   }
 
-  const post = result.rows[0];
   const postData = {
-    id: post.id.toString(),
+    id: post.id,
     user_id: post.user_id,
     caption: post.caption,
     image_url: post.image_url,
@@ -120,6 +100,7 @@ export const getPostById = async (postId) => {
     created_at: post.created_at,
   };
 
+  // Cache the post
   await cachePost(postId, postData).catch((err) =>
     console.error("Failed to cache post:", err)
   );
@@ -128,7 +109,7 @@ export const getPostById = async (postId) => {
 };
 
 /**
- * Get all posts by a user
+ * Get all posts by a user (from PostgreSQL)
  * @param {number} userId - User ID
  * @returns {Array} Array of posts
  */
@@ -138,19 +119,21 @@ export const getPostsByUser = async (userId) => {
     throw new Error("Invalid user_id");
   }
 
-  const query = `SELECT * FROM ${KEYSPACE}.posts_by_user WHERE user_id = ?`;
-  const result = await cassandraClient.execute(query, [userIdInt], {
-    prepare: true,
+  const posts = await Post.findAll({
+    where: {
+      user_id: userIdInt,
+    },
+    order: [["created_at", "DESC"]],
   });
 
-  return result.rows.map((row) => ({
-    id: row.id.toString(),
-    user_id: row.user_id,
-    caption: row.caption,
-    image_url: row.image_url,
-    likes_count: row.likes_count,
-    comments_count: row.comments_count,
-    created_at: row.created_at,
+  return posts.map((post) => ({
+    id: post.id,
+    user_id: post.user_id,
+    caption: post.caption,
+    image_url: post.image_url,
+    likes_count: post.likes_count,
+    comments_count: post.comments_count,
+    created_at: post.created_at,
   }));
 };
 
@@ -164,6 +147,7 @@ export const getPostsByIds = async (postIds) => {
     return [];
   }
 
+  // Check Redis cache first
   const cachedPosts = await getPostsFromCache(postIds);
   const cachedMap = new Map();
   const missingIds = [];
@@ -180,24 +164,24 @@ export const getPostsByIds = async (postIds) => {
     return postIds.map((id) => cachedMap.get(id));
   }
 
-  const uuidPostIds = missingIds.map((id) => types.Uuid.fromString(id));
-  const placeholders = missingIds.map(() => "?").join(",");
-  const query = `SELECT * FROM ${KEYSPACE}.posts WHERE id IN (${placeholders})`;
-
-  const result = await cassandraClient.execute(query, uuidPostIds, {
-    prepare: true,
+  // Query PostgreSQL for missing posts
+  const posts = await Post.findAll({
+    where: {
+      id: missingIds,
+    },
   });
 
-  const fetchedPosts = result.rows.map((row) => ({
-    id: row.id.toString(),
-    user_id: row.user_id,
-    caption: row.caption,
-    image_url: row.image_url,
-    likes_count: row.likes_count,
-    comments_count: row.comments_count,
-    created_at: row.created_at,
+  const fetchedPosts = posts.map((post) => ({
+    id: post.id,
+    user_id: post.user_id,
+    caption: post.caption,
+    image_url: post.image_url,
+    likes_count: post.likes_count,
+    comments_count: post.comments_count,
+    created_at: post.created_at,
   }));
 
+  // Cache the fetched posts
   if (fetchedPosts.length > 0) {
     await batchCachePosts(fetchedPosts);
   }
@@ -214,18 +198,18 @@ export const getPostsByIds = async (postIds) => {
  */
 export const getAllPosts = async (limit = 50) => {
   const limitInt = parseInt(limit);
-  const query = `SELECT * FROM ${KEYSPACE}.posts LIMIT ?`;
-  const result = await cassandraClient.execute(query, [limitInt], {
-    prepare: true,
+  const posts = await Post.findAll({
+    order: [["created_at", "DESC"]],
+    limit: limitInt,
   });
 
-  return result.rows.map((row) => ({
-    id: row.id.toString(),
-    user_id: row.user_id,
-    caption: row.caption,
-    image_url: row.image_url,
-    likes_count: row.likes_count,
-    comments_count: row.comments_count,
-    created_at: row.created_at,
+  return posts.map((post) => ({
+    id: post.id,
+    user_id: post.user_id,
+    caption: post.caption,
+    image_url: post.image_url,
+    likes_count: post.likes_count,
+    comments_count: post.comments_count,
+    created_at: post.created_at,
   }));
 };

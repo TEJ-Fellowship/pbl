@@ -1,15 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
-import { types } from "cassandra-driver";
 
 import {
   sequelize,
-  initializeCassandra,
-  cassandraClient,
   initializeRedis,
   redisClient,
 } from "./config/db.js";
-import { initializeSchema, KEYSPACE } from "./config/cassandra-schema.js";
 import { loadLuaScripts } from "./services/redisLuaScripts.js";
 import { initializeKafka, disconnectKafka } from "./config/kafka.js";
 import {
@@ -99,70 +95,6 @@ app.use("/api/users", requireServicesReady);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Helper endpoint to view Cassandra tables
-app.get("/api/cassandra/tables", async (req, res) => {
-  try {
-    const query = `
-      SELECT table_name 
-      FROM system_schema.tables 
-      WHERE keyspace_name = ?
-    `;
-    const result = await cassandraClient.execute(query, [KEYSPACE], {
-      prepare: true,
-    });
-
-    const tables = result.rows.map((row) => row.table_name);
-
-    res.json({
-      success: true,
-      keyspace: KEYSPACE,
-      tables,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching tables",
-      error: error.message,
-    });
-  }
-});
-
-// Helper endpoint to view data from a specific table
-app.get("/api/cassandra/tables/:tableName", async (req, res) => {
-  try {
-    const { tableName } = req.params;
-    const limit = parseInt(req.query.limit) || 10;
-
-    const query = `SELECT * FROM ${KEYSPACE}.${tableName} LIMIT ?`;
-    const result = await cassandraClient.execute(query, [limit], {
-      prepare: true,
-    });
-
-    const rows = result.rows.map((row) => {
-      const obj = {};
-      row.keys().forEach((key) => {
-        const value = row.get(key);
-        // Convert UUID to string for JSON serialization
-        obj[key] = value instanceof types.Uuid ? value.toString() : value;
-      });
-      return obj;
-    });
-
-    res.json({
-      success: true,
-      keyspace: KEYSPACE,
-      table: tableName,
-      count: rows.length,
-      data: rows,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Error fetching table data",
-      error: error.message,
-    });
-  }
-});
 
 app.get("/api/redis/test", async (req, res) => {
   try {
@@ -268,20 +200,6 @@ async function initializeServices() {
       console.error("❌ PostgreSQL initialization failed:", error.message);
       throw error; // Critical service - fail fast
     }
-
-    // Cassandra
-    try {
-      await initializeCassandra();
-      markServiceReady("cassandra");
-      console.log("✅ Connected to Cassandra/AstraDB");
-      await initializeSchema();
-    } catch (error) {
-      markServiceNotReady("cassandra", error);
-      console.error("❌ Cassandra initialization failed:", error.message);
-      throw error; // Critical service - fail fast
-    }
-
-    // Redis
     try {
       await initializeRedis();
       markServiceReady("redis");
