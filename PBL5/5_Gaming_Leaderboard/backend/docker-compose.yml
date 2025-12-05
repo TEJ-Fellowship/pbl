@@ -71,21 +71,49 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       PORT: ${PORT:-3001}
+      NODE_ENV: ${NODE_ENV:-development}
     ports:
       - "${PORT:-3001}:3001"
     volumes:
       - .:/app
       - /app/node_modules
+      - ./logs:/app/logs
     depends_on:
       - kafka
       - redis
     restart: unless-stopped
     networks:
       - gaming-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    container_name: gaming-leaderboard-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - gaming-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   kafka_data:
   redis_data:
+  nginx_cache:
 
 networks:
   gaming-network:

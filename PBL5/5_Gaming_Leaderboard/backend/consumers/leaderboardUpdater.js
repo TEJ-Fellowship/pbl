@@ -6,6 +6,7 @@ const {
 const redisService = require("../services/redisService");
 const kafkaService = require("../services/kafkaService");
 const cdnCacheService = require("../services/cdnCacheService");
+const logger = require("../util/logger");
 
 /**
  * Kafka Consumer - Processes score-submitted events and updates Redis leaderboards
@@ -229,6 +230,9 @@ const startConsumer = async () => {
               pipeline.zincrby(dailyKey, score, playerId);
               pipeline.expire(dailyKey, 7 * 24 * 60 * 60); // 7 days TTL
 
+              // Update weekly leaderboard
+              await redisService.updateWeeklyLeaderboard(gameMode, playerId, score);
+
               // Update player stats
               pipeline.hincrby(`player:${playerId}`, "total_score", score);
               pipeline.hincrby(`player:${playerId}`, "games_played", 1);
@@ -270,13 +274,11 @@ const startConsumer = async () => {
                       (previousRank !== null && previousRank <= 100) ||
                       newRankData.rank <= 100
                     ) {
-                      await cdnCacheService.invalidateCache([
-                        `/api/leaderboard/${event.gameMode}/top100`,
-                        `/api/leaderboard/${event.gameMode}?limit=100&offset=0`,
-                        `/api/leaderboard/${event.gameMode}?type=${
-                          type || "global"
-                        }&limit=100&offset=0`,
-                      ]);
+                    await cdnCacheService.invalidateCache([
+                      `/api/leaderboard/${event.gameMode}/top100`,
+                      `/api/leaderboard/${event.gameMode}?limit=100&offset=0`,
+                      `/api/leaderboard/${event.gameMode}?type=global&limit=100&offset=0`,
+                    ]);
                     }
                   }
                 }
@@ -317,6 +319,11 @@ const startConsumer = async () => {
             const dailyKey = `leaderboard:${gameMode}:daily:${today}`;
             pipeline.zincrby(dailyKey, score, playerId);
             pipeline.expire(dailyKey, 7 * 24 * 60 * 60); // 7 days TTL
+
+            // Update weekly leaderboard (async, non-blocking)
+            redisService.updateWeeklyLeaderboard(gameMode, playerId, score).catch(err => {
+              console.error("❌ Error updating weekly leaderboard:", err);
+            });
 
             // Update player stats
             pipeline.hincrby(`player:${playerId}`, "total_score", score);

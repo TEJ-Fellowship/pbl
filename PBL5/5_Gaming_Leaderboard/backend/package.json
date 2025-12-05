@@ -3,8 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
     "dev": "node --watch index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "setup-topics": "node util/setup-kafka-topics.js",
     "kafka:list": "docker exec gaming-leaderboard-kafka sh -c \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list\"",
     "kafka:describe": "docker exec gaming-leaderboard-kafka sh -c \"/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe\"",
@@ -16,15 +22,27 @@
     "test:latency": "node scripts/test-read-write-latency.js",
     "perf:all": "npm run benchmark && npm run load-test && npm run monitor:redis"
   },
-  "keywords": [],
+  "keywords": ["gaming", "leaderboard", "kafka", "redis", "real-time"],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Production-ready real-time gaming leaderboard system with Kafka and Redis",
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "kafkajs": "^2.2.4",
     "ioredis": "^5.3.2",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "winston": "^3.11.0",
+    "express-validator": "^7.0.1",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.56.0",
+    "@types/jest": "^29.5.11"
   }
 }

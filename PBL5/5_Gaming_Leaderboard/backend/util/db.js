@@ -88,7 +88,7 @@ const resetConsumerOffsetToEarliest = async () => {
     const admin = kafka.admin();
     await admin.connect();
 
-    const groupId = consumer.options.groupId;
+    const groupId = consumer?.options?.groupId || "leaderboard-updater";
 
     console.log(`🔄 Resetting consumer group '${groupId}' offset to earliest...`);
 

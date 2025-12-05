@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const redisService = require("../services/redisService");
+const { validatePlayerId, validateGameMode } = require("../middleware/validation");
+const { apiLimiter } = require("../middleware/rateLimiter");
+const logger = require("../util/logger");
 
 /**
  * GET /api/players/:id/rank/:gameMode
@@ -9,7 +12,7 @@ const redisService = require("../services/redisService");
  * Query params:
  * - type: "global" | "daily" (default: "global")
  */
-router.get("/:id/rank/:gameMode", async (req, res) => {
+router.get("/:id/rank/:gameMode", apiLimiter, validatePlayerId, validateGameMode, async (req, res) => {
   try {
     const playerId = req.params.id;
     const gameMode = parseInt(req.params.gameMode);
@@ -25,7 +28,12 @@ router.get("/:id/rank/:gameMode", async (req, res) => {
     }
 
     // Get player rank
-    const rankData = await redisService.getPlayerRank(gameMode, playerId, type);
+    let rankData;
+    if (type === "weekly") {
+      rankData = await redisService.getPlayerWeeklyRank(gameMode, playerId);
+    } else {
+      rankData = await redisService.getPlayerRank(gameMode, playerId, type);
+    }
 
     if (!rankData) {
       return res.status(404).json({
@@ -48,11 +56,8 @@ router.get("/:id/rank/:gameMode", async (req, res) => {
       score: rankData.score,
     });
   } catch (error) {
-    console.error("Error fetching player rank:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+    logger.error("Error fetching player rank", { error: error.message, playerId, gameMode });
+    throw error;
   }
 });
 
@@ -60,7 +65,7 @@ router.get("/:id/rank/:gameMode", async (req, res) => {
  * GET /api/players/:id/stats
  * Get player statistics
  */
-router.get("/:id/stats", async (req, res) => {
+router.get("/:id/stats", apiLimiter, validatePlayerId, async (req, res) => {
   try {
     const playerId = req.params.id;
 
@@ -81,6 +86,7 @@ router.get("/:id/stats", async (req, res) => {
     for (const mode of gameModes) {
       const globalRank = await redisService.getPlayerRank(mode.id, playerId, "global");
       const dailyRank = await redisService.getPlayerRank(mode.id, playerId, "daily");
+      const weeklyRank = await redisService.getPlayerWeeklyRank(mode.id, playerId);
 
       ranks[mode.id] = {
         gameMode: mode.name,
@@ -94,6 +100,13 @@ router.get("/:id/stats", async (req, res) => {
           ? {
               rank: dailyRank.rank,
               score: dailyRank.score,
+            }
+          : null,
+        weekly: weeklyRank
+          ? {
+              rank: weeklyRank.rank,
+              score: weeklyRank.score,
+              weekId: weeklyRank.weekId,
             }
           : null,
       };
@@ -110,11 +123,8 @@ router.get("/:id/stats", async (req, res) => {
       ranks,
     });
   } catch (error) {
-    console.error("Error fetching player stats:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+    logger.error("Error fetching player stats", { error: error.message, playerId });
+    throw error;
   }
 });
 

@@ -1,12 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const redisService = require("../services/redisService");
+const { apiLimiter } = require("../middleware/rateLimiter");
+const logger = require("../util/logger");
 
 /**
  * GET /api/game-modes
  * Get all available game modes
  */
-router.get("/", async (req, res) => {
+router.get("/", apiLimiter, async (req, res) => {
   try {
     const gameModes = await redisService.getAllGameModes();
 
@@ -15,11 +17,8 @@ router.get("/", async (req, res) => {
       gameModes,
     });
   } catch (error) {
-    console.error("Error fetching game modes:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+    logger.error("Error fetching game modes", { error: error.message });
+    throw error;
   }
 });
 
@@ -27,7 +26,7 @@ router.get("/", async (req, res) => {
  * GET /api/game-modes/:id
  * Get specific game mode details
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", apiLimiter, async (req, res) => {
   try {
     const gameModeId = parseInt(req.params.id);
     const gameMode = await redisService.getGameMode(gameModeId);
@@ -44,11 +43,8 @@ router.get("/:id", async (req, res) => {
       ...gameMode,
     });
   } catch (error) {
-    console.error("Error fetching game mode:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error.message,
-    });
+    logger.error("Error fetching game mode", { error: error.message, gameModeId });
+    throw error;
   }
 });
 

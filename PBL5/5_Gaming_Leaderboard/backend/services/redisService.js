@@ -133,12 +133,97 @@ const getPlayerScore = async (gameMode, playerId, type = "global") => {
   if (type === "daily") {
     const today = new Date().toISOString().split("T")[0];
     key = `leaderboard:${gameMode}:daily:${today}`;
+  } else if (type === "weekly") {
+    const weekId = getWeekIdentifier();
+    key = `leaderboard:${gameMode}:weekly:${weekId}`;
   } else {
     key = `leaderboard:${gameMode}:global`;
   }
 
   const score = await redis.zscore(key, playerId);
   return score ? parseInt(score) : 0;
+};
+
+// Weekly Leaderboard Operations
+const updateWeeklyLeaderboard = async (gameMode, playerId, score) => {
+  const weekId = getWeekIdentifier();
+  const key = `leaderboard:${gameMode}:weekly:${weekId}`;
+  
+  await redis.zincrby(key, score, playerId);
+  // Keep weekly leaderboards for 4 weeks (28 days)
+  await redis.expire(key, 28 * 24 * 60 * 60);
+};
+
+const getWeeklyLeaderboard = async (gameMode, weekId = null, limit = 100, offset = 0) => {
+  const targetWeekId = weekId || getWeekIdentifier();
+  const key = `leaderboard:${gameMode}:weekly:${targetWeekId}`;
+
+  // Get total count of players in leaderboard
+  const totalCount = await redis.zcard(key);
+
+  // Get top players with scores (sorted descending)
+  const results = await redis.zrevrange(key, offset, offset + limit - 1, "WITHSCORES");
+  
+  // Convert to array of {playerId, score}
+  const leaderboard = [];
+  for (let i = 0; i < results.length; i += 2) {
+    leaderboard.push({
+      playerId: results[i],
+      score: parseInt(results[i + 1]),
+    });
+  }
+
+  // Batch fetch usernames
+  let leaderboardWithRanks = [];
+  if (leaderboard.length > 0) {
+    const playerIds = leaderboard.map((entry) => entry.playerId);
+    const usernames = await batchGetUsernames(playerIds);
+
+    // Combine with ranks
+    leaderboardWithRanks = leaderboard.map((entry, index) => ({
+      rank: offset + index + 1,
+      playerId: entry.playerId,
+      username: usernames[entry.playerId] || "Unknown",
+      score: entry.score,
+    }));
+  }
+
+  return {
+    leaderboard: leaderboardWithRanks,
+    totalCount: totalCount || 0,
+    weekId: targetWeekId,
+  };
+};
+
+const getPlayerWeeklyRank = async (gameMode, playerId, weekId = null) => {
+  const targetWeekId = weekId || getWeekIdentifier();
+  const key = `leaderboard:${gameMode}:weekly:${targetWeekId}`;
+
+  const rank = await redis.zrevrank(key, playerId);
+  const score = await redis.zscore(key, playerId);
+
+  if (rank === null || score === null) {
+    return null;
+  }
+
+  return {
+    rank: rank + 1, // 0-indexed to 1-indexed
+    score: parseInt(score),
+    weekId: targetWeekId,
+  };
+};
+
+// Helper function to get week identifier (ISO week format: YYYY-Www)
+const getWeekIdentifier = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  
+  // Get ISO week number
+  const startOfYear = new Date(year, 0, 1);
+  const pastDaysOfYear = (date - startOfYear) / 86400000;
+  const weekNumber = Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  
+  return `${year}-W${weekNumber.toString().padStart(2, "0")}`;
 };
 
 // Batch operations for performance
@@ -256,11 +341,25 @@ const needsRebuild = async () => {
     
     if (gameModes.length === 0) {
       // Game modes not initialized, will be initialized separately
-      // Check if there are any players instead
-      const keys = await redis.keys("player:*");
-      // Filter out rate limit keys
-      const playerKeys = keys.filter(key => !key.includes(":last_submission"));
-      return playerKeys.length === 0;
+      // Check if there are any players instead using SCAN (non-blocking)
+      let cursor = "0";
+      let playerCount = 0;
+      
+      do {
+        const result = await redis.scan(cursor, "MATCH", "player:*", "COUNT", 100);
+        cursor = result[0];
+        const keys = result[1];
+        // Filter out rate limit keys
+        const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+        playerCount += playerKeys.length;
+        
+        // Early exit if we found at least one player
+        if (playerCount > 0) {
+          return false;
+        }
+      } while (cursor !== "0");
+      
+      return playerCount === 0;
     }
 
     // Check if at least one global leaderboard has data
@@ -273,12 +372,20 @@ const needsRebuild = async () => {
       }
     }
 
-    // Check if there are any players
-    const keys = await redis.keys("player:*");
-    const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+    // Check if there are any players using SCAN (non-blocking)
+    let cursor = "0";
+    let playerCount = 0;
+    
+    do {
+      const result = await redis.scan(cursor, "MATCH", "player:*", "COUNT", 100);
+      cursor = result[0];
+      const keys = result[1];
+      const playerKeys = keys.filter(key => !key.includes(":last_submission"));
+      playerCount += playerKeys.length;
+    } while (cursor !== "0");
     
     // If no leaderboards and no players, we need to rebuild
-    return playerKeys.length === 0;
+    return playerCount === 0;
   } catch (error) {
     console.error("❌ Error checking if rebuild is needed:", error);
     // If we can't check, assume rebuild is needed (safer option)
@@ -295,8 +402,11 @@ module.exports = {
   // Leaderboard operations
   updateGlobalLeaderboard,
   updateDailyLeaderboard,
+  updateWeeklyLeaderboard,
   getLeaderboard,
+  getWeeklyLeaderboard,
   getPlayerRank,
+  getPlayerWeeklyRank,
   getPlayerScore,
 
   // Rate limiting
@@ -309,5 +419,8 @@ module.exports = {
 
   // Recovery
   needsRebuild,
+  
+  // Helpers
+  getWeekIdentifier,
 };
 
