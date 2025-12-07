@@ -1,6 +1,6 @@
 //sequelize feed service
 import { sequelize } from "../config/db.js";
-import { Post } from "../models/index.js"; 
+import { Post } from "../models/index.js";
 import { redisClient } from "../config/db.js";
 import { Follow } from "../models/index.js";
 import * as postService from "./postService.js";
@@ -22,8 +22,6 @@ const IDEMPOTENCY_KEY = (userId, postId) =>
 const MAX_FEED_SIZE = 100; // Top 100 posts per user in Redis
 const FEED_TTL = FEED_CONFIG.FEED_TTL;
 const FANOUT_BATCH_SIZE = FEED_CONFIG.FANOUT_BATCH_SIZE;
-
-
 
 /**
  * Add a post to a user's feed in Redis only
@@ -125,7 +123,7 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
       const feedKeys = batch.map((id) => FEED_KEY(id));
 
       try {
-        // Batch update Redis feeds only (no PostgreSQL feed table)
+        // Batch update Redis feeds
         await batchAddPostToFeeds(
           feedKeys,
           score,
@@ -145,13 +143,14 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
           );
         });
 
-        // Invalidate response caches - batch operation
-        await batchInvalidateResponseCaches(batch).catch((err) => {
-          console.error(
-            `⚠️ Cache invalidation failed for batch ${batchIndex + 1}:`,
-            err.message
-          );
-        });
+        // CRITICAL: Invalidate response caches AFTER adding post to feed
+        // This ensures the next request will get fresh data from Redis feed
+        const invalidationResult = await batchInvalidateResponseCaches(batch);
+        console.log(
+          `🗑️ [CACHE] Invalidated response caches for ${invalidationResult} users in batch ${
+            batchIndex + 1
+          }`
+        );
 
         console.log(
           `✅ [FAN-OUT] Batch ${batchIndex + 1}/${batches.length} completed (${

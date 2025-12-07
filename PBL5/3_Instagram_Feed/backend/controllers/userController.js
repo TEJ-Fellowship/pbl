@@ -165,6 +165,7 @@ export const followUser = async (req, res) => {
     const { id } = req.params;
     const { follower_id } = req.body;
 
+    // Fast validation
     if (!follower_id) {
       return res.status(400).json({
         success: false,
@@ -172,22 +173,38 @@ export const followUser = async (req, res) => {
       });
     }
 
-    if (isNaN(id) || isNaN(follower_id)) {
+    const followingId = parseInt(id);
+    const followerId = parseInt(follower_id);
+
+    if (isNaN(followingId) || isNaN(followerId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID",
       });
     }
 
-    if (parseInt(id) === parseInt(follower_id)) {
+    if (followingId === followerId) {
       return res.status(400).json({
         success: false,
         message: "You cannot follow yourself",
       });
     }
 
-    const userToFollow = await User.findByPk(id);
-    const follower = await User.findByPk(follower_id);
+    // OPTIMIZATION 1: Parallel user lookups + follow check
+    const [userToFollow, follower, existingFollow] = await Promise.all([
+      User.findByPk(followingId, {
+        attributes: ["id", "username", "followers_count", "is_celebrity"],
+      }),
+      User.findByPk(followerId, {
+        attributes: ["id", "username", "following_count"],
+      }),
+      Follow.findOne({
+        where: {
+          follower_id: followerId,
+          following_id: followingId,
+        },
+      }),
+    ]);
 
     if (!userToFollow) {
       return res.status(404).json({
@@ -203,13 +220,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    const existingFollow = await Follow.findOne({
-      where: {
-        follower_id: follower_id,
-        following_id: id,
-      },
-    });
-
     if (existingFollow) {
       return res.status(409).json({
         success: false,
@@ -217,27 +227,37 @@ export const followUser = async (req, res) => {
       });
     }
 
-    const follow = await Follow.create({
-      follower_id: follower_id,
-      following_id: id,
-    });
-
-    // Update counts in database (can be parallel)
-    await Promise.all([
-      User.increment("following_count", { where: { id: follower_id } }),
-      User.increment("followers_count", { where: { id: id } }),
+    // OPTIMIZATION 2: Create follow + update counts in parallel
+    const [follow] = await Promise.all([
+      Follow.create({
+        follower_id: followerId,
+        following_id: followingId,
+      }),
+      // Update counts in database (parallel)
+      User.increment("following_count", { where: { id: followerId } }),
+      User.increment("followers_count", { where: { id: followingId } }),
+      // Update counts in Redis cache (parallel, non-blocking)
+      userCacheService.incrementFollowingCount(followerId).catch(() => {}),
+      userCacheService.incrementFollowersCount(followingId).catch(() => {}),
     ]);
 
-    // Update counts in Redis cache (can be parallel)
-    await Promise.all([
-      userCacheService.incrementFollowingCount(follower_id),
-      userCacheService.incrementFollowersCount(id),
-    ]);
+    // OPTIMIZATION 3: Calculate new counts directly (no reload needed)
+    const newFollowingCount = follower.following_count + 1;
+    const newFollowersCount = userToFollow.followers_count + 1;
+
+    // OPTIMIZATION 4: Check celebrity status without reload
+    const shouldUpdateCelebrity =
+      newFollowersCount >= 10000 && !userToFollow.is_celebrity;
+    if (shouldUpdateCelebrity) {
+      User.update({ is_celebrity: true }, { where: { id: followingId } }).catch(
+        console.error
+      );
+    }
 
     // Publish follow event to Kafka (non-blocking)
     setImmediate(async () => {
       try {
-        await publishUserFollowed(follower_id, id);
+        await publishUserFollowed(followerId, followingId);
       } catch (kafkaError) {
         console.error(
           "⚠️ Error publishing follow event to Kafka:",
@@ -246,26 +266,17 @@ export const followUser = async (req, res) => {
       }
     });
 
-    // FIX: Make backfill asynchronous (non-blocking)
-    // This is the main bottleneck - don't wait for it
+    // Backfill feed asynchronously (non-blocking)
     setImmediate(async () => {
       try {
-        await backfillFeedOnFollow(follower_id, id);
-        console.log(`✅ Backfilled feed for follower ${follower_id}`);
+        await backfillFeedOnFollow(followerId, followingId);
       } catch (backfillError) {
         console.error("⚠️ Error backfilling feed on follow:", backfillError);
-        await invalidateFeedCache(follower_id).catch((err) =>
-          console.error("Failed to invalidate cache:", err)
-        );
+        await invalidateFeedCache(followerId).catch(() => {});
       }
     });
 
-    await Promise.all([follower.reload(), userToFollow.reload()]);
-
-    if (userToFollow.followers_count >= 10000 && !userToFollow.is_celebrity) {
-      userToFollow.update({ is_celebrity: true }).catch(console.error);
-    }
-
+    // Return immediately with calculated counts
     res.status(201).json({
       success: true,
       message: `User ${follower.username} is now following ${userToFollow.username}`,
@@ -274,12 +285,12 @@ export const followUser = async (req, res) => {
         follower: {
           id: follower.id,
           username: follower.username,
-          following_count: follower.following_count,
+          following_count: newFollowingCount,
         },
         following: {
           id: userToFollow.id,
           username: userToFollow.username,
-          followers_count: userToFollow.followers_count,
+          followers_count: newFollowersCount,
         },
       },
     });
@@ -310,15 +321,31 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    if (isNaN(id) || isNaN(follower_id)) {
+    const followingId = parseInt(id);
+    const followerId = parseInt(follower_id);
+
+    if (isNaN(followingId) || isNaN(followerId)) {
       return res.status(400).json({
         success: false,
         message: "Invalid user ID",
       });
     }
 
-    const userToUnfollow = await User.findByPk(id);
-    const follower = await User.findByPk(follower_id);
+    // OPTIMIZATION 1: Parallel user lookups + follow check
+    const [userToUnfollow, follower, existingFollow] = await Promise.all([
+      User.findByPk(followingId, {
+        attributes: ["id", "username", "followers_count", "is_celebrity"],
+      }),
+      User.findByPk(followerId, {
+        attributes: ["id", "username", "following_count"],
+      }),
+      Follow.findOne({
+        where: {
+          follower_id: followerId,
+          following_id: followingId,
+        },
+      }),
+    ]);
 
     if (!userToUnfollow) {
       return res.status(404).json({
@@ -334,13 +361,6 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    const existingFollow = await Follow.findOne({
-      where: {
-        follower_id: follower_id,
-        following_id: id,
-      },
-    });
-
     if (!existingFollow) {
       return res.status(404).json({
         success: false,
@@ -348,27 +368,35 @@ export const unfollowUser = async (req, res) => {
       });
     }
 
-    await existingFollow.destroy();
-
-    // Update counts in parallel
+    // OPTIMIZATION 2: Delete follow + update counts in parallel
     await Promise.all([
-      User.decrement("following_count", { where: { id: follower_id } }),
-      User.decrement("followers_count", { where: { id: id } }),
+      existingFollow.destroy(),
+      // Update counts in parallel
+      User.decrement("following_count", { where: { id: followerId } }),
+      User.decrement("followers_count", { where: { id: followingId } }),
+      // Update counts in Redis cache (parallel, non-blocking)
+      userCacheService.decrementFollowingCount(followerId).catch(() => {}),
+      userCacheService.decrementFollowersCount(followingId).catch(() => {}),
     ]);
 
-    // Update counts in Redis cache in parallel
-    await Promise.all([
-      userCacheService.decrementFollowingCount(follower_id),
-      userCacheService.decrementFollowersCount(id),
-    ]);
+    // OPTIMIZATION 3: Calculate new counts directly (no reload needed)
+    const newFollowingCount = Math.max(0, follower.following_count - 1);
+    const newFollowersCount = Math.max(0, userToUnfollow.followers_count - 1);
+
+    // OPTIMIZATION 4: Check celebrity status without reload
+    const shouldUpdateCelebrity =
+      newFollowersCount < 10000 && userToUnfollow.is_celebrity;
+    if (shouldUpdateCelebrity) {
+      User.update(
+        { is_celebrity: false },
+        { where: { id: followingId } }
+      ).catch(console.error);
+    }
 
     // Publish unfollow event to Kafka (non-blocking)
     setImmediate(async () => {
       try {
-        await publishUserUnfollowed(follower_id, id);
-        console.log(
-          `📤 [KAFKA] User ${follower_id} unfollowed user ${id} event published`
-        );
+        await publishUserUnfollowed(followerId, followingId);
       } catch (kafkaError) {
         console.error(
           "⚠️ Error publishing unfollow event to Kafka:",
@@ -377,27 +405,20 @@ export const unfollowUser = async (req, res) => {
       }
     });
 
-    // FIX: Make post removal asynchronous (non-blocking)
-    // This is the main bottleneck - don't wait for it
+    // Remove posts from feed asynchronously (non-blocking)
     setImmediate(async () => {
       try {
-        await removePostsFromFeedOnUnfollow(follower_id, id);
-        console.log(`✅ Removed posts from feed for follower ${follower_id}`);
+        await removePostsFromFeedOnUnfollow(followerId, followingId);
       } catch (removeError) {
         console.error(
           "⚠️ Error removing posts from feed on unfollow:",
           removeError
         );
-        await invalidateFeedCache(follower_id).catch(console.error);
+        await invalidateFeedCache(followerId).catch(() => {});
       }
     });
 
-    await Promise.all([follower.reload(), userToUnfollow.reload()]);
-
-    if (userToUnfollow.followers_count < 10000 && userToUnfollow.is_celebrity) {
-      userToUnfollow.update({ is_celebrity: false }).catch(console.error);
-    }
-
+    // Return immediately with calculated counts
     res.status(200).json({
       success: true,
       message: `User ${follower.username} has unfollowed ${userToUnfollow.username}`,
@@ -405,10 +426,12 @@ export const unfollowUser = async (req, res) => {
         follower: {
           id: follower.id,
           username: follower.username,
+          following_count: newFollowingCount,
         },
         unfollowed: {
           id: userToUnfollow.id,
           username: userToUnfollow.username,
+          followers_count: newFollowersCount,
         },
       },
     });

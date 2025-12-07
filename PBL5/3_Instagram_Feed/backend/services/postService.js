@@ -29,46 +29,48 @@ export const createPost = async (postData) => {
   const postId = randomUUID();
   const createdAt = created_at ? new Date(created_at) : new Date();
 
-  // STEP 2: Start PostgreSQL write AND Kafka publish in PARALLEL
-  const postgresPromise = Post.create({
-    id: postId,
-    user_id: userId,
-    caption: caption || null,
-    image_url: image_url,
-    likes_count: 0,
-    comments_count: 0,
-    created_at: createdAt,
-  });
-
-  // Start Kafka publish immediately (parallel, non-blocking)
-  const kafkaPromise = sendMessage(
-    TOPICS.POST_CREATED,
+  // STEP 2: Start PostgreSQL write (use raw: true for faster response)
+  const postgresPromise = Post.create(
     {
-      eventType: "POST_CREATED",
-      postId: postId,
-      userId: userId,
-      createdAt: createdAt.toISOString(),
+      id: postId,
+      user_id: userId,
+      caption: caption || null,
+      image_url: image_url,
+      likes_count: 0,
+      comments_count: 0,
+      created_at: createdAt,
     },
-    userId.toString() // Key for partitioning
-  ).catch((error) => {
-    // Log but don't throw - Kafka failure shouldn't break post creation
-    console.error("⚠️ Failed to publish post to Kafka:", error.message);
-  });
+    {
+      raw: false, // Keep false to get model instance for toJSON()
+    }
+  );
 
-  // STEP 3: Wait ONLY for PostgreSQL success (Kafka continues in background)
+  // STEP 3: Check Kafka availability BEFORE creating promise (optimization)
+  const { isKafkaAvailable } = await import("../config/kafka.js");
+
+  // Start Kafka publish immediately (parallel, non-blocking) - only if available
+  let kafkaPromise = Promise.resolve();
+  if (isKafkaAvailable()) {
+    kafkaPromise = sendMessage(
+      TOPICS.POST_CREATED,
+      {
+        eventType: "POST_CREATED",
+        postId: postId,
+        userId: userId,
+        createdAt: createdAt.toISOString(),
+      },
+      userId.toString() // Key for partitioning
+    ).catch((error) => {
+      // Log but don't throw - Kafka failure shouldn't break post creation
+      console.error("⚠️ Failed to publish post to Kafka:", error.message);
+    });
+  }
+
+  // STEP 4: Wait ONLY for PostgreSQL success (Kafka continues in background)
   const post = await postgresPromise;
 
-  // STEP 4: Return response immediately after PostgreSQL success
-  // User gets success response faster, Kafka publish continues in background
-  return {
-    id: postId,
-    user_id: userId,
-    caption: caption || null,
-    image_url: image_url,
-    likes_count: 0,
-    comments_count: 0,
-    created_at: createdAt,
-  };
+  // STEP 5: Return using toJSON() for faster serialization
+  return post.toJSON();
 };
 
 /**
