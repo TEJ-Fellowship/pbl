@@ -24,7 +24,8 @@
     "load-test:artillery": "artillery run artillery.yml",
     "load-test:report": "artillery run --output report.json artillery.yml && artillery report report.json",
     "load-test:150": "artillery run artillery-150.yml",
-    "load-test:150:report": "artillery run --output report-150.json artillery-150.yml && artillery report report-150.json"
+    "load-test:150:report": "artillery run --output report-150.json artillery-150.yml && artillery report report-150.json",
+    "add-100-users": "node scripts/add-100-users-scores.js"
   },
   "keywords": [
     "gaming",
