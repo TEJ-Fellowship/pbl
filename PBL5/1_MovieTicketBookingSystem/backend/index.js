@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 
 const app = express();
 
@@ -7,7 +8,18 @@ const { connectToDatabase } = require("./utils/db.js");
 
 // Middleware
 
-app.use(express.json());
+// JSON parser for all routes EXCEPT webhook (webhook needs raw body)
+app.use((req, res, next) => {
+  // Skip JSON parsing for webhook endpoint (needs raw body for signature verification)
+  if (req.path === "/api/payments/webhook") {
+    return next();
+  }
+  // Use JSON parser for all other routes
+  return express.json()(req, res, next);
+});
+
+// Serve static files from frontend directory
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Rate limiting middleware (prevents abuse)
 const { rateLimiters } = require("./middleware/rateLimiter");
@@ -158,6 +170,7 @@ const start = async () => {
     // Start Kafka consumers if Kafka mode is enabled
     const config = require("./utils/config");
     if (config.KAFKA_MODE === "kafka") {
+      console.log("🔄 Starting Kafka consumers...");
       try {
         const { startBookingConsumer } = require("./services/kafkaConsumer");
         await startBookingConsumer();
@@ -166,10 +179,28 @@ const start = async () => {
         );
       } catch (kafkaError) {
         console.error(
-          "⚠️  Failed to start Kafka consumers:",
+          "❌ Failed to start Kafka consumers:",
           kafkaError.message
         );
+        console.error("Full error:", kafkaError);
         console.log("⚠️  Server will continue without Kafka consumers");
+      }
+
+      // Start Payment Intent consumers (only if Stripe is configured)
+      try {
+        const {
+          startPaymentIntentConsumer,
+        } = require("./services/paymentIntentConsumer");
+        await startPaymentIntentConsumer(2); // 2 consumers for Payment Intent processing
+        console.log("✅ Payment Intent consumers started successfully");
+      } catch (paymentIntentError) {
+        console.error(
+          "⚠️  Failed to start Payment Intent consumers:",
+          paymentIntentError.message
+        );
+        console.log(
+          "⚠️  Server will continue without Payment Intent consumers"
+        );
       }
     }
 

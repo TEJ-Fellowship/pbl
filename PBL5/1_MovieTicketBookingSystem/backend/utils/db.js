@@ -2,7 +2,10 @@ const { Sequelize } = require("sequelize");
 const { DATABASE_URL } = require("./config");
 const { Umzug, SequelizeStorage } = require("umzug");
 
-const sequelize = new Sequelize(DATABASE_URL, {
+// Only create Sequelize instance if DATABASE_URL is provided (optional for Redis-only mode)
+let sequelize = null;
+if (DATABASE_URL) {
+  sequelize = new Sequelize(DATABASE_URL, {
   dialect: "postgres",
   dialectOptions: {
     ssl: {
@@ -18,8 +21,31 @@ const sequelize = new Sequelize(DATABASE_URL, {
     idle: 10000, // Maximum time (ms) a connection can be idle
   },
 });
+} else {
+  // Create a dummy sequelize object for models to load (Redis-only mode)
+  // Models won't actually work, but they won't crash the app
+  sequelize = {
+    define: () => {
+      return {
+        hasMany: () => {},
+        belongsTo: () => {},
+        hasOne: () => {},
+      };
+    },
+    authenticate: async () => {
+      throw new Error("Database not configured");
+    },
+    getQueryInterface: () => ({}),
+  };
+}
 
 const connectToDatabase = async () => {
+  // Skip database connection if DATABASE_URL is not provided (Redis-only mode)
+  if (!DATABASE_URL || !sequelize) {
+    console.log("⚠️  Database connection skipped (Redis-only mode)");
+    return null;
+  }
+
   try {
     await sequelize.authenticate();
     console.log("✅ Database authenticated");
@@ -31,22 +57,34 @@ const connectToDatabase = async () => {
     if (err.original) {
       console.error("Original error:", err.original.message);
     }
-    return process.exit(1);
+    // Don't exit process - allow Redis-only mode to continue
+    throw err;
   }
   return null;
 };
 
-const migrationConf = {
+const getMigrationConf = () => {
+  if (!sequelize) {
+    throw new Error(
+      "Sequelize not initialized. DATABASE_URL is required for migrations."
+    );
+  }
+  return {
   migrations: {
     glob: "migrations/*.js",
   },
   storage: new SequelizeStorage({ sequelize, tableName: "migrations" }),
   context: sequelize.getQueryInterface(),
   logger: console,
+  };
 };
 
 const runMigrations = async () => {
+  if (!sequelize) {
+    return; // Skip migrations if database is not configured
+  }
   try {
+    const migrationConf = getMigrationConf();
     const migrator = new Umzug(migrationConf);
     const migrations = await migrator.up();
     if (migrations.length > 0) {
@@ -63,7 +101,13 @@ const runMigrations = async () => {
 };
 
 const rollbackMigration = async () => {
+  if (!sequelize) {
+    throw new Error(
+      "Sequelize not initialized. DATABASE_URL is required for rollback."
+    );
+  }
   await sequelize.authenticate();
+  const migrationConf = getMigrationConf();
   const migrator = new Umzug(migrationConf);
   await migrator.down();
 };

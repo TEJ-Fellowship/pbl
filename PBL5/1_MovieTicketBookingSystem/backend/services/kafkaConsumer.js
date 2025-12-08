@@ -8,6 +8,8 @@ const config = require("../utils/config");
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
 const { batchWrite } = require("../utils/redisPipeline");
+const { sendPaymentIntentRequest } = require("./kafkaProducer");
+const { isStripeConfigured } = require("./stripeService");
 const crypto = require("crypto");
 
 /**
@@ -168,6 +170,25 @@ async function processBookingRequest(bookingRequest) {
         `✅ Booking ${bookingId} created successfully (request: ${request_id}, seats: ${seat_ids.length})`
       );
 
+      // Queue Payment Intent creation (async, non-blocking)
+      // Only if Stripe is configured
+      if (isStripeConfigured()) {
+        sendPaymentIntentRequest({
+          booking_id: bookingId,
+          amount: totalAmount * 100, // Convert to cents
+          metadata: {
+            request_id: request_id,
+            seat_count: seat_ids.length,
+          },
+        }).catch((error) => {
+          // Log error but don't fail the booking
+          console.error(
+            `⚠️  Failed to queue Payment Intent for booking ${bookingId}:`,
+            error.message
+          );
+        });
+      }
+
       return {
         success: true,
         booking_id: bookingId,
@@ -226,14 +247,12 @@ async function startConsumerInstance(instanceId, onMessage = null) {
         const startTime = Date.now();
         const batchSize = batch.messages.length;
 
-        // Reduced logging for multiple consumers
-        if (instanceId === 0 && batch.messages.length > 0) {
+        // Log every batch for visibility (especially for testing)
+        if (batch.messages.length > 0) {
           const firstOffset = batch.messages[0].offset;
-          if (firstOffset % 100 === 0) {
-            console.log(
-              `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
-            );
-          }
+          console.log(
+            `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
+          );
         }
 
         // Process all messages in batch in parallel
@@ -249,6 +268,11 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             let bookingRequest;
             try {
               bookingRequest = JSON.parse(messageValue);
+              console.log(
+                `📨 Consumer ${instanceId}: Received booking request (request_id: ${
+                  bookingRequest.request_id
+                }, seats: ${bookingRequest.seat_ids?.length || 0})`
+              );
             } catch (parseError) {
               console.error(
                 `❌ Consumer ${instanceId}: Failed to parse message at offset ${message.offset}:`,
@@ -258,6 +282,9 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             }
 
             // Process booking
+            console.log(
+              `🔄 Consumer ${instanceId}: Processing booking request ${bookingRequest.request_id}...`
+            );
             const result = await processBookingRequest(bookingRequest);
 
             // Call optional callback
@@ -276,14 +303,14 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             // Send heartbeat to keep consumer alive
             await heartbeat();
 
-            // Log only successful bookings or errors (reduce noise)
-            if (
-              result.success &&
-              instanceId === 0 &&
-              message.offset % 50 === 0
-            ) {
+            // Log all bookings for visibility (especially for testing)
+            if (result.success) {
               console.log(
-                `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed (partition: ${partition})`
+                `✅ Consumer ${instanceId}: Booking ${
+                  result.booking_id
+                } created (request: ${result.request_id}, seats: ${
+                  result.seat_ids?.length || 0
+                }, partition: ${partition})`
               );
             } else if (
               !result.success &&

@@ -91,7 +91,54 @@ async function sendBookingRequestsBatch(bookingRequests) {
   }
 }
 
+/**
+ * Send Payment Intent creation request to Kafka queue
+ * @param {Object} paymentIntentRequest - Payment Intent request data
+ * @param {string} paymentIntentRequest.booking_id - Booking ID
+ * @param {number} paymentIntentRequest.amount - Amount in cents
+ * @param {Object} paymentIntentRequest.metadata - Optional metadata
+ * @returns {Promise<Object>} - Result with success status and message ID
+ */
+async function sendPaymentIntentRequest(paymentIntentRequest) {
+  try {
+    const producer = await getProducer();
+
+    const message = {
+      key:
+        paymentIntentRequest.booking_id ||
+        `payment-intent-${Date.now()}-${Math.random()}`,
+      value: JSON.stringify({
+        ...paymentIntentRequest,
+        timestamp: new Date().toISOString(),
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    };
+
+    const result = await producer.send({
+      topic: config.KAFKA_TOPIC_PAYMENT_INTENTS,
+      messages: [message],
+    });
+
+    console.log(
+      `✅ Payment Intent request queued: booking ${paymentIntentRequest.booking_id} (partition: ${result[0].partition}, offset: ${result[0].offset})`
+    );
+
+    return {
+      success: true,
+      messageId: message.key,
+      partition: result[0].partition,
+      offset: result[0].offset,
+    };
+  } catch (error) {
+    console.error("❌ Error queuing Payment Intent request:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendBookingRequest,
   sendBookingRequestsBatch,
+  sendPaymentIntentRequest,
 };

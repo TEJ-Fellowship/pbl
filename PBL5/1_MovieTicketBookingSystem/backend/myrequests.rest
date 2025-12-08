@@ -1,242 +1,115 @@
-### Seat-Only Redis Booking System - Load Testing
-### Simple approach: Just seat_ids, no user/movie/showtime needed
+### Stripe Booking + Payment Flow
 
 @baseUrl = http://localhost:3001
 @apiUrl = {{baseUrl}}/api
 
 ### ============================================
-### VARIABLES - Fill these after creating booking
+### VARIABLES - Update after creating booking
 ### ============================================
-@booking_id = ae035006-0422-4a52-acaa-b6a8bc5f674b
-@payment_id = f9bc64e0-a1e4-4c89-a59b-2e1ec2a85133
+@request_id = 
+@booking_id = 9da00317-f48d-45f4-987f-cf8e644d818f
+@payment_intent_id = pi_3Sc5jyJHQuHCrlwI072cOPDN
 
 ### ============================================
 ### STEP 1: CREATE BOOKING
+### Payment Intent is created automatically via Kafka (wait 2-3 seconds)
 ### ============================================
-### Seat IDs: Use seat1, seat2, seat3, ..., seat1000
-### Any number from 1 to 1000 works
 
 POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
-  "seat_ids": ["seat1", "seat2", "seat3"]
+  "seat_ids": ["seat3635", "seat3675", "seat3685"]
 }
-### Expected: 201 Created
-### Response includes: id, seat_ids, status: "pending", total_amount
-### Copy "id" from response → paste in @booking_id above
+
+### Copy "id" (booking_id) from response → update @booking_id variable above
+### If response has "request_id" only, wait 2-3 seconds then use STEP 2
 
 ### ============================================
-### STEP 2: GET BOOKING
+### STEP 2: GET BOOKING BY REQUEST ID (If Step 1 returned request_id)
 ### ============================================
+
+GET {{apiUrl}}/bookings/request/{{request_id}}
+
+### ============================================
+### STEP 3: GET BOOKING BY ID (Check payment_intent_id + client_secret)
+### ============================================
+
 GET {{apiUrl}}/bookings/{{booking_id}}
-### Expected: 200 OK
-### Response: Complete booking details
+
+### Verify booking has:
+### - payment_intent_id exists
+### - client_secret exists
+### - status is "pending"
 
 ### ============================================
-### STEP 3: PROCESS PAYMENT
+### STEP 4: PAY WITH FRONTEND
 ### ============================================
-### Amount should match total_amount from booking (100 per seat)
-### For 3 seats = 300
-
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "{{booking_id}}",
-  "amount": 300,
-  "payment_method": "credit_card"
-}
-### Expected: 200 OK
-### Response includes: payment_id, status: "success", receipt
-### Copy "payment_id" from response → paste in @payment_id above
+### Open in browser:
+### http://localhost:3001/payment.html?booking_id={{booking_id}}
+###
+### Enter test card: 4242 4242 4242 4242
+### Expiry: 12/25 (any future date)
+### CVC: 123 (any 3 digits)
+###
+### Click "Pay Now" → Payment processes → Webhook confirms booking
 
 ### ============================================
-### STEP 4: VERIFY BOOKING IS CONFIRMED
+### STEP 5: VERIFY BOOKING CONFIRMED (after webhook)
+### Wait 2-3 seconds after payment, then check booking
 ### ============================================
+
 GET {{apiUrl}}/bookings/{{booking_id}}
-### Expected: status = "confirmed"
+
+### Status should be "confirmed"
 
 ### ============================================
-### STEP 5: GET PAYMENT DETAILS
+### QUICK TEST FLOW
 ### ============================================
-GET {{apiUrl}}/payments/booking/{{booking_id}}
-### Expected: Payment details with receipt
 
-### ============================================
-### STEP 6: CANCEL BOOKING (Optional - Only pending)
-### ============================================
-### Note: Can only cancel pending bookings (before payment)
-
-DELETE {{apiUrl}}/bookings/{{booking_id}}
-### Expected: 200 OK
-### Response: Booking cancelled, seats released
-
-### ============================================
-### STEP 7: GET ALL BOOKINGS (For Testing)
-### ============================================
-GET {{apiUrl}}/bookings
-### Expected: List of all bookings in Redis
-
-### ============================================
-### TEST: CONCURRENT BOOKINGS (Load Testing)
-### ============================================
-### Run these TWO requests at the SAME TIME
-### Expected: One succeeds (201), one fails (409)
-
-### Request 1
+### 1. Create booking
 POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
-  "seat_ids": ["seat10"]
+  "seat_ids": ["seat100", "seat101"]
 }
 
-### Request 2 (run immediately after Request 1)
-POST {{apiUrl}}/bookings
-Content-Type: application/json
+### 2. Wait 3 seconds, then get booking:
+GET {{apiUrl}}/bookings/{{booking_id}}
 
-{
-  "seat_ids": ["seat10"]
-}
-### Expected: One gets 201 Created, other gets 409 Conflict (seat busy)
+### 3. Open frontend:
+### http://localhost:3001/payment.html?booking_id={{booking_id}}
+###
+### 4. Enter test card and pay
+###
+### 5. Wait 2-3 seconds, then verify:
+GET {{apiUrl}}/bookings/{{booking_id}}
+### Status should be "confirmed"
 
 ### ============================================
-### TEST: BOOKING FLOW WITH DIFFERENT SEATS
+### NOTES
 ### ============================================
-
-### Create booking with different seats
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["seat50", "seat51", "seat52"]
-}
-
-### Pay for it
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "PASTE_BOOKING_ID_HERE",
-  "amount": 300,
-  "payment_method": "credit_card"
-}
-
-### Try to book same seats again (should fail)
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["seat50", "seat51"]
-}
-### Expected: 409 Conflict - "Some seats are not available"
-
-### ============================================
-### TEST: CANCELLATION FLOW
-### ============================================
-
-### Step 1: Create booking
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["seat100"]
-}
-
-### Step 2: Cancel booking
-DELETE {{apiUrl}}/bookings/PASTE_BOOKING_ID_HERE
-### Expected: 200 OK - Booking cancelled
-
-### Step 3: Book same seat again (should work)
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["seat100"]
-}
-### Expected: 201 Created - Seat available again
-
-### ============================================
-### ERROR TESTING
-### ============================================
-
-### Test: Empty seat_ids
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": []
-}
-### Expected: 400 Bad Request
-
-### Test: Invalid seat (not in available_seats)
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["invalid_seat"]
-}
-### Expected: 409 Conflict - "Some seats are not available"
-
-### Test: Payment with wrong amount
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "{{booking_id}}",
-  "amount": 999,
-  "payment_method": "credit_card"
-}
-### Expected: 400 Bad Request - "Payment amount does not match booking total"
-
-### Test: Payment for non-existent booking
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "00000000-0000-0000-0000-000000000000",
-  "amount": 300,
-  "payment_method": "credit_card"
-}
-### Expected: 404 Not Found - "Booking not found"
-
-### Test: Double payment (pay same booking twice)
-### Step 1: First payment
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "{{booking_id}}",
-  "amount": 300,
-  "payment_method": "credit_card"
-}
-
-### Step 2: Try to pay again
-POST {{apiUrl}}/payments/process
-Content-Type: application/json
-
-{
-  "booking_id": "{{booking_id}}",
-  "amount": 300,
-  "payment_method": "credit_card"
-}
-### Expected: 400 Bad Request - "Booking is already confirmed"
-
-### ============================================
-### PIPELINE TEST - Check server logs for pipeline messages
-### ============================================
-
-POST {{apiUrl}}/bookings
-Content-Type: application/json
-
-{
-  "seat_ids": ["seat1", "seat2", "seat3"]
-}
-### Expected: 202 Accepted (Kafka mode) or 201 Created (Direct mode)
-### Check server console for: "📦 Pipeline: Executed 4 commands in batch"
-### Check server console for: "⚡ Pipeline executed 4 commands in Xms"
-
-   curl -X POST http://localhost:3001/api/bookings \
-     -H "Content-Type: application/json" \
-     -d '{"seat_ids":["seat1","seat2"]}'
+### 
+### 1. Payment Intent creation is ASYNC (via Kafka)
+###    - Booking created immediately
+###    - Payment Intent created in background (2-5 seconds)
+###    - Check booking again to see payment_intent_id and client_secret
+### 
+### 2. Frontend Payment:
+###    - Open: http://localhost:3001/payment.html?booking_id=YOUR_BOOKING_ID
+###    - Frontend fetches booking and client_secret automatically
+###    - Uses Stripe.js to process payment (card data never touches your backend)
+###    - Stripe sends REAL webhook to your server
+###    - Booking status updates after webhook processes (2-3 seconds)
+### 
+### 3. Webhook Processing:
+###    - Real webhook sent by Stripe (not simulated)
+###    - Webhook endpoint: POST /api/payments/webhook
+###    - For local testing: Use Stripe CLI to forward webhooks
+###      Command: stripe listen --forward-to localhost:3001/api/payments/webhook
+### 
+### 4. Test Cards (for frontend):
+###    - Success: 4242 4242 4242 4242
+###    - Decline: 4000 0000 0000 0002
+###    - 3D Secure: 4000 0025 0000 3155

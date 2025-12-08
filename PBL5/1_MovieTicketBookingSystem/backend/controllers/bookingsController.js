@@ -24,7 +24,7 @@ const createBooking = async (req, res, next) => {
   try {
     const { seat_ids } = req.body;
 
-    // If Kafka mode is enabled, send to queue and return immediately
+    // If Kafka mode is enabled, send to queue and wait for booking to be created
     if (config.KAFKA_MODE === "kafka") {
       const requestId = crypto.randomUUID();
 
@@ -47,12 +47,49 @@ const createBooking = async (req, res, next) => {
         });
       });
 
-      // Return immediately - Kafka processes in background
-      // This prevents request timeouts under heavy load
+      // Wait for booking to be created (with timeout)
+      const maxWaitTime = 5000; // 5 seconds
+      const checkInterval = 100; // Check every 100ms
+      const startTime = Date.now();
+
+      while (Date.now() - startTime < maxWaitTime) {
+        // Check if booking was created by looking for request_id mapping
+        const bookingKeys = await redis.keys("booking:*");
+        for (const key of bookingKeys) {
+          if (
+            key === "booking:pending" ||
+            key === "booking:confirmed" ||
+            key.includes(":locks")
+          ) {
+            continue;
+          }
+
+          const bookingData = await redis.get(key);
+          if (bookingData) {
+            const booking = JSON.parse(bookingData);
+            if (booking.request_id === requestId) {
+              // Booking found! Return it
+              return res.status(201).json({
+                id: booking.id,
+                seat_ids: booking.seat_ids,
+                status: booking.status,
+                total_amount: booking.total_amount,
+                created_at: booking.created_at,
+                request_id: requestId,
+              });
+            }
+          }
+        }
+
+        // Wait before next check
+        await new Promise((resolve) => setTimeout(resolve, checkInterval));
+      }
+
+      // Timeout - booking not created yet, return request_id
       return res.status(202).json({
         message: "Booking request queued for processing",
         request_id: requestId,
-        note: "Check booking status using GET /api/bookings/:id after processing",
+        note: "Booking is being processed. Use GET /api/bookings/request/:requestId to check status",
       });
     }
 
@@ -187,6 +224,47 @@ const getBookingById = async (req, res, next) => {
 };
 
 /**
+ * Get booking by request_id - Redis-only
+ * GET /api/bookings/request/:requestId
+ */
+const getBookingByRequestId = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+
+    if (!redis.isReady) {
+      return res.status(503).json({ error: "Redis not ready" });
+    }
+
+    // Get all booking keys
+    const bookingKeys = await redis.keys("booking:*");
+
+    // Search through bookings to find one with matching request_id
+    for (const key of bookingKeys) {
+      // Skip SET keys and lock storage keys
+      if (
+        key === "booking:pending" ||
+        key === "booking:confirmed" ||
+        key.includes(":locks")
+      ) {
+        continue;
+      }
+
+      const bookingData = await redis.get(key);
+      if (bookingData) {
+        const booking = JSON.parse(bookingData);
+        if (booking.request_id === requestId) {
+          return res.json(booking);
+        }
+      }
+    }
+
+    res.status(404).json({ error: "Booking not found for this request_id" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get all bookings - Redis-only (for testing)
  * GET /api/bookings
  */
@@ -198,23 +276,39 @@ const getAllBookings = async (req, res, next) => {
 
     // Get all booking keys
     const bookingKeys = await redis.keys("booking:*");
-    const bookingIds = bookingKeys
-      .filter((key) => {
-        // Exclude SET keys (booking:pending, booking:confirmed) and lock storage keys
-        return (
-          key !== "booking:pending" &&
-          key !== "booking:confirmed" &&
-          !key.includes(":locks")
-        );
-      })
-      .map((key) => key.replace("booking:", ""));
 
     // Get all bookings
     const bookings = [];
-    for (const id of bookingIds) {
-      const bookingData = await redis.get(`booking:${id}`);
+    for (const key of bookingKeys) {
+      // Skip SET keys (booking:pending, booking:confirmed) and lock storage keys
+      if (
+        key === "booking:pending" ||
+        key === "booking:confirmed" ||
+        key.includes(":locks")
+      ) {
+        continue;
+      }
+
+      // Extract booking ID from key (format: booking:uuid)
+      if (!key.startsWith("booking:")) {
+        continue;
+      }
+
+      const bookingData = await redis.get(key);
       if (bookingData) {
-        bookings.push(JSON.parse(bookingData));
+        try {
+          const booking = JSON.parse(bookingData);
+          // Only include if it's a valid booking object with an id
+          if (booking && booking.id) {
+            bookings.push(booking);
+          }
+        } catch (parseError) {
+          // Skip invalid JSON
+          console.warn(
+            `Failed to parse booking from key ${key}:`,
+            parseError.message
+          );
+        }
       }
     }
 
@@ -287,6 +381,7 @@ const cancelBooking = async (req, res, next) => {
 module.exports = {
   createBooking,
   getBookingById,
+  getBookingByRequestId,
   getAllBookings,
   cancelBooking,
 };
