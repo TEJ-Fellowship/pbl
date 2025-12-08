@@ -1,41 +1,37 @@
 config:
   target: "http://localhost:3001"
   phases:
-    # Warm-up phase: Start very small to verify server is responding
+    # Initial health check - verify server is responding
     - duration: 30
       arrivalRate: 1
       name: "Initial Health Check"
-    # Gradual warm-up: Slowly increase to 50 users
-    - duration: 120
+    # Warm-up phase: Gradually ramp up to 25 users
+    - duration: 90
       arrivalRate: 1
-      rampTo: 50
-      name: "Warm-up to 50 users"
-    # Ramp-up phase: Increase to 1000 users over 5 minutes (very gradual)
-    - duration: 300
-      arrivalRate: 50
-      rampTo: 1000
-      name: "Ramp-up to 1k users"
-    # Sustained load: Maintain 1000 concurrent users for 3 minutes
+      rampTo: 25
+      name: "Warm-up to 25 users"
+    # Ramp-up phase: Increase to 150 users over 3 minutes (gradual)
     - duration: 180
-      arrivalRate: 1000
-      name: "Sustained 1k concurrent users"
+      arrivalRate: 25
+      rampTo: 150
+      name: "Ramp-up to 150 users"
+    # Sustained load: Maintain 150 concurrent users for 3 minutes
+    - duration: 180
+      arrivalRate: 150
+      name: "Sustained 150 concurrent users"
     # Cool-down phase: Gradually reduce load
-    - duration: 120
-      arrivalRate: 1000
+    - duration: 90
+      arrivalRate: 150
       rampTo: 0
       name: "Cool-down Phase"
   
   # Default HTTP settings
   http:
-    timeout: 30  # Reduced back to 30s - if server can't respond in 30s, it's overloaded
-    pool: 200     # Reduced connection pool to avoid overwhelming server
+    timeout: 30  # 30 second timeout
+    pool: 100     # Connection pool sized for 150 users
     keepAlive: true
     keepAliveMsecs: 1000
-    maxSockets: 50  # Limit concurrent connections per origin
-    headers:
-      Content-Type: "application/json"
-      Accept: "application/json"
-      User-Agent: "Artillery-LoadTest/1.0"
+    maxSockets: 30  # Limit concurrent connections per origin
   
   # Processor for generating dynamic data
   processor: "./artillery-processor.js"
@@ -75,6 +71,11 @@ scenarios:
               as: "gameMode1"
             - json: "$.gameModes[1].id"
               as: "gameMode2"
+          expect:
+            - statusCode: [200, 429]
+      
+      # Wait before submitting
+      - think: 2
       
       # Submit a score
       - post:
@@ -89,7 +90,7 @@ scenarios:
             - statusCode: [202, 429]  # Accept rate limit responses
       
       # Wait before next request (simulate user behavior)
-      - think: 1
+      - think: 2
       
       # Check leaderboard for the game mode
       - get:
@@ -125,7 +126,7 @@ scenarios:
           expect:
             - statusCode: [200, 429]
       
-      - think: 2
+      - think: 3
       
       - get:
           url: "/api/leaderboard/{{ gameMode }}"
@@ -164,9 +165,14 @@ scenarios:
           capture:
             - json: "$.gameModes[0].id"
               as: "gameMode"
+          expect:
+            - statusCode: [200, 429]
       
       # Generate a player ID for this session
       - function: "generatePlayerId"
+      
+      # Wait before submitting
+      - think: 2
       
       # Submit multiple scores
       - post:
@@ -184,7 +190,7 @@ scenarios:
             - statusCode: [202, 429]  # Accept rate limit responses
       
       # Wait a bit before checking rank (simulating real user behavior)
-      - think: 3
+      - think: 5
       
       # Check player's rank
       - get:
@@ -194,8 +200,8 @@ scenarios:
           expect:
             - statusCode: [200, 404, 429]  # 404 if player not in leaderboard yet, 429 for rate limit
       
-      # Wait before next submission
-      - think: 5
+      # Wait before next submission (respect rate limits)
+      - think: 8
       
       # Submit another score
       - post:
@@ -210,7 +216,7 @@ scenarios:
             - statusCode: [202, 429]
       
       # Wait before checking stats
-      - think: 2
+      - think: 3
       
       # Check player stats
       - get:
@@ -228,7 +234,7 @@ scenarios:
             - statusCode: [200, 429]
             - contentType: json
       
-      - think: 3
+      - think: 4
       
       - get:
           url: "/api/leaderboard/1"
@@ -238,7 +244,7 @@ scenarios:
           expect:
             - statusCode: [200, 429]
       
-      - think: 2
+      - think: 3
       
       - get:
           url: "/api/leaderboard/1/top100"
@@ -254,8 +260,13 @@ scenarios:
           capture:
             - json: "$.gameModes[0].id"
               as: "gameMode"
+          expect:
+            - statusCode: [200, 429]
       
       - function: "generatePlayerId"
+      
+      # Wait before first submission
+      - think: 2
       
       # Submit multiple scores (with delays to avoid rate limiting)
       - post:
@@ -294,3 +305,4 @@ scenarios:
             gameDurationSeconds: "{{ $randomInt(60, 3000) }}"
           expect:
             - statusCode: [202, 429]
+

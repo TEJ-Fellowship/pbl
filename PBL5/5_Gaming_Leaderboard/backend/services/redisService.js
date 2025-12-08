@@ -146,10 +146,17 @@ const getPlayerScore = async (gameMode, playerId, type = "global") => {
 
 // Weekly Leaderboard Operations
 const updateWeeklyLeaderboard = async (gameMode, playerId, score) => {
+  // Validate and convert score to number
+  const numericScore = Number(score);
+  if (isNaN(numericScore) || numericScore === 0) {
+    console.warn(`⚠️ Invalid score for weekly leaderboard update: ${score} (gameMode: ${gameMode}, playerId: ${playerId})`);
+    return; // Skip update if score is invalid
+  }
+  
   const weekId = getWeekIdentifier();
   const key = `leaderboard:${gameMode}:weekly:${weekId}`;
   
-  await redis.zincrby(key, score, playerId);
+  await redis.zincrby(key, numericScore, playerId);
   // Keep weekly leaderboards for 4 weeks (28 days)
   await redis.expire(key, 28 * 24 * 60 * 60);
 };

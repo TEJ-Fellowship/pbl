@@ -1,69 +1,112 @@
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
 
-// Generate random player data for score submission
-function generatePlayerData(context, events, done) {
-  context.vars.playerId = uuidv4();
-  context.vars.username = `player_${Math.floor(Math.random() * 1000000)}`;
-  context.vars.gameMode = Math.floor(Math.random() * 3) + 1; // Game modes 1-3
-  context.vars.score = Math.floor(Math.random() * 100000) + 1000; // Score between 1000-101000
-  context.vars.gameDuration = Math.floor(Math.random() * 600) + 60; // Duration 60-660 seconds
-  return done();
-}
+/**
+ * Artillery processor functions for generating dynamic test data
+ */
 
-// Generate random game mode
-function generateGameMode(context, events, done) {
-  context.vars.gameMode = Math.floor(Math.random() * 3) + 1; // Game modes 1-3
-  return done();
-}
+// Store player data per virtual user session
+const playerSessions = new Map();
 
-// Generate player ID and game mode
-function generatePlayerAndGameMode(context, events, done) {
-  // Use existing player IDs if available, otherwise generate new ones
-  if (!context.vars.existingPlayerIds) {
-    context.vars.existingPlayerIds = [];
-  }
-  
-  // 70% chance to use existing player, 30% chance to generate new
-  if (context.vars.existingPlayerIds.length > 0 && Math.random() < 0.7) {
-    context.vars.playerId = context.vars.existingPlayerIds[
-      Math.floor(Math.random() * context.vars.existingPlayerIds.length)
-    ];
-  } else {
-    context.vars.playerId = uuidv4();
-    context.vars.existingPlayerIds.push(context.vars.playerId);
-    // Keep only last 1000 player IDs in memory
-    if (context.vars.existingPlayerIds.length > 1000) {
-      context.vars.existingPlayerIds.shift();
-    }
-  }
-  
-  context.vars.gameMode = Math.floor(Math.random() * 3) + 1;
-  return done();
-}
-
-// Generate player ID
+/**
+ * Generate a unique player ID and username for a virtual user
+ * This ensures consistency across multiple requests in the same scenario
+ */
 function generatePlayerId(context, events, done) {
-  if (!context.vars.existingPlayerIds) {
-    context.vars.existingPlayerIds = [];
+  const sessionId = context.vars.$processEnvironment?.sessionId || 
+                    context.vars.$processEnvironment?.__uid || 
+                    Math.random().toString(36).substring(7);
+  
+  // Check if we already have a player ID for this session
+  if (!playerSessions.has(sessionId)) {
+    const playerId = uuidv4();
+    const username = `player_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+    
+    playerSessions.set(sessionId, {
+      playerId,
+      username,
+      createdAt: Date.now()
+    });
   }
   
-  if (context.vars.existingPlayerIds.length > 0 && Math.random() < 0.7) {
-    context.vars.playerId = context.vars.existingPlayerIds[
-      Math.floor(Math.random() * context.vars.existingPlayerIds.length)
-    ];
-  } else {
-    context.vars.playerId = uuidv4();
-    context.vars.existingPlayerIds.push(context.vars.playerId);
-    if (context.vars.existingPlayerIds.length > 1000) {
-      context.vars.existingPlayerIds.shift();
+  const session = playerSessions.get(sessionId);
+  context.vars.playerId = session.playerId;
+  context.vars.username = session.username;
+  
+  return done();
+}
+
+/**
+ * Generate a random game mode ID (assuming game modes 1-5 exist)
+ * This can be adjusted based on actual game modes in your system
+ */
+function getRandomGameMode(context, events, done) {
+  // Default game modes if not captured from API
+  const gameModes = [1, 2, 3, 4, 5];
+  context.vars.randomGameMode = gameModes[Math.floor(Math.random() * gameModes.length)];
+  return done();
+}
+
+/**
+ * Generate a realistic score based on game mode
+ */
+function generateRealisticScore(context, events, done) {
+  const gameMode = context.vars.gameMode || context.vars.randomGameMode || 1;
+  
+  // Different score ranges for different game modes
+  const scoreRanges = {
+    1: { min: 1000, max: 50000 },   // Easy mode
+    2: { min: 5000, max: 100000 },  // Normal mode
+    3: { min: 10000, max: 200000 }, // Hard mode
+    4: { min: 20000, max: 500000 }, // Expert mode
+    5: { min: 50000, max: 1000000 } // Master mode
+  };
+  
+  const range = scoreRanges[gameMode] || scoreRanges[1];
+  context.vars.realisticScore = Math.floor(
+    Math.random() * (range.max - range.min) + range.min
+  );
+  
+  return done();
+}
+
+/**
+ * Generate realistic game duration (in seconds)
+ */
+function generateGameDuration(context, events, done) {
+  // Most games last between 2-30 minutes
+  const minDuration = 120;  // 2 minutes
+  const maxDuration = 1800; // 30 minutes
+  
+  context.vars.gameDuration = Math.floor(
+    Math.random() * (maxDuration - minDuration) + minDuration
+  );
+  
+  return done();
+}
+
+/**
+ * Clean up old sessions (optional, for long-running tests)
+ */
+function cleanupOldSessions() {
+  const now = Date.now();
+  const maxAge = 3600000; // 1 hour
+  
+  for (const [sessionId, session] of playerSessions.entries()) {
+    if (now - session.createdAt > maxAge) {
+      playerSessions.delete(sessionId);
     }
   }
-  return done();
+}
+
+// Clean up old sessions every 10 minutes
+if (typeof setInterval !== 'undefined') {
+  setInterval(cleanupOldSessions, 600000);
 }
 
 module.exports = {
-  generatePlayerData,
-  generateGameMode,
-  generatePlayerAndGameMode,
-  generatePlayerId
+  generatePlayerId,
+  getRandomGameMode,
+  generateRealisticScore,
+  generateGameDuration
 };
+

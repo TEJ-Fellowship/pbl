@@ -111,12 +111,17 @@ const startConsumer = async () => {
         for (const message of batch.messages) {
           try {
             const event = JSON.parse(message.value.toString());
+            // Validate required fields
+            if (!event.playerId || event.score === undefined || event.score === null || event.score === '') {
+              console.error("❌ Invalid event data:", event);
+              continue; // Skip invalid events
+            }
             events.push(event);
           } catch (error) {
             console.error("❌ Error parsing message:", error);
           }
         }
-
+        
         // Track rebuild completion: if we're rebuilding and get empty/small batches,
         // it means we've caught up to the latest messages
         if (isRebuilding) {
