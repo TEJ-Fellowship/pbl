@@ -1,0 +1,235 @@
+
+Artillery configuration file to simulate 10,000 concurrent requests:
+
+```yaml:artillery.yml
+config:
+  target: 'http://localhost:3001'
+  phases:
+    # Ramp up to 10,000 concurrent users over 30 seconds
+    - duration: 30
+      arrivalRate: 333
+      name: "Warm up phase"
+    # Maintain 10,000 concurrent users for 2 minutes
+    - duration: 120
+      arrivalRate: 10000
+      name: "Sustained load phase"
+    # Ramp down over 30 seconds
+    - duration: 30
+      arrivalRate: 333
+      name: "Cool down phase"
+  
+  # Default HTTP settings
+  http:
+    timeout: 30
+    pool: 10000
+    maxSockets: 10000
+  
+  # Processor functions for generating dynamic data
+  processor: "./artillery-processor.js"
+  
+  # Plugins
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      stripQueryString: true
+
+scenarios:
+  # Scenario 1: Submit scores (write-heavy)
+  - name: "Submit Scores"
+    weight: 30
+    flow:
+      - function: "generatePlayerData"
+      - post:
+          url: "/api/scores/submit"
+          json:
+            playerId: "{{ playerId }}"
+            username: "{{ username }}"
+            gameMode: "{{ gameMode }}"
+            score: "{{ score }}"
+            gameDurationSeconds: "{{ gameDuration }}"
+          expect:
+            - statusCode: 202
+            - contentType: json
+            - hasProperty: message
+
+  # Scenario 2: Get leaderboard (read-heavy)
+  - name: "Get Leaderboard"
+    weight: 40
+    flow:
+      - function: "generateGameMode"
+      - get:
+          url: "/api/leaderboard/{{ gameMode }}"
+          qs:
+            type: "{{ $randomString([\"global\", \"daily\"]) }}"
+            limit: "{{ $randomInt(10, 100) }}"
+            offset: 0
+          expect:
+            - statusCode: [200, 304]
+            - contentType: json
+
+  # Scenario 3: Get Top 100 leaderboard (most common read)
+  - name: "Get Top 100 Leaderboard"
+    weight: 20
+    flow:
+      - function: "generateGameMode"
+      - get:
+          url: "/api/leaderboard/{{ gameMode }}/top100"
+          qs:
+            type: "{{ $randomString([\"global\", \"daily\"]) }}"
+          expect:
+            - statusCode: [200, 304]
+            - contentType: json
+
+  # Scenario 4: Get player rank
+  - name: "Get Player Rank"
+    weight: 5
+    flow:
+      - function: "generatePlayerAndGameMode"
+      - get:
+          url: "/api/players/{{ playerId }}/rank/{{ gameMode }}"
+          qs:
+            type: "{{ $randomString([\"global\", \"daily\"]) }}"
+          expect:
+            - statusCode: [200, 404]
+            - contentType: json
+
+  # Scenario 5: Get player stats
+  - name: "Get Player Stats"
+    weight: 3
+    flow:
+      - function: "generatePlayerId"
+      - get:
+          url: "/api/players/{{ playerId }}/stats"
+          expect:
+            - statusCode: [200, 404]
+            - contentType: json
+
+  # Scenario 6: Get game modes
+  - name: "Get Game Modes"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/game-modes"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: gameModes
+
+  # Scenario 7: Health check
+  - name: "Health Check"
+    weight: 1
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: [200, 503]
+            - contentType: json
+```
+
+Create the processor file for dynamic data generation:
+
+```javascript:artillery-processor.js
+const { v4: uuidv4 } = require('uuid');
+
+// Generate random player data for score submission
+function generatePlayerData(context, events, done) {
+  context.vars.playerId = uuidv4();
+  context.vars.username = `player_${Math.floor(Math.random() * 1000000)}`;
+  context.vars.gameMode = Math.floor(Math.random() * 3) + 1; // Game modes 1-3
+  context.vars.score = Math.floor(Math.random() * 100000) + 1000; // Score between 1000-101000
+  context.vars.gameDuration = Math.floor(Math.random() * 600) + 60; // Duration 60-660 seconds
+  return done();
+}
+
+// Generate random game mode
+function generateGameMode(context, events, done) {
+  context.vars.gameMode = Math.floor(Math.random() * 3) + 1; // Game modes 1-3
+  return done();
+}
+
+// Generate player ID and game mode
+function generatePlayerAndGameMode(context, events, done) {
+  // Use existing player IDs if available, otherwise generate new ones
+  if (!context.vars.existingPlayerIds) {
+    context.vars.existingPlayerIds = [];
+  }
+  
+  // 70% chance to use existing player, 30% chance to generate new
+  if (context.vars.existingPlayerIds.length > 0 && Math.random() < 0.7) {
+    context.vars.playerId = context.vars.existingPlayerIds[
+      Math.floor(Math.random() * context.vars.existingPlayerIds.length)
+    ];
+  } else {
+    context.vars.playerId = uuidv4();
+    context.vars.existingPlayerIds.push(context.vars.playerId);
+    // Keep only last 1000 player IDs in memory
+    if (context.vars.existingPlayerIds.length > 1000) {
+      context.vars.existingPlayerIds.shift();
+    }
+  }
+  
+  context.vars.gameMode = Math.floor(Math.random() * 3) + 1;
+  return done();
+}
+
+// Generate player ID
+function generatePlayerId(context, events, done) {
+  if (!context.vars.existingPlayerIds) {
+    context.vars.existingPlayerIds = [];
+  }
+  
+  if (context.vars.existingPlayerIds.length > 0 && Math.random() < 0.7) {
+    context.vars.playerId = context.vars.existingPlayerIds[
+      Math.floor(Math.random() * context.vars.existingPlayerIds.length)
+    ];
+  } else {
+    context.vars.playerId = uuidv4();
+    context.vars.existingPlayerIds.push(context.vars.playerId);
+    if (context.vars.existingPlayerIds.length > 1000) {
+      context.vars.existingPlayerIds.shift();
+    }
+  }
+  return done();
+}
+
+module.exports = {
+  generatePlayerData,
+  generateGameMode,
+  generatePlayerAndGameMode,
+  generatePlayerId
+};
+```
+
+**To use this Artillery configuration:**
+
+1. Install Artillery:
+```bash
+npm install -g artillery
+```
+
+2. Install the uuid package (if not already installed):
+```bash
+cd backend
+npm install uuid
+```
+
+3. Run the load test:
+```bash
+artillery run artillery.yml
+```
+
+4. For a report:
+```bash
+artillery run --output report.json artillery.yml
+artillery report report.json
+```
+
+**Configuration details:**
+- 10,000 concurrent users: ramps up over 30s, sustains for 2 minutes, then ramps down
+- Multiple scenarios: score submissions (30%), leaderboard reads (40%), top 100 (20%), player queries (5%), game modes (2%), health checks (1%)
+- Dynamic data: random player IDs, usernames, scores, game modes
+- Realistic distribution: more reads than writes
+- HTTP settings: 10,000 max sockets, 30s timeout
+
+**Note:** Adjust the `target` URL in the config if your server runs on a different host/port. The test simulates realistic traffic patterns with a mix of read and write operations.
+
