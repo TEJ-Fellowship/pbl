@@ -3,7 +3,6 @@ const {
   getCache,
   setCache,
   deleteCache,
-  deletePattern,
   addUserPostCacheKey,
   deleteFeedCache,
 } = require("../utils/cache");

@@ -55,26 +55,31 @@ class KafkaProducer {
     }
   }
 
-  // Convenience methods for specific events
-  async sendPostCreatedEvent(postData) {
+  // ============================================
+  // PURE PULL MODEL: Send post-created event for SELECTIVE cache invalidation
+  // (NOT for fan-out - worker will handle selective invalidation)
+  // ============================================
+  async sendPostCreatedEvent(eventData) {
+    // eventData structure: { postId, userId, postData, timestamp }
     const message = {
-      key: postData.user_id.toString(), // Partition by user_id
+      key: eventData.userId.toString(), // Partition by user_id (post author)
       value: JSON.stringify({
         eventType: "post-created",
-        postId: postData.id,
-        userId: postData.user_id,
+        postId: eventData.postId,
+        userId: eventData.userId,
         postData: {
-          id: postData.id,
-          user_id: postData.user_id,
-          content: postData.content,
-          image_urls: postData.image_urls,
-          likes_count: postData.likes_count || 0,
-          comments_count: postData.comments_count || 0,
-          created_at: postData.created_at,
-          author: postData.author,
+          id: eventData.postData.id,
+          user_id: eventData.postData.user_id,
+          content: eventData.postData.content,
+          image_urls: eventData.postData.image_urls,
+          likes_count: eventData.postData.likes_count || 0,
+          comments_count: eventData.postData.comments_count || 0,
+          created_at: eventData.postData.created_at,
+          author: eventData.postData.author,
         },
-        followerIds: postData.followerIds || [],
-        timestamp: new Date().toISOString(),
+        // REMOVED: followerIds - not needed in pure pull model
+        // Worker will fetch active users and check follow relationships
+        timestamp: eventData.timestamp || new Date().toISOString(),
       }),
     };
 
