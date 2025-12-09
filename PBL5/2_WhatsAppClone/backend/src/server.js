@@ -6,13 +6,15 @@ import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
 import redis from './config/redis.js';
+import cors from 'cors';
 
 // Initialize database connection
 const startServer = async () => {
   try {
     const app = express();
     app.use(express.json());
-
+    app.use(cors());
+    
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
       transports: ["websocket", "polling"],
