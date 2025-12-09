@@ -189,7 +189,8 @@ async function handlePaymentIntentFailed(paymentIntent) {
     // Release seats back to available
     const availableSeatsKey = "available_seats";
     if (booking.seat_ids && booking.seat_ids.length > 0) {
-      await redis.sAdd(availableSeatsKey, booking.seat_ids);
+      // sAdd requires individual arguments, not an array
+      await redis.sAdd(availableSeatsKey, ...booking.seat_ids);
     }
 
     // Remove from pending
@@ -236,9 +237,15 @@ async function processWebhookEvent(event) {
   const { type, data, id: eventId } = event;
   const paymentIntent = data.object;
 
-  console.log(
-    `📨 Webhook received: ${type} (event_id: ${eventId}, payment_intent: ${paymentIntent.id})`
-  );
+  // Only log important events to reduce noise
+  if (
+    type === "payment_intent.succeeded" ||
+    type === "payment_intent.payment_failed"
+  ) {
+    console.log(
+      `📨 Webhook: ${type} (event_id: ${eventId}, payment_intent: ${paymentIntent.id})`
+    );
+  }
 
   switch (type) {
     case "payment_intent.succeeded":
@@ -254,7 +261,8 @@ async function processWebhookEvent(event) {
       return await handlePaymentIntentFailed(paymentIntent);
 
     default:
-      console.log(`ℹ️  Unhandled webhook event type: ${type}`);
+      // Silently ignore unhandled events (charge.succeeded, charge.updated, etc.)
+      // These are redundant events from Stripe
       return {
         success: true,
         message: `Event type ${type} not handled`,

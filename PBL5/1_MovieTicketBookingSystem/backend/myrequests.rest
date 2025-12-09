@@ -6,8 +6,8 @@
 ### ============================================
 ### VARIABLES - Update after creating booking
 ### ============================================
-@request_id = 
-@booking_id = 9da00317-f48d-45f4-987f-cf8e644d818f
+@request_id = 3c8b057c-e85f-4dbd-86e0-f159995d4e96
+@booking_id = 4dd461b1-0a67-4ed9-b7a0-8d114b3aa090
 @payment_intent_id = pi_3Sc5jyJHQuHCrlwI072cOPDN
 
 ### ============================================
@@ -19,7 +19,7 @@ POST {{apiUrl}}/bookings
 Content-Type: application/json
 
 {
-  "seat_ids": ["seat3635", "seat3675", "seat3685"]
+  "seat_ids": ["seat134", "seat2343", "seat3343"]
 }
 
 ### Copy "id" (booking_id) from response → update @booking_id variable above

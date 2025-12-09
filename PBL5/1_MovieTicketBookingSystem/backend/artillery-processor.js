@@ -1,36 +1,38 @@
 /**
  * Artillery processor functions for load testing
+ * Compatible with Artillery v2
  */
 
-module.exports = {
-  /**
-   * Generate random seat IDs for booking
-   * Returns array of 1-3 random seats
-   * @param {number} maxSeats - Maximum seat number (defaults to 150000)
-   */
-  generateSeatIds: (maxSeats = 150000) => {
-    const numSeats = Math.floor(Math.random() * 3) + 1; // 1-3 seats
-    const seatIds = [];
-    const usedSeats = new Set();
+/**
+ * Generate random seat IDs for booking
+ * Returns array of 1-3 random seats
+ * @param {number} maxSeats - Maximum seat number (defaults to 150000)
+ */
+function generateSeatIds(maxSeats = 150000) {
+  const numSeats = Math.floor(Math.random() * 3) + 1; // 1-3 seats
+  const seatIds = [];
+  const usedSeats = new Set();
 
-    for (let i = 0; i < numSeats; i++) {
-      let seatNum;
-      do {
-        seatNum = Math.floor(Math.random() * maxSeats) + 1; // 1 to maxSeats
-      } while (usedSeats.has(seatNum));
+  for (let i = 0; i < numSeats; i++) {
+    let seatNum;
+    do {
+      seatNum = Math.floor(Math.random() * maxSeats) + 1; // 1 to maxSeats
+    } while (usedSeats.has(seatNum));
 
-      usedSeats.add(seatNum);
-      seatIds.push(`seat${seatNum}`);
-    }
+    usedSeats.add(seatNum);
+    seatIds.push(`seat${seatNum}`);
+  }
 
-    return seatIds;
-  },
+  return seatIds;
+}
 
-  /**
-   * Custom function to generate and set seat IDs
-   * Called explicitly in the flow
-   */
-  generateSeatsForRequest: (context, events, done) => {
+/**
+ * Custom function to generate and set seat IDs
+ * Called explicitly in the flow
+ * Artillery v2 compatible format
+ */
+function generateSeatsForRequest(context, events, done) {
+  try {
     // Initialize context.vars if it doesn't exist
     if (!context.vars) {
       context.vars = {};
@@ -38,15 +40,29 @@ module.exports = {
     // Get seatCount from load test config (defaults to 150000)
     const maxSeats = context.vars.seatCount || 150000;
     // Generate seat IDs and set as variable for use in templates
-    const seatIds = module.exports.generateSeatIds(maxSeats);
+    const seatIds = generateSeatIds(maxSeats);
+    // Set as array - Artillery v2 should handle this correctly
     context.vars.seatIds = seatIds;
-    return done();
-  },
-  /**
-   * Generate seat sets that intentionally overlap for atomicity testing
-   * Multiple users will try to book the same seats simultaneously
-   */
-  generateAtomicitySeatSets: (context, events, done) => {
+
+    // Call done callback immediately (synchronous function)
+    if (done && typeof done === "function") {
+      done();
+    }
+  } catch (error) {
+    console.error("Error in generateSeatsForRequest:", error);
+    if (done && typeof done === "function") {
+      done(error);
+    }
+  }
+}
+
+/**
+ * Generate seat sets that intentionally overlap for atomicity testing
+ * Multiple users will try to book the same seats simultaneously
+ * Artillery v2 compatible format
+ */
+function generateAtomicitySeatSets(context, events, done) {
+  try {
     if (!context.vars) {
       context.vars = {};
     }
@@ -79,6 +95,19 @@ module.exports = {
     }
 
     context.vars.atomicSeatIds = selectedSeats;
-    return done();
-  },
+    if (done && typeof done === "function") {
+      done();
+    }
+  } catch (error) {
+    console.error("Error in generateAtomicitySeatSets:", error);
+    if (done && typeof done === "function") {
+      done(error);
+    }
+  }
+}
+
+module.exports = {
+  generateSeatIds,
+  generateSeatsForRequest,
+  generateAtomicitySeatSets,
 };

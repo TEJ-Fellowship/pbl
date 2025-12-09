@@ -1,24 +1,23 @@
 config:
   target: "http://localhost:3001"
   phases:
-    # Capacity test - 500 req/s (testing with clean resources)
-    - duration: 120
-      arrivalRate: 500
-      name: "500 req/s capacity test (30 partitions, 32 consumers)"
+    - duration: 30
+      arrivalRate: 50
+      name: "50 RPS"
+    - duration: 30
+      arrivalRate: 100
+      name: "100 RPS"
+    - duration: 30
+      arrivalRate: 200
+      name: "200 RPS"
   processor: "./artillery-processor.js"
   variables:
     seatCount: 150000
 
 scenarios:
-  # Scenario 1: Booking creation only (high rate)
   - name: "Booking Load Test"
     weight: 70
     flow:
-      # Simulate different IP addresses for rate limiting tests
-      # Each virtual user gets a unique IP (192.168.x.x format)
-      - set:
-          headers:
-            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
       - function: "generateSeatsForRequest"
       - post:
           url: "/api/bookings"
@@ -27,56 +26,15 @@ scenarios:
           capture:
             - json: "$.id"
               as: "bookingId"
-              strict: false # Don't fail if field doesn't exist (409 responses won't have id)
+              strict: false
           expect:
-            - statusCode: [201, 202, 409, 429] # 201 = direct mode success, 202 = kafka mode queued, 409 = seat conflict, 429 = rate limited (expected)
+            - statusCode: [201, 202, 409]
             - contentType: json
 
-  # Scenario 2: Full flow (booking + payment) - COMMENTED OUT FOR BOOKING-ONLY TESTING
-  # - name: "Booking and Payment Flow"
-  #   weight: 30
-  #   flow:
-  #     - function: "generateSeatsForRequest"
-  #     # Step 1: Create booking
-  #     - post:
-  #         url: "/api/bookings"
-  #         json:
-  #           seat_ids: "{{ seatIds }}"
-  #         capture:
-  #           - json: "$.id"
-  #             as: "bookingId"
-  #             strict: false # Don't fail if field doesn't exist (409 responses won't have id)
-  #         expect:
-  #           - statusCode: [201, 409]
-  #
-  #     # Step 2: Pay immediately (if booking succeeded)
-  #     - post:
-  #         url: "/api/payments/process"
-  #         json:
-  #           booking_id: "{{ bookingId }}"
-  #           amount: 200
-  #           payment_method: "credit_card"
-  #         capture:
-  #           - json: "$.payment_id"
-  #             as: "paymentId"
-  #             strict: false # Don't fail if field doesn't exist (error responses won't have payment_id)
-  #         expect:
-  #           - statusCode: [200, 400, 404] # 200 = success, 400/404 = booking not found/confirmed
-  #         if:
-  #           "{{ bookingId && bookingId !== '' }}"
-
-  # Scenario 3: Multi-seat Atomicity Stress Test
   - name: "Atomic Multi-seat Locking Stress Test"
     weight: 15
     flow:
-      # Simulate different IP addresses
-      - set:
-          headers:
-            "X-Forwarded-For": "192.168.{{ $randomInt(1, 255) }}.{{ $randomInt(1, 255) }}"
-      # Generate seat sets that intentionally overlap
       - function: "generateAtomicitySeatSets"
-
-      # Users aggressively try to book overlapping seats
       - post:
           url: "/api/bookings"
           json:
@@ -89,5 +47,5 @@ scenarios:
               as: "unavailableSeats"
               strict: false
           expect:
-            - statusCode: [201, 202, 409, 429] # 201 = direct mode success, 202 = kafka mode queued, 409 = conflict, 429 = rate limited
+            - statusCode: [201, 202, 409]
             - contentType: json

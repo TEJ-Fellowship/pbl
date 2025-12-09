@@ -23,11 +23,13 @@ module.exports = {
   KAFKA_PARTITIONS: process.env.KAFKA_PARTITIONS
     ? parseInt(process.env.KAFKA_PARTITIONS)
     : 30, // Increased from 20 to test partition scaling
-  // Consumer instances per PM2 worker (not total)
-  // With 4 PM2 workers and 30 partitions: 8 consumers per worker = 32 total consumers
+  // Consumer instances per process
+  // Single process setup: 16 consumers (practical limit for single Node.js process)
+  // With 30 partitions: 16 consumers can process up to 16 partitions simultaneously
+  // Can be increased via KAFKA_CONSUMER_INSTANCES env var if needed
   KAFKA_CONSUMER_INSTANCES: process.env.KAFKA_CONSUMER_INSTANCES
     ? parseInt(process.env.KAFKA_CONSUMER_INSTANCES)
-    : 8, // 8 per worker × 4 workers = 32 total (slightly more than 30 partitions is fine)
+    : 16, // Practical limit for single process (can handle ~16 partitions in parallel)
   // Stripe configuration
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || "",

@@ -1,17 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const paymentsController = require("../controllers/paymentsController");
-const { rateLimiters } = require("../middleware/rateLimiter");
 const verifyStripeWebhook = require("../middleware/stripeWebhookVerification");
 const { processWebhookEvent } = require("../services/stripeWebhookHandler");
 
 // Simplified routes for seat-only approach
-// Apply very strict rate limiting to payment processing (5 requests per minute)
-router.post(
-  "/process",
-  rateLimiters.payment,
-  paymentsController.processPayment
-);
+router.post("/process", paymentsController.processPayment);
 router.get("/booking/:bookingId", paymentsController.getPaymentByBooking);
 
 // Get Stripe publishable key for frontend
@@ -32,13 +26,30 @@ router.post(
   verifyStripeWebhook,
   async (req, res) => {
     try {
-      console.log(
-        `🔔 Webhook endpoint hit: ${req.stripeEvent.type} (event_id: ${req.stripeEvent.id})`
-      );
+      // Only log important webhook events to reduce noise
+      const eventType = req.stripeEvent.type;
+      if (
+        eventType === "payment_intent.succeeded" ||
+        eventType === "payment_intent.payment_failed"
+      ) {
+        console.log(
+          `🔔 Webhook: ${eventType} (event_id: ${req.stripeEvent.id})`
+        );
+      }
       const result = await processWebhookEvent(req.stripeEvent);
 
       if (result.success) {
-        console.log(`✅ Webhook processed successfully:`, result);
+        // Only log detailed success for important events
+        if (
+          eventType === "payment_intent.succeeded" ||
+          eventType === "payment_intent.payment_failed"
+        ) {
+          console.log(
+            `✅ Webhook processed: ${
+              result.booking_id ? `booking ${result.booking_id}` : eventType
+            }`
+          );
+        }
         res.json({ received: true, result });
       } else {
         console.error(`❌ Webhook processing failed:`, result.error);

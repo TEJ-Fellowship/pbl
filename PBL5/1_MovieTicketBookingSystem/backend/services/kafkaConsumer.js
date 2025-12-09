@@ -98,6 +98,22 @@ async function processBookingRequest(bookingRequest) {
     }
 
     if (unavailableSeats.length > 0) {
+      // Store failed booking attempt for debugging
+      const failedBookingKey = `booking:failed:${request_id}`;
+      const failedBookingData = {
+        request_id,
+        seat_ids: seat_ids,
+        status: "failed",
+        error: "Some seats are not available",
+        unavailable_seats: unavailableSeats,
+        failed_at: new Date().toISOString(),
+      };
+      await redis.setEx(
+        failedBookingKey,
+        60,
+        JSON.stringify(failedBookingData)
+      );
+
       return {
         success: false,
         error: "Some seats are not available",
@@ -116,6 +132,22 @@ async function processBookingRequest(bookingRequest) {
     );
 
     if (failedLocks.length > 0) {
+      // Store failed booking attempt for debugging (with short TTL)
+      const failedBookingKey = `booking:failed:${request_id}`;
+      const failedBookingData = {
+        request_id,
+        seat_ids: seat_ids,
+        status: "failed",
+        error: "Seats are currently being processed by another user",
+        failed_at: new Date().toISOString(),
+      };
+      // Store for 60 seconds only (just for debugging)
+      await redis.setEx(
+        failedBookingKey,
+        60,
+        JSON.stringify(failedBookingData)
+      );
+
       return {
         success: false,
         error: "Seats are currently being processed by another user",
@@ -154,11 +186,15 @@ async function processBookingRequest(bookingRequest) {
       // Build sRem args: [key, ...members] - spread seat_ids when calling
       const sRemArgs = [availableSeatsKey, ...seat_ids];
 
+      // Store request_id -> booking_id mapping for fast lookup (avoids redis.keys())
+      const requestIdKey = `request:${request_id}`;
+
       await batchWrite([
         { type: "setEx", args: [bookingKey, 300, JSON.stringify(bookingData)] }, // Store booking (5 min TTL)
         { type: "sAdd", args: ["booking:pending", bookingId] }, // Add to pending set
         { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
         { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
+        { type: "setEx", args: [requestIdKey, 300, bookingId] }, // Store request_id -> booking_id mapping
       ]);
       const pipelineTime = Date.now() - pipelineStart;
       if (process.env.NODE_ENV !== "production" && pipelineTime > 50) {
@@ -224,10 +260,10 @@ async function startConsumerInstance(instanceId, onMessage = null) {
     const consumer = await getConsumer(config.KAFKA_GROUP_ID, instanceId);
 
     // Subscribe to booking requests topic
-    // fromBeginning: true to process all messages (including queued ones from load tests)
+    // fromBeginning: false - only process new messages (prevents processing old queued messages)
     await consumer.subscribe({
       topic: config.KAFKA_TOPIC_BOOKINGS,
-      fromBeginning: true, // Process ALL messages (including queued ones)
+      fromBeginning: false, // Only process NEW messages (prevents backlog from old load tests)
     });
 
     console.log(
@@ -312,11 +348,8 @@ async function startConsumerInstance(instanceId, onMessage = null) {
                   result.seat_ids?.length || 0
                 }, partition: ${partition})`
               );
-            } else if (
-              !result.success &&
-              result.error !== "Some seats are not available"
-            ) {
-              // Log non-availability errors (but skip "seats not available" as it's expected)
+            } else {
+              // Log all failures (including lock conflicts and unavailable seats)
               console.warn(
                 `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error}`
               );

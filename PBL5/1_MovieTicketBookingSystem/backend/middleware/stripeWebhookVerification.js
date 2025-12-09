@@ -94,24 +94,21 @@ function verifyStripeWebhook(req, res, next) {
       rawBody = Buffer.from(JSON.stringify(req.body));
     }
 
-    console.log("🔐 Verifying webhook signature...");
-    // Verify webhook signature
+    // Verify webhook signature (silent in dev mode if secret not set)
     event = stripe.webhooks.constructEvent(
       rawBody,
       sig,
       config.STRIPE_WEBHOOK_SECRET
     );
-    console.log(
-      `✅ Webhook signature verified: ${event.type} (event_id: ${event.id})`
-    );
-  } catch (err) {
-    console.error("❌ Webhook signature verification failed:", err.message);
-
-    // In development, try to proceed with unverified event if it looks valid
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(
-        "⚠️  Dev mode: Attempting to parse event without verification"
+    // Only log successful verification in production
+    if (process.env.NODE_ENV === "production") {
+      console.log(
+        `✅ Webhook signature verified: ${event.type} (event_id: ${event.id})`
       );
+    }
+  } catch (err) {
+    // In development, silently proceed with unverified event (Stripe CLI doesn't match secrets)
+    if (process.env.NODE_ENV !== "production") {
       try {
         let eventData;
         if (req.body instanceof Buffer) {
@@ -124,14 +121,21 @@ function verifyStripeWebhook(req, res, next) {
 
         if (eventData && eventData.type && eventData.data) {
           req.stripeEvent = eventData;
-          console.log(
-            `⚠️  Webhook processed without verification: ${eventData.type} (DEV MODE ONLY)`
-          );
+          // Only log important events, not every webhook
+          if (
+            eventData.type === "payment_intent.succeeded" ||
+            eventData.type === "payment_intent.payment_failed"
+          ) {
+            console.log(`📨 Webhook: ${eventData.type} (dev mode, unverified)`);
+          }
           return next();
         }
       } catch (parseErr) {
         console.error("❌ Could not parse webhook event:", parseErr.message);
       }
+    } else {
+      // In production, log the error
+      console.error("❌ Webhook signature verification failed:", err.message);
     }
 
     return res.status(400).json({ error: `Webhook Error: ${err.message}` });

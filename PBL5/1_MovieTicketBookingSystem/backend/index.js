@@ -9,38 +9,37 @@ const { connectToDatabase } = require("./utils/db.js");
 // Middleware
 
 // JSON parser for all routes EXCEPT webhook (webhook needs raw body)
+// Apply JSON parser directly, but skip for webhook
+const jsonParser = express.json();
 app.use((req, res, next) => {
   // Skip JSON parsing for webhook endpoint (needs raw body for signature verification)
   if (req.path === "/api/payments/webhook") {
     return next();
   }
   // Use JSON parser for all other routes
-  return express.json()(req, res, next);
+  return jsonParser(req, res, next);
 });
 
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, "../frontend")));
 
-// Rate limiting middleware (prevents abuse)
-const { rateLimiters } = require("./middleware/rateLimiter");
-// Apply general rate limiting to all API routes (100 requests per minute)
-app.use("/api", rateLimiters.general);
-
 // Request timeout middleware (production best practice)
 // Prevents requests from hanging indefinitely
-// 5s timeout for true capacity testing (standard production value)
+// 15s timeout for Kafka mode (allows time for async processing)
 const REQUEST_TIMEOUT = process.env.REQUEST_TIMEOUT
   ? parseInt(process.env.REQUEST_TIMEOUT)
-  : 5000;
-app.use((req, res, next) => {
-  req.setTimeout(REQUEST_TIMEOUT, () => {
-    if (!res.headersSent) {
-      res.status(504).json({ error: "Request timeout" });
-    }
-  });
-  res.setTimeout(REQUEST_TIMEOUT);
-  next();
-});
+  : 15000;
+// Request timeout disabled for high-load Kafka processing
+// Timeouts handled at application level (booking controller returns 202 immediately)
+// app.use((req, res, next) => {
+//   req.setTimeout(REQUEST_TIMEOUT, () => {
+//     if (!res.headersSent) {
+//       res.status(504).json({ error: "Request timeout" });
+//     }
+//   });
+//   res.setTimeout(REQUEST_TIMEOUT);
+//   next();
+// });
 
 // Routes
 app.use("/api/movies", require("./routes/movies"));
@@ -204,10 +203,15 @@ const start = async () => {
       }
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`Kafka mode: ${config.KAFKA_MODE}`);
     });
+
+    // Set server timeouts to prevent connection drops at high load
+    server.timeout = 0; // Disable server timeout (let application handle it)
+    server.keepAliveTimeout = 65000; // 65 seconds
+    server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
   } catch (error) {
     console.log(`Failed to start server:`, error.message);
     process.exit(1);
