@@ -65,6 +65,10 @@ export const handleSocket = async (io, serverId) => {
       return;
     }
 
+    // ✅ NEW: Join user's personal room for direct messaging
+    socket.join(`user:${userId}`);
+    console.log(`[${serverId}] User ${userId} joined personal room: user:${userId}`);
+
     try {
       // ✅ Use dynamic serverId instead of hardcoded "server-1"
       await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
@@ -200,6 +204,17 @@ export const handleSocket = async (io, serverId) => {
           console.warn(`[${serverId}] Invalid message:received data:`, data);
           return;
         }
+
+        // ✅ TEST: Emit directly to see if socket rooms work
+        const senderId = "YOUR_SENDER_ID_HERE"; // Replace with actual sender ID for testing
+        io.to(`user:${senderId}`).emit('message:status', {
+          messageId: messageId,
+          conversationId: conversationId,
+          userId: userId,
+          status: 'delivered',
+          timestamp: new Date().toISOString(),
+        });
+        console.log(`[${serverId}] TEST: Emitted message:status directly to user:${senderId}`);
 
         await markMessageDelivered(messageId, conversationId, userId);
         console.log(

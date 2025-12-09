@@ -20,6 +20,8 @@ function ChatWindow({
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [receiverStatus, setReceiverStatus] = useState("offline");
   const [groupMembers, setGroupMembers] = useState([]);
+  const [messageStatuses, setMessageStatuses] = useState(new Map()); // Track message statuses
+  const processedMessagesRef = useRef(new Set()); // Track which messages we've processed
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -62,6 +64,38 @@ useEffect(() => {
 
   socket.on("user:status", handleStatusUpdate);
 
+  // ✅ NEW: Listen for message status updates (delivered/read)
+  const handleMessageStatus = (data) => {
+    console.log(`�� [FRONTEND] Message status update received:`, data); // ✅ Enhanced logging
+    
+    const { messageId, status, userId } = data;
+    
+    if (!messageId || !status || !userId) {
+      console.warn(`�� [FRONTEND] Invalid message:status data:`, data);
+      return;
+    }
+    
+    setMessageStatuses((prev) => {
+      const newMap = new Map(prev);
+      const key = `${messageId}-${userId}`;
+      const oldStatus = newMap.get(key);
+      newMap.set(key, status);
+      
+      console.log(`📊 [FRONTEND] Status updated:`, { 
+        key, 
+        oldStatus, 
+        newStatus: status,
+        mapSize: newMap.size,
+        allStatuses: Array.from(newMap.entries())
+      });
+      
+      return newMap;
+    });
+  };
+
+  socket.on("message:status", handleMessageStatus);
+  console.log(`📊 [FRONTEND] Registered message:status listener`); // ✅ Debug log
+
   const interval = setInterval(() => {
     socket.emit("heartbeat");
   }, 10000);
@@ -87,6 +121,19 @@ useEffect(() => {
       });
     }
     
+    // ✅ NEW: Emit conversation:open when joining conversation
+    // Find the last message ID to mark all previous messages as read
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageId = lastMessage.messageId?.toString() || lastMessage.messageId;
+      
+      socket.emit("conversation:open", {
+        conversationId: currentConversationId,
+        lastReadMessageId: lastMessageId,
+      });
+      console.log(`📖 Conversation opened, marking messages as read up to: ${lastMessageId}`);
+    }
+    
     // ✅ Update ref with current conversation
     previousConversationIdRef.current = currentConversationId;
   }
@@ -94,7 +141,6 @@ useEffect(() => {
   // ✅ Message handler with strict conversation ID matching
   const handleMessage = (message) => {
     // ✅ CRITICAL: Only add message if it's for the current conversation
-    // Normalize conversation IDs for comparison (handle string/UUID differences)
     const messageConvId = message.conversationId?.toString() || message.conversationId;
     const currentConvId = currentConversationId?.toString() || currentConversationId;
     
@@ -107,11 +153,27 @@ useEffect(() => {
       return;
     }
     
+    const messageId = message.messageId?.toString() || message.messageId;
+    const isOwnMessage = message.senderId === currentUser.user_id;
+    
     console.log("📨 Real-time message received:", message);
+    
+    // ✅ NEW: Emit message:received if it's not our own message
+    if (!isOwnMessage && !processedMessagesRef.current.has(messageId)) {
+      processedMessagesRef.current.add(messageId);
+      
+      // Small delay to ensure message is added to state first
+      setTimeout(() => {
+        socket.emit("message:received", {
+          messageId: messageId,
+          conversationId: currentConversationId,
+        });
+        console.log(`✅ Emitted message:received for message: ${messageId}`);
+      }, 100);
+    }
+    
     onMessagesUpdate((prev) => {
       // ✅ Normalize message IDs for comparison
-      const messageId = message.messageId?.toString() || message.messageId;
-      
       const messageExists = prev.some((m) => {
         const prevMessageId = m.messageId?.toString() || m.messageId;
         return prevMessageId === messageId;
@@ -125,6 +187,21 @@ useEffect(() => {
           const timeB = new Date(b.createdAt || 0).getTime();
           return timeA - timeB;
         });
+        
+        // ✅ NEW: Auto-mark as read if conversation is open
+        if (newMessages.length > 0) {
+          const lastMessage = newMessages[newMessages.length - 1];
+          const lastMessageId = lastMessage.messageId?.toString() || lastMessage.messageId;
+          
+          // Emit conversation:open to mark all messages as read
+          setTimeout(() => {
+            socket.emit("conversation:open", {
+              conversationId: currentConversationId,
+              lastReadMessageId: lastMessageId,
+            });
+          }, 200);
+        }
+        
         return newMessages;
       } else {
         console.log("⚠️ Message already exists, skipping");
@@ -155,6 +232,7 @@ useEffect(() => {
     socket.off("typing:start");
     socket.off("typing:stop");
     socket.off("user:status", handleStatusUpdate);
+    socket.off("message:status", handleMessageStatus); // ✅ NEW
     clearInterval(interval);
     
     // ✅ Leave conversation on cleanup
@@ -171,6 +249,7 @@ useEffect(() => {
   currentUser.user_id,
   receiver?.user_id,
   isGroup,
+  messages.length, // ✅ Add this to track when new messages arrive
   // ✅ Remove onMessagesUpdate from dependencies to prevent re-registration
 ]);
 
@@ -249,6 +328,43 @@ useEffect(() => {
       }, 100);
     }
   }, [messages.length, pagination?.isLoading]);
+
+  // ✅ NEW: Helper function to get message status
+  const getMessageStatus = (message) => {
+    const messageId = message.messageId?.toString() || message.messageId;
+    const isOwnMessage = message.senderId === currentUser.user_id;
+    
+    if (!isOwnMessage) {
+      return null; // Status only shown for own messages
+    }
+    
+    // For own messages, check status for the receiver
+    if (isGroup) {
+      // For groups, we'd need to track status per member
+      // For now, just show sent
+      return "sent";
+    } else if (receiver?.user_id) {
+      const key = `${messageId}-${receiver.user_id}`;
+      const status = messageStatuses.get(key);
+      return status || "sent";
+    }
+    
+    return "sent";
+  };
+
+  // ✅ NEW: Helper function to render status icon
+  const renderStatusIcon = (status) => {
+    switch (status) {
+      case "read":
+        return "✓✓"; // Double check (blue)
+      case "delivered":
+        return "✓✓"; // Double check (gray)
+      case "sent":
+        return "✓"; // Single check
+      default:
+        return "✓";
+    }
+  };
 
   const sendMessage = () => {
     if (!inputMessage.trim() || !conversation?.conversationId) return;
@@ -397,6 +513,7 @@ useEffect(() => {
             const showAvatar =
               index === 0 || messages[index - 1].senderId !== message.senderId;
             const senderName = getSenderName(message.senderId);
+            const messageStatus = getMessageStatus(message); // ✅ NEW
 
             return (
               <div
@@ -417,8 +534,17 @@ useEffect(() => {
                     <div className="message-sender-name">{senderName}</div>
                   )}
                   <div className="message-content">{message.content}</div>
-                  <div className="message-time">
+                  <div className="message-time-status"> {/* ✅ Updated class name */}
                     {formatTime(message.createdAt)}
+                    {/* ✅ NEW: Show status for own messages */}
+                    {isOwnMessage && messageStatus && (
+                      <span 
+                        className={`message-status message-status-${messageStatus}`}
+                        title={messageStatus}
+                      >
+                        {renderStatusIcon(messageStatus)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
