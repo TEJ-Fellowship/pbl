@@ -46,6 +46,10 @@ function ChatWindow({
     }
 
     socket.on("message:send", (message) => {
+      if (message.senderId === currentUser.user_id) {
+        // Ignore my own socket message
+        return;
+      }
       onMessagesUpdate((prev) => {
         if (!prev.some((m) => m.messageId === message.messageId)) {
           return [...prev, message];
@@ -108,15 +112,15 @@ function ChatWindow({
     });
 
     // ⚡ Optimistic UI
-    // const tempMessage = {
-    //   messageId: `temp-${Date.now()}`,
-    //   conversationId: conversation.conversationId,
-    //   senderId: currentUser.user_id,
-    //   content: messageContent,
-    //   createdAt: new Date(),
-    // };
+    const tempMessage = {
+      messageId: `temp-${Date.now()}`,
+      conversationId: conversation.conversationId,
+      senderId: currentUser.user_id,
+      content: messageContent,
+      createdAt: new Date(),
+    };
 
-    // onMessagesUpdate((prev) => [...prev, tempMessage]);
+    onMessagesUpdate((prev) => [...prev, tempMessage]);
   };
 
   const handleInputChange = (e) => {

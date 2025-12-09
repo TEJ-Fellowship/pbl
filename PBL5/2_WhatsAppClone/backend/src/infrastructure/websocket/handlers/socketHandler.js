@@ -1,14 +1,37 @@
 import websocketService from "../websocketService.js";
 import { CassandraRepository } from "../../db/cassandraRepository.js";
 import Redis from "ioredis";
+import {
+  REDIS_HOST,
+  REDIS_PORT,
+  REDIS_PASSWORD,
+  REDIS_USERNAME,
+} from "../../../config/index.js";
 
-export const handleSocket = (io) => {
+export const handleSocket = (io, serverId) => {
+  // ✅ Accept serverId parameter
   const wsService = new websocketService(io);
   const messageRepo = new CassandraRepository();
 
-  const redis = new Redis();
-  const pub = new Redis();
-  const sub = new Redis();
+  // Use authenticated Redis clients
+  const redis = new Redis({
+    host: REDIS_HOST || "localhost",
+    port: REDIS_PORT || 6379,
+    password: REDIS_PASSWORD,
+    username: REDIS_USERNAME,
+  });
+  const pub = new Redis({
+    host: REDIS_HOST || "localhost",
+    port: REDIS_PORT || 6379,
+    password: REDIS_PASSWORD,
+    username: REDIS_USERNAME,
+  });
+  const sub = new Redis({
+    host: REDIS_HOST || "localhost",
+    port: REDIS_PORT || 6379,
+    password: REDIS_PASSWORD,
+    username: REDIS_USERNAME,
+  });
 
   const HEARTBEAT_TTL = 30;
 
@@ -16,47 +39,46 @@ export const handleSocket = (io) => {
 
   sub.on("message", (channel, message) => {
     const data = JSON.parse(message);
-    console.log("status", data);
+    console.log(`[${serverId}] Received status update:`, data);
     wsService.statusUpdate(data.userId, data.status);
   });
 
   io.on("connection", async (socket) => {
     const { userId } = socket.handshake.query;
 
-    //stores online status on redis
-    await redis.set(`online:${userId}`, "server-1", "EX", HEARTBEAT_TTL);
-    //publish online status
+    // ✅ Use dynamic serverId instead of hardcoded "server-1"
+    await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
     await pub.publish(
       "user_status",
-      JSON.stringify({ userId, status: "online" })
+      JSON.stringify({ userId, status: "online", serverId })
     );
 
     socket.on("heartbeat", async () => {
-      await redis.set(`online:${userId}`, "server-1", "EX", HEARTBEAT_TTL);
+      // ✅ Use dynamic serverId
+      await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
     });
 
     socket.on("conversation:join", async ({ conversationId, receiver }) => {
-      // const conversationId =
-      //   typeof data === "object" ? data.conversationId : data;
       wsService.joinConversation(socket, conversationId);
 
       const isOnline = await redis.exists(`online:${receiver.user_id}`);
       const status = isOnline ? "online" : "offline";
 
       socket.emit("user:status", { userId: receiver.user_id, status });
-      console.log(`initial status of ${receiver.user_id}: `, status);
       console.log(
-        `Rooms for socket ${socket.id}:`,
-
-        socket.rooms
-      ); // Should show conversationId
+        `[${serverId}] initial status of ${receiver.user_id}: `,
+        status
+      );
 
       const room = io.sockets.adapter.rooms.get(conversationId);
-      console.log(`👥 Total sockets in room ${conversationId}:`, room?.size);
+      console.log(
+        `[${serverId}] 👥 Total sockets in room ${conversationId}:`,
+        room?.size
+      );
     });
 
     socket.on("message:send", async (data) => {
-      console.log("Message received:", data);
+      console.log(`[${serverId}] Message received:`, data);
       const message = {
         conversationId: data.conversationId,
         senderId: data.senderId,
@@ -65,11 +87,13 @@ export const handleSocket = (io) => {
         status: "sent",
       };
 
-      console.log("Emitting to room:", data.conversationId);
+      console.log(`[${serverId}] Emitting to room:`, data.conversationId);
       const savedMessage = await messageRepo.saveMessage(message);
 
       const room = io.sockets.adapter.rooms.get(data.conversationId);
-      console.log(`📤 Broadcasting to ${room?.size || 0} sockets`);
+      console.log(
+        `[${serverId}] 📤 Broadcasting to ${room?.size || 0} sockets`
+      );
       wsService.sendMessage(data.conversationId, savedMessage);
     });
 
@@ -85,7 +109,7 @@ export const handleSocket = (io) => {
       await redis.del(`online:${userId}`);
       await pub.publish(
         "user_status",
-        JSON.stringify({ userId, status: "offline" })
+        JSON.stringify({ userId, status: "offline", serverId })
       );
       wsService.removeUserSocket(userId, socket.id);
     });
