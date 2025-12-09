@@ -1,0 +1,68 @@
+config:
+  target: 'http://localhost:80'  # Nginx load balancer
+  phases:
+    # Warm-up phase
+    - duration: 10
+      arrivalRate: 5
+      name: "Warm up"
+    # Ramp up phase
+    - duration: 30
+      arrivalRate: 5
+      rampTo: 50
+      name: "Ramp up load"
+    # Sustained load
+    - duration: 60
+      arrivalRate: 50
+      name: "Sustained load"
+    # Spike test
+    - duration: 10
+      arrivalRate: 100
+      name: "Spike test"
+    # Cool down
+    - duration: 10
+      arrivalRate: 10
+      name: "Cool down"
+  processor: "./artillery-processor.js"
+
+  variables:
+    baseUrl: "http://localhost:80"
+
+scenarios:
+  # Test 1: Check which server handles each request
+  - name: "Server Distribution Test"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/server-info"
+          capture:
+            - json: "$.serverId"
+              as: "serverId"
+            - json: "$.port"
+              as: "port"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - think: 1
+
+  # Test 2: Health check
+  - name: "Health Check"
+    weight: 0
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  # Test 3: WebSocket connection test
+  - name: "WebSocket Connection"
+    weight: 40
+    engine: ws
+    flow:
+      - connect:
+          url: "ws://localhost:80/socket.io/?userId={{ $uuid }}"
+          headers:
+            userId: "{{ $uuid }}"
+      - send:
+          payload: '{"type":"ping"}'
+      - think: 2
+      - disconnect:

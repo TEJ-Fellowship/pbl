@@ -52,17 +52,16 @@ function ChatWindow({
 
     socket.on("message:send", (message) => {
       console.log("📨 Real-time message received:", message);
-      if (message.senderId === currentUser.user_id) {
-        // Ignore my own socket message
-        return;
-      }
       onMessagesUpdate((prev) => {
         // Check if message already exists to prevent duplicates
         const messageExists = prev.some(
-          (m) => m.messageId === message.messageId || 
-          (m.messageId && message.messageId && m.messageId.toString() === message.messageId.toString())
+          (m) =>
+            m.messageId === message.messageId ||
+            (m.messageId &&
+              message.messageId &&
+              m.messageId.toString() === message.messageId.toString())
         );
-        
+
         if (!messageExists) {
           console.log("✅ Adding new message to state");
           return [...prev, message];
@@ -108,7 +107,8 @@ function ChatWindow({
     if (!container || !pagination?.hasMore || pagination?.isLoading) {
       if (!container) console.log("⚠️ No container for scroll");
       if (!pagination?.hasMore) console.log("⚠️ No more messages to load");
-      if (pagination?.isLoading) console.log("⏳ Already loading, skipping scroll handler");
+      if (pagination?.isLoading)
+        console.log("⏳ Already loading, skipping scroll handler");
       return;
     }
 
@@ -144,7 +144,11 @@ function ChatWindow({
     const previousLength = previousMessagesLengthRef.current;
 
     // If messages increased and we're loading more (not initial load)
-    if (currentLength > previousLength && previousLength > 0 && pagination?.isLoading === false) {
+    if (
+      currentLength > previousLength &&
+      previousLength > 0 &&
+      pagination?.isLoading === false
+    ) {
       // We loaded older messages - preserve scroll position
       requestAnimationFrame(() => {
         const scrollHeightBefore = container.scrollHeight;
@@ -173,8 +177,9 @@ function ChatWindow({
 
     // Only auto-scroll if user is near bottom (within 100px)
     // This prevents scrolling when user is reading older messages
-    const isNearBottom = 
-      container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      100;
 
     if (messages.length > 0 && !pagination?.isLoading && isNearBottom) {
       // Small delay to ensure DOM is updated
