@@ -1,46 +1,45 @@
 import websocketService from "../websocketService.js";
 import { CassandraRepository } from "../../db/cassandraRepository.js";
-import Redis from "ioredis";
-import {
-  REDIS_HOST,
-  REDIS_PORT,
-  REDIS_PASSWORD,
-  REDIS_USERNAME,
-} from "../../../config/index.js";
+import { redis, createAppSubscriber } from "../../../config/redis.js";
 
-export const handleSocket = (io, serverId) => {
+export const handleSocket = async (io, serverId) => {
   // ✅ Accept serverId parameter
   const wsService = new websocketService(io);
   const messageRepo = new CassandraRepository();
 
-  // Use authenticated Redis clients
-  const redis = new Redis({
-    host: REDIS_HOST || "localhost",
-    port: REDIS_PORT || 6379,
-    password: REDIS_PASSWORD,
-    username: REDIS_USERNAME,
-  });
-  const pub = new Redis({
-    host: REDIS_HOST || "localhost",
-    port: REDIS_PORT || 6379,
-    password: REDIS_PASSWORD,
-    username: REDIS_USERNAME,
-  });
-  const sub = new Redis({
-    host: REDIS_HOST || "localhost",
-    port: REDIS_PORT || 6379,
-    password: REDIS_PASSWORD,
-    username: REDIS_USERNAME,
-  });
-
   const HEARTBEAT_TTL = 30;
 
-  sub.subscribe("user_status");
+  const appSub = await createAppSubscriber();
 
-  sub.on("message", (channel, message) => {
-    const data = JSON.parse(message);
-    console.log(`[${serverId}] Received status update:`, data);
-    wsService.statusUpdate(data.userId, data.status);
+  await appSub.subscribe("user_status", (message) => {
+    try {
+      // ✅ Add null check
+      if (!message) {
+        console.warn(`[${serverId}] Received null/empty user_status message`);
+        return;
+      }
+      
+      const data = JSON.parse(message);
+      
+      // ✅ Add validation
+      if (!data || !data.userId) {
+        console.warn(`[${serverId}] Invalid user_status message format:`, data);
+        return;
+      }
+      
+      console.log(`[${serverId}] [user_status] Received status update:`, data);
+      // update presence UI across connected sockets
+      wsService.statusUpdate(data.userId, data.status);
+    } catch (err) {
+      console.error(
+        `[${serverId}] Failed to parse user_status message:`,
+        err && err.message
+      );
+    }
+  });
+
+  redis.on("error", (err) => {
+    console.error(`[${serverId}] redis error:`, err && err.message);
   });
 
   io.on("connection", async (socket) => {
@@ -72,7 +71,7 @@ export const handleSocket = (io, serverId) => {
         console.error(`[${serverId}] ❌ Failed to set user ${userId} in Redis`);
       }
 
-      await pub.publish(
+      await redis.publish(
         "user_status",
         JSON.stringify({ userId, status: "online", serverId })
       );
@@ -97,21 +96,27 @@ export const handleSocket = (io, serverId) => {
 
     socket.on("conversation:join", async ({ conversationId, receiver }) => {
       wsService.joinConversation(socket, conversationId);
-
-      const isOnline = await redis.exists(`online:${receiver.user_id}`);
-      const status = isOnline ? "online" : "offline";
-
-      socket.emit("user:status", { userId: receiver.user_id, status });
-      console.log(
-        `[${serverId}] initial status of ${receiver.user_id}: `,
-        status
-      );
-
-      const room = io.sockets.adapter.rooms.get(conversationId);
-      console.log(
-        `[${serverId}] 👥 Total sockets in room ${conversationId}:`,
-        room?.size
-      );
+      // If receiver object present -> check online
+      try {
+        const isOnline = receiver?.user_id
+          ? await redis.exists(`online:${receiver.user_id}`)
+          : 0;
+        const status = isOnline ? "online" : "offline";
+        socket.emit("user:status", { userId: receiver?.user_id, status });
+        console.log(
+          `[${serverId}] initial status of ${receiver?.user_id}: ${status}`
+        );
+        const room = io.sockets.adapter.rooms.get(conversationId);
+        console.log(
+          `[${serverId}] 👥 Total sockets in room ${conversationId}:`,
+          room?.size || 0
+        );
+      } catch (err) {
+        console.error(
+          `[${serverId}] error while checking status:`,
+          err && err.message
+        );
+      }
     });
 
     socket.on("message:send", async (data) => {
@@ -158,12 +163,25 @@ export const handleSocket = (io, serverId) => {
     });
 
     socket.on("disconnect", async () => {
-      await redis.del(`online:${userId}`);
-      await pub.publish(
-        "user_status",
-        JSON.stringify({ userId, status: "offline", serverId })
-      );
-      wsService.removeUserSocket(userId, socket.id);
+      try {
+        // Option A: remove immediately
+        await redis.del(`online:${userId}`);
+
+        // Option B (recommended alternative): do not delete, just leave TTL expiry
+        // comment out the del() line above if you want this behavior
+
+        await redis.publish(
+          "user_status",
+          JSON.stringify({ userId, status: "offline", serverId })
+        );
+      } catch (err) {
+        console.error(
+          `[${serverId}] error during disconnect for ${userId}:`,
+          err && err.message
+        );
+      } finally {
+        wsService.removeUserSocket(userId, socket.id);
+      }
     });
   });
 };

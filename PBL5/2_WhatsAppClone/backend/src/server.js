@@ -6,16 +6,8 @@ import { handleSocket } from "./infrastructure/websocket/handlers/socketHandler.
 import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
-import redis from "./config/redis.js";
+import { redis, createAdapterClients } from "./config/redis.js";
 import cors from "cors";
-
-import Redis from "ioredis";
-import {
-  REDIS_HOST,
-  REDIS_PORT,
-  REDIS_PASSWORD,
-  REDIS_USERNAME,
-} from "./config/index.js";
 
 // Get server instance ID and port from environment
 const SERVER_ID = process.env.SERVER_ID || `server-${process.pid}`;
@@ -31,19 +23,34 @@ const startServer = async () => {
     const httpServer = createServer(app);
 
     // Create Redis clients for Socket.IO adapter
-    const pubClient = new Redis({
-      host: REDIS_HOST || "localhost",
-      port: REDIS_PORT || 6379,
-      password: REDIS_PASSWORD,
-      username: REDIS_USERNAME,
-    });
-    const subClient = pubClient.duplicate();
+    // const pubClient = new Redis({
+    //   host: REDIS_HOST || "localhost",
+    //   port: REDIS_PORT || 6379,
+    //   password: REDIS_PASSWORD,
+    //   username: REDIS_USERNAME,
+    // });
+    // const subClient = pubClient.duplicate();
+
+    const { pubClient, subClient } = createAdapterClients();
+
+    // ✅ Only attach event handlers once
+    if (!pubClient.listenerCount('connect')) {
+      pubClient.on("connect", () =>
+        console.log(`[${SERVER_ID}] pubClient connected`)
+      );
+    }
+    if (!subClient.listenerCount('connect')) {
+      subClient.on("connect", () =>
+        console.log(`[${SERVER_ID}] subClient connected`)
+      );
+    }
 
     const io = new Server(httpServer, {
       transports: ["websocket", "polling"],
       cors: { origin: "*", methods: ["GET", "POST"] },
-      adapter: createAdapter(pubClient, subClient), // ✅ Critical for multi-server
     });
+
+    io.adapter(createAdapter(pubClient, subClient));
 
     // Store server ID in io instance for access in handlers
     io.serverId = SERVER_ID;
@@ -52,7 +59,7 @@ const startServer = async () => {
       console.log(`[${SERVER_ID}] Connected to Redis`);
     });
 
-    handleSocket(io, SERVER_ID);
+    await handleSocket(io, SERVER_ID);
 
     app.use("/api/users", userRoutes);
     app.use("/api/conversation", messageRoutes);
