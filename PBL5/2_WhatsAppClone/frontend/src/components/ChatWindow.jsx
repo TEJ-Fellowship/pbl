@@ -11,6 +11,8 @@ function ChatWindow({
   messages,
   onMessageSent,
   onMessagesUpdate,
+  pagination,
+  onLoadMore,
 }) {
   const socket = useSocket();
   const [inputMessage, setInputMessage] = useState("");
@@ -18,7 +20,10 @@ function ChatWindow({
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [receiverStatus, setReceiverStatus] = useState("offline");
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const previousMessagesLengthRef = useRef(0);
+  const isLoadingMoreRef = useRef(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -46,13 +51,22 @@ function ChatWindow({
     }
 
     socket.on("message:send", (message) => {
-      if (message.senderId === currentUser.user_id) {
-        // Ignore my own socket message
-        return;
-      }
+      console.log("📨 Real-time message received:", message);
       onMessagesUpdate((prev) => {
-        if (!prev.some((m) => m.messageId === message.messageId)) {
+        // Check if message already exists to prevent duplicates
+        const messageExists = prev.some(
+          (m) =>
+            m.messageId === message.messageId ||
+            (m.messageId &&
+              message.messageId &&
+              m.messageId.toString() === message.messageId.toString())
+        );
+
+        if (!messageExists) {
+          console.log("✅ Adding new message to state");
           return [...prev, message];
+        } else {
+          console.log("⚠️ Message already exists, skipping");
         }
         return prev;
       });
@@ -87,9 +101,93 @@ function ChatWindow({
     onMessagesUpdate,
   ]);
 
+  // Infinite scroll: Load more when user scrolls near the top
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingUsers]);
+    const container = messagesContainerRef.current;
+    if (!container || !pagination?.hasMore || pagination?.isLoading) {
+      if (!container) console.log("⚠️ No container for scroll");
+      if (!pagination?.hasMore) console.log("⚠️ No more messages to load");
+      if (pagination?.isLoading)
+        console.log("⏳ Already loading, skipping scroll handler");
+      return;
+    }
+
+    const handleScroll = () => {
+      // Check if user scrolled near the top (within 200px)
+      const scrollTop = container.scrollTop;
+      const scrollThreshold = 200;
+
+      if (scrollTop < scrollThreshold && !isLoadingMoreRef.current) {
+        console.log("🔄 Scroll detected near top, triggering load more");
+        isLoadingMoreRef.current = true;
+        onLoadMore();
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [pagination?.hasMore, pagination?.isLoading, onLoadMore]);
+
+  // Reset loading ref when loading completes
+  useEffect(() => {
+    if (!pagination?.isLoading) {
+      isLoadingMoreRef.current = false;
+    }
+  }, [pagination?.isLoading]);
+
+  // Handle scroll position when loading older messages
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const currentLength = messages.length;
+    const previousLength = previousMessagesLengthRef.current;
+
+    // If messages increased and we're loading more (not initial load)
+    if (
+      currentLength > previousLength &&
+      previousLength > 0 &&
+      pagination?.isLoading === false
+    ) {
+      // We loaded older messages - preserve scroll position
+      requestAnimationFrame(() => {
+        const scrollHeightBefore = container.scrollHeight;
+        const scrollTopBefore = container.scrollTop;
+
+        requestAnimationFrame(() => {
+          const scrollHeightAfter = container.scrollHeight;
+          const heightDifference = scrollHeightAfter - scrollHeightBefore;
+          container.scrollTop = scrollTopBefore + heightDifference;
+        });
+      });
+    } else if (currentLength !== previousLength && previousLength === 0) {
+      // Initial load - scroll to bottom
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+
+    previousMessagesLengthRef.current = currentLength;
+  }, [messages, pagination?.isLoading]);
+
+  // Scroll to bottom when new messages arrive (not from pagination)
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Only auto-scroll if user is near bottom (within 100px)
+    // This prevents scrolling when user is reading older messages
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      100;
+
+    if (messages.length > 0 && !pagination?.isLoading && isNearBottom) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [messages.length, pagination?.isLoading]);
 
   const sendMessage = () => {
     if (!inputMessage.trim() || !receiver) return;
@@ -178,7 +276,15 @@ function ChatWindow({
         </div>
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
+        {/* Infinite Scroll Loading Indicator - Shows at top when loading older messages */}
+        {pagination?.isLoading && (
+          <div className="infinite-scroll-loader">
+            <span className="loading-spinner"></span>
+            <span>Loading older messages...</span>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="no-messages">
             <p>No messages yet. Start the conversation!</p>

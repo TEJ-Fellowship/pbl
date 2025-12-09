@@ -7,6 +7,8 @@ import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
 import redis from "./config/redis.js";
+import cors from "cors";
+
 import Redis from "ioredis";
 import {
   REDIS_HOST,
@@ -24,6 +26,7 @@ const startServer = async () => {
   try {
     const app = express();
     app.use(express.json());
+    app.use(cors());
 
     const httpServer = createServer(app);
 
@@ -71,29 +74,29 @@ const startServer = async () => {
         pid: process.pid,
         timestamp: new Date().toISOString(),
         requestHeaders: {
-          'x-real-ip': req.headers['x-real-ip'],
-          'x-forwarded-for': req.headers['x-forwarded-for'],
-        }
+          "x-real-ip": req.headers["x-real-ip"],
+          "x-forwarded-for": req.headers["x-forwarded-for"],
+        },
       });
     });
-    
+
     // ✅ Move debug endpoint here (before listen)
     app.get("/api/debug/redis", async (req, res) => {
       try {
         const keys = await redis.keys("online:*");
         const users = {};
-        
+
         for (const key of keys) {
           const userId = key.replace("online:", "");
           const serverId = await redis.get(key);
           const ttl = await redis.ttl(key);
           users[userId] = { serverId, ttl };
         }
-        
+
         res.json({
           total: keys.length,
           users,
-          serverId: SERVER_ID
+          serverId: SERVER_ID,
         });
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -103,7 +106,7 @@ const startServer = async () => {
     httpServer.listen(PORT, () => {
       console.log(`[${SERVER_ID}] Server running on port ${PORT}`);
     });
-    
+
     // Connect to PostgreSQL database
     await connectToDatabase();
     console.log(`[${SERVER_ID}] Database initialized successfully`);

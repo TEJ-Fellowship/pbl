@@ -48,7 +48,9 @@ export const handleSocket = (io, serverId) => {
 
     // ✅ Add validation and error handling
     if (!userId) {
-      console.error(`[${serverId}] ⚠️  Connection without userId from socket ${socket.id}`);
+      console.error(
+        `[${serverId}] ⚠️  Connection without userId from socket ${socket.id}`
+      );
       socket.disconnect();
       return;
     }
@@ -56,21 +58,29 @@ export const handleSocket = (io, serverId) => {
     try {
       // ✅ Use dynamic serverId instead of hardcoded "server-1"
       await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
-      
+
       // ✅ Verify it was set
       const verify = await redis.get(`online:${userId}`);
       if (verify) {
-        console.log(`[${serverId}] ✅ User ${userId.substring(0, 8)}... set in Redis on ${serverId}`);
+        console.log(
+          `[${serverId}] ✅ User ${userId.substring(
+            0,
+            8
+          )}... set in Redis on ${serverId}`
+        );
       } else {
         console.error(`[${serverId}] ❌ Failed to set user ${userId} in Redis`);
       }
-      
+
       await pub.publish(
         "user_status",
         JSON.stringify({ userId, status: "online", serverId })
       );
     } catch (error) {
-      console.error(`[${serverId}] ❌ Error setting user online in Redis:`, error.message);
+      console.error(
+        `[${serverId}] ❌ Error setting user online in Redis:`,
+        error.message
+      );
     }
 
     socket.on("heartbeat", async () => {
@@ -78,7 +88,10 @@ export const handleSocket = (io, serverId) => {
         // ✅ Use dynamic serverId
         await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
       } catch (error) {
-        console.error(`[${serverId}] ❌ Error updating heartbeat:`, error.message);
+        console.error(
+          `[${serverId}] ❌ Error updating heartbeat:`,
+          error.message
+        );
       }
     });
 
@@ -114,18 +127,33 @@ export const handleSocket = (io, serverId) => {
       console.log(`[${serverId}] Emitting to room:`, data.conversationId);
       const savedMessage = await messageRepo.saveMessage(message);
 
+      // Format message for frontend (convert TimeUUID to string, ensure all fields)
+      const formattedMessage = {
+        messageId: savedMessage.messageId?.toString() || savedMessage.messageId,
+        conversationId:
+          savedMessage.conversationId?.toString() ||
+          savedMessage.conversationId,
+        senderId: savedMessage.senderId?.toString() || savedMessage.senderId,
+        content: savedMessage.content,
+        messageType: savedMessage.messageType || "text",
+        status: savedMessage.status || "sent",
+        createdAt: savedMessage.createdAt || new Date(),
+      };
+
       const room = io.sockets.adapter.rooms.get(data.conversationId);
-      console.log(
-        `[${serverId}] 📤 Broadcasting to ${room?.size || 0} sockets`
-      );
-      wsService.sendMessage(data.conversationId, savedMessage);
+      console.log(`📤 Broadcasting to ${room?.size || 0} sockets`);
+
+      // Broadcast to all sockets in the room (including sender)
+      wsService.sendMessage(data.conversationId, formattedMessage);
     });
 
-    socket.on("typing:start", (conversationId, userId) => {
+    socket.on("typing:start", (conversationId) => {
+      // userId is already available from socket handshake
       wsService.typingStart(socket, conversationId, userId);
     });
 
-    socket.on("typing:stop", (conversationId, userId) => {
+    socket.on("typing:stop", (conversationId) => {
+      // userId is already available from socket handshake
       wsService.typingStop(socket, conversationId, userId);
     });
 

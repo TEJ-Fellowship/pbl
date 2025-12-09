@@ -14,26 +14,87 @@ function ChatInterface({
 }) {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [pagination, setPagination] = useState({
+    nextCursor: null,
+    hasMore: false,
+    isLoading: false,
+  });
 
   useEffect(() => {
     if (selectedConversation) {
-      fetchMessages(selectedConversation.conversationId);
+      // Reset messages and pagination when conversation changes
+      setMessages([]);
+      setPagination({ nextCursor: null, hasMore: false, isLoading: false });
+      fetchMessages(selectedConversation.conversationId, null, true);
     }
   }, [selectedConversation]);
 
-  const fetchMessages = async (conversationId) => {
+  const fetchMessages = async (conversationId, cursor = null, isInitial = false) => {
     try {
-      const response = await fetch(
-        `${API_BASE}/conversation/${conversationId}`
-      );
+      console.log(`📥 Fetching messages:`, { conversationId, cursor, isInitial });
+      setPagination((prev) => ({ ...prev, isLoading: true }));
+      
+      // Build URL with pagination parameters
+      const limit = 50;
+      const url = cursor
+        ? `${API_BASE}/conversation/${conversationId}?limit=${limit}&cursor=${cursor}`
+        : `${API_BASE}/conversation/${conversationId}?limit=${limit}`;
+
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setMessages(data.data || []);
+        const newMessages = data.data || [];
+        
+        console.log(`✅ Received ${newMessages.length} messages`, {
+          hasMore: data.pagination?.hasMore,
+          nextCursor: data.pagination?.nextCursor,
+        });
+        
+        if (isInitial || !cursor) {
+          // First load or initial fetch - replace messages
+          setMessages(newMessages);
+        } else {
+          // Loading more - prepend older messages
+          setMessages((prev) => [...newMessages, ...prev]);
+        }
+
+        // Update pagination state
+        setPagination({
+          nextCursor: data.pagination?.nextCursor || null,
+          hasMore: data.pagination?.hasMore || false,
+          isLoading: false,
+        });
+        
+        console.log(`📊 Pagination updated:`, {
+          hasMore: data.pagination?.hasMore,
+          nextCursor: data.pagination?.nextCursor ? "exists" : "null",
+          isLoading: false,
+        });
+      } else {
+        console.error("❌ Failed to fetch messages:", response.status);
+        setPagination((prev) => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.error("Error fetching messages:", error);
-      setMessages([]);
+      console.error("❌ Error fetching messages:", error);
+      if (isInitial) {
+        setMessages([]);
+      }
+      setPagination((prev) => ({ ...prev, isLoading: false }));
     }
+  };
+
+  const loadMoreMessages = async () => {
+    if (!selectedConversation || !pagination.nextCursor || pagination.isLoading) {
+      console.log("⚠️ Cannot load more:", {
+        hasConversation: !!selectedConversation,
+        hasCursor: !!pagination.nextCursor,
+        isLoading: pagination.isLoading,
+      });
+      return;
+    }
+
+    console.log("🔄 Loading more messages with cursor:", pagination.nextCursor);
+    await fetchMessages(selectedConversation.conversationId, pagination.nextCursor, false);
   };
 
   const startNewConversation = async (receiverId) => {
@@ -140,6 +201,8 @@ function ChatInterface({
             messages={messages}
             onMessageSent={handleMessageSent}
             onMessagesUpdate={setMessages}
+            pagination={pagination}
+            onLoadMore={loadMoreMessages}
           />
         ) : (
           <div className="no-conversation">
