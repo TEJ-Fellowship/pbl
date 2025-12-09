@@ -52,6 +52,10 @@ function ChatWindow({
 
     socket.on("message:send", (message) => {
       console.log("📨 Real-time message received:", message);
+      if (message.senderId === currentUser.user_id) {
+        // Ignore my own socket message
+        return;
+      }
       onMessagesUpdate((prev) => {
         // Check if message already exists to prevent duplicates
         const messageExists = prev.some(
@@ -201,15 +205,15 @@ function ChatWindow({
     });
 
     // ⚡ Optimistic UI
-    // const tempMessage = {
-    //   messageId: `temp-${Date.now()}`,
-    //   conversationId: conversation.conversationId,
-    //   senderId: currentUser.user_id,
-    //   content: messageContent,
-    //   createdAt: new Date(),
-    // };
+    const tempMessage = {
+      messageId: `temp-${Date.now()}`,
+      conversationId: conversation.conversationId,
+      senderId: currentUser.user_id,
+      content: messageContent,
+      createdAt: new Date(),
+    };
 
-    // onMessagesUpdate((prev) => [...prev, tempMessage]);
+    onMessagesUpdate((prev) => [...prev, tempMessage]);
   };
 
   const handleInputChange = (e) => {
