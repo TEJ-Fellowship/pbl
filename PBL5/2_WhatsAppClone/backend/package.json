@@ -6,7 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --watch ./src/server.js",
-    "start:pm2": "pm2 start ecosystem.config.cjs"
+    "start:pm2": "pm2 start ecosystem.config.cjs",
+    "test:load": "artillery run artillery-test.yml",
+    "test:load:simple": "node test-load-distribution.js",
+    "test:websocket": "node test-websocket-load.js",
+    "test:websocket:custom": "TOTAL_USERS=200 CONCURRENT=30 node test-websocket-load.js",
+    "test:load:quick": "artillery quick --count 100 --num 10 http://localhost:80/api/server-info"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +27,7 @@
     "pm2": "^6.0.14",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "umzug": "^3.8.2",
     "uuid": "^13.0.0"
   }

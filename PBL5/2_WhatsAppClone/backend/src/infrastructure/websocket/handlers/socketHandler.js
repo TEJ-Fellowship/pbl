@@ -46,16 +46,40 @@ export const handleSocket = (io, serverId) => {
   io.on("connection", async (socket) => {
     const { userId } = socket.handshake.query;
 
-    // ✅ Use dynamic serverId instead of hardcoded "server-1"
-    await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
-    await pub.publish(
-      "user_status",
-      JSON.stringify({ userId, status: "online", serverId })
-    );
+    // ✅ Add validation and error handling
+    if (!userId) {
+      console.error(`[${serverId}] ⚠️  Connection without userId from socket ${socket.id}`);
+      socket.disconnect();
+      return;
+    }
+
+    try {
+      // ✅ Use dynamic serverId instead of hardcoded "server-1"
+      await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
+      
+      // ✅ Verify it was set
+      const verify = await redis.get(`online:${userId}`);
+      if (verify) {
+        console.log(`[${serverId}] ✅ User ${userId.substring(0, 8)}... set in Redis on ${serverId}`);
+      } else {
+        console.error(`[${serverId}] ❌ Failed to set user ${userId} in Redis`);
+      }
+      
+      await pub.publish(
+        "user_status",
+        JSON.stringify({ userId, status: "online", serverId })
+      );
+    } catch (error) {
+      console.error(`[${serverId}] ❌ Error setting user online in Redis:`, error.message);
+    }
 
     socket.on("heartbeat", async () => {
-      // ✅ Use dynamic serverId
-      await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
+      try {
+        // ✅ Use dynamic serverId
+        await redis.set(`online:${userId}`, serverId, "EX", HEARTBEAT_TTL);
+      } catch (error) {
+        console.error(`[${serverId}] ❌ Error updating heartbeat:`, error.message);
+      }
     });
 
     socket.on("conversation:join", async ({ conversationId, receiver }) => {

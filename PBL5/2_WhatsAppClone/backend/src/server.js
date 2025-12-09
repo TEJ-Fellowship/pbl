@@ -51,10 +51,6 @@ const startServer = async () => {
 
     handleSocket(io, SERVER_ID);
 
-    httpServer.listen(PORT, () => {
-      console.log(`[${SERVER_ID}] Server running on port ${PORT}`);
-    });
-
     app.use("/api/users", userRoutes);
     app.use("/api/conversation", messageRoutes);
 
@@ -68,6 +64,46 @@ const startServer = async () => {
       });
     });
 
+    app.get("/api/server-info", (req, res) => {
+      res.json({
+        serverId: SERVER_ID,
+        port: PORT,
+        pid: process.pid,
+        timestamp: new Date().toISOString(),
+        requestHeaders: {
+          'x-real-ip': req.headers['x-real-ip'],
+          'x-forwarded-for': req.headers['x-forwarded-for'],
+        }
+      });
+    });
+    
+    // ✅ Move debug endpoint here (before listen)
+    app.get("/api/debug/redis", async (req, res) => {
+      try {
+        const keys = await redis.keys("online:*");
+        const users = {};
+        
+        for (const key of keys) {
+          const userId = key.replace("online:", "");
+          const serverId = await redis.get(key);
+          const ttl = await redis.ttl(key);
+          users[userId] = { serverId, ttl };
+        }
+        
+        res.json({
+          total: keys.length,
+          users,
+          serverId: SERVER_ID
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    httpServer.listen(PORT, () => {
+      console.log(`[${SERVER_ID}] Server running on port ${PORT}`);
+    });
+    
     // Connect to PostgreSQL database
     await connectToDatabase();
     console.log(`[${SERVER_ID}] Database initialized successfully`);
