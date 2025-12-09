@@ -128,8 +128,46 @@ export const getUserFeed = async (req, res) => {
   try {
     const { user_id } = req.params;
     const limit = parseInt(req.query.limit) || 20;
-    const refresh = req.query.refresh === "true" || req.query.refresh === "1"; // Force refresh
-    const cursor = req.query.cursor ? new Date(req.query.cursor) : null; // FIX: Get cursor early
+    const refresh = req.query.refresh === "true" || req.query.refresh === "1";
+
+    // FIX: Better cursor parsing with validation - handle format with post ID
+    let cursor = null;
+    if (req.query.cursor) {
+      const cursorString = req.query.cursor;
+
+      // Check if cursor includes post ID (format: "2025-12-05T12:07:57.610Z_post-id")
+      if (cursorString.includes("_")) {
+        const parts = cursorString.split("_");
+        const datePart = parts[0];
+        const dateObj = new Date(datePart);
+
+        if (isNaN(dateObj.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid cursor format. Date part is invalid.",
+          });
+        }
+
+        // Keep cursor as string (feedService will parse it)
+        cursor = cursorString;
+        console.log(
+          `🔍 [PAGINATION] User ${user_id}: Using cursor with post ID=${cursor}`
+        );
+      } else {
+        // Old format - just date
+        const dateObj = new Date(cursorString);
+        if (isNaN(dateObj.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid cursor format. Use ISO 8601 date string.",
+          });
+        }
+        cursor = cursorString; // Keep as string
+        console.log(
+          `🔍 [PAGINATION] User ${user_id}: Using cursor=${dateObj.toISOString()}`
+        );
+      }
+    }
 
     // Validate user_id
     const userIdInt = parseInt(user_id);
@@ -141,8 +179,6 @@ export const getUserFeed = async (req, res) => {
     }
 
     // FIX: Skip cache if cursor is provided (pagination requires fresh data)
-    // OPTIMIZATION: Try cached complete response first (fastest path - < 10ms)
-    // BUT: Skip if refresh=true OR if cursor is provided (pagination)
     if (!refresh && !cursor) {
       const minCachedPosts = Math.max(1, Math.floor(limit * 0.8));
       const cachedResponse = await feedService.getFeedResponseFromCache(
@@ -151,6 +187,9 @@ export const getUserFeed = async (req, res) => {
       );
 
       if (cachedResponse && cachedResponse.length >= minCachedPosts) {
+        // FIX: Slice cached response to requested limit
+        const trimmedCachedResponse = cachedResponse.slice(0, limit);
+
         // FIX: Validate cache freshness - check if Redis feed has newer posts
         try {
           const redisFeed = await feedService.getFeedFromRedis(user_id, 1); // Get just the newest post from Redis
@@ -159,12 +198,20 @@ export const getUserFeed = async (req, res) => {
           console.log(
             `🔍 [CACHE VALIDATION] User ${user_id}: Redis feed length=${
               redisFeed?.length || 0
-            }, Cache length=${cachedResponse.length}`
+            }, Cache length=${
+              cachedResponse.length
+            }, Requested limit=${limit}, Trimmed to=${
+              trimmedCachedResponse.length
+            }`
           );
 
-          if (redisFeed && redisFeed.length > 0 && cachedResponse.length > 0) {
+          if (
+            redisFeed &&
+            redisFeed.length > 0 &&
+            trimmedCachedResponse.length > 0
+          ) {
             const newestPostInRedis = redisFeed[0];
-            const newestPostInCache = cachedResponse[0];
+            const newestPostInCache = trimmedCachedResponse[0];
 
             // FIX: Convert post_id to string for comparison (UUIDs are strings)
             const redisPostId = newestPostInRedis.post_id.toString();
@@ -194,26 +241,33 @@ export const getUserFeed = async (req, res) => {
               await feedService.invalidateFeedCache(user_id);
               // Fall through to rebuild from Redis feed below
             } else {
-              // Cache is fresh, return it
+              // Cache is fresh, return it (trimmed to limit)
               console.log(`✅ [CACHE] Cache is fresh for user ${user_id}`);
-              
+
               // FIX: Calculate pagination info for cached response too
-              const lastPost = cachedResponse[cachedResponse.length - 1];
+              const hasMore = await feedService.checkHasMorePosts(
+                user_id,
+                limit,
+                trimmedCachedResponse[trimmedCachedResponse.length - 1]
+              );
+
+              const lastPost =
+                trimmedCachedResponse[trimmedCachedResponse.length - 1];
               let nextCursor = null;
-              if (lastPost && lastPost.created_at) {
-                const createdAt = lastPost.created_at instanceof Date 
-                  ? lastPost.created_at 
-                  : new Date(lastPost.created_at);
+              if (lastPost && lastPost.created_at && hasMore) {
+                const createdAt =
+                  lastPost.created_at instanceof Date
+                    ? lastPost.created_at
+                    : new Date(lastPost.created_at);
                 if (!isNaN(createdAt.getTime())) {
-                  nextCursor = createdAt.toISOString();
+                  nextCursor = `${createdAt.toISOString()}_${lastPost.id}`;
                 }
               }
-              const hasMore = cachedResponse.length === limit;
-              
+
               return res.status(200).json({
                 success: true,
-                feed: cachedResponse,
-                count: cachedResponse.length,
+                feed: trimmedCachedResponse, // Use trimmed response
+                count: trimmedCachedResponse.length, // Use trimmed count
                 cached: true,
                 has_more: hasMore,
                 next_cursor: nextCursor,
@@ -226,22 +280,29 @@ export const getUserFeed = async (req, res) => {
               `⚠️ [CACHE] Redis feed is EMPTY for user ${user_id} but cache has ${cachedResponse.length} posts. This might indicate fan-out didn't happen.`
             );
             // Still return cache since Redis is empty - but log the issue
-            const lastPost = cachedResponse[cachedResponse.length - 1];
+            const hasMore = await feedService.checkHasMorePosts(
+              user_id,
+              limit,
+              trimmedCachedResponse[trimmedCachedResponse.length - 1]
+            );
+
+            const lastPost =
+              trimmedCachedResponse[trimmedCachedResponse.length - 1];
             let nextCursor = null;
-            if (lastPost && lastPost.created_at) {
-              const createdAt = lastPost.created_at instanceof Date 
-                ? lastPost.created_at 
-                : new Date(lastPost.created_at);
+            if (lastPost && lastPost.created_at && hasMore) {
+              const createdAt =
+                lastPost.created_at instanceof Date
+                  ? lastPost.created_at
+                  : new Date(lastPost.created_at);
               if (!isNaN(createdAt.getTime())) {
-                nextCursor = createdAt.toISOString();
+                nextCursor = `${createdAt.toISOString()}_${lastPost.id}`;
               }
             }
-            const hasMore = cachedResponse.length === limit;
-            
+
             return res.status(200).json({
               success: true,
-              feed: cachedResponse,
-              count: cachedResponse.length,
+              feed: trimmedCachedResponse, // Use trimmed response
+              count: trimmedCachedResponse.length, // Use trimmed count
               cached: true,
               has_more: hasMore,
               next_cursor: nextCursor,
@@ -249,23 +310,30 @@ export const getUserFeed = async (req, res) => {
                 "Redis feed is empty - posts may not have been added via fan-out",
             });
           } else {
-            // No posts in cache or Redis - return cached response
-            const lastPost = cachedResponse[cachedResponse.length - 1];
+            // No posts in cache or Redis - return cached response (trimmed)
+            const hasMore = await feedService.checkHasMorePosts(
+              user_id,
+              limit,
+              trimmedCachedResponse[trimmedCachedResponse.length - 1]
+            );
+
+            const lastPost =
+              trimmedCachedResponse[trimmedCachedResponse.length - 1];
             let nextCursor = null;
-            if (lastPost && lastPost.created_at) {
-              const createdAt = lastPost.created_at instanceof Date 
-                ? lastPost.created_at 
-                : new Date(lastPost.created_at);
+            if (lastPost && lastPost.created_at && hasMore) {
+              const createdAt =
+                lastPost.created_at instanceof Date
+                  ? lastPost.created_at
+                  : new Date(lastPost.created_at);
               if (!isNaN(createdAt.getTime())) {
-                nextCursor = createdAt.toISOString();
+                nextCursor = `${createdAt.toISOString()}_${lastPost.id}`;
               }
             }
-            const hasMore = cachedResponse.length === limit;
-            
+
             return res.status(200).json({
               success: true,
-              feed: cachedResponse,
-              count: cachedResponse.length,
+              feed: trimmedCachedResponse, // Use trimmed response
+              count: trimmedCachedResponse.length, // Use trimmed count
               cached: true,
               has_more: hasMore,
               next_cursor: nextCursor,
@@ -277,22 +345,29 @@ export const getUserFeed = async (req, res) => {
             `⚠️ Cache validation error for user ${user_id}:`,
             validationError.message
           );
-          const lastPost = cachedResponse[cachedResponse.length - 1];
+          const hasMore = await feedService.checkHasMorePosts(
+            user_id,
+            limit,
+            trimmedCachedResponse[trimmedCachedResponse.length - 1]
+          );
+
+          const lastPost =
+            trimmedCachedResponse[trimmedCachedResponse.length - 1];
           let nextCursor = null;
-          if (lastPost && lastPost.created_at) {
-            const createdAt = lastPost.created_at instanceof Date 
-              ? lastPost.created_at 
-              : new Date(lastPost.created_at);
+          if (lastPost && lastPost.created_at && hasMore) {
+            const createdAt =
+              lastPost.created_at instanceof Date
+                ? lastPost.created_at
+                : new Date(lastPost.created_at);
             if (!isNaN(createdAt.getTime())) {
-              nextCursor = createdAt.toISOString();
+              nextCursor = `${createdAt.toISOString()}_${lastPost.id}`;
             }
           }
-          const hasMore = cachedResponse.length === limit;
-          
+
           return res.status(200).json({
             success: true,
-            feed: cachedResponse,
-            count: cachedResponse.length,
+            feed: trimmedCachedResponse, // Use trimmed response
+            count: trimmedCachedResponse.length, // Use trimmed count
             cached: true,
             has_more: hasMore,
             next_cursor: nextCursor,
@@ -302,15 +377,19 @@ export const getUserFeed = async (req, res) => {
     }
 
     // Cache miss or stale or cursor provided - use hybrid approach: Redis first 100, PostgreSQL for beyond
-    const feed = await feedService.getFeed(user_id, limit, cursor);
+    // FIX: Query for limit + 1 to accurately determine has_more
+    const feed = await feedService.getFeed(user_id, limit + 1, cursor);
 
-    if (feed.length === 0) {
+    // Determine has_more and trim to limit
+    const hasMore = feed.length > limit;
+    const trimmedFeed = hasMore ? feed.slice(0, limit) : feed;
+
+    if (trimmedFeed.length === 0) {
       return res.status(200).json({
         success: true,
         feed: [],
         count: 0,
         message: "No posts in feed",
-        // FIX: Return pagination info
         has_more: false,
         next_cursor: null,
       });
@@ -320,34 +399,31 @@ export const getUserFeed = async (req, res) => {
     if (!cursor) {
       const redisKey = `feed:user:${user_id}`;
       const FEED_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
-      await cacheFeedResponse(redisKey, feed, FEED_TTL).catch((err) =>
+      await cacheFeedResponse(redisKey, trimmedFeed, FEED_TTL).catch((err) =>
         console.error("Error caching feed response:", err)
       );
     }
 
-    // FIX: Calculate next cursor for pagination
-    const lastPost = feed[feed.length - 1];
+    // Calculate next cursor for pagination
+    const lastPost = trimmedFeed[trimmedFeed.length - 1];
     let nextCursor = null;
-    
-    if (lastPost && lastPost.created_at) {
-      // Handle both Date objects and strings
-      const createdAt = lastPost.created_at instanceof Date 
-        ? lastPost.created_at 
-        : new Date(lastPost.created_at);
-      
+
+    if (lastPost && lastPost.created_at && hasMore) {
+      const createdAt =
+        lastPost.created_at instanceof Date
+          ? lastPost.created_at
+          : new Date(lastPost.created_at);
+
       if (!isNaN(createdAt.getTime())) {
-        nextCursor = createdAt.toISOString();
+        nextCursor = `${createdAt.toISOString()}_${lastPost.id}`;
       }
     }
-    
-    const hasMore = feed.length === limit; // If we got exactly the limit, there might be more
 
     res.status(200).json({
       success: true,
-      feed: feed,
-      count: feed.length,
+      feed: trimmedFeed,
+      count: trimmedFeed.length,
       cached: false,
-      // FIX: Add pagination info
       has_more: hasMore,
       next_cursor: nextCursor,
     });

@@ -115,28 +115,19 @@ export const getPostById = async (postId) => {
  * @param {number} userId - User ID
  * @returns {Array} Array of posts
  */
-export const getPostsByUser = async (userId) => {
-  const userIdInt = parseInt(userId);
-  if (isNaN(userIdInt)) {
-    throw new Error("Invalid user_id");
+export const getPostsByUser = async (userId, options = {}) => {
+  const { limit, order = [["created_at", "DESC"]] } = options;
+
+  const queryOptions = {
+    where: { user_id: userId },
+    order: order,
+  };
+
+  if (limit) {
+    queryOptions.limit = limit;
   }
 
-  const posts = await Post.findAll({
-    where: {
-      user_id: userIdInt,
-    },
-    order: [["created_at", "DESC"]],
-  });
-
-  return posts.map((post) => ({
-    id: post.id,
-    user_id: post.user_id,
-    caption: post.caption,
-    image_url: post.image_url,
-    likes_count: post.likes_count,
-    comments_count: post.comments_count,
-    created_at: post.created_at,
-  }));
+  return await Post.findAll(queryOptions);
 };
 
 /**

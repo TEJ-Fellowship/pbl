@@ -24,7 +24,6 @@ CompressionCodecs[CompressionTypes.Snappy] = SnappyCodec;
  * - Producers send messages to topics
  * - Consumers read messages from topics
  * - Brokers store and manage topics
- * - Zookeeper coordinates the cluster
  *
  * NOTE: This configuration works with existing Kafka Confluent 7.4.0+ setups.
  * Set KAFKA_BROKERS in your .env file to point to your existing Kafka instance.

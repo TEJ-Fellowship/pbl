@@ -1,4 +1,5 @@
 //sequelize feed service
+import { Sequelize } from "sequelize"; // FIX: Import Sequelize class, not just sequelize instance
 import { sequelize } from "../config/db.js";
 import { Post } from "../models/index.js";
 import { redisClient } from "../config/db.js";
@@ -183,8 +184,12 @@ export const fanOutToFollowers = async (userId, postId, createdAt) => {
  */
 export const backfillFeedOnFollow = async (followerId, followingId) => {
   try {
-    // Get all existing posts from the user being followed (from PostgreSQL)
-    const existingPosts = await postService.getPostsByUser(followingId);
+    // Get existing posts from the user being followed (from PostgreSQL)
+    // FIX: Limit to top MAX_FEED_SIZE posts to prevent adding too many
+    const existingPosts = await postService.getPostsByUser(followingId, {
+      limit: MAX_FEED_SIZE,
+      order: [["created_at", "DESC"]],
+    });
 
     if (existingPosts.length === 0) {
       return 0;
@@ -205,12 +210,20 @@ export const backfillFeedOnFollow = async (followerId, followingId) => {
       return 0;
     }
 
-    // Add missing posts to follower's feed in Redis
-    const redisPromises = postsToAdd.map((post) =>
-      addPostToFeedRedis(followerId, post.id, post.created_at)
-    );
+    // FIX: Add posts one by one (each addition respects MAX_FEED_SIZE via LUA script)
+    // Sort by created_at DESC to add newest posts first
+    const sortedPosts = postsToAdd.sort((a, b) => {
+      const dateA =
+        a.created_at instanceof Date ? a.created_at : new Date(a.created_at);
+      const dateB =
+        b.created_at instanceof Date ? b.created_at : new Date(b.created_at);
+      return dateB.getTime() - dateA.getTime();
+    });
 
-    await Promise.all(redisPromises);
+    // Add posts sequentially to ensure MAX_FEED_SIZE limit is respected
+    for (const post of sortedPosts) {
+      await addPostToFeedRedis(followerId, post.id, post.created_at);
+    }
 
     // Invalidate cached response so new posts appear immediately
     await invalidateFeedCache(followerId);
@@ -346,22 +359,80 @@ export const getFeedFromPostgres = async (
 
     const followingIds = following.map((f) => f.following_id);
 
-    // Build query with cursor-based pagination
-    const whereClause = {
-      user_id: followingIds,
-    };
+    // Parse cursor that might include post ID
+    let cursorDate = null;
+    let excludePostId = null;
 
     if (cursor) {
-      whereClause.created_at = {
-        [sequelize.Op.lt]: cursor, // Less than cursor (older posts)
+      // Check if cursor includes post ID (format: "2025-12-05T12:07:57.610Z_post-id")
+      if (typeof cursor === "string" && cursor.includes("_")) {
+        const parts = cursor.split("_");
+        cursorDate = new Date(parts[0]);
+        excludePostId = parts.slice(1).join("_"); // In case UUID has underscores
+      } else {
+        cursorDate = cursor instanceof Date ? cursor : new Date(cursor);
+      }
+
+      if (isNaN(cursorDate.getTime())) {
+        console.error(`⚠️ Invalid cursor: ${cursor}`);
+        return [];
+      }
+    }
+
+    // Build query with cursor-based pagination
+    // FIX: Build whereClause correctly - use explicit structure
+    let whereClause;
+
+    if (cursor && cursorDate) {
+      // When cursor is provided, build complete where clause with AND/OR structure
+      whereClause = {
+        [Sequelize.Op.and]: [
+          // FIX: Use Sequelize.Op instead of sequelize.Op
+          { user_id: { [Sequelize.Op.in]: followingIds } },
+          {
+            [Sequelize.Op.or]: [
+              { created_at: { [Sequelize.Op.lt]: cursorDate } },
+              {
+                [Sequelize.Op.and]: [
+                  { created_at: { [Sequelize.Op.eq]: cursorDate } },
+                  { id: { [Sequelize.Op.ne]: excludePostId } },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    } else {
+      // No cursor - simple query
+      whereClause = {
+        user_id: {
+          [Sequelize.Op.in]: followingIds, // FIX: Use Sequelize.Op
+        },
       };
     }
+
+    // FIX: Add debugging
+    console.log(
+      `🔍 [POSTGRES] User ${userId}: Querying with cursor=${
+        cursorDate ? cursorDate.toISOString() : "null"
+      }, excludePostId=${excludePostId || "null"}, followingIds=${
+        followingIds.length
+      }`
+    );
+    console.log(
+      `🔍 [POSTGRES] Where clause:`,
+      JSON.stringify(whereClause, null, 2)
+    );
 
     const posts = await Post.findAll({
       where: whereClause,
       order: [["created_at", "DESC"]],
       limit: limitInt,
+      logging: console.log, // FIX: Enable SQL logging to debug
     });
+
+    // FIX: Add debugging
+    console.log(`✅ [POSTGRES] User ${userId}: Found ${posts.length} posts`);
 
     return posts.map((post) => ({
       id: post.id,
@@ -375,7 +446,8 @@ export const getFeedFromPostgres = async (
   } catch (error) {
     console.error(
       `⚠️ PostgreSQL feed read error for user ${userId}:`,
-      error.message
+      error.message,
+      error.stack
     );
     return [];
   }
@@ -453,8 +525,9 @@ export const warmUpCache = async (userId, feedItems) => {
 
 /**
  * Get user's feed (hybrid: Redis first 100, PostgreSQL for beyond 100)
+ * FIX: Support querying limit + 1 for accurate has_more calculation
  * @param {number} userId - User ID
- * @param {number} limit - Maximum number of posts to return
+ * @param {number} limit - Maximum number of posts to return (may be limit + 1 for has_more check)
  * @param {Date} cursor - Cursor for pagination (optional)
  * @returns {Array} Array of posts
  */
@@ -543,5 +616,52 @@ export const invalidateFeedCache = async (userId) => {
       `⚠️ Cache invalidation error for user ${userId}:`,
       error.message
     );
+  }
+};
+
+/**
+ * Check if there are more posts available after the given post
+ * @param {number} userId - User ID
+ * @param {number} limit - Limit to check
+ * @param {Object} lastPost - Last post in current feed
+ * @returns {boolean} True if there are more posts
+ */
+export const checkHasMorePosts = async (userId, limit, lastPost) => {
+  try {
+    if (!lastPost) return false;
+
+    // If we're using Redis and have less than MAX_FEED_SIZE posts, no more in Redis
+    const redisFeed = await getFeedFromRedis(userId, MAX_FEED_SIZE);
+    if (redisFeed.length < MAX_FEED_SIZE) {
+      // Check PostgreSQL for more posts
+      const cursor =
+        lastPost.created_at instanceof Date
+          ? lastPost.created_at
+          : new Date(lastPost.created_at);
+      const nextPosts = await getFeedFromPostgres(
+        userId,
+        1,
+        `${cursor.toISOString()}_${lastPost.id}`
+      );
+      return nextPosts.length > 0;
+    }
+
+    // If Redis has MAX_FEED_SIZE posts, check PostgreSQL for more
+    const cursor =
+      lastPost.created_at instanceof Date
+        ? lastPost.created_at
+        : new Date(lastPost.created_at);
+    const nextPosts = await getFeedFromPostgres(
+      userId,
+      1,
+      `${cursor.toISOString()}_${lastPost.id}`
+    );
+    return nextPosts.length > 0;
+  } catch (error) {
+    console.error(
+      `⚠️ Error checking has_more for user ${userId}:`,
+      error.message
+    );
+    return false; // Conservative: assume no more posts on error
   }
 };
