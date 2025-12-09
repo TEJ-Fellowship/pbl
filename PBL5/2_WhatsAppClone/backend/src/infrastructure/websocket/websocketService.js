@@ -18,7 +18,9 @@ class websocketService {
   }
 
   sendMessage(conversationId, message) {
-    this.io.to(conversationId).emit("message:send", message);
+    // Use .in() to include all sockets in the room (including sender)
+    // This ensures real-time messages appear for both sender and receiver
+    this.io.in(conversationId).emit("message:send", message);
   }
 
   typingStart(socket, conversationId, userId) {

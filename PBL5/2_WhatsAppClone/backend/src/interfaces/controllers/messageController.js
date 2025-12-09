@@ -55,9 +55,15 @@ export const initiateConversation = async (req, res) => {
 export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const limit = parseInt(req.query.limit) || 50; // Allow custom limit via query parameter
+    const limit = parseInt(req.query.limit) || 50; // Default batch size: 50
+    const cursor = req.query.cursor || null; // Cursor for pagination (message_id TimeUUID)
 
-    const messages = await messageRepo.getMessages(conversationId, limit);
+    // Use cursor-based pagination
+    const { messages, hasMore, nextCursor } = await messageRepo.getMessagesPaginated(
+      conversationId,
+      limit,
+      cursor
+    );
 
     // Format messages for better readability
     const formattedMessages = messages.map((msg) => ({
@@ -75,6 +81,11 @@ export const getMessages = async (req, res) => {
       conversationId: conversationId,
       count: formattedMessages.length,
       data: formattedMessages,
+      pagination: {
+        hasMore,
+        nextCursor,
+        limit,
+      },
     });
   } catch (error) {
     console.error("Error getting messages:", error);

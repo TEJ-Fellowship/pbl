@@ -6,25 +6,16 @@ import { handleSocket } from "./infrastructure/websocket/handlers/socketHandler.
 import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
-import redis from "./config/redis.js";
-import Redis from "ioredis";
-import {
-  REDIS_HOST,
-  REDIS_PORT,
-  REDIS_PASSWORD,
-  REDIS_USERNAME,
-} from "./config/index.js";
-
-// Get server instance ID and port from environment
-const SERVER_ID = process.env.SERVER_ID || `server-${process.pid}`;
-const PORT = process.env.PORT || 3000;
+import redis from './config/redis.js';
+import cors from 'cors';
 
 // Initialize database connection
 const startServer = async () => {
   try {
     const app = express();
     app.use(express.json());
-
+    app.use(cors());
+    
     const httpServer = createServer(app);
 
     // Create Redis clients for Socket.IO adapter

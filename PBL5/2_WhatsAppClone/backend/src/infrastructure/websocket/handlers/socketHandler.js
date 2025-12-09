@@ -90,18 +90,31 @@ export const handleSocket = (io, serverId) => {
       console.log(`[${serverId}] Emitting to room:`, data.conversationId);
       const savedMessage = await messageRepo.saveMessage(message);
 
+      // Format message for frontend (convert TimeUUID to string, ensure all fields)
+      const formattedMessage = {
+        messageId: savedMessage.messageId?.toString() || savedMessage.messageId,
+        conversationId: savedMessage.conversationId?.toString() || savedMessage.conversationId,
+        senderId: savedMessage.senderId?.toString() || savedMessage.senderId,
+        content: savedMessage.content,
+        messageType: savedMessage.messageType || "text",
+        status: savedMessage.status || "sent",
+        createdAt: savedMessage.createdAt || new Date(),
+      };
+
       const room = io.sockets.adapter.rooms.get(data.conversationId);
-      console.log(
-        `[${serverId}] 📤 Broadcasting to ${room?.size || 0} sockets`
-      );
-      wsService.sendMessage(data.conversationId, savedMessage);
+      console.log(`📤 Broadcasting to ${room?.size || 0} sockets`);
+      
+      // Broadcast to all sockets in the room (including sender)
+      wsService.sendMessage(data.conversationId, formattedMessage);
     });
 
-    socket.on("typing:start", (conversationId, userId) => {
+    socket.on("typing:start", (conversationId) => {
+      // userId is already available from socket handshake
       wsService.typingStart(socket, conversationId, userId);
     });
 
-    socket.on("typing:stop", (conversationId, userId) => {
+    socket.on("typing:stop", (conversationId) => {
+      // userId is already available from socket handshake
       wsService.typingStop(socket, conversationId, userId);
     });
 
