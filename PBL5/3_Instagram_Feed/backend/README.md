@@ -336,7 +336,7 @@ When Kafka is unavailable:
 **Feed Retrieval (3-Tier Strategy):**
 
 - `getFeedResponseFromCache(userId, limit)` - **Tier 1:** Get complete cached response
-- `getFeed(userId, limit, cursor)` - **Hybrid:** Redis first 100, PostgreSQL for beyond 100 or cursor-based pagination
+- `getFeed(userId, limit, cursor)` - **Hybrid:** Smart cursor pagination - uses Redis when cursor is within Redis (first 100), combines Redis + PostgreSQL when needed, PostgreSQL only when cursor is beyond Redis
 - `getFeedFromRedis(userId, limit)` - Get feed IDs from Redis sorted set
 - `getFeedFromPostgres(userId, limit, cursor)` - **Tier 3:** Get feed from PostgreSQL with cursor-based pagination
 - `rebuildFeedFromPostgres(userId)` - Rebuild Redis feed from PostgreSQL when cache is empty
@@ -568,10 +568,24 @@ GET /api/posts/feed/1?limit=20
    └─ Cache Miss: Continue
    ↓
 4. feedService.getFeed()
-   ├─ If limit > 100 OR cursor provided:
-   │  └─ Query PostgreSQL with cursor-based pagination
-   │     └─ ✅ [POSTGRESQL] Cursor-based pagination
-   └─ Else (limit <= 100):
+   ├─ If limit > 100:
+   │  └─ Query PostgreSQL directly (always)
+   │     └─ ✅ [POSTGRESQL] Large limit query
+   ├─ If cursor provided:
+   │  ├─ Check if cursor post exists in Redis
+   │  ├─ If cursor in Redis:
+   │  │  ├─ Filter posts after cursor from Redis
+   │  │  ├─ If Redis has enough: Return from Redis only
+   │  │  │  └─ ✅ [HYBRID] All from Redis
+   │  │  └─ If Redis doesn't have enough:
+   │  │     ├─ Get available from Redis (e.g., 80 posts)
+   │  │     ├─ Get remaining from PostgreSQL (e.g., 5 posts)
+   │  │     ├─ Combine Redis + PostgreSQL results
+   │  │     └─ ✅ [HYBRID] Combined Redis + PostgreSQL
+   │  └─ If cursor not in Redis:
+   │     └─ Query PostgreSQL directly
+   │        └─ ✅ [POSTGRESQL] Cursor beyond Redis
+   └─ Else (no cursor, first page):
       ├─ Try Redis: getFeedFromRedis(userId, limit)
       │  ├─ Cache Hit: Get post details from PostgreSQL
       │  │  └─ ✅ [CACHE HIT] Feed from Redis
@@ -586,8 +600,12 @@ GET /api/posts/feed/1?limit=20
 
 **Key Points:**
 
-- **First 100 posts:** Always from Redis (fastest)
-- **Beyond 100 posts:** PostgreSQL with cursor-based pagination
+- **First page (no cursor):** Always from Redis (fastest)
+- **Cursor pagination (within Redis):** Smart hybrid approach
+  - If cursor post is in Redis: Uses Redis first, PostgreSQL only for remaining if needed
+  - Example: Request 85 posts, Redis has 80 → Gets 80 from Redis + 5 from PostgreSQL
+- **Cursor pagination (beyond Redis):** PostgreSQL directly
+- **Beyond 100 posts (no cursor):** PostgreSQL directly
 - **Empty Redis:** Automatically rebuilds from PostgreSQL
 - **Response caching:** Complete feed responses cached for instant retrieval
 
@@ -608,6 +626,44 @@ When a new post is added to a feed that already has 100 posts:
 - Feed temporarily has 101 posts
 - Oldest post (lowest score) is automatically removed
 - Anu's feed now has 100 posts, including Ram's new post
+
+### Hybrid Cursor Pagination
+
+The system uses a smart hybrid approach for cursor-based pagination that maximizes Redis usage:
+
+**How it works:**
+
+1. **Cursor Check:** When a cursor is provided, the system checks if the cursor post exists in Redis (within the first 100 posts)
+
+2. **If cursor is in Redis:**
+
+   - Filters all posts after the cursor from Redis
+   - If Redis has enough posts (≥ requested limit): Returns from Redis only
+   - If Redis doesn't have enough: Gets all available from Redis, then fetches remaining from PostgreSQL, combines results
+
+3. **If cursor is not in Redis:**
+   - Cursor is beyond the 100 posts in Redis
+   - Queries PostgreSQL directly
+
+**Example Scenario:**
+
+```
+Request 1: GET /api/posts/feed/user123?limit=20
+→ Returns 20 posts from Redis
+
+Request 2: GET /api/posts/feed/user123?limit=85&cursor=2025-12-05T12:07:57.610Z_post-id
+→ Cursor post is in Redis
+→ Redis has 80 posts available after cursor
+→ Gets 80 from Redis + 5 from PostgreSQL = 85 total
+→ Returns combined feed
+```
+
+**Benefits:**
+
+- **Performance:** Maximizes Redis usage (fastest)
+- **Efficiency:** Only queries PostgreSQL when necessary
+- **Seamless:** Users don't notice the hybrid approach
+- **Scalable:** Handles any pagination scenario correctly
 
 ### Follow/Unfollow Flow
 

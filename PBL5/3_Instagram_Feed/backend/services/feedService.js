@@ -432,7 +432,9 @@ export const getFeedFromPostgres = async (
     });
 
     // FIX: Add debugging
-    console.log(`✅ [POSTGRES] User ${userId}: Found ${posts.length} posts`);
+    console.log(
+      `📊 [POSTGRES] User ${userId}: Found ${posts.length} posts from postgres`
+    );
 
     return posts.map((post) => ({
       id: post.id,
@@ -526,6 +528,7 @@ export const warmUpCache = async (userId, feedItems) => {
 /**
  * Get user's feed (hybrid: Redis first 100, PostgreSQL for beyond 100)
  * FIX: Support querying limit + 1 for accurate has_more calculation
+ * FIX: Hybrid approach - use Redis when cursor is within Redis, PostgreSQL for remaining
  * @param {number} userId - User ID
  * @param {number} limit - Maximum number of posts to return (may be limit + 1 for has_more check)
  * @param {Date} cursor - Cursor for pagination (optional)
@@ -534,12 +537,135 @@ export const warmUpCache = async (userId, feedItems) => {
 export const getFeed = async (userId, limit = 20, cursor = null) => {
   const limitInt = parseInt(limit);
 
-  // If requesting more than 100 posts or using cursor, query PostgreSQL
-  if (limitInt > MAX_FEED_SIZE || cursor) {
-    return await getFeedFromPostgres(userId, limitInt, cursor);
+  // If requesting more than 100 posts, always use PostgreSQL
+  if (limitInt > MAX_FEED_SIZE) {
+    const posts = await getFeedFromPostgres(userId, limitInt, cursor);
+    console.log(
+      `📊 [FEED SOURCE] User ${userId}: ${posts.length} from postgres (limit > 100)`
+    );
+    return posts;
   }
 
-  // Try Redis first (top 100 posts)
+  // If cursor provided, check if we can use Redis (hybrid approach)
+  if (cursor) {
+    // Parse cursor to extract date and post ID
+    let cursorDate = null;
+    let cursorPostId = null;
+
+    if (typeof cursor === "string" && cursor.includes("_")) {
+      const parts = cursor.split("_");
+      cursorDate = new Date(parts[0]);
+      cursorPostId = parts.slice(1).join("_"); // Handle UUIDs that might have underscores
+    } else {
+      cursorDate = cursor instanceof Date ? cursor : new Date(cursor);
+    }
+
+    if (isNaN(cursorDate.getTime())) {
+      console.error(
+        `⚠️ Invalid cursor date: ${cursor}, falling back to PostgreSQL`
+      );
+      return await getFeedFromPostgres(userId, limitInt, cursor);
+    }
+
+    // Get all available posts from Redis (up to MAX_FEED_SIZE)
+    const redisFeed = await getFeedFromRedis(userId, MAX_FEED_SIZE);
+
+    // Check if cursor post exists in Redis feed
+    const cursorPostInRedis =
+      cursorPostId &&
+      redisFeed.some(
+        (item) => item.post_id.toString() === cursorPostId.toString()
+      );
+
+    if (cursorPostInRedis && redisFeed.length > 0) {
+      // Cursor post is in Redis - filter posts after cursor from Redis
+      const filteredRedisFeed = redisFeed.filter((item) => {
+        const itemDate =
+          item.created_at instanceof Date
+            ? item.created_at
+            : new Date(item.created_at);
+        const itemTimestamp = itemDate.getTime();
+        const cursorTimestamp = cursorDate.getTime();
+
+        // Include posts with created_at < cursor date
+        // Or same timestamp but different post ID (to exclude cursor post)
+        return (
+          itemTimestamp < cursorTimestamp ||
+          (itemTimestamp === cursorTimestamp &&
+            item.post_id.toString() !== cursorPostId.toString())
+        );
+      });
+
+      // If Redis has enough posts, return from Redis only
+      if (filteredRedisFeed.length >= limitInt) {
+        const limitedFeed = filteredRedisFeed.slice(0, limitInt);
+        const postIds = limitedFeed.map((item) => item.post_id);
+        const posts = await postService.getPostsByIds(postIds);
+
+        // Return posts in the same order as feed
+        const postsMap = new Map(posts.map((post) => [post.id, post]));
+        const result = limitedFeed
+          .map((item) => postsMap.get(item.post_id))
+          .filter((post) => post !== undefined);
+
+        console.log(
+          `📊 [FEED SOURCE] User ${userId}: ${result.length} from redis`
+        );
+        return result;
+      }
+
+      // Redis doesn't have enough posts - hybrid approach
+      // Get all available from Redis, then get remaining from PostgreSQL
+      const redisPosts = filteredRedisFeed;
+      const remainingNeeded = limitInt - redisPosts.length;
+
+      console.log(
+        `🔄 [HYBRID] User ${userId}: Redis has ${redisPosts.length} posts, need ${limitInt} total. Getting ${remainingNeeded} more from PostgreSQL.`
+      );
+
+      // Get remaining posts from PostgreSQL using cursor from last Redis post
+      const lastRedisPost = redisPosts[redisPosts.length - 1];
+      const lastPostDate =
+        lastRedisPost.created_at instanceof Date
+          ? lastRedisPost.created_at
+          : new Date(lastRedisPost.created_at);
+      const pgCursor = `${lastPostDate.toISOString()}_${lastRedisPost.post_id}`;
+
+      const pgPosts = await getFeedFromPostgres(
+        userId,
+        remainingNeeded,
+        pgCursor
+      );
+
+      // Get post details for Redis posts
+      const redisPostIds = redisPosts.map((item) => item.post_id);
+      const allPostIds = [...redisPostIds, ...pgPosts.map((p) => p.id)];
+      const allPosts = await postService.getPostsByIds(allPostIds);
+
+      // Combine Redis + PostgreSQL results
+      const postsMap = new Map(allPosts.map((post) => [post.id, post]));
+      const redisPostDetails = redisPosts
+        .map((item) => postsMap.get(item.post_id))
+        .filter((post) => post !== undefined);
+
+      const combinedFeed = [...redisPostDetails, ...pgPosts];
+
+      console.log(
+        `📊 [FEED SOURCE] User ${userId}: ${redisPostDetails.length} from redis + ${pgPosts.length} from postgres = ${combinedFeed.length} total`
+      );
+
+      return combinedFeed;
+    }
+
+    // Cursor post not in Redis - must be beyond 100, use PostgreSQL
+    const posts = await getFeedFromPostgres(userId, limitInt, cursor);
+    console.log(
+      `📊 [FEED SOURCE] User ${userId}: ${posts.length} from postgres (cursor beyond redis)`
+    );
+    return posts;
+  }
+
+  // No cursor - try Redis first (top 100 posts)
   const cachedFeed = await getFeedFromRedis(userId, limitInt);
 
   if (cachedFeed && cachedFeed.length > 0) {
@@ -549,9 +675,14 @@ export const getFeed = async (userId, limit = 20, cursor = null) => {
 
     // Return posts in the same order as feed
     const postsMap = new Map(posts.map((post) => [post.id, post]));
-    return cachedFeed
+    const result = cachedFeed
       .map((item) => postsMap.get(item.post_id))
       .filter((post) => post !== undefined);
+
+    console.log(
+      `📊 [FEED SOURCE] User ${userId}: ${result.length} from redis (first page)`
+    );
+    return result;
   }
 
   // Cache miss - rebuild from PostgreSQL
@@ -567,9 +698,14 @@ export const getFeed = async (userId, limit = 20, cursor = null) => {
 
   // Return posts in the same order as feed
   const postsMap = new Map(posts.map((post) => [post.id, post]));
-  return feedItems
+  const result = feedItems
     .map((item) => postsMap.get(item.post_id))
     .filter((post) => post !== undefined);
+
+  console.log(
+    `📊 [FEED SOURCE] User ${userId}: ${result.length} from postgres (cache miss)`
+  );
+  return result;
 };
 
 /**

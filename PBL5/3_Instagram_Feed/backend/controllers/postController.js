@@ -264,6 +264,9 @@ export const getUserFeed = async (req, res) => {
                 }
               }
 
+              console.log(
+                `📊 [FEED SOURCE] User ${user_id}: ${trimmedCachedResponse.length} from redis (cached response)`
+              );
               return res.status(200).json({
                 success: true,
                 feed: trimmedCachedResponse, // Use trimmed response
@@ -299,6 +302,9 @@ export const getUserFeed = async (req, res) => {
               }
             }
 
+            console.log(
+              `📊 [FEED SOURCE] User ${user_id}: ${trimmedCachedResponse.length} from redis (cached response, redis empty warning)`
+            );
             return res.status(200).json({
               success: true,
               feed: trimmedCachedResponse, // Use trimmed response
@@ -330,6 +336,9 @@ export const getUserFeed = async (req, res) => {
               }
             }
 
+            console.log(
+              `📊 [FEED SOURCE] User ${user_id}: ${trimmedCachedResponse.length} from redis (cached response)`
+            );
             return res.status(200).json({
               success: true,
               feed: trimmedCachedResponse, // Use trimmed response
@@ -364,6 +373,9 @@ export const getUserFeed = async (req, res) => {
             }
           }
 
+          console.log(
+            `📊 [FEED SOURCE] User ${user_id}: ${trimmedCachedResponse.length} from redis (cached response, validation error fallback)`
+          );
           return res.status(200).json({
             success: true,
             feed: trimmedCachedResponse, // Use trimmed response
@@ -383,6 +395,8 @@ export const getUserFeed = async (req, res) => {
     // Determine has_more and trim to limit
     const hasMore = feed.length > limit;
     const trimmedFeed = hasMore ? feed.slice(0, limit) : feed;
+
+    // Note: Feed source logging is already done in feedService.getFeed()
 
     if (trimmedFeed.length === 0) {
       return res.status(200).json({
