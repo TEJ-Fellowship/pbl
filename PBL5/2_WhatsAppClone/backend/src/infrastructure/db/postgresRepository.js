@@ -4,6 +4,8 @@ import { sequelize } from "../../config/postgres.js";
 
 class User extends Model {}
 class Conversation extends Model {}
+class Group extends Model {}
+
 
 User.init(
   {
@@ -61,6 +63,19 @@ Conversation.init(
         key: "user_id",
       },
     },
+    conversation_type: {
+      type: DataTypes.ENUM('direct', 'group'),
+      allowNull: false,
+      defaultValue: 'direct',
+    },
+    group_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'groups',
+        key: 'group_id',
+      },
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -106,6 +121,54 @@ Conversation.init(
   }
 );
 
+
+Group.init(
+  {
+    group_id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+    group_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    group_description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    created_by: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'users',
+        key: 'user_id',
+      },
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    tableName: 'groups',
+    underscored: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    modelName: 'group',
+  }
+);
+
+
+
 // Define associations
 User.hasMany(Conversation, {
   foreignKey: "user1_id",
@@ -126,4 +189,4 @@ Conversation.belongsTo(User, {
   as: "lastMessageSender",
 });
 
-export { User, Conversation, sequelize };
+export { User, Conversation, sequelize, Group };

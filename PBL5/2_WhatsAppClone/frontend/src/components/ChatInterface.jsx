@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ConversationList from "./ConversationList";
 import ChatWindow from "./ChatWindow";
+import GroupCreationModal from "./GroupCreationModal";
 import "./ChatInterface.css";
 
 const API_BASE = "http://localhost:3000/api";
@@ -8,12 +9,16 @@ const API_BASE = "http://localhost:3000/api";
 function ChatInterface({
   currentUser,
   conversations,
+  groups,
   users,
   onNewConversation,
+  onNewGroup,
+  onRefreshGroups,
   onLogout,
 }) {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [pagination, setPagination] = useState({
     nextCursor: null,
     hasMore: false,
@@ -22,7 +27,6 @@ function ChatInterface({
 
   useEffect(() => {
     if (selectedConversation) {
-      // Reset messages and pagination when conversation changes
       setMessages([]);
       setPagination({ nextCursor: null, hasMore: false, isLoading: false });
       fetchMessages(selectedConversation.conversationId, null, true);
@@ -34,7 +38,6 @@ function ChatInterface({
       console.log(`📥 Fetching messages:`, { conversationId, cursor, isInitial });
       setPagination((prev) => ({ ...prev, isLoading: true }));
       
-      // Build URL with pagination parameters
       const limit = 50;
       const url = cursor
         ? `${API_BASE}/conversation/${conversationId}?limit=${limit}&cursor=${cursor}`
@@ -45,29 +48,15 @@ function ChatInterface({
         const data = await response.json();
         const newMessages = data.data || [];
         
-        console.log(`✅ Received ${newMessages.length} messages`, {
-          hasMore: data.pagination?.hasMore,
-          nextCursor: data.pagination?.nextCursor,
-        });
-        
         if (isInitial || !cursor) {
-          // First load or initial fetch - replace messages
           setMessages(newMessages);
         } else {
-          // Loading more - prepend older messages
           setMessages((prev) => [...newMessages, ...prev]);
         }
 
-        // Update pagination state
         setPagination({
           nextCursor: data.pagination?.nextCursor || null,
           hasMore: data.pagination?.hasMore || false,
-          isLoading: false,
-        });
-        
-        console.log(`📊 Pagination updated:`, {
-          hasMore: data.pagination?.hasMore,
-          nextCursor: data.pagination?.nextCursor ? "exists" : "null",
           isLoading: false,
         });
       } else {
@@ -85,15 +74,8 @@ function ChatInterface({
 
   const loadMoreMessages = async () => {
     if (!selectedConversation || !pagination.nextCursor || pagination.isLoading) {
-      console.log("⚠️ Cannot load more:", {
-        hasConversation: !!selectedConversation,
-        hasCursor: !!pagination.nextCursor,
-        isLoading: pagination.isLoading,
-      });
       return;
     }
-
-    console.log("🔄 Loading more messages with cursor:", pagination.nextCursor);
     await fetchMessages(selectedConversation.conversationId, pagination.nextCursor, false);
   };
 
@@ -102,7 +84,6 @@ function ChatInterface({
     if (!receiver) return;
 
     try {
-      // 1️⃣ Create conversation on backend
       const res = await fetch(`${API_BASE}/conversation/initiate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -115,7 +96,6 @@ function ChatInterface({
       const data = await res.json();
       const conversationId = data.data.conversationId;
 
-      // 2️⃣ Create conversation object for frontend
       const newConversation = {
         conversationId,
         user1Id: currentUser.user_id,
@@ -123,12 +103,10 @@ function ChatInterface({
         receiver: receiver,
         lastMessageText: "",
         lastMessageTime: new Date(),
+        type: 'direct',
       };
 
-      // 3️⃣ Add to sidebar list immediately
       onNewConversation(newConversation);
-
-      // 4️⃣ Select the conversation
       setSelectedConversation(newConversation);
     } catch (err) {
       console.error("Error starting conversation:", err);
@@ -136,36 +114,63 @@ function ChatInterface({
   };
 
   const handleConversationSelect = (conversation) => {
-    // Get the other user's info
-    const otherUserId =
-      conversation.user1Id === currentUser.user_id
-        ? conversation.user2Id
-        : conversation.user1Id;
-    const otherUser = users.find((u) => u.user_id === otherUserId);
+    if (conversation.type === 'group') {
+      // For groups, set group info
+      setSelectedConversation({
+        ...conversation,
+        isGroup: true,
+        groupId: conversation.groupId,
+        groupName: conversation.groupName,
+      });
+    } else {
+      // For direct conversations
+      const otherUserId =
+        conversation.user1Id === currentUser.user_id
+          ? conversation.user2Id
+          : conversation.user1Id;
+      const otherUser = users.find((u) => u.user_id === otherUserId);
 
-    setSelectedConversation({
-      ...conversation,
-      receiver: otherUser,
-    });
+      setSelectedConversation({
+        ...conversation,
+        receiver: otherUser,
+        isGroup: false,
+      });
+    }
+  };
+
+  const handleGroupCreated = (groupData) => {
+    const newGroup = {
+      conversationId: groupData.conversationId,
+      groupId: groupData.groupId,
+      groupName: groupData.groupName,
+      lastMessageText: "",
+      lastMessageTime: new Date(),
+      type: 'group',
+    };
+    onNewGroup(newGroup);
+    setSelectedConversation(newGroup);
+    onRefreshGroups();
   };
 
   const handleMessageSent = (newMessage) => {
-    // Update conversation if it was new
     if (selectedConversation && !selectedConversation.conversationId) {
       const updatedConversation = {
         ...selectedConversation,
         conversationId: newMessage.conversationId,
       };
       setSelectedConversation(updatedConversation);
-      onNewConversation(updatedConversation);
+      if (selectedConversation.isGroup) {
+        onNewGroup(updatedConversation);
+      } else {
+        onNewConversation(updatedConversation);
+      }
     }
-
-    // Add message to local state
     setMessages([...messages, newMessage]);
   };
 
   const getOtherUser = () => {
     if (!selectedConversation) return null;
+    if (selectedConversation.isGroup) return null; // Groups don't have a single receiver
     return selectedConversation.receiver;
   };
 
@@ -185,11 +190,13 @@ function ChatInterface({
         </div>
         <ConversationList
           conversations={conversations}
+          groups={groups}
           currentUser={currentUser}
           users={users}
           selectedConversation={selectedConversation}
           onSelectConversation={handleConversationSelect}
           onNewConversation={startNewConversation}
+          onShowCreateGroup={() => setShowCreateGroup(true)}
         />
       </div>
       <div className="chat-main">
@@ -213,6 +220,14 @@ function ChatInterface({
           </div>
         )}
       </div>
+      {showCreateGroup && (
+        <GroupCreationModal
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setShowCreateGroup(false)}
+          onGroupCreated={handleGroupCreated}
+        />
+      )}
     </div>
   );
 }

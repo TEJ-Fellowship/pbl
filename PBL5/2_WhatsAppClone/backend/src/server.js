@@ -4,6 +4,10 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { handleSocket } from "./infrastructure/websocket/handlers/socketHandler.js";
 import messageRoutes from "../src/interfaces/routes/messageRoutes.js";
+import { startKafkaConsumer } from './infrastructure/kafka/consumer.js';
+import { createTopicsIfNotExists } from './infrastructure/kafka/topics.js';
+import groupRoutes from '../src/interfaces/routes/groupRoutes.js';
+
 import userRoutes from "../src/interfaces/routes/userRoutes.js";
 import { connectToDatabase } from "./config/postgres.js";
 import { redis, createAdapterClients } from "./config/redis.js";
@@ -61,8 +65,23 @@ const startServer = async () => {
 
     await handleSocket(io, SERVER_ID);
 
+    // Initialize Kafka topics and consumer
+    try {
+      await createTopicsIfNotExists();
+      console.log(`[${SERVER_ID}] Kafka topics initialized`);
+      
+      await startKafkaConsumer(io);
+      console.log(`[${SERVER_ID}] Kafka consumer started`);
+    } catch (error) {
+      console.error(`[${SERVER_ID}] Failed to initialize Kafka:`, error);
+      // Don't exit - server can still work without Kafka
+    }
+
     app.use("/api/users", userRoutes);
     app.use("/api/conversation", messageRoutes);
+    
+app.use("/api/groups", groupRoutes); 
+
 
     // Health check endpoint
     app.get("/health", (req, res) => {

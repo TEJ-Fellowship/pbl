@@ -162,3 +162,38 @@
   color: #999;
 }
 
+/* Add to existing ConversationList.css */
+
+.conversation-list-header {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.new-chat-btn,
+.new-group-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #25d366;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.new-chat-btn:hover,
+.new-group-btn:hover {
+  background: #20ba5a;
+}
+
+.group-item {
+  position: relative;
+}
+
+.group-avatar {
+  background: #25d366 !important;
+  font-size: 1.2rem;
+}

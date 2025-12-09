@@ -287,3 +287,20 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* Add to existing ChatWindow.css */
+
+.group-avatar {
+  background: #25d366 !important;
+  font-size: 1.5rem;
+}
+
+.message-sender-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.message.received .message-sender-name {
+  color: #1976d2;
+}

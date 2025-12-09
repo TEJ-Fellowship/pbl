@@ -10,13 +10,17 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [groups, setGroups] = useState([]);
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
-    if (currentUser) fetchConversations();
+    if (currentUser) {
+      fetchConversations();
+      fetchGroups();
+    }
   }, [currentUser]);
 
   const fetchUsers = async () => {
@@ -47,6 +51,22 @@ function App() {
     }
   };
 
+  const fetchGroups = async () => {
+    if (!currentUser?.user_id) return;
+    try {
+      const response = await fetch(
+        `${API_BASE}/groups/user/${currentUser.user_id}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      setGroups([]);
+    }
+  };
+
   const createUser = async (name, phone) => {
     try {
       const response = await fetch(`${API_BASE}/users`, {
@@ -72,6 +92,10 @@ function App() {
     setConversations([conversation, ...conversations]);
   };
 
+  const handleNewGroup = (group) => {
+    setGroups([group, ...groups]);
+  };
+
   if (!currentUser) {
     return (
       <UserSelection
@@ -87,8 +111,11 @@ function App() {
       <ChatInterface
         currentUser={currentUser}
         conversations={conversations}
+        groups={groups}
         users={users}
         onNewConversation={handleNewConversation}
+        onNewGroup={handleNewGroup}
+        onRefreshGroups={fetchGroups}
         onLogout={() => setCurrentUser(null)}
       />
     </SocketProvider>

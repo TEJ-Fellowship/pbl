@@ -19,41 +19,64 @@ function ChatWindow({
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState(new Set());
   const [receiverStatus, setReceiverStatus] = useState("offline");
+  const [groupMembers, setGroupMembers] = useState([]);
+
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const previousMessagesLengthRef = useRef(0);
   const isLoadingMoreRef = useRef(false);
 
+  const isGroup = conversation?.isGroup || conversation?.type === "group";
+
+  useEffect(() => {
+    if (isGroup && conversation?.groupId) {
+      fetchGroupMembers(conversation.groupId);
+    }
+  }, [isGroup, conversation?.groupId]);
+
+  const fetchGroupMembers = async (groupId) => {
+    try {
+      const response = await fetch(`${API_BASE}/groups/${groupId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setGroupMembers(data.data.members || []);
+      }
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+    }
+  };
+
   useEffect(() => {
     if (!socket) return;
 
     const handleStatusUpdate = ({ userId, status }) => {
-      console.log(userId, status);
-      if (userId === receiver.user_id) {
+      if (!isGroup && receiver && userId === receiver.user_id) {
         setReceiverStatus(status);
       }
-      console.log(receiverStatus);
     };
 
     socket.on("user:status", handleStatusUpdate);
 
     const interval = setInterval(() => {
       socket.emit("heartbeat");
-    }, 10000); // every 10 seconds
+    }, 10000);
 
     // Join conversation room
-    if (conversation?.conversationId && receiver?.user_id) {
-      socket.emit("conversation:join", {
-        conversationId: conversation.conversationId,
-        receiver: { user_id: receiver.user_id },
-      });
+    if (conversation?.conversationId) {
+      if (isGroup && conversation?.groupId) {
+        socket.emit("group:join", { groupId: conversation.groupId });
+      } else if (receiver?.user_id) {
+        socket.emit("conversation:join", {
+          conversationId: conversation.conversationId,
+          receiver: { user_id: receiver.user_id },
+        });
+      }
     }
 
     socket.on("message:send", (message) => {
       console.log("📨 Real-time message received:", message);
       onMessagesUpdate((prev) => {
-        // Check if message already exists to prevent duplicates
         const messageExists = prev.some(
           (m) =>
             m.messageId === message.messageId ||
@@ -96,8 +119,10 @@ function ChatWindow({
   }, [
     socket,
     conversation?.conversationId,
+    conversation?.groupId,
     currentUser.user_id,
-    receiver.user_id,
+    receiver?.user_id,
+    isGroup,
     onMessagesUpdate,
   ]);
 
@@ -105,20 +130,14 @@ function ChatWindow({
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container || !pagination?.hasMore || pagination?.isLoading) {
-      if (!container) console.log("⚠️ No container for scroll");
-      if (!pagination?.hasMore) console.log("⚠️ No more messages to load");
-      if (pagination?.isLoading)
-        console.log("⏳ Already loading, skipping scroll handler");
       return;
     }
 
     const handleScroll = () => {
-      // Check if user scrolled near the top (within 200px)
       const scrollTop = container.scrollTop;
       const scrollThreshold = 200;
 
       if (scrollTop < scrollThreshold && !isLoadingMoreRef.current) {
-        console.log("🔄 Scroll detected near top, triggering load more");
         isLoadingMoreRef.current = true;
         onLoadMore();
       }
@@ -143,13 +162,11 @@ function ChatWindow({
     const currentLength = messages.length;
     const previousLength = previousMessagesLengthRef.current;
 
-    // If messages increased and we're loading more (not initial load)
     if (
       currentLength > previousLength &&
       previousLength > 0 &&
       pagination?.isLoading === false
     ) {
-      // We loaded older messages - preserve scroll position
       requestAnimationFrame(() => {
         const scrollHeightBefore = container.scrollHeight;
         const scrollTopBefore = container.scrollTop;
@@ -161,7 +178,6 @@ function ChatWindow({
         });
       });
     } else if (currentLength !== previousLength && previousLength === 0) {
-      // Initial load - scroll to bottom
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
@@ -170,19 +186,16 @@ function ChatWindow({
     previousMessagesLengthRef.current = currentLength;
   }, [messages, pagination?.isLoading]);
 
-  // Scroll to bottom when new messages arrive (not from pagination)
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    // Only auto-scroll if user is near bottom (within 100px)
-    // This prevents scrolling when user is reading older messages
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
       100;
 
     if (messages.length > 0 && !pagination?.isLoading && isNearBottom) {
-      // Small delay to ensure DOM is updated
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       }, 100);
@@ -190,35 +203,43 @@ function ChatWindow({
   }, [messages.length, pagination?.isLoading]);
 
   const sendMessage = () => {
-    if (!inputMessage.trim() || !receiver) return;
+    if (!inputMessage.trim() || !conversation?.conversationId) return;
 
     const messageContent = inputMessage.trim();
     setInputMessage("");
     setIsTyping(false);
 
-    // stop typing
     if (socket) {
       socket.emit("typing:stop", conversation.conversationId);
     }
 
-    // 🚀 Emit message directly to socket
-    socket.emit("message:send", {
-      conversationId: conversation.conversationId,
-      senderId: currentUser.user_id,
-      receiverId: receiver.user_id,
-      content: messageContent,
-    });
+    if (isGroup) {
+      socket.emit("message:send", {
+        conversationId: conversation.conversationId,
+        senderId: currentUser.user_id,
+        content: messageContent,
+        groupId: conversation.groupId,
+      });
+    } else {
+      if (!receiver?.user_id) return;
+      socket.emit("message:send", {
+        conversationId: conversation.conversationId,
+        senderId: currentUser.user_id,
+        receiverId: receiver.user_id,
+        content: messageContent,
+      });
+    }
 
-    // ⚡ Optimistic UI
-    const tempMessage = {
-      messageId: `temp-${Date.now()}`,
-      conversationId: conversation.conversationId,
-      senderId: currentUser.user_id,
-      content: messageContent,
-      createdAt: new Date(),
-    };
+    // // Optimistic UI
+    // const tempMessage = {
+    //   messageId: `temp-${Date.now()}`,
+    //   conversationId: conversation.conversationId,
+    //   senderId: currentUser.user_id,
+    //   content: messageContent,
+    //   createdAt: new Date(),
+    // };
 
-    onMessagesUpdate((prev) => [...prev, tempMessage]);
+    // onMessagesUpdate((prev) => [...prev, tempMessage]);
   };
 
   const handleInputChange = (e) => {
@@ -246,13 +267,41 @@ function ChatWindow({
     }
   };
 
+  const getSenderName = (senderId) => {
+    if (senderId === currentUser.user_id) return "You";
+    if (isGroup) {
+      const member = groupMembers.find((m) => m.user_id === senderId);
+      return member?.name || "Unknown";
+    }
+    return receiver?.name || "Unknown";
+  };
+
+  const getDisplayName = () => {
+    if (isGroup) {
+      return conversation.groupName || "Group";
+    }
+    return receiver?.name || "Unknown";
+  };
+
   const formatTime = (dateString) =>
     new Date(dateString).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
 
-  if (!receiver) {
+  // ✅ FIX: Only show loading if we don't have a valid conversation
+  // For groups, receiver is null (which is fine)
+  // For direct chats, we need receiver
+  if (!conversation?.conversationId) {
+    return (
+      <div className="chat-window">
+        <div className="no-receiver">Loading...</div>
+      </div>
+    );
+  }
+
+  // ✅ FIX: For direct chats, we need receiver. For groups, we don't.
+  if (!isGroup && !receiver) {
     return (
       <div className="chat-window">
         <div className="no-receiver">Loading...</div>
@@ -264,20 +313,25 @@ function ChatWindow({
     <div className="chat-window">
       <div className="chat-header">
         <div className="chat-header-user">
-          <div className="user-avatar-medium">
-            {receiver.name.charAt(0).toUpperCase()}
+          <div
+            className={`user-avatar-medium ${isGroup ? "group-avatar" : ""}`}
+          >
+            {isGroup ? "👥" : receiver.name.charAt(0).toUpperCase()}
           </div>
           <div className="chat-header-info">
-            <div className="chat-header-name">{receiver.name}</div>
+            <div className="chat-header-name">{getDisplayName()}</div>
             <div className="chat-header-status">
-              {typingUsers.size > 0 ? "typing..." : receiverStatus}
+              {isGroup
+                ? `${groupMembers.length} members`
+                : typingUsers.size > 0
+                ? "typing..."
+                : receiverStatus}
             </div>
           </div>
         </div>
       </div>
 
       <div className="chat-messages" ref={messagesContainerRef}>
-        {/* Infinite Scroll Loading Indicator - Shows at top when loading older messages */}
         {pagination?.isLoading && (
           <div className="infinite-scroll-loader">
             <span className="loading-spinner"></span>
@@ -294,6 +348,7 @@ function ChatWindow({
             const isOwnMessage = message.senderId === currentUser.user_id;
             const showAvatar =
               index === 0 || messages[index - 1].senderId !== message.senderId;
+            const senderName = getSenderName(message.senderId);
 
             return (
               <div
@@ -302,12 +357,17 @@ function ChatWindow({
               >
                 {!isOwnMessage && showAvatar && (
                   <div className="message-avatar">
-                    {receiver.name.charAt(0).toUpperCase()}
+                    {isGroup
+                      ? senderName.charAt(0).toUpperCase()
+                      : receiver.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div
                   className={`message ${isOwnMessage ? "sent" : "received"}`}
                 >
+                  {isGroup && !isOwnMessage && (
+                    <div className="message-sender-name">{senderName}</div>
+                  )}
                   <div className="message-content">{message.content}</div>
                   <div className="message-time">
                     {formatTime(message.createdAt)}
@@ -317,6 +377,7 @@ function ChatWindow({
             );
           })
         )}
+
         {typingUsers.size > 0 && (
           <div className="typing-indicator">
             <span></span>
