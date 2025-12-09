@@ -6,13 +6,14 @@ import {
   getAllPosts,
   getUserFeed,
 } from "../controllers/postController.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
 
 const router = express.Router();
 
-router.post("/", createPost);
-router.get("/", getAllPosts);
-router.get("/feed/:user_id", getUserFeed); // Must be before /:id to avoid route conflicts
-router.get("/user/:user_id", getPostsByUser);
-router.get("/:id", getPostById);
+router.post("/", asyncHandler(createPost));
+router.get("/", asyncHandler(getAllPosts));
+router.get("/feed/:user_id", asyncHandler(getUserFeed)); // Must be before /:id to avoid route conflicts
+router.get("/user/:user_id", asyncHandler(getPostsByUser));
+router.get("/:id", asyncHandler(getPostById));
 
 export default router;
