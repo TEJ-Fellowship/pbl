@@ -25,16 +25,23 @@ async function seedRedis() {
 
     console.log("✅ Redis connected");
 
-    // Recreate Kafka topic with correct partition count (removes old messages)
-    console.log("🧹 Recreating Kafka topic with new partition count...");
+    // Recreate Kafka topics with correct partition count (removes old messages)
+    console.log("🧹 Recreating Kafka topics with new partition count...");
     try {
+      // Clear booking requests topic
       await recreateTopic(config.KAFKA_TOPIC_BOOKINGS, config.KAFKA_PARTITIONS);
       console.log(
-        `✅ Kafka topic recreated with ${config.KAFKA_PARTITIONS} partitions`
+        `✅ Kafka topic '${config.KAFKA_TOPIC_BOOKINGS}' recreated with ${config.KAFKA_PARTITIONS} partitions`
+      );
+
+      // Clear payment intent requests topic (10 partitions for payment intents)
+      await recreateTopic(config.KAFKA_TOPIC_PAYMENT_INTENTS, 10);
+      console.log(
+        `✅ Kafka topic '${config.KAFKA_TOPIC_PAYMENT_INTENTS}' recreated with 10 partitions`
       );
     } catch (kafkaError) {
       console.warn(
-        "⚠️  Could not recreate Kafka topic (Kafka might not be running):",
+        "⚠️  Could not recreate Kafka topics (Kafka might not be running):",
         kafkaError.message
       );
       console.log("   Continuing with Redis seeding...");
@@ -56,6 +63,42 @@ async function seedRedis() {
     await redis.del("booked_seats");
     await redis.del("booking:pending");
     await redis.del("booking:confirmed");
+
+    // Clear all locks (seat locks from previous requests)
+    const lockKeys = await redis.keys("lock:*");
+    if (lockKeys.length > 0) {
+      await redis.del(lockKeys);
+      console.log(`   Cleared ${lockKeys.length} locks`);
+    }
+
+    // Clear all booking keys (old bookings)
+    const bookingKeys = await redis.keys("booking:*");
+    if (bookingKeys.length > 0) {
+      // Filter out set keys (booking:pending, booking:confirmed)
+      const actualBookingKeys = bookingKeys.filter(
+        (key) => key !== "booking:pending" && key !== "booking:confirmed"
+      );
+      if (actualBookingKeys.length > 0) {
+        await redis.del(actualBookingKeys);
+        console.log(`   Cleared ${actualBookingKeys.length} booking keys`);
+      }
+    }
+
+    // Clear request_id mappings
+    const requestKeys = await redis.keys("request:*");
+    if (requestKeys.length > 0) {
+      await redis.del(requestKeys);
+      console.log(`   Cleared ${requestKeys.length} request_id mappings`);
+    }
+
+    // Clear failed booking attempts
+    const failedBookingKeys = await redis.keys("booking:failed:*");
+    if (failedBookingKeys.length > 0) {
+      await redis.del(failedBookingKeys);
+      console.log(
+        `   Cleared ${failedBookingKeys.length} failed booking attempts`
+      );
+    }
 
     // Add all seats to available_seats SET using chunks (faster for large datasets)
     if (seatIds.length > 0) {
@@ -90,7 +133,9 @@ async function seedRedis() {
 
     console.log("\n🎉 Redis seeded successfully!");
     console.log(`   - ${availableCount} seats available for booking`);
-    console.log("   - Kafka topic cleared (old messages removed)");
+    console.log("   - Kafka topics cleared (old messages removed)");
+    console.log("     * booking-requests topic recreated");
+    console.log("     * payment-intent-requests topic recreated");
     console.log("   - Ready for load testing");
     console.log(
       "\n⚠️  Note: Restart your server to reconnect consumer to the new topic\n"

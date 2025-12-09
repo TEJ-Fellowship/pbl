@@ -24,9 +24,13 @@ const createBooking = async (req, res, next) => {
   try {
     const { seat_ids } = req.body;
 
-    // If Kafka mode is enabled, send to queue and return immediately
+    // Log request received
+    console.log(`📥 Booking request received: ${seat_ids?.length || 0} seats`);
+
+    // If Kafka mode is enabled, send to queue and wait for booking to be created
     if (config.KAFKA_MODE === "kafka") {
       const requestId = crypto.randomUUID();
+      console.log(`🔄 Queueing to Kafka: request_id=${requestId}`);
 
       // Add to smart batcher (batches messages for efficient Kafka throughput)
       // Works for both low load (sends after 100ms) and high load (sends when batch full)
@@ -47,13 +51,16 @@ const createBooking = async (req, res, next) => {
         });
       });
 
-      // Return immediately - Kafka processes in background
-      // This prevents request timeouts under heavy load
-      return res.status(202).json({
+      // For high load, return immediately with 202 (async processing)
+      // Client can poll /api/bookings/request/:requestId to check status
+      // This prevents HTTP timeouts at high RPS
+      console.log(`✅ Sending 202 response for request_id=${requestId}`);
+      res.status(202).json({
         message: "Booking request queued for processing",
         request_id: requestId,
-        note: "Check booking status using GET /api/bookings/:id after processing",
+        note: "Booking is being processed. Use GET /api/bookings/request/:requestId to check status",
       });
+      return;
     }
 
     // Direct processing mode (original logic)
@@ -187,6 +194,56 @@ const getBookingById = async (req, res, next) => {
 };
 
 /**
+ * Get booking by request_id - Redis-only
+ * GET /api/bookings/request/:requestId
+ */
+const getBookingByRequestId = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+
+    if (!redis.isReady) {
+      return res.status(503).json({ error: "Redis not ready" });
+    }
+
+    // First, try to find successful booking via request_id -> booking_id mapping
+    const requestIdKey = `request:${requestId}`;
+    const bookingId = await redis.get(requestIdKey);
+
+    if (bookingId) {
+      // Get booking by ID
+      const bookingKey = `booking:${bookingId}`;
+      const bookingData = await redis.get(bookingKey);
+
+      if (bookingData) {
+        const booking = JSON.parse(bookingData);
+        return res.json(booking);
+      }
+    }
+
+    // If not found, check for failed booking attempts
+    const failedBookingKey = `booking:failed:${requestId}`;
+    const failedBookingData = await redis.get(failedBookingKey);
+
+    if (failedBookingData) {
+      const failedBooking = JSON.parse(failedBookingData);
+      return res.status(409).json({
+        ...failedBooking,
+        message: "Booking request failed",
+      });
+    }
+
+    // Not found anywhere
+    return res.status(404).json({
+      error: "Booking not found for this request_id",
+      request_id: requestId,
+      note: "Booking may still be processing, or it may have failed. Try again in a few seconds.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get all bookings - Redis-only (for testing)
  * GET /api/bookings
  */
@@ -196,30 +253,115 @@ const getAllBookings = async (req, res, next) => {
       return res.status(503).json({ error: "Redis not ready" });
     }
 
-    // Get all booking keys
-    const bookingKeys = await redis.keys("booking:*");
-    const bookingIds = bookingKeys
-      .filter((key) => {
-        // Exclude SET keys (booking:pending, booking:confirmed) and lock storage keys
-        return (
-          key !== "booking:pending" &&
-          key !== "booking:confirmed" &&
-          !key.includes(":locks")
-        );
-      })
-      .map((key) => key.replace("booking:", ""));
+    // Get bookings from pending and confirmed sets (more efficient than scanning)
+    const pendingBookingIds = await redis.sMembers("booking:pending");
+    const confirmedBookingIds = await redis.sMembers("booking:confirmed");
+    const allBookingIds = [
+      ...new Set([...pendingBookingIds, ...confirmedBookingIds]),
+    ];
 
-    // Get all bookings
     const bookings = [];
-    for (const id of bookingIds) {
-      const bookingData = await redis.get(`booking:${id}`);
-      if (bookingData) {
-        bookings.push(JSON.parse(bookingData));
+
+    if (allBookingIds.length > 0) {
+      // Get all bookings in parallel using pipeline
+      const pipeline = redis.multi();
+      allBookingIds.forEach((bookingId) => {
+        pipeline.get(`booking:${bookingId}`);
+      });
+      const results = await pipeline.exec();
+
+      results.forEach((result, index) => {
+        // Pipeline results format: [error, value] or just value
+        let bookingData = null;
+        if (Array.isArray(result)) {
+          const [error, value] = result;
+          if (!error && value) {
+            bookingData = value;
+          }
+        } else if (result && typeof result === "string") {
+          bookingData = result;
+        }
+
+        if (bookingData) {
+          try {
+            const booking = JSON.parse(bookingData);
+            if (booking && booking.id) {
+              bookings.push(booking);
+            }
+          } catch (parseError) {
+            console.warn(
+              `Failed to parse booking ${allBookingIds[index]}:`,
+              parseError.message
+            );
+          }
+        }
+      });
+    }
+
+    // If no bookings found in sets, try scanning for orphaned bookings (fallback)
+    // This can happen if sets were cleared but booking keys still exist
+    if (bookings.length === 0) {
+      console.log("⚠️  No bookings in sets, scanning for orphaned bookings...");
+      let cursor = "0";
+      const pattern = "booking:*";
+      const maxIterations = 100;
+      let iterations = 0;
+
+      do {
+        const result = await redis.scan(cursor, {
+          MATCH: pattern,
+          COUNT: 100,
+        });
+
+        cursor = String(result.cursor);
+        const keys = result.keys.filter(
+          (key) =>
+            key !== "booking:pending" &&
+            key !== "booking:confirmed" &&
+            !key.includes(":locks") &&
+            !key.startsWith("booking:failed:")
+        );
+
+        if (keys.length > 0) {
+          const pipeline = redis.multi();
+          keys.forEach((key) => pipeline.get(key));
+          const scanResults = await pipeline.exec();
+
+          scanResults.forEach((result, index) => {
+            let bookingData = null;
+            if (Array.isArray(result)) {
+              const [error, value] = result;
+              if (!error && value) {
+                bookingData = value;
+              }
+            } else if (result && typeof result === "string") {
+              bookingData = result;
+            }
+
+            if (bookingData) {
+              try {
+                const booking = JSON.parse(bookingData);
+                if (booking && booking.id) {
+                  bookings.push(booking);
+                }
+              } catch (parseError) {
+                // Skip invalid JSON
+              }
+            }
+          });
+        }
+
+        iterations++;
+      } while (cursor !== "0" && iterations < maxIterations);
+
+      if (bookings.length > 0) {
+        console.log(`   Found ${bookings.length} orphaned bookings via scan`);
       }
     }
 
     res.json({ bookings, total: bookings.length });
   } catch (error) {
+    console.error("Error in getAllBookings:", error);
     next(error);
   }
 };
@@ -287,6 +429,7 @@ const cancelBooking = async (req, res, next) => {
 module.exports = {
   createBooking,
   getBookingById,
+  getBookingByRequestId,
   getAllBookings,
   cancelBooking,
 };

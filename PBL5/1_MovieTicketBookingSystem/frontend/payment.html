@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complete Payment - Movie Ticket Booking</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 100%;
+        padding: 40px;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+
+      .booking-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+      }
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+
+      .info-label {
+        color: #666;
+        font-weight: 500;
+      }
+
+      .info-value {
+        color: #333;
+        font-weight: 600;
+      }
+
+      .amount {
+        font-size: 32px;
+        color: #667eea;
+        font-weight: 700;
+        margin-top: 10px;
+      }
+
+      #card-element {
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        transition: border-color 0.3s;
+      }
+
+      #card-element:focus {
+        border-color: #667eea;
+        outline: none;
+      }
+
+      #card-errors {
+        color: #dc3545;
+        font-size: 14px;
+        margin-bottom: 20px;
+        min-height: 20px;
+      }
+
+      .test-card-hint {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        color: #856404;
+      }
+
+      .test-card-hint strong {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      button {
+        width: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      .status.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .status.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .status.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.6s linear infinite;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Complete Payment</h1>
+      <p class="subtitle">Enter your card details to confirm your booking</p>
+
+      <div id="booking-info" class="booking-info hidden">
+        <div class="info-row">
+          <span class="info-label">Booking ID:</span>
+          <span class="info-value" id="booking-id">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Seats:</span>
+          <span class="info-value" id="booking-seats">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status:</span>
+          <span class="info-value" id="booking-status">-</span>
+        </div>
+        <div class="amount" id="booking-amount">$0.00</div>
+      </div>
+
+      <div class="test-card-hint">
+        <strong>🧪 Test Mode</strong>
+        Use test card: <strong>4242 4242 4242 4242</strong><br />
+        Expiry: Any future date (e.g., 12/25)<br />
+        CVC: Any 3 digits (e.g., 123)
+      </div>
+
+      <form id="payment-form">
+        <div id="card-element">
+          <!-- Stripe Elements will create form elements here -->
+        </div>
+        <div id="card-errors" role="alert"></div>
+        <button type="submit" id="submit-button">
+          <span id="button-text">Pay Now</span>
+        </button>
+      </form>
+
+      <div id="status-message" class="status hidden"></div>
+    </div>
+
+    <script>
+      // Configuration
+      const API_BASE_URL = "http://localhost:3001/api";
+
+      // Get booking ID from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const bookingId = urlParams.get("booking_id") || urlParams.get("id");
+
+      let stripe = null;
+      let elements = null;
+      let cardElement = null;
+      let clientSecret = null;
+
+      // Initialize Stripe
+      async function initStripe() {
+        try {
+          // Get publishable key from backend
+          const response = await fetch(`${API_BASE_URL}/payments/config`);
+          const data = await response.json();
+
+          if (!data.publishable_key) {
+            throw new Error("Stripe publishable key not configured");
+          }
+
+          stripe = Stripe(data.publishable_key);
+          elements = stripe.elements();
+
+          // Create card element
+          cardElement = elements.create("card", {
+            style: {
+              base: {
+                fontSize: "16px",
+                color: "#32325d",
+                fontFamily:
+                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                "::placeholder": {
+                  color: "#aab7c4",
+                },
+              },
+              invalid: {
+                color: "#fa755a",
+                iconColor: "#fa755a",
+              },
+            },
+          });
+
+          cardElement.mount("#card-element");
+
+          // Handle real-time validation errors
+          cardElement.on("change", ({ error }) => {
+            const displayError = document.getElementById("card-errors");
+            if (error) {
+              displayError.textContent = error.message;
+            } else {
+              displayError.textContent = "";
+            }
+          });
+
+          console.log("✅ Stripe initialized");
+        } catch (error) {
+          showStatus("error", `Failed to initialize Stripe: ${error.message}`);
+          console.error("Stripe initialization error:", error);
+        }
+      }
+
+      // Load booking details
+      async function loadBooking() {
+        if (!bookingId) {
+          showStatus(
+            "error",
+            "No booking ID provided. Add ?booking_id=YOUR_BOOKING_ID to the URL"
+          );
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}`);
+
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new Error(
+                "Booking not found. Make sure the booking ID is correct."
+              );
+            }
+            throw new Error(`Failed to load booking: ${response.statusText}`);
+          }
+
+          const booking = await response.json();
+
+          // Check if booking has payment intent
+          if (!booking.client_secret) {
+            showStatus(
+              "info",
+              "Payment Intent is being created. Please wait a few seconds and refresh the page."
+            );
+            return;
+          }
+
+          if (booking.status === "confirmed") {
+            showStatus(
+              "success",
+              "✅ Payment already confirmed! Booking is confirmed."
+            );
+            document.getElementById("payment-form").style.display = "none";
+          }
+
+          // Store client secret
+          clientSecret = booking.client_secret;
+
+          // Display booking info
+          document.getElementById("booking-id").textContent = booking.id;
+          document.getElementById("booking-seats").textContent =
+            booking.seat_ids?.join(", ") || "N/A";
+          document.getElementById("booking-status").textContent =
+            booking.status;
+          document.getElementById("booking-amount").textContent = `$${(
+            booking.total_amount / 100
+          ).toFixed(2)}`;
+          document.getElementById("booking-info").classList.remove("hidden");
+
+          console.log("✅ Booking loaded:", booking);
+        } catch (error) {
+          showStatus("error", `Failed to load booking: ${error.message}`);
+          console.error("Booking load error:", error);
+        }
+      }
+
+      // Handle form submission
+      document
+        .getElementById("payment-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          if (!clientSecret) {
+            showStatus(
+              "error",
+              "Payment Intent not ready. Please refresh the page."
+            );
+            return;
+          }
+
+          const submitButton = document.getElementById("submit-button");
+          const buttonText = document.getElementById("button-text");
+
+          // Disable button and show loading
+          submitButton.disabled = true;
+          buttonText.innerHTML = '<span class="loading"></span> Processing...';
+
+          try {
+            console.log("💳 Confirming payment with client_secret...");
+
+            const { error, paymentIntent } = await stripe.confirmCardPayment(
+              clientSecret,
+              {
+                payment_method: {
+                  card: cardElement,
+                  billing_details: {
+                    name: "Test User",
+                  },
+                },
+              }
+            );
+
+            if (error) {
+              // Show error to user
+              showStatus("error", `Payment failed: ${error.message}`);
+              console.error("Payment error:", error);
+
+              // Re-enable button
+              submitButton.disabled = false;
+              buttonText.textContent = "Pay Now";
+            } else {
+              // Payment succeeded
+              console.log("✅ Payment succeeded:", paymentIntent);
+              showStatus(
+                "success",
+                "✅ Payment successful! Stripe is sending a webhook to confirm your booking. Please wait a few seconds..."
+              );
+
+              // Disable form
+              submitButton.disabled = true;
+              buttonText.textContent = "Payment Successful";
+
+              // Poll for booking confirmation (webhook processing)
+              pollBookingStatus();
+            }
+          } catch (error) {
+            showStatus("error", `Unexpected error: ${error.message}`);
+            console.error("Unexpected error:", error);
+
+            submitButton.disabled = false;
+            buttonText.textContent = "Pay Now";
+          }
+        });
+
+      // Poll booking status after payment
+      async function pollBookingStatus() {
+        let attempts = 0;
+        const maxAttempts = 10;
+        const pollInterval = 2000; // 2 seconds
+
+        const poll = setInterval(async () => {
+          attempts++;
+
+          try {
+            const response = await fetch(
+              `${API_BASE_URL}/bookings/${bookingId}`
+            );
+            if (!response.ok) {
+              clearInterval(poll);
+              return;
+            }
+
+            const booking = await response.json();
+
+            if (booking.status === "confirmed") {
+              clearInterval(poll);
+              showStatus(
+                "success",
+                "🎉 Booking confirmed! Your payment has been processed successfully."
+              );
+              document.getElementById("booking-status").textContent =
+                "confirmed";
+              document.getElementById("payment-form").style.display = "none";
+            } else if (attempts >= maxAttempts) {
+              clearInterval(poll);
+              showStatus(
+                "info",
+                "Payment processed. Booking confirmation may take a few more seconds. Please refresh the page."
+              );
+            }
+          } catch (error) {
+            console.error("Polling error:", error);
+            if (attempts >= maxAttempts) {
+              clearInterval(poll);
+            }
+          }
+        }, pollInterval);
+      }
+
+      // Show status message
+      function showStatus(type, message) {
+        const statusEl = document.getElementById("status-message");
+        statusEl.className = `status ${type}`;
+        statusEl.textContent = message;
+        statusEl.classList.remove("hidden");
+      }
+
+      // Initialize on page load
+      window.addEventListener("DOMContentLoaded", async () => {
+        await initStripe();
+        await loadBooking();
+      });
+    </script>
+  </body>
+</html>

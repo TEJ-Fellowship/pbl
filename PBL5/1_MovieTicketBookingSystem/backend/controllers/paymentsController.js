@@ -7,6 +7,10 @@
 const redis = require("../utils/redis");
 const { releaseLocks } = require("../utils/redisLock");
 const crypto = require("crypto");
+const {
+  confirmPaymentIntentWithTestCard,
+  isStripeConfigured,
+} = require("../services/stripeService");
 
 /**
  * Process payment - Redis-only
@@ -19,14 +23,14 @@ const processPayment = async (req, res, next) => {
 
     // Validation
     if (!booking_id || !amount || !payment_method) {
-    return res.status(400).json({
+      return res.status(400).json({
         error: "booking_id, amount, and payment_method are required",
       });
     }
 
     if (!redis.isReady) {
       return res.status(503).json({ error: "Redis not ready" });
-  }
+    }
 
     // Get booking from Redis
     const bookingKey = `booking:${booking_id}`;
@@ -59,14 +63,14 @@ const processPayment = async (req, res, next) => {
       if (existingPayment) {
         const payment = JSON.parse(existingPayment);
         if (payment.status === "success") {
-        return res.json({
+          return res.json({
             payment_id: payment.id,
             booking_id: payment.booking_id,
             amount: payment.amount,
             status: payment.status,
-          message: "Payment already processed successfully",
-        });
-      }
+            message: "Payment already processed successfully",
+          });
+        }
       }
     }
 
@@ -88,7 +92,7 @@ const processPayment = async (req, res, next) => {
     const paymentData = {
       id: paymentId,
       booking_id: booking_id,
-        amount: parseFloat(amount),
+      amount: parseFloat(amount),
       payment_method: payment_method,
       status: paymentStatus,
       transaction_id: transactionId,
@@ -108,10 +112,10 @@ const processPayment = async (req, res, next) => {
       );
     }
 
-      // Update booking status to confirmed
+    // Update booking status to confirmed
     const updatedBooking = {
       ...booking,
-          status: "confirmed",
+      status: "confirmed",
       confirmed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -133,23 +137,23 @@ const processPayment = async (req, res, next) => {
     }
 
     // Release locks (payment confirmed)
-        const lockStorageKey = `booking:${booking_id}:locks`;
-        const storedLocks = await redis.get(lockStorageKey);
-        if (storedLocks) {
-          const locks = JSON.parse(storedLocks);
-          await releaseLocks(locks);
-          await redis.del(lockStorageKey);
-        }
+    const lockStorageKey = `booking:${booking_id}:locks`;
+    const storedLocks = await redis.get(lockStorageKey);
+    if (storedLocks) {
+      const locks = JSON.parse(storedLocks);
+      await releaseLocks(locks);
+      await redis.del(lockStorageKey);
+    }
 
     console.log(`✅ Payment processed for booking ${booking_id}`);
 
     res.json({
       payment_id: paymentId,
       booking_id: booking_id,
-        amount: parseFloat(amount),
+      amount: parseFloat(amount),
       status: paymentStatus,
       payment_method: payment_method,
-        transaction_id: transactionId,
+      transaction_id: transactionId,
       receipt: {
         booking_id: booking_id,
         seats: booking.seat_ids,
@@ -193,7 +197,81 @@ const getPaymentByBooking = async (req, res, next) => {
   }
 };
 
+/**
+ * Confirm Payment Intent with test card (backend testing)
+ * POST /api/payments/confirm/:paymentIntentId
+ * This triggers a real webhook from Stripe
+ */
+const confirmPaymentIntent = async (req, res, next) => {
+  try {
+    const { paymentIntentId } = req.params;
+
+    if (!isStripeConfigured()) {
+      return res.status(503).json({
+        error: "Stripe is not configured",
+      });
+    }
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        error: "paymentIntentId is required",
+      });
+    }
+
+    console.log(
+      `🔔 API Request: Confirm Payment Intent ${paymentIntentId} with test card`
+    );
+
+    // Confirm Payment Intent with test card
+    const confirmedPaymentIntent = await confirmPaymentIntentWithTestCard(
+      paymentIntentId
+    );
+
+    console.log(
+      `✅ Payment Intent ${paymentIntentId} confirmed successfully. Webhook will be sent by Stripe.`
+    );
+
+    res.json({
+      success: true,
+      payment_intent_id: confirmedPaymentIntent.id,
+      status: confirmedPaymentIntent.status,
+      amount: confirmedPaymentIntent.amount,
+      currency: confirmedPaymentIntent.currency,
+      message:
+        "Payment Intent confirmed. Stripe will send a webhook event shortly.",
+    });
+  } catch (error) {
+    console.error("❌ Payment Intent confirmation error:", error.message);
+    next(error);
+  }
+};
+
+/**
+ * Get Stripe publishable key for frontend
+ * GET /api/payments/config
+ */
+const getStripeConfig = async (req, res, next) => {
+  try {
+    const config = require("../utils/config");
+
+    if (!config.STRIPE_PUBLISHABLE_KEY) {
+      return res.status(503).json({
+        error: "Stripe publishable key not configured",
+      });
+    }
+
+    res.json({
+      publishable_key: config.STRIPE_PUBLISHABLE_KEY,
+    });
+  } catch (error) {
+    console.error("❌ Stripe config error:", error.message);
+    next(error);
+  }
+};
+
 module.exports = {
   processPayment,
   getPaymentByBooking,
+  confirmPaymentIntent,
+  getStripeConfig,
 };

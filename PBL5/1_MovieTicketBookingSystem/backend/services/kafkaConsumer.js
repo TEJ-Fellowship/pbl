@@ -8,6 +8,8 @@ const config = require("../utils/config");
 const redis = require("../utils/redis");
 const { acquireLocks, releaseLocks } = require("../utils/redisLock");
 const { batchWrite } = require("../utils/redisPipeline");
+const { sendPaymentIntentRequest } = require("./kafkaProducer");
+const { isStripeConfigured } = require("./stripeService");
 const crypto = require("crypto");
 
 /**
@@ -96,6 +98,22 @@ async function processBookingRequest(bookingRequest) {
     }
 
     if (unavailableSeats.length > 0) {
+      // Store failed booking attempt for debugging
+      const failedBookingKey = `booking:failed:${request_id}`;
+      const failedBookingData = {
+        request_id,
+        seat_ids: seat_ids,
+        status: "failed",
+        error: "Some seats are not available",
+        unavailable_seats: unavailableSeats,
+        failed_at: new Date().toISOString(),
+      };
+      await redis.setEx(
+        failedBookingKey,
+        60,
+        JSON.stringify(failedBookingData)
+      );
+
       return {
         success: false,
         error: "Some seats are not available",
@@ -114,6 +132,22 @@ async function processBookingRequest(bookingRequest) {
     );
 
     if (failedLocks.length > 0) {
+      // Store failed booking attempt for debugging (with short TTL)
+      const failedBookingKey = `booking:failed:${request_id}`;
+      const failedBookingData = {
+        request_id,
+        seat_ids: seat_ids,
+        status: "failed",
+        error: "Seats are currently being processed by another user",
+        failed_at: new Date().toISOString(),
+      };
+      // Store for 60 seconds only (just for debugging)
+      await redis.setEx(
+        failedBookingKey,
+        60,
+        JSON.stringify(failedBookingData)
+      );
+
       return {
         success: false,
         error: "Seats are currently being processed by another user",
@@ -152,11 +186,15 @@ async function processBookingRequest(bookingRequest) {
       // Build sRem args: [key, ...members] - spread seat_ids when calling
       const sRemArgs = [availableSeatsKey, ...seat_ids];
 
+      // Store request_id -> booking_id mapping for fast lookup (avoids redis.keys())
+      const requestIdKey = `request:${request_id}`;
+
       await batchWrite([
         { type: "setEx", args: [bookingKey, 300, JSON.stringify(bookingData)] }, // Store booking (5 min TTL)
         { type: "sAdd", args: ["booking:pending", bookingId] }, // Add to pending set
         { type: "setEx", args: [lockStorageKey, 300, JSON.stringify(locks)] }, // Store lock tokens
         { type: "sRem", args: sRemArgs }, // Remove seats from available (already spread)
+        { type: "setEx", args: [requestIdKey, 300, bookingId] }, // Store request_id -> booking_id mapping
       ]);
       const pipelineTime = Date.now() - pipelineStart;
       if (process.env.NODE_ENV !== "production" && pipelineTime > 50) {
@@ -167,6 +205,25 @@ async function processBookingRequest(bookingRequest) {
       console.log(
         `✅ Booking ${bookingId} created successfully (request: ${request_id}, seats: ${seat_ids.length})`
       );
+
+      // Queue Payment Intent creation (async, non-blocking)
+      // Only if Stripe is configured
+      if (isStripeConfigured()) {
+        sendPaymentIntentRequest({
+          booking_id: bookingId,
+          amount: totalAmount * 100, // Convert to cents
+          metadata: {
+            request_id: request_id,
+            seat_count: seat_ids.length,
+          },
+        }).catch((error) => {
+          // Log error but don't fail the booking
+          console.error(
+            `⚠️  Failed to queue Payment Intent for booking ${bookingId}:`,
+            error.message
+          );
+        });
+      }
 
       return {
         success: true,
@@ -203,10 +260,10 @@ async function startConsumerInstance(instanceId, onMessage = null) {
     const consumer = await getConsumer(config.KAFKA_GROUP_ID, instanceId);
 
     // Subscribe to booking requests topic
-    // fromBeginning: true to process all messages (including queued ones from load tests)
+    // fromBeginning: false - only process new messages (prevents processing old queued messages)
     await consumer.subscribe({
       topic: config.KAFKA_TOPIC_BOOKINGS,
-      fromBeginning: true, // Process ALL messages (including queued ones)
+      fromBeginning: false, // Only process NEW messages (prevents backlog from old load tests)
     });
 
     console.log(
@@ -226,14 +283,12 @@ async function startConsumerInstance(instanceId, onMessage = null) {
         const startTime = Date.now();
         const batchSize = batch.messages.length;
 
-        // Reduced logging for multiple consumers
-        if (instanceId === 0 && batch.messages.length > 0) {
+        // Log every batch for visibility (especially for testing)
+        if (batch.messages.length > 0) {
           const firstOffset = batch.messages[0].offset;
-          if (firstOffset % 100 === 0) {
-            console.log(
-              `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
-            );
-          }
+          console.log(
+            `🔔 Consumer ${instanceId}: Processing batch of ${batchSize} messages (partition: ${partition}, offset: ${firstOffset})`
+          );
         }
 
         // Process all messages in batch in parallel
@@ -249,6 +304,11 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             let bookingRequest;
             try {
               bookingRequest = JSON.parse(messageValue);
+              console.log(
+                `📨 Consumer ${instanceId}: Received booking request (request_id: ${
+                  bookingRequest.request_id
+                }, seats: ${bookingRequest.seat_ids?.length || 0})`
+              );
             } catch (parseError) {
               console.error(
                 `❌ Consumer ${instanceId}: Failed to parse message at offset ${message.offset}:`,
@@ -258,6 +318,9 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             }
 
             // Process booking
+            console.log(
+              `🔄 Consumer ${instanceId}: Processing booking request ${bookingRequest.request_id}...`
+            );
             const result = await processBookingRequest(bookingRequest);
 
             // Call optional callback
@@ -276,20 +339,17 @@ async function startConsumerInstance(instanceId, onMessage = null) {
             // Send heartbeat to keep consumer alive
             await heartbeat();
 
-            // Log only successful bookings or errors (reduce noise)
-            if (
-              result.success &&
-              instanceId === 0 &&
-              message.offset % 50 === 0
-            ) {
+            // Log all bookings for visibility (especially for testing)
+            if (result.success) {
               console.log(
-                `✅ Consumer ${instanceId}: Booking ${result.booking_id} processed (partition: ${partition})`
+                `✅ Consumer ${instanceId}: Booking ${
+                  result.booking_id
+                } created (request: ${result.request_id}, seats: ${
+                  result.seat_ids?.length || 0
+                }, partition: ${partition})`
               );
-            } else if (
-              !result.success &&
-              result.error !== "Some seats are not available"
-            ) {
-              // Log non-availability errors (but skip "seats not available" as it's expected)
+            } else {
+              // Log all failures (including lock conflicts and unavailable seats)
               console.warn(
                 `⚠️ Consumer ${instanceId}: Failed booking ${result.request_id}: ${result.error}`
               );
