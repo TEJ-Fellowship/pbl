@@ -1,0 +1,120 @@
+[1m[90m[TAILING] Tailing last 15 lines for [all] processes (change the value with --lines option)[39m[22m
+[90m/home/anish/.pm2/pm2.log last 15 lines:[39m
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-2:1] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-2:1] starting in -fork mode-
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-2:1] online
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-1:0] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-1:0] starting in -fork mode-
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-1:0] online
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-3:2] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-3:2] starting in -fork mode-
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-3:2] online
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-2:1] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: Script /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js had too many unstable restarts (16). Stopped. "errored"
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-1:0] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: Script /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js had too many unstable restarts (16). Stopped. "errored"
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: App [whatsapp-server-3:2] exited with code [1] via signal [SIGINT]
+[34mPM2        | [39m2025-12-09T16:25:08: PM2 log: Script /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js had too many unstable restarts (16). Stopped. "errored"
+
+[90m/home/anish/.pm2/logs/whatsapp-server-2-out-1.log last 15 lines:[39m
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[32m1|whatsapp | [39mConnecting to local Cassandra...
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[32m1|whatsapp | [39mConnecting to local Cassandra...
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[32m1|whatsapp | [39mConnecting to local Cassandra...
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[32m1|whatsapp | [39mConnecting to local Cassandra...
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[32m1|whatsapp | [39mConnecting to local Cassandra...
+[32m1|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+
+[90m/home/anish/.pm2/logs/whatsapp-server-1-out-0.log last 15 lines:[39m
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[32m0|whatsapp | [39mConnecting to local Cassandra...
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[32m0|whatsapp | [39mConnecting to local Cassandra...
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[32m0|whatsapp | [39mConnecting to local Cassandra...
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 📡 add observability to secrets: https://dotenvx.com/ops
+[32m0|whatsapp | [39mConnecting to local Cassandra...
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[32m0|whatsapp | [39mConnecting to local Cassandra...
+[32m0|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+
+[90m/home/anish/.pm2/logs/whatsapp-server-3-out-2.log last 15 lines:[39m
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+[32m2|whatsapp | [39mConnecting to local Cassandra...
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+[32m2|whatsapp | [39mConnecting to local Cassandra...
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[32m2|whatsapp | [39mConnecting to local Cassandra...
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+[32m2|whatsapp | [39mConnecting to local Cassandra...
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (5) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[32m2|whatsapp | [39mConnecting to local Cassandra...
+[32m2|whatsapp | [39m[dotenv@17.2.3] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+[90m/home/anish/.pm2/logs/whatsapp-server-2-error-1.log last 15 lines:[39m
+[31m1|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m1|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m1|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m1|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+[31m1|whatsapp | [39m[server-2] Failed to start server: Error: Redis is already connecting/connected
+[31m1|whatsapp | [39m    at /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:108:24
+[31m1|whatsapp | [39m    at new Promise (<anonymous>)
+[31m1|whatsapp | [39m    at EventEmitter.connect (/home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:104:25)
+[31m1|whatsapp | [39m    at createAppSubscriber (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/config/redis.js:53:16)
+[31m1|whatsapp | [39m    at handleSocket (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/infrastructure/websocket/handlers/socketHandler.js:39:24)
+[31m1|whatsapp | [39m    at startServer (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:65:11)
+[31m1|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m1|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m1|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m1|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+
+[90m/home/anish/.pm2/logs/whatsapp-server-1-error-0.log last 15 lines:[39m
+[31m0|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m0|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m0|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m0|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+[31m0|whatsapp | [39m[server-1] Failed to start server: Error: Redis is already connecting/connected
+[31m0|whatsapp | [39m    at /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:108:24
+[31m0|whatsapp | [39m    at new Promise (<anonymous>)
+[31m0|whatsapp | [39m    at EventEmitter.connect (/home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:104:25)
+[31m0|whatsapp | [39m    at createAppSubscriber (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/config/redis.js:53:16)
+[31m0|whatsapp | [39m    at handleSocket (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/infrastructure/websocket/handlers/socketHandler.js:39:24)
+[31m0|whatsapp | [39m    at startServer (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:65:11)
+[31m0|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m0|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m0|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m0|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+
+[90m/home/anish/.pm2/logs/whatsapp-server-3-error-2.log last 15 lines:[39m
+[31m2|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m2|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m2|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m2|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+[31m2|whatsapp | [39m[server-3] Failed to start server: Error: Redis is already connecting/connected
+[31m2|whatsapp | [39m    at /home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:108:24
+[31m2|whatsapp | [39m    at new Promise (<anonymous>)
+[31m2|whatsapp | [39m    at EventEmitter.connect (/home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/node_modules/ioredis/built/Redis.js:104:25)
+[31m2|whatsapp | [39m    at createAppSubscriber (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/config/redis.js:53:16)
+[31m2|whatsapp | [39m    at handleSocket (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/infrastructure/websocket/handlers/socketHandler.js:39:24)
+[31m2|whatsapp | [39m    at startServer (file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:65:11)
+[31m2|whatsapp | [39m    at file:///home/anish/WhatsappClone/pbl/PBL5/2_WhatsAppClone/backend/src/server.js:132:1
+[31m2|whatsapp | [39m    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+[31m2|whatsapp | [39m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m2|whatsapp | [39m    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+
