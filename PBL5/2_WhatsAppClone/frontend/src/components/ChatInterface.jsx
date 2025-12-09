@@ -42,18 +42,33 @@ function ChatInterface({
       const url = cursor
         ? `${API_BASE}/conversation/${conversationId}?limit=${limit}&cursor=${cursor}`
         : `${API_BASE}/conversation/${conversationId}?limit=${limit}`;
-
+  
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        const newMessages = data.data || [];
+        let newMessages = data.data || [];
+        
+        // ✅ Sort messages by timestamp (oldest first)
+        newMessages = newMessages.sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeA - timeB;
+        });
         
         if (isInitial || !cursor) {
           setMessages(newMessages);
         } else {
-          setMessages((prev) => [...newMessages, ...prev]);
+          // ✅ When loading older messages, prepend and maintain sort
+          setMessages((prev) => {
+            const combined = [...newMessages, ...prev];
+            return combined.sort((a, b) => {
+              const timeA = new Date(a.createdAt || 0).getTime();
+              const timeB = new Date(b.createdAt || 0).getTime();
+              return timeA - timeB;
+            });
+          });
         }
-
+  
         setPagination({
           nextCursor: data.pagination?.nextCursor || null,
           hasMore: data.pagination?.hasMore || false,

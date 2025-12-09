@@ -26,6 +26,7 @@ function ChatWindow({
   const typingTimeoutRef = useRef(null);
   const previousMessagesLengthRef = useRef(0);
   const isLoadingMoreRef = useRef(false);
+  const previousConversationRef = useRef(null);
 
   const isGroup = conversation?.isGroup || conversation?.type === "group";
 
@@ -47,84 +48,131 @@ function ChatWindow({
     }
   };
 
-  useEffect(() => {
-    if (!socket) return;
+  // ✅ Store previous conversation ID in a ref (persists across renders)
+const previousConversationIdRef = useRef(null);
 
-    const handleStatusUpdate = ({ userId, status }) => {
-      if (!isGroup && receiver && userId === receiver.user_id) {
-        setReceiverStatus(status);
-      }
-    };
+useEffect(() => {
+  if (!socket) return;
 
-    socket.on("user:status", handleStatusUpdate);
-
-    const interval = setInterval(() => {
-      socket.emit("heartbeat");
-    }, 10000);
-
-    // Join conversation room
-    if (conversation?.conversationId) {
-      if (isGroup && conversation?.groupId) {
-        socket.emit("group:join", { groupId: conversation.groupId });
-      } else if (receiver?.user_id) {
-        socket.emit("conversation:join", {
-          conversationId: conversation.conversationId,
-          receiver: { user_id: receiver.user_id },
-        });
-      }
+  const handleStatusUpdate = ({ userId, status }) => {
+    if (!isGroup && receiver && userId === receiver.user_id) {
+      setReceiverStatus(status);
     }
+  };
 
-    socket.on("message:send", (message) => {
-      console.log("📨 Real-time message received:", message);
-      onMessagesUpdate((prev) => {
-        const messageExists = prev.some(
-          (m) =>
-            m.messageId === message.messageId ||
-            (m.messageId &&
-              message.messageId &&
-              m.messageId.toString() === message.messageId.toString())
-        );
+  socket.on("user:status", handleStatusUpdate);
 
-        if (!messageExists) {
-          console.log("✅ Adding new message to state");
-          return [...prev, message];
-        } else {
-          console.log("⚠️ Message already exists, skipping");
-        }
-        return prev;
+  const interval = setInterval(() => {
+    socket.emit("heartbeat");
+  }, 10000);
+
+  // ✅ Get current conversation ID
+  const currentConversationId = conversation?.conversationId;
+  const previousConversationId = previousConversationIdRef.current;
+
+  // ✅ Leave previous conversation if switching
+  if (previousConversationId && previousConversationId !== currentConversationId) {
+    socket.emit("conversation:leave", { conversationId: previousConversationId });
+    console.log(`🔄 Left previous conversation: ${previousConversationId}`);
+  }
+
+  // Join conversation room
+  if (currentConversationId) {
+    if (isGroup && conversation?.groupId) {
+      socket.emit("group:join", { groupId: conversation.groupId });
+    } else if (receiver?.user_id) {
+      socket.emit("conversation:join", {
+        conversationId: currentConversationId,
+        receiver: { user_id: receiver.user_id },
       });
-    });
+    }
+    
+    // ✅ Update ref with current conversation
+    previousConversationIdRef.current = currentConversationId;
+  }
 
-    socket.on("typing:start", (userId) => {
-      if (userId !== currentUser.user_id) {
-        setTypingUsers((prev) => new Set(prev).add(userId));
+  // ✅ Message handler with strict conversation ID matching
+  const handleMessage = (message) => {
+    // ✅ CRITICAL: Only add message if it's for the current conversation
+    // Normalize conversation IDs for comparison (handle string/UUID differences)
+    const messageConvId = message.conversationId?.toString() || message.conversationId;
+    const currentConvId = currentConversationId?.toString() || currentConversationId;
+    
+    if (messageConvId !== currentConvId) {
+      console.log(`⚠️ Ignoring message for different conversation:`, {
+        messageConvId,
+        currentConvId,
+        messageId: message.messageId
+      });
+      return;
+    }
+    
+    console.log("📨 Real-time message received:", message);
+    onMessagesUpdate((prev) => {
+      // ✅ Normalize message IDs for comparison
+      const messageId = message.messageId?.toString() || message.messageId;
+      
+      const messageExists = prev.some((m) => {
+        const prevMessageId = m.messageId?.toString() || m.messageId;
+        return prevMessageId === messageId;
+      });
+
+      if (!messageExists) {
+        console.log("✅ Adding new message to state");
+        // ✅ Sort messages by timestamp to maintain order
+        const newMessages = [...prev, message].sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeA - timeB;
+        });
+        return newMessages;
+      } else {
+        console.log("⚠️ Message already exists, skipping");
       }
+      return prev;
     });
+  };
 
-    socket.on("typing:stop", (userId) => {
-      setTypingUsers((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(userId);
-        return newSet;
+  socket.on("message:send", handleMessage);
+
+  socket.on("typing:start", (userId) => {
+    if (userId !== currentUser.user_id) {
+      setTypingUsers((prev) => new Set(prev).add(userId));
+    }
+  });
+
+  socket.on("typing:stop", (userId) => {
+    setTypingUsers((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(userId);
+      return newSet;
+    });
+  });
+
+  return () => {
+    // ✅ Cleanup: Remove all listeners
+    socket.off("message:send", handleMessage);
+    socket.off("typing:start");
+    socket.off("typing:stop");
+    socket.off("user:status", handleStatusUpdate);
+    clearInterval(interval);
+    
+    // ✅ Leave conversation on cleanup
+    if (previousConversationIdRef.current) {
+      socket.emit("conversation:leave", { 
+        conversationId: previousConversationIdRef.current 
       });
-    });
-
-    return () => {
-      socket.off("message:send");
-      socket.off("typing:start");
-      socket.off("typing:stop");
-      socket.off("user:status", handleStatusUpdate);
-      clearInterval(interval);
-    };
-  }, [
-    socket,
-    conversation?.conversationId,
-    conversation?.groupId,
-    currentUser.user_id,
-    receiver?.user_id,
-    isGroup,
-    onMessagesUpdate,
-  ]);
+    }
+  };
+}, [
+  socket,
+  conversation?.conversationId,
+  conversation?.groupId,
+  currentUser.user_id,
+  receiver?.user_id,
+  isGroup,
+  // ✅ Remove onMessagesUpdate from dependencies to prevent re-registration
+]);
 
   // Infinite scroll: Load more when user scrolls near the top
   useEffect(() => {
