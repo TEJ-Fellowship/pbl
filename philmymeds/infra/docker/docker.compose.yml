@@ -1,0 +1,63 @@
+version: '3.9'
+
+services:
+  api:
+    build: ./backend-go
+    container_name: philmymeds-api
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/philmymeds
+      - POSTGRES_URI=postgres://postgres:postgres@postgres:5432/philmymeds
+      - REDIS_URI=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - MINIO_ENDPOINT=minio:9000
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SHIPPO_API_KEY=${SHIPPO_API_KEY}
+    volumes:
+      - ./backend-go:/app
+    depends_on:
+      - mongodb
+      - postgres
+
+  mongodb:
+    image: mongo:latest
+    container_name: philmymeds-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - ./mongodb:/data/db    
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: philmymeds-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+    volumes:
+      - ./kafka:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: philmymeds-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+      - ZOOKEEPER_INIT_LIMIT=5
+      - ZOOKEEPER_SYNC_LIMIT=2
+    volumes:
+      - ./zookeeper:/var/lib/zookeeper/data
