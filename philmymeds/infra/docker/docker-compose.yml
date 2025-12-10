@@ -1,0 +1,41 @@
+services:
+  api:
+    build:
+      context: ../../backend-go
+      dockerfile: Dockerfile
+    container_name: philmymeds-api
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../../.env  # Load .env from root directory
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - PORT=${PORT:-8080}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - SHIPPO_API_KEY=${SHIPPO_API_KEY:-}
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    networks:
+      - philmymeds-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: philmymeds-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-password}
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+    networks:
+      - philmymeds-network
+
+networks:
+  philmymeds-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

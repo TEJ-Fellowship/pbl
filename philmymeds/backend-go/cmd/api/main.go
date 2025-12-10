@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/database"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/router"
 	"github.com/joho/godotenv"
 )
 
@@ -27,16 +27,8 @@ func main() {
 	}
 	defer database.DisconnectMongoDB()
 
-	// Example: Get a collection
-	patientCollection := database.GetCollection("patients")
-	log.Printf("Connected to collection: %s", patientCollection.Name())
-
-	// Setup HTTP server
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "OK - MongoDB connected")
-	})
+	// Setup router with all routes
+	r := router.SetupRouter()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -45,17 +37,17 @@ func main() {
 
 	server := &http.Server{
 		Addr:    ":" + port,
-		Handler: mux,
+		Handler: r,
 	}
 
 	// Graceful shutdown
 	go func() {
+		log.Printf("🚀 Server running on port %s", port)
+		log.Printf("📚 API Documentation: http://localhost:%s/api/v1", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed: %v", err)
 		}
 	}()
-
-	log.Printf("🚀 Server running on port %s", port)
 
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
@@ -68,4 +60,6 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
+
+	log.Println("Server stopped gracefully")
 }
