@@ -9,7 +9,7 @@ services:
     env_file:
       - ../../.env  # Load .env from root directory
     environment:
-      - MONGODB_URI=${MONGODB_URI}
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/philmymeds?authSource=admin
       - PORT=${PORT:-8080}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - SHIPPO_API_KEY=${SHIPPO_API_KEY:-}
@@ -24,9 +24,6 @@ services:
     container_name: philmymeds-mongodb
     ports:
       - "27017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-password}
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
