@@ -1,65 +1,55 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/database"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/handlers"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/router"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/services"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Load .env file
+	// Step 1: Load environment variables from .env file
 	envPath := "../.env"
 	if err := godotenv.Load(envPath); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	// Connect to MongoDB
+	// Step 2: Connect to MongoDB database
 	if err := database.ConnectMongoDB(); err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer database.DisconnectMongoDB()
 
-	// Setup router with all routes
-	r := router.SetupRouter()
+	// Step 3: Initialize dependencies (Repository → Service → Handler)
+	patientRepo := repositories.NewPatientRepository()
+	patientService := services.NewPatientService(patientRepo)
+	patientHandler := handlers.NewPatientHandler(patientService)
 
+	prescriptionRepo := repositories.NewPrescriptionRepository()
+	prescriptionService := services.NewPrescriptionService(prescriptionRepo)
+	prescriptionHandler := handlers.NewPrescriptionHandler(prescriptionService)
+
+	// Step 4: Setup router with all API routes
+	r := router.SetupRouter(patientHandler, prescriptionHandler)
+
+	// Step 5: Get port from environment or use default
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081" // Changed from 8080 to avoid conflicts
 	}
 
-	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: r,
+	// Step 6: Start the HTTP server
+	log.Printf("🚀 Server running on port %s", port)
+	log.Printf("📚 API available at: http://localhost:%s/api/v1", port)
+	log.Printf("💚 Health check: http://localhost:%s/health", port)
+
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
 	}
-
-	// Graceful shutdown
-	go func() {
-		log.Printf("🚀 Server running on port %s", port)
-		log.Printf("📚 API Documentation: http://localhost:%s/api/v1", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed: %v", err)
-		}
-	}()
-
-	// Wait for interrupt signal
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	log.Println("Shutting down server...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := server.Shutdown(ctx); err != nil {
-		log.Fatal("Server forced to shutdown:", err)
-	}
-
-	log.Println("Server stopped gracefully")
 }

@@ -30,9 +30,25 @@ services:
     networks:
       - philmymeds-network
 
+  postgres:
+    image: postgres:latest
+    container_name: philmymeds-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-philmymeds}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - philmymeds-network
+
 networks:
   philmymeds-network:
     driver: bridge
 
 volumes:
   mongodb_data:
+  postgres_data:

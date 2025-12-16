@@ -1,25 +1,35 @@
 package router
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/handlers"
-	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
-	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/services"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 // SetupRouter configures and returns the chi router with all routes
-func SetupRouter() *chi.Mux {
+func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *handlers.PrescriptionHandler) *chi.Mux {
 	r := chi.NewRouter()
 
-	// Middleware
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.URLFormat)
+	// Debug: Print patient handler structure (like console.log in Node.js)
+	log.Println("=== Patient Handler Debug ===")
+	// log.Printf("Patient Handler: %s", spew.Sdump(patientHandler))
+	log.Println("=== Patient Handler Debug ===")
+
+	// Essential Middleware
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	r.Use(middleware.Logger)    // Log all requests
+	r.Use(middleware.Recoverer) // Recover from panics
 
 	// Health check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +39,6 @@ func SetupRouter() *chi.Mux {
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		// Initialize repositories
-		patientRepo := repositories.NewPatientRepository()
-
-		// Initialize services
-		patientService := services.NewPatientService(patientRepo)
-
-		// Initialize handlers
-		patientHandler := handlers.NewPatientHandler(patientService)
 
 		// Patient routes
 		r.Route("/patients", func(r chi.Router) {
@@ -45,6 +47,17 @@ func SetupRouter() *chi.Mux {
 			r.Get("/email/{email}", patientHandler.GetPatientByEmail)
 			r.Put("/{id}", patientHandler.UpdatePatient)
 			r.Delete("/{id}", patientHandler.DeletePatient)
+		})
+
+		// Prescription routes
+		r.Route("/prescriptions", func(r chi.Router) {
+			r.Get("/", prescriptionHandler.GetAllPrescriptions)
+			r.Post("/", prescriptionHandler.CreatePrescription)
+			r.Get("/{id}", prescriptionHandler.GetPrescription)
+			r.Get("/number/{number}", prescriptionHandler.GetPrescriptionByNumber)
+			r.Get("/patient/{patient_id}", prescriptionHandler.GetPrescriptionsByPatient)
+			r.Put("/{id}", prescriptionHandler.UpdatePrescription)
+			r.Delete("/{id}", prescriptionHandler.DeletePrescription)
 		})
 	})
 

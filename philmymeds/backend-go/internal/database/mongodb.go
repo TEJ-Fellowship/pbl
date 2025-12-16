@@ -24,7 +24,7 @@ func ConnectMongoDB() error {
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	defer cancel() //remember to defer this to avoid memory leaks
 
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
