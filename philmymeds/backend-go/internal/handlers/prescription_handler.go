@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
@@ -32,23 +31,15 @@ func (h *PrescriptionHandler) GetAllPrescriptions(w http.ResponseWriter, r *http
 
 // CreatePrescription handles POST /api/v1/prescriptions
 func (h *PrescriptionHandler) CreatePrescription(w http.ResponseWriter, r *http.Request) {
-	log.Println("🔵 [HANDLER] CreatePrescription - Request received")
-
 	var prescriptionDTO dto.PrescriptionDTO
 
-	log.Println("🔵 [HANDLER] CreatePrescription - Decoding request body...")
 	if err := json.NewDecoder(r.Body).Decode(&prescriptionDTO); err != nil {
-		log.Printf("🔴 [HANDLER] CreatePrescription - Error decoding: %v", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
-	log.Printf("🔵 [HANDLER] CreatePrescription - Decoded DTO: PatientID=%s, PrescriberID=%s, PrescriptionNumber=%s",
-		prescriptionDTO.PatientID, prescriptionDTO.PrescriberID, prescriptionDTO.PrescriptionNumber)
 
-	log.Println("🔵 [HANDLER] CreatePrescription - Calling service layer...")
 	created, err := h.service.CreatePrescription(r.Context(), &prescriptionDTO)
 	if err != nil {
-		log.Printf("🔴 [HANDLER] CreatePrescription - Service error: %v", err)
 		if err == services.ErrPrescriptionAlreadyExists {
 			RespondWithError(w, http.StatusConflict, "Prescription already exists", err)
 			return
@@ -57,19 +48,15 @@ func (h *PrescriptionHandler) CreatePrescription(w http.ResponseWriter, r *http.
 		return
 	}
 
-	log.Printf("🟢 [HANDLER] CreatePrescription - Success! Created prescription ID: %s", created.ID)
 	RespondWithJSON(w, http.StatusCreated, created)
 }
 
 // GetPrescription handles GET /api/v1/prescriptions/{id}
 func (h *PrescriptionHandler) GetPrescription(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	log.Printf("🔵 [HANDLER] GetPrescription - Request received for ID: %s", id)
 
-	log.Println("🔵 [HANDLER] GetPrescription - Calling service layer...")
 	prescription, err := h.service.GetPrescriptionByID(r.Context(), id)
 	if err != nil {
-		log.Printf("🔴 [HANDLER] GetPrescription - Service error: %v", err)
 		if err == services.ErrPrescriptionNotFound {
 			RespondWithError(w, http.StatusNotFound, "Prescription not found", err)
 			return
@@ -82,7 +69,6 @@ func (h *PrescriptionHandler) GetPrescription(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	log.Printf("🟢 [HANDLER] GetPrescription - Success! Found prescription ID: %s", prescription.ID)
 	RespondWithJSON(w, http.StatusOK, prescription)
 }
 

@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/database"
@@ -39,20 +38,12 @@ func (r *PrescriptionRepository) FindAll(ctx context.Context) ([]*models.Prescri
 
 // Create creates a new prescription
 func (r *PrescriptionRepository) Create(ctx context.Context, prescription *models.Prescription) error {
-	log.Println("🟢 [REPOSITORY] Create - Starting database insert...")
-	log.Printf("🟢 [REPOSITORY] Create - Prescription data: Number=%s, Status=%s, PatientID=%s, PrescriberID=%s",
-		prescription.PrescriptionNumber, prescription.Status,
-		prescription.PatientID.Hex(), prescription.PrescriberID.Hex())
-
 	prescription.CreatedAt = time.Now()
 	prescription.UpdatedAt = time.Now()
-	log.Printf("🟢 [REPOSITORY] Create - Set timestamps: CreatedAt=%v, UpdatedAt=%v",
-		prescription.CreatedAt, prescription.UpdatedAt)
 
 	// Set default status if not provided
 	if prescription.Status == "" {
 		prescription.Status = models.StatusReceived
-		log.Printf("🟢 [REPOSITORY] Create - Set default status: %s", prescription.Status)
 	}
 
 	// Initialize status history
@@ -65,18 +56,14 @@ func (r *PrescriptionRepository) Create(ctx context.Context, prescription *model
 				Timestamp: time.Now(),
 			},
 		}
-		log.Printf("🟢 [REPOSITORY] Create - Initialized status history with %d entries", len(prescription.StatusHistory))
 	}
 
-	log.Println("🟢 [REPOSITORY] Create - Executing InsertOne to MongoDB...")
 	result, err := r.collection.InsertOne(ctx, prescription)
 	if err != nil {
-		log.Printf("🔴 [REPOSITORY] Create - MongoDB insert error: %v", err)
 		return err
 	}
 
 	prescription.ID = result.InsertedID.(primitive.ObjectID)
-	log.Printf("🟢 [REPOSITORY] Create - Success! Inserted with ID: %s", prescription.ID.Hex())
 	return nil
 }
 

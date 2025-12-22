@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/database"
@@ -24,24 +23,15 @@ func NewPrescriberRepository() *PrescriberRepository {
 
 // Create creates a new prescriber
 func (r *PrescriberRepository) Create(ctx context.Context, prescriber *models.Prescriber) error {
-	log.Println("🟢 [REPOSITORY] CreatePrescriber - Starting database insert...")
-	log.Printf("🟢 [REPOSITORY] CreatePrescriber - Prescriber data: NPI=%s, Name=%s %s",
-		prescriber.NPI, prescriber.FirstName, prescriber.LastName)
-
 	prescriber.CreatedAt = time.Now()
 	prescriber.UpdatedAt = time.Now()
-	log.Printf("🟢 [REPOSITORY] CreatePrescriber - Set timestamps: CreatedAt=%v, UpdatedAt=%v",
-		prescriber.CreatedAt, prescriber.UpdatedAt)
 
-	log.Println("🟢 [REPOSITORY] CreatePrescriber - Executing InsertOne to MongoDB...")
 	result, err := r.collection.InsertOne(ctx, prescriber)
 	if err != nil {
-		log.Printf("🔴 [REPOSITORY] CreatePrescriber - MongoDB insert error: %v", err)
 		return err
 	}
 
 	prescriber.ID = result.InsertedID.(primitive.ObjectID)
-	log.Printf("🟢 [REPOSITORY] CreatePrescriber - Success! Inserted with ID: %s", prescriber.ID.Hex())
 	return nil
 }
 

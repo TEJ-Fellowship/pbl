@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
@@ -24,44 +23,28 @@ func NewPrescriberService(repo *repositories.PrescriberRepository) *PrescriberSe
 
 // CreatePrescriber creates a new prescriber
 func (s *PrescriberService) CreatePrescriber(ctx context.Context, prescriberDTO *dto.PrescriberDTO) (*dto.PrescriberDTO, error) {
-	log.Println("🟡 [SERVICE] CreatePrescriber - Starting...")
-	log.Printf("🟡 [SERVICE] CreatePrescriber - Input DTO: NPI=%s, Name=%s %s",
-		prescriberDTO.NPI, prescriberDTO.FirstName, prescriberDTO.LastName)
-
 	// Convert DTO to model
-	log.Println("🟡 [SERVICE] CreatePrescriber - Converting DTO to Model...")
 	prescriber, err := prescriberDTO.ToModel()
 	if err != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescriber - Error converting DTO: %v", err)
 		return nil, err
 	}
-	log.Printf("🟡 [SERVICE] CreatePrescriber - Model created: NPI=%s", prescriber.NPI)
 
 	// Check if prescriber with NPI already exists
-	log.Printf("🟡 [SERVICE] CreatePrescriber - Checking if NPI exists: %s", prescriber.NPI)
 	existing, err := s.repo.FindByNPI(ctx, prescriber.NPI)
 	if err == nil && existing != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescriber - Prescriber with NPI already exists: %s", prescriber.NPI)
 		return nil, ErrPrescriberAlreadyExists
 	}
 	if err != nil && err != mongo.ErrNoDocuments {
-		log.Printf("🔴 [SERVICE] CreatePrescriber - Error checking existing: %v", err)
 		return nil, err
 	}
-	log.Println("🟡 [SERVICE] CreatePrescriber - NPI is unique ✓")
 
 	// Create prescriber via repository
-	log.Println("🟡 [SERVICE] CreatePrescriber - Calling repository to create...")
 	if err := s.repo.Create(ctx, prescriber); err != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescriber - Repository error: %v", err)
 		return nil, err
 	}
-	log.Printf("🟢 [SERVICE] CreatePrescriber - Repository created successfully! ID: %s", prescriber.ID.Hex())
 
 	// Convert back to DTO
-	log.Println("🟡 [SERVICE] CreatePrescriber - Converting Model back to DTO...")
 	result := dto.PrescriberToDTO(prescriber)
-	log.Printf("🟢 [SERVICE] CreatePrescriber - Success! Returning DTO with ID: %s", result.ID)
 	return result, nil
 }
 

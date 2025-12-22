@@ -1,7 +1,6 @@
 package router
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/handlers"
@@ -14,11 +13,6 @@ import (
 // SetupRouter configures and returns the chi router with all routes
 func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *handlers.PrescriptionHandler, prescriberHandler *handlers.PrescriberHandler) *chi.Mux {
 	r := chi.NewRouter()
-
-	// Debug: Print patient handler structure (like console.log in Node.js)
-	log.Println("=== Patient Handler Debug ===")
-	// log.Printf("Patient Handler: %s", spew.Sdump(patientHandler))
-	log.Println("=== Patient Handler Debug ===")
 
 	// Essential Middleware
 	r.Use(cors.Handler(cors.Options{

@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
@@ -40,62 +39,39 @@ func (s *PrescriptionService) GetAllPrescriptions(ctx context.Context) ([]*dto.P
 
 // CreatePrescription creates a new prescription
 func (s *PrescriptionService) CreatePrescription(ctx context.Context, prescriptionDTO *dto.PrescriptionDTO) (*dto.PrescriptionDTO, error) {
-	log.Println("🟡 [SERVICE] CreatePrescription - Starting...")
-	log.Printf("🟡 [SERVICE] CreatePrescription - Input DTO: PatientID=%s, PrescriberID=%s, Status=%s",
-		prescriptionDTO.PatientID, prescriptionDTO.PrescriberID, prescriptionDTO.Status)
-
 	// Convert DTO to model
-	log.Println("🟡 [SERVICE] CreatePrescription - Converting DTO to Model...")
 	prescription, err := prescriptionDTO.ToModel()
 	if err != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescription - Error converting DTO: %v", err)
 		return nil, err
 	}
-	log.Printf("🟡 [SERVICE] CreatePrescription - Model created: PrescriptionNumber=%s, Status=%s",
-		prescription.PrescriptionNumber, prescription.Status)
 
 	// Generate prescription number if not provided
 	if prescription.PrescriptionNumber == "" {
 		prescription.PrescriptionNumber = s.generatePrescriptionNumber()
-		log.Printf("🟡 [SERVICE] CreatePrescription - Generated prescription number: %s", prescription.PrescriptionNumber)
-	} else {
-		log.Printf("🟡 [SERVICE] CreatePrescription - Using provided prescription number: %s", prescription.PrescriptionNumber)
 	}
 
 	// Check if prescription number already exists
-	log.Printf("🟡 [SERVICE] CreatePrescription - Checking if prescription number exists: %s", prescription.PrescriptionNumber)
 	existing, err := s.repo.FindByPrescriptionNumber(ctx, prescription.PrescriptionNumber)
 	if err == nil && existing != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescription - Prescription number already exists: %s", prescription.PrescriptionNumber)
 		return nil, ErrPrescriptionAlreadyExists
 	}
 	if err != nil && err != mongo.ErrNoDocuments {
-		log.Printf("🔴 [SERVICE] CreatePrescription - Error checking existing: %v", err)
 		return nil, err
 	}
-	log.Println("🟡 [SERVICE] CreatePrescription - Prescription number is unique ✓")
 
 	// Set default status if not provided
 	if prescription.Status == "" {
 		prescription.Status = models.StatusReceived
-		log.Printf("🟡 [SERVICE] CreatePrescription - Set default status: %s", prescription.Status)
-	} else {
-		log.Printf("🟡 [SERVICE] CreatePrescription - Using provided status: %s", prescription.Status)
 	}
 
 	// Create prescription via repository
 	// Note: Repository handles CreatedAt and UpdatedAt timestamps
-	log.Println("🟡 [SERVICE] CreatePrescription - Calling repository to create...")
 	if err := s.repo.Create(ctx, prescription); err != nil {
-		log.Printf("🔴 [SERVICE] CreatePrescription - Repository error: %v", err)
 		return nil, err
 	}
-	log.Printf("🟢 [SERVICE] CreatePrescription - Repository created successfully! ID: %s", prescription.ID.Hex())
 
 	// Convert back to DTO
-	log.Println("🟡 [SERVICE] CreatePrescription - Converting Model back to DTO...")
 	result := dto.PrescriptionToDTO(prescription)
-	log.Printf("🟢 [SERVICE] CreatePrescription - Success! Returning DTO with ID: %s", result.ID)
 	return result, nil
 }
 
