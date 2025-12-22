@@ -35,8 +35,12 @@ func main() {
 	prescriptionService := services.NewPrescriptionService(prescriptionRepo)
 	prescriptionHandler := handlers.NewPrescriptionHandler(prescriptionService)
 
+	prescriberRepo := repositories.NewPrescriberRepository()
+	prescriberService := services.NewPrescriberService(prescriberRepo)
+	prescriberHandler := handlers.NewPrescriberHandler(prescriberService)
+
 	// Step 4: Setup router with all API routes
-	r := router.SetupRouter(patientHandler, prescriptionHandler)
+	r := router.SetupRouter(patientHandler, prescriptionHandler, prescriberHandler)
 
 	// Step 5: Get port from environment or use default
 	port := os.Getenv("PORT")

@@ -12,7 +12,7 @@ import (
 )
 
 // SetupRouter configures and returns the chi router with all routes
-func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *handlers.PrescriptionHandler) *chi.Mux {
+func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *handlers.PrescriptionHandler, prescriberHandler *handlers.PrescriberHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Debug: Print patient handler structure (like console.log in Node.js)
@@ -56,8 +56,16 @@ func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *h
 			r.Get("/{id}", prescriptionHandler.GetPrescription)
 			r.Get("/number/{number}", prescriptionHandler.GetPrescriptionByNumber)
 			r.Get("/patient/{patient_id}", prescriptionHandler.GetPrescriptionsByPatient)
+			r.Get("/prescriber/{prescriber_id}", prescriptionHandler.GetPrescriptionsByPrescriber)
 			r.Put("/{id}", prescriptionHandler.UpdatePrescription)
 			r.Delete("/{id}", prescriptionHandler.DeletePrescription)
+		})
+		r.Route("/prescribers", func(r chi.Router) {
+			r.Get("/", prescriberHandler.GetAllPrescribers)
+			r.Post("/", prescriberHandler.CreatePrescriber)
+			r.Get("/{id}", prescriberHandler.GetPrescriber)
+			r.Put("/{id}", prescriberHandler.UpdatePrescriber)
+			r.Delete("/{id}", prescriberHandler.DeletePrescriber)
 		})
 	})
 

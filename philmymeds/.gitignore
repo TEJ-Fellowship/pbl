@@ -1,2 +1,6 @@
 .env
+.env.local
+.env.docker
+.env.production
 **/.env
+AGENTS.md
