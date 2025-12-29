@@ -23,14 +23,17 @@ func NewPatientHandler(service *services.PatientService) *PatientHandler {
 
 // CreatePatient handles POST /api/v1/patients
 func (h *PatientHandler) CreatePatient(w http.ResponseWriter, r *http.Request) {
-	var patientDTO dto.PatientDTO
+	var req dto.CreatePatientRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&patientDTO); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	created, err := h.service.CreatePatient(r.Context(), &patientDTO)
+	// Convert request DTO to service DTO
+	patientDTO := req.ToDTO()
+
+	created, err := h.service.CreatePatient(r.Context(), patientDTO)
 	if err != nil {
 		if err == services.ErrPatientAlreadyExists {
 			RespondWithError(w, http.StatusConflict, "Patient already exists", err)
@@ -85,13 +88,16 @@ func (h *PatientHandler) GetPatientByEmail(w http.ResponseWriter, r *http.Reques
 func (h *PatientHandler) UpdatePatient(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	var patientDTO dto.PatientDTO
-	if err := json.NewDecoder(r.Body).Decode(&patientDTO); err != nil {
+	var req dto.UpdatePatientRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	updated, err := h.service.UpdatePatient(r.Context(), id, &patientDTO)
+	// Convert request DTO to service DTO
+	patientDTO := req.ToDTO()
+
+	updated, err := h.service.UpdatePatient(r.Context(), id, patientDTO)
 	if err != nil {
 		if err == services.ErrPatientNotFound {
 			RespondWithError(w, http.StatusNotFound, "Patient not found", err)

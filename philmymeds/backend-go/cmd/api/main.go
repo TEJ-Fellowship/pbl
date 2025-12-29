@@ -31,13 +31,29 @@ func main() {
 	patientService := services.NewPatientService(patientRepo)
 	patientHandler := handlers.NewPatientHandler(patientService)
 
-	prescriptionRepo := repositories.NewPrescriptionRepository()
-	prescriptionService := services.NewPrescriptionService(prescriptionRepo)
-	prescriptionHandler := handlers.NewPrescriptionHandler(prescriptionService)
-
 	prescriberRepo := repositories.NewPrescriberRepository()
 	prescriberService := services.NewPrescriberService(prescriberRepo)
 	prescriberHandler := handlers.NewPrescriberHandler(prescriberService)
+
+	prescriptionRepo := repositories.NewPrescriptionRepository()
+	prescriptionService := services.NewPrescriptionService(
+		prescriptionRepo,
+		patientRepo,
+		prescriberRepo,
+	)
+
+	insuranceRepo := repositories.NewInsuranceRepository()
+	insuranceService := services.NewInsuranceService(insuranceRepo)
+
+	geminiService := services.NewGeminiService()
+
+	prescriptionHandler := handlers.NewPrescriptionHandler(
+		prescriptionService,
+		patientService,
+		prescriberService,
+		insuranceService,
+		geminiService,
+	)
 
 	// Step 4: Setup router with all API routes
 	r := router.SetupRouter(patientHandler, prescriptionHandler, prescriberHandler)

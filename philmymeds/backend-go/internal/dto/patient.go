@@ -22,6 +22,59 @@ type PatientDTO struct {
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
+// CreatePatientRequest represents the request payload for creating a patient.
+// Excludes server-generated fields: ID, InsuranceProfileID, CreatedAt, UpdatedAt
+type CreatePatientRequest struct {
+	FirstName   string     `json:"first_name" validate:"required"`
+	LastName    string     `json:"last_name" validate:"required"`
+	DateOfBirth string     `json:"date_of_birth" validate:"required"`     // Format: YYYY-MM-DD
+	Sex         string     `json:"sex" validate:"required,oneof=M F O U"` // M/F/O/U
+	Email       string     `json:"email" validate:"required,email"`
+	Phone       string     `json:"phone" validate:"required"`
+	Address     AddressDTO `json:"address" validate:"required"`
+}
+
+// ToDTO converts CreatePatientRequest to PatientDTO for service layer compatibility
+func (r *CreatePatientRequest) ToDTO() *PatientDTO {
+	return &PatientDTO{
+		FirstName:   r.FirstName,
+		LastName:    r.LastName,
+		DateOfBirth: r.DateOfBirth,
+		Sex:         r.Sex,
+		Email:       r.Email,
+		Phone:       r.Phone,
+		Address:     r.Address,
+		// ID, InsuranceProfileID, CreatedAt, UpdatedAt will be set by service/repository
+	}
+}
+
+// UpdatePatientRequest represents the request payload for updating a patient.
+// Excludes immutable fields: ID, CreatedAt
+type UpdatePatientRequest struct {
+	FirstName   string     `json:"first_name,omitempty"`
+	LastName    string     `json:"last_name,omitempty"`
+	DateOfBirth string     `json:"date_of_birth,omitempty"` // Format: YYYY-MM-DD
+	Sex         string     `json:"sex,omitempty"`            // M/F/O/U
+	Email       string     `json:"email,omitempty"`
+	Phone       string     `json:"phone,omitempty"`
+	Address     AddressDTO `json:"address,omitempty"`
+}
+
+// ToDTO converts UpdatePatientRequest to PatientDTO for service layer compatibility
+func (r *UpdatePatientRequest) ToDTO() *PatientDTO {
+	return &PatientDTO{
+		FirstName:   r.FirstName,
+		LastName:    r.LastName,
+		DateOfBirth: r.DateOfBirth,
+		Sex:         r.Sex,
+		Email:       r.Email,
+		Phone:       r.Phone,
+		Address:     r.Address,
+		// ID, CreatedAt are immutable and will be preserved by service
+		// InsuranceProfileID is managed separately
+	}
+}
+
 // AddressDTO represents a physical address for API responses (JSON model).
 type AddressDTO struct {
 	Line1       string         `json:"line1" validate:"required"`

@@ -66,6 +66,35 @@ func (s *PrescriberService) GetPrescriberByID(ctx context.Context, id string) (*
 	return dto.PrescriberToDTO(prescriber), nil
 }
 
+// GetPrescriberByNPI retrieves a prescriber by NPI
+func (s *PrescriberService) GetPrescriberByNPI(ctx context.Context, npi string) (*dto.PrescriberDTO, error) {
+	prescriber, err := s.repo.FindByNPI(ctx, npi)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrPrescriberNotFound
+		}
+		return nil, err
+	}
+
+	return dto.PrescriberToDTO(prescriber), nil
+}
+
+// CreateOrGetPrescriber creates a prescriber if it doesn't exist, or returns existing one by NPI
+func (s *PrescriberService) CreateOrGetPrescriber(ctx context.Context, prescriberDTO *dto.PrescriberDTO) (*dto.PrescriberDTO, error) {
+	// Try to find existing prescriber by NPI
+	existing, err := s.repo.FindByNPI(ctx, prescriberDTO.NPI)
+	if err == nil && existing != nil {
+		// Prescriber exists, return it
+		return dto.PrescriberToDTO(existing), nil
+	}
+	if err != nil && err != mongo.ErrNoDocuments {
+		return nil, err
+	}
+
+	// Prescriber doesn't exist, create it
+	return s.CreatePrescriber(ctx, prescriberDTO)
+}
+
 // GetAllPrescribers retrieves all prescribers
 func (s *PrescriberService) GetAllPrescribers(ctx context.Context) ([]*dto.PrescriberDTO, error) {
 	prescribers, err := s.repo.FindAll(ctx)
@@ -102,9 +131,10 @@ func (s *PrescriberService) UpdatePrescriber(ctx context.Context, id string, pre
 		return nil, err
 	}
 
-	// Preserve the ID and created timestamp
+	// Preserve the ID, created timestamp, and immutable fields
 	prescriber.ID = objectID
 	prescriber.CreatedAt = existing.CreatedAt
+	prescriber.NPI = existing.NPI // NPI is immutable
 
 	// Update prescriber via repository
 	if err := s.repo.Update(ctx, objectID, prescriber); err != nil {

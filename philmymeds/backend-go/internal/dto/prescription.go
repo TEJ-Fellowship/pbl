@@ -21,17 +21,81 @@ type PrescriptionDTO struct {
 	UpdatedAt          time.Time     `json:"updated_at"`
 }
 
+// CreatePrescriptionRequest represents the request payload for creating a prescription.
+// Supports two formats:
+// 1. Simple: Use patient_id and prescriber_id (existing entities)
+// 2. Comprehensive: Include nested patient/prescriber objects (NCPDP-style from Gemini API)
+// Excludes server-generated fields: ID, PrescriptionNumber, Status, CreatedAt, UpdatedAt
+type CreatePrescriptionRequest struct {
+	// Simple format: Use existing patient/prescriber IDs
+	PatientID    string `json:"patient_id,omitempty"`
+	PrescriberID string `json:"prescriber_id,omitempty"`
+
+	// Comprehensive format: Reuse existing DTOs (no duplication!)
+	Patient    *CreatePatientRequest    `json:"patient,omitempty"`
+	Prescriber *CreatePrescriberRequest `json:"prescriber,omitempty"`
+	Insurance  *InsuranceInfoRequest    `json:"insurance,omitempty"`
+
+	// Common fields
+	PrescriptionNumber string        `json:"prescription_number,omitempty"` // Optional, will be generated
+	DateWritten        string        `json:"date_written,omitempty"`        // Format: YYYY-MM-DD
+	Medication         MedicationDTO `json:"medication" validate:"required"`
+	Notes              string        `json:"notes,omitempty"`
+}
+
+// InsuranceInfoRequest represents insurance information in prescription request
+type InsuranceInfoRequest struct {
+	PayerName   string `json:"payer_name" validate:"required"` // Insurance carrier name
+	MemberID    string `json:"member_id" validate:"required"`  // Member/Subscriber ID
+	GroupNumber string `json:"group_number,omitempty"`         // Group ID
+	BIN         string `json:"bin,omitempty" validate:"len=6"` // 6-digit BIN
+	PCN         string `json:"pcn,omitempty"`                  // Processor Control Number
+	PlanType    string `json:"plan_type,omitempty"`            // commercial/medicare/medicaid/etc
+}
+
+// ToDTO converts CreatePrescriptionRequest to PrescriptionDTO for service layer compatibility
+func (r *CreatePrescriptionRequest) ToDTO() *PrescriptionDTO {
+	return &PrescriptionDTO{
+		PatientID:    r.PatientID,
+		PrescriberID: r.PrescriberID,
+		Medication:   r.Medication,
+		Notes:        r.Notes,
+		// ID, PrescriptionNumber, Status, CreatedAt, UpdatedAt will be set by service/repository
+	}
+}
+
+// UpdatePrescriptionRequest represents the request payload for updating a prescription.
+// Excludes immutable fields: ID, PrescriptionNumber, CreatedAt
+type UpdatePrescriptionRequest struct {
+	Medication         MedicationDTO `json:"medication,omitempty"`
+	Notes              string        `json:"notes,omitempty"`
+	SelectedPharmacyID string        `json:"selected_pharmacy_id,omitempty"`
+}
+
+// ToDTO converts UpdatePrescriptionRequest to PrescriptionDTO for service layer compatibility
+func (r *UpdatePrescriptionRequest) ToDTO() *PrescriptionDTO {
+	return &PrescriptionDTO{
+		Medication:         r.Medication,
+		Notes:              r.Notes,
+		SelectedPharmacyID: r.SelectedPharmacyID,
+		// ID, PrescriptionNumber, CreatedAt are immutable and will be preserved by service
+	}
+}
+
 // MedicationDTO mirrors models.Medication for JSON.
+// Includes essential NCPDP fields: NDC (required) and DAW (for brand/generic substitution).
 type MedicationDTO struct {
-	DrugName   string `json:"drug_name"`
-	Strength   string `json:"strength"`
-	Dosage     string `json:"dosage"`
+	NDC        string `json:"ndc" validate:"required"` // National Drug Code - REQUIRED in NCPDP
+	DrugName   string `json:"drug_name" validate:"required"`
+	Strength   string `json:"strength" validate:"required"`
+	Dosage     string `json:"dosage" validate:"required"`
 	Form       string `json:"form,omitempty"`
 	Route      string `json:"route,omitempty"`
-	SIG        string `json:"sig"`
-	Quantity   int    `json:"quantity"`
-	DaysSupply int    `json:"days_supply"`
-	Refills    int    `json:"refills"`
+	SIG        string `json:"sig" validate:"required"`
+	Quantity   int    `json:"quantity" validate:"required,gt=0"`
+	DaysSupply int    `json:"days_supply" validate:"required,gt=0"`
+	Refills    int    `json:"refills" validate:"min=0"`
+	DAW        int    `json:"daw,omitempty" validate:"min=0,max=9"` // Dispense As Written code (0-9)
 }
 
 // PrescriptionToDTO converts BSON model to JSON DTO.
@@ -107,6 +171,7 @@ func MedicationToDTO(m *models.Medication) *MedicationDTO {
 		return nil
 	}
 	return &MedicationDTO{
+		NDC:        m.NDC,
 		DrugName:   m.DrugName,
 		Strength:   m.Strength,
 		Dosage:     m.Dosage,
@@ -116,12 +181,14 @@ func MedicationToDTO(m *models.Medication) *MedicationDTO {
 		Quantity:   m.Quantity,
 		DaysSupply: m.DaysSupply,
 		Refills:    m.Refills,
+		DAW:        m.DAW,
 	}
 }
 
 // ToModel converts JSON DTO to BSON medication.
 func (d *MedicationDTO) ToModel() *models.Medication {
 	return &models.Medication{
+		NDC:        d.NDC,
 		DrugName:   d.DrugName,
 		Strength:   d.Strength,
 		Dosage:     d.Dosage,
@@ -131,5 +198,6 @@ func (d *MedicationDTO) ToModel() *models.Medication {
 		Quantity:   d.Quantity,
 		DaysSupply: d.DaysSupply,
 		Refills:    d.Refills,
+		DAW:        d.DAW,
 	}
 }

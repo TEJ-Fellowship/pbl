@@ -4,9 +4,10 @@ import (
 	"net/http"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/handlers"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
@@ -22,8 +23,9 @@ func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *h
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-	r.Use(middleware.Logger)    // Log all requests
-	r.Use(middleware.Recoverer) // Recover from panics
+	r.Use(middleware.RequestLogger) // Custom request/payload logger
+	r.Use(chimiddleware.Logger)     // Chi's request logger
+	r.Use(chimiddleware.Recoverer)  // Recover from panics
 
 	// Health check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +49,7 @@ func SetupRouter(patientHandler *handlers.PatientHandler, prescriptionHandler *h
 		r.Route("/prescriptions", func(r chi.Router) {
 			r.Get("/", prescriptionHandler.GetAllPrescriptions)
 			r.Post("/", prescriptionHandler.CreatePrescription)
+			r.Post("/generate", prescriptionHandler.GeneratePrescriptionFromGemini) // Gemini API endpoint
 			r.Get("/{id}", prescriptionHandler.GetPrescription)
 			r.Get("/number/{number}", prescriptionHandler.GetPrescriptionByNumber)
 			r.Get("/patient/{patient_id}", prescriptionHandler.GetPrescriptionsByPatient)

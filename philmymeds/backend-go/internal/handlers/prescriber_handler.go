@@ -34,14 +34,17 @@ func (h *PrescriberHandler) GetAllPrescribers(w http.ResponseWriter, r *http.Req
 
 // CreatePrescriber handles POST /api/v1/prescribers
 func (h *PrescriberHandler) CreatePrescriber(w http.ResponseWriter, r *http.Request) {
-	var prescriberDTO dto.PrescriberDTO
+	var req dto.CreatePrescriberRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&prescriberDTO); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	created, err := h.service.CreatePrescriber(r.Context(), &prescriberDTO)
+	// Convert request DTO to service DTO
+	prescriberDTO := req.ToDTO()
+
+	created, err := h.service.CreatePrescriber(r.Context(), prescriberDTO)
 	if err != nil {
 		if err == services.ErrPrescriberAlreadyExists {
 			RespondWithError(w, http.StatusConflict, "Prescriber already exists", err)
@@ -79,13 +82,16 @@ func (h *PrescriberHandler) GetPrescriber(w http.ResponseWriter, r *http.Request
 func (h *PrescriberHandler) UpdatePrescriber(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	var prescriberDTO dto.PrescriberDTO
-	if err := json.NewDecoder(r.Body).Decode(&prescriberDTO); err != nil {
+	var req dto.UpdatePrescriberRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload", err)
 		return
 	}
 
-	updated, err := h.service.UpdatePrescriber(r.Context(), id, &prescriberDTO)
+	// Convert request DTO to service DTO
+	prescriberDTO := req.ToDTO()
+
+	updated, err := h.service.UpdatePrescriber(r.Context(), id, prescriberDTO)
 	if err != nil {
 		if err == services.ErrPrescriberNotFound {
 			RespondWithError(w, http.StatusNotFound, "Prescriber not found", err)
@@ -122,4 +128,3 @@ func (h *PrescriberHandler) DeletePrescriber(w http.ResponseWriter, r *http.Requ
 
 	RespondWithJSON(w, http.StatusNoContent, nil)
 }
-

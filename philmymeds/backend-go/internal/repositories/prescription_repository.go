@@ -77,7 +77,7 @@ func (r *PrescriptionRepository) FindByID(ctx context.Context, id primitive.Obje
 	return &prescription, nil
 }
 
-// FindByPrescriptionNumber finds a prescription by prescription number
+// FindByPrescriptionNumber finds a prescription by prescription numbePr
 func (r *PrescriptionRepository) FindByPrescriptionNumber(ctx context.Context, prescriptionNumber string) (*models.Prescription, error) {
 	var prescription models.Prescription
 	err := r.collection.FindOne(ctx, bson.M{"prescription_number": prescriptionNumber}).Decode(&prescription)

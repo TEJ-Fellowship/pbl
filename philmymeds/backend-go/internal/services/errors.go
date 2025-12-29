@@ -10,6 +10,7 @@ var (
 	ErrPrescriptionAlreadyExists = errors.New("prescription with this number already exists")
 	ErrPrescriberNotFound        = errors.New("prescriber not found")
 	ErrPrescriberAlreadyExists   = errors.New("prescriber with this NPI already exists")
+	ErrInsuranceProfileNotFound  = errors.New("insurance profile not found")
 	ErrInvalidID                 = errors.New("invalid ID format")
 	ErrNotImplemented            = errors.New("not implemented")
 )

@@ -47,6 +47,24 @@ func (s *PatientService) CreatePatient(ctx context.Context, patientDTO *dto.Pati
 	return dto.PatientToDTO(patient), nil
 }
 
+// CreateOrGetPatient creates a patient if it doesn't exist, or returns existing one by email
+func (s *PatientService) CreateOrGetPatient(ctx context.Context, patientDTO *dto.PatientDTO) (*dto.PatientDTO, error) {
+	// Try to find existing patient by email
+	if patientDTO.Email != "" {
+		existing, err := s.repo.FindByEmail(ctx, patientDTO.Email)
+		if err == nil && existing != nil {
+			// Patient exists, return it
+			return dto.PatientToDTO(existing), nil
+		}
+		if err != nil && err != mongo.ErrNoDocuments {
+			return nil, err
+		}
+	}
+
+	// Patient doesn't exist, create it
+	return s.CreatePatient(ctx, patientDTO)
+}
+
 // GetPatientByID retrieves a patient by ID
 func (s *PatientService) GetPatientByID(ctx context.Context, id string) (*dto.PatientDTO, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
