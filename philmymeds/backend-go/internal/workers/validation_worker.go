@@ -2,6 +2,7 @@ package workers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/models"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -52,8 +54,11 @@ func (w *ValidationWorker) processNextJob(ctx context.Context) {
 		return
 	}
 	if job == nil {
-		return // No jobs available
+		// No jobs available - this is normal, don't log
+		return
 	}
+
+	log.Printf("🔍 Processing validation job %s for prescription %s", job.JobID, job.PrescriptionID)
 
 	// Process the job
 	if err := w.validatePrescription(ctx, job); err != nil {
@@ -64,35 +69,48 @@ func (w *ValidationWorker) processNextJob(ctx context.Context) {
 
 	// Mark job as completed
 	w.markJobCompleted(ctx, job)
+	log.Printf("✅ Validation completed for prescription %s", job.PrescriptionID)
 }
 
 // lockJob atomically locks a pending job for processing
 func (w *ValidationWorker) lockJob(ctx context.Context) (*models.ValidationJob, error) {
-	query := `
+	// First, find and lock a pending job
+	findQuery := `
+		SELECT id, job_id, prescription_id, status, retry_count, max_retries
+		FROM validation_jobs 
+		WHERE status = 'pending' 
+		ORDER BY created_at ASC 
+		LIMIT 1
+		FOR UPDATE SKIP LOCKED
+	`
+
+	var job models.ValidationJob
+	err := database.PostgresPool.QueryRow(ctx, findQuery).Scan(
+		&job.ID, &job.JobID, &job.PrescriptionID, &job.Status, &job.RetryCount, &job.MaxRetries,
+	)
+	if err != nil {
+		// Check if it's a "no rows" error
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil // No jobs available
+		}
+		return nil, fmt.Errorf("error finding job: %w", err)
+	}
+
+	// Update the job status to processing
+	updateQuery := `
 		UPDATE validation_jobs 
 		SET status = 'processing', 
 		    locked_at = NOW(), 
 		    locked_by = $1,
 		    updated_at = NOW()
-		WHERE id = (
-			SELECT id FROM validation_jobs 
-			WHERE status = 'pending' 
-			ORDER BY created_at ASC 
-			LIMIT 1
-			FOR UPDATE SKIP LOCKED
-		)
-		RETURNING id, job_id, prescription_id, status, retry_count, max_retries
+		WHERE id = $2
 	`
-
-	var job models.ValidationJob
-	err := database.PostgresPool.QueryRow(ctx, query, w.workerID).Scan(
-		&job.ID, &job.JobID, &job.PrescriptionID, &job.Status, &job.RetryCount, &job.MaxRetries,
-	)
+	_, err = database.PostgresPool.Exec(ctx, updateQuery, w.workerID, job.ID)
 	if err != nil {
-		// No rows means no pending jobs
-		return nil, nil
+		return nil, fmt.Errorf("error locking job: %w", err)
 	}
 
+	job.Status = "processing"
 	return &job, nil
 }
 

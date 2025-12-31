@@ -6,8 +6,9 @@ WORKDIR /app
 # Copy code to the container
 COPY . .
 
-# Build the app
-RUN go build -o api ./cmd/api
+# Build both API and worker
+RUN go build -o api ./cmd/api && \
+    go build -o worker ./cmd/worker
 
 # Expose the port
 EXPOSE 8080

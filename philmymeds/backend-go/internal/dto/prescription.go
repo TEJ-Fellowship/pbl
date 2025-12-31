@@ -9,16 +9,19 @@ import (
 
 // PrescriptionDTO represents prescription data for API JSON.
 type PrescriptionDTO struct {
-	ID                 string        `json:"id"`
-	PrescriptionNumber string        `json:"prescription_number"`
-	Status             string        `json:"status"`
-	PatientID          string        `json:"patient_id"`
-	PrescriberID       string        `json:"prescriber_id"`
-	SelectedPharmacyID string        `json:"selected_pharmacy_id,omitempty"`
-	Medication         MedicationDTO `json:"medication"`
-	Notes              string        `json:"notes,omitempty"`
-	CreatedAt          time.Time     `json:"created_at"`
-	UpdatedAt          time.Time     `json:"updated_at"`
+	ID                 string               `json:"id"`
+	PrescriptionNumber string               `json:"prescription_number"`
+	Status             string               `json:"status"`
+	PatientID          string               `json:"patient_id"`
+	PrescriberID       string               `json:"prescriber_id"`
+	SelectedPharmacyID string               `json:"selected_pharmacy_id,omitempty"`
+	Medication         MedicationDTO        `json:"medication"`
+	Notes              string               `json:"notes,omitempty"`
+	ValidationErrors   []ValidationErrorDTO `json:"validation_errors,omitempty"`
+	ValidationChecks   *ValidationChecksDTO `json:"validation_checks,omitempty"`
+	ValidatedAt        *time.Time           `json:"validated_at,omitempty"`
+	CreatedAt          time.Time            `json:"created_at"`
+	UpdatedAt          time.Time            `json:"updated_at"`
 }
 
 // CreatePrescriptionRequest represents the request payload for creating a prescription.
@@ -109,7 +112,7 @@ func PrescriptionToDTO(p *models.Prescription) *PrescriptionDTO {
 		selectedPharmacyID = p.SelectedPharmacyID.Hex()
 	}
 
-	return &PrescriptionDTO{
+	dto := &PrescriptionDTO{
 		ID:                 p.ID.Hex(),
 		PrescriptionNumber: p.PrescriptionNumber,
 		Status:             p.Status,
@@ -118,9 +121,37 @@ func PrescriptionToDTO(p *models.Prescription) *PrescriptionDTO {
 		SelectedPharmacyID: selectedPharmacyID,
 		Medication:         *MedicationToDTO(&p.Medication),
 		Notes:              p.Notes,
+		ValidatedAt:        p.ValidatedAt,
 		CreatedAt:          p.CreatedAt,
 		UpdatedAt:          p.UpdatedAt,
 	}
+
+	// Convert validation errors
+	if len(p.ValidationErrors) > 0 {
+		dto.ValidationErrors = make([]ValidationErrorDTO, len(p.ValidationErrors))
+		for i, ve := range p.ValidationErrors {
+			dto.ValidationErrors[i] = ValidationErrorDTO{
+				Field:    ve.Field,
+				Error:    ve.Error,
+				Severity: ve.Severity,
+			}
+		}
+	}
+
+	// Convert validation checks
+	if p.ValidationChecks.NPIValid || p.ValidationChecks.DEAValid || p.ValidationChecks.NDCValid {
+		dto.ValidationChecks = &ValidationChecksDTO{
+			NPIValid:        p.ValidationChecks.NPIValid,
+			DEAValid:        p.ValidationChecks.DEAValid,
+			NDCValid:        p.ValidationChecks.NDCValid,
+			RequiredFields:  p.ValidationChecks.RequiredFields,
+			SIGFormat:       p.ValidationChecks.SIGFormat,
+			QuantityValid:   p.ValidationChecks.QuantityValid,
+			DaysSupplyValid: p.ValidationChecks.DaysSupplyValid,
+		}
+	}
+
+	return dto
 }
 
 // ToModel converts JSON DTO to BSON model.
@@ -200,4 +231,22 @@ func (d *MedicationDTO) ToModel() *models.Medication {
 		Refills:    d.Refills,
 		DAW:        d.DAW,
 	}
+}
+
+// ValidationErrorDTO represents a validation error for API responses
+type ValidationErrorDTO struct {
+	Field    string `json:"field"`
+	Error    string `json:"error"`
+	Severity string `json:"severity"`
+}
+
+// ValidationChecksDTO represents validation check results for API responses
+type ValidationChecksDTO struct {
+	NPIValid        bool `json:"npi_valid"`
+	DEAValid        bool `json:"dea_valid"`
+	NDCValid        bool `json:"ndc_valid"`
+	RequiredFields  bool `json:"required_fields"`
+	SIGFormat       bool `json:"sig_format"`
+	QuantityValid   bool `json:"quantity_valid"`
+	DaysSupplyValid bool `json:"days_supply_valid"`
 }

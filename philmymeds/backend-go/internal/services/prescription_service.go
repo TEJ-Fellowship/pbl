@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
@@ -109,7 +110,9 @@ func (s *PrescriptionService) CreatePrescription(ctx context.Context, prescripti
 	if err := workers.EnqueueValidationJob(ctx, prescription.ID.Hex()); err != nil {
 		// Log error but don't fail prescription creation
 		// Validation can be retried later
-		fmt.Printf("Warning: Failed to enqueue validation job: %v\n", err)
+		log.Printf("⚠️  Warning: Failed to enqueue validation job for prescription %s: %v", prescription.ID.Hex(), err)
+	} else {
+		log.Printf("✅ Validation job enqueued for prescription %s", prescription.ID.Hex())
 	}
 
 	// Convert back to DTO

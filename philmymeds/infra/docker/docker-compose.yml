@@ -5,15 +5,16 @@ services:
       dockerfile: Dockerfile
     container_name: philmymeds-api
     ports:
-      - "8080:8080"
+      - "8080:8081"
     env_file:
       - ../../.env
    
     environment:
-      - PORT=${API_PORT:-8080}
-      - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - PORT=${API_PORT:-8081} 
+      - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin #27017 is the container port for mongodb
       - POSTGRES_HOST=postgres
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-sanjeev}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
       - POSTGRES_DB=${POSTGRES_DB:-philmymedspg}
       - POSTGRES_SSLMODE=disable
@@ -40,13 +41,33 @@ services:
     ports:
       - "5431:5432"
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_USER=${POSTGRES_USER:-sanjeev}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - POSTGRES_DB=${POSTGRES_DB:-philmymeds}
+      - POSTGRES_DB=${POSTGRES_DB:-philmymedspg}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  worker:
+    build:
+      context: ../../backend-go
+      dockerfile: Dockerfile
+    container_name: philmymeds-worker
+    command: ["./worker"]
+    env_file:
+      - ../../.env
+    environment:
+      - MONGODB_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-sanjeev}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-philmymedspg}
+      - POSTGRES_SSLMODE=disable
+    depends_on:
+      - mongodb
+      - postgres
+    restart: unless-stopped
 
 volumes:
   mongodb_data:
