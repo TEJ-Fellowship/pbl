@@ -1,6 +1,10 @@
 package services
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/validation"
+)
 
 // Service-level errors
 var (
@@ -14,3 +18,21 @@ var (
 	ErrInvalidID                 = errors.New("invalid ID format")
 	ErrNotImplemented            = errors.New("not implemented")
 )
+
+// ValidationError wraps validation errors for API responses
+type ValidationError struct {
+	Message string                       `json:"message"`
+	Errors  []validation.ValidationError `json:"errors"`
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
+}
+
+// NewValidationError creates a validation error from validation.ValidationErrors
+func NewValidationError(ve *validation.ValidationErrors) *ValidationError {
+	return &ValidationError{
+		Message: "Prescription validation failed",
+		Errors:  ve.Errors,
+	}
+}

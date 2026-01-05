@@ -91,6 +91,12 @@ func (h *PrescriptionHandler) CreatePrescription(w http.ResponseWriter, r *http.
 				RespondWithError(w, http.StatusConflict, "Prescriber already exists", err)
 				return
 			}
+			// Check if it's an NPI validation error
+			errMsg := err.Error()
+			if errMsg != "" && (len(errMsg) > 3 && errMsg[:3] == "NPI" || len(errMsg) > 3 && errMsg[:3] == "npi" || len(errMsg) > 10 && errMsg[:10] == "NPI must be") {
+				RespondWithError(w, http.StatusBadRequest, "Invalid prescriber NPI format", err)
+				return
+			}
 			RespondWithError(w, http.StatusInternalServerError, "Failed to process prescriber", err)
 			return
 		}
@@ -130,6 +136,11 @@ func (h *PrescriptionHandler) CreatePrescription(w http.ResponseWriter, r *http.
 
 	created, err := h.service.CreatePrescription(r.Context(), prescriptionDTO)
 	if err != nil {
+		// Handle validation errors (synchronous validation failures)
+		if validationErr, ok := err.(*services.ValidationError); ok {
+			RespondWithJSON(w, http.StatusBadRequest, validationErr)
+			return
+		}
 		if err == services.ErrPrescriptionAlreadyExists {
 			RespondWithError(w, http.StatusConflict, "Prescription already exists", err)
 			return
@@ -312,6 +323,12 @@ func (h *PrescriptionHandler) GeneratePrescriptionFromGemini(w http.ResponseWrit
 				RespondWithError(w, http.StatusConflict, "Prescriber already exists", err)
 				return
 			}
+			// Check if it's an NPI validation error
+			errMsg := err.Error()
+			if errMsg != "" && (len(errMsg) > 3 && errMsg[:3] == "NPI" || len(errMsg) > 3 && errMsg[:3] == "npi" || len(errMsg) > 10 && errMsg[:10] == "NPI must be") {
+				RespondWithError(w, http.StatusBadRequest, "Invalid prescriber NPI format", err)
+				return
+			}
 			RespondWithError(w, http.StatusInternalServerError, "Failed to process prescriber", err)
 			return
 		}
@@ -346,6 +363,11 @@ func (h *PrescriptionHandler) GeneratePrescriptionFromGemini(w http.ResponseWrit
 
 	created, err := h.service.CreatePrescription(r.Context(), prescriptionDTO)
 	if err != nil {
+		// Handle validation errors (synchronous validation failures)
+		if validationErr, ok := err.(*services.ValidationError); ok {
+			RespondWithJSON(w, http.StatusBadRequest, validationErr)
+			return
+		}
 		if err == services.ErrPrescriptionAlreadyExists {
 			RespondWithError(w, http.StatusConflict, "Prescription already exists", err)
 			return

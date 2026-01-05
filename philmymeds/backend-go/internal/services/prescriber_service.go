@@ -2,9 +2,11 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/validation"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -23,6 +25,11 @@ func NewPrescriberService(repo *repositories.PrescriberRepository) *PrescriberSe
 
 // CreatePrescriber creates a new prescriber
 func (s *PrescriberService) CreatePrescriber(ctx context.Context, prescriberDTO *dto.PrescriberDTO) (*dto.PrescriberDTO, error) {
+	// Validate NPI format before proceeding
+	if !validation.ValidateNPI(prescriberDTO.NPI) {
+		return nil, fmt.Errorf("NPI must be exactly 10 digits, got: %s", prescriberDTO.NPI)
+	}
+
 	// Convert DTO to model
 	prescriber, err := prescriberDTO.ToModel()
 	if err != nil {
@@ -81,6 +88,11 @@ func (s *PrescriberService) GetPrescriberByNPI(ctx context.Context, npi string) 
 
 // CreateOrGetPrescriber creates a prescriber if it doesn't exist, or returns existing one by NPI
 func (s *PrescriberService) CreateOrGetPrescriber(ctx context.Context, prescriberDTO *dto.PrescriberDTO) (*dto.PrescriberDTO, error) {
+	// Validate NPI format before proceeding
+	if !validation.ValidateNPI(prescriberDTO.NPI) {
+		return nil, fmt.Errorf("NPI must be exactly 10 digits, got: %s", prescriberDTO.NPI)
+	}
+
 	// Try to find existing prescriber by NPI
 	existing, err := s.repo.FindByNPI(ctx, prescriberDTO.NPI)
 	if err == nil && existing != nil {

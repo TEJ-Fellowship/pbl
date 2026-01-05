@@ -50,6 +50,12 @@ func (h *PrescriberHandler) CreatePrescriber(w http.ResponseWriter, r *http.Requ
 			RespondWithError(w, http.StatusConflict, "Prescriber already exists", err)
 			return
 		}
+		// Check if it's an NPI validation error
+		errMsg := err.Error()
+		if errMsg != "" && (len(errMsg) > 3 && errMsg[:3] == "NPI" || len(errMsg) > 3 && errMsg[:3] == "npi" || len(errMsg) > 10 && errMsg[:10] == "NPI must be") {
+			RespondWithError(w, http.StatusBadRequest, "Invalid NPI format", err)
+			return
+		}
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create prescriber", err)
 		return
 	}

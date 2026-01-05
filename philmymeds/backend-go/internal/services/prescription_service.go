@@ -9,6 +9,7 @@ import (
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/dto"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/models"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/repositories"
+	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/validation"
 	"github.com/TEJ-Fellowship/pbl/philmymeds/internal/workers"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -48,6 +49,7 @@ func (s *PrescriptionService) GetAllPrescriptions(ctx context.Context) ([]*dto.P
 }
 
 // CreatePrescription creates a new prescription
+// Performs synchronous validation before saving - rejects immediately if validation fails
 func (s *PrescriptionService) CreatePrescription(ctx context.Context, prescriptionDTO *dto.PrescriptionDTO) (*dto.PrescriptionDTO, error) {
 	// Validate patient exists
 	patientID, err := primitive.ObjectIDFromHex(prescriptionDTO.PatientID)
@@ -62,17 +64,23 @@ func (s *PrescriptionService) CreatePrescription(ctx context.Context, prescripti
 		return nil, err
 	}
 
-	// Validate prescriber exists
+	// Validate prescriber exists and fetch for validation
 	prescriberID, err := primitive.ObjectIDFromHex(prescriptionDTO.PrescriberID)
 	if err != nil {
 		return nil, ErrInvalidID
 	}
-	_, err = s.prescriberRepo.FindByID(ctx, prescriberID)
+	prescriber, err := s.prescriberRepo.FindByID(ctx, prescriberID)
 	if err == mongo.ErrNoDocuments {
 		return nil, ErrPrescriberNotFound
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	// SYNCHRONOUS VALIDATION - reject immediately if fails
+	// Validates: NCPDP structure, required fields, basic data integrity
+	if validationErr := validation.ValidatePrescription(prescriptionDTO, prescriber); validationErr != nil {
+		return nil, NewValidationError(validationErr)
 	}
 
 	// Convert DTO to model
@@ -95,18 +103,19 @@ func (s *PrescriptionService) CreatePrescription(ctx context.Context, prescripti
 		return nil, err
 	}
 
-	// Set default status if not provided
+	// Set default status - only prescriptions that pass sync validation are saved
 	if prescription.Status == "" {
 		prescription.Status = models.StatusReceived
 	}
 
-	// Create prescription via repository
+	// Create prescription via repository (only if sync validation passed)
 	// Note: Repository handles CreatedAt and UpdatedAt timestamps
 	if err := s.repo.Create(ctx, prescription); err != nil {
 		return nil, err
 	}
 
-	// Enqueue validation job
+	// Enqueue async validation job for advanced checks
+	// Only prescriptions that pass sync validation reach here
 	if err := workers.EnqueueValidationJob(ctx, prescription.ID.Hex()); err != nil {
 		// Log error but don't fail prescription creation
 		// Validation can be retried later
