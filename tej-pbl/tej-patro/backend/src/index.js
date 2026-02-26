@@ -20,6 +20,7 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.json());
 
 app.get(
   "/auth/google",
@@ -55,6 +56,8 @@ app.get("/logout", (req, res) => {
   });
 });
 
+const eventsRouter = require("./routes/events");
+app.use("/api/events", eventsRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
 app.listen(5000, () => {
