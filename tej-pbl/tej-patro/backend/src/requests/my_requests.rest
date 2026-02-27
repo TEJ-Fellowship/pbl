@@ -1,0 +1,28 @@
+### Unauthenticated create event (expect 401)
+POST http://localhost:5000/api/events
+Content-Type: application/json
+
+{
+  "title": "Test event",
+  "start": "2026-02-28T09:00:00.000Z",
+  "end": "2026-02-28T10:00:00.000Z",
+  "description": "Testing create event",
+  "location": "Online",
+  "isAllDay": false,
+  "color": "#2196F3"
+}
+
+### Authenticated create event (expect 201)
+POST http://localhost:5000/api/events
+Content-Type: application/json
+Cookie: connect.sid=s%3A0nOr2ObkOZRgIaBsXXUPoamPmB5Hfnjx.aQaOJDZ%2B6yPeYduqBlUzsGiEe%2Bv1TXpbkcDk%2FzpmwNU
+
+{
+  "title": "Test event (REST client)",
+  "start": "2026-02-28T09:00:00.000Z",
+  "end": "2026-02-28T10:00:00.000Z",
+  "description": "Testing create event via REST file",
+  "location": "Online",
+  "isAllDay": false,
+  "color": "#2196F3"
+}
