@@ -6,7 +6,7 @@ Note:
  - Uses err.statusCode when present (e.g. ValidationError → 400, ConflictError → 409).
  - Returns JSON { error: message } and never leaks stack/details for 500.
  */
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, _next) {
     const status = typeof err.statusCode === "number" && err.statusCode >= 400 && err.statusCode < 600
       ? err.statusCode
       : 500;
