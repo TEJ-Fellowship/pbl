@@ -34,4 +34,22 @@ async function create(userId, eventData) {
   return event;
 }
 
-module.exports = { create };
+/*
+Note:
+
+- Lists all events for the given user.
+- Sorts events by start time.
+- Returns a list of events.
+
+Summary:
+Event.find({ userId }) — only that user’s events.
+.sort({ start: 1 }) — ascending by start.
+.lean() — returns plain JavaScript objects (faster, no Mongoose methods).
+list(userId) takes userId from the controller (req.user), not from the client.
+*/
+async function list(userId) {
+  const events = await Event.find({ userId }).sort({ start: 1 }).lean();
+  return events;
+}
+
+module.exports = { create, list };
