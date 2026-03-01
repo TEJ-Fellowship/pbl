@@ -13,4 +13,17 @@ async function create(req, res, next) {
   }
 }
 
-module.exports = { create };
+async function list(req, res, next) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const events = await eventService.list(userId);
+    res.status(200).json(events);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list };
