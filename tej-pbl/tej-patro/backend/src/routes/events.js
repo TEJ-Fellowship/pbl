@@ -7,4 +7,7 @@ const { requireAuth } = require("../middleware/requireAuth");
 // POST /api/events — create event (add requireAuth in Phase 4)
 router.post("/", requireAuth, validateCreateEvent, eventsController.create);
 
+// GET /api/events — list current user's events
+router.get("/", requireAuth, eventsController.list);
+
 module.exports = router;
