@@ -7,15 +7,18 @@ Content-Type: application/json
   "start": "2026-02-28T09:00:00.000Z",
   "end": "2026-02-28T10:00:00.000Z",
   "description": "Testing create event",
+
   "location": "Online",
   "isAllDay": false,
   "color": "#2196F3"
 }
 
 ### Authenticated create event (expect 201)
+// @no-cookie-jar
 POST http://localhost:5000/api/events
 Content-Type: application/json
-Cookie: connect.sid=s%3A0nOr2ObkOZRgIaBsXXUPoamPmB5Hfnjx.aQaOJDZ%2B6yPeYduqBlUzsGiEe%2Bv1TXpbkcDk%2FzpmwNU
+# Paste connect.sid from DevTools as-is (s%3A... and %2B for +)
+Cookie: connect.sid=s%3ABjKIlbxJmxEkvp0wbNLT2lPtrm6z8vao.k0nFBnbNl974XRN%2FpI0qquUH4vd3kk3n4dlZl2qQfjs
 
 {
   "title": "Test event (REST client)",
