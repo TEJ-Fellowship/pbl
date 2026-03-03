@@ -1,9 +1,9 @@
-import Login from './components/login.jsx';
+import Calendar from "./components/Calendar.jsx";
 
 function App() {
   return (
     <div className="App">
-      <Login />
+      <Calendar />
     </div>
   );
 }
