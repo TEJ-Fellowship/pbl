@@ -1,5 +1,5 @@
 const Event = require("../models/Event");
-const { ValidationError } = require("../errors");
+const { ValidationError, NotFoundError, ForbiddenError } = require("../errors");
 
 /*
 Note:
@@ -65,4 +65,44 @@ async function list(userId, options = {}) {
   return events;
 }
 
-module.exports = { create, list };
+/*
+ * Update an event. Only the owner can update.
+ * Throws ValidationError (400), NotFoundError (404), or ForbiddenError (403).
+ */
+async function update(userId, eventId, eventData) {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw new ValidationError("Invalid event id");
+  }
+
+  const event = await Event.findById(eventId);
+  if (!event) {
+    throw new NotFoundError("Event not found");
+  }
+  if (event.userId !== userId) {
+    throw new ForbiddenError("You are not allowed to update this event");
+  }
+
+  const { title, start, end, description, location, isAllDay, color } = eventData;
+
+  const updates = {};
+  if (title !== undefined) updates.title = typeof title === "string" ? title.trim() : title;
+  if (start !== undefined) updates.start = new Date(start);
+  if (end !== undefined) updates.end = new Date(end);
+  if (description !== undefined) updates.description = description ?? "";
+  if (location !== undefined) updates.location = location ?? "";
+  if (isAllDay !== undefined) updates.isAllDay = Boolean(isAllDay);
+  if (color !== undefined) updates.color = color ?? "#2196F3";
+
+  const startDate = updates.start ?? event.start;
+  const endDate = updates.end ?? event.end;
+  if (endDate <= startDate) {
+    throw new ValidationError("End time must be after start time");
+  }
+
+  event.set(updates);
+  await event.save();
+
+  return event;
+}
+
+module.exports = { create, list, update };
