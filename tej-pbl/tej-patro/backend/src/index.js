@@ -4,6 +4,7 @@ const session = require("express-session");
 const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
+const {MongoStore} = require("connect-mongo");
 
 const passport = require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
@@ -17,6 +18,9 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+    }),
   })
 );
 

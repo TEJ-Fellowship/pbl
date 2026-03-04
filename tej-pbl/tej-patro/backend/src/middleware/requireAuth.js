@@ -4,9 +4,12 @@ Note:
  * If the user is not logged in, responds with 401 and does not call next().
  */
 function requireAuth(req, res, next) {
-    // DEBUG: remove after fixing REST client auth
+    // DEBUG: 
+    console.log("cookie:", req.headers);
     console.log("[requireAuth] Cookie header:", req.headers.cookie ? "present" : "MISSING");
     console.log("[requireAuth] sessionID:", req.sessionID);
+    console.log("Full session:", req.session.passport);
+
     console.log("[requireAuth] isAuthenticated:", req.isAuthenticated && req.isAuthenticated());
     if (req.isAuthenticated && req.isAuthenticated()) {
       return next();

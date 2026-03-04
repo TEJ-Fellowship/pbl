@@ -18,14 +18,23 @@ Content-Type: application/json
 POST http://localhost:5000/api/events
 Content-Type: application/json
 # Paste connect.sid from DevTools as-is (s%3A... and %2B for +)
-Cookie: connect.sid=s%3ABjKIlbxJmxEkvp0wbNLT2lPtrm6z8vao.k0nFBnbNl974XRN%2FpI0qquUH4vd3kk3n4dlZl2qQfjs
+Cookie: connect.sid=s%3AugszmG9g9twWg_PYmpF7xUpCuWoxGwwh.jpMv1ZlDtJLCcEVPortSZoHu%2FHJDCG2koa8vTU6ODKw
 
 {
-  "title": "Test event (REST client)",
+  "title": "Test event (REST client) - new",
   "start": "2026-02-28T09:00:00.000Z",
   "end": "2026-02-28T10:00:00.000Z",
-  "description": "Testing create event via REST file",
+  "description": "Testing create event via REST file, this is a new event",
   "location": "Online",
   "isAllDay": false,
   "color": "#2196F3"
 }
+
+
+### GET events — unauthenticated (expect 401)
+GET http://localhost:5000/api/events
+
+### GET events — authenticated (expect 200 and array; [] if no events)
+GET http://localhost:5000/api/events
+Cookie: connect.sid=s%3AugszmG9g9twWg_PYmpF7xUpCuWoxGwwh.jpMv1ZlDtJLCcEVPortSZoHu%2FHJDCG2koa8vTU6ODKw
+
