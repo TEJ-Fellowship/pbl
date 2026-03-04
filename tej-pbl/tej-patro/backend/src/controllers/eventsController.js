@@ -53,4 +53,17 @@ async function list(req, res, next) {
   }
 }
 
-module.exports = { create, list };
+async function update(req, res, next) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const eventId = req.params.id;
+    const updatedEvent = await eventService.update(userId, eventId, req.body);
+    res.status(200).json(updatedEvent);
+  } catch (err) {
+    next(err);
+  }
+}
+module.exports = { create, list, update };
