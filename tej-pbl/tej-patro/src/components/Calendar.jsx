@@ -16,7 +16,7 @@ const MONTH_NAMES = [
   "December",
 ];
 
-function Calendar() {
+function Calendar({ onLoginClick }) {
   const [current, setCurrent] = useState(() => new Date());
 
   const year = current.getFullYear();
@@ -57,13 +57,22 @@ function Calendar() {
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-slate-800">Tej Patro</h1>
-          <button
-            type="button"
-            onClick={goToToday}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
-          >
-            Today
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goToToday}
+              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => onLoginClick?.()}
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
         </div>
       </header>
 
