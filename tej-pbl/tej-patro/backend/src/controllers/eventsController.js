@@ -66,4 +66,19 @@ async function update(req, res, next) {
     next(err);
   }
 }
-module.exports = { create, list, update };
+
+async function remove(req, res, next) {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const eventId = req.params.id;
+    await eventService.remove(userId, eventId);
+    res.status(200).json({ message: "Event deleted" });  
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, list, update, remove };
