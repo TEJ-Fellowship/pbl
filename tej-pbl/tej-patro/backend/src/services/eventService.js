@@ -106,4 +106,26 @@ async function update(userId, eventId, eventData) {
   return event;
 }
 
-module.exports = { create, list, update };
+/*
+ * Delete an event. Only the owner can delete.
+ * Throws ValidationError (400), NotFoundError (404), or ForbiddenError (403).
+ * Returns the deleted event (or { deleted: true }) for the controller to send 204/200.
+ */
+async function remove(userId, eventId) {
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    throw new ValidationError("Invalid event id");
+  }
+
+  const event = await Event.findById(eventId);
+  if (!event) {
+    throw new NotFoundError("Event not found");
+  }
+  if (event.userId !== userId) {
+    throw new ForbiddenError("You are not allowed to delete this event");
+  }
+
+  await Event.findByIdAndDelete(eventId);
+  return { deleted: true, id: eventId };
+}
+
+module.exports = { create, list, update, remove };
