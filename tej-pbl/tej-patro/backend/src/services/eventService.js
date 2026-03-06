@@ -1,4 +1,5 @@
 const Event = require("../models/Event");
+const mongoose = require("mongoose");
 const { ValidationError, NotFoundError, ForbiddenError } = require("../errors");
 
 /*

@@ -18,13 +18,13 @@ Content-Type: application/json
 POST http://localhost:5000/api/events
 Content-Type: application/json
 # Paste connect.sid from DevTools as-is (s%3A... and %2B for +)
-Cookie: connect.sid=s%3AugszmG9g9twWg_PYmpF7xUpCuWoxGwwh.jpMv1ZlDtJLCcEVPortSZoHu%2FHJDCG2koa8vTU6ODKw
+Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z0zcdQtXhAm7RIrfujRL0
 
 {
-  "title": "Test event (REST client) - new",
+  "title": "Testing 01",
   "start": "2026-02-28T09:00:00.000Z",
   "end": "2026-02-28T10:00:00.000Z",
-  "description": "Testing create event via REST file, this is a new event",
+  "description": "Testing 01 via REST file",
   "location": "Online",
   "isAllDay": false,
   "color": "#2196F3"
@@ -35,9 +35,28 @@ Cookie: connect.sid=s%3AugszmG9g9twWg_PYmpF7xUpCuWoxGwwh.jpMv1ZlDtJLCcEVPortSZoH
 GET http://localhost:5000/api/events
 
 ### GET events — authenticated (expect 200 and array; [] if no events)
+// @no-cookie-jar
 GET http://localhost:5000/api/events
-Cookie: connect.sid=s%3AugszmG9g9twWg_PYmpF7xUpCuWoxGwwh.jpMv1ZlDtJLCcEVPortSZoHu%2FHJDCG2koa8vTU6ODKw
+Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z0zcdQtXhAm7RIrfujRL0
+
 
 ### GET events with date range (March 2026)
+// @no-cookie-jar
 GET http://localhost:5000/api/events?start=2026-03-01&end=2026-03-31
 Cookie: connect.sid=s%3AM4d70u7EQfaI0tDGYFqLIA8fLMMiCH4M.f%2F9zMxL%2FFbs1ZwBbyRzViRcAjqslJCGTzyb1IVC7xxo
+
+### Update event (expect 200)
+// @no-cookie-jar
+PUT http://localhost:5000/api/events/69aa3d8de447760405ec5405
+Content-Type: application/json
+Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z0zcdQtXhAm7RIrfujRL0
+
+{
+  "title": "Updated title via PUT",
+  "start": "2026-03-10T09:00:00.000Z",
+  "end": "2026-03-10T11:00:00.000Z",
+  "description": "Updated description",
+  "location": "Office",
+  "isAllDay": false,
+  "color": "#4CAF50"
+}
