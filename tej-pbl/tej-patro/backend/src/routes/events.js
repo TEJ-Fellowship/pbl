@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const eventsController = require("../controllers/eventsController");
-const { validateCreateEvent, validateUpdateEvent } = require("../middleware/validateEvent");
+const { validateCreateEvent, validateUpdateEvent, validateEventId } = require("../middleware/validateEvent");
 const { requireAuth } = require("../middleware/requireAuth");
 
 // POST /api/events — create event (add requireAuth in Phase 4)
