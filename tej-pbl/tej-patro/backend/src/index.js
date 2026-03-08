@@ -28,41 +28,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
 
-app.get(
-  "/auth/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
-);
-
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect("/profile");
-  }
-);
-
-app.get("/profile", (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.send("Not logged in");
-  }
-
-  res.send(`
-    <h1>Profile</h1>
-    <p>Name: ${req.user.displayName}</p>
-    <p>Email: ${req.user.emails[0].value}</p>
-    <a href="/logout">Logout</a>
-  `);
-});
-
-app.get("/logout", (req, res) => {
-  req.logout(() => {
-    res.redirect("/");
-  });
-});
-
+const authRouter = require("./routes/auth");
 const eventsRouter = require("./routes/events");
+app.use("/auth", authRouter);
 app.use("/api/events", eventsRouter);
 app.use(express.static(path.join(__dirname, "public")));
 
