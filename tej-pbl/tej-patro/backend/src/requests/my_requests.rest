@@ -60,3 +60,8 @@ Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z
   "isAllDay": false,
   "color": "#4CAF50"
 }
+
+### Delete event — authenticated, own event (expect 204 or 200)
+// @no-cookie-jar
+DELETE http://localhost:5000/api/events/69a798b355d60b499018328c
+Cookie: connect.sid=s%3APeNBJMTH90xlSDXd1enZUua-vih2Kbh0.xyKBAbdMKcmhpJrMnlDwvGxd7HG7Xqh9zU5EWHY6Kn8

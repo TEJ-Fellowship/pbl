@@ -90,4 +90,19 @@ function validateUpdateEvent(req, res, next) {
   next();
 }
 
-module.exports = { validateCreateEvent, validateUpdateEvent };
+/*
+ * Validates req.params.id is a valid MongoDB ObjectId.
+ * Use for GET one, PUT, DELETE by id. On invalid id → next(ValidationError) → 400.
+ */
+function validateEventId(req, res, next) {
+  const eventId = req.params.id;
+  if (!eventId) {
+    return next(new ValidationError("event id is required"));
+  }
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    return next(new ValidationError("event id must be a valid MongoDB ObjectId"));
+  }
+  next();
+}
+
+module.exports = { validateCreateEvent, validateUpdateEvent, validateEventId };
