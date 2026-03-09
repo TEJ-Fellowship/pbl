@@ -27,7 +27,7 @@ function Calendar({ onLoginClick, user, onLogout }) {
   // Local time: first weekday and days-in-month (avoids UTC/local mismatch hiding a date)
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
-  const { events, loading, error } = useEvents(user, firstDay, lastDay);
+  const { events, loading } = useEvents(user, firstDay, lastDay);
   const startPadding = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
 
@@ -178,7 +178,7 @@ function Calendar({ onLoginClick, user, onLogout }) {
 
           {/* Right column: Insights panel */}
           <aside className="w-full md:w-72 md:flex-shrink-0">
-  <InsightsPanel events={events} user={user} />
+  <InsightsPanel events={events} user={user} loading={loading} />
 </aside>
         </div>
       </main>

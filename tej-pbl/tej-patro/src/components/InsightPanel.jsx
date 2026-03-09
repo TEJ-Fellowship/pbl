@@ -35,7 +35,7 @@ function getSchedulingTip() {
   // Or: return SCHEDULING_TIPS[new Date().getDay() % SCHEDULING_TIPS.length];
 }
 
-function InsightsPanel({ events = [] }) {
+function InsightsPanel({ events = [], user, loading = false }) {
   const [expanded, setExpanded] = useState(true);
 
   const { weekStart, weekEnd } = useMemo(() => getWeekBounds(), []);
@@ -43,6 +43,9 @@ function InsightsPanel({ events = [] }) {
     () => (Array.isArray(events) ? events : []).filter((e) => eventOverlapsWeek(e, weekStart, weekEnd)),
     [events, weekStart, weekEnd]
   );
+
+  const notLoggedIn = !user;
+  const showEventData = user && !loading;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden sticky top-4">
@@ -76,37 +79,55 @@ function InsightsPanel({ events = [] }) {
 
       {expanded && (
         <div className="p-4 space-y-4">
-          {/* This week — blue-grey */}
-          <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-4 text-sm">
-            <p className="font-semibold text-slate-800 mb-2">
-              This week: You have {thisWeekEvents.length} event{thisWeekEvents.length !== 1 ? "s" : ""} scheduled
-            </p>
-            {thisWeekEvents.length > 0 ? (
-              <ul className="list-none space-y-1.5 text-slate-600">
-                {thisWeekEvents.map((ev) => (
-                  <li key={ev._id || ev.id || ev.title + ev.start} className="flex flex-col gap-0.5">
-                    <span className="font-medium text-slate-800">{ev.title}</span>
-                    <span className="text-xs text-slate-500">{formatEventTime(ev)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-slate-500 text-xs">No events this week.</p>
-            )}
-          </div>
+          {notLoggedIn && (
+            <p className="text-sm text-slate-500">Sign in to see insights.</p>
+          )}
 
-          {/* Tip — green */}
-          <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 p-4 flex gap-3 text-sm">
-            <span className="text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden="true">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          {showEventData && loading && (
+            <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-4 text-sm text-slate-500 flex items-center gap-2">
+              <svg className="h-5 w-5 animate-spin flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-            </span>
-            <div>
-              <p className="font-semibold text-slate-800 text-xs uppercase tracking-wide mb-1">Tip</p>
-              <p className="text-slate-600">{getSchedulingTip()}</p>
+              <span>Loading…</span>
             </div>
-          </div>
+          )}
+
+          {showEventData && !loading && (
+            <>
+              {/* This week — blue-grey */}
+              <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-4 text-sm">
+                <p className="font-semibold text-slate-800 mb-2">
+                  {thisWeekEvents.length > 0
+                    ? `This week: You have ${thisWeekEvents.length} event${thisWeekEvents.length !== 1 ? "s" : ""} scheduled`
+                    : "This week: No events scheduled"}
+                </p>
+                {thisWeekEvents.length > 0 ? (
+                  <ul className="list-none space-y-1.5 text-slate-600">
+                    {thisWeekEvents.map((ev) => (
+                      <li key={ev._id || ev.id || ev.title + ev.start} className="flex flex-col gap-0.5">
+                        <span className="font-medium text-slate-800">{ev.title}</span>
+                        <span className="text-xs text-slate-500">{formatEventTime(ev)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+
+              {/* Tip — green */}
+              <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 p-4 flex gap-3 text-sm">
+                <span className="text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="font-semibold text-slate-800 text-xs uppercase tracking-wide mb-1">Tip</p>
+                  <p className="text-slate-600">{getSchedulingTip()}</p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
