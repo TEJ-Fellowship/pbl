@@ -59,7 +59,8 @@ app.get("/profile", (req, res) => {
 
 app.get("/logout", (req, res) => {
   req.logout(() => {
-    res.redirect("/");
+    // res.redirect("/");
+    res.redirect("http://localhost:5173");
   });
 });
 
