@@ -15,11 +15,10 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect("/auth/profile");
+    res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/`);
   }
 );
 
-router.get("/profile", authController.profile);
 router.get("/logout", authController.logout);
 
 module.exports = router;
