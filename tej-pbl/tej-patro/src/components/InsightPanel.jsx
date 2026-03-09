@@ -1,7 +1,37 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+// Local week: Sunday 00:00:00 to Saturday 23:59:59.999 (matches calendar getDay())
+function getWeekBounds(referenceDate = new Date()) {
+  const d = new Date(referenceDate);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  const weekStart = d.getTime();
+  const weekEnd = new Date(d);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  return { weekStart, weekEnd };
+}
+
+function eventOverlapsWeek(event, weekStart, weekEnd) {
+  const start = event.start instanceof Date ? event.start.getTime() : new Date(event.start).getTime();
+  const end = event.end instanceof Date ? event.end.getTime() : new Date(event.end).getTime();
+  return end >= weekStart && start <= weekEnd;
+}
+
+function formatEventTime(event) {
+  const start = event.start instanceof Date ? event.start : new Date(event.start);
+  if (event.isAllDay) return "All day";
+  return start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
 
 function InsightsPanel({ events = [] }) {
   const [expanded, setExpanded] = useState(true);
+
+  const { weekStart, weekEnd } = useMemo(() => getWeekBounds(), []);
+  const thisWeekEvents = useMemo(
+    () => (Array.isArray(events) ? events : []).filter((e) => eventOverlapsWeek(e, weekStart, weekEnd)),
+    [events, weekStart, weekEnd]
+  );
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden sticky top-4">
@@ -35,14 +65,23 @@ function InsightsPanel({ events = [] }) {
 
       {expanded && (
         <div className="p-4 space-y-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-600">
-            Summary and insight cards will go here.
+          <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-sm text-slate-700">
+            <p className="font-medium text-slate-800 mb-2">
+              This week: You have {thisWeekEvents.length} event{thisWeekEvents.length !== 1 ? "s" : ""} scheduled
+            </p>
+            {thisWeekEvents.length > 0 ? (
+              <ul className="list-none space-y-1.5 text-slate-600">
+                {thisWeekEvents.map((ev) => (
+                  <li key={ev._id || ev.id || ev.title + ev.start} className="flex flex-col gap-0.5">
+                    <span className="font-medium text-slate-800">{ev.title}</span>
+                    <span className="text-xs text-slate-500">{formatEventTime(ev)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-500 text-xs">No events this week.</p>
+            )}
           </div>
-          {events?.length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-500">
-              {events.length} event(s) in range.
-            </div>
-          )}
         </div>
       )}
     </div>
