@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useEvents } from "../hooks/useEvents";
+import InsightsPanel from "./InsightPanel";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTH_NAMES = [
@@ -25,6 +27,7 @@ function Calendar({ onLoginClick, user, onLogout }) {
   // Local time: first weekday and days-in-month (avoids UTC/local mismatch hiding a date)
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
+  const { events, loading, error } = useEvents(user, firstDay, lastDay);
   const startPadding = firstDay.getDay();
   const daysInMonth = lastDay.getDate();
 
@@ -55,7 +58,7 @@ function Calendar({ onLoginClick, user, onLogout }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
+        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-slate-800">Tej Patro</h1>
           <div className="flex items-center gap-3">
             {user?.displayName && (
@@ -91,8 +94,11 @@ function Calendar({ onLoginClick, user, onLogout }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* Left column: Calendar */}
+          <div className="flex-1 min-w-0">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-4">
             <div className="flex items-center gap-2">
               <button
@@ -167,6 +173,13 @@ function Calendar({ onLoginClick, user, onLogout }) {
               ))}
             </div>
           </div>
+            </div>
+          </div>
+
+          {/* Right column: Insights panel */}
+          <aside className="w-full md:w-72 md:flex-shrink-0">
+  <InsightsPanel events={events} user={user} />
+</aside>
         </div>
       </main>
     </div>
