@@ -25,8 +25,16 @@ export function useEvents(user, startDate, endDate) {
 
     const start = startDate ? formatDateForAPI(startDate) : "";
     const end = endDate ? formatDateForAPI(endDate) : "";
+    /*
+    URLSearchParams - JS utility for creating and managing URL query parameters,
+    query Parameters - part of a URL after ?,
+    Example: /api/events?start=2026-03-01&end=2026-03-09
+
+    set(key, value) - adds or updates a key-value pair in the URLSearchParams object(query parameters),
+    toString() - converts the parameters into a string format that can be used in a URL,
+    */
     const params = new URLSearchParams();
-    if (start) params.set("start", start);
+    if (start) params.set("start", start); 
     if (end) params.set("end", end);
     const qs = params.toString();
     const url = `${API_URL}/api/events${qs ? `?${qs}` : ""}`;
