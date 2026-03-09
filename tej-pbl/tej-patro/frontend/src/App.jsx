@@ -17,9 +17,13 @@ function App() {
         setUser(null);
         return;
       }
-      const match = html.match(/Name:\s*([^<]+)/);
-      if (match) {
-        setUser({ displayName: match[1].trim() });
+      const nameMatch = html.match(/Name:\s*([^<]+)/);
+      const emailMatch = html.match(/Email:\s*([^<]+)/);
+      if (nameMatch) {
+        setUser({
+          displayName: nameMatch[1].trim(),
+          email: emailMatch?.[1]?.trim() ?? null,
+        });
       } else {
         setUser(null);
       }
@@ -38,8 +42,16 @@ function App() {
           setUser(null);
           return;
         }
-        const match = html.match(/Name:\s*([^<]+)/);
-        setUser(match ? { displayName: match[1].trim() } : null);
+        const nameMatch = html.match(/Name:\s*([^<]+)/);
+        const emailMatch = html.match(/Email:\s*([^<]+)/);
+        setUser(
+          nameMatch
+            ? {
+                displayName: nameMatch[1].trim(),
+                email: emailMatch?.[1]?.trim() ?? null,
+              }
+            : null
+        );
       })
       .catch(() => {
         if (!cancelled) setUser(null);
@@ -70,10 +82,7 @@ function App() {
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
-        <Calendar
-          current={calendarDate}
-          onDateChange={setCalendarDate}
-        />
+        <Calendar current={calendarDate} onDateChange={setCalendarDate} />
       )}
     </div>
   );

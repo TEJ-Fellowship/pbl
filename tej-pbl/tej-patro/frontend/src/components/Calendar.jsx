@@ -3,6 +3,7 @@ import { DAY_NAMES, MONTH_NAMES } from "../constants/calendar.js";
 
 function Calendar({ current: currentProp, onDateChange }) {
   const [internalCurrent, setInternalCurrent] = useState(() => new Date());
+  // ?? operator: used to check null or undefined
   const current = currentProp ?? internalCurrent;
   const setCurrent = onDateChange ?? setInternalCurrent;
 

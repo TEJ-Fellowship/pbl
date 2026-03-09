@@ -4,14 +4,14 @@ const session = require("express-session");
 const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
-const {MongoStore} = require("connect-mongo");
+const { MongoStore } = require("connect-mongo");
 
 const passport = require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
 app.use(
   session({
@@ -21,7 +21,7 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
     }),
-  })
+  }),
 );
 
 app.use(passport.initialize());
@@ -32,15 +32,16 @@ app.get(
   "/auth/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
-  })
+  }),
 );
 
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect("/profile");
-  }
+    // res.redirect("/profile");
+    res.redirect("http://localhost:5173");
+  },
 );
 
 app.get("/profile", (req, res) => {
