@@ -1,20 +1,5 @@
 import { useState } from "react";
-
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
+import { DAY_NAMES, MONTH_NAMES } from "../constants/calendar.js";
 
 function Calendar({ onLoginClick, user, onLogout }) {
   const [current, setCurrent] = useState(() => new Date());

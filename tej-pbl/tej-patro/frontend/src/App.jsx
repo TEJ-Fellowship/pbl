@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import Calendar from "./components/Calendar.jsx";
-import Login from "./components/login.jsx";
+import Login from "./components/Login.jsx";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -43,7 +43,9 @@ function App() {
       .catch(() => {
         if (!cancelled) setUser(null);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
