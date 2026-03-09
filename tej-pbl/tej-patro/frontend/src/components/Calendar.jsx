@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { DAY_NAMES, MONTH_NAMES } from "../constants/calendar.js";
 
-function Calendar({ onLoginClick, user, onLogout }) {
-  const [current, setCurrent] = useState(() => new Date());
+function Calendar({ current: currentProp, onDateChange }) {
+  const [internalCurrent, setInternalCurrent] = useState(() => new Date());
+  const current = currentProp ?? internalCurrent;
+  const setCurrent = onDateChange ?? setInternalCurrent;
 
   const year = current.getFullYear();
   const month = current.getMonth();
 
-  // Local time: first weekday and days-in-month (avoids UTC/local mismatch hiding a date)
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const startPadding = firstDay.getDay();
@@ -19,10 +20,6 @@ function Calendar({ onLoginClick, user, onLogout }) {
 
   const nextMonth = () => {
     setCurrent((d) => new Date(d.getFullYear(), d.getMonth() + 1));
-  };
-
-  const goToToday = () => {
-    setCurrent(new Date());
   };
 
   const today = new Date();
@@ -39,43 +36,6 @@ function Calendar({ onLoginClick, user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-slate-800">Tej Patro</h1>
-          <div className="flex items-center gap-3">
-            {user?.displayName && (
-              <span className="text-sm text-slate-600">
-                Logged in as <strong>{user.displayName}</strong>
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={goToToday}
-              className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 transition-colors"
-            >
-              Today
-            </button>
-            {user ? (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Log out
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onLoginClick?.()}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Sign in
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-4">

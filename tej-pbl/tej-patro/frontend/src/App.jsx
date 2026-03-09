@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import Calendar from "./components/Calendar.jsx";
 import Login from "./components/Login.jsx";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { API_URL } from "./config/env.js";
+import Navbar from "./components/Navbar.jsx";
 
 function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
+  const [calendarDate, setCalendarDate] = useState(() => new Date());
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -60,13 +61,18 @@ function App() {
 
   return (
     <div className="App">
+      <Navbar
+        user={user}
+        onLogout={handleLogout}
+        onLoginClick={() => setShowLogin(true)}
+        onGoToToday={() => setCalendarDate(new Date())}
+      />
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
         <Calendar
-          onLoginClick={() => setShowLogin(true)}
-          user={user}
-          onLogout={handleLogout}
+          current={calendarDate}
+          onDateChange={setCalendarDate}
         />
       )}
     </div>
