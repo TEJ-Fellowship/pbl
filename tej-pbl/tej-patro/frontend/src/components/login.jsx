@@ -1,6 +1,6 @@
+import { API_URL } from "../config/env.js";
 function Login({ onBack }) {
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  const authUrl = `${apiUrl}/auth/google`;
+  const authUrl = `${API_URL}/auth/google`;
 
   const handleSignIn = () => {
     window.location.href = authUrl;
@@ -11,7 +11,7 @@ function Login({ onBack }) {
       <div className="w-full max-w-[380px] mx-auto bg-white/90 backdrop-blur rounded-2xl shadow-lg shadow-slate-200/50 p-10 text-center transition-all duration-200 hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-0.5 flex flex-col items-center">
         <h1 className="text-xl font-medium text-slate-800 mb-1">Sign in</h1>
         <p className="text-slate-500 text-sm mb-8">
-          You’ll be sent to the backend, then to Google to sign in. After signing in, return to the calendar to see your name.
+          Use your Google account to continue
         </p>
         <div className="flex justify-center">
           <button

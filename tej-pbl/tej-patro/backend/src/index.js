@@ -4,17 +4,19 @@ const session = require("express-session");
 const cors = require("cors");
 const path = require("path");
 const mongoose = require("mongoose");
-const {MongoStore} = require("connect-mongo");
+const { MongoStore } = require("connect-mongo");
 
 const passport = require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 app.use(
   session({
@@ -24,7 +26,7 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
     }),
-  })
+  }),
 );
 
 app.use(passport.initialize());
