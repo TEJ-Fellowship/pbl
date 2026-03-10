@@ -1,36 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Calendar from "./components/Calendar.jsx";
 import Login from "./components/Login.jsx";
 import { API_URL } from "./config/env.js";
 import Navbar from "./components/Navbar.jsx";
 
 function App() {
+  console.log("App");
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [calendarDate, setCalendarDate] = useState(() => new Date());
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/profile`, { credentials: "include" });
-      const html = await res.text();
-      if (html.includes("Not logged in")) {
-        setUser(null);
-        return;
-      }
-      const nameMatch = html.match(/Name:\s*([^<]+)/);
-      const emailMatch = html.match(/Email:\s*([^<]+)/);
-      if (nameMatch) {
-        setUser({
-          displayName: nameMatch[1].trim(),
-          email: emailMatch?.[1]?.trim() ?? null,
-        });
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +16,7 @@ function App() {
       .then((res) => res.text())
       .then((html) => {
         if (cancelled) return;
+        console.log("html", html);
         if (html.includes("Not logged in")) {
           setUser(null);
           return;
@@ -50,7 +29,7 @@ function App() {
                 displayName: nameMatch[1].trim(),
                 email: emailMatch?.[1]?.trim() ?? null,
               }
-            : null
+            : null,
         );
       })
       .catch(() => {
@@ -60,12 +39,6 @@ function App() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    const onFocus = () => fetchProfile();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [fetchProfile]);
 
   const handleLogout = () => {
     window.location.href = `${API_URL}/logout`;
