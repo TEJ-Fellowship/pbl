@@ -8,43 +8,28 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (options = {}) => {
+    const { signal } = options;
     try {
-      const res = await fetch(`${API_URL}/profile`, { credentials: "include" });
-      const html = await res.text();
-      if (html.includes("Not logged in")) {
+      const res = await fetch(`${API_URL}/auth/me`, { credentials: "include", signal });
+      if (!res.ok) {
         setUser(null);
         return;
       }
-      const match = html.match(/Name:\s*([^<]+)/);
-      if (match) {
-        setUser({ displayName: match[1].trim() });
-      } else {
-        setUser(null);
-      }
-    } catch {
+      const data = await res.json();
+      if (signal?.aborted) return;
+      setUser(data?.displayName ? { displayName: data.displayName } : null);
+    } catch (err) {
+      if (err.name === "AbortError") return;
       setUser(null);
     }
   }, []);
-
+  
   useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_URL}/profile`, { credentials: "include" })
-      .then((res) => res.text())
-      .then((html) => {
-        if (cancelled) return;
-        if (html.includes("Not logged in")) {
-          setUser(null);
-          return;
-        }
-        const match = html.match(/Name:\s*([^<]+)/);
-        setUser(match ? { displayName: match[1].trim() } : null);
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null);
-      });
-    return () => { cancelled = true; };
-  }, []);
+    const controller = new AbortController();
+    queueMicrotask(() => fetchProfile({ signal: controller.signal }));
+    return () => controller.abort();
+  }, [fetchProfile]);
 
   useEffect(() => {
     const onFocus = () => fetchProfile();
@@ -53,7 +38,7 @@ function App() {
   }, [fetchProfile]);
 
   const handleLogout = () => {
-    window.location.href = `${API_URL}/logout`;
+    window.location.href = `${API_URL}/auth/logout`;
   };
 
   return (
