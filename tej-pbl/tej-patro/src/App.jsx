@@ -10,18 +10,13 @@ function App() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/profile`, { credentials: "include" });
-      const html = await res.text();
-      if (html.includes("Not logged in")) {
+      const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+      if (!res.ok) {
         setUser(null);
         return;
       }
-      const match = html.match(/Name:\s*([^<]+)/);
-      if (match) {
-        setUser({ displayName: match[1].trim() });
-      } else {
-        setUser(null);
-      }
+      const data = await res.json();
+      setUser(data?.displayName ? { displayName: data.displayName } : null);
     } catch {
       setUser(null);
     }
@@ -29,16 +24,11 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/profile`, { credentials: "include" })
-      .then((res) => res.text())
-      .then((html) => {
+    fetch(`${API_URL}/auth/me`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
         if (cancelled) return;
-        if (html.includes("Not logged in")) {
-          setUser(null);
-          return;
-        }
-        const match = html.match(/Name:\s*([^<]+)/);
-        setUser(match ? { displayName: match[1].trim() } : null);
+        setUser(data?.displayName ? { displayName: data.displayName } : null);
       })
       .catch(() => {
         if (!cancelled) setUser(null);
@@ -53,7 +43,7 @@ function App() {
   }, [fetchProfile]);
 
   const handleLogout = () => {
-    window.location.href = `${API_URL}/logout`;
+    window.location.href = `${API_URL}/auth/logout`;
   };
 
   return (
