@@ -8,33 +8,28 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (options = {}) => {
+    const { signal } = options;
     try {
-      const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/auth/me`, { credentials: "include", signal });
       if (!res.ok) {
         setUser(null);
         return;
       }
       const data = await res.json();
+      if (signal?.aborted) return;
       setUser(data?.displayName ? { displayName: data.displayName } : null);
-    } catch {
+    } catch (err) {
+      if (err.name === "AbortError") return;
       setUser(null);
     }
   }, []);
-
+  
   useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_URL}/auth/me`, { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        setUser(data?.displayName ? { displayName: data.displayName } : null);
-      })
-      .catch(() => {
-        if (!cancelled) setUser(null);
-      });
-    return () => { cancelled = true; };
-  }, []);
+    const controller = new AbortController();
+    queueMicrotask(() => fetchProfile({ signal: controller.signal }));
+    return () => controller.abort();
+  }, [fetchProfile]);
 
   useEffect(() => {
     const onFocus = () => fetchProfile();
