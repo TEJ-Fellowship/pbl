@@ -32,7 +32,7 @@ function App() {
   }, []);
 
   const handleLogout = () => {
-    window.location.href = `${API_URL}/logout`;
+    window.location.href = `${API_URL}/auth/logout`;
   };
 
   return (
