@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useState, useEffect } from "react";
 import Calendar from "./components/Calendar.jsx";
 import Login from "./components/Login.jsx";
 import { API_URL } from "./config/env.js";
