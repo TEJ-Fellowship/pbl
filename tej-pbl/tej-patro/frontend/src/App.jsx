@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Calendar from "./components/Calendar.jsx";
 import Login from "./components/Login.jsx";
 import { API_URL } from "./config/env.js";
@@ -12,25 +13,16 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/profile`, { credentials: "include" })
+    fetch(`${API_URL}/auth/me`, { credentials: "include" })
       .then((res) => res.text())
-      .then((html) => {
+      .then((userData) => {
         if (cancelled) return;
-        console.log("html", html);
-        if (html.includes("Not logged in")) {
+        if (userData.includes("Not logged in")) {
           setUser(null);
           return;
         }
-        const nameMatch = html.match(/Name:\s*([^<]+)/);
-        const emailMatch = html.match(/Email:\s*([^<]+)/);
-        setUser(
-          nameMatch
-            ? {
-                displayName: nameMatch[1].trim(),
-                email: emailMatch?.[1]?.trim() ?? null,
-              }
-            : null,
-        );
+        const userObj = JSON.parse(userData).displayName;
+        setUser(userObj);
       })
       .catch(() => {
         if (!cancelled) setUser(null);
