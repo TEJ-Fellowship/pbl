@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "./components/Calendar.jsx";
+import CreateEventForm from "./components/CreateEventForm.jsx";
+import EventModal from "./components/EventModal.jsx";
 import Login from "./components/Login.jsx";
 import { API_URL } from "./config/env.js";
 import Navbar from "./components/Navbar.jsx";
@@ -9,6 +11,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [calendarDate, setCalendarDate] = useState(() => new Date());
+  const [showCreateEvent, setCreateEvent] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +45,13 @@ function App() {
         onLogout={handleLogout}
         onLoginClick={() => setShowLogin(true)}
         onGoToToday={() => setCalendarDate(new Date())}
+        onAddEvent={() => setCreateEvent(true)}
       />
+      {showCreateEvent && (
+        <EventModal title="Create event" onClose={() => setCreateEvent(false)}>
+          <CreateEventForm onClose={() => setCreateEvent(false)} />
+        </EventModal>
+      )}
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
