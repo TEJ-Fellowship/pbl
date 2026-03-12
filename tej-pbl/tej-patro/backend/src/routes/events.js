@@ -3,6 +3,7 @@ const router = express.Router();
 const eventsController = require("../controllers/eventsController");
 const { validateCreateEvent, validateUpdateEvent, validateEventId } = require("../middleware/validateEvent");
 const { requireAuth } = require("../middleware/requireAuth");
+const tipsController = require("../controllers/tipsController");
 
 // POST /api/events — create event (add requireAuth in Phase 4)
 router.post("/", requireAuth, validateCreateEvent, eventsController.create);
@@ -16,4 +17,5 @@ router.put("/:id", requireAuth, validateUpdateEvent, eventsController.update);
 // DELETE /api/events/:id — delete event 
 router.delete("/:id", requireAuth, validateEventId, eventsController.remove);
 
+router.get("/tips", requireAuth, tipsController.getTips);
 module.exports = router;
