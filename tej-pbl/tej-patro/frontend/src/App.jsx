@@ -12,25 +12,16 @@ function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/profile`, { credentials: "include" })
+    fetch(`${API_URL}/auth/me`, { credentials: "include" })
       .then((res) => res.text())
-      .then((html) => {
+      .then((userData) => {
         if (cancelled) return;
-        console.log("html", html);
-        if (html.includes("Not logged in")) {
+        if (userData.includes("Not logged in")) {
           setUser(null);
           return;
         }
-        const nameMatch = html.match(/Name:\s*([^<]+)/);
-        const emailMatch = html.match(/Email:\s*([^<]+)/);
-        setUser(
-          nameMatch
-            ? {
-                displayName: nameMatch[1].trim(),
-                email: emailMatch?.[1]?.trim() ?? null,
-              }
-            : null,
-        );
+        const userObj = JSON.parse(userData).displayName;
+        setUser(userObj);
       })
       .catch(() => {
         if (!cancelled) setUser(null);
@@ -41,7 +32,7 @@ function App() {
   }, []);
 
   const handleLogout = () => {
-    window.location.href = `${API_URL}/logout`;
+    window.location.href = `${API_URL}/auth/logout`;
   };
 
   return (
