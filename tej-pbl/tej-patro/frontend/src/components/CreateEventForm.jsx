@@ -3,6 +3,7 @@ import { API_URL } from "../config/env.js";
 
 function CreateEventForm({ onClose, onSuccess }) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [error, setError] = useState("");
@@ -40,12 +41,11 @@ function CreateEventForm({ onClose, onSuccess }) {
           title: trimmedTitle,
           start: startDate.toISOString(),
           end: endDate.toISOString(),
+          description: endDate.toISOString(),
         }),
         credentials: "include",
       });
-      console.log("FE res", res);
       const data = await res.json().catch(() => ({}));
-      console.log("FE data", data);
       if (!res.ok) {
         setError(data.error || "Could not create event");
         setSubmitting(false);
@@ -78,6 +78,7 @@ function CreateEventForm({ onClose, onSuccess }) {
           autoFocus
         />
       </div>
+
       <div>
         <label
           htmlFor="event-start"
@@ -106,6 +107,22 @@ function CreateEventForm({ onClose, onSuccess }) {
           value={end}
           onChange={(e) => setEnd(e.target.value)}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+        />
+      </div>
+      <div>
+        <label
+          htmlFor="event-description"
+          className="block text-sm font-medium text-slate-700 mb-1"
+        >
+          Description
+        </label>
+        <textarea
+          id="event-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 resize-y"
+          placeholder="Optional description"
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -25,12 +25,12 @@ export async function fetchEventsForMonth(date, signal) {
   return res.json();
 }
 
-export async function createEvent({ title, start, end }) {
+export async function createEvent({ title, start, end, description }) {
   const res = await fetch(`${API_URL}/api/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ title, start, end }),
+    body: JSON.stringify({ title, start, end, description }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

@@ -14,7 +14,6 @@ function App() {
   const [calendarDate, setCalendarDate] = useState(() => new Date());
   const [showCreateEvent, setCreateEvent] = useState(false);
   const [events, setEvents] = useState([]);
-  console.log("showCreateEvent", showCreateEvent);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +45,6 @@ function App() {
     if (!user) return;
     fetchEvents()
       .then((data) => {
-        console.log("Fetched events from server:", data);
         setEvents(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
@@ -61,7 +59,6 @@ function App() {
     fetchEvents()
       .then((data) => {
         if (cancelled) return;
-        console.log("Fetched events from server:", data);
         setEvents(Array.isArray(data) ? data : []);
       })
       .catch((err) => {
@@ -95,7 +92,11 @@ function App() {
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
-        <Calendar current={calendarDate} onDateChange={setCalendarDate} events={events} />
+        <Calendar
+          current={calendarDate}
+          onDateChange={setCalendarDate}
+          events={events}
+        />
       )}
     </div>
   );
