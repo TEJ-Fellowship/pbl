@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { API_URL } from "../config/env.js";
 
-function CreateEventForm({ onClose }) {
+function CreateEventForm({ onClose, onSuccess }) {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -43,12 +43,15 @@ function CreateEventForm({ onClose }) {
         }),
         credentials: "include",
       });
+      console.log("FE res", res);
       const data = await res.json().catch(() => ({}));
+      console.log("FE data", data);
       if (!res.ok) {
         setError(data.error || "Could not create event");
         setSubmitting(false);
         return;
       }
+      onSuccess?.();
       onClose?.();
     } catch {
       setError("Could not create event");
