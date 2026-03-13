@@ -6,6 +6,7 @@ import Login from "./components/Login.jsx";
 import { fetchEvents } from "./api/event.js";
 import { API_URL } from "./config/env.js";
 import Navbar from "./components/Navbar.jsx";
+import EventsList from "./components/EventsList.jsx";
 
 function App() {
   console.log("App");
@@ -73,7 +74,7 @@ function App() {
   }, [user]);
 
   return (
-    <div className="App">
+    <div className="App flex flex-col min-h-screen">
       <Navbar
         user={user}
         onLogout={handleLogout}
@@ -92,11 +93,16 @@ function App() {
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
-        <Calendar
-          current={calendarDate}
-          onDateChange={setCalendarDate}
-          events={events}
-        />
+        <div className="flex flex-1 min-h-0">
+          <div className="flex-1 min-w-0 overflow-auto">
+            <Calendar
+              current={calendarDate}
+              onDateChange={setCalendarDate}
+              events={events}
+            />
+          </div>
+          <EventsList events={events} />
+        </div>
       )}
     </div>
   );
