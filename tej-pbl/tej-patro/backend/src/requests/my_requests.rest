@@ -1,5 +1,9 @@
+### Variables
+@baseUrl = http://localhost:5000
+@cookie = connect.sid=s%3A6hg_cDt0jseGkyd5BVpqunbr7CRtewk2.qvHTUAvvaSgC%2BKx4ceWW1p%2BI%2Foyh1tl0ApB8RD3k0zg
+
 ### Unauthenticated create event (expect 401)
-POST http://localhost:5000/api/events
+POST {{baseUrl}}/api/events
 Content-Type: application/json
 
 {
@@ -15,10 +19,9 @@ Content-Type: application/json
 
 ### Authenticated create event (expect 201)
 // @no-cookie-jar
-POST http://localhost:5000/api/events
+POST {{baseUrl}}/api/events
 Content-Type: application/json
-# Paste connect.sid from DevTools as-is (s%3A... and %2B for +)
-Cookie: connect.sid=s%3AGswcdO1B6Ero6Nt2vzn_BniT2BtaBhuz.imQCjTzynkI1meoZxI60uJrw6%2B3leKECxhmomO95DpY
+Cookie: {{cookie}}
 
 {
   "title": "Testing 02",
@@ -32,24 +35,24 @@ Cookie: connect.sid=s%3AGswcdO1B6Ero6Nt2vzn_BniT2BtaBhuz.imQCjTzynkI1meoZxI60uJr
 
 
 ### GET events — unauthenticated (expect 401)
-GET http://localhost:5000/api/events
+GET {{baseUrl}}/api/events
 
 ### GET events — authenticated (expect 200 and array; [] if no events)
 // @no-cookie-jar
-GET http://localhost:5000/api/events
-Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z0zcdQtXhAm7RIrfujRL0
+GET {{baseUrl}}/api/events
+Cookie: {{cookie}}
 
 
 ### GET events with date range (March 2026)
 // @no-cookie-jar
-GET http://localhost:5000/api/events?start=2026-04-12&end=2026-04-14
-Cookie: connect.sid=s%3AGswcdO1B6Ero6Nt2vzn_BniT2BtaBhuz.imQCjTzynkI1meoZxI60uJrw6%2B3leKECxhmomO95DpY
+GET {{baseUrl}}/api/events?start=2026-04-12&end=2026-04-14
+Cookie: {{cookie}}
 
 ### Update event (expect 200)
 // @no-cookie-jar
-PUT http://localhost:5000/api/events/69aa3d8de447760405ec5405
+PUT {{baseUrl}}/api/events/69aa3d8de447760405ec5405
 Content-Type: application/json
-Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z0zcdQtXhAm7RIrfujRL0
+Cookie: {{cookie}}
 
 {
   "title": "Updated title via PUT",
@@ -63,10 +66,20 @@ Cookie: connect.sid=s%3ACXP43M8NE_fnb4lhxc-hBnNw5bDSeWq1.8kUFMySK95yZib1kU0TA35z
 
 ### Delete event — authenticated, own event (expect 204 or 200)
 // @no-cookie-jar
-DELETE http://localhost:5000/api/events/69a798b355d60b499018328c
-Cookie: connect.sid=s%3APeNBJMTH90xlSDXd1enZUua-vih2Kbh0.xyKBAbdMKcmhpJrMnlDwvGxd7HG7Xqh9zU5EWHY6Kn8
+DELETE {{baseUrl}}/api/events/69a798b355d60b499018328c
+Cookie: {{cookie}}
 
 ### Get tips — authenticated (expect 200)
 // @no-cookie-jar
-GET http://localhost:5000/api/events/tips?start=2026-04-12&end=2026-04-14
-Cookie: connect.sid=s%3AT8MrtDakDZwyGMtT17E0vh_W6BGEKtVH.QPcfHlvntvd%2B6KmiA%2F3tc5zXDiva%2BwcvYJEtuiI32m4
+GET {{baseUrl}}/api/events/tips?start=2026-04-12&end=2026-04-14
+Cookie: {{cookie}}
+
+### Get tips — no data range
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips
+Cookie: {{cookie}}
+
+### Get tips — with date  range
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=2026-04-12&end=2026-04-14
+Cookie: {{cookie}}
