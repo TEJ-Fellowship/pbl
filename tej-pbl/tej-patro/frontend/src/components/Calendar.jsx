@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DAY_NAMES, MONTH_NAMES } from "../constants/calendar.js";
 
-function Calendar({ current: currentProp, onDateChange }) {
+function Calendar({ current: currentProp, onDateChange, events = [] }) {
   const [internalCurrent, setInternalCurrent] = useState(() => new Date());
   // ?? operator: used to check null or undefined
   const current = currentProp ?? internalCurrent;
