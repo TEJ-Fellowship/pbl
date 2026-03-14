@@ -128,4 +128,29 @@ async function remove(userId, eventId) {
   return { deleted: true, id: eventId };
 }
 
-module.exports = { create, list, update, remove };
+/**
+ * Parse start/end from query and build options for list().
+ * Returns { options } or { error, statusCode } for invalid dates.
+ */
+
+function parseListOptionsFromQuery(query) {
+  const { start, end } = query ?? {};
+  const options = {};
+  if (start != null && start !== "") {
+    const startDate = new Date(start);
+    if (isNaN(startDate.getTime())) {
+      return { error: "Invalid start date format", statusCode: 400 };
+    }
+    options.start = startDate;
+  }
+  if (end != null && end !== "") {
+    const endDate = new Date(end);
+    if (isNaN(endDate.getTime())) {
+      return { error: "Invalid end date format", statusCode: 400 };
+    }
+    options.end = endDate;
+  }
+  return { options };
+}
+
+module.exports = { create, list, update, remove, parseListOptions };

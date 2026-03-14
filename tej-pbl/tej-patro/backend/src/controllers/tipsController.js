@@ -36,23 +36,12 @@ async function getTips(req, res, next) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const options = {};
-      if (start != null && start !== "") {
-        const startDate = new Date(start);
-        if (isNaN(startDate.getTime())) {
-          return res.status(400).json({ error: "Invalid start date format" });
-        }
-        options.start = startDate;
+      const parsed = eventService.parseListOptionsFromQuery(req.query);
+      if (parsed.error) {
+        return res.status(parsed.statusCode).json({ error: parsed.error });
       }
-      if (end != null && end !== "") {
-        const endDate = new Date(end);
-        if (isNaN(endDate.getTime())) {
-          return res.status(400).json({ error: "Invalid end date format" });
-        }
-        options.end = endDate;
-      }
-
-      const events = await eventService.list(userId, options);
+      const events = await eventService.list(userId, parsed.options);
+      
     const eventsForPrompt = events.map((e) => ({
       title: e.title,
       start: e.start,
