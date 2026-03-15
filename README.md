@@ -17,6 +17,8 @@ This monorepo contains multiple projects built by our fellows as they progress t
 
 ## 📁 Repository Structure
 
+Each PBL folder (PBL1, PBL2, PBL3, …) contains a `README.md` and one or more project folders. Each project has its own folder and `README.md`:
+
 ```
 pbl/
 ├── README.md
@@ -24,37 +26,52 @@ pbl/
 │   ├── project-guidelines.md
 │   └── presentation_guidelines.md
 ├── PBL1/
+│   ├── README.md
 │   ├── DiscordCommunitySupportAgent/
+│   │   └── README.md
+│   ├── Eventia-Project/
+│   │   └── README.md
+│   ├── [your-project-name]/
 │   │   └── README.md
 │   └── ...
 ├── PBL2/
+│   ├── README.md
 │   ├── FoodManduSupportAgent/
+│   │   └── README.md
+│   ├── GyanSathi/
+│   │   └── README.md
+│   ├── [your-project-name]/
 │   │   └── README.md
 │   └── ...
 ├── PBL3/
-│   ├── MailChimpSupportAgent/
+│   ├── README.md
+│   ├── Echo/
+│   │   └── README.md
+│   ├── Spindle/
+│   │   └── README.md
+│   ├── [your-project-name]/
 │   │   └── README.md
 │   └── ...
 ├── PBL4/
+│   ├── README.md
 │   ├── PayPalCustomerSupportAgent/
 │   │   └── README.md
 │   ├── ShopifyMerchantSupportAgent/
 │   │   └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
 │   └── ...
 ├── PBL5/
+│   ├── README.md
 │   ├── 1_MovieTicketBookingSystem/
-│   ├── 2_WhatsAppClone/
-│   ├── 3_Instagram_Feed/
-│   ├── 4_Facebook_Newsfeed/
-│   ├── 5_Gaming_Leaderboard/
-│   ├── 6_E-commerce_Orders/
-│   ├── Task Queue/
 │   ├── pharmonico/
-│   └── README.md
-└── [your-project-name]/
-    ├── ...
-    └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+└── ...
 ```
+
+Replace `[your-project-name]` with your actual project folder name. Each project must include a `README.md` with overview and requirements.
 
 ## 🛠 Getting Started
 
