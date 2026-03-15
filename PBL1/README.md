@@ -1,7 +1,7 @@
-# 📘 1st Project-Based Learning (PBL) Partners & Projects 
+# 📘 1st Project-Based Learning (PBL) Partners & Projects
 
 ## 1. Binita Hamal & Anjana Budhathoki  
-### 🎯 AimEZ — AI-Powered Goal Dashboard + Motivation  
+### 🎯 AimEZ — AI-Powered Goal Dashboard + Motivation
 
 🌍 **Overview**  
 AimEZ is a simple yet intelligent personal goal dashboard designed to help users stay focused and consistent.  
@@ -12,10 +12,12 @@ Users can:
 
 The app evolves from a habit tracker to an intelligent companion with natural language input and smart check-ins.  
 
+🔗 **Code:** [AimEz](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/AimEz) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/AimEz/docs/requirements.md)
+
 ---
 
 ## 2. Swikar Ramdam & Ashok Limbu  
-### 💡 SparkMind — Microlearning Engine for Skill Builders  
+### 💡 SparkMind — Microlearning Engine for Skill Builders
 
 🧠 **Overview**  
 SparkMind delivers **2-minute learning bursts** powered by quizzes, flashcards, and AI summaries.  
@@ -23,10 +25,12 @@ It’s designed for daily upskilling — whether it’s product sense, market in
 
 ⚡ Fast, 🎯 Personal, 🔁 Habit-forming.  
 
+🔗 **Code:** [SparkMind](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/SparkMind) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/SparkMind/docs/requirements.md)
+
 ---
 
 ## 3. Bijay Pokhrel & Lokesh Choudhary  
-### 🍽️ NourishNow — AI Recipe Concierge + Fun Food Insights  
+### 🍽️ NourishNow — AI Recipe Concierge + Fun Food Insights
 
 🌍 **Overview**  
 NourishNow is a delightful recipe discovery and organization tool.  
@@ -35,10 +39,12 @@ Users can:
 - Learn fun food facts using the **Spoonacular API**  
 - Get AI-powered smart suggestions via **Gemini** for dietary substitutions and nutritional tips  
 
+🔗 **Code:** [NourishNow](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/NourishNow) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/NourishNow/docs/requirements.md)
+
 ---
 
 ## 4. Anu Ale Magar & Mahesh Choudhary  
-### 📅 Eventia — AI Calendar with Context-Aware Holidays  
+### 📅 Eventia — AI Calendar with Context-Aware Holidays
 
 🌍 **Overview**  
 Eventia is a modern calendar tool that allows users to:  
@@ -47,10 +53,12 @@ Eventia is a modern calendar tool that allows users to:
 - Get smart weekly insights using **Gemini**  
 - See local holiday highlights via **Calendarific API**  
 
+🔗 **Code:** [Eventia-Project](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/Eventia-Project) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/Eventia-Project/requirements.md)
+
 ---
 
 ## 5. Ganesh Choudhary & Rahul Karna  
-### 🍴 FocusFlow — Smart Task Sphere with AI Motivation  
+### 🍴 FocusFlow — Smart Task Sphere with AI Motivation
 
 🌍 **Overview**  
 FocusFlow is a productivity app to help users manage tasks with categories and due dates.  
@@ -58,10 +66,14 @@ Features include:
 - Daily motivational quotes via quote APIs  
 - Advanced stage: AI-powered intelligent task suggestions using **Gemini**  
 
+🔗 **Code:** [FocusFlow-Project](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/FocusFlow-Project) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/FocusFlow-Project/requirements.md)
+
 ---
 
 ## 6. Anish Shrestha & Manoj Rai  
-### 💸 Spendly — Smart Finance Tracker  
+### 💸 Spendly — Smart Finance Tracker
 
 🌍 **Overview**  
 Spendly helps users take control of their finances through intuitive expense tracking and smart insights.  
+
+🔗 **Code:** [Spendly-Project](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/Spendly-Project) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/Spendly-Project/docs/requirements.md)

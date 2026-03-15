@@ -21,14 +21,35 @@ This monorepo contains multiple projects built by our fellows as they progress t
 pbl/
 ├── README.md
 ├── docs/
-│   └── project-guidelines.md
-├── weather_and_AQI_app/
-│   ├── frontend/
-│   ├── backend/
-│   └── README.md
-├── job_board_platform/
-│   ├── client/
-│   ├── server/
+│   ├── project-guidelines.md
+│   └── presentation_guidelines.md
+├── PBL1/
+│   ├── DiscordCommunitySupportAgent/
+│   │   └── README.md
+│   └── ...
+├── PBL2/
+│   ├── FoodManduSupportAgent/
+│   │   └── README.md
+│   └── ...
+├── PBL3/
+│   ├── MailChimpSupportAgent/
+│   │   └── README.md
+│   └── ...
+├── PBL4/
+│   ├── PayPalCustomerSupportAgent/
+│   │   └── README.md
+│   ├── ShopifyMerchantSupportAgent/
+│   │   └── README.md
+│   └── ...
+├── PBL5/
+│   ├── 1_MovieTicketBookingSystem/
+│   ├── 2_WhatsAppClone/
+│   ├── 3_Instagram_Feed/
+│   ├── 4_Facebook_Newsfeed/
+│   ├── 5_Gaming_Leaderboard/
+│   ├── 6_E-commerce_Orders/
+│   ├── Task Queue/
+│   ├── pharmonico/
 │   └── README.md
 └── [your-project-name]/
     ├── ...
@@ -52,7 +73,7 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    git clone <repository-url>
-   cd tej-bootcamp-monorepo
+   cd pbl
    ```
 
 2. **Explore the Structure**
