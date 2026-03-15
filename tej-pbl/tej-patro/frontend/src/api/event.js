@@ -38,3 +38,17 @@ export async function createEvent({ title, start, end, description }) {
   }
   return data;
 }
+
+export async function editEvent({ eventId, title, start, end, description }) {
+  const res = await fetch(`${API_URL}/api/events/${eventId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ title, start, end, description }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Could not edit event");
+  }
+  return data;
+}
