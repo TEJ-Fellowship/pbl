@@ -77,3 +77,24 @@ Features include:
 Spendly helps users take control of their finances through intuitive expense tracking and smart insights.  
 
 🔗 **Code:** [Spendly-Project](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/Spendly-Project) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/Spendly-Project/docs/requirements.md)
+
+---
+
+## 7. Weather App — Interactive Weather Dashboard 
+### By: Sankar & Sanjeev
+
+🌍 **Overview**  
+A modern, interactive weather dashboard built with React, providing real-time weather, air quality, city facts, and news for any city worldwide. Features dynamic backgrounds, recent search history, and AI-powered news and city information via Gemini.
+
+🔗 **Code:** [weather-app](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/weather-app) · 📋 **Requirements:** [README.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/weather-app/README.md)
+🔗 **Deployed Site:** [weather-app](https://tej-weather-app.onrender.com/) 
+
+---
+
+## 8. Weather or Not — Weather & Air Quality by Country
+### By: Niru & Muskan
+
+🌍 **Overview**  
+A weather application that provides current weather conditions and air quality index (AQI) for cities worldwide, with country selection, search, and detailed weather and pollutant information.
+
+🔗 **Code:** [Weather-Or-Not](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL1/Weather-Or-Not) · 📋 **Requirements:** [README.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL1/Weather-Or-Not/README.md)
