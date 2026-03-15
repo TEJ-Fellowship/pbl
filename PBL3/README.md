@@ -1,7 +1,5 @@
 # 📘 3rd Project-Based Learning (PBL) Partners & Projects
 
----
-
 ## 1. Swikar Ramdam & Bijay Pokhrel
 
 ### 📢 Echo — _Anonymous Audio Confessions_
@@ -16,6 +14,9 @@ Echo is an anonymous audio-first network. Users can:
 
 🔗 **Demo:** [Demo Video](https://drive.google.com/file/d/1alDyhvHHh857UX97KBT1uhfcYVAmq-EA/view?usp=drive_link)  
 📑 **Presentation:** [Slide](https://drive.google.com/file/d/1j79r8ICw0ejTlWCKhzH4-xtZIfH77nKw/view?usp=drive_link)
+
+🔗 **Code:** [Echo](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/Echo)
+📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/Echo/requirements.md)
 
 ---
 
@@ -34,6 +35,8 @@ Spindle replaces chaotic group chats with **quick polls**. Users can:
 
 **🌐 Deployed Site:** [https://quickpick-e70x.onrender.com/](https://quickpick-e70x.onrender.com/)
 
+🔗 **Code:** [Spindle](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/Spindle) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/Spindle/docs/requirements.md)
+
 ---
 
 ## 3. Lokesh Choudhary & Anjana Budhathoki
@@ -48,6 +51,8 @@ Loop is **multiplayer doodling** where friends take turns adding to a shared can
 
 **💡 YC bet:** Shared creativity as entertainment.
 
+🔗 **Code:** [Loop](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/Loop) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/Loop/docs/requirements.md)
+
 ---
 
 ## 4. Rahul Karna & Anish Shrestha
@@ -59,6 +64,8 @@ Ripple is a one-button social network. Tap → ripple out → friends tap back.
 Creates synchronous “waves” of activity across networks.
 
 **💡 YC bet:** A viral mechanic built on minimal input.
+
+🔗 **Code:** [ripple](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/ripple) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/ripple/requirements.md)
 
 ---
 
@@ -73,6 +80,9 @@ It’s intimacy + structure in audio form.
 
 **💡 YC bet:** Audio-first social media for intimacy, not virality.
 
+🔗 **Code:** [huddle (Sambaad)](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/huddle)
+📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/huddle/docs/README.md)
+
 ---
 
 ## 6. Anu Magar & Manoj Rai
@@ -85,6 +95,10 @@ Over time, users build emotional highlight reels — short, bingeable, and memor
 
 **💡 YC bet:** Micro video is the default unit of memory.
 
+🔗 **Code:** [glimpse](https://github.com/TEJ-Fellowship/pbl/tree/main/PBL3/PBL_3/glimpse) · 📋 **Requirements:** [requirements.md](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/PBL_3/glimpse/requirements.md)
+
 ---
+
+**Note** : See [individual PBL](https://github.com/TEJ-Fellowship/pbl/blob/main/PBL3/IndividualPBL/README.md) for more PBL3 projects
 
 ✨ _End of 3rd PBL Project List_
