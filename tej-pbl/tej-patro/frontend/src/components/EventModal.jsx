@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 function EventModal({ title, onClose, children }) {
   return (
     <div
@@ -11,9 +12,20 @@ function EventModal({ title, onClose, children }) {
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        {title && (
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">{title}</h2>
-        )}
+        <div className="flex items-center justify-between">
+          {title && (
+            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+              {title}
+            </h2>
+          )}
+          <button
+            className="text-slate-500 hover:text-slate-700"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="rounded p-1 border border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-500 hover:bg-slate-100" />
+          </button>
+        </div>
         {children}
       </div>
     </div>
