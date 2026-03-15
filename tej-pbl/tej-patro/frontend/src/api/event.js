@@ -25,12 +25,12 @@ export async function fetchEventsForMonth(date, signal) {
   return res.json();
 }
 
-export async function createEvent({ title, start, end, description }) {
+export async function createEvent({ title, start, end, description, location }) {
   const res = await fetch(`${API_URL}/api/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ title, start, end, description }),
+    body: JSON.stringify({ title, start, end, description, location: location ?? "" }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -39,12 +39,12 @@ export async function createEvent({ title, start, end, description }) {
   return data;
 }
 
-export async function editEvent({ eventId, title, start, end, description }) {
+export async function editEvent({ eventId, title, start, end, description, location }) {
   const res = await fetch(`${API_URL}/api/events/${eventId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ title, start, end, description }),
+    body: JSON.stringify({ title, start, end, description, location: location ?? "" }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

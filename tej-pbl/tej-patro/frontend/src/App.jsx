@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "./components/Calendar.jsx";
 import CreateEventForm from "./components/CreateEventForm.jsx";
+import EventDetailView from "./components/EventDetailView.jsx";
 import EventModal from "./components/EventModal.jsx";
 import Login from "./components/Login.jsx";
 import { fetchEvents } from "./api/event.js";
@@ -9,13 +10,14 @@ import Navbar from "./components/Navbar.jsx";
 import EventsList from "./components/EventsList.jsx";
 
 function App() {
-  console.log("App");
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [calendarDate, setCalendarDate] = useState(() => new Date());
   const [showCreateEvent, setCreateEvent] = useState(false);
   const [events, setEvents] = useState([]);
   const [editEvent, setEditEvent] = useState(null);
+  /** Event currently shown in read-only "view details" modal */
+  const [viewingEvent, setViewingEvent] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +93,21 @@ function App() {
           />
         </EventModal>
       )}
+      {viewingEvent && (
+        <EventModal
+          title="Event details"
+          onClose={() => setViewingEvent(null)}
+        >
+          <EventDetailView
+            event={viewingEvent}
+            onClose={() => setViewingEvent(null)}
+            onEdit={() => {
+              setEditEvent(viewingEvent);
+              setViewingEvent(null);
+            }}
+          />
+        </EventModal>
+      )}
       {editEvent && (
         <EventModal title="Edit event" onClose={() => setEditEvent(null)}>
           <CreateEventForm
@@ -115,7 +132,11 @@ function App() {
               events={events}
             />
           </div>
-          <EventsList events={events} onEditEvent={setEditEvent} />
+          <EventsList
+            events={events}
+            onEditEvent={setEditEvent}
+            onViewEvent={setViewingEvent}
+          />
         </div>
       )}
     </div>

@@ -1,12 +1,22 @@
+import { useEffect } from "react";
 import { X } from "lucide-react";
+
 function EventModal({ title, onClose, children }) {
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
-      onKeyDown={(e) => e.key === "Escape" && onClose?.()}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? "event-modal-title" : undefined}
     >
       <div
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
@@ -14,7 +24,7 @@ function EventModal({ title, onClose, children }) {
       >
         <div className="flex items-center justify-between">
           {title && (
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">
+            <h2 id="event-modal-title" className="text-lg font-semibold text-slate-800 mb-4">
               {title}
             </h2>
           )}
