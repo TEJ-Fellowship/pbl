@@ -28,24 +28,55 @@ Example:
 ["Group similar tasks to reduce context switching.","Schedule short breaks between long meetings.","Reserve a focus block for deep work."]`;
 
 async function getTips(req, res, next) {
+  const { start, end } = req.query;
     
     try {
-      console.log("TIPS ROUTE HIT");
       const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
-      const events = await eventService.list(userId, {});
-      console.log("[Tips] userId:", userId, "events count:", events?.length, "events:", JSON.stringify(events, null, 2));
-      const prompt = `${TIPS_SYSTEM_PROMPT}
-  Events: ${JSON.stringify(events)}`;
-      const text = await generateText(prompt);
-      res.json({ data: text });
-    } catch (error) {
-      console.error("[Tips] Error:", error?.message ?? error);
-      next(error);
+
+      const options = {};
+      if (start != null && start !== "") {
+        const startDate = new Date(start);
+        if (isNaN(startDate.getTime())) {
+          return res.status(400).json({ error: "Invalid start date format" });
+        }
+        options.start = startDate;
+      }
+      if (end != null && end !== "") {
+        const endDate = new Date(end);
+        if (isNaN(endDate.getTime())) {
+          return res.status(400).json({ error: "Invalid end date format" });
+        }
+        options.end = endDate;
+      }
+
+      const events = await eventService.list(userId, options);
+    const eventsForPrompt = events.map((e) => ({
+      title: e.title,
+      start: e.start,
+      end: e.end,
+      description: e.description ?? "",
+    }));
+
+    const userMessage = `Here are the calendar events:\n${JSON.stringify(eventsForPrompt)}`;
+    const fullPrompt = `${TIPS_SYSTEM_PROMPT}\n\n${userMessage}`;
+
+    const text = await generateText(fullPrompt);
+
+    let data;
+    try {
+      const parsed = JSON.parse(text.trim());
+      data = Array.isArray(parsed) ? parsed : [text];
+    } catch {
+      data = [text];
     }
+    res.json({ data });
+  } catch (error) {
+    next(error);
   }
+}
 
 module.exports = {
   getTips,

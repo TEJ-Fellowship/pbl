@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:5000
-@cookie = connect.sid=s%3A6hg_cDt0jseGkyd5BVpqunbr7CRtewk2.qvHTUAvvaSgC%2BKx4ceWW1p%2BI%2Foyh1tl0ApB8RD3k0zg
+@cookie = connect.sid=s%3Acril-t_Qza4TY1rXzT7lQoUNwI4B21xv.A8gQlLIAOY0i3H31KHEhrfCFm4a5xgRlYnpFYoXRpQs
 
 ### Unauthenticated create event (expect 401)
 POST {{baseUrl}}/api/events
@@ -81,5 +81,5 @@ Cookie: {{cookie}}
 
 ### Get tips — with date  range
 // @no-cookie-jar
-GET {{baseUrl}}/api/events/tips?start=2026-04-12&end=2026-04-14
+GET {{baseUrl}}/api/events/tips?start=2026-02-28&end=2026-02-28
 Cookie: {{cookie}}
