@@ -1,0 +1,107 @@
+name: PR Review
+
+on:
+  pull_request:
+    branches: [main, master, source, dev, samay]
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.changed.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed projects
+        id: changed
+        run: |
+          set -e
+          BASE_REF="${{ github.event.pull_request.base.ref }}"
+          git fetch origin "$BASE_REF"
+
+          # Get files changed in this PR
+          CHANGED_FILES=$(git diff --name-only "origin/$BASE_REF...HEAD" 2>/dev/null || echo "")
+
+          # Find all project dirs (package.json, exclude node_modules, .vite)
+          ALL_PROJECTS=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.vite/*" -exec dirname {} \; | sort -u)
+
+          # Filter to projects with changes
+          AFFECTED=""
+          for dir in $ALL_PROJECTS; do
+            for file in $CHANGED_FILES; do
+              if [[ "$file" == "$dir"/* ]] || [[ "$file" == "$dir" ]]; then
+                AFFECTED="$AFFECTED $dir"
+                break
+              fi
+            done
+          done
+
+          # If root config changed, check all projects
+          if echo "$CHANGED_FILES" | grep -qE "^\.(prettierrc|eslintrc|hintrc)|^\.github/"; then
+            AFFECTED=$ALL_PROJECTS
+          fi
+
+          # Deduplicate and format as JSON array
+          AFFECTED=$(echo $AFFECTED | tr ' ' '\n' | sort -u | grep -v '^$')
+          if [ -z "$AFFECTED" ]; then
+            echo "No affected projects found."
+            echo 'projects=[]' >> $GITHUB_OUTPUT
+          else
+            echo "Affected projects:"
+            echo "$AFFECTED"
+            JSON=$(echo "$AFFECTED" | sed 's/^/"/;s/$/"/' | paste -sd,)
+            echo "projects=[$JSON]" >> $GITHUB_OUTPUT
+          fi
+
+  lint-and-build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJson(needs.detect-changes.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.project }}
+        run: npm ci 2>/dev/null || npm install
+
+      - name: Lint
+        working-directory: ${{ matrix.project }}
+        run: npm run lint
+
+      - name: Build
+        working-directory: ${{ matrix.project }}
+        run: npm run build
+        continue-on-error: true
+
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Prettier
+        run: npm init -y && npm install --save-dev prettier
+
+      - name: Check formatting
+        run: npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}"
+        continue-on-error: true

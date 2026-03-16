@@ -17,23 +17,61 @@ This monorepo contains multiple projects built by our fellows as they progress t
 
 ## 📁 Repository Structure
 
+Each PBL folder (PBL1, PBL2, PBL3, …) contains a `README.md` and one or more project folders. Each project has its own folder and `README.md`:
+
 ```
 pbl/
 ├── README.md
 ├── docs/
-│   └── project-guidelines.md
-├── weather_and_AQI_app/
-│   ├── frontend/
-│   ├── backend/
-│   └── README.md
-├── job_board_platform/
-│   ├── client/
-│   ├── server/
-│   └── README.md
-└── [your-project-name]/
-    ├── ...
-    └── README.md
+│   ├── project-guidelines.md
+│   └── presentation_guidelines.md
+├── PBL1/
+│   ├── README.md
+│   ├── DiscordCommunitySupportAgent/
+│   │   └── README.md
+│   ├── Eventia-Project/
+│   │   └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+├── PBL2/
+│   ├── README.md
+│   ├── FoodManduSupportAgent/
+│   │   └── README.md
+│   ├── GyanSathi/
+│   │   └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+├── PBL3/
+│   ├── README.md
+│   ├── Echo/
+│   │   └── README.md
+│   ├── Spindle/
+│   │   └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+├── PBL4/
+│   ├── README.md
+│   ├── PayPalCustomerSupportAgent/
+│   │   └── README.md
+│   ├── ShopifyMerchantSupportAgent/
+│   │   └── README.md
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+├── PBL5/
+│   ├── README.md
+│   ├── 1_MovieTicketBookingSystem/
+│   ├── pharmonico/
+│   ├── [your-project-name]/
+│   │   └── README.md
+│   └── ...
+└── ...
 ```
+
+Replace `[your-project-name]` with your actual project folder name. Each project must include a `README.md` with overview and requirements.
 
 ## 🛠 Getting Started
 
@@ -52,7 +90,7 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    git clone <repository-url>
-   cd tej-bootcamp-monorepo
+   cd pbl
    ```
 
 2. **Explore the Structure**
