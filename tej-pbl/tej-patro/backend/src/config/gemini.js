@@ -28,10 +28,23 @@ function getModel(modelName = "gemini-3-flash-preview") {
         if (!response) {
           throw new Error("Gemini returned no response");
         }
+
+        /*
+        - Checks whether the Gemini API blocked the prompt due to safety filters.
+        - The API may return `promptFeedback.blockReason` when a request violates
+          - safety policies. If a valid block reason exists (not null, empty, or
+          - "BLOCK_REASON_UNSPECIFIED"), an error is thrown so the controller can
+          - return a 422 response instead of a 500 server error.
+          
+        */
+
+        const blockReason = response.promptFeedback?.blockReason;
+        if (blockReason != null && blockReason !== "" && String(blockReason) !== "BLOCK_REASON_UNSPECIFIED") {   //// Using `!= null`: checks both `null` and `undefined` in one condition
+          throw new Error("Content was blocked by safety filter");
+        }
+        const text = response.text ?? "";
         return {
-          response: {
-            text: response.text ?? "",
-          },
+          response: { text },
         };
       } catch (error) {
         const message = error?.message ?? "Failed to generate content";

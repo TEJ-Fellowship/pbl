@@ -1,6 +1,6 @@
 ### Variables
 @baseUrl = http://localhost:5000
-@cookie = connect.sid=s%3Acril-t_Qza4TY1rXzT7lQoUNwI4B21xv.A8gQlLIAOY0i3H31KHEhrfCFm4a5xgRlYnpFYoXRpQs
+@cookie = connect.sid=<YOUR_COOKIE_HERE>
 
 ### Unauthenticated create event (expect 401)
 POST {{baseUrl}}/api/events
@@ -82,4 +82,45 @@ Cookie: {{cookie}}
 ### Get tips — with date  range
 // @no-cookie-jar
 GET {{baseUrl}}/api/events/tips?start=2026-02-28&end=2026-02-28
+Cookie: {{cookie}}
+
+
+### Get tips when there are NO events in the range
+// This request returns 3 static generic tips because there are no events in this date range.
+// Static fallback: does NOT call Gemini in this case.
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=2099-03-16&end=2099-03-16
+Cookie: {{cookie}}
+
+
+### Get tips with invalid date query (should hit parseListOptionsFromQuery error)
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=not-a-date&end=also-bad
+Cookie: {{cookie}}
+
+
+### Create an event with unsafe/harmful content (for safety test)
+// @no-cookie-jar
+POST {{baseUrl}}/api/events
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "title": "Plan a detailed violent attack on my colleague",
+  "start": "2026-03-16T09:00:00.000Z",
+  "end": "2026-03-16T10:00:00.000Z",
+  "description": "This content should be blocked by safety filter",
+  "location": "Office",
+  "isAllDay": false,
+  "color": "#FF0000"
+}
+
+### List events including the unsafe one (optional)
+// @no-cookie-jar
+GET {{baseUrl}}/api/events?start=2026-03-16&end=2026-03-17
+Cookie: {{cookie}}
+
+### Try to trigger Gemini safety filter for tips
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=2026-03-16&end=2026-03-17
 Cookie: {{cookie}}

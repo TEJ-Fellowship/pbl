@@ -27,6 +27,35 @@ Output format:
 Example:
 ["Group similar tasks to reduce context switching.","Schedule short breaks between long meetings.","Reserve a focus block for deep work."]`;
 
+/*NOTE (No events in range): 
+We still call Gemini with this message when there are no events. The system prompt tells the model to return 3 general time-management
+ tips, so the frontend always gets a valid tips array or a proper error.*/
+const NO_EVENTS_USER_MESSAGE = "I have no events in this range.";
+
+
+/**
+ * Checks if an error is caused by Gemini's safety or content filtering.
+ *
+ * Looks for keywords like "block", "safety", "filter", "content policy", or "harm"
+ * in the error message. Returns true if any are found, otherwise false.
+ */
+function isBlockOrSafetyError(err) {
+  const msg = (err?.message ?? String(err)).toLowerCase();
+  return (
+    msg.includes("block") ||
+    msg.includes("safety") ||
+    msg.includes("filter") ||
+    msg.includes("blocked") ||
+    msg.includes("content policy") ||
+    msg.includes("harm")
+  );
+}
+
+/** Ensures value is a non-empty array of strings (valid tips format). */
+function isArrayOfStrings(arr) {
+  return Array.isArray(arr) && arr.length > 0 && arr.every((item) => typeof item === "string");
+}
+
 async function getTips(req, res, next) {
   const { start, end } = req.query;
     
@@ -49,23 +78,59 @@ async function getTips(req, res, next) {
       description: e.description ?? "",
     }));
 
-    const userMessage = `Here are the calendar events:\n${JSON.stringify(eventsForPrompt)}`;
-    const fullPrompt = `${TIPS_SYSTEM_PROMPT}\n\n${userMessage}`;
-
-    const text = await generateText(fullPrompt);
-
-    let data;
-    try {
-      const parsed = JSON.parse(text.trim());
-      data = Array.isArray(parsed) ? parsed : [text];
-    } catch {
-      data = [text];
-    }
-    res.json({ data });
-  } catch (error) {
-    next(error);
-  }
+ // STATIC FALLBACK for no events:
+// If there are no events in the range, do NOT call Gemini.
+// Return a fixed set of generic productivity tips instead.
+if (eventsForPrompt.length === 0) {
+  return res.json({
+    data: [
+      "Add events in this range to get personalized tips.",
+      "Block time for focused work in your calendar.",
+      "Review your week and plan key tasks.",
+    ],
+  });
 }
+// For non-empty event lists, we still call Gemini as before.
+const userMessage = `Here are the calendar events:\n${JSON.stringify(eventsForPrompt)}`;
+const fullPrompt = `${TIPS_SYSTEM_PROMPT}\n\n${userMessage}`;    
+
+   let text;
+   try {
+     text = await generateText(fullPrompt);
+   } catch (err) {
+     // NOTE: Safety/block — return 422 with a user-friendly message so frontend can show or retry.
+     if (isBlockOrSafetyError(err)) {
+       return res.status(422).json({
+         error: "Content was filtered; try different events or dates.",
+       });
+     }
+     throw err;
+   }
+   // NOTE: Empty or missing Gemini response — do not treat as success; return 502.
+   const trimmed = text != null ? String(text).trim() : "";
+   if (!trimmed) {
+     return res.status(502).json({ error: "AI did not return insights" });
+   }
+   let data;
+   try {
+     const parsedData = JSON.parse(trimmed);
+     // NOTE: Invalid format — must be a non-empty array of strings; otherwise 502 + log for debugging.
+     if (!isArrayOfStrings(parsedData)) {
+       console.error("Invalid insights format - raw response:", trimmed);
+       return res.status(502).json({ error: "Invalid insights format" });
+     }
+     data = parsedData;
+   } catch {
+     // NOTE: JSON.parse threw; return 502 and log raw text for debugging.
+     console.error("Invalid insights format - parse error, raw response:", trimmed);
+     return res.status(502).json({ error: "Invalid insights format" });
+   }
+   res.json({ data });
+ } catch (error) {
+   next(error);
+ }
+}
+
 
 module.exports = {
   getTips,
