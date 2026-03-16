@@ -1,0 +1,85 @@
+### Variables
+@baseUrl = http://localhost:5000
+@cookie = connect.sid=s%3Acril-t_Qza4TY1rXzT7lQoUNwI4B21xv.A8gQlLIAOY0i3H31KHEhrfCFm4a5xgRlYnpFYoXRpQs
+
+### Unauthenticated create event (expect 401)
+POST {{baseUrl}}/api/events
+Content-Type: application/json
+
+{
+  "title": "Test event",
+  "start": "2026-02-28T09:00:00.000Z",
+  "end": "2026-02-28T10:00:00.000Z",
+  "description": "Testing create event",
+
+  "location": "Online",
+  "isAllDay": false,
+  "color": "#2196F3"
+}
+
+### Authenticated create event (expect 201)
+// @no-cookie-jar
+POST {{baseUrl}}/api/events
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "title": "Testing 02",
+  "start": "2026-03-12T06:55:00.000Z",
+  "end": "2026-03-14T09:00:00.000Z",
+  "description": "Testing 02 via REST file",
+  "location": "Online",
+  "isAllDay": false,
+  "color": "#2196F3"
+}
+
+
+### GET events — unauthenticated (expect 401)
+GET {{baseUrl}}/api/events
+
+### GET events — authenticated (expect 200 and array; [] if no events)
+// @no-cookie-jar
+GET {{baseUrl}}/api/events
+Cookie: {{cookie}}
+
+
+### GET events with date range (March 2026)
+// @no-cookie-jar
+GET {{baseUrl}}/api/events?start=2026-04-12&end=2026-04-14
+Cookie: {{cookie}}
+
+### Update event (expect 200)
+// @no-cookie-jar
+PUT {{baseUrl}}/api/events/69aa3d8de447760405ec5405
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+  "title": "Updated title via PUT",
+  "start": "2026-03-10T09:00:00.000Z",
+  "end": "2026-03-10T11:00:00.000Z",
+  "description": "Updated description",
+  "location": "Office",
+  "isAllDay": false,
+  "color": "#4CAF50"
+}
+
+### Delete event — authenticated, own event (expect 204 or 200)
+// @no-cookie-jar
+DELETE {{baseUrl}}/api/events/69a798b355d60b499018328c
+Cookie: {{cookie}}
+
+### Get tips — authenticated (expect 200)
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=2026-04-12&end=2026-04-14
+Cookie: {{cookie}}
+
+### Get tips — no data range
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips
+Cookie: {{cookie}}
+
+### Get tips — with date  range
+// @no-cookie-jar
+GET {{baseUrl}}/api/events/tips?start=2026-02-28&end=2026-02-28
+Cookie: {{cookie}}

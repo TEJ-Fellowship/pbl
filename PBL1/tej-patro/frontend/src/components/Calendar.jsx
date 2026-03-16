@@ -1,0 +1,122 @@
+import { useState } from "react";
+import { DAY_NAMES, MONTH_NAMES } from "../constants/calendar.js";
+
+function Calendar({ current: currentProp, onDateChange, events = [] }) {
+  const [internalCurrent, setInternalCurrent] = useState(() => new Date());
+  // ?? operator: used to check null or undefined
+  const current = currentProp ?? internalCurrent;
+  const setCurrent = onDateChange ?? setInternalCurrent;
+
+  const year = current.getFullYear();
+  const month = current.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startPadding = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  const prevMonth = () => {
+    setCurrent((d) => new Date(d.getFullYear(), d.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrent((d) => new Date(d.getFullYear(), d.getMonth() + 1));
+  };
+
+  const today = new Date();
+  const isToday = (day) =>
+    day === today.getDate() &&
+    month === today.getMonth() &&
+    year === today.getFullYear();
+
+  // Build grid: empty slots before 1st, then 1..daysInMonth, then pad to full weeks
+  const dayNumbers = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const gridCells = [...Array(startPadding).fill(null), ...dayNumbers];
+  const totalSlots = Math.ceil(gridCells.length / 7) * 7;
+  while (gridCells.length < totalSlots) gridCells.push(null);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <main className="mx-auto max-w-4xl px-4 py-8">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-4">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={prevMonth}
+                className="rounded-lg p-2 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+                aria-label="Previous month"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <h2 className="text-lg font-semibold text-slate-800 min-w-[180px] text-center">
+                {MONTH_NAMES[month]} {year}
+              </h2>
+              <button
+                type="button"
+                onClick={nextMonth}
+                className="rounded-lg p-2 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
+                aria-label="Next month"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">
+              {DAY_NAMES.map((day) => (
+                <div
+                  key={day}
+                  className="bg-slate-50 py-2 text-center text-xs font-medium text-slate-500"
+                >
+                  {day}
+                </div>
+              ))}
+              {gridCells.map((day, i) => (
+                <div
+                  key={`cell-${year}-${month}-${i}`}
+                  className={`min-h-14 flex items-center justify-center text-sm select-none ${
+                    day != null
+                      ? isToday(day)
+                        ? "bg-blue-500 text-white font-semibold rounded-md ring-2 ring-blue-600 ring-inset shadow-sm"
+                        : "bg-white text-slate-800 hover:bg-slate-100"
+                      : "bg-slate-50/50 text-slate-300"
+                  }`}
+                >
+                  {day != null ? String(day) : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default Calendar;
