@@ -1,4 +1,5 @@
 import { API_URL } from "../config/env.js";
+import { buildEventPlayload } from "../helper/buildEventPlayload.js";
 
 /** Fetch all events for the current user (no date filter). */
 export async function fetchEvents(signal) {
@@ -25,12 +26,20 @@ export async function fetchEventsForMonth(date, signal) {
   return res.json();
 }
 
-export async function createEvent({ title, start, end, description, location }) {
+export async function createEvent({
+  title,
+  start,
+  end,
+  description,
+  location,
+}) {
   const res = await fetch(`${API_URL}/api/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ title, start, end, description, location: location ?? "" }),
+    body: JSON.stringify(
+      buildEventPlayload({ title, start, end, description, location }),
+    ),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -39,12 +48,21 @@ export async function createEvent({ title, start, end, description, location }) 
   return data;
 }
 
-export async function editEvent({ eventId, title, start, end, description, location }) {
+export async function editEvent({
+  eventId,
+  title,
+  start,
+  end,
+  description,
+  location,
+}) {
   const res = await fetch(`${API_URL}/api/events/${eventId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ title, start, end, description, location: location ?? "" }),
+    body: JSON.stringify(
+      buildEventPlayload({ title, start, end, description, location }),
+    ),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
