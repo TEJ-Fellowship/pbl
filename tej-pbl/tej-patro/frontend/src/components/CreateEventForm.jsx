@@ -1,13 +1,30 @@
 import { useState } from "react";
-import { API_URL } from "../config/env.js";
+import { createEvent, editEvent } from "../api/event.js";
 
-function CreateEventForm({ onClose, onSuccess }) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+function toDateTimeLocal(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return "";
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
+  const [title, setTitle] = useState(() => initialEvent?.title ?? "");
+  const [description, setDescription] = useState(
+    () => initialEvent?.description ?? "",
+  );
+  const [start, setStart] = useState(() =>
+    toDateTimeLocal(initialEvent?.start),
+  );
+  const [end, setEnd] = useState(() => toDateTimeLocal(initialEvent?.end));
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const isEdit = Boolean(initialEvent?._id);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,27 +51,29 @@ function CreateEventForm({ onClose, onSuccess }) {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_URL}/api/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      if (isEdit) {
+        await editEvent({
+          eventId: initialEvent._id,
           title: trimmedTitle,
+          description: description.trim() || "",
           start: startDate.toISOString(),
           end: endDate.toISOString(),
-          description: endDate.toISOString(),
-        }),
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || "Could not create event");
-        setSubmitting(false);
-        return;
+        });
+      } else {
+        await createEvent({
+          title: trimmedTitle,
+          description: description.trim() || "",
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+        });
       }
       onSuccess?.();
       onClose?.();
-    } catch {
-      setError("Could not create event");
+    } catch (err) {
+      setError(
+        err.message ||
+          (isEdit ? "Could not update event" : "Could not create event"),
+      );
       setSubmitting(false);
     }
   };
@@ -139,7 +158,13 @@ function CreateEventForm({ onClose, onSuccess }) {
           disabled={submitting}
           className="flex-1 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
-          {submitting ? "Creating…" : "Create"}
+          {submitting
+            ? isEdit
+              ? "Updating…"
+              : "Creating…"
+            : isEdit
+              ? "Update"
+              : "Create"}
         </button>
       </div>
     </form>

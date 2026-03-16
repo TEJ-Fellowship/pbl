@@ -9,12 +9,12 @@ import Navbar from "./components/Navbar.jsx";
 import EventsList from "./components/EventsList.jsx";
 
 function App() {
-  console.log("App");
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [calendarDate, setCalendarDate] = useState(() => new Date());
   const [showCreateEvent, setCreateEvent] = useState(false);
   const [events, setEvents] = useState([]);
+  const [editEvent, setEditEvent] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,6 +90,19 @@ function App() {
           />
         </EventModal>
       )}
+      {editEvent && (
+        <EventModal title="Edit event" onClose={() => setEditEvent(null)}>
+          <CreateEventForm
+            key={editEvent._id}
+            event={editEvent}
+            onClose={() => setEditEvent(null)}
+            onSuccess={() => {
+              refetchEvents();
+              setEditEvent(null);
+            }}
+          />
+        </EventModal>
+      )}
       {showLogin ? (
         <Login onBack={() => setShowLogin(false)} />
       ) : (
@@ -101,7 +114,7 @@ function App() {
               events={events}
             />
           </div>
-          <EventsList events={events} />
+          <EventsList events={events} onEditEvent={setEditEvent} />
         </div>
       )}
     </div>
