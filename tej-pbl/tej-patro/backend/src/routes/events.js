@@ -3,6 +3,10 @@ const router = express.Router();
 const eventsController = require("../controllers/eventsController");
 const { validateCreateEvent, validateUpdateEvent, validateEventId } = require("../middleware/validateEvent");
 const { requireAuth } = require("../middleware/requireAuth");
+const tipsController = require("../controllers/tipsController");
+
+// GET /api/events/tips — get tips for events between start and end
+router.get("/tips", requireAuth, tipsController.getTips);
 
 // POST /api/events — create event (add requireAuth in Phase 4)
 router.post("/", requireAuth, validateCreateEvent, eventsController.create);

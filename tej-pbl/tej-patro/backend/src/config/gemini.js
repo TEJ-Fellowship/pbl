@@ -15,7 +15,7 @@ const genAI = new GoogleGenAI({ apiKey });
  *   const model = getModel("gemini-2.0-flash");
  *   const result = await model.generateContent(prompt);
  *   const text = result?.response?.text ?? "";
- * @param {string} modelName - e.g. "gemini-2.0-flash" or "gemini-1.5-flash"
+ * @param {string} modelName 
  */
 function getModel(modelName = "gemini-3-flash-preview") {
   return {
@@ -41,4 +41,10 @@ function getModel(modelName = "gemini-3-flash-preview") {
   };
 }
 
-module.exports = { getModel, genAI };
+async function generateText(prompt, modelName){
+  const model = getModel(modelName);
+  const result = await model.generateContent(prompt);
+  return result?.response?.text ?? "";
+}
+
+module.exports = { getModel, genAI, generateText };
