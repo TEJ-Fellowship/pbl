@@ -153,4 +153,4 @@ function parseListOptionsFromQuery(query) {
   return { options };
 }
 
-module.exports = { create, list, update, remove, parseListOptions };
+module.exports = { create, list, update, remove, parseListOptionsFromQuery };
