@@ -18,6 +18,7 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
   const [description, setDescription] = useState(
     () => initialEvent?.description ?? "",
   );
+  const [location, setLocation] = useState(() => initialEvent?.location ?? "");
   const [start, setStart] = useState(() =>
     toDateTimeLocal(initialEvent?.start),
   );
@@ -51,11 +52,13 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
 
     setSubmitting(true);
     try {
+      const locationVal = location.trim() || "";
       if (isEdit) {
         await editEvent({
           eventId: initialEvent._id,
           title: trimmedTitle,
           description: description.trim() || "",
+          location: locationVal,
           start: startDate.toISOString(),
           end: endDate.toISOString(),
         });
@@ -63,6 +66,7 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
         await createEvent({
           title: trimmedTitle,
           description: description.trim() || "",
+          location: locationVal,
           start: startDate.toISOString(),
           end: endDate.toISOString(),
         });
@@ -130,10 +134,26 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
       </div>
       <div>
         <label
+          htmlFor="event-location"
+          className="block text-sm font-medium text-slate-700 mb-1"
+        >
+          Location
+        </label>
+        <input
+          id="event-location"
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+          placeholder="Optional location"
+        />
+      </div>
+      <div>
+        <label
           htmlFor="event-description"
           className="block text-sm font-medium text-slate-700 mb-1"
         >
-          Description
+          Notes
         </label>
         <textarea
           id="event-description"
@@ -141,7 +161,7 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500 resize-y"
-          placeholder="Optional description"
+          placeholder="Optional notes..."
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
