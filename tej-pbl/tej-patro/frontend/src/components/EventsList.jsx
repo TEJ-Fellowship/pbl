@@ -25,7 +25,7 @@ function EventsList({ events = [], onEditEvent }) {
               key={event._id}
               className="rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-left"
             >
-              <div className="flex items-center justify-between gap-2 my-5">
+              <div className="flex items-center justify-between gap-2 my-2">
                 <p className="text-sm font-medium text-slate-800 truncate">
                   {event.title}
                 </p>
