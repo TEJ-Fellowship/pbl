@@ -12,12 +12,11 @@ function EventModal({ title, onClose, children }) {
         className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           {title && (
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">
-              {title}
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-800 ">{title}</h2>
           )}
+          {!title && <span />}
           <button
             className="text-slate-500 hover:text-slate-700"
             onClick={onClose}

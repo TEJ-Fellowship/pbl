@@ -9,7 +9,6 @@ import Navbar from "./components/Navbar.jsx";
 import EventsList from "./components/EventsList.jsx";
 
 function App() {
-  console.log("App");
   const [showLogin, setShowLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [calendarDate, setCalendarDate] = useState(() => new Date());

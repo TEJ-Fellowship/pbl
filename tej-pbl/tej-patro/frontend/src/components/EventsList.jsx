@@ -31,7 +31,7 @@ function EventsList({ events = [], onEditEvent }) {
                 </p>
                 <button
                   className="text-sm text-slate-500"
-                  title="button"
+                  title="Edit event"
                   aria-label="Edit event"
                   onClick={() => {
                     onEditEvent?.(event);
