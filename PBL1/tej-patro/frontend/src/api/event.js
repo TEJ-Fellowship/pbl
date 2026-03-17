@@ -70,3 +70,15 @@ export async function editEvent({
   }
   return data;
 }
+
+export async function deleteEvent({ eventId }) {
+  const res = await fetch(`${API_URL}/api/events/${eventId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.eror || "Could not delete event");
+  }
+  return data;
+}

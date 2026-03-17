@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createEvent, editEvent } from "../api/event.js";
+import { createEvent, editEvent, deleteEvent } from "../api/event.js";
 
 function toDateTimeLocal(isoString) {
   if (!isoString) return "";
@@ -13,7 +13,12 @@ function toDateTimeLocal(isoString) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
+function CreateEventForm({
+  event: initialEvent,
+  onClose,
+  onSuccess,
+  onDelete,
+}) {
   const [title, setTitle] = useState(() => initialEvent?.title ?? "");
   const [description, setDescription] = useState(
     () => initialEvent?.description ?? "",
@@ -79,6 +84,17 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
           (isEdit ? "Could not update event" : "Could not create event"),
       );
       setSubmitting(false);
+    }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteEvent({ evnetId: initialEvent._id });
+    } catch (err) {
+      setError(err.message || "Could not delete event");
+    } finally {
+      setSubmitting(false);
+      onDelete?.();
+      onClose?.();
     }
   };
 
@@ -165,27 +181,36 @@ function CreateEventForm({ event: initialEvent, onClose, onSuccess }) {
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex gap-3 pt-2">
+      <div>
         <button
           type="button"
-          onClick={() => onClose?.()}
+          onClick={() => onDelete?.()}
           className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
-          Cancel
+          Delete
         </button>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="flex-1 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-        >
-          {submitting
-            ? isEdit
-              ? "Updating…"
-              : "Creating…"
-            : isEdit
-              ? "Update"
-              : "Create"}
-        </button>
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex-1 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          >
+            {submitting
+              ? isEdit
+                ? "Updating…"
+                : "Creating…"
+              : isEdit
+                ? "Update"
+                : "Create"}
+          </button>
+        </div>
       </div>
     </form>
   );
