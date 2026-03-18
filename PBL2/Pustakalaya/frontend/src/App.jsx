@@ -1,11 +1,15 @@
+import { Routes, Route } from 'react-router-dom';
+import Home from './pages/Home';
+import Auth from './pages/Auth';
 
-function App() {
+const App = () => {
 
   return (
     <>
-      <h1 className="text-3xl font-bold">
-      Hello world!
-    </h1>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/auth" element={<Auth />} />
+      </Routes>
     </>
   )
 }
