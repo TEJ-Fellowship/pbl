@@ -6,3 +6,12 @@ GET {{baseUrl}}/api/books?q=javascript&startIndex=0
 
 ### GET /api/books — missing q (expect 400 and error message)
 GET {{baseUrl}}/api/books
+
+### GET /api/books/:id — with valid ID (expect 200 and JSON with book data)
+GET {{baseUrl}}/api/books/U69Hzz2jLPUC
+
+### GET /api/books/:id — with invalid ID (expect 400 and error message)
+GET {{baseUrl}}/api/books/123
+
+### GET /api/books/:id — missing ID (expect 400 and error message)
+GET {{baseUrl}}/api/books/
