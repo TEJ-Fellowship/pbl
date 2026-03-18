@@ -1,7 +1,9 @@
 const Home = () => {
     return (
         <div>
-            <h1>Home Page</h1>
+            <h1 className="font-serif font-bold text-2xl text-gray-900 mb-4 text-center">
+        Welcome to TEJ Pustakalaya
+      </h1>
         </div>
     )
 }
