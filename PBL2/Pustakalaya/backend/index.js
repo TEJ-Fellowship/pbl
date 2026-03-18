@@ -5,6 +5,7 @@ const express = require("express");
 */
 const cors = require("cors");
 const mongoose = require("mongoose");
+const User = require("./models/User");
 /*- Imports environment variables from a .env file */
 require("dotenv").config();
 /* - Creates the Express app instance (app)*/
@@ -74,6 +75,20 @@ async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connected");
+    try {
+      await User.create({
+        username: "test-user",
+        email: "test123@gmail.com",
+        password: "test123",
+      });
+      console.log("Dummy user created successfully");
+    } catch (e) {
+      if (e.code === 11000) {
+        console.log("Dummy user already exists");
+      } else {
+        console.log("Error creating dummy user", e.message);
+      }
+    }
     app.listen(PORT, () =>
       console.log(`Pustakalaya server is running on port ${PORT}`),
     );
