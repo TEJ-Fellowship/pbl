@@ -1,0 +1,8 @@
+### Variables (Pustakalaya backend runs on port 1000)
+@baseUrl = http://localhost:1000
+
+### GET /api/books — with query (expect 200 and JSON with items / totalItems)
+GET {{baseUrl}}/api/books?q=javascript&startIndex=0
+
+### GET /api/books — missing q (expect 400 and error message)
+GET {{baseUrl}}/api/books
