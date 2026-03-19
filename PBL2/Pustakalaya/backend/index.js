@@ -44,6 +44,28 @@ app.get("/api/books", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+/* - GET endpoint to get a book by ID */
+/* - Params:
+  - id (required):string = Google Books ID (e.g. "U69Hzz2jLPUC")
+*/
+app.get("/api/books/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: "Book ID is required!" });
+    }
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes/${id}?key=${process.env.GOOGLE_BOOKS_API_KEY}`,
+    );
+    const data = await response.json();
+    if (!data) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 const PORT = process.env.PORT || 1000;
 app.listen(PORT, () =>
