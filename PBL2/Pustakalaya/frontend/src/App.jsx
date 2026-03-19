@@ -1,13 +1,19 @@
+import { Routes, Route } from "react-router-dom";
+import MainLayout from "./layout/MainLayout";
+import Home from "./pages/Home";
+import Auth from "./pages/Auth";
+import Favorites from "./pages/Favorites";
 
-function App() {
-
+const App = () => {
   return (
-    <>
-      <h1 className="text-3xl font-bold">
-      Hello world!
-    </h1>
-    </>
-  )
-}
+    <Routes>
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/favorites" element={<Favorites />} />
+      </Route>
+      <Route path="/auth" element={<Auth />} />
+    </Routes>
+  );
+};
 
-export default App
+export default App;
