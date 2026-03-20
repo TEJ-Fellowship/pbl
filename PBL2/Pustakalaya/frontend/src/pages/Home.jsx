@@ -1,19 +1,16 @@
-import { useEffect } from "react";
-import API_URL from "../config/api";
+import BookGrid from "../components/BookGrid";
+import SearchBar from "../components/SearchBar";
+import { dummyBooks } from "../data/dummyBooks";
 
 const Home = () => {
-  useEffect(() => {
-    fetch("/api/books")
-      .then(() => console.log("Backend connected"))
-      .catch(() => {});
-  }, []);
-
   return (
-    <div>
-      <h1 className="font-serif font-bold text-2xl text-gray-900 mb-4 text-center">
-        Welcome to TEJ Pustakalaya
-      </h1>
-    </div>
+    <>
+      <main className="mx-auto max-w-7xl px-4 py-8">
+        <SearchBar />
+        <h1 className="font-serif mb-6 text-2xl font-bold">Top Picks</h1>
+        <BookGrid books={dummyBooks} />
+      </main>
+    </>
   );
 };
 
