@@ -6,16 +6,39 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const User = require("./models/User");
+const session = require("express-session");
+
 /*- Imports environment variables from a .env file */
 require("dotenv").config();
+// const passport = require("passport");
+const passport = require("./config/passport");
 /* - Creates the Express app instance (app)*/
 const app = express();
 /* - Middleware to allow cross-origin requests 
 - (allows requests from other origins like React frontend)
 */
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
 /* - Middleware to parse JSON bodies for incoming requests */
 app.use(express.json());
+app.use("/api/auth", require("./routes/auth"));
 
 /* - GET endpoint to search for books */
 app.get("/api/books", async (req, res) => {
@@ -75,20 +98,7 @@ async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connected");
-    try {
-      await User.create({
-        username: "test-user",
-        email: "test123@gmail.com",
-        password: "test123",
-      });
-      console.log("Dummy user created successfully");
-    } catch (e) {
-      if (e.code === 11000) {
-        console.log("Dummy user already exists");
-      } else {
-        console.log("Error creating dummy user", e.message);
-      }
-    }
+
     app.listen(PORT, () =>
       console.log(`Pustakalaya server is running on port ${PORT}`),
     );

@@ -15,3 +15,15 @@ GET {{baseUrl}}/api/books/123
 
 ### GET /api/books/:id — missing ID (expect 400 and error message)
 GET {{baseUrl}}/api/books/
+
+### GET /api/auth/google — initiate Google OAuth flow (expect 302 redirect)
+GET {{baseUrl}}/api/auth/google
+
+### GET /api/auth/google/callback — Google OAuth callback (expect 302 redirect)
+GET {{baseUrl}}/api/auth/google/callback
+
+### GET /api/auth/user — get authenticated user (expect 200 and JSON with user data)
+GET {{baseUrl}}/api/auth/user
+
+### POST /api/auth/logout — logout user (expect 200 and success message)
+POST {{baseUrl}}/api/auth/logout
