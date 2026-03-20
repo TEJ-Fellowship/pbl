@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 
-const SearchBar = () => {
+const SearchBar = ({ value, onChange }) => {
   return (
     <div className="mb-6">
       <div className="relative">
@@ -12,6 +12,8 @@ const SearchBar = () => {
         />
         <input
           type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           placeholder="Search books by title"
           /*py: padding top and bottom,
             outline: line that is drawn around elements, OUTSIDE the borders, to make the element "stand out",
