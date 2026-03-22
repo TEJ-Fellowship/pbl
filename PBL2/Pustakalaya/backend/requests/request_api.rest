@@ -25,5 +25,48 @@ GET {{baseUrl}}/api/auth/google/callback
 ### GET /api/auth/user — get authenticated user (expect 200 and JSON with user data)
 GET {{baseUrl}}/api/auth/me
 
-### POST /api/auth/logout — logout user (expect 200 and success message)
-POST {{baseUrl}}/api/auth/logout
+### GET /api/auth/logout — logout (expect 200 JSON; send session cookie)
+GET {{baseUrl}}/api/auth/logout
+
+### --- Library & shelves (authenticated: paste Cookie from browser DevTools after Google login) ---
+# @cookie = connect.sid=YOUR_VALUE_HERE
+
+### GET /api/library/books — list saved books
+# GET {{baseUrl}}/api/library/books
+# Cookie: {{cookie}}
+
+### GET /api/library/books?favorite=true — favorites only
+# GET {{baseUrl}}/api/library/books?favorite=true
+# Cookie: {{cookie}}
+
+### POST /api/library/books — add to library (title + googleBookId required)
+# POST {{baseUrl}}/api/library/books
+# Content-Type: application/json
+# Cookie: {{cookie}}
+#
+# {"title":"Example","googleBookId":"U69Hzz2jLPUC","author":"Author","favorite":false}
+
+### PATCH /api/library/books/:bookId — update (e.g. favorite, rating)
+# PATCH {{baseUrl}}/api/library/books/BOOK_ID
+# Content-Type: application/json
+# Cookie: {{cookie}}
+#
+# {"favorite":true,"rating":5}
+
+### POST /api/shelves — create bookshelf
+# POST {{baseUrl}}/api/shelves
+# Content-Type: application/json
+# Cookie: {{cookie}}
+#
+# {"name":"Want to read"}
+
+### POST /api/shelves/:shelfId/books — add library book to shelf
+# POST {{baseUrl}}/api/shelves/SHELF_ID/books
+# Content-Type: application/json
+# Cookie: {{cookie}}
+#
+# {"bookId":"BOOK_OBJECT_ID"}
+
+### DELETE /api/shelves/:shelfId/books/:bookId — remove book from shelf only
+# DELETE {{baseUrl}}/api/shelves/SHELF_ID/books/BOOK_OBJECT_ID
+# Cookie: {{cookie}}
