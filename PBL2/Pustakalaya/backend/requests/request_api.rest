@@ -5,7 +5,7 @@
 GET {{baseUrl}}/api/books?q=javascript&startIndex=0
 
 ### GET /api/books — missing q (expect 400 and error message)
-GET {{baseUrl}}/api/books
+GET {{baseUrl}}/api/books/
 
 ### GET /api/books/:id — with valid ID (expect 200 and JSON with book data)
 GET {{baseUrl}}/api/books/U69Hzz2jLPUC
@@ -23,7 +23,7 @@ GET {{baseUrl}}/api/auth/google
 GET {{baseUrl}}/api/auth/google/callback
 
 ### GET /api/auth/user — get authenticated user (expect 200 and JSON with user data)
-GET {{baseUrl}}/api/auth/user
+GET {{baseUrl}}/api/auth/me
 
 ### POST /api/auth/logout — logout user (expect 200 and success message)
 POST {{baseUrl}}/api/auth/logout

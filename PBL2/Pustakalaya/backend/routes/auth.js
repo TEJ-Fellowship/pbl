@@ -1,9 +1,9 @@
-// routes/auth.js
-const router = require("express").Router();
-const passport = require("passport");
-const jwt = require("jsonwebtoken");
+const express = require("express");
+const passport = require("../config/passport");
+const authController = require("../controllers/authController");
 
-// Initialize Google OAuth flow
+const router = express.Router();
+
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -11,60 +11,18 @@ router.get(
   }),
 );
 
-// Google OAuth callback
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173/login?error=auth_failed",
-    session: false, // We'll use JWT instead of session
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=true&message=Authentication failed`,
+    session: true,
   }),
   (req, res) => {
-    try {
-      // Generate JWT token
-      const token = jwt.sign(
-        {
-          id: req.user._id,
-          email: req.user.email,
-          name: req.user.name,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" },
-      );
-
-      // Redirect to frontend with token
-      res.redirect(`http://localhost:5173/auth-success?token=${token}`);
-    } catch (error) {
-      res.redirect("http://localhost:5173/login?error=token_generation_failed");
-    }
+    res.redirect(`${process.env.FRONTEND_URL}/dashboard?auth=sucess`);
   },
 );
 
-// Get current user (protected route example)
-router.get("/user", authenticateToken, (req, res) => {
-  res.json(req.user);
-});
-
-// Logout
-router.post("/logout", (req, res) => {
-  res.json({ message: "Logged out successfully" });
-});
-
-// Middleware to verify JWT token
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ error: "Access denied" });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: "Invalid or expired token" });
-    }
-    req.user = user;
-    next();
-  });
-}
+router.get("/me", authController.getMe);
+router.get("/logout", authController.logout);
 
 module.exports = router;

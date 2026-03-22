@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      index: true,
     },
     username: {
       type: String,
@@ -25,6 +26,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minlength: 6,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    lastLogin: Date,
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {

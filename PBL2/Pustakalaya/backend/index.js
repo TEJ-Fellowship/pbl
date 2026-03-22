@@ -1,12 +1,12 @@
 /* Imports the express library (web server framework)*/
 const express = require("express");
+const mongoose = require("mongoose");
+const session = require("express-session");
+const { MongoStore } = require("connect-mongo");
 /*- Imports the cors library (cross-origin resource sharing)
   - (allows requests from other origins like your React frontend)
 */
 const cors = require("cors");
-const mongoose = require("mongoose");
-const User = require("./models/User");
-const session = require("express-session");
 
 /*- Imports environment variables from a .env file */
 require("dotenv").config();
@@ -19,7 +19,7 @@ const app = express();
 */
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   }),
 );
@@ -28,12 +28,20 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      ttl: 14 * 24 * 60 * 60, // 14 days
+      autoRemove: "native",
+    }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+      httpOnly: true,
+      sameSite: "lax",
     },
   }),
 );
+
 app.use(passport.initialize());
 app.use(passport.session());
 /* - Middleware to parse JSON bodies for incoming requests */
@@ -41,7 +49,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/auth"));
 
 /* - GET endpoint to search for books */
-app.get("/api/books", async (req, res) => {
+app.get("/api/books/", async (req, res) => {
   try {
     /* - Destructures the query parameters from the request 
     - Query Params:
