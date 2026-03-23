@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -36,6 +41,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    shelves: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Shelf",
+      },
+    ],
   },
   {
     timestamps: true,

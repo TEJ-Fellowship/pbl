@@ -58,6 +58,8 @@ app.use(passport.session());
 /* - Middleware to parse JSON bodies for incoming requests */
 app.use(express.json());
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/library", require("./routes/library"));
+app.use("/api/shelves", require("./routes/shelves"));
 
 /* - GET endpoint to search for books */
 app.get("/api/books/", async (req, res) => {
