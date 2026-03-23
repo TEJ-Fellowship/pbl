@@ -10,7 +10,6 @@ const cors = require("cors");
 
 /*- Imports environment variables from a .env file */
 require("dotenv").config();
-// const passport = require("passport");
 const passport = require("./config/passport");
 /* - Creates the Express app instance (app)*/
 const app = express();
@@ -26,17 +25,29 @@ app.use(
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
+    /* - Session is saved only when something actually changes */
     resave: false,
+    /* - No session is created until something is stored in it e.g user ID after login */
     saveUninitialized: false,
+    /* - Stores session in MongoDB using connect-mongo */
     store: MongoStore.create({
+      /* - Connecting string to MongoDB database */
       mongoUrl: process.env.MONGO_URI,
-      ttl: 14 * 24 * 60 * 60, // 14 days
+      /* - ttl (Time to live): session expire after this time */
+      ttl: 7 * 24 * 60 * 60, // 7 days
+      /* - Uses MongoDB's built-in TTL index to automatically delete expired sessions */
       autoRemove: "native",
     }),
     cookie: {
+      /* - Secure cookie is only sent over HTTPS in production */
       secure: process.env.NODE_ENV === "production",
-      maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days
+      /* - maxAge (Time to live): cookie expire after this time and browser will delete it */
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      /* - HttpOnly: cookie is not accessible by JavaScript 
+         - cookie can only be accessed by server-side code. (Prevents XSS (cross-site scripting) attacks)
+      */
       httpOnly: true,
+      /* - SameSite: cookie is only sent in same-site requests e.g. clicking a link in the same domain */
       sameSite: "lax",
     },
   }),
