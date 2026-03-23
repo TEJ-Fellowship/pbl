@@ -1,9 +1,19 @@
 // src/components/BookCard.jsx
 import { Heart } from "lucide-react";
 
-const BookCard = ({ book }) => {
+const BookCard = ({ book, onBookClick }) => {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition">
+    <div
+      className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition"
+      onClick={() => onBookClick(book)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onBookClick(book);
+        }
+      }}
+    >
       {/* Cover area */}
       <div className="relative h-64 bg-gray-200">
         <img

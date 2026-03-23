@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import BookGrid from "../components/BookGrid";
 import SearchBar from "../components/SearchBar";
+import BookModal from "../components/BookModal";
 
 const Home = () => {
   const [books, setBooks] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+
+  const openBookModal = (book) => {
+    setSelectedBook(book);
+  };
+
+  const closeBookModal = () => {
+    setSelectedBook(null);
+  };
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -23,7 +33,12 @@ const Home = () => {
     <main className="mx-auto max-w-7xl px-4 py-8">
       <SearchBar />
       <h1 className="font-serif mb-6 text-2xl font-bold">Top Picks</h1>
-      <BookGrid books={books} />
+      <BookGrid books={books} onBookClick={openBookModal} />
+      
+      {/* modal opens only when selectedBook exists */}
+      {selectedBook && (
+        <BookModal book={selectedBook} onClose={closeBookModal} />
+      )}
     </main>
   );
 };
