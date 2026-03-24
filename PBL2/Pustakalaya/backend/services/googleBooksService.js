@@ -1,3 +1,5 @@
+const ApiError = require("../utils/ApiError");
+
 // service handles the business logic for the Google Books API
 async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
   const response = await fetch(
@@ -5,7 +7,7 @@ async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
   );
   const data = await response.json();
   if (!data.items) {
-    return response.status(404).json({ message: "No books found" });
+    throw new ApiError(404, "No books found");
   }
   return data;
 }
@@ -15,8 +17,9 @@ async function getBooksByIdService({ id, apikey }) {
     `https://www.googleapis.com/books/v1/volumes/${id}?key=${apikey}`,
   );
   const data = await response.json();
-  if (!data) {
-    return response.status(404).json({ message: "Book not found" });
+
+  if (!data || data.error) {
+    throw new ApiError(404, "Book not found");
   }
   return data;
 }

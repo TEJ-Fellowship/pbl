@@ -2,6 +2,8 @@
 const express = require("express");
 const session = require("express-session");
 const { MongoStore } = require("connect-mongo");
+const errorHandler = require("./middleware/errorHandler");
+const notFound = require("./middleware/notFound");
 
 /*- Imports the cors library (cross-origin resource sharing)
   - (allows requests from other origins like your React frontend)
@@ -63,5 +65,8 @@ app.use("/api/books", require("./routes/book"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/library", require("./routes/library"));
 app.use("/api/shelves", require("./routes/shelves"));
+
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
