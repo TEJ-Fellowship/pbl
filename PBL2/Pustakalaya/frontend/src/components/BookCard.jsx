@@ -1,4 +1,3 @@
-// src/components/BookCard.jsx
 import { Heart } from "lucide-react";
 
 const BookCard = ({ book, onBookClick }) => {

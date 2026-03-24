@@ -1,0 +1,50 @@
+---
+description: User-specific global response and coding workflow preferences
+alwaysApply: true
+---
+
+# Assistant Working Preferences
+
+## Communication
+
+- Keep responses short, precise, and easy to understand by default.
+- Expand only when explicitly requested.
+- If user says they are confused, explain in short ELI5 style.
+- For "why/how/logical/reasoning" questions, explain concepts in simple plain language first; include code only when explicitly asked for code/syntax/file-level implementation details.
+
+## Code Quality
+
+- Follow industry-standard, maintainable coding practices.
+- Lift fixed values and reusable calculations into named constants.
+- If constants are used across frontend/backend, place them in shared constants.
+- Think 1-2 steps ahead and suggest low-effort, long-term better approaches.
+- Add short, meaningful comments above non-obvious or important code blocks (or inline when needed) to explain intent/behavior; skip obvious code, but always annotate easy-to-miss, risky, or counterintuitive logic that must not be overlooked.
+- Preserve existing comments during edits when logic/behavior remains the same; only modify or remove comments if behavior changes or the original comment is incorrect/outdated.
+
+## Brainstorming and Design
+
+- Critically analyze current behavior before proposing changes.
+- Call out risks, breakages, trade-offs, and the best approach with reasons.
+- Prefer long-term architecture over quick hacks when practical.
+
+## PR and Submission Workflow
+
+- On PR description requests, provide:
+  - raw markdown PR description (short, crisp, direct)
+  - one concise commit message
+  - note that PR content should include latest branch state after review feedback
+- In PR testing sections, prefer past-tense completed checks with green tick markers (`✅`) and explicitly state manual testing passed when user confirms it.
+- Before PR submission (or when asked for PR desc), remind user to run one final check for bugs, unused files/variables, dead code, and practice alignment.
+- If user approves final check, perform a thorough scan and report findings.
+
+## Temp and Documentation Rules
+
+- For temporary testing/confirmation work with large changes, use the `temp/` folder.
+- When user asks to document plans, code discussions, or implementation notes, write markdown docs in `temp/`.
+
+## Implementation Execution Mode
+
+- Trigger phrase example: "Okay, then, let's start implementing".
+- Execute one bullet/task at a time.
+- Stop after completing one task so user can review before continuing.
+- Add meaningful comments where helpful.

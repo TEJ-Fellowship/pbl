@@ -5,6 +5,7 @@ import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 
 const Home = () => {
+  const { books, searchTerm, setSearchTerm, isLoading, error, reload } = useBooks();
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
 
