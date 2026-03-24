@@ -1,7 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
 import { Home, Heart, Moon, User } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
+  const { isAuthenticated, logout } = useAuth();
+
   const linkClass = ({ isActive }) =>
     `flex items-center gap-2 rounded-full px-4 py-2 transition-colors ${
       isActive
@@ -41,13 +44,29 @@ const Navbar = () => {
               <Moon size={18} strokeWidth={1.75} />
             </button>
 
+            {!isAuthenticated ? (
+            <NavLink
+              to="/auth"
+              className={({ isActive }) =>
+                `rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-terracotta text-white"
+                    : "text-terracotta border border-terracotta/40 hover:bg-terracotta/10"
+                }`
+              }
+            >
+              Sign In
+            </NavLink>
+            ) : (
             <button
               type="button"
               aria-label="Profile"
+              onClick={logout}
               className="p-2 rounded-full text-terracotta hover:bg-terracotta/10 transition-colors"
             >
               <User size={18} strokeWidth={1.75} />
             </button>
+            )}
           </div>
         </div>
       </nav>
