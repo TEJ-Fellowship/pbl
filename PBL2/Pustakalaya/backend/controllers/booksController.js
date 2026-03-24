@@ -1,4 +1,6 @@
-/* - GET endpoint to search for books */
+const googleBooksService = require("../services/googleBooksService");
+
+// controller handles HTTP requests and responses
 async function searchBooks(req, res) {
   try {
     /* - Destructures the query parameters from the request 
@@ -8,21 +10,18 @@ async function searchBooks(req, res) {
         */
     const { q = "book", startIndex } = req.query;
 
-    const index = startIndex ? startIndex : 0;
     /* - Fetches the books from the Google Books API using Node's global fetch.
         - If Node >= 18, global `fetch` is available.
         */
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${q}&startIndex=${index}&key=${process.env.GOOGLE_BOOKS_API_KEY}`,
-    );
-    const data = await response.json();
+    const data = await googleBooksService.searchBooksService({
+      q,
+      startIndex,
+      apikey: process.env.GOOGLE_BOOKS_API_KEY,
+    });
 
-    if (!data.items) {
-      return res.status(404).json({ message: "No books found" });
-    }
-    res.json(data);
+    return res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(err.status || 500).json({ error: err.message });
   }
 }
 
@@ -36,16 +35,15 @@ async function getBookById(req, res) {
     if (!id) {
       return res.status(400).json({ error: "Book ID is required!" });
     }
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes/${id}?key=${process.env.GOOGLE_BOOKS_API_KEY}`,
-    );
-    const data = await response.json();
-    if (!data) {
-      return res.status(404).json({ message: "Book not found" });
-    }
-    res.json(data);
+
+    const data = await googleBooksService.getBooksByIdService({
+      id,
+      apikey: process.env.GOOGLE_BOOKS_API_KEY,
+    });
+
+    return res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(err.statu || 500).json({ error: error.message });
   }
 }
 
