@@ -9,7 +9,7 @@
       "isFavorite": false,
       "description": "A thoughtful story about choices, regrets, and second chances.",
       "rating": 4.3,
-      "reviewCount": 128,
+      "reviews": 128,
       "statusBadge": "Popular"
     },
     {
@@ -21,7 +21,7 @@
       "isFavorite": true,
       "description": "Practical strategies for building good habits and breaking bad ones.",
       "rating": 4.8,
-      "reviewCount": 342,
+      "reviews": 342,
       "statusBadge": "Bestseller"
     },
     {
@@ -33,7 +33,7 @@
       "isFavorite": false,
       "description": "A classic novel exploring wealth, love, and the American Dream.",
       "rating": 4.1,
-      "reviewCount": 201,
+      "reviews": 201,
       "statusBadge": "Classic"
     }
   ]

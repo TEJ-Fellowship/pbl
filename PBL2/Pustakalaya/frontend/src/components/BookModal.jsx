@@ -4,6 +4,11 @@ import { X, BookOpen, Download, Star, Heart } from "lucide-react";
 const BookModal = ({ book, onClose }) => {
   // If no book is passed, don't render anything
   if (!book) return null;
+  const rating = book.rating ?? 4.6;
+  const reviews =
+    typeof book.reviews === "number"
+      ? book.reviews.toLocaleString()
+      : (book.reviews ?? "2,891");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -53,28 +58,26 @@ const BookModal = ({ book, onClose }) => {
                     key={i}
                     size={16}
                     className={
-                      i < Math.floor(book.rating || 4.6)
+                      i < Math.floor(rating)
                         ? "fill-orange-500 text-orange-500"
                         : "text-gray-300"
                     }
                   />
                 ))}
                 <span className="ml-2 text-2xl font-semibold text-gray-900">
-                  {book.rating || 4.6}
+                  {rating}
                 </span>
                 <span className="text-sm text-gray-500">
-                  ({book.reviews || "2,891"} reviews)
+                  ({reviews} reviews)
                 </span>
               </div>
-
-              
             </div>
 
             <p className="mt-5 text-sm leading-6 text-gray-700">
               {book.description ||
                 "No description available yet. Add one in your data to show more details here."}
             </p>
-
+{/* TODO: Will add onClick handlers for read full book and borrow book buttons */}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
