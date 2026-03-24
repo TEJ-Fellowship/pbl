@@ -26,6 +26,9 @@ const BookCard = ({ book, onBookClick }) => {
           type="button"
           //bg-white/90: white background with 90% opacity
           className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
           <Heart
             size={18}
