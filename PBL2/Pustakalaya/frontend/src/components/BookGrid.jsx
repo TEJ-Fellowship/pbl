@@ -1,4 +1,3 @@
-// src/components/BookGrid.jsx
 import BookCard from "./BookCard";
 
 const BookGrid = ({ books }) => {
