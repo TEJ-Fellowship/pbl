@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import API_URL from "../config/api";
-import BookGrid from "../components/BookGrid";
+import { useState } from "react";
+import useBooks from "../hooks/useBooks";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
+import BooksSection from "../components/BooksSection";
 
 const Home = () => {
-  const { books, searchTerm, setSearchTerm, isLoading, error, reload } = useBooks();
-  const [books, setBooks] = useState([]);
+  const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
+    useBooks();
   const [selectedBook, setSelectedBook] = useState(null);
 
   const openBookModal = (book) => {
@@ -17,26 +17,23 @@ const Home = () => {
     setSelectedBook(null);
   };
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const response = await fetch(`${API_URL}/books`);
-        const data = await response.json();
-        setBooks(data);
-      } catch (error) {
-        console.error("Failed to fetch books:", error);
-      }
-    };
-
-    fetchBooks();
-  }, []);
-
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <SearchBar />
+      <SearchBar value={searchTerm} onChange={setSearchTerm} />
       <h1 className="font-serif mb-6 text-2xl font-bold">Top Picks</h1>
-      <BookGrid books={books} onBookClick={openBookModal} />
-      
+      <BooksSection
+        books={books}
+        isLoading={isLoading}
+        error={error}
+        onRetry={reload}
+        onBookClick={openBookModal}
+        emptyMessage={
+          searchTerm
+            ? `No books found for "${searchTerm}".`
+            : "No books available right now."
+        }
+      />
+
       {/* modal opens only when selectedBook exists */}
       {selectedBook && (
         <BookModal book={selectedBook} onClose={closeBookModal} />
