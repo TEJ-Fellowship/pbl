@@ -58,10 +58,8 @@ app.get("/api/books/", async (req, res) => {
      - q (required):string = search term (e.g. "javascript")
      - startIndex (optional):number = pagination offset (default: 0)
     */
-    const { q, startIndex } = req.query;
-    if (!q) {
-      return res.status(400).json({ error: "Query is required" });
-    }
+    const { q = "book", startIndex } = req.query;
+
     const index = startIndex ? startIndex : 0;
     /* - Fetches the books from the Google Books API using Node's global fetch.
     - If Node >= 18, global `fetch` is available.
