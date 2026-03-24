@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API_URL from "../config/api";
 import BookGrid from "../components/BookGrid";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
@@ -18,7 +19,7 @@ const Home = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch("http://localhost:3001/books");
+        const response = await fetch(`${API_URL}/books`);
         const data = await response.json();
         setBooks(data);
       } catch (error) {
