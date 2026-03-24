@@ -1,6 +1,6 @@
 import { Heart } from "lucide-react";
 
-const BookCard = ({ book, onBookClick }) => {
+const BookCard = ({ book, onBookClick, isFavorite, onToggleFavorite }) => {
   return (
     <div
       className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition"
@@ -28,12 +28,14 @@ const BookCard = ({ book, onBookClick }) => {
           className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow"
           onClick={(e) => {
             e.stopPropagation();
+            onToggleFavorite(book.id);
           }}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
             size={18}
             className={
-              book.isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
+              isFavorite ? "fill-red-500 text-red-500" : "text-gray-600"
             }
           />
         </button>

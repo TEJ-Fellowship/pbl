@@ -1,8 +1,6 @@
-import { X, BookOpen, Download, Star, Heart } from "lucide-react";
+import { X, BookOpen, Download, Star } from "lucide-react";
 
-// A modal component that displays selected book details and closes when clicking outside or on the close button.
 const BookModal = ({ book, onClose }) => {
-  // If no book is passed, don't render anything
   if (!book) return null;
   const rating = book.rating ?? 4.6;
   const reviews =
@@ -12,16 +10,13 @@ const BookModal = ({ book, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal card */}
       <div className="relative z-10 w-[92%] max-w-3xl rounded-2xl bg-white p-6 shadow-xl">
-        {/* Close button */}
         <button
           type="button"
           onClick={onClose}
@@ -32,14 +27,12 @@ const BookModal = ({ book, onClose }) => {
         </button>
 
         <div className="grid gap-6 md:grid-cols-[220px_1fr]">
-          {/* Cover */}
           <img
             src={book.coverImage}
             alt={book.title}
             className="h-72 w-full rounded-xl object-cover md:h-80"
           />
 
-          {/* Details */}
           <div>
             <h2 className="font-serif text-2xl font-bold text-gray-900">
               {book.title}
@@ -50,7 +43,6 @@ const BookModal = ({ book, onClose }) => {
               {book.category}
             </span>
 
-            {/* Rating + Favorites */}
             <div className="mt-4">
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
@@ -79,6 +71,8 @@ const BookModal = ({ book, onClose }) => {
             </p>
 {/* TODO: Will add onClick handlers for read full book and borrow book buttons */}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            
+
               <button
                 type="button"
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
