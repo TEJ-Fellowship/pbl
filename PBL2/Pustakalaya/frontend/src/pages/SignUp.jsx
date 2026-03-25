@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const SignUp = ({ onSwitchToLogin, onGoogleAuth, onAuthSuccess }) => {
+const SignUp = ({ onSwitchToLogin, onGoogleAuth }) => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +39,6 @@ const SignUp = ({ onSwitchToLogin, onGoogleAuth, onAuthSuccess }) => {
     }
     setSuccessMessage("Signup successful!");
     console.log("Form is valid!");
-    onAuthSuccess?.();
   };
 
   return (

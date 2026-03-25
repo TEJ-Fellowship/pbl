@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const Login = ({ onSwitchToSignUp, onGoogleAuth, onAuthSuccess }) => {
+const Login = ({ onSwitchToSignUp, onGoogleAuth }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +26,6 @@ const Login = ({ onSwitchToSignUp, onGoogleAuth, onAuthSuccess }) => {
     }
 
     console.log("Login valid!", { email, password });
-    onAuthSuccess?.();
   };
 
   return (
