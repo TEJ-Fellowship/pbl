@@ -1,15 +1,64 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = () => setIsAuthenticated(true);
-  const logout = () => setIsAuthenticated(false);
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/me", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        setIsAuthenticated(false);
+        setUser(null);
+        return;
+      }
+
+      const data = await res.json();
+      setIsAuthenticated(true);
+      setUser(data.user ?? null);
+    } catch {
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch {
+      // even if request fails, clear UI state
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated,
+        user,
+        loading,
+        logout,
+        checkAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

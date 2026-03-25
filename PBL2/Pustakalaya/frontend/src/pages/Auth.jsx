@@ -8,8 +8,7 @@ const Auth = () => {
   const { login } = useAuth();
 
   const handleGoogleAuth = () => {
-    console.log("Google auth successful!");
-    login();
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -18,14 +17,14 @@ const Auth = () => {
         <Login 
           onAuthSuccess={ login }
           onSwitchToSignUp={() => setMode("signup")}
-          onGoogleAuth={() => handleGoogleAuth()}
+          onGoogleAuth={ handleGoogleAuth }
         />
       ):(
 
         <SignUp 
           onAuthSuccess={ login }
           onSwitchToLogin={() => setMode("login")}
-          onGoogleAuth={() => handleGoogleAuth()}
+          onGoogleAuth={ handleGoogleAuth }
         />
       )}
     </div>
