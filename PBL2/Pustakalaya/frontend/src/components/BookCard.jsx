@@ -1,8 +1,18 @@
 import { Heart } from "lucide-react";
 
-const BookCard = ({ book }) => {
+const BookCard = ({ book, onBookClick }) => {
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition">
+    <div
+      className="overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-lg transition"
+      onClick={() => onBookClick(book)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          onBookClick(book);
+        }
+      }}
+    >
       {/* Cover area */}
       <div className="relative h-64 bg-gray-200">
         <img
@@ -16,6 +26,9 @@ const BookCard = ({ book }) => {
           type="button"
           //bg-white/90: white background with 90% opacity
           className="absolute right-3 top-3 rounded-full bg-white/90 p-2 shadow"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
           <Heart
             size={18}
