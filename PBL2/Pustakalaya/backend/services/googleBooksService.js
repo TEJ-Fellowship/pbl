@@ -1,4 +1,8 @@
 const ApiError = require("../utils/ApiError");
+const {
+  mapSearchPayloadToDto,
+  mapDetailPayloadToDto,
+} = require("../mappers/googleBooks.mapper");
 
 // service handles the business logic for the Google Books API
 async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
@@ -6,22 +10,24 @@ async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
     `https://www.googleapis.com/books/v1/volumes?q=${q}&startIndex=${startIndex}&key=${apikey}`,
   );
   const data = await response.json();
+
   if (!data.items) {
-    throw new ApiError(404, "No books found");
+    //  throw new ApiError(404, "No books found");
+    return { books: [] };
   }
-  return data;
+  return mapSearchPayloadToDto(data);
 }
 
 async function getBooksByIdService({ id, apikey }) {
   const response = await fetch(
-    `https://www.googleapis.com/books/v1/volumes/${id}?key=${apikey}`,
+    `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(id)}?key=${apikey}`,
   );
   const data = await response.json();
 
-  if (!data || data.error) {
+  if (!data || data.error || !data.id) {
     throw new ApiError(404, "Book not found");
   }
-  return data;
+  return mapDetailPayloadToDto(data);
 }
 
 module.exports = {
