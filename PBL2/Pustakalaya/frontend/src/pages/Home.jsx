@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import useBooks from "../hooks/useBooks";
+import { useAuth } from "../context/AuthContext";
+import { setPendingBorrow } from "../utils/pendingBorrowStorage";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
@@ -8,6 +11,9 @@ const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
   const [selectedBook, setSelectedBook] = useState(null);
+const navigate = useNavigate();
+const { isAuthenticated } = useAuth();
+
 
   const openBookModal = (book) => {
     setSelectedBook(book);
@@ -15,6 +21,17 @@ const Home = () => {
 
   const closeBookModal = () => {
     setSelectedBook(null);
+  };
+
+  const handleBorrow = (book) => {
+    if (!book?.id) return;
+    if (!isAuthenticated) {
+      setPendingBorrow(book.id);
+      navigate("/auth");
+      closeBookModal();
+      return;
+    }
+    // Logged in: stub for real borrow API later
   };
 
   return (
@@ -36,7 +53,7 @@ const Home = () => {
 
       {/* modal opens only when selectedBook exists */}
       {selectedBook && (
-        <BookModal book={selectedBook} onClose={closeBookModal} />
+        <BookModal book={selectedBook} onClose={closeBookModal} onBorrow={handleBorrow} />
       )}
     </main>
   );
