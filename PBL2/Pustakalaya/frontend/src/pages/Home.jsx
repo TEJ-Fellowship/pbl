@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useBooks from "../hooks/useBooks";
+import { useFavoritesContext } from "../context/FavoritesContext";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
@@ -7,6 +8,7 @@ import BooksSection from "../components/BooksSection";
 const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
+    const { favoriteSet, toggleFavorite} = useFavoritesContext();
   const [selectedBook, setSelectedBook] = useState(null);
 
   const openBookModal = (book) => {
@@ -27,6 +29,8 @@ const Home = () => {
         error={error}
         onRetry={reload}
         onBookClick={openBookModal}
+        favoriteSet={favoriteSet}
+        onToggleFavorite={toggleFavorite}
         emptyMessage={
           searchTerm
             ? `No books found for "${searchTerm}".`
