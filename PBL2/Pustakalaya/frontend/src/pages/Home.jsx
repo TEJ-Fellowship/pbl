@@ -26,7 +26,7 @@ const { isAuthenticated } = useAuth();
   const handleBorrow = (book) => {
     if (!book?.id) return;
     if (!isAuthenticated) {
-      setPendingBorrow(book.id);
+      setPendingBorrow(book);
       navigate("/auth");
       closeBookModal();
       return;

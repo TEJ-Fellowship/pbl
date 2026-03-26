@@ -1,37 +1,36 @@
-const STORAGE_KEY = "pustakalaya_pendingBorrowBookId";
+import { isShelfItem, formatBookForDisplay } from "./shelfItem";
 
-/*
-typeof window !== "undefined": Checks if we are actually in a browser (and not on a server).
+const STORAGE_KEY = "pustakalaya_pendingBorrow";
 
-window.localStorage != null: Checks if the browser allows us to save things.*/ 
 function canUseStorage() {
-    return typeof window !== "undefined" && window.localStorage != null;
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage != null;
+  } catch {
+    return false;
   }
+}
 
-  // set the pending borrow book id to the local storage
-  export function setPendingBorrow(bookId) {
-    if (!canUseStorage()) return;
-    const id = bookId?.toString().trim() ?? "";    // if bookId is null or undefined, set it to an empty string
-    if (!id) return;  // if id is an empty string, return
-    try {
-      window.localStorage.setItem(STORAGE_KEY, id);
-    } catch {
-      // Quota / private mode — ignore
-    }
+export function setPendingBorrow(book) {
+  if (!canUseStorage()) return;
+  const snapshot = formatBookForDisplay(book);
+  if (!snapshot) return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Quota / private mode — ignore
   }
+}
 
-/**
- * Reads the saved book ID from storage and immediately deletes it.
- * To be used after login to finish a 'pending' borrow action exactly once.
- */
-  export function consumePendingBorrow() {
-    if (!canUseStorage()) return null;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      window.localStorage.removeItem(STORAGE_KEY);
-      const id = raw?.trim();
-      return id || null;
-    } catch {
-      return null;
-    }
+export function consumePendingBorrow() {
+  if (!canUseStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY);
+    if (!raw?.trim()) return null;
+    const parsed = JSON.parse(raw);
+    return isShelfItem(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
+}
