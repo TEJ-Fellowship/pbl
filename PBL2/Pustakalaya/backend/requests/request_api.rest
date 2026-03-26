@@ -30,43 +30,69 @@ GET {{baseUrl}}/api/auth/logout
 
 ### --- Library & shelves (authenticated: paste Cookie from browser DevTools after Google login) ---
 # @cookie = connect.sid=YOUR_VALUE_HERE
+# cookie value from browser DevTools after Google login
 
 ### GET /api/library/books — list saved books
-# GET {{baseUrl}}/api/library/books
-# Cookie: {{cookie}}
+GET {{baseUrl}}/api/library/books
+Cookie: {{cookie}}
 
 ### GET /api/library/books?favorite=true — favorites only
-# GET {{baseUrl}}/api/library/books?favorite=true
-# Cookie: {{cookie}}
+GET {{baseUrl}}/api/library/books?favorite=true
+Cookie: {{cookie}}
 
 ### POST /api/library/books — add to library (title + googleBookId required)
-# POST {{baseUrl}}/api/library/books
-# Content-Type: application/json
-# Cookie: {{cookie}}
-#
-# {"title":"Example","googleBookId":"U69Hzz2jLPUC","author":"Author","favorite":false}
+POST {{baseUrl}}/api/library/books
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{"title":"action-books","googleBookId":"123456","author":"test","favorite":true,"rating":5,"genre":"test-genre"}
 
 ### PATCH /api/library/books/:bookId — update (e.g. favorite, rating)
-# PATCH {{baseUrl}}/api/library/books/BOOK_ID
-# Content-Type: application/json
-# Cookie: {{cookie}}
-#
-# {"favorite":true,"rating":5}
+PATCH {{baseUrl}}/api/library/books/69c4f0e80493632b4d1bdc80
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{"favorite":true,"rating":4}
+###
+DELETE {{baseUrl}}/api/library/books/69c4f5fd4777c9d1e53b97aa
+Cookie: {{cookie}}
+
+### Shelves
+
+### GET /api/shelves — list all shelves
+GET {{baseUrl}}/api/shelves
+Cookie: {{cookie}}
+
+### GET /api/shelves/:shelfId — get a shelf by ID
+GET {{baseUrl}}/api/shelves/69c4fe394777c9d1e53b97b6
+Cookie: {{cookie}}
 
 ### POST /api/shelves — create bookshelf
-# POST {{baseUrl}}/api/shelves
-# Content-Type: application/json
-# Cookie: {{cookie}}
-#
-# {"name":"Want to read"}
+POST {{baseUrl}}/api/shelves
+Content-Type: application/json
+Cookie: {{cookie}}
 
-### POST /api/shelves/:shelfId/books — add library book to shelf
-# POST {{baseUrl}}/api/shelves/SHELF_ID/books
-# Content-Type: application/json
-# Cookie: {{cookie}}
-#
-# {"bookId":"BOOK_OBJECT_ID"}
+{"name":"This is another Book-Shelf"}
+
+### PATCH /api/shelves/:shelfId — update a shelf
+PATCH {{baseUrl}}/api/shelves/69c4fe394777c9d1e53b97b6
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{"name":"This is again updated Book-Shelf"}
+
+### DELETE /api/shelves/:shelfId — delete a shelf
+DELETE {{baseUrl}}/api/shelves/69c5026d4777c9d1e53b97c9
+Cookie: {{cookie}}
+
+### POST /api/shelves/:shelfId/ — add library book to shelf
+POST {{baseUrl}}/api/shelves/69c4fe394777c9d1e53b97b6/
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{"bookId":"69c503da4777c9d1e53b97e2"}
+
 
 ### DELETE /api/shelves/:shelfId/books/:bookId — remove book from shelf only
-# DELETE {{baseUrl}}/api/shelves/SHELF_ID/books/BOOK_OBJECT_ID
-# Cookie: {{cookie}}
+DELETE {{baseUrl}}/api/shelves/69c4fe394777c9d1e53b97b6/books/69c503da4777c9d1e53b97e2
+Cookie: {{cookie}}

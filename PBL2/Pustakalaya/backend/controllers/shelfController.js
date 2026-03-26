@@ -72,7 +72,13 @@ async function update(req, res) {
     const shelf = await Shelf.findOneAndUpdate(
       { _id: req.params.shelfId, user: req.user._id },
       { $set: { name: String(name).trim() } },
-      { new: true, runValidators: true },
+      /**
+       * add returnDocument: "after" to return the updated shelf
+       * before that new: true, n newer Mongoose versions, new is being deprecated for these methods
+       * and it is not recommended to use new: true in the future
+       * runValidators: true to validate the updated shelf
+       */
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!shelf) {
@@ -165,9 +171,7 @@ async function removeBook(req, res) {
     }
 
     const before = shelf.books.length;
-    shelf.books = shelf.books.filter(
-      (id) => !id.equals(req.params.bookId),
-    );
+    shelf.books = shelf.books.filter((id) => !id.equals(req.params.bookId));
     if (shelf.books.length === before) {
       return res.status(404).json({ error: "Book not on this shelf" });
     }
