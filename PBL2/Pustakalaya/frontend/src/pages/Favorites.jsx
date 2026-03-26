@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import useBooks from "../hooks/useBooks";
-import useFavorites from "../hooks/useFavorites";
+import { useFavoritesContext } from "../context/FavoritesContext";
 import BooksSection from "../components/BooksSection";
 import BookModal from "../components/BookModal";
 
 const Favorites = () => {
   const { books, isLoading, error, reload } = useBooks();
-  const { favoriteSet, isFavorite, toggleFavorite } = useFavorites();
+  const { favoriteSet, toggleFavorite } = useFavoritesContext();
   const [selectedBook, setSelectedBook] = useState(null);
 
   const favoriteBooks = useMemo(
@@ -30,12 +30,7 @@ const Favorites = () => {
       />
 
       {selectedBook && (
-        <BookModal
-          book={selectedBook}
-          onClose={() => setSelectedBook(null)}
-          isFavorite={isFavorite(selectedBook.id)}
-          onToggleFavorite={toggleFavorite}
-        />
+        <BookModal book={selectedBook} onClose={() => setSelectedBook(null)} />
       )}
     </div>
   );

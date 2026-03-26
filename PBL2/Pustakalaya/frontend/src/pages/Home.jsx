@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useBooks from "../hooks/useBooks";
-import useFavorites from "../hooks/useFavorites";
+import { useFavoritesContext } from "../context/FavoritesContext";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
@@ -8,7 +8,7 @@ import BooksSection from "../components/BooksSection";
 const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
-    const { favoriteSet, isFavorite, toggleFavorite} = useFavorites();
+    const { favoriteSet, toggleFavorite} = useFavoritesContext();
   const [selectedBook, setSelectedBook] = useState(null);
 
   const openBookModal = (book) => {
@@ -40,8 +40,7 @@ const Home = () => {
 
       {/* modal opens only when selectedBook exists */}
       {selectedBook && (
-        <BookModal book={selectedBook} onClose={closeBookModal} isFavorite={isFavorite(selectedBook.id)}
-        onToggleFavorite={toggleFavorite} />
+        <BookModal book={selectedBook} onClose={closeBookModal} />
       )}
     </main>
   );
