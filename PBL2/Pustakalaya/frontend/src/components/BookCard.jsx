@@ -30,6 +30,11 @@ const BookCard = ({ book, onBookClick, isFavorite, onToggleFavorite }) => {
             e.stopPropagation();
             onToggleFavorite(book.id);
           }}
+          onKeyDown={(e) => {  
+                       if (e.key === "Enter" || e.key === " ") {  
+                          e.stopPropagation();  
+                        }  
+                      }}  
           aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart
