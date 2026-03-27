@@ -11,9 +11,8 @@ const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
   const [selectedBook, setSelectedBook] = useState(null);
-const navigate = useNavigate();
-const { isAuthenticated } = useAuth();
-
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const openBookModal = (book) => {
     setSelectedBook(book);
@@ -53,7 +52,11 @@ const { isAuthenticated } = useAuth();
 
       {/* modal opens only when selectedBook exists */}
       {selectedBook && (
-        <BookModal book={selectedBook} onClose={closeBookModal} onBorrow={handleBorrow} />
+        <BookModal
+          book={selectedBook}
+          onClose={closeBookModal}
+          onBorrow={handleBorrow}
+        />
       )}
     </main>
   );
