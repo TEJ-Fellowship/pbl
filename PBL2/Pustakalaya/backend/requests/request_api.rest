@@ -30,6 +30,7 @@ GET {{baseUrl}}/api/auth/logout
 
 ### --- Library & shelves (authenticated: paste Cookie from browser DevTools after Google login) ---
 # @cookie = connect.sid=YOUR_VALUE_HERE
+
 # cookie value from browser DevTools after Google login
 
 ### GET /api/library/books — list saved books
@@ -45,14 +46,14 @@ POST {{baseUrl}}/api/library/books
 Content-Type: application/json
 Cookie: {{cookie}}
 
-{"title":"action-books","googleBookId":"123456","author":"test","favorite":true,"rating":5,"genre":"test-genre"}
+{"title":"test-type-books","googleBookId":"1","author":"test","favorite":"false","rating":5,"genre":"test-genre"}
 
 ### PATCH /api/library/books/:bookId — update (e.g. favorite, rating)
-PATCH {{baseUrl}}/api/library/books/69c4f0e80493632b4d1bdc80
+PATCH {{baseUrl}}/api/library/books/69c503844777c9d1e53b97d0
 Content-Type: application/json
 Cookie: {{cookie}}
 
-{"favorite":true,"rating":4}
+{"favorite":"true","rating":4}
 ###
 DELETE {{baseUrl}}/api/library/books/69c4f5fd4777c9d1e53b97aa
 Cookie: {{cookie}}

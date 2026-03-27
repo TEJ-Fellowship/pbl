@@ -50,7 +50,7 @@ async function create(req, res) {
       year: year != null ? Number(year) : undefined,
       description: description != null ? String(description) : undefined,
       rating: rating != null ? Number(rating) : undefined,
-      favorite: Boolean(favorite),
+      favorite: favorite === true || favorite === "true",
       coverImage: coverImage != null ? String(coverImage) : undefined,
       source: source != null ? String(source).trim() : undefined,
     });
@@ -124,7 +124,7 @@ async function update(req, res) {
     const book = await Book.findOneAndUpdate(
       { _id: req.params.bookId, user: req.user._id },
       { $set: updates },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!book) {
