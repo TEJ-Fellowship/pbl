@@ -21,8 +21,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await res.json();
-      setIsAuthenticated(true);
-      setUser(data.user ?? null);
+      const nextUser = data?.user ?? null;
+      setUser(nextUser);
+      setIsAuthenticated(Boolean(nextUser));
     } catch {
       setIsAuthenticated(false);
       setUser(null);

@@ -38,7 +38,7 @@ const SignUp = ({ onSwitchToLogin, onGoogleAuth }) => {
       return;
     }
     setSuccessMessage("Signup successful!");
-    console.log("Form is valid!");
+    //TODO: will implement email password signup later
   };
 
   return (

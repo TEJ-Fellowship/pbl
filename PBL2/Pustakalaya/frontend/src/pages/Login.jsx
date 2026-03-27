@@ -6,7 +6,7 @@ const Login = ({ onSwitchToSignUp, onGoogleAuth }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -24,8 +24,7 @@ const Login = ({ onSwitchToSignUp, onGoogleAuth }) => {
       setErrorMessage("Password is required.");
       return;
     }
-
-    console.log("Login valid!", { email, password });
+    //TODO: will implement email password login later
   };
 
   return (
@@ -59,7 +58,7 @@ const Login = ({ onSwitchToSignUp, onGoogleAuth }) => {
           <div className="h-px flex-1 bg-gray-300" />
         </div>
 
-        <form onSubmit={handleSubmit} >
+        <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Email
