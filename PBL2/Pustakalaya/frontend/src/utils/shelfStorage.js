@@ -37,3 +37,18 @@ export function addShelfItem(item) {
   }
   return next;
 }
+
+export function removeShelfItem(id) {
+  if (!canUseStorage()) return [];
+  
+  const existing = getShelfItems();
+  // Keep everything EXCEPT the book we want to remove
+  const next = existing.filter((book) => book.id !== id);
+  
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  return next;
+}
