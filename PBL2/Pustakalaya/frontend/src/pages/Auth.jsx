@@ -4,6 +4,7 @@ import Login from "./Login";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { consumePendingBorrow } from "../utils/pendingBorrowStorage";
+import { addShelfItem } from "../utils/shelfStorage";
 
 const Auth = () => {
   const [mode, setMode] = useState("login");
@@ -14,12 +15,10 @@ const Auth = () => {
   // This handles the redirection after a successful login/signup
   function handleLoginSuccess() {
     login();
-    const pendingBookId = consumePendingBorrow();
-
-    if (pendingBookId) {
-      navigate(`/my-shelf?bookId=${encodeURIComponent(pendingBookId)}`, {
-        replace: true,
-      });
+    const pendingBorrow = consumePendingBorrow();
+    if (pendingBorrow) {
+      addShelfItem(pendingBorrow);
+      navigate("/my-shelf", { replace: true });
       return;
     }
 

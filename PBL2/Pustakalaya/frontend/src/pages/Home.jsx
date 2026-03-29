@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useBooks from "../hooks/useBooks";
 import { useAuth } from "../context/AuthContext";
 import { setPendingBorrow } from "../utils/pendingBorrowStorage";
@@ -8,6 +8,9 @@ import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
 
+import { addShelfItem } from "../utils/shelfStorage";
+import { formatBookForDisplay } from "../utils/shelfItem";
+
 const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
@@ -15,6 +18,7 @@ const Home = () => {
   const [selectedBook, setSelectedBook] = useState(null);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
   const openBookModal = (book) => {
     setSelectedBook(book);
@@ -26,13 +30,16 @@ const Home = () => {
 
   const handleBorrow = (book) => {
     if (!book?.id) return;
+    const formattedBook = formatBookForDisplay(book);
     if (!isAuthenticated) {
-      setPendingBorrow(book.id);
-      navigate("/auth");
+      setPendingBorrow(book);
+      navigate("/auth", { state: { from: location.pathname } });
       closeBookModal();
       return;
     }
-    // Logged in: stub for real borrow API later
+    addShelfItem(formattedBook);
+    navigate("/my-shelf");
+    closeBookModal();
   };
 
   return (
