@@ -1,6 +1,7 @@
 /* Imports the express library (web server framework)*/
 const express = require("express");
 const session = require("express-session");
+const { mongooseConnection } = require("./index");
 const { MongoStore } = require("connect-mongo");
 const errorHandler = require("./middleware/errorHandler");
 const notFound = require("./middleware/notFound");
@@ -13,6 +14,12 @@ const passport = require("./config/passport");
 
 /* - Creates the Express app instance (app)*/
 const app = express();
+const requiredEnv = ["FRONTEND_URL", "MONGO_URI", "SESSION_SECRET"];
+for (const key of requiredEnv) {
+  if (!process.env[key]) {
+    throw new Error(`${key} is required`);
+  }
+}
 
 /* - Middleware to allow cross-origin requests 
 - (allows requests from other origins like React frontend)
@@ -33,8 +40,8 @@ app.use(
     saveUninitialized: false,
     /* - Stores session in MongoDB using connect-mongo */
     store: MongoStore.create({
-      /* - Connecting string to MongoDB database */
-      mongoUrl: process.env.MONGO_URI,
+      //client: get the client from the mongoose connection
+      client: mongooseConnection.getClient(),
       /* - ttl (Time to live): session expire after this time */
       ttl: 7 * 24 * 60 * 60, // 7 days
       /* - Uses MongoDB's built-in TTL index to automatically delete expired sessions */

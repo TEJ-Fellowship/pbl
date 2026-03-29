@@ -22,3 +22,5 @@ async function connectDB() {
   }
 }
 connectDB();
+/* - Export the app and mongoose connection */
+module.exports = { app, mongooseConnection: mongoose.connection };
