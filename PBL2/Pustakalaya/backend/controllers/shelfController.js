@@ -1,27 +1,35 @@
 const Shelf = require("../models/Shelf");
 const Book = require("../models/Book");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 async function create(req, res) {
   try {
+    //start sessoin: mongoose.startSession() creates a new session and returns it
+    const session = await mongoose.startSession();
     const name = req.body?.name;
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: "name is required" });
     }
 
-    const shelf = await Shelf.create({
-      name: String(name).trim(),
-      user: req.user._id,
-      books: [],
-    });
-
-    await User.findByIdAndUpdate(req.user._id, {
-      $addToSet: { shelves: shelf._id },
+    //withTransaction: executes the given function in a transaction
+    let shelf = await session.withTransaction(async () => {
+      [shelf] = await Shelf.create(
+        [{ name: String(name).trim(), user: req.user._id, books: [] }],
+        { session },
+      );
+      await User.findByIdAndUpdate(
+        req.user._id,
+        { $addToSet: { shelves: shelf._id } },
+        { session },
+      );
     });
 
     res.status(201).json({ shelf });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  } finally {
+    await session.endSession();
   }
 }
 
@@ -143,14 +151,15 @@ async function addBook(req, res) {
       return res.status(404).json({ error: "Book not found in your library" });
     }
 
-    if (shelf.books.some((id) => id.equals(book._id))) {
+    const populated = await Shelf.findOneAndUpdate(
+      { _id: req.params.shelfId, user: req.user._id },
+      { $addToSet: { books: book._id } },
+      { new: true, runValidators: true },
+    ).populate("books");
+    if (!populated) {
       return res.status(409).json({ error: "Book already on this shelf" });
     }
 
-    shelf.books.push(book._id);
-    await shelf.save();
-
-    const populated = await Shelf.findById(shelf._id).populate("books");
     res.json({ shelf: populated });
   } catch (err) {
     if (err.name === "CastError") {
