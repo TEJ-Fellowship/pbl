@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useBooks from "../hooks/useBooks";
 import { useAuth } from "../context/AuthContext";
 import { setPendingBorrow } from "../utils/pendingBorrowStorage";
+import { useFavoritesContext } from "../context/FavoritesContext";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
@@ -10,6 +11,7 @@ import BooksSection from "../components/BooksSection";
 const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
+  const { favoriteSet, toggleFavorite } = useFavoritesContext();
   const [selectedBook, setSelectedBook] = useState(null);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -43,6 +45,8 @@ const Home = () => {
         error={error}
         onRetry={reload}
         onBookClick={openBookModal}
+        favoriteSet={favoriteSet}
+        onToggleFavorite={toggleFavorite}
         emptyMessage={
           searchTerm
             ? `No books found for "${searchTerm}".`
