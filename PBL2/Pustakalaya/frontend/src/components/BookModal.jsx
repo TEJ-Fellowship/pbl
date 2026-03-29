@@ -1,6 +1,8 @@
-import { X, BookOpen, Download, Star } from "lucide-react";
+import { X, BookOpen, Download, Star, Heart } from "lucide-react";
 
-const BookModal = ({ book, onClose }) => {
+// A modal component that displays selected book details and closes when clicking outside or on the close button.
+const BookModal = ({ book, onClose, onBorrow }) => {
+  // If no book is passed, don't render anything
   if (!book) return null;
   const rating = book.rating ?? 4.6;
   const reviews =
@@ -69,10 +71,8 @@ const BookModal = ({ book, onClose }) => {
               {book.description ||
                 "No description available yet. Add one in your data to show more details here."}
             </p>
-{/* TODO: Will add onClick handlers for read full book and borrow book buttons */}
+            {/* TODO: Will add onClick handlers for read full book and borrow book buttons */}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            
-
               <button
                 type="button"
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
@@ -83,6 +83,7 @@ const BookModal = ({ book, onClose }) => {
 
               <button
                 type="button"
+                onClick={() => onBorrow?.(book)}
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-800"
               >
                 <Download size={16} />

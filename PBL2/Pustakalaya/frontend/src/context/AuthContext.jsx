@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 
 const AuthContext = createContext(null);
 
@@ -7,7 +14,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
+  // 1. Logic to verify session with backend
+  const checkAuth = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me", {
         method: "GET",
@@ -30,47 +38,53 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  // 2. The 'login' function your UI components call after successful form submission
+  const login = useCallback(() => {
+    // Re-verify with server to get the user object now that cookie is set
+    checkAuth();
+  }, [checkAuth]);
+
+  // 3. Logout logic
+  const logout = useCallback(async () => {
     try {
       await fetch("/api/auth/logout", {
         method: "GET",
         credentials: "include",
       });
     } catch {
-      // even if request fails, clear UI state
+      // Clear UI state anyway
     } finally {
       setIsAuthenticated(false);
       setUser(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        user,
-        loading,
-        logout,
-        checkAuth,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // 4. Memoize the value to keep the dummy version's performance optimization
+  const value = useMemo(
+    () => ({
+      isAuthenticated,
+      user,
+      loading,
+      login,
+      logout,
+      checkAuth,
+    }),
+    [isAuthenticated, user, loading, login, logout, checkAuth],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used inside AuthProvider");
   }
-
   return context;
 };
