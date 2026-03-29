@@ -1,13 +1,18 @@
+import { useState } from "react";
+import SignUp from "./SignUp";
+import Login from "./Login";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { consumePendingBorrow } from "../utils/pendingBorrowStorage";
 import { addShelfItem } from "../utils/shelfStorage";
 
 const Auth = () => {
+  const [mode, setMode] = useState("login");
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
+  // This handles the redirection after a successful login/signup
   function handleLoginSuccess() {
     login();
     const pendingBorrow = consumePendingBorrow();
@@ -16,25 +21,41 @@ const Auth = () => {
       navigate("/my-shelf", { replace: true });
       return;
     }
+
     const from = location.state?.from;
-    const safeFrom =
-      typeof from === "string" && from.startsWith("/") && from !== "/auth"
-        ? from
-        : "/";
+    const isSafePath =
+      typeof from === "string" &&
+      from.startsWith("/") &&
+      !from.startsWith("//") &&
+      !from.startsWith("/\\");
+
+    const safeFrom = isSafePath && from !== "/auth" ? from : "/";
     navigate(safeFrom, { replace: true });
   }
 
+  const handleGoogleAuth = () => {
+    // Note: If using Google OAuth redirect, handleLoginSuccess
+    // will usually happen on a callback route, not here.
+    window.location.href = "/api/auth/google";
+  };
+
   return (
-    <div>
-      <h1>Auth Page</h1>
-      {/* TODO: Wire this to the real auth flow; call handleLoginSuccess when login succeeds */}
-      <button
-        type="button"
-        onClick={handleLoginSuccess}
-        className="mt-4 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 hover:bg-gray-50"
-      >
-        Continue (dummy login)
-      </button>
+    <div className="auth-container">
+      <h1>{mode === "login" ? "Login" : "Sign Up"}</h1>
+
+      {mode === "login" ? (
+        <Login
+          onLoginSuccess={handleLoginSuccess}
+          onSwitchToSignUp={() => setMode("signup")}
+          onGoogleAuth={handleGoogleAuth}
+        />
+      ) : (
+        <SignUp
+          onSignUpSuccess={handleLoginSuccess}
+          onSwitchToLogin={() => setMode("login")}
+          onGoogleAuth={handleGoogleAuth}
+        />
+      )}
     </div>
   );
 };

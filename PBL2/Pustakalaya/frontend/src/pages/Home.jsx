@@ -1,19 +1,24 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useBooks from "../hooks/useBooks";
 import { useAuth } from "../context/AuthContext";
 import { setPendingBorrow } from "../utils/pendingBorrowStorage";
+import { useFavoritesContext } from "../context/FavoritesContext";
 import SearchBar from "../components/SearchBar";
 import BookModal from "../components/BookModal";
 import BooksSection from "../components/BooksSection";
 
+import { addShelfItem } from "../utils/shelfStorage";
+import { formatBookForDisplay } from "../utils/shelfItem";
+
 const Home = () => {
   const { books, searchTerm, setSearchTerm, isLoading, error, reload } =
     useBooks();
+  const { favoriteSet, toggleFavorite } = useFavoritesContext();
   const [selectedBook, setSelectedBook] = useState(null);
-const navigate = useNavigate();
-const { isAuthenticated } = useAuth();
-
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
 
   const openBookModal = (book) => {
     setSelectedBook(book);
@@ -25,13 +30,16 @@ const { isAuthenticated } = useAuth();
 
   const handleBorrow = (book) => {
     if (!book?.id) return;
+    const formattedBook = formatBookForDisplay(book);
     if (!isAuthenticated) {
       setPendingBorrow(book);
-      navigate("/auth");
+      navigate("/auth", { state: { from: location.pathname } });
       closeBookModal();
       return;
     }
-    // Logged in: stub for real borrow API later
+    addShelfItem(formattedBook);
+    navigate("/my-shelf");
+    closeBookModal();
   };
 
   return (
@@ -44,6 +52,8 @@ const { isAuthenticated } = useAuth();
         error={error}
         onRetry={reload}
         onBookClick={openBookModal}
+        favoriteSet={favoriteSet}
+        onToggleFavorite={toggleFavorite}
         emptyMessage={
           searchTerm
             ? `No books found for "${searchTerm}".`
@@ -53,7 +63,11 @@ const { isAuthenticated } = useAuth();
 
       {/* modal opens only when selectedBook exists */}
       {selectedBook && (
-        <BookModal book={selectedBook} onClose={closeBookModal} onBorrow={handleBorrow} />
+        <BookModal
+          book={selectedBook}
+          onClose={closeBookModal}
+          onBorrow={handleBorrow}
+        />
       )}
     </main>
   );
