@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { dummyBooks } from "../data/dummyBooks";
-
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function useBooks() {
   const [books, setBooks] = useState([]);
@@ -14,11 +11,11 @@ export default function useBooks() {
       setIsLoading(true);
       setError(null);
 
-      // TODO:Simulate API delay now, will remove later
-      await wait(500);
-
-      //TODO: Dummy source now will replace with API response later
-      const data = dummyBooks;
+      const response = await fetch(`http://localhost:3001/books`);
+      if (!response.ok) {
+        throw new Error("Failed to load books. Please try again.");
+      }
+      const data = await response.json();
 
       const q = query.trim().toLowerCase();
       const filtered = q
