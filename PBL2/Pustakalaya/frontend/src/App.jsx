@@ -3,6 +3,8 @@ import MainLayout from "./layout/MainLayout";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Favorites from "./pages/Favorites";
+import MyShelf from "./pages/MyShelf";
+import RequireAuth from "./components/RequireAuth";
 
 const App = () => {
   return (
@@ -12,6 +14,7 @@ const App = () => {
         <Route path="/favorites" element={<Favorites />} />
       </Route>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/my-shelf" element={<RequireAuth><MyShelf /></RequireAuth>} />
     </Routes>
   );
 };

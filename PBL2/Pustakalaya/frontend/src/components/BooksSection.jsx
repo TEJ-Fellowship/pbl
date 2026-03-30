@@ -5,6 +5,9 @@ const BooksSection = ({
   isLoading,
   error,
   onRetry,
+  onBookClick,
+  favoriteSet,
+  onToggleFavorite,
   emptyMessage = "No books found.",
 }) => {
   if (isLoading) {
@@ -37,7 +40,8 @@ const BooksSection = ({
     return <div>{emptyMessage}</div>;
   }
 
-  return <BookGrid books={books} />;
+  return <BookGrid books={books} onBookClick={onBookClick} favoriteSet={favoriteSet}
+  onToggleFavorite={onToggleFavorite} />;
 };
 
 export default BooksSection;
