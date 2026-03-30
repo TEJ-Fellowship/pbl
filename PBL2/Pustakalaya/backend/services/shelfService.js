@@ -15,11 +15,24 @@ async function createShelf(userId, name) {
     throw new ApiError(400, "name is required");
   }
 
-  const shelf = await Shelf.create({
-    name: String(name).trim(),
-    user: userId,
-    books: [],
-  });
+  const existing = await Shelf.findOne({ user: userId });
+  if (existing) {
+    throw new ApiError(409, "You already have a shelf");
+  }
+
+  let shelf;
+  try {
+    shelf = await Shelf.create({
+      name: String(name).trim(),
+      user: userId,
+      books: [],
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      throw new ApiError(409, "You already have a shelf");
+    }
+    throw err;
+  }
 
   await User.findByIdAndUpdate(userId, {
     $addToSet: { shelves: shelf._id },
