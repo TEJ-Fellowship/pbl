@@ -59,6 +59,8 @@ Before suggesting or writing a commit message, ALWAYS ensure:
 - fix: resolve API error in book fetch endpoint
 - refactor: simplify validation logic in signup route
 - chore: remove unused helper functions
+- Before PR submission (or when asked for PR desc), remind user to run one final check for bugs, unused files/variables, dead code, and practice alignment.
+- If user approves final check, perform a thorough scan and report findings.
 
 Applies to:
-PBL2/Pustakalaya/**
+PBL2/Pustakalaya/\*\*
