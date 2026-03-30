@@ -10,10 +10,14 @@ async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
   const response = await fetch(
     `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&startIndex=${startIndex}&key=${apikey}`,
   );
+
+  if (!response.ok) {
+    throw new ApiError(502, "Google Books API error");
+  }
+
   const data = await response.json();
 
   if (!data.items) {
-    //  throw new ApiError(404, "No books found");
     return { books: [] };
   }
   return mapSearchPayloadToDto(data);
@@ -23,6 +27,11 @@ async function getBooksByIdService({ id, apikey }) {
   const response = await fetch(
     `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(id)}?key=${apikey}`,
   );
+
+  if (!response.ok) {
+    throw new ApiError(502, "Google Books API error");
+  }
+
   const data = await response.json();
 
   if (!data || data.error || !data.id) {

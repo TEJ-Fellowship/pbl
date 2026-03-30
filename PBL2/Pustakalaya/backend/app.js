@@ -1,7 +1,7 @@
 /* Imports the express library (web server framework)*/
 const express = require("express");
 const session = require("express-session");
-const { mongooseConnection } = require("./index");
+const { mongooseConnection } = require("./config/db");
 const { MongoStore } = require("connect-mongo");
 const errorHandler = require("./middleware/errorHandler");
 const notFound = require("./middleware/notFound");
@@ -14,7 +14,12 @@ const passport = require("./config/passport");
 
 /* - Creates the Express app instance (app)*/
 const app = express();
-const requiredEnv = ["FRONTEND_URL", "MONGO_URI", "SESSION_SECRET"];
+const requiredEnv = [
+  "FRONTEND_URL",
+  "MONGO_URI",
+  "SESSION_SECRET",
+  "GOOGLE_BOOKS_API_KEY",
+];
 for (const key of requiredEnv) {
   if (!process.env[key]) {
     throw new Error(`${key} is required`);
