@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 
-const FAVORITES_KEY = "guest_favorites";
+export const GUEST_FAVORITES_KEY = "guest_favorites";
 
-/**
-* Safely retrieves and cleans the user's favorite IDs from local storage.
-* - Parses text into an Array; returns [] if empty or broken.
-* - Ensures all IDs are Strings; wipes storage if data is corrupted.
-*/
-function getInitialFavoriteIds() {
+function userFavoritesKey(userId) {
+  return `favorites_user_${userId}`;
+}
+
+function readFavoriteIdsFromStorage(storageKey) {
   let raw = null;
   try {
-    raw = localStorage.getItem(FAVORITES_KEY);
+    raw = localStorage.getItem(storageKey);
   } catch (error) {
     console.error("Error reading favorites from localStorage:", error);
     raw = null;
@@ -19,11 +19,10 @@ function getInitialFavoriteIds() {
 
   try {
     const parsed = JSON.parse(raw);
-    //parsed.map(String): ensures every item in the list is a String. If the list was [1, 2], it becomes ["1", "2"]
     return Array.isArray(parsed) ? parsed.map(String) : [];
   } catch {
     try {
-      localStorage.removeItem(FAVORITES_KEY);
+      localStorage.removeItem(storageKey);
     } catch (error) {
       console.error("Error removing favorites from localStorage:", error);
     }
@@ -32,43 +31,65 @@ function getInitialFavoriteIds() {
 }
 
 export default function useFavorites() {
-  const [favoriteIds, setFavoriteIds] = useState(getInitialFavoriteIds);
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
 
-  //set - fast lookup, no duplicates 
-  //useMemo - remember the result of the function call and only recompute it if the dependencies change
+  const userId =
+    user?.id != null
+      ? String(user.id)
+      : user?._id != null
+        ? String(user._id)
+        : null;
+
+  const storageKey = useMemo(() => {
+    if (authLoading) return null;
+    if (isAuthenticated && userId) return userFavoritesKey(userId);
+    return GUEST_FAVORITES_KEY;
+  }, [authLoading, isAuthenticated, userId]);
+
+  const storageKeyRef = useRef(storageKey);
+  useEffect(() => {
+    storageKeyRef.current = storageKey;
+  }, [storageKey]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [prevStorageKey, setPrevStorageKey] = useState(storageKey);
+  if (storageKey !== prevStorageKey) {
+    setPrevStorageKey(storageKey);
+    if (storageKey == null) {
+      setFavoriteIds([]);
+    } else {
+      setFavoriteIds(readFavoriteIdsFromStorage(storageKey));
+    }
+  }
+
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
-  //updates the screen and the localStorage
-  const persist = (updater) => {
+  const persist = useCallback((updater) => {
     setFavoriteIds((prev) => {
       const nextIds = typeof updater === "function" ? updater(prev) : updater;
-
-      try {
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(nextIds));
-      } catch (error) {
-        console.error("Failed to save favorites to localStorage:", error);
+      const key = storageKeyRef.current;
+      if (key) {
+        try {
+          localStorage.setItem(key, JSON.stringify(nextIds));
+        } catch (error) {
+          console.error("Failed to save favorites to localStorage:", error);
+        }
       }
-
       return nextIds;
     });
-  };
+  }, []);
 
-  //checks if the book is in the favorites list
   const isFavorite = (bookId) => favoriteSet.has(String(bookId));
 
-  // adds a book to the favorites list, also makes sure there are no duplicates
   const addFavorite = (bookId) => {
     const id = String(bookId);
     persist((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
-  // Removes one specific book from the favorites list
   const removeFavorite = (bookId) => {
     const id = String(bookId);
     persist((prev) => prev.filter((x) => x !== id));
   };
 
-  // Switches a book between favorited and unfavorited states
   const toggleFavorite = (bookId) => {
     const id = String(bookId);
     persist((prev) =>
@@ -76,11 +97,12 @@ export default function useFavorites() {
     );
   };
 
-  // Completely wipes all saved favorites and clears storage
   const clearFavorites = () => {
     setFavoriteIds([]);
+    const key = storageKeyRef.current;
+    if (!key) return;
     try {
-      localStorage.removeItem(FAVORITES_KEY);
+      localStorage.removeItem(key);
     } catch (error) {
       console.error("Error clearing favorites from localStorage:", error);
     }
