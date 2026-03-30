@@ -21,7 +21,7 @@ router.patch(
 );
 router.delete("/:shelfId", asyncHandler(shelfController.remove));
 router.post(
-  "/:shelfId/books",
+  "/:shelfId",
   validateAddBookBody,
   asyncHandler(shelfController.addBook),
 );
