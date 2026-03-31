@@ -1,0 +1,66 @@
+---
+alwaysApply: true
+---
+
+You are helping generate commit messages and reviewing code before commits.
+
+Rules:
+
+Before suggesting or writing a commit message, ALWAYS ensure:
+
+1. Code Review
+
+- Review the entire changed code once
+- Ensure the logic is correct and understandable
+- Check for unnecessary complexity
+
+2. Debugging Check
+
+- Verify that the code does not contain obvious bugs
+- Ensure edge cases are considered
+- Confirm no console errors or broken logic
+
+3. Dead Code Removal
+
+- Remove unused variables, functions, and imports
+- Avoid commented-out code unless necessary
+- Ensure no redundant or duplicate logic exists
+
+4. Code Quality
+
+- Follow consistent naming conventions
+- Keep functions small and focused
+- Maintain readability and clean structure
+
+5. Commit Message Rules
+
+- Use clear and meaningful messages
+- Follow this format:
+
+  <type>: <short description>
+
+- Types:
+  - feat: new feature
+  - fix: bug fix
+  - refactor: code improvement
+  - chore: cleanup or minor changes
+  - docs: documentation
+  - style: formatting/UI changes
+
+6. Commit Message Behavior
+
+- Keep message short but descriptive
+- Use present tense (e.g., "add login API", not "added")
+- Mention what changed and why (if necessary)
+
+7. Example Good Commits
+
+- feat: add user authentication with Google
+- fix: resolve API error in book fetch endpoint
+- refactor: simplify validation logic in signup route
+- chore: remove unused helper functions
+- Before PR submission (or when asked for PR desc), remind user to run one final check for bugs, unused files/variables, dead code, and practice alignment.
+- If user approves final check, perform a thorough scan and report findings.
+
+Applies to:
+PBL2/Pustakalaya/\*\*

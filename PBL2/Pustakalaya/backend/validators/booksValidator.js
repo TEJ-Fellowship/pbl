@@ -8,11 +8,19 @@ function validateSearchBooksQuery(req, res, next) {
   if (q !== undefined && typeof q !== "string") {
     return next(new ApiError(400, "q must be a string"));
   }
-  if (
-    startIndex !== undefined &&
-    (!Number.isInteger(Number(startIndex)) || Number(startIndex) < 0)
-  ) {
-    return next(new ApiError(400, "StartIndex must be a non-negative integer"));
+
+  //validate startIndex, if it is defined, it must be a non-negative integer
+  if (startIndex !== undefined) {
+    const parsed = Number(startIndex);
+    if (
+      String(startIndex).trim() === "" ||
+      !Number.isInteger(parsed) ||
+      parsed < 0
+    ) {
+      return next(
+        new ApiError(400, "StartIndex must be a non-negative integer"),
+      );
+    }
   }
   return next();
 }

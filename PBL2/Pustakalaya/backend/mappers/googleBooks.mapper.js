@@ -40,7 +40,11 @@ function mapVolumeToBookDto(volume) {
     title: vi.title || "Untitled",
     author,
     category: pickCategory(vi),
-    coverImage: img.replace(/^http:\/\//i, "https://"),
+    //if img is not a string, use PLACEHOLDER_COVER
+    coverImage: (typeof img === "string" ? img : PLACEHOLDER_COVER).replace(
+      /^http:\/\//i,
+      "https://",
+    ),
     isFavorite: false,
     description: vi.description || "",
     rating,
