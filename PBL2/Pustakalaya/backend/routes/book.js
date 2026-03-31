@@ -14,5 +14,10 @@ router.get(
   asyncHandler(booksController.searchBooks),
 );
 router.get("/:id", validateBookId, asyncHandler(booksController.getBookById));
+router.get(
+  "/:id/summary",
+  validateBookId,
+  asyncHandler(booksController.getBookSummary),
+);
 
 module.exports = router;

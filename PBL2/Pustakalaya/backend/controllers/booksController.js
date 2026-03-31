@@ -1,4 +1,5 @@
 const googleBooksService = require("../services/googleBooksService");
+const { generateBookSummary } = require("../services/geminiSummaryService");
 
 // controller handles HTTP requests and responses
 async function searchBooks(req, res) {
@@ -36,7 +37,18 @@ async function getBookById(req, res) {
   return res.json(data);
 }
 
+async function getBookSummary(req, res) {
+  const { id } = req.params;
+  const data = await generateBookSummary({
+    id,
+    googleApiKey: process.env.GOOGLE_BOOKS_API_KEY,
+    geminiApiKey: process.env.GEMINI_API_KEY,
+  });
+  return res.json(data);
+}
+
 module.exports = {
   searchBooks,
   getBookById,
+  getBookSummary,
 };
