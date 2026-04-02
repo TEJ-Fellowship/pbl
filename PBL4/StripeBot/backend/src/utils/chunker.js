@@ -24,7 +24,7 @@ function tailByTokens(text, overlapTokens) {
 }
 /**
  * Splits a long document into smaller, AI-friendly pieces (chunks).
- * It splits by paragraphs first to keep thoughts together, then checks 
+ * It splits by paragraphs first to keep thoughts together, then checks
  * token counts to ensure each piece fits within the AI's "context window."
  * * @param {string} text - The full text to be divided.
  * @param {object} options - Configuration for maxChunkTokens and overlapTokens.
@@ -32,15 +32,24 @@ function tailByTokens(text, overlapTokens) {
  */
 
 function chunkTextByTokens(text, options = {}) {
-    // Default limits: 500 tokens per chunk, with 50 tokens of repeated context
-  const maxChunkTokens = options.maxChunkTokens ?? 500;
-  const overlapTokens = options.overlapTokens ?? 50;
+  // Default limits: 500 tokens per chunk, with 50 tokens of repeated context
+  const maxChunkTokensRaw = Number(options.maxChunkTokens ?? 500);
+  const overlapTokensRaw = Number(options.overlapTokens ?? 50);
+
+  const maxChunkTokens =
+    Number.isInteger(maxChunkTokensRaw) && maxChunkTokensRaw > 0
+      ? maxChunkTokensRaw
+      : 500;
+  const overlapTokens =
+    Number.isInteger(overlapTokensRaw) && overlapTokensRaw >= 0
+      ? overlapTokensRaw
+      : 50;
 
   if (!text || !text.trim()) return [];
 
   const chunks = [];
   // Split by double newlines to try and preserve paragraph structure
-  const parts = text.split(/\n\n+/); 
+  const parts = text.split(/\n\n+/);
   let current = "";
   for (const part of parts) {
     // Create a "test" version of the chunk including the new paragraph
@@ -55,28 +64,33 @@ function chunkTextByTokens(text, options = {}) {
     if (current) {
       chunks.push(current);
     }
-    // SPECIAL CASE:if single part is too big, hard-truncate and continue
+    // SPECIAL CASE: single part is too big -> split into multiple token windows
     if (countTokens(part) > maxChunkTokens) {
-        // Snip it exactly at the limit
-      const clipped = truncateToTokenLimit(part, maxChunkTokens);
-      chunks.push(clipped);
-      // Start the next chunk with the 'tail' (overlap) of what we just cut
-      current = tailByTokens(clipped, overlapTokens); // token overlap
-      continue;
+      const tokenizer = getTokenizer();
+      const ids = tokenizer.encode(part);
+      const stride = Math.max(1, maxChunkTokens - Math.max(0, overlapTokens));
+
+      for (let start = 0; start < ids.length; start += stride) {
+        const end = Math.min(start + maxChunkTokens, ids.length);
+        const piece = tokenizer.decode(ids.slice(start, end));
+        chunks.push(piece);
+        if (end >= ids.length) break;
+      }
+
+      // NORMAL CASE:tart new chunk with token overlap from previous chunk
+      const overlap = current ? tailByTokens(current, overlapTokens) : "";
+      current = overlap ? `${overlap}\n\n${part}` : part;
+      // safety in case overlap + part exceeds
+      if (countTokens(current) > maxChunkTokens) {
+        current = truncateToTokenLimit(current, maxChunkTokens);
+      }
     }
-    // sNORMAL CASE:tart new chunk with token overlap from previous chunk
-    const overlap = current ? tailByTokens(current, overlapTokens) : "";
-    current = overlap ? `${overlap}\n\n${part}` : part;
-    // safety in case overlap + part exceeds
-    if (countTokens(current) > maxChunkTokens) {
-      current = truncateToTokenLimit(current, maxChunkTokens);
+    // If there is any leftover text in the last bucket, save it
+    if (current) {
+      chunks.push(current);
     }
+    return chunks;
   }
-  // If there is any leftover text in the last bucket, save it
-  if (current) {
-    chunks.push(current);
-  }
-  return chunks;
 }
 
 module.exports = { chunkTextByTokens };

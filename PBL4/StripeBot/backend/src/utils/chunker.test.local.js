@@ -9,8 +9,8 @@ Refunds, disputes, and subscriptions are supported as well.
 `.repeat(20); // make it longer
 
 const config = {
-  chunkSizeTokens: 80,
-  chunkOverlapTokens: 10,
+  maxChunkTokens: 80,
+  overlapTokens: 10,
 };
 
 const chunks = chunkTextByTokens(text, config);
