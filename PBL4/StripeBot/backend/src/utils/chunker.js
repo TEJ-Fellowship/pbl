@@ -1,8 +1,4 @@
-const {
-  countTokens,
-  truncateToTokenLimit,
-  getTokenizer,
-} = require("../utils/tokenCounter");
+const { countTokens, getTokenizer } = require("../utils/tokenCounter");
 
 /**
  * Grabs a specific number of tokens from the very end of a string.
@@ -23,74 +19,105 @@ function tailByTokens(text, overlapTokens) {
   return tokenizer.decode(ids.slice(ids.length - overlapTokens));
 }
 /**
- * Splits a long document into smaller, AI-friendly pieces (chunks).
- * It splits by paragraphs first to keep thoughts together, then checks
- * token counts to ensure each piece fits within the AI's "context window."
- * * @param {string} text - The full text to be divided.
- * @param {object} options - Configuration for maxChunkTokens and overlapTokens.
- * @returns {string[]} An array of text chunks with overlapping ends/starts.
+ * Chunks a single scraped page object.
+ * @param {Object} pageObject - One item from the scraped JSON array
+ * @param {object} options - { maxChunkTokens, overlapTokens }
+ * @returns {Object[]} Array of DB-ready chunk objects
  */
 
-function chunkTextByTokens(text, options = {}) {
-  // Default limits: 500 tokens per chunk, with 50 tokens of repeated context
-  const maxChunkTokensRaw = Number(options.maxChunkTokens ?? 500);
-  const overlapTokensRaw = Number(options.overlapTokens ?? 50);
+function chunkPageObject(pageObject, options = {}) {
+  const maxChunkTokens = options.maxChunkTokens || 800;
+  const overlapTokens = options.overlapTokens || 100;
 
-  const maxChunkTokens =
-    Number.isInteger(maxChunkTokensRaw) && maxChunkTokensRaw > 0
-      ? maxChunkTokensRaw
-      : 500;
-  const overlapTokens =
-    Number.isInteger(overlapTokensRaw) && overlapTokensRaw >= 0
-      ? overlapTokensRaw
-      : 50;
+  const {
+    content,
+    id,
+    url,
+    category,
+    title,
+    scrapedAt,
+    docType,
+    metadata: sourceMetadata,
+  } = pageObject;
 
-  if (!text || !text.trim()) return [];
+  if (!content || !content.trim()) return [];
+
+  // Metadata to carry into every chunk from this page
+  const docMetadata = {
+    source_id: id,
+    url,
+    category,
+    title,
+    docType,
+    scrapedAt,
+    source: sourceMetadata?.source,
+    contentType: sourceMetadata?.contentType,
+  };
 
   const chunks = [];
-  // Split by double newlines to try and preserve paragraph structure
-  const parts = text.split(/\n\n+/);
+  const tokenizer = getTokenizer();
+
+  const createChunkObject = (chunkContent) => ({
+    content: chunkContent,
+    metadata: {
+      ...docMetadata,
+      chunk_index: chunks.length,
+      token_count: countTokens(chunkContent),
+    },
+  });
+
+  const parts = content.split(/\n\n+/);
   let current = "";
+
   for (const part of parts) {
-    // Create a "test" version of the chunk including the new paragraph
     const candidate = current ? `${current}\n\n${part}` : part;
 
-    // If the test version is small enough, keep adding to the current bucket
     if (countTokens(candidate) <= maxChunkTokens) {
       current = candidate;
       continue;
     }
-    // current is full, push it
+
     if (current) {
-      chunks.push(current);
+      chunks.push(createChunkObject(current));
     }
-    // SPECIAL CASE: single part is too big -> split into multiple token windows
+
     if (countTokens(part) > maxChunkTokens) {
-      const tokenizer = getTokenizer();
       const ids = tokenizer.encode(part);
-      const stride = Math.max(1, maxChunkTokens - Math.max(0, overlapTokens));
+      const stride = Math.max(1, maxChunkTokens - overlapTokens);
 
       for (let start = 0; start < ids.length; start += stride) {
         const end = Math.min(start + maxChunkTokens, ids.length);
         const piece = tokenizer.decode(ids.slice(start, end));
-        chunks.push(piece);
+        chunks.push(createChunkObject(piece));
         if (end >= ids.length) break;
       }
 
-      // NORMAL CASE:start new chunk with token overlap from previous chunk
-      const overlap = current ? tailByTokens(current, overlapTokens) : "";
-      current = overlap ? `${overlap}\n\n${part}` : part;
-      // safety in case overlap + part exceeds
-      if (countTokens(current) > maxChunkTokens) {
-        current = truncateToTokenLimit(current, maxChunkTokens);
-      }
+      // Fix: carry overlap after force-split (was missing before)
+      const lastPiece = chunks[chunks.length - 1].content;
+      current = tailByTokens(lastPiece, overlapTokens);
+    } else {
+      const overlapText = current ? tailByTokens(current, overlapTokens) : "";
+      current = overlapText ? `${overlapText}\n\n${part}` : part;
     }
-    // If there is any leftover text in the last bucket, save it
-    if (current) {
-      chunks.push(current);
-    }
-    return chunks;
   }
+
+  if (current) {
+    chunks.push(createChunkObject(current));
+  }
+
+  return chunks;
 }
 
-module.exports = { chunkTextByTokens };
+/**
+ * Processes the full scraped JSON array.
+ * @param {Object[]} scrapedPages - The array your teammate produces
+ * @param {object} options - { maxChunkTokens, overlapTokens }
+ * @returns {Object[]} Flat array of all DB-ready chunks across all pages
+ */
+function chunkScrapedJSON(scrapedPages, options = {}) {
+  if (!Array.isArray(scrapedPages) || scrapedPages.length === 0) return [];
+
+  return scrapedPages.flatMap((page) => chunkPageObject(page, options));
+}
+
+module.exports = { chunkScrapedJSON, chunkPageObject };
