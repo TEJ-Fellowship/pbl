@@ -87,6 +87,19 @@ const Navbar = () => {
 
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-40 rounded-lg border border-black/10 bg-white p-1 shadow-lg z-50">
+                     <NavLink
+                      to="/my-shelf"
+                      onClick={() => setIsProfileOpen(false)}
+                      className={({ isActive }) =>
+                        `flex w-full rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                          isActive
+                            ? "bg-black/5 font-medium text-gray-900"
+                            : "text-gray-700 hover:bg-black/5"
+                        }`
+                      }
+                    >
+                      My Shelf
+                    </NavLink>
                     <button
                       type="button"
                       onClick={async () => {
