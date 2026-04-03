@@ -1,3 +1,4 @@
+import "dotenv/config";
 import * as cheerio from "cheerio";
 import fs from "fs/promises";
 import path from "path";
@@ -85,11 +86,10 @@ export async function scrapeDoc(url, category) {
     const $ = cheerio.load(html);
 
     $(
-      "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style"
+      "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style",
     ).remove();
 
-    const content =
-      $("main").text() || $("article").text() || $("body").text();
+    const content = $("main").text() || $("article").text() || $("body").text();
 
     let title = "";
     if ($("h1").length > 0) {
@@ -166,7 +166,9 @@ async function writeScrapedJson(docs) {
 }
 
 async function main() {
-  console.log("🚀 Starting Stripe documentation scraper (fetch + cheerio, JSON output only)…");
+  console.log(
+    "🚀 Starting Stripe documentation scraper (fetch + cheerio, JSON output only)…",
+  );
 
   const args = process.argv.slice(2);
   const sourcesArg = args
