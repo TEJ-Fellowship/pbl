@@ -1,10 +1,21 @@
 import "dotenv/config";
+/**
+ * cheerio: library for parsing HTML to extract data
+ * *: asterisk to import all functions from cheerio
+ */
 import * as cheerio from "cheerio";
+/** fs: File system module for reading and writing files */
 import fs from "fs/promises";
+/** path: Path module for working with file paths */
 import path from "path";
+/** undici: Fetch API for making HTTP requests
+ */
 import { fetch } from "undici";
 
-/** Stripe documentation entry points (same set as StripeCustomerSupportAgent reference). */
+/** Stripe documentation entry points.
+ * sources: from where data is scraped
+ */
+
 export const SOURCES = {
   api: "https://stripe.com/docs/api",
   webhooks: "https://stripe.com/docs/webhooks",
@@ -17,28 +28,61 @@ export const SOURCES = {
   connect: "https://stripe.com/docs/connect",
 };
 
+/** Default user agent for the scraper */
 const DEFAULT_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
+/** Delay for the scraper
+ * @param {number} ms - The delay in milliseconds
+ * @returns {Promise<void>} - A promise that resolves after the delay
+ * Pause async execution for `ms` milliseconds (non-blocking sleep).
+ * Used with `rateLimitMs()` so we wait between HTTP requests.
+ */
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * @returns {number} - The rate limit in milliseconds
+ * How long to wait between scrape requests (politeness / rate limiting).
+ * Set via env `RATE_LIMIT_DELAY` (milliseconds). Invalid or missing → 1000.
+ * 1000ms is the default rate limit
+ */
 function rateLimitMs() {
   const raw = process.env.RATE_LIMIT_DELAY;
+  /** parseInt: convert the string to a number
+   */
   const n = raw ? parseInt(raw, 10) : NaN;
   return Number.isFinite(n) && n >= 0 ? n : 1000;
 }
-
+/**
+ * Max time to wait for one HTTP response before aborting the fetch.
+ * Env `SCRAPE_FETCH_TIMEOUT_MS` (ms). Invalid or missing → 30000.
+ * @returns {number}
+ */
 function fetchTimeoutMs() {
   const raw = process.env.SCRAPE_FETCH_TIMEOUT_MS;
   const n = raw ? parseInt(raw, 10) : NaN;
   return Number.isFinite(n) && n > 0 ? n : 30_000;
 }
 
-/** Abort fetch after ms (Node 16–compatible; avoids AbortSignal.timeout). */
+/** Abort fetch after ms (Node 16–compatible; avoids AbortSignal.timeout).
+ * Returns an AbortSignal that fires after `ms`, plus a `cancel()` to clear the timer.
+ * Used so `fetch` does not hang forever on slow/broken networks.
+ */
 function abortAfter(ms) {
+  /** AbortController: built-in object used to cancel an async operation (fetch)
+   * creates a controller that can signal "stop" later
+   */
   const controller = new AbortController();
+  /** setTimeout: set a timer to abort the fetch after `ms` */
   const id = setTimeout(() => controller.abort(), ms);
+  /**
+   * signal: a small AbortSignal object pass into fetch(), fetch API listens to that signal
+   * like wire hand to fetch so another part of code can cancel that request
+   */
   const signal = controller.signal;
+  /** cancel: function to clear the timer
+   * id: timer id to clear the timer
+   */
   return { signal, cancel: () => clearTimeout(id) };
 }
 
@@ -80,31 +124,61 @@ export async function scrapeDoc(url, category) {
   console.log(`🔍 Scraping ${category}: ${url}`);
 
   try {
+    /** Space out requests so, do not hammer Stripe (see RATE_LIMIT_DELAY).
+     * wait for the rate limit delay before making the next request
+     *
+     */
     await delay(rateLimitMs());
 
     const { html, contentType } = await fetchHtml(url);
-    const $ = cheerio.load(html);
+    // Load the HTML into cheerio to parse it
+    const parsedHtml = cheerio.load(html);
 
-    $(
+    // Remove navigation, footer, ads, and other non-content elements from the parsed HTML
+    parsedHtml(
       "nav, footer, .sidebar, .header, .advertisement, .cookie-banner, script, style",
     ).remove();
 
-    const content = $("main").text() || $("article").text() || $("body").text();
+    const content =
+      parsedHtml("main").text() ||
+      parsedHtml("article").text() ||
+      parsedHtml("body").text();
 
     let title = "";
-    if ($("h1").length > 0) {
-      title = $("h1").first().text().trim();
-    } else if ($("title").length > 0) {
-      title = $("title").text().trim();
-    } else if ($("h2").length > 0) {
-      title = $("h2").first().text().trim();
-    } else if ($(".page-title").length > 0) {
-      title = $(".page-title").first().text().trim();
-    } else if ($("[data-testid='page-title']").length > 0) {
-      title = $("[data-testid='page-title']").first().text().trim();
+    // Find all <h1> elements in the parsed document.
+    if (parsedHtml("h1").length > 0) {
+      /**
+       * .first(): Take only the first match (in case there are several).
+       * .text():	Get the plain text inside that element (no HTML tags).
+       * .trim():	Remove leading/trailing spaces and line breaks.
+       *  */
+      title = parsedHtml("h1").first().text().trim();
+      /**
+       * in case of no <h1>, you usually get "" (empty string), and the scraper’s later code falls back to other selectors (<title>, h2, etc.) or a default title.
+       */
+    } else if (parsedHtml("title").length > 0) {
+      title = parsedHtml("title").text().trim();
+    } else if (parsedHtml("h2").length > 0) {
+      title = parsedHtml("h2").first().text().trim();
+    } else if (parsedHtml(".page-title").length > 0) {
+      title = parsedHtml(".page-title").first().text().trim();
+      /**
+       * parsedHtml("[data-testid='page-title']"): (Cheerio) selects elements that have HTML attribute data-testid equal to page-title.
+       * why: some pages use data-testid for the title instead of h1, and it's more reliable than h1.
+       */
+    } else if (parsedHtml("[data-testid='page-title']").length > 0) {
+      title = parsedHtml("[data-testid='page-title']").first().text().trim();
     }
 
     title = title
+      /**
+       * /\s+/g with " ": replace every run of whitespace with a single space.
+       * \s: any whitespace (spaces, tabs, newlines, etc.)
+       * +: one or more in a row
+       * g: do it everywhere in the string, not just the first match
+       * " ": replace that whole run with one normal space
+       * e.g.: "Hello world\n\nfoo" → "Hello world foo"
+       */
       .replace(/\s+/g, " ")
       .replace(/^\s*-\s*Stripe\s*$/, "")
       .replace(/^\s*Stripe\s*-\s*/, "")
@@ -125,6 +199,12 @@ export async function scrapeDoc(url, category) {
       title = categoryTitles[category] || "Documentation";
     }
 
+    /**
+     * content: raw text from the page
+     * replace multiple whitespace with single space
+     * replace API keys with [REDACTED] to protect sensitive information
+     * trim leading/trailing spaces and line breaks
+     */
     const cleanContent = content
       .replace(/\s+/g, " ")
       .replace(/sk_test_[A-Za-z0-9]+/g, "sk_test_[REDACTED]")
@@ -156,10 +236,22 @@ export async function scrapeDoc(url, category) {
   }
 }
 
+/**
+ * Write the scraped documents to a JSON file
+ * @param {Object[]} docs - The documents to write
+ * @returns {Promise<string>} - The path to the output file
+ */
 async function writeScrapedJson(docs) {
+  /**
+   * path.join(process.cwd(), "data", "stripe_docs"): join the current working directory with the data/stripe_docs folder
+   */
   const outputDir = path.join(process.cwd(), "data", "stripe_docs");
   await fs.mkdir(outputDir, { recursive: true });
   const outputFile = path.join(outputDir, "scraped.json");
+  /**
+   * JSON.stringify(docs, null, 2): convert the documents to a JSON string
+   * "utf8": the encoding of the output file
+   */
   await fs.writeFile(outputFile, JSON.stringify(docs, null, 2), "utf8");
   console.log(`💾 Saved ${docs.length} document(s) to: ${outputFile}`);
   return outputFile;
@@ -170,6 +262,12 @@ async function main() {
     "🚀 Starting Stripe documentation scraper (fetch + cheerio, JSON output only)…",
   );
 
+  /**
+   * process.argv: an array of command line arguments passed to the script
+   * e.g.: ["node", "path/to/scraper.js", "--sources=api", "--limit=2"]
+   * slice(2): remove the first two arguments (node and the script name)
+   * args: ["--sources=api", "--limit=2"]
+   */
   const args = process.argv.slice(2);
   const sourcesArg = args
     .find((arg) => arg.startsWith("--sources="))
@@ -177,10 +275,17 @@ async function main() {
   const limitArg = args
     .find((arg) => arg.startsWith("--limit="))
     ?.split("=")[1];
-
+  /**
+   * starts as every key in SOURCES (api, webhooks, errors, …).
+   */
   let sourcesToScrape = Object.keys(SOURCES);
+  /**
+   * if limitArg is set, parse it as an integer, otherwise set limit to null
+   * parseInt(limitArg, 10): parse the limit argument as an integer
+   * 10: the radix (base) of the number system to use
+   */
   const limit = limitArg ? parseInt(limitArg, 10) : null;
-
+  /** if sourcesArg is "all", set sourcesToScrape to every key in SOURCES*/
   if (sourcesArg) {
     if (sourcesArg === "all") {
       sourcesToScrape = Object.keys(SOURCES);
