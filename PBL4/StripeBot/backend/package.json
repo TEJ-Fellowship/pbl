@@ -2,9 +2,16 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/app.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scrape": "node src/scripts/scraper.js",
+    "test:chunk": "node src/scripts/testChunk.js",
+    "ingest": "node src/scripts/ingestVectors.js",
+    "data:refresh": "npm run scrape && npm run ingest",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +21,16 @@
     "@langchain/core": "^1.1.38",
     "js-tiktoken": "^1.0.21",
     "nvm": "^0.0.4",
-    "use": "^3.1.1"
+    "use": "^3.1.1",
+    "@xenova/transformers": "^2.17.2",
+    "cheerio": "1.0.0-rc.12",
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1",
+    "pg": "^8.20.0",
+    "pgvector": "^0.2.1",
+    "undici": "^5.28.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
