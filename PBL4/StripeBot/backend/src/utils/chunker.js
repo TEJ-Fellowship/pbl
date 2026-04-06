@@ -11,8 +11,7 @@ const { countTokens, getTokenizer } = require("../utils/tokenCounter");
 function segmentMarkdownByFences(content) {
   const segments = [];
   if (content == null || content === "") return segments;
-  const fenceRe =
-    /^```[^\n\r]*\r?\n([\s\S]*?)^```[ \t]*(?:\r?\n|$)/gm;
+  const fenceRe = /^```[^\n\r]*\r?\n([\s\S]*?)^```[ \t]*(?:\r?\n|$)/gm;
   let lastIndex = 0;
   let match;
   while ((match = fenceRe.exec(content)) !== null) {
@@ -77,6 +76,87 @@ function forceSplitByTokens(
 }
 
 /**
+ * Paragraph-based chunking for a plain text fragment (one or more "text" segments).
+ * Mutates `state`: { current }, `chunks`, via createChunkObject.
+ */
+function processTextSegmentValue(
+  textValue,
+  state,
+  maxChunkTokens,
+  overlapTokens,
+  tokenizer,
+  createChunkObject,
+  chunks,
+) {
+  const parts = textValue.split(/\n\n+/).filter((p) => p.length > 0);
+  for (const part of parts) {
+    const candidate = state.current ? `${state.current}\n\n${part}` : part;
+    if (countTokens(candidate) <= maxChunkTokens) {
+      state.current = candidate;
+      continue;
+    }
+    if (state.current) {
+      chunks.push(createChunkObject(state.current));
+    }
+    if (countTokens(part) > maxChunkTokens) {
+      state.current = forceSplitByTokens(
+        part,
+        maxChunkTokens,
+        overlapTokens,
+        tokenizer,
+        createChunkObject,
+        chunks,
+        true,
+      );
+    } else {
+      const overlapText = state.current
+        ? tailByTokens(state.current, overlapTokens)
+        : "";
+      const combined = overlapText ? `${overlapText}\n\n${part}` : part;
+      state.current = countTokens(combined) <= maxChunkTokens ? combined : part;
+    }
+  }
+}
+
+/**
+ * Append a fenced code block: try current chunk, else flush and new chunk, else force-split without overlap.
+ */
+function processCodeSegmentValue(
+  codeValue,
+  state,
+  maxChunkTokens,
+  tokenizer,
+  createChunkObject,
+  chunks,
+) {
+  const candidate = state.current
+    ? `${state.current}\n\n${codeValue}`
+    : codeValue;
+  if (countTokens(candidate) <= maxChunkTokens) {
+    state.current = candidate;
+    return;
+  }
+  if (state.current) {
+    chunks.push(createChunkObject(state.current));
+    state.current = "";
+  }
+  if (countTokens(codeValue) <= maxChunkTokens) {
+    chunks.push(createChunkObject(codeValue));
+    state.current = "";
+    return;
+  }
+  state.current = forceSplitByTokens(
+    codeValue,
+    maxChunkTokens,
+    0,
+    tokenizer,
+    createChunkObject,
+    chunks,
+    false,
+  );
+}
+
+/**
  * Chunks a single scraped page object.
  * @param {Object} pageObject - One item from the scraped JSON array
  * @param {object} options - { maxChunkTokens, overlapTokens }
@@ -124,49 +204,34 @@ function chunkPageObject(pageObject, options = {}) {
     },
   });
 
-  const parts = content.split(/\n\n+/); //splits string into an array using blank lines(paragraphs)
-  let current = "";
-
-  for (const part of parts) {
-    const candidate = current ? `${current}\n\n${part}` : part;
-
-    if (countTokens(candidate) <= maxChunkTokens) {
-      current = candidate;
-      continue;
-    }
-
-    if (current) {
-      chunks.push(createChunkObject(current));
-    }
-
-    if (countTokens(part) > maxChunkTokens) {
-      const ids = tokenizer.encode(part); //Turns text into an array of token IDs
-      const stride = Math.max(1, maxChunkTokens - overlapTokens);
-
-      for (let start = 0; start < ids.length; start += stride) {
-        const end = Math.min(start + maxChunkTokens, ids.length);
-        const piece = tokenizer.decode(ids.slice(start, end));
-        chunks.push(createChunkObject(piece));
-        if (end >= ids.length) break;
-      }
-
-      // Fix: carry overlap after force-split (was missing before)
-      const lastPiece = chunks[chunks.length - 1].content;
-      current = tailByTokens(lastPiece, overlapTokens);
+  const segments = segmentMarkdownByFences(content);
+  const state = { current: "" };
+  for (const seg of segments) {
+    if (seg.type === "text") {
+      processTextSegmentValue(
+        seg.value,
+        state,
+        maxChunkTokens,
+        overlapTokens,
+        tokenizer,
+        createChunkObject,
+        chunks,
+      );
     } else {
-      const overlapText = current ? tailByTokens(current, overlapTokens) : "";
-      const combined = overlapText ? `${overlapText}\n\n${part}` : part;
-      // If overlap pushes us over, skip the overlap to respect the limit
-      current = countTokens(combined) <= maxChunkTokens ? combined : part;
+      processCodeSegmentValue(
+        seg.value,
+        state,
+        maxChunkTokens,
+        tokenizer,
+        createChunkObject,
+        chunks,
+      );
     }
   }
-
-  if (current) {
-    chunks.push(createChunkObject(current));
+  if (state.current) {
+    chunks.push(createChunkObject(state.current));
   }
-
   return chunks;
-  console.log(chunks);
 }
 
 /**
