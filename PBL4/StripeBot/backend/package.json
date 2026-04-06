@@ -11,19 +11,22 @@
     "data:refresh": "npm run scrape && npm run ingest",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "mcp": "node src/mcpServer.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@xenova/transformers": "^2.17.2",
     "cheerio": "1.0.0-rc.12",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "pg": "^8.20.0",
     "pgvector": "^0.2.1",
-    "undici": "^5.28.4"
+    "undici": "^5.28.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
