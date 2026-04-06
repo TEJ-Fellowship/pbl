@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "20": "^3.1.9",
+    "@google/generative-ai": "^0.24.1",
     "@langchain/core": "^1.1.38",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
