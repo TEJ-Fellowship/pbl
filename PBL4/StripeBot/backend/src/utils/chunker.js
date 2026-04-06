@@ -1,6 +1,36 @@
 const { countTokens, getTokenizer } = require("../utils/tokenCounter");
 
 /**
+ * Split markdown into ordered text vs fenced-code segments.
+ * Code values include the full fence (e.g. "```js\n...\n```").
+ * Incomplete fences (no closing line) stay in "text" segments.
+ *
+ * @param {string} content
+ * @returns {{ type: "text" | "code", value: string }[]}
+ */
+function segmentMarkdownByFences(content) {
+  const segments = [];
+  if (content == null || content === "") return segments;
+  const fenceRe =
+    /^```[^\n\r]*\r?\n([\s\S]*?)^```[ \t]*(?:\r?\n|$)/gm;
+  let lastIndex = 0;
+  let match;
+  while ((match = fenceRe.exec(content)) !== null) {
+    const start = match.index;
+    const fullFence = match[0];
+    if (start > lastIndex) {
+      segments.push({ type: "text", value: content.slice(lastIndex, start) });
+    }
+    segments.push({ type: "code", value: fullFence });
+    lastIndex = start + fullFence.length;
+  }
+  if (lastIndex < content.length) {
+    segments.push({ type: "text", value: content.slice(lastIndex) });
+  }
+  return segments;
+}
+
+/**
  * Grabs a specific number of tokens from the very end of a string.
  * This is used to create a "bridge" between two chunks
  * so the AI doesn't lose the meaning of a sentence cut in half.
@@ -66,7 +96,7 @@ function chunkPageObject(pageObject, options = {}) {
     },
   });
 
-  const parts = content.split(/\n\n+/);
+  const parts = content.split(/\n\n+/); //splits string into an array using blank lines(paragraphs)
   let current = "";
 
   for (const part of parts) {
@@ -82,7 +112,7 @@ function chunkPageObject(pageObject, options = {}) {
     }
 
     if (countTokens(part) > maxChunkTokens) {
-      const ids = tokenizer.encode(part);
+      const ids = tokenizer.encode(part); //Turns text into an array of token IDs
       const stride = Math.max(1, maxChunkTokens - overlapTokens);
 
       for (let start = 0; start < ids.length; start += stride) {
@@ -97,7 +127,9 @@ function chunkPageObject(pageObject, options = {}) {
       current = tailByTokens(lastPiece, overlapTokens);
     } else {
       const overlapText = current ? tailByTokens(current, overlapTokens) : "";
-      current = overlapText ? `${overlapText}\n\n${part}` : part;
+      const combined = overlapText ? `${overlapText}\n\n${part}` : part;
+      // If overlap pushes us over, skip the overlap to respect the limit
+      current = countTokens(combined) <= maxChunkTokens ? combined : part;
     }
   }
 
@@ -106,6 +138,7 @@ function chunkPageObject(pageObject, options = {}) {
   }
 
   return chunks;
+  console.log(chunks);
 }
 
 /**
@@ -120,4 +153,4 @@ function chunkScrapedJSON(scrapedPages, options = {}) {
   return scrapedPages.flatMap((page) => chunkPageObject(page, options));
 }
 
-module.exports = { chunkScrapedJSON, chunkPageObject };
+module.exports = { chunkScrapedJSON, chunkPageObject, segmentMarkdownByFences };
