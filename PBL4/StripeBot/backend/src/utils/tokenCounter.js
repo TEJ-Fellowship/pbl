@@ -5,7 +5,7 @@ const TOKENIZER_FALLBACK_ENCODING =
   process.env.TOKENIZER_FALLBACK_ENCODING || "cl100k_base";
 
 let encoder = null;
-
+// getTokenizer() - that returns a tokenizer for the given model.
 function getTokenizer() {
   if (encoder) return encoder;
 

@@ -16,10 +16,10 @@ const {
 function tailByTokens(text, overlapTokens) {
   if (!text || overlapTokens <= 0) return "";
   const tokenizer = getTokenizer();
-  // If the text is shorter than the overlap we want, return the whole thing
+  // If the text is shorter than the overlap we want, return the whole thing and encode it into tokens
   const ids = tokenizer.encode(text);
   if (ids.length <= overlapTokens) return text;
-  // Slice the array of IDs to get only the last 'overlapTokens' and decode them
+  // Slice the array of IDs to get only the last 'overlapTokens' and decode them into text
   return tokenizer.decode(ids.slice(ids.length - overlapTokens));
 }
 /**
@@ -77,7 +77,7 @@ function chunkTextByTokens(text, options = {}) {
         if (end >= ids.length) break;
       }
 
-      // NORMAL CASE:tart new chunk with token overlap from previous chunk
+      // NORMAL CASE:start new chunk with token overlap from previous chunk
       const overlap = current ? tailByTokens(current, overlapTokens) : "";
       current = overlap ? `${overlap}\n\n${part}` : part;
       // safety in case overlap + part exceeds
