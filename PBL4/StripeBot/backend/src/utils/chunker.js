@@ -48,6 +48,34 @@ function tailByTokens(text, overlapTokens) {
   // Slice the array of IDs to get only the last 'overlapTokens' and decode them into text
   return tokenizer.decode(ids.slice(ids.length - overlapTokens));
 }
+
+/**
+ * Force-split a string into <= maxChunkTokens pieces using a sliding window.
+ * @param {boolean} useOverlap - If false, windows abut (for code; avoids duplicating partial fences).
+ */
+function forceSplitByTokens(
+  text,
+  maxChunkTokens,
+  overlapTokens,
+  tokenizer,
+  createChunkObject,
+  chunks,
+  useOverlap,
+) {
+  const ids = tokenizer.encode(text);
+  const stride = useOverlap
+    ? Math.max(1, maxChunkTokens - overlapTokens)
+    : maxChunkTokens;
+  for (let start = 0; start < ids.length; start += stride) {
+    const end = Math.min(start + maxChunkTokens, ids.length);
+    const piece = tokenizer.decode(ids.slice(start, end));
+    chunks.push(createChunkObject(piece));
+    if (end >= ids.length) break;
+  }
+  const lastPiece = chunks[chunks.length - 1].content;
+  return useOverlap ? tailByTokens(lastPiece, overlapTokens) : "";
+}
+
 /**
  * Chunks a single scraped page object.
  * @param {Object} pageObject - One item from the scraped JSON array
