@@ -1,0 +1,25 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### 1) Valid message 
+POST {{baseUrl}}/api/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "How do I get my Stripe invoice?"
+}
+
+### 2) Empty message 
+POST {{baseUrl}}/api/chat
+Content-Type: {{contentType}}
+
+{
+  "message": ""
+}
+
+### 3) Missing message 
+POST {{baseUrl}}/api/chat
+Content-Type: {{contentType}}
+
+{
+}
