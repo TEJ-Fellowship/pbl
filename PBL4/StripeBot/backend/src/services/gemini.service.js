@@ -3,6 +3,21 @@ const { AppError } = require("../utils/AppError");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 15000);
+
+// Wraps an asynchronous operation with a timeout, so it either returns the result quickly or throws a clear error if it takes too long
+function withTimeout(promise, ms) {
+  let timer;
+  // Promise.race runs multiple promises and returns the result of the one that settles first (resolves or rejects)
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        reject(new AppError(504, "AI_TIMEOUT", "AI provider timed out"));
+      }, ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
 
 if (!GEMINI_API_KEY) {
   throw new Error("Missing GEMINI_API_KEY in environment");
@@ -28,7 +43,10 @@ async function generateAIResponse(userPrompt) {
   }
 
   try {
-    const result = await model.generateContent(userPrompt.trim());
+    const result = await withTimeout(
+      model.generateContent(userPrompt.trim()),
+      GEMINI_TIMEOUT_MS,
+    );
     const response = result.response.text();
 
     if (!response) {
@@ -43,7 +61,12 @@ async function generateAIResponse(userPrompt) {
   } catch (error) {
     if (error instanceof AppError) throw error;
 
-    console.error("Gemini API Error:", error);
+    console.error("Gemini API Error", {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      status: error?.status,
+    });
 
     throw new AppError(
       500,
