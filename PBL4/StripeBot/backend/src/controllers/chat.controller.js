@@ -17,7 +17,7 @@ const handleChatQuery = async (req, res, next) => {
       );
     }
 
-    const aiResponse = await generateAIResponse(message);
+    const aiResponse = await generateAIResponse(userPrompt);
 
     return res.status(200).json({
       success: true,
