@@ -33,6 +33,7 @@ const rewriteModel = genAI.getGenerativeModel({
   systemInstruction: REWRITE_SYSTEM_PROMPT,
 });
 
+// TODO(next): This PR tests query rewriting only; response generation flow will be finalized in the upcoming PR.
 async function generateAIResponse(userPrompt) {
   if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
     throw new AppError(
