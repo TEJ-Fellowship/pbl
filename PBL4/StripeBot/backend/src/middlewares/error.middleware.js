@@ -1,7 +1,9 @@
+const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
+
 /**
  * Central error formatter. Must be registered after all routes.
  * Pass errors with: next(err) or throw from sync code.
- * For async handlers, call next(err) in catch (Express 4 does not auto-catch promises).
+ * For async handlers, call next(err) in catch.
  */
 function errorMiddleware(err, req, res, next) {
   // If headers already sent, delegate to default Express behavior
@@ -20,13 +22,13 @@ function errorMiddleware(err, req, res, next) {
     typeof err.code === "string" && err.code.length > 0
       ? err.code
       : statusCode === 500
-        ? "INTERNAL_SERVER_ERROR"
-        : "ERROR";
+        ? ERROR_CODES.INTERNAL_SERVER_ERROR
+        : ERROR_CODES.GENERIC_ERROR;
 
   const message =
     statusCode === 500
-      ? "Something went wrong while processing the request"
-      : err.message || "Request failed";
+      ? RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR
+      : err.message || RESPONSE_MESSAGES.GENERIC_ERROR;
 
   if (statusCode === 500) {
     console.error(err);
