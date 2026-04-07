@@ -1,4 +1,5 @@
 // System prompt for rewriting user input into a concise, standalone question
+// TODO(next): Conversation-history-aware rewriting will be added in a follow-up PR; current rewrite uses only the current user prompt.
 const REWRITE_SYSTEM_PROMPT = `Transform the user's message into a concise, standalone question optimized for vector search retrieval.
 
 Rules:

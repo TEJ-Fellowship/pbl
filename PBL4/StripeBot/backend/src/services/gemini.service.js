@@ -1,6 +1,7 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { AppError } = require("../utils/AppError");
 const { REWRITE_SYSTEM_PROMPT } = require("../constants/aiPrompts");
+const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -14,7 +15,13 @@ function withTimeout(promise, ms) {
     promise,
     new Promise((_, reject) => {
       timer = setTimeout(() => {
-        reject(new AppError(504, "AI_TIMEOUT", "AI provider timed out"));
+        reject(
+          new AppError(
+            504,
+            ERROR_CODES.AI_TIMEOUT,
+            RESPONSE_MESSAGES.AI_TIMEOUT,
+          ),
+        );
       }, ms);
     }),
   ]).finally(() => clearTimeout(timer));
@@ -28,9 +35,14 @@ if (!GEMINI_API_KEY) {
 - Authenticate to google with valid gemini key, checks if key is valid, billing limits,
 - Creates a client instance(genAI) that holds your credentials and is ready to talk to the API.*/
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
 const rewriteModel = genAI.getGenerativeModel({
   model: GEMINI_MODEL,
   systemInstruction: REWRITE_SYSTEM_PROMPT,
+});
+
+const responseModel = genAI.getGenerativeModel({
+  model: GEMINI_MODEL,
 });
 
 // TODO(next): This PR tests query rewriting only; response generation flow will be finalized in the upcoming PR.
@@ -38,14 +50,14 @@ async function generateAIResponse(userPrompt) {
   if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
     throw new AppError(
       400,
-      "INVALID_PROMPT",
-      "Prompt is required and must be a non-empty string",
+      ERROR_CODES.INVALID_PROMPT,
+      RESPONSE_MESSAGES.INVALID_PROMPT,
     );
   }
 
   try {
     const result = await withTimeout(
-      model.generateContent(userPrompt.trim()),
+      responseModel.generateContent(userPrompt.trim()),
       GEMINI_TIMEOUT_MS,
     );
     const response = result.response.text();
@@ -53,8 +65,8 @@ async function generateAIResponse(userPrompt) {
     if (!response) {
       throw new AppError(
         502,
-        "EMPTY_AI_RESPONSE",
-        "AI returned an empty response",
+        ERROR_CODES.EMPTY_AI_RESPONSE,
+        RESPONSE_MESSAGES.EMPTY_AI_RESPONSE,
       );
     }
 
@@ -71,8 +83,8 @@ async function generateAIResponse(userPrompt) {
 
     throw new AppError(
       500,
-      "AI_GENERATION_FAILED",
-      "Failed to generate AI response",
+      ERROR_CODES.AI_GENERATION_FAILED,
+      RESPONSE_MESSAGES.AI_GENERATION_FAILED,
     );
   }
 }
@@ -82,8 +94,8 @@ async function rewriteQuery(userPrompt) {
   if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
     throw new AppError(
       400,
-      "INVALID_PROMPT",
-      "Prompt is required and must be a non-empty string",
+      ERROR_CODES.INVALID_PROMPT,
+      RESPONSE_MESSAGES.INVALID_PROMPT,
     );
   }
 
@@ -96,8 +108,8 @@ async function rewriteQuery(userPrompt) {
   if (!rewrittenQuery) {
     throw new AppError(
       502,
-      "EMPTY_AI_RESPONSE",
-      "AI returned an empty response",
+      ERROR_CODES.EMPTY_AI_RESPONSE,
+      RESPONSE_MESSAGES.EMPTY_AI_RESPONSE,
     );
   }
   return rewrittenQuery;

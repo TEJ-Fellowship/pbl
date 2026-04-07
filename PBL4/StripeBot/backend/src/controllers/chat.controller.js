@@ -20,7 +20,16 @@ const handleChatQuery = async (req, res, next) => {
       );
     }
 
-    const rewrittenQuery = await rewriteQuery(userPrompt);
+    let rewrittenQuery = userPrompt;
+    try {
+      rewrittenQuery = await rewriteQuery(userPrompt);
+    } catch (error) {
+      // Fallback behavior: if rewrite fails, continue with original prompt.
+      console.warn("Rewrite failed, falling back to original userPrompt", {
+        message: error?.message,
+        code: error?.code,
+      });
+    }
 
     /*
     TODO: This PR intentionally validates rewrite flow end-to-end.
@@ -34,7 +43,7 @@ const handleChatQuery = async (req, res, next) => {
         //'reply' clearly indicates this is the response from the chat system; chosen to clearly show it is the output, follow chat API naming conventions, and separate from user input
         reply: aiResponse,
         userInput: userPrompt,
-        rewrittenQuery, //// Temporary: exposed for rewrite verification during this phase.
+        rewrittenQuery, // Temporary: exposed for rewrite verification during this phase.
       },
     });
   } catch (error) {

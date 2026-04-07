@@ -1,23 +1,23 @@
 @baseUrl = http://localhost:3000
 @contentType = application/json
 
-### 1) Valid message 
+### 1) Rewrite test 
 POST {{baseUrl}}/api/chat
 Content-Type: {{contentType}}
 
 {
-  "message": "How do I get my Stripe invoice?"
+ "prompt": "Hey, can you tell me what the pricing is?"
 }
 
-### 2) Empty message 
+### 2) Empty prompt 
 POST {{baseUrl}}/api/chat
 Content-Type: {{contentType}}
 
 {
-  "message": ""
+  "prompt": ""
 }
 
-### 3) Missing message 
+### 3) Missing prompt 
 POST {{baseUrl}}/api/chat
 Content-Type: {{contentType}}
 
