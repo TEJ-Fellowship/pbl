@@ -76,4 +76,30 @@ async function generateAIResponse(userPrompt) {
   }
 }
 
-module.exports = { generateAIResponse };
+// Rewrites the user prompt into a concise, standalone question
+async function rewriteQuery(userPrompt) {
+  if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
+    throw new AppError(
+      400,
+      "INVALID_PROMPT",
+      "Prompt is required and must be a non-empty string",
+    );
+  }
+
+  const result = await withTimeout(
+    rewriteModel.generateContent(userPrompt),
+    GEMINI_TIMEOUT_MS,
+  );
+
+  const rewrittenQuery = result.response.text()?.trim().replace(/\s+/g, " ");
+  if (!rewrittenQuery) {
+    throw new AppError(
+      502,
+      "EMPTY_AI_RESPONSE",
+      "AI returned an empty response",
+    );
+  }
+  return rewrittenQuery;
+}
+
+module.exports = { generateAIResponse, rewriteQuery };
