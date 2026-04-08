@@ -1,10 +1,7 @@
 const express = require("express");
 const chatRoutes = require("./routes/chat.routes");
 const { errorMiddleware } = require("./middlewares/error.middleware");
-import "dotenv/config";
-import express from "express";
-import pool from "./config/db.js";
-import { hybridSearch } from "./services/hybridRagService.js";
+const pool = require("./config/db");
 
 // Create an Express application instance
 const app = express();

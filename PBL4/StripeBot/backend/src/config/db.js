@@ -3,9 +3,9 @@
  * pg: PostgreSQL client library
  * pgvector: PostgreSQL vector extension library
  */
-import pg from "pg";
-import pgvector from "pgvector/pg";
-import "dotenv/config";
+const pg = require("pg");
+const pgvector = require("pgvector/pg");
+require("dotenv").config();
 
 /** Pool: PostgreSQL connection pool
  * open connections to the database
@@ -37,4 +37,4 @@ pool.on("connect", async (client) => {
   await pgvector.registerType(client);
 });
 
-export default pool;
+module.exports = pool;
