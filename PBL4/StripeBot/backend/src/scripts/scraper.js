@@ -209,8 +209,6 @@ async function scrapeDoc(url, category) {
       };
       title = categoryTitles[category] ?? "Documentation";
     }
-    console.log("hello");
-    console.log("this is not ");
     /**
      * content: raw text from the page
      * replace multiple whitespace with single space
@@ -218,7 +216,9 @@ async function scrapeDoc(url, category) {
      * trim leading/trailing spaces and line breaks
      */
     const cleanContent = content
-      .replace(/\s+/g, " ")
+      .replace(/\r\n/g, "\n")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
       .replace(/sk_test_[A-Za-z0-9]+/g, "sk_test_[REDACTED]")
       .replace(/sk_live_[A-Za-z0-9]+/g, "sk_live_[REDACTED]")
       .replace(/whsec_[A-Za-z0-9]+/g, "whsec_[REDACTED]")
