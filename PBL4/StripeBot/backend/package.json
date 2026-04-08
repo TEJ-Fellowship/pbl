@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
+    "scrape": "node src/scripts/scraper.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --watch src/index.js",
     "start": "node src/index.js"
@@ -15,11 +17,12 @@
     "20": "^3.1.9",
     "@google/generative-ai": "^0.24.1",
     "@langchain/core": "^1.1.38",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
-    "express": "^5.2.1",
     "js-tiktoken": "^1.0.21",
     "nvm": "^0.0.4",
+    "undici": "^7.24.7",
     "use": "^3.1.1"
   },
   "devDependencies": {
