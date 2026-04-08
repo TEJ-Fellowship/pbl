@@ -8,18 +8,14 @@ const DEFAULT_MAX_QUERY_LENGTH = 1000;
  * - Ensures string input
  * - Trims whitespace
  * - Rejects empty query
- * - Enforces max length (throws by default, optionally truncates)
- * 
+ * - Enforces max length (throws by default)
+ *
  * Parameters:
  * - input: The user query string to validate
  * - options: An object with optional settings:
  *   - maxLength: The maximum length of the query (default: DEFAULT_MAX_QUERY_LENGTH)
- *  - truncate: Whether to truncate the query if it exceeds maxLength (default: false)
  */
-function validateQuery(
-  input,
-  { maxLength = DEFAULT_MAX_QUERY_LENGTH, truncate = false } = {},
-) {
+function validateQuery(input, { maxLength = DEFAULT_MAX_QUERY_LENGTH } = {}) {
   if (typeof input !== "string") {
     throw new AppError(
       400,
@@ -39,14 +35,9 @@ function validateQuery(
   }
 
   if (query.length > maxLength) {
-    if (truncate) {
-      return query.slice(0, maxLength);
-    }
-
-    // Keeps current error contract without requiring new error constants yet
     throw new AppError(
       400,
-      ERROR_CODES.INVALID_PROMPT,
+      ERROR_CODES.QUERY_TOO_LONG,
       RESPONSE_MESSAGES.QUERY_TOO_LONG,
     );
   }

@@ -1,5 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { AppError } = require("../utils/AppError");
+const { validateQuery } = require("../utils/validateQuery");
 const { REWRITE_SYSTEM_PROMPT } = require("../constants/aiPrompts");
 const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
 
@@ -47,17 +48,11 @@ const responseModel = genAI.getGenerativeModel({
 
 // TODO(#889): This PR tests query rewriting only; response generation flow will be finalized in the upcoming PR.
 async function generateAIResponse(userPrompt) {
-  if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
-    throw new AppError(
-      400,
-      ERROR_CODES.INVALID_PROMPT,
-      RESPONSE_MESSAGES.INVALID_PROMPT,
-    );
-  }
+  const cleanPrompt = validateQuery(userPrompt);
 
   try {
     const result = await withTimeout(
-      responseModel.generateContent(userPrompt.trim()),
+      responseModel.generateContent(cleanPrompt),
       GEMINI_TIMEOUT_MS,
     );
     const response = result.response.text();
@@ -91,16 +86,11 @@ async function generateAIResponse(userPrompt) {
 
 // Rewrites the user prompt into a concise, standalone question
 async function rewriteQuery(userPrompt) {
-  if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
-    throw new AppError(
-      400,
-      ERROR_CODES.INVALID_PROMPT,
-      RESPONSE_MESSAGES.INVALID_PROMPT,
-    );
-  }
+const cleanPrompt = validateQuery(userPrompt);
+
   try {
     const result = await withTimeout(
-      rewriteModel.generateContent(userPrompt.trim()),
+      rewriteModel.generateContent(cleanPrompt),
       GEMINI_TIMEOUT_MS,
     );
 
