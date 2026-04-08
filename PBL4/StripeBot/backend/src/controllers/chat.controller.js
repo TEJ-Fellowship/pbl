@@ -1,5 +1,6 @@
 const { AppError } = require("../utils/AppError");
 const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
+const { generateAIResponse } = require("../services/gemini.service");
 
 const handleChatQuery = async (req, res, next) => {
   try {
@@ -16,11 +17,13 @@ const handleChatQuery = async (req, res, next) => {
       );
     }
 
+    const aiResponse = await generateAIResponse(userPrompt);
+
     return res.status(200).json({
       success: true,
       data: {
         //'reply' clearly indicates this is the response from the chat system; chosen to clearly show it is the output, follow chat API naming conventions, and separate from user input
-        reply: "Placeholder response from /api/chat",
+        reply: aiResponse,
         userInput: userPrompt,
       },
     });
