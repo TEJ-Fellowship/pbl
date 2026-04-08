@@ -1,5 +1,6 @@
 const { AppError } = require("../utils/AppError");
 const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
+const { REWRITE_FALLBACK_WARN_MESSAGE } = require("../constants/aiPrompts");
 const {
   generateAIResponse,
   rewriteQuery,
@@ -25,14 +26,14 @@ const handleChatQuery = async (req, res, next) => {
       rewrittenQuery = await rewriteQuery(userPrompt);
     } catch (error) {
       // Fallback behavior: if rewrite fails, continue with original prompt.
-      console.warn("Rewrite failed, falling back to original userPrompt", {
+      console.warn(REWRITE_FALLBACK_WARN_MESSAGE, {
         message: error?.message,
         code: error?.code,
       });
     }
 
     /*
-    TODO: This PR intentionally validates rewrite flow end-to-end.
+    TODO(#887): This PR intentionally validates rewrite flow end-to-end.
     Next PR will use rewrittenQuery for embedding/search and improve this flow.
     */
     const aiResponse = await generateAIResponse(rewrittenQuery);

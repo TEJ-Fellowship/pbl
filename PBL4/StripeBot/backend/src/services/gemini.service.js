@@ -45,7 +45,7 @@ const responseModel = genAI.getGenerativeModel({
   model: GEMINI_MODEL,
 });
 
-// TODO(next): This PR tests query rewriting only; response generation flow will be finalized in the upcoming PR.
+// TODO(#889): This PR tests query rewriting only; response generation flow will be finalized in the upcoming PR.
 async function generateAIResponse(userPrompt) {
   if (!userPrompt || typeof userPrompt !== "string" || !userPrompt.trim()) {
     throw new AppError(
@@ -98,21 +98,36 @@ async function rewriteQuery(userPrompt) {
       RESPONSE_MESSAGES.INVALID_PROMPT,
     );
   }
+  try {
+    const result = await withTimeout(
+      rewriteModel.generateContent(userPrompt.trim()),
+      GEMINI_TIMEOUT_MS,
+    );
 
-  const result = await withTimeout(
-    rewriteModel.generateContent(userPrompt),
-    GEMINI_TIMEOUT_MS,
-  );
+    const rewrittenQuery = result.response.text()?.trim().replace(/\s+/g, " ");
+    if (!rewrittenQuery) {
+      throw new AppError(
+        502,
+        ERROR_CODES.EMPTY_AI_RESPONSE,
+        RESPONSE_MESSAGES.EMPTY_AI_RESPONSE,
+      );
+    }
+    return rewrittenQuery;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
 
-  const rewrittenQuery = result.response.text()?.trim().replace(/\s+/g, " ");
-  if (!rewrittenQuery) {
+    console.error("Gemini Rewrite Error", {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      status: error?.status,
+    });
     throw new AppError(
-      502,
-      ERROR_CODES.EMPTY_AI_RESPONSE,
-      RESPONSE_MESSAGES.EMPTY_AI_RESPONSE,
+      500,
+      ERROR_CODES.AI_GENERATION_FAILED,
+      RESPONSE_MESSAGES.AI_GENERATION_FAILED,
     );
   }
-  return rewrittenQuery;
 }
 
 module.exports = { generateAIResponse, rewriteQuery };

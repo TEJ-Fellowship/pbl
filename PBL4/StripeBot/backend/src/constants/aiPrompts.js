@@ -1,5 +1,5 @@
 // System prompt for rewriting user input into a concise, standalone question
-// TODO(next): Conversation-history-aware rewriting will be added in a follow-up PR; current rewrite uses only the current user prompt.
+// TODO(#891): Conversation-history-aware will be added in a follow-up PR;
 const REWRITE_SYSTEM_PROMPT = `Transform the user's message into a concise, standalone question optimized for vector search retrieval.
 
 Rules:
@@ -10,8 +10,12 @@ Rules:
 - If the input is already a clean question, return it unchanged.
 - If the intent is ambiguous, lean toward the broader interpretation.
 
-Output: A single plain string. No explanation, no alternatives, no punctuation beyond the question mark.`
+Output: A single plain string. No explanation, no alternatives, no punctuation beyond the question mark.`;
+
+const REWRITE_FALLBACK_WARN_MESSAGE =
+  "Rewrite failed, falling back to original userPrompt";
 
 module.exports = {
   REWRITE_SYSTEM_PROMPT,
+  REWRITE_FALLBACK_WARN_MESSAGE,
 };
