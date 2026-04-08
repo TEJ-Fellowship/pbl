@@ -1,11 +1,21 @@
 // undici provides fetch + related Web APIs for Node
 const { fetch, Headers, Request, Response } = require("undici");
 //Wraps an AI task into one simple call: tokenizes input, runs it through the model, and formats the output into usable results
-const { pipeline } = require("@xenova/transformers"); 
+const { pipeline } = require("@xenova/transformers");
 
 /*
 Polyfill for environments where fetch APIs are missing as @xenova/transformers (used by pipeline(...)) internally expects Web APIs like fetch, Headers, Request, and Response to exist globally.
 This ensures the pipeline function can be used in Node.js environments that don't have these APIs natively.*/
+/** undici: HTTP client for Node.js
+ * use for implement the standard fetch API in Node.js
+ */
+/** xenova/transformers: pipeline for feature extraction
+ * @xenova/transformers: JS library to run ML model locally on CPU
+ * Transformers: refers to a type of AI model architecture
+ * pipeline: helper that loads and runs transformer models easily in JavaScript for feature extraction
+ */
+
+// @xenova/transformers expects Web APIs (Node < 18)
 if (typeof globalThis.fetch === "undefined") globalThis.fetch = fetch;
 if (typeof globalThis.Headers === "undefined") globalThis.Headers = Headers;
 if (typeof globalThis.Request === "undefined") globalThis.Request = Request;
@@ -17,6 +27,11 @@ const TASK = "feature-extraction"; //number-extraction
 const MAX_INPUT_CHARS = 8000;
 const POOLING = "mean";
 const NORMALIZE = true;
+/**
+ * "Xenova/all-MiniLM-L6-v2": embedding model, converts text → 384-dimensional vector (numbers)
+ * 384 dimension: every sentence is converted into a list of 384 numbers
+ * why: it's a small model that is fast and accurate for feature extraction
+ */
 
 /** @type {import('@xenova/transformers').FeatureExtractionPipeline | null} */
 
@@ -74,6 +89,10 @@ async function embedText(text) {
 
 /* Iterates through an array of text, generating embeddings one by one.
 Returns an array of all the vectors generated.*/
+/** @param {string[]} texts
+ * takes multiple texts and returns multiple embedding vectors
+ * vectors: array of embedding vectors
+ */
 async function embedTexts(texts) {
   const vectors = [];
   for (const t of texts) {
