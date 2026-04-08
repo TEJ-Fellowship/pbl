@@ -1,4 +1,4 @@
-const { AppError } = require("../utils/AppError");
+const { validateQuery } = require("../utils/validateQuery");
 const { ERROR_CODES, RESPONSE_MESSAGES } = require("../constants/apiResponse");
 const { REWRITE_FALLBACK_WARN_MESSAGE } = require("../constants/aiPrompts");
 const {
@@ -9,17 +9,7 @@ const {
 const handleChatQuery = async (req, res, next) => {
   try {
     const { prompt } = req.body || {};
-    const userPrompt = typeof prompt === "string" ? prompt.trim() : "";
-
-    if (!userPrompt) {
-      return next(
-        new AppError(
-          400,
-          ERROR_CODES.INVALID_PROMPT,
-          RESPONSE_MESSAGES.INVALID_PROMPT,
-        ),
-      );
-    }
+    const userPrompt = validateQuery(prompt);
 
     let rewrittenQuery = userPrompt;
     try {
