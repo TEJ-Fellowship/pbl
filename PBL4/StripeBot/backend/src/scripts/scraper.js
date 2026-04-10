@@ -1,23 +1,23 @@
-require("dotenv").config();
-const crypto = require("node:crypto"); // use for create unique id
+import "dotenv/config";
+import crypto from "node:crypto"; // use for create unique id
 /**
  * cheerio: library for parsing HTML to extract data
  * *: asterisk to import all functions from cheerio
  */
-const cheerio = require("cheerio");
+import * as cheerio from "cheerio";
 /** fs: File system module for reading and writing files */
-const fs = require("fs/promises");
+import fs from "fs/promises";
 /** path: Path module for working with file paths */
-const path = require("path");
+import path from "path";
 /** undici: Fetch API for making HTTP requests
  */
-const { fetch } = require("undici");
+import { fetch } from "undici";
 
 /** Stripe documentation entry points.
  * sources: from where data is scraped
  */
 
-const SOURCES = {
+export const SOURCES = {
   api: "https://stripe.com/docs/api",
   webhooks: "https://stripe.com/docs/webhooks",
   errors: "https://stripe.com/docs/error-codes",
@@ -133,7 +133,7 @@ async function fetchHtml(url) {
  * @param {string} url
  * @param {string} category
  */
-async function scrapeDoc(url, category) {
+export async function scrapeDoc(url, category) {
   console.log(`🔍 Scraping ${category}: ${url}`);
 
   try {
@@ -363,5 +363,3 @@ if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
     process.exit(1);
   });
 }
-
-module.exports = { SOURCES, scrapeDoc };
