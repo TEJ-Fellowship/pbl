@@ -5,6 +5,7 @@ const {
   generateAIResponse,
   rewriteQuery,
 } = require("../services/gemini.service");
+const { embedText } = require("../services/embeddingService");
 
 const handleChatQuery = async (req, res, next) => {
   try {
@@ -22,6 +23,8 @@ const handleChatQuery = async (req, res, next) => {
       });
     }
 
+    const queryEmbedding = await embedText(rewrittenQuery);
+
     /*
     TODO(#887): This PR intentionally validates rewrite flow end-to-end.
     Next PR will use rewrittenQuery for embedding/search and improve this flow.
@@ -35,6 +38,7 @@ const handleChatQuery = async (req, res, next) => {
         reply: aiResponse,
         userInput: userPrompt,
         rewrittenQuery, // Temporary: exposed for rewrite verification during this phase.
+        queryEmbeddingDimensions: queryEmbedding.length, //using length for checks only
       },
     });
   } catch (error) {
