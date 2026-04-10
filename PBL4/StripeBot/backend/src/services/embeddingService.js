@@ -1,5 +1,7 @@
+// undici provides fetch + related Web APIs for Node
 const { fetch, Headers, Request, Response } = require("undici");
-const { pipeline } = require("@xenova/transformers");
+//Wraps an AI task into one simple call: tokenizes input, runs it through the model, and formats the output into usable results
+const { pipeline } = require("@xenova/transformers"); 
 
 /*
 Polyfill for environments where fetch APIs are missing as @xenova/transformers (used by pipeline(...)) internally expects Web APIs like fetch, Headers, Request, and Response to exist globally.
@@ -40,7 +42,15 @@ async function getEmbedder() {
     - The Model: The actual neural network weights (the "brain" data).
     - The Tokenizer: The "dictionary" that knows how to turn your specific words into the specific ID numbers the model understands.
     */
-    embedderPromise = pipeline(TASK, MODEL_ID);
+    embedderPromise = pipeline(TASK, MODEL_ID)
+      .then((instance) => {
+        embedder = instance;
+        return instance;
+      })
+      .catch((err) => {
+        embedderPromise = null; // allow retry after transient failure
+        throw err;
+      });
   }
   return embedderPromise;
 }
@@ -53,7 +63,7 @@ async function embedText(text) {
 
   const out = await model(prepared, {
     //A model might look at every single word individually. "Pooling" tells it how to combine all those word-meanings into one single "summary" for the whole sentence.
-    pooling: POOLING,   
+    pooling: POOLING,
     //This squishes the resulting numbers into a standard scale (usually between -1 and 1). This makes it much easier to compare two different sentences later on.
     normalize: NORMALIZE,
   });
