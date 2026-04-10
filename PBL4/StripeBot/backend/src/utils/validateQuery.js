@@ -15,7 +15,8 @@ const DEFAULT_MAX_QUERY_LENGTH = 1000;
  * - options: An object with optional settings:
  *   - maxLength: The maximum length of the query (default: DEFAULT_MAX_QUERY_LENGTH)
  */
-function validateQuery(input, { maxLength = DEFAULT_MAX_QUERY_LENGTH } = {}) {
+function validateQuery(input, options = {}) {
+  const maxLength = options.maxLength ?? DEFAULT_MAX_QUERY_LENGTH;
   if (typeof input !== "string") {
     throw new AppError(
       400,
