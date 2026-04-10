@@ -1,23 +1,23 @@
-import "dotenv/config";
-import crypto from "node:crypto"; // use for create unique id
+require("dotenv").config();
+const crypto = require("node:crypto"); // use for create unique id
 /**
  * cheerio: library for parsing HTML to extract data
  * *: asterisk to import all functions from cheerio
  */
-import * as cheerio from "cheerio";
+const cheerio = require("cheerio");
 /** fs: File system module for reading and writing files */
-import fs from "fs/promises";
+const fs = require("fs/promises");
 /** path: Path module for working with file paths */
-import path from "path";
+const path = require("path");
 /** undici: Fetch API for making HTTP requests
  */
-import { fetch } from "undici";
+const { fetch } = require("undici");
 
 /** Stripe documentation entry points.
  * sources: from where data is scraped
  */
 
-export const SOURCES = {
+const SOURCES = {
   api: "https://stripe.com/docs/api",
   webhooks: "https://stripe.com/docs/webhooks",
   errors: "https://stripe.com/docs/error-codes",
@@ -133,7 +133,7 @@ async function fetchHtml(url) {
  * @param {string} url
  * @param {string} category
  */
-export async function scrapeDoc(url, category) {
+async function scrapeDoc(url, category) {
   console.log(`🔍 Scraping ${category}: ${url}`);
 
   try {
@@ -157,8 +157,12 @@ export async function scrapeDoc(url, category) {
       parsedHtml("body").text();
 
     let title = "";
-    // Find all <h1> elements in the parsed document.
-    if (parsedHtml("h1").length > 0) {
+    // Try to extract title from the <title> element and use title as default title if no title is found
+    if (parsedHtml("title").length > 0) {
+      title = parsedHtml("title").text().trim();
+      // Find all <h1> elements in the parsed document.
+      // if no title is found, use the title as default title
+    } else if (parsedHtml("h1").length > 0) {
       /**
        * .first(): Take only the first match (in case there are several).
        * .text():	Get the plain text inside that element (no HTML tags).
@@ -166,10 +170,9 @@ export async function scrapeDoc(url, category) {
        *  */
       title = parsedHtml("h1").first().text().trim();
       /**
-       * in case of no <h1>, you usually get "" (empty string), and the scraper’s later code falls back to other selectors (<title>, h2, etc.) or a default title.
+       * parsedHtml("[data-testid='page-title']"): (Cheerio) selects elements that have HTML attribute data-testid equal to page-title.
+       * why: some pages use data-testid for the title instead of h1, and it's more reliable than h1.
        */
-    } else if (parsedHtml("title").length > 0) {
-      title = parsedHtml("title").text().trim();
     } else if (parsedHtml("h2").length > 0) {
       title = parsedHtml("h2").first().text().trim();
     } else if (parsedHtml(".page-title").length > 0) {
@@ -181,20 +184,8 @@ export async function scrapeDoc(url, category) {
     } else if (parsedHtml("[data-testid='page-title']").length > 0) {
       title = parsedHtml("[data-testid='page-title']").first().text().trim();
     }
-    title = title
-      /**
-       * /\s+/g with " ": replace every run of whitespace with a single space.
-       * \s: any whitespace (spaces, tabs, newlines, etc.)
-       * +: one or more in a row
-       * g: do it everywhere in the string, not just the first match
-       * " ": replace that whole run with one normal space
-       * e.g.: "Hello world\n\nfoo" → "Hello world foo"
-       */
-      .replace(/\s+/g, " ")
-      .replace(/^\s*-\s*Stripe\s*$/, "")
-      .replace(/^\s*Stripe\s*-\s*/, "")
-      .trim();
 
+    /** If no title is found, use a default title based on the category */
     if (!title) {
       const categoryTitles = {
         api: "API Reference",
@@ -209,8 +200,7 @@ export async function scrapeDoc(url, category) {
       };
       title = categoryTitles[category] ?? "Documentation";
     }
-    console.log("hello");
-    console.log("this is not ");
+
     /**
      * content: raw text from the page
      * replace multiple whitespace with single space
@@ -292,38 +282,14 @@ async function main() {
   );
 
   /**
-   * process.argv: an array of command line arguments passed to the script
-   * e.g.: ["node", "path/to/scraper.js", "--sources=api", "--limit=2"]
-   * slice(2): remove the first two arguments (node and the script name)
-   * args: ["--sources=api", "--limit=2"]
-   */
-  const args = process.argv.slice(2);
-  const sourcesArg = args
-    .find((arg) => arg.startsWith("--sources="))
-    ?.split("=")[1];
-  const limitArg = args
-    .find((arg) => arg.startsWith("--limit="))
-    ?.split("=")[1];
-  /**
    * starts as every key in SOURCES (api, webhooks, errors, …).
    */
   let sourcesToScrape = Object.keys(SOURCES);
-  /**
-   * if limitArg is set, parse it as an integer, otherwise set limit to null
-   * parseInt(limitArg, 10): parse the limit argument as an integer
-   * 10: the radix (base) of the number system to use
+
+  /** limit: the maximum number of documents to scrape
+   * why null: no limit by default
    */
-  const limit = limitArg ? parseInt(limitArg, 10) : null;
-  /** if sourcesArg is "all", set sourcesToScrape to every key in SOURCES*/
-  if (sourcesArg) {
-    if (sourcesArg === "all") {
-      sourcesToScrape = Object.keys(SOURCES);
-    } else {
-      sourcesToScrape = sourcesArg.split(",").map((s) => s.trim());
-    }
-  }
-  console.log(`📋 Sources: ${sourcesToScrape.join(", ")}`);
-  if (limit) console.log(`🔢 Limit: ${limit} document(s) total`);
+  let limit = null;
 
   const docs = [];
   let totalWords = 0;
@@ -363,3 +329,5 @@ if (process.argv[1] && process.argv[1].endsWith("scraper.js")) {
     process.exit(1);
   });
 }
+
+module.exports = { SOURCES, scrapeDoc };
