@@ -1,6 +1,7 @@
 // Constants for API error codes
 const ERROR_CODES = {
   INVALID_PROMPT: "INVALID_PROMPT",
+  QUERY_TOO_LONG: "QUERY_TOO_LONG",
   INTERNAL_SERVER_ERROR: "INTERNAL_SERVER_ERROR",
   GENERIC_ERROR: "ERROR",
   AI_TIMEOUT: "AI_TIMEOUT",
@@ -11,6 +12,7 @@ const ERROR_CODES = {
 // Constants for API response messages
 const RESPONSE_MESSAGES = {
   INVALID_PROMPT: "prompt is required and must be a non-empty string",
+  QUERY_TOO_LONG: "prompt exceeds maximum allowed length",
   INTERNAL_SERVER_ERROR: "Something went wrong while processing the request",
   GENERIC_ERROR: "Request failed",
   AI_TIMEOUT: "AI provider timed out",
