@@ -1,6 +1,18 @@
 import React from "react";
 
-const ChatInputBar = () => {
+const ChatInputBar = ({ value, onChange, onSend, isLoading }) => {
+  const handleSend = () => {
+    const cleaned = value.trim();
+    if (!cleaned || isLoading) return;
+    onSend(cleaned);
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+  const isSendDisabled = isLoading || !value.trim();
   return (
     <div className="relative flex items-center rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-md w-full max-w-2xl mx-auto mt-[480px]">
       <button
@@ -27,11 +39,17 @@ const ChatInputBar = () => {
         placeholder="Type your message..."
         className="flex-1 bg-transparent pr-12 outline-none"
         aria-label="Message input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        disabled={isLoading}
       />
       <button
         type="button"
         aria-label="Send message"
         className="absolute right-2 h-8 w-8 rounded-xl bg-[#516498] text-white flex items-center justify-center"
+        onClick={handleSend}
+        disabled={isSendDisabled}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
