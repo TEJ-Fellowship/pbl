@@ -1,78 +1,151 @@
-# 🧭 LakshyaMap — Career Mapping Tool to Turn Dreams into Goals
+# Lakshya
 
-**Category:** Career / AI Guidance
+**Design your career roadmap with a modern dashboard for interests, goals, and AI-powered learning recommendations.**
 
----
+## Summary
 
-## 🚀 Overview
+Lakshya is a career planning web application that helps learners identify their interests, define measurable goals, and receive personalized recommendations for courses and skill development.
 
-LakshyaMap helps users explore career options, log their interests, and receive personalized guidance on courses, job roles, and career paths. It supports goal tracking and evolves into an AI-powered career advisor.
+For **learners and mentors**, Lakshya offers a focused interface to track career progress, persist plans locally, and quickly generate actionable next steps.
 
-**Users can:**
+For **technical teams**, the project demonstrates a modular React architecture powered by Vite, Tailwind CSS, client-side routing, and Gemini API integration for recommendation workflows.
 
-- ✅ Select and log career interests
-- ✅ Track job goals and progress
-- ✅ Get AI-driven career advice and learning recommendations
+## Key Features and Benefits
 
----
+- **Career Interest Selection**: Users can choose from popular career areas and add custom interests for a personalized profile
+- **Goal Tracking Dashboard**: Add, update, complete, and remove career goals with progress percentages, deadlines, and overdue indicators
+- **AI Course and Skill Recommender**: Generate tailored course suggestions and skill priorities based on saved interests and goals
+- **Persistent Local Data**: Store interests and goals in localStorage for continuity across browser sessions
+- **Responsive Dashboard Experience**: Use the platform across desktop and mobile breakpoints with Tailwind-based responsive layouts
+- **Dark Mode Support**: Switch between light and dark themes for improved usability in different environments
 
-## 🧩 Tier 1: Interest & Goal Tracker (React Fundamentals)
+## Technology Stack
 
-### Features
+### Frontend
 
-- 🎯 Select multiple career interests (e.g., Data Science, Web Dev)
-- 📝 Log desired job roles or titles
-- 📅 Track progress toward career goals
-- 🗂️ View and edit saved interests and goals
-- 📱 Responsive UI with Tailwind CSS
+- React 19.x with functional components and hooks
+- React Router for client-side navigation
+- Tailwind CSS for utility-first responsive styling
+- Lucide React for iconography
+- Gemini client SDK (`@google/generative-ai`) for AI recommendations
 
-### Tech Stack
+### Development Tools
 
-- React with `useState`, `useContext`, and props
-- **Core components:** `InterestSelector`, `JobLogger`, `GoalTracker`
+- Vite for fast local development and optimized builds
+- ESLint for code quality and consistency
+- PostCSS + Autoprefixer for CSS tooling
 
----
+## Tools and Libraries Used
 
-## 📊 Tier 2: Job Market Data (API Integration)
+- React (frontend UI)
+- React Router DOM (routing/navigation)
+- Vite (dev server + build tool)
+- Tailwind CSS (styling)
+- PostCSS + Autoprefixer (CSS processing)
+- ESLint (linting/code quality)
+- Lucide React (icons)
+- @google/generative-ai (Gemini API integration for AI recommendations)
+- @mui/material + @emotion/react + @emotion/styled (UI/component tooling)
+- @mui/x-charts (charting support)
 
-### APIs
+## Installation and Setup
 
-- **LinkedIn Job API** (via RapidAPI)
-- Other job search APIs on RapidAPI
+### Prerequisites
 
-### Features
+- Node.js (v18.x or higher recommended)
+- npm (or another compatible package manager)
+- Google Gemini API key
 
-- 🔍 Fetch job trends, descriptions, and requirements by role or industry
-- 🧾 Display salary ranges, location info, and company details
-- 🛠 Filter jobs by experience, type, and location
-- ⚠️ Handle loading, error, and success states
+### Project Setup
 
----
+```bash
+# Navigate to project directory
+cd Lakshya
 
-## 🤖 Tier 3: AI-Powered Career Advisor (Gemini Integration)
+# Install dependencies
+npm install
+```
 
-Using **Google Gemini API** to:
+### Environment Configuration
 
-- 🧠 Analyze user interests and goals to suggest suitable career paths
-- 📚 Provide course and skill recommendations aligned with career ambitions
-- 📝 Generate summaries of job roles and industry outlooks
-- 🎯 Offer personalized study plans or learning roadmaps
-- 🗣 Accept natural language inputs (e.g., "I want to work in AI research") and respond with tailored advice
+Create a `.env` file in the `Lakshya` root:
 
----
+```bash
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-## ✨ Optional Enhancements
+### Run the App
 
-- 💾 Save user data in localStorage or Firebase
-- 📊 Add progress dashboards or skill gap analysis
-- 🌓 Dark/light theme toggle
-- 🔗 Link to external resources, courses, or job boards
+```bash
+# Start development server
+npm run dev
 
----
+# Build for production
+npm run build
 
-## 🔌 Suitable APIs
+# Preview production build
+npm run preview
+```
 
-| API | Purpose |
-|-----|---------|
-| **RapidAPI (Job Search APIs)** | Job data and trends |
-| **Google Gemini API** | Personalized career guidance and summaries |
+## Usage Instructions
+
+1. **Open Dashboard**: Start at the dashboard to access all modules from the sidebar
+2. **Select Career Interests**: Go to Career and choose predefined interests or add custom ones
+3. **Save Interests**: Persist your selected interests to local storage
+4. **Track Goals**: Use Goal Tracker to create goals, assign deadlines, and update progress
+5. **Generate AI Recommendations**: Visit AI Advisor to receive course and skill recommendations from Gemini
+6. **Refresh Insights**: Re-run recommendation generation as your goals and interests evolve
+
+## Project Structure
+
+```text
+Lakshya/
+├── public/                    # Static public assets
+├── src/
+│   ├── assets/                # Images and visual assets
+│   ├── components/            # Shared layout and UI components
+│   ├── pages/                 # Route-level pages (Career, Goals, AI Advisor, etc.)
+│   ├── App.jsx                # Main app layout and route definitions
+│   ├── main.jsx               # App bootstrap with BrowserRouter
+│   └── index.css              # Global styles
+├── package.json               # Scripts and dependencies
+├── tailwind.config.js         # Tailwind configuration
+├── vite.config.js             # Vite configuration
+└── README.md                  # Project documentation
+```
+
+## Current Module Status
+
+- **Implemented**: Dashboard, Career, Goal Tracker, AI Advisor
+- **Planned / Coming Soon**: Job Market, Resources, Calendar
+
+## Best Practices and Design Principles
+
+- **Modular UI Architecture**: Components and pages are separated for easier maintenance and extension
+- **Data Persistence by Default**: User profile inputs are retained locally to reduce repeated work
+- **Progress-Oriented UX**: Goal metrics and visual progress indicators encourage consistent learning
+- **Incremental Feature Delivery**: Core features are shipped first, with future modules scaffolded for phased rollout
+- **API Safety and Resilience**: AI recommendation workflow includes loading and error states to improve reliability
+
+## Contribution Guidelines
+
+1. Follow the existing ESLint and React code patterns
+2. Keep pull requests focused and reviewable
+3. Use clear commit messages that explain the intent of changes
+4. Validate UI behavior across light/dark themes and responsive breakpoints
+5. Update this README when introducing major features or architectural changes
+
+## License
+
+This project is proprietary software owned by TEJ Fellowship. All rights reserved.
+
+## Contact Information
+
+**Project Maintainers:**
+
+- Frontend Lead: Mahesh Chaudhary
+- Product Manager: Sanjeev Rai
+
+## Technical Support
+
+- Email: initx.mahesh@gmail.com
