@@ -200,7 +200,6 @@ async function scrapeDoc(url, category) {
       };
       title = categoryTitles[category] ?? "Documentation";
     }
-
     /**
      * content: raw text from the page
      * replace multiple whitespace with single space
