@@ -12,6 +12,9 @@ const shelfSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      //unique: true, ensures that each user can only have one shelf
+      unique: true,
+      //index: true, creates an index on the user field for faster queries
       index: true,
     },
     books: [

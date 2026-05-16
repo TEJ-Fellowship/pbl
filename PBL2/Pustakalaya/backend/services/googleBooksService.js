@@ -8,7 +8,7 @@ const {
 async function searchBooksService({ q = "book", startIndex = 0, apikey }) {
   //encodeURIComponent: encodes the query string to ensure it is a valid URL
   const response = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&startIndex=${startIndex}&key=${apikey}`,
+    `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&startIndex=${startIndex}&maxResults=10&key=${apikey}`,
   );
 
   if (!response.ok) {
