@@ -31,8 +31,11 @@ const startConsumer = async () => {
   try {
     console.log("🔄 Starting leaderboard updater consumer...");
 
-    // Check if leaderboards need to be rebuilt
+    // Check if leaderboards need to be rebuilt (optimized with SCAN)
+    const startTime = Date.now();
     const needsRebuild = await redisService.needsRebuild();
+    const checkTime = Date.now() - startTime;
+    console.log(`⏱️  Rebuild check completed in ${checkTime}ms`);
 
     if (needsRebuild) {
       console.log("⚠️ Redis leaderboards appear to be empty or missing");

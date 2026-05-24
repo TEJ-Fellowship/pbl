@@ -9,34 +9,34 @@ const logger = require("../util/logger");
 
 /**
  * GET /api/leaderboard/:gameMode
- * Get leaderboard for a specific game mode
+ * Get leaderboard for a specific game mode (offset or cursor pagination)
  *
  * Query params:
- * - type: "global" | "daily" (default: "global")
+ * - type: "global" | "daily" | "weekly" (default: "global")
  * - limit: number (default: 100, max: 1000)
- * - offset: number (default: 0)
+ * - offset: number (offset-based pagination, default: 0)
+ * - cursor: string (base64 encoded cursor for cursor-based pagination)
+ * - direction: "next" | "prev" (default: "next", cursor pagination only)
  */
 router.get("/:gameMode", apiLimiter, validateLeaderboardQuery, async (req, res) => {
   try {
     const gameMode = parseInt(req.params.gameMode);
     const type = req.query.type || "global";
+    const cursor = req.query.cursor || null;
+    const direction = req.query.direction || "next";
 
-    // Parse and validate limit parameter
-    // Handle NaN, negative values, and ensure it's between 1 and 1000
     let limit = parseInt(req.query.limit);
     if (isNaN(limit) || limit <= 0) {
-      limit = 100; // Default to 100 if invalid or missing
+      limit = 100;
     }
-    limit = Math.max(1, Math.min(limit, 1000)); // Clamp between 1 and 1000
+    limit = Math.max(1, Math.min(limit, 1000));
 
-    // Parse and validate offset parameter
     let offset = parseInt(req.query.offset);
     if (isNaN(offset) || offset < 0) {
-      offset = 0; // Default to 0 if invalid or negative
+      offset = 0;
     }
-    offset = Math.max(0, offset); // Ensure non-negative
+    offset = Math.max(0, offset);
 
-    // Validate game mode
     const gameModeData = await redisService.getGameMode(gameMode);
     if (!gameModeData) {
       return res.status(404).json({
@@ -45,58 +45,104 @@ router.get("/:gameMode", apiLimiter, validateLeaderboardQuery, async (req, res) 
       });
     }
 
-    // Get leaderboard from Redis
-    let leaderboardData;
-    if (type === "weekly") {
-      leaderboardData = await redisService.getWeeklyLeaderboard(gameMode, null, limit, offset);
-    } else {
-      leaderboardData = await redisService.getLeaderboard(gameMode, type, limit, offset);
-    }
-    
-    const { leaderboard, totalCount } = leaderboardData;
+    let responseData;
 
-    // Calculate pagination metadata
-    const hasMore = offset + limit < totalCount;
-    const nextOffset = hasMore ? offset + limit : null;
-    const prevOffset = offset > 0 ? Math.max(0, offset - limit) : null;
+    if (cursor) {
+      if (direction !== "next" && direction !== "prev") {
+        return res.status(400).json({
+          error: "Invalid direction. Must be 'next' or 'prev'",
+        });
+      }
 
-    const responseData = {
-      gameMode,
-      gameModeName: gameModeData.name,
-      type,
-      pagination: {
+      const result = await redisService.getLeaderboardWithCursor(
+        gameMode,
+        type,
         limit,
-        offset,
-        total: totalCount,
-        hasMore,
-        nextOffset,
-        prevOffset,
-      },
-      leaderboard,
-    };
+        cursor,
+        direction
+      );
 
-    // Generate ETag for conditional requests
+      responseData = {
+        gameMode,
+        gameModeName: gameModeData.name,
+        type,
+        pagination: {
+          limit: result.pagination.limit,
+          total: result.totalCount,
+          hasMore: result.pagination.hasMore,
+          nextCursor: result.pagination.nextCursor,
+          prevCursor: result.pagination.prevCursor,
+        },
+        leaderboard: result.leaderboard,
+      };
+    } else if (type === "weekly") {
+      const { leaderboard, totalCount, weekId } =
+        await redisService.getWeeklyLeaderboard(gameMode, null, limit, offset);
+
+      const hasMore = offset + limit < totalCount;
+      responseData = {
+        gameMode,
+        gameModeName: gameModeData.name,
+        type,
+        weekId,
+        pagination: {
+          limit,
+          offset,
+          total: totalCount,
+          hasMore,
+          nextOffset: hasMore ? offset + limit : null,
+          prevOffset: offset > 0 ? Math.max(0, offset - limit) : null,
+        },
+        leaderboard,
+      };
+    } else {
+      const { leaderboard, totalCount } = await redisService.getLeaderboard(
+        gameMode,
+        type,
+        limit,
+        offset
+      );
+
+      const hasMore = offset + limit < totalCount;
+      responseData = {
+        gameMode,
+        gameModeName: gameModeData.name,
+        type,
+        pagination: {
+          limit,
+          offset,
+          total: totalCount,
+          hasMore,
+          nextOffset: hasMore ? offset + limit : null,
+          prevOffset: offset > 0 ? Math.max(0, offset - limit) : null,
+        },
+        leaderboard,
+      };
+    }
+
     const etag = crypto
       .createHash("md5")
       .update(JSON.stringify(responseData))
       .digest("hex");
 
-    // Check If-None-Match header for 304 Not Modified
     if (req.headers["if-none-match"] === `"${etag}"`) {
       return res.status(304).end();
     }
 
-    // Set cache headers for CDN
     const cacheControl = `public, max-age=${CDN_CACHE_TTL}, s-maxage=${CDN_CACHE_TTL}`;
     res.setHeader("Cache-Control", cacheControl);
-    res.setHeader("CDN-Cache-Control", cacheControl); // Some CDNs use this
+    res.setHeader("CDN-Cache-Control", cacheControl);
     res.setHeader("ETag", `"${etag}"`);
-    res.setHeader("Vary", "Accept"); // Vary by Accept header
+    res.setHeader("Vary", "Accept");
 
     res.json(responseData);
   } catch (error) {
-    logger.error("Error fetching leaderboard", { error: error.message, gameMode, type });
-    throw error; // Let error handler middleware handle it
+    logger.error("Error fetching leaderboard", {
+      error: error.message,
+      gameMode: req.params.gameMode,
+      type: req.query.type,
+    });
+    throw error;
   }
 });
 
