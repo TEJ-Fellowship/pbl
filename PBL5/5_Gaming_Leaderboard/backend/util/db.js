@@ -63,6 +63,34 @@ const connectToDatabase = async () => {
     await producer.connect();
     console.log("✅ Kafka producer connected");
 
+    // Create topics if they don't exist
+    const admin = kafka.admin();
+    await admin.connect();
+    try {
+      await admin.createTopics({
+        topics: [
+          {
+            topic: "score-submitted",
+            numPartitions: 10,
+            replicationFactor: 1,
+          },
+          {
+            topic: "leaderboard-updated",
+            numPartitions: 3,
+            replicationFactor: 1,
+          },
+        ],
+        waitForLeaders: true,
+      });
+      console.log("✅ Kafka topics created/verified");
+    } catch (err) {
+      // Topic might already exist, which is fine
+      if (!err.message?.includes("already exists")) {
+        console.warn("⚠️ Topic creation warning:", err.message);
+      }
+    }
+    await admin.disconnect();
+
     // Connect Kafka consumer
     await consumer.connect();
     console.log("✅ Kafka consumer connected");
@@ -80,8 +108,6 @@ const connectToDatabase = async () => {
 /**
  * Reset consumer group offset to earliest available position
  * This allows replaying messages from Kafka to rebuild leaderboards
- * Strategy: Delete the consumer group to remove stored offsets
- * Note: Consumer should already be connected when this is called
  */
 const resetConsumerOffsetToEarliest = async () => {
   try {
@@ -92,35 +118,26 @@ const resetConsumerOffsetToEarliest = async () => {
 
     console.log(`🔄 Resetting consumer group '${groupId}' offset to earliest...`);
 
-    // Disconnect consumer first so we can delete the group
-    // Consumer must be disconnected before deleting the group
     try {
       await consumer.disconnect();
       console.log("   Disconnected consumer");
     } catch (disconnectError) {
-      // Consumer might not be connected yet, that's okay
       console.log("   Consumer not connected, skipping disconnect");
     }
 
-    // Delete the consumer group to remove all stored offsets
-    // This will cause the consumer to start from the beginning on next subscribe
     try {
       await admin.deleteGroups([groupId]);
       console.log(`✅ Deleted consumer group '${groupId}' - offsets will reset to earliest`);
     } catch (deleteError) {
-      // Group might not exist yet, which is fine - will start from beginning anyway
       if (deleteError.message && deleteError.message.includes("does not exist")) {
         console.log(`   Consumer group '${groupId}' does not exist yet (will start from beginning)`);
       } else {
         console.log(`⚠️ Could not delete consumer group: ${deleteError.message}`);
-        // Continue anyway - we'll subscribe from beginning
       }
     }
 
     await admin.disconnect();
-    
-    // Reconnect the consumer (it will start from beginning since group was deleted)
-    // when we subscribe with fromBeginning: true
+
     try {
       await consumer.connect();
       console.log("   Reconnected consumer");
@@ -128,11 +145,10 @@ const resetConsumerOffsetToEarliest = async () => {
       console.error("❌ Error reconnecting consumer:", reconnectError);
       return false;
     }
-    
+
     return true;
   } catch (error) {
     console.error("❌ Error resetting consumer offset:", error);
-    // Try to reconnect consumer even if reset fails
     try {
       await consumer.connect();
     } catch (reconnectError) {
