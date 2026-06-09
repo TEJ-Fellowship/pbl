@@ -1,0 +1,56 @@
+{
+  "_comment": "Claude Desktop MCP Configuration",
+  "_instructions": [
+    "1. Copy this file content to your Claude Desktop config location:",
+    "   - macOS: ~/Library/Application Support/Claude/claude_desktop_config.json",
+    "   - Windows: %APPDATA%/Claude/claude_desktop_config.json",
+    "   - Linux: ~/.config/Claude/claude_desktop_config.json",
+    "",
+    "2. Update the 'args' path to the ABSOLUTE path of mcpServer.js on your system",
+    "",
+    "3. Restart Claude Desktop",
+    "",
+    "4. The Foodmandu tools will appear in Claude's tool list"
+  ],
+  
+  "mcpServers": {
+    "foodmandu-support-agent": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/backend/src/mcp/mcpServer.js"
+      ],
+      "env": {
+        "_comment": "Optional: Set environment variables if needed",
+        "PINECONE_API_KEY": "your-pinecone-key-here",
+        "PINECONE_INDEX_NAME": "your-index-name",
+        "GOOGLE_GEMINI_API_KEY": "your-gemini-key-here"
+      }
+    }
+  },
+  
+  "_example_windows": {
+    "mcpServers": {
+      "foodmandu-support-agent": {
+        "command": "node",
+        "args": [
+          "C:\\Users\\YourUser\\Documents\\pbl\\PBL4\\FoodManduSupportAgent\\backend\\src\\mcp\\mcpServer.js"
+        ]
+      }
+    }
+  },
+  
+  "_example_macos_linux": {
+    "mcpServers": {
+      "foodmandu-support-agent": {
+        "command": "node",
+        "args": [
+          "/home/youruser/projects/FoodManduSupportAgent/backend/src/mcp/mcpServer.js"
+        ]
+      }
+    }
+  }
+}
+
+
+
+

@@ -24,7 +24,7 @@ Inspired by [Foodmandu's Help Center](https://foodmandu.com/Help) and their in-a
 - Chunk into 500 tokens (shorter for quick answers to urgent queries)
 - Chroma local vector DB with metadata: `{topic: ordering/payment/delivery, user_type: customer/restaurant}`
 - Terminal interface for common questions: "Where's my order?", "How do I pay with eSewa?"
-- Bilingual support detection (respond in language of query)
+- Bilingual support detection (respond in language of query) 
 
 **Tier 2: Production RAG + Context** ⏱️ _Days 4-7_
 
@@ -79,6 +79,6 @@ Inspired by [Foodmandu's Help Center](https://foodmandu.com/Help) and their in-a
 - Nepali language nuances (Romanized Nepali in queries)
 - Local payment ecosystem (eSewa, Khalti, COD)
 - Address ambiguity (no standardized postal codes in many areas)
-- Cultural context (festival rush times, food preferences)
+- ✅ Cultural context (festival rush times, food preferences) 
 
 ---
